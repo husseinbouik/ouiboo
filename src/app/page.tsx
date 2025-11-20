@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
-import { Dialog } from '@headlessui/react'
+import React, { Fragment,useState, useEffect, useRef } from 'react'
 import { Bars3Icon, XMarkIcon, GlobeAltIcon, BuildingOffice2Icon, CheckCircleIcon, SparklesIcon } from '@heroicons/react/24/outline'
 import { motion, useScroll, useTransform, useInView, animate } from 'framer-motion' // Import new hooks
 import axios from 'axios'
+import { Dialog, Transition } from '@headlessui/react' 
 
 
 type CounterProps = {
@@ -38,9 +38,19 @@ function Counter({ from, to, duration = 2 }: CounterProps) {
 
 // Ouiboo Landing Page — Enhanced Version
 export default function OuibooLanding() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [formData, setFormData] = useState({ name: '', email: '', userType: 'Traveler' })
-  const [submitted, setSubmitted] = useState(false)
+ const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  
+  // 1. Add phoneNumber and agencyName to the initial state
+  const [formData, setFormData] = useState({ 
+    name: '', 
+    email: '', 
+    userType: 'Traveler',
+    phoneNumber: '', 
+    agencyName: '' 
+  })
+
+  // 2. Replace 'submitted' state with state for the modal
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const { scrollYProgress } = useScroll()
@@ -53,12 +63,21 @@ export default function OuibooLanding() {
     { name: 'Features', href: '#features' },
   ]
 
+// This function correctly calls your new API route
 const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
     try {
       await axios.post('/api/subscribe', formData)
-      setSubmitted(true)
+      setIsSuccessModalOpen(true) // Open the modal on success
+      // Optional: Reset form after successful submission
+      setFormData({ 
+        name: '', 
+        email: '', 
+        userType: 'Traveler',
+        phoneNumber: '', 
+        agencyName: '' 
+      });
     } catch (err) {
       console.error('Subscribe error:', err)
       alert('Could not submit your request. Please try again later.')
@@ -66,8 +85,8 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       setLoading(false)
     }
   }
+
   
-  // NEW: Staggered animation variant for containers
   const containerVariants = {
     hidden: {},
     visible: {
@@ -275,12 +294,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
               <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-300">
                 Join our waitlist for exclusive early access, a free month of our Pro plan for agencies, and updates on our launch.
               </p>
-              {submitted ? (
-              <div className="text-center py-8">
-                <h2 className="text-2xl font-semibold text-green-400 mb-2">You're on the list! 🎉</h2>
-                <p className="text-gray-300">We'll notify you when early access launches. Thanks for joining!</p>
-              </div>
-            ) : (
+
               <form onSubmit={handleSubmit} className="mt-10 mx-auto max-w-md grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
                 <input
                   name="name"
@@ -302,6 +316,18 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
+                <div className="sm:col-span-2">
+    <input
+      name="phoneNumber"
+      type="tel" // Use type="tel" for phone numbers
+      autoComplete="tel"
+      required
+      className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6"
+      placeholder="Enter your phone number"
+      value={formData.phoneNumber}
+      onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+    />
+  </div>
                 <select
                   name="userType"
                   className="min-w-0 flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6"
@@ -311,15 +337,104 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                   <option className="text-black">Traveler</option>
                   <option className="text-black">Agency</option>
                 </select>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-none rounded-md bg-sunset-orange px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                >
-                   {loading ? 'Joining...' : 'Join Waitlist'}
-                </button>
+               <button
+    type="submit"
+    disabled={loading}
+    className="flex-none rounded-md bg-sunset-orange px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+  >
+    {loading ? 'Joining...' : 'Join Waitlist'}
+  </button>
+
+  {/* --- NEW: Conditional Agency Name Input with Animation --- */}
+  {formData.userType === 'Agency' && (
+    <motion.div
+      className="sm:col-span-2"
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <input
+        name="agencyName"
+        type="text"
+        required // Required only when visible
+        className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6"
+        placeholder="Enter your agency name"
+        value={formData.agencyName}
+        onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}
+      />
+    </motion.div>
+  )}
               </form>
-            )}
+              {/* --- NEW: Animated Success Modal --- */}
+<Transition appear show={isSuccessModalOpen} as={Fragment}>
+  <Dialog as="div" className="relative z-50" onClose={() => setIsSuccessModalOpen(false)}>
+    <Transition.Child
+      as={Fragment}
+      enter="ease-out duration-300"
+      enterFrom="opacity-0"
+      enterTo="opacity-100"
+      leave="ease-in duration-200"
+      leaveFrom="opacity-100"
+      leaveTo="opacity-0"
+    >
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
+    </Transition.Child>
+
+    <div className="fixed inset-0 overflow-y-auto">
+      <div className="flex min-h-full items-center justify-center p-4 text-center">
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0 scale-95"
+          enterTo="opacity-100 scale-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100 scale-100"
+          leaveTo="opacity-0 scale-95"
+        >
+          <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+            <div className="flex flex-col items-center">
+              {/* Animated Checkmark */}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1, rotate: 360 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 20,
+                  delay: 0.2,
+                }}
+              >
+                <CheckCircleIcon className="h-20 w-20 text-green-500" />
+              </motion.div>
+
+              <Dialog.Title
+                as="h3"
+                className="mt-4 text-2xl font-bold leading-6 text-gray-900"
+              >
+                You're on the list! 🎉
+              </Dialog.Title>
+              <div className="mt-2">
+                <p className="text-sm text-gray-500">
+                  Thanks for joining! We'll notify you when early access launches.
+                </p>
+              </div>
+
+              <div className="mt-6">
+                <button
+                  type="button"
+                  className="inline-flex justify-center rounded-md border border-transparent bg-green-100 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+                  onClick={() => setIsSuccessModalOpen(false)}
+                >
+                  Awesome!
+                </button>
+              </div>
+            </div>
+          </Dialog.Panel>
+        </Transition.Child>
+      </div>
+    </div>
+  </Dialog>
+</Transition>
               <svg
                 viewBox="0 0 1024 1024"
                 aria-hidden="true"
