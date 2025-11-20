@@ -1,7 +1,10 @@
+// app/layout.tsx
+
 import { Metadata } from "next";
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
-import Script from 'next/script'; // 1. Import the Script component
+import Script from 'next/script';
+import ClaritySetup from '../components/ClaritySetup'; 
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,21 +16,21 @@ export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
-}>) {   
+}>) {
   return (
     <html lang="en">
-      {/* 2. The <head> tag is now managed by Next.js metadata and is not needed here */}
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
         suppressHydrationWarning={true}
       >
+        <ClaritySetup /> {/* 2. Add the component here */}
         {children}
       </body>
 
-      {/* 3. Add the Google Analytics scripts here using the next/script component */}
+      {/* Google Analytics Scripts */}
       <Script
         strategy="afterInteractive"
-        src="https://www.googletagmanager.com/gtag/js?id=G-NGNWG1877Q"
+        src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
       />
       <Script
         id="google-analytics"
@@ -37,7 +40,7 @@ export default function RootLayout({
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-NGNWG1877Q');
+            gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
           `,
         }}
       />
