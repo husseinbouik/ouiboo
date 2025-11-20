@@ -1,20 +1,8 @@
-import type { Metadata } from "next";
+import { Metadata } from "next";
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
+import Script from 'next/script'; // 1. Import the Script component
 import "./globals.css";
-
-// REMOVE THESE CONSTANTS. You no longer need to call the fonts as functions.
-/*
-const geistSans = GeistSans({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = GeistMono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-*/
 
 export const metadata: Metadata = {
   title: "Ouiboo",
@@ -25,16 +13,34 @@ export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
-}>) {
+}>) {   
   return (
     <html lang="en">
+      {/* 2. The <head> tag is now managed by Next.js metadata and is not needed here */}
       <body
-        // UPDATE THIS LINE to use the imported objects directly
         className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
         suppressHydrationWarning={true}
       >
         {children}
       </body>
+
+      {/* 3. Add the Google Analytics scripts here using the next/script component */}
+      <Script
+        strategy="afterInteractive"
+        src="https://www.googletagmanager.com/gtag/js?id=G-NGNWG1877Q"
+      />
+      <Script
+        id="google-analytics"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-NGNWG1877Q');
+          `,
+        }}
+      />
     </html>
   );
 }
