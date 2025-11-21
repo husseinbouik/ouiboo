@@ -268,10 +268,12 @@ export default function OuibooLanding() {
               <h2 className="text-base font-semibold leading-7 text-deep-blue">Pricing</h2>
               <p className="mt-2 text-4xl font-bold tracking-tight text-deep-blue sm:text-5xl">Simple, Transparent Pricing</p>
             </motion.div>
-            <motion.p variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true, delay: 0.2 }} className="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-gray-600">
+            <motion.p variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }} 
+  transition={{ delay: 0.2 }}  className="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-gray-600">
               We're finalizing our plans to ensure they're fair and provide incredible value. Early supporters get the best deal, forever.
             </motion.p>
-            <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true, delay: 0.4 }} className="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-8 lg:mx-0 lg:max-w-none">
+            <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }} 
+  transition={{ delay: 0.4 }}  className="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-8 lg:mx-0 lg:max-w-none">
               <div className="rounded-3xl p-8 ring-2 ring-deep-blue xl:p-10 transition-shadow duration-300 hover:shadow-2xl">
                 <h3 className="text-2xl font-bold tracking-tight text-deep-blue">Exclusive Waitlist Offer</h3>
                 <p className="mt-4 text-base leading-7 text-gray-600">As a thank you for being an early supporter, all agencies who join the waitlist will receive...</p>
