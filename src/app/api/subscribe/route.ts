@@ -216,7 +216,7 @@ export async function POST(req: Request) {
 
     // Define the email options with the dynamic subject and HTML
     const mailOptions = {
-      from: `"The Ouiboo Team" <${process.env.GMAIL_EMAIL}>`,
+      from: `"Ouiboo" <${process.env.GMAIL_EMAIL}>`,
       to: email,
       subject: subject,
       html: html,
