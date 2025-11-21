@@ -361,40 +361,43 @@ export default function OuibooLanding() {
                   </Transition.Child>
                   <div className="fixed inset-0 overflow-y-auto">
                     <div className="flex min-h-full items-center justify-center p-4 text-center">
-                      <Transition.Child
-                        as={Fragment}
-                        enter="ease-out duration-300"
-                        enterFrom="opacity-0 scale-95"
-                        enterTo="opacity-100 scale-100"
-                        leave="ease-in duration-200"
-                        leaveFrom="opacity-100 scale-100"
-                        leaveTo="opacity-0 scale-95"
-                      >
-                        <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                          <div className="flex flex-col items-center">
-                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1, rotate: 360 }} transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}>
-                              <CheckCircleIcon className="h-20 w-20 text-green-500" />
-                            </motion.div>
-                            <Dialog.Title as="h3" className="mt-4 text-2xl font-bold leading-6 text-gray-900">
-                              You're on the list! 🎉
-                            </Dialog.Title>
-                            <div className="mt-2">
-                              <p className="text-sm text-gray-500">
-                                Thanks for joining! We'll notify you when early access launches.
-                              </p>
-                            </div>
-                            <div className="mt-6">
-                              <button
-                                type="button"
-                                className="inline-flex justify-center rounded-md border border-transparent bg-green-100 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-                                onClick={() => setIsSuccessModalOpen(false)}
-                              >
-                                Awesome!
-                              </button>
-                            </div>
-                          </div>
-                        </Dialog.Panel>
-                      </Transition.Child>
+    <Transition.Child
+  as={Fragment}
+  enter="ease-out duration-300"
+  enterFrom="opacity-0 scale-95"
+  enterTo="opacity-100 scale-100"
+  leave="ease-in duration-200"
+  leaveFrom="opacity-100 scale-100"
+  leaveTo="opacity-0 scale-95"
+>
+  <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+    <div className="flex flex-col items-center">
+      <motion.div initial={{ scale: 0 }} animate={{ scale: 1, rotate: 360 }} transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}>
+        <CheckCircleIcon className="h-20 w-20 text-green-500" aria-hidden={true} />
+      </motion.div>
+
+      <Dialog.Title as="h3" className="mt-4 text-2xl font-bold leading-6 text-gray-900">
+        You're on the list! 🎉
+      </Dialog.Title>
+
+      <div className="mt-2">
+        <p className="text-sm text-gray-500">
+          Thanks for joining! We'll notify you when early access launches.
+        </p>
+      </div>
+
+      <div className="mt-6">
+        <button
+          type="button"
+          className="inline-flex justify-center rounded-md border border-transparent bg-green-100 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+          onClick={() => setIsSuccessModalOpen(false)}
+        >
+          Awesome!
+        </button>
+      </div>
+    </div>
+  </Dialog.Panel>
+</Transition.Child>
                     </div>
                   </div>
                 </Dialog>
