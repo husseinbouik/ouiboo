@@ -262,32 +262,119 @@ export default function OuibooLanding() {
         </section>
 
         {/* Pricing Section */}
-        <section id="pricing" className="bg-white py-24 sm:py-32">
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mx-auto max-w-4xl text-center">
-              <h2 className="text-base font-semibold leading-7 text-deep-blue">Pricing</h2>
-              <p className="mt-2 text-4xl font-bold tracking-tight text-deep-blue sm:text-5xl">Simple, Transparent Pricing</p>
-            </motion.div>
-            <motion.p variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }} 
-  transition={{ delay: 0.2 }}  className="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-gray-600">
-              We're finalizing our plans to ensure they're fair and provide incredible value. Early supporters get the best deal, forever.
-            </motion.p>
-            <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }} 
-  transition={{ delay: 0.4 }}  className="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-8 lg:mx-0 lg:max-w-none">
-              <div className="rounded-3xl p-8 ring-2 ring-deep-blue xl:p-10 transition-shadow duration-300 hover:shadow-2xl">
-                <h3 className="text-2xl font-bold tracking-tight text-deep-blue">Exclusive Waitlist Offer</h3>
-                <p className="mt-4 text-base leading-7 text-gray-600">As a thank you for being an early supporter, all agencies who join the waitlist will receive...</p>
-                <p className="mt-6 flex items-baseline gap-x-1">
-                  <span className="text-5xl font-bold tracking-tight bg-gradient-to-r from-sunset-orange to-golden-yellow text-transparent bg-clip-text">3 Months Free</span>
-                  <span className="text-sm font-semibold leading-6 text-gray-600">on any Pro plan</span>
-                </p>
-                <a href="#waitlist" className="mt-8 block rounded-md bg-sunset-orange px-3 py-2 text-center text-sm font-semibold leading-6 text-white shadow-sm hover:bg-opacity-90 transition-transform hover:scale-105">
-                  Claim Your Free Months
-                </a>
-              </div>
-            </motion.div>
-          </div>
-        </section>
+ {/* --- PRICING SECTION (in Moroccan Dirham) --- */}
+<section id="pricing" className="bg-white py-24 sm:py-32">
+  <div className="mx-auto max-w-7xl px-6 lg:px-8">
+    <motion.div 
+      variants={fadeInUp} 
+      initial="hidden" 
+      whileInView="visible" 
+      viewport={{ once: true }} 
+      className="mx-auto max-w-4xl text-center"
+    >
+      <h2 className="text-base font-semibold leading-7 text-deep-blue">Pricing</h2>
+      <p className="mt-2 text-4xl font-bold tracking-tight text-deep-blue sm:text-5xl">
+        An Unbeatable Founding Offer
+      </p>
+    </motion.div>
+    <motion.p 
+      variants={fadeInUp} 
+      initial="hidden" 
+      whileInView="visible" 
+      viewport={{ once: true }} 
+      transition={{ delay: 0.2 }}  
+      className="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-gray-600"
+    >
+      Our full pricing is coming soon. As a thank you to our pioneers, we're offering an exclusive deal you won't see again.
+    </motion.p>
+    
+    {/* --- Pricing Table --- */}
+    <motion.div 
+      variants={staggerContainer}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true }}
+      className="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-8 lg:mx-0 lg:max-w-none lg:grid-cols-3"
+    >
+      {/* Pro Plan (Disabled) */}
+      <motion.div variants={fadeInUp} className="rounded-3xl p-8 opacity-60 ring-1 ring-gray-200 xl:p-10">
+        <h3 className="text-lg font-semibold leading-8 text-gray-900">Pro Plan</h3>
+        <p className="mt-4 text-sm leading-6 text-gray-600">The complete toolkit for growing travel agencies.</p>
+        <p className="mt-6 flex items-baseline gap-x-1">
+          {/* UPDATED PRICE */}
+          <span className="text-4xl font-bold tracking-tight text-gray-900">999</span>
+          <span className="text-sm font-semibold leading-6 text-gray-600">MAD/month</span>
+        </p>
+        <a href="#" className="mt-8 block rounded-md bg-gray-200 px-3 py-2 text-center text-sm font-semibold leading-6 text-gray-500 cursor-not-allowed">
+          Coming Soon
+        </a>
+        <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
+          <li className="flex gap-x-3">
+            <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
+            Unlimited trip listings
+          </li>
+          <li className="flex gap-x-3">
+            <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
+            Advanced analytics & reporting
+          </li>
+          <li className="flex gap-x-3">
+            <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
+            Secure payment processing
+          </li>
+        </ul>
+      </motion.div>
+
+      {/* Exclusive Waitlist Offer (Highlighted) */}
+      <motion.div variants={fadeInUp} className="relative rounded-3xl p-8 ring-2 ring-deep-blue xl:p-10 lg:z-10 lg:scale-105 transition-shadow duration-300 hover:shadow-2xl">
+         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <span className="inline-flex items-center rounded-full bg-cyan-500 px-4 py-1 text-sm font-medium text-white">
+                Best Value
+            </span>
+        </div>
+        <h3 className="text-2xl font-bold tracking-tight text-deep-blue">Exclusive Waitlist Offer</h3>
+        <p className="mt-4 text-base leading-7 text-gray-600">Get everything in our Pro plan, absolutely free, as a thank you for your early support.</p>
+        <p className="mt-6 flex items-baseline gap-x-1">
+          <span className="text-5xl font-bold tracking-tight bg-gradient-to-r from-sunset-orange to-golden-yellow text-transparent bg-clip-text">3 Months Free</span>
+        </p>
+        <a href="#waitlist" className="mt-8 block rounded-md bg-sunset-orange px-3 py-2 text-center text-sm font-semibold leading-6 text-white shadow-sm hover:bg-opacity-90 transition-transform hover:scale-105">
+          Claim Your Free Months
+        </a>
+         <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
+          <li className="flex gap-x-3 font-semibold">
+            <CheckCircleIcon className="h-6 w-5 flex-none text-cyan-500" aria-hidden="true" />
+            Everything in the future Pro plan
+          </li>
+        </ul>
+      </motion.div>
+
+      {/* Scale Plan (Disabled) */}
+      <motion.div variants={fadeInUp} className="rounded-3xl p-8 opacity-60 ring-1 ring-gray-200 xl:p-10">
+        <h3 className="text-lg font-semibold leading-8 text-gray-900">Scale Plan</h3>
+        <p className="mt-4 text-sm leading-6 text-gray-600">For large-scale operations and custom needs.</p>
+        <p className="mt-6 flex items-baseline gap-x-1">
+          <span className="text-4xl font-bold tracking-tight text-gray-900">Custom</span>
+        </p>
+        <a href="#" className="mt-8 block rounded-md bg-gray-200 px-3 py-2 text-center text-sm font-semibold leading-6 text-gray-500 cursor-not-allowed">
+          Coming Soon
+        </a>
+        <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
+          <li className="flex gap-x-3">
+            <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
+            Everything in Pro
+          </li>
+          <li className="flex gap-x-3">
+            <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
+            Dedicated account manager
+          </li>
+          <li className="flex gap-x-3">
+            <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
+            API access & custom integrations
+          </li>
+        </ul>
+      </motion.div>
+    </motion.div>
+  </div>
+</section>
 
         {/* Social Proof (Testimonials) Section */}
         <section className="py-24 sm:py-32">
