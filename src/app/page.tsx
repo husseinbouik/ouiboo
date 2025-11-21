@@ -262,7 +262,7 @@ export default function OuibooLanding() {
         </section>
 
         {/* Pricing Section */}
- {/* --- NEW & IMPROVED PRICING SECTION --- */}
+ {/* --- PRICING SECTION (in Moroccan Dirham) --- */}
 <section id="pricing" className="bg-white py-24 sm:py-32">
   <div className="mx-auto max-w-7xl px-6 lg:px-8">
     <motion.div 
@@ -301,8 +301,9 @@ export default function OuibooLanding() {
         <h3 className="text-lg font-semibold leading-8 text-gray-900">Pro Plan</h3>
         <p className="mt-4 text-sm leading-6 text-gray-600">The complete toolkit for growing travel agencies.</p>
         <p className="mt-6 flex items-baseline gap-x-1">
-          <span className="text-4xl font-bold tracking-tight text-gray-900">$99</span>
-          <span className="text-sm font-semibold leading-6 text-gray-600">/month</span>
+          {/* UPDATED PRICE */}
+          <span className="text-4xl font-bold tracking-tight text-gray-900">999</span>
+          <span className="text-sm font-semibold leading-6 text-gray-600">MAD/month</span>
         </p>
         <a href="#" className="mt-8 block rounded-md bg-gray-200 px-3 py-2 text-center text-sm font-semibold leading-6 text-gray-500 cursor-not-allowed">
           Coming Soon
@@ -362,7 +363,7 @@ export default function OuibooLanding() {
             Everything in Pro
           </li>
           <li className="flex gap-x-3">
-            <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="trie" />
+            <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
             Dedicated account manager
           </li>
           <li className="flex gap-x-3">
