@@ -2,7 +2,8 @@
 
 import React, { Fragment, useState, useEffect, useRef } from 'react'
 import { Bars3Icon, XMarkIcon, GlobeAltIcon, BuildingOffice2Icon, CheckCircleIcon, SparklesIcon, MagnifyingGlassIcon, PencilSquareIcon, PaperAirplaneIcon, ChartBarIcon, UserGroupIcon } from '@heroicons/react/24/outline'
-import { motion, useScroll, useTransform, useInView, animate } from 'framer-motion'
+// 1. Import the 'Variants' type from Framer Motion
+import { motion, useScroll, useTransform, useInView, animate, Variants } from 'framer-motion'
 import axios from 'axios'
 import { Dialog, Transition } from '@headlessui/react'
 
@@ -80,22 +81,23 @@ export default function OuibooLanding() {
     }
   }
 
-  const fadeInUp = {
+  // 2. Apply the 'Variants' type to your animation objects
+  const fadeInUp: Variants = {
     hidden: { opacity: 0, y: 30 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
   };
   
-  const staggerContainer = {
+  const staggerContainer: Variants = {
     hidden: {},
     visible: { transition: { staggerChildren: 0.15 } }
   };
   
-  const slideInLeft = {
+  const slideInLeft: Variants = {
      hidden: { opacity: 0, x: -50 },
      visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: "easeOut" }}
   }
 
-  const slideInRight = {
+  const slideInRight: Variants = {
      hidden: { opacity: 0, x: 50 },
      visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: "easeOut" }}
   }
@@ -103,6 +105,7 @@ export default function OuibooLanding() {
 
   return (
     <div className="bg-off-white text-deep-blue">
+      {/* (The rest of your component JSX remains exactly the same) */}
       {/* Header */}
        <header className="absolute inset-x-0 top-0 z-50">
         <nav aria-label="Global" className="flex items-center justify-between p-6 lg:px-8">
@@ -315,97 +318,92 @@ export default function OuibooLanding() {
         </section>
 
         {/* Waitlist Section */}
-         <section id="waitlist" className="py-24 sm:py-32">
-            <div className="mx-auto max-w-7xl px-6 lg:px-8">
-                <div className="relative isolate overflow-hidden bg-deep-blue px-6 py-24 text-center shadow-2xl sm:rounded-3xl sm:px-16">
-                    <h2 className="mx-auto max-w-2xl text-3xl font-bold tracking-tight text-white sm:text-4xl">Be the First to Experience Ouiboo</h2>
-                    <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-300">Join our waitlist for exclusive early access, a free month of our Pro plan for agencies, and updates on our launch.</p>
-                    <form onSubmit={handleSubmit} className="mt-10 mx-auto max-w-md grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
-                        <input name="name" type="text" autoComplete="name" required className="min-w-0 flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6" placeholder="Enter your name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}/>
-                        <input name="email" type="email" autoComplete="email" required className="min-w-0 flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6" placeholder="Enter your email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })}/>
-                        <div className="sm:col-span-2">
-                            <input name="phoneNumber" type="tel" autoComplete="tel" required className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6" placeholder="Enter your phone number" value={formData.phoneNumber} onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}/>
-                        </div>
-                        <select name="userType" className="min-w-0 flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6" value={formData.userType} onChange={(e) => setFormData({ ...formData, userType: e.target.value })}>
-                            <option className="text-black">Traveler</option>
-                            <option className="text-black">Agency</option>
-                        </select>
-                        <button type="submit" disabled={loading} className="flex-none rounded-md bg-sunset-orange px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-opacity disabled:opacity-50">
-                            {loading ? 'Joining...' : 'Join Waitlist'}
-                        </button>
-                        {formData.userType === 'Agency' && (
-                            <motion.div className="sm:col-span-2" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-                            <input name="agencyName" type="text" required className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6" placeholder="Enter your agency name" value={formData.agencyName} onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}/>
-                            </motion.div>
-                        )}
-                    </form>
-                    {/* --- FIX: RESTORED SUCCESS MODAL IMPLEMENTATION --- */}
-                    <Transition appear show={isSuccessModalOpen} as={Fragment}>
-                      <Dialog as="div" className="relative z-50" onClose={() => setIsSuccessModalOpen(false)}>
-                        <Transition.Child
-                          as={Fragment}
-                          enter="ease-out duration-300"
-                          enterFrom="opacity-0"
-                          enterTo="opacity-100"
-                          leave="ease-in duration-200"
-                          leaveFrom="opacity-100"
-                          leaveTo="opacity-0"
-                        >
-                          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
-                        </Transition.Child>
-
-                        <div className="fixed inset-0 overflow-y-auto">
-                          <div className="flex min-h-full items-center justify-center p-4 text-center">
-                            <Transition.Child
-                              as={Fragment}
-                              enter="ease-out duration-300"
-                              enterFrom="opacity-0 scale-95"
-                              enterTo="opacity-100 scale-100"
-                              leave="ease-in duration-200"
-                              leaveFrom="opacity-100 scale-100"
-                              leaveTo="opacity-0 scale-95"
-                            >
-                              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                                <div className="flex flex-col items-center">
-                                  <motion.div
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1, rotate: 360 }}
-                                    transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
-                                  >
-                                    <CheckCircleIcon className="h-20 w-20 text-green-500" />
-                                  </motion.div>
-
-                                  <Dialog.Title as="h3" className="mt-4 text-2xl font-bold leading-6 text-gray-900">
-                                    You're on the list! 🎉
-                                  </Dialog.Title>
-                                  <div className="mt-2">
-                                    <p className="text-sm text-gray-500">
-                                      Thanks for joining! We'll notify you when early access launches.
-                                    </p>
-                                  </div>
-
-                                  <div className="mt-6">
-                                    <button
-                                      type="button"
-                                      className="inline-flex justify-center rounded-md border border-transparent bg-green-100 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-                                      onClick={() => setIsSuccessModalOpen(false)}
-                                    >
-                                      Awesome!
-                                    </button>
-                                  </div>
-                                </div>
-                              </Dialog.Panel>
-                            </Transition.Child>
-                          </div>
-                        </div>
-                      </Dialog>
-                    </Transition>
-                    <svg viewBox="0 0 1024 1024" aria-hidden="true" className="absolute left-1/2 top-1/2 -z-10 h-[64rem] w-[64rem] -translate-x-1/2">
-                        <circle cx={512} cy={512} r={512} fill="url(#759c1415-0410-454c-8f7c-9a820de03641)" fillOpacity="0.7" />
-                        <defs><radialGradient id="759c1415-0410-454c-8f7c-9a820de03641" cx={0} cy={0} r={1} gradientUnits="userSpaceOnUse" gradientTransform="translate(512 512) rotate(90) scale(512)"><stop stopColor="#FACC15" /><stop offset={1} stopColor="#0EA5E9" stopOpacity={0} /></radialGradient></defs>
-                    </svg>
+        <section id="waitlist" className="py-24 sm:py-32">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="relative isolate overflow-hidden bg-deep-blue px-6 py-24 text-center shadow-2xl sm:rounded-3xl sm:px-16">
+              <h2 className="mx-auto max-w-2xl text-3xl font-bold tracking-tight text-white sm:text-4xl">Be the First to Experience Ouiboo</h2>
+              <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-300">Join our waitlist for exclusive early access, a free month of our Pro plan for agencies, and updates on our launch.</p>
+              <form onSubmit={handleSubmit} className="mt-10 mx-auto max-w-md grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
+                <input name="name" type="text" autoComplete="name" required className="min-w-0 flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6" placeholder="Enter your name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}/>
+                <input name="email" type="email" autoComplete="email" required className="min-w-0 flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6" placeholder="Enter your email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })}/>
+                <div className="sm:col-span-2">
+                  <input name="phoneNumber" type="tel" autoComplete="tel" required className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6" placeholder="Enter your phone number" value={formData.phoneNumber} onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}/>
                 </div>
+                <select name="userType" className="min-w-0 flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6" value={formData.userType} onChange={(e) => setFormData({ ...formData, userType: e.target.value })}>
+                  <option className="text-black">Traveler</option>
+                  <option className="text-black">Agency</option>
+                </select>
+                <button type="submit" disabled={loading} className="flex-none rounded-md bg-sunset-orange px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-opacity disabled:opacity-50">
+                  {loading ? 'Joining...' : 'Join Waitlist'}
+                </button>
+                {formData.userType === 'Agency' && (
+                  <motion.div className="sm:col-span-2" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+                    <input name="agencyName" type="text" required className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6" placeholder="Enter your agency name" value={formData.agencyName} onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}/>
+                  </motion.div>
+                )}
+              </form>
+
+              {/* Success Modal implementation is now restored */}
+              <Transition appear show={isSuccessModalOpen} as={Fragment}>
+                <Dialog as="div" className="relative z-50" onClose={() => setIsSuccessModalOpen(false)}>
+                  <Transition.Child
+                    as={Fragment}
+                    enter="ease-out duration-300"
+                    enterFrom="opacity-0"
+                    enterTo="opacity-100"
+                    leave="ease-in duration-200"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
+                  >
+                    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
+                  </Transition.Child>
+                  <div className="fixed inset-0 overflow-y-auto">
+                    <div className="flex min-h-full items-center justify-center p-4 text-center">
+                      <Transition.Child
+                        as={Fragment}
+                        enter="ease-out duration-300"
+                        enterFrom="opacity-0 scale-95"
+                        enterTo="opacity-100 scale-100"
+                        leave="ease-in duration-200"
+                        leaveFrom="opacity-100 scale-100"
+                        leaveTo="opacity-0 scale-95"
+                      >
+                        <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                          <div className="flex flex-col items-center">
+                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1, rotate: 360 }} transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}>
+                              <CheckCircleIcon className="h-20 w-20 text-green-500" />
+                            </motion.div>
+                            <Dialog.Title as="h3" className="mt-4 text-2xl font-bold leading-6 text-gray-900">
+                              You're on the list! 🎉
+                            </Dialog.Title>
+                            <div className="mt-2">
+                              <p className="text-sm text-gray-500">
+                                Thanks for joining! We'll notify you when early access launches.
+                              </p>
+                            </div>
+                            <div className="mt-6">
+                              <button
+                                type="button"
+                                className="inline-flex justify-center rounded-md border border-transparent bg-green-100 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+                                onClick={() => setIsSuccessModalOpen(false)}
+                              >
+                                Awesome!
+                              </button>
+                            </div>
+                          </div>
+                        </Dialog.Panel>
+                      </Transition.Child>
+                    </div>
+                  </div>
+                </Dialog>
+              </Transition>
+              
+              <svg viewBox="0 0 1024 1024" aria-hidden="true" className="absolute left-1/2 top-1/2 -z-10 h-[64rem] w-[64rem] -translate-x-1/2">
+                <circle cx={512} cy={512} r={512} fill="url(#759c1415-0410-454c-8f7c-9a820de03641)" fillOpacity="0.7" />
+                <defs><radialGradient id="759c1415-0410-454c-8f7c-9a820de03641" cx={0} cy={0} r={1} gradientUnits="userSpaceOnUse" gradientTransform="translate(512 512) rotate(90) scale(512)"><stop stopColor="#FACC15" /><stop offset={1} stopColor="#0EA5E9" stopOpacity={0} /></radialGradient></defs>
+              </svg>
             </div>
+          </div>
         </section>
       </main>
 
