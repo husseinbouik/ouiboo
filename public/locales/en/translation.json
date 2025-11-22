@@ -1,0 +1,99 @@
+{
+  "joinWaitlist": "Join Waitlist",
+  "nav": {
+    "howItWorks": "How it Works",
+    "forTravelers": "For Travelers",
+    "forAgencies": "For Agencies",
+    "pricing": "Pricing"
+  },
+  "hero": {
+    "title": "Your Next Adventure, Seamlessly Connected.",
+    "subtitle": "For travelers, a world of curated trips. For agencies, a powerful platform to grow. Ouiboo is where travel comes together.",
+    "ctaPrimary": "Join the Waitlist & Get a Free Month",
+    "ctaSecondary": "Learn more"
+  },
+  "howItWorks": {
+    "preTitle": "The Process",
+    "title": "Getting Started is Easy",
+    "subtitle": "Whether you're finding an adventure or listing one, the path is simple and clear.",
+    "step1": { "title": "Discover or Create", "description": "Travelers browse a curated marketplace. Agencies easily build and publish their unique travel packages." },
+    "step2": { "title": "Book Seamlessly", "description": "A simple, secure booking process for travelers. Agencies manage everything from a single, intuitive dashboard." },
+    "step3": { "title": "Experience & Grow", "description": "Travelers embark on their adventure. Agencies gain valuable insights and a global audience." }
+  },
+  "travelers": {
+    "preTitle": "For Travelers",
+    "title": "Your Story is Waiting",
+    "subtitle": "Trade endless scrolling for authentic adventures. We connect you with unique trips from trusted, independent agencies.",
+    "feature1": { "title": "Discover Unique Trips", "description": "Find experiences you won’t see anywhere else, from culinary tours to mountain treks." },
+    "feature2": { "title": "Book with Confidence", "description": "Every agency is vetted. Every booking is secure. Travel with total peace of mind." },
+    "feature3": { "title": "Save Time & Effort", "description": "No more juggling 20 tabs. Find, compare, and book your perfect trip, all in one place." }
+  },
+  "agencies": {
+    "preTitle": "For Agencies",
+    "title": "Your Business, Amplified",
+    "subtitle": "Stop wrestling with outdated tools. Our platform gives you everything you need to manage your business and reach a global audience.",
+    "feature1": { "title": "Digitize Your Offerings", "description": "Easily create, publish, and manage beautiful trip pages that convert." },
+    "feature2": { "title": "Unlock Growth Insights", "description": "Use our dashboard to understand your customers, track sales, and make data-driven decisions." },
+    "feature3": { "title": "Reach a Global Audience", "description": "Tap into our marketplace of passionate travelers actively looking for trips just like yours." }
+  },
+  "testimonials": {
+    "preTitle": "Testimonials",
+    "title": "Loved by Travelers and Agencies",
+    "quote1": "Finally, a platform that understands the needs of independent travel agencies. The dashboard is a game-changer.",
+    "quote2": "As a traveler, finding unique trips was always a challenge. Ouiboo's marketplace is beautifully curated. I can't wait!",
+    "quote3": "The ability to reach a global audience without a huge marketing budget is incredible. Ouiboo is set to be essential."
+  },
+  "pricing": {
+    "preTitle": "Pricing",
+    "title": "An Unbeatable Founding Offer",
+    "subtitle": "Our full pricing is coming soon. As a thank you to our pioneers, we're offering an exclusive deal you won't see again.",
+    "pro": {
+      "title": "Pro Plan",
+      "description": "The complete toolkit for growing travel agencies.",
+      "price": "999",
+      "currency": "MAD/month",
+      "button": "Coming Soon",
+      "feature1": "Unlimited trip listings",
+      "feature2": "Advanced analytics & reporting",
+      "feature3": "Secure payment processing"
+    },
+    "waitlist": {
+      "badge": "Best Value",
+      "title": "Exclusive Waitlist Offer",
+      "description": "Get everything in our Pro plan, absolutely free, as a thank you for your early support.",
+      "price": "3 Months Free",
+      "button": "Claim Your Free Months",
+      "feature1": "Everything in the future Pro plan"
+    },
+    "scale": {
+      "title": "Scale Plan",
+      "description": "For large-scale operations and custom needs.",
+      "price": "Custom",
+      "button": "Coming Soon",
+      "feature1": "Everything in Pro",
+      "feature2": "Dedicated account manager",
+      "feature3": "API access & custom integrations"
+    }
+  },
+  "waitlist": {
+    "title": "Be the First to Experience Ouiboo",
+    "subtitle": "Join our waitlist for exclusive early access, a free month of our Pro plan for agencies, and updates on our launch.",
+    "form": {
+      "name": "Enter your name",
+      "email": "Enter your email",
+      "phone": "Enter your phone number",
+      "userType": { "traveler": "Traveler", "agency": "Agency" },
+      "agencyName": "Enter your agency name",
+      "submit": "Join Waitlist",
+      "submitting": "Joining..."
+    }
+  },
+  "modal": {
+    "title": "You're on the list! 🎉",
+    "subtitle": "Thanks for joining! We'll notify you when early access launches.",
+    "button": "Awesome!"
+  },
+  "footer": {
+    "rights": "All rights reserved."
+  }
+}
