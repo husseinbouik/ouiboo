@@ -45,34 +45,63 @@
   },
   "pricing": {
     "preTitle": "Pricing",
-    "title": "An Unbeatable Founding Offer",
-    "subtitle": "Our full pricing is coming soon. As a thank you to our pioneers, we're offering an exclusive deal you won't see again.",
+    "title": "Simple, Transparent Pricing",
+    "subtitle": "Choose the plan that fits your agency. All plans include marketplace access and secure payment processing.",
+    "free": {
+      "title": "Free",
+      "description": "Perfect for getting started",
+      "price": "0",
+      "currency": "MAD/month",
+      "commission": "5% commission fee",
+      "button": "Get Started",
+      "feature1": "3 trips",
+      "feature2": "Basic profile",
+      "feature3": "Marketplace access"
+    },
     "pro": {
-      "title": "Pro Plan",
-      "description": "The complete toolkit for growing travel agencies.",
+      "title": "Pro",
+      "description": "For growing travel agencies",
+      "price": "499",
+      "currency": "MAD/month",
+      "commission": "3% commission fee",
+      "button": "Coming Soon",
+      "feature1": "Unlimited trips",
+      "feature2": "Branding & customization",
+      "feature3": "Basic analytics",
+      "feature4": "Priority listing"
+    },
+    "premium": {
+      "title": "Premium",
+      "description": "For established agencies",
       "price": "999",
       "currency": "MAD/month",
-      "button": "Coming Soon",
-      "feature1": "Unlimited trip listings",
-      "feature2": "Advanced analytics & reporting",
-      "feature3": "Secure payment processing"
-    },
-    "waitlist": {
-      "badge": "Best Value",
-      "title": "Exclusive Waitlist Offer",
-      "description": "Get everything in our Pro plan, absolutely free, as a thank you for your early support.",
-      "price": "3 Months Free",
-      "button": "Claim Your Free Months",
-      "feature1": "Everything in the future Pro plan"
-    },
-    "scale": {
-      "title": "Scale Plan",
-      "description": "For large-scale operations and custom needs.",
-      "price": "Custom",
+      "commission": "2% commission fee",
       "button": "Coming Soon",
       "feature1": "Everything in Pro",
-      "feature2": "Dedicated account manager",
-      "feature3": "API access & custom integrations"
+      "feature2": "Advanced analytics",
+      "feature3": "Marketing boost",
+      "feature4": "Priority support"
+    },
+    "enterprise": {
+      "title": "Enterprise",
+      "description": "For large-scale operations",
+      "price": "Custom",
+      "currency": "",
+      "commission": "Negotiable commission",
+      "button": "Contact Sales",
+      "feature1": "Everything in Premium",
+      "feature2": "White-label solution",
+      "feature3": "Custom integrations",
+      "feature4": "Dedicated support"
+    },
+    "waitlist": {
+      "badge": "Limited Time",
+      "title": "Early Access Offer",
+      "description": "Join our waitlist and get 3 months free of Pro plan when we launch.",
+      "price": "3 Months Free",
+      "button": "Join Waitlist",
+      "feature1": "Early access to platform",
+      "feature2": "3 months of Pro plan free"
     }
   },
   "waitlist": {

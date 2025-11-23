@@ -50,6 +50,24 @@ export default function OuibooLanding() {
   })
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  // --- Scroll detection for navbar ---
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // --- Smooth scroll behavior ---
+  useEffect(() => {
+    document.documentElement.style.scrollBehavior = 'smooth';
+    return () => {
+      document.documentElement.style.scrollBehavior = 'auto';
+    };
+  }, []);
 
   // --- Animation Hooks & Variants ---
   const { scrollYProgress } = useScroll();
@@ -124,23 +142,62 @@ export default function OuibooLanding() {
   }
 
   const fadeInUp: Variants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+    hidden: { opacity: 0, y: 40 },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { 
+        duration: 0.7, 
+        ease: [0.25, 0.46, 0.45, 0.94],
+        staggerChildren: 0.1
+      } 
+    }
   };
 
   const staggerContainer: Variants = {
     hidden: {},
-    visible: { transition: { staggerChildren: 0.15 } }
+    visible: { 
+      transition: { 
+        staggerChildren: 0.2,
+        delayChildren: 0.1
+      } 
+    }
   };
 
   const slideInLeft: Variants = {
-    hidden: { opacity: 0, x: -50 },
-    visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: [0.25, 1, 0.5, 1] }}
+    hidden: { opacity: 0, x: -60 },
+    visible: { 
+      opacity: 1, 
+      x: 0, 
+      transition: { 
+        duration: 0.8, 
+        ease: [0.25, 0.46, 0.45, 0.94]
+      }
+    }
   }
 
   const slideInRight: Variants = {
-    hidden: { opacity: 0, x: 50 },
-    visible: { opacity: 1, x: 0, transition: { duration: 0.7, ease: [0.25, 1, 0.5, 1] }}
+    hidden: { opacity: 0, x: 60 },
+    visible: { 
+      opacity: 1, 
+      x: 0, 
+      transition: { 
+        duration: 0.8, 
+        ease: [0.25, 0.46, 0.45, 0.94]
+      }
+    }
+  }
+
+  const scaleIn: Variants = {
+    hidden: { opacity: 0, scale: 0.9 },
+    visible: { 
+      opacity: 1, 
+      scale: 1, 
+      transition: { 
+        duration: 0.6, 
+        ease: [0.25, 0.46, 0.45, 0.94]
+      }
+    }
   }
 
   const LanguageSwitcher = () => (
@@ -167,9 +224,18 @@ export default function OuibooLanding() {
 
   return (
     <div className="bg-off-white text-deep-blue font-sans">
-      {/* Header */}
-      <header className="absolute inset-x-0 top-0 z-50">
-        <nav aria-label="Global" className="flex items-center justify-between p-6 lg:px-8">
+      {/* Header - Fixed with scroll effect */}
+      <motion.header 
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
+          isScrolled 
+            ? 'bg-white/80 backdrop-blur-md shadow-lg' 
+            : 'bg-transparent'
+        }`}
+      >
+        <nav aria-label="Global" className="flex items-center justify-between p-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex lg:flex-1">
             <a href="#" className="-m-1.5 p-1.5 flex items-center gap-2">
               <div className="logo-placeholder bg-deep-blue text-white" aria-hidden>O</div>
@@ -184,9 +250,13 @@ export default function OuibooLanding() {
           </div>
           <div className="hidden lg:flex lg:gap-x-12">
             {navigation.map((item) => (
-              <a key={item.name} href={item.href} className="text-sm font-semibold leading-6 hover:text-cyan-500 transition-colors relative group">
+              <a 
+                key={item.name} 
+                href={item.href} 
+                className="text-sm font-semibold leading-6 hover:text-sunset-orange transition-all duration-300 relative group"
+              >
                 {item.name}
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-cyan-500 group-hover:w-full transition-all duration-300"></span>
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-sunset-orange group-hover:w-full transition-all duration-300 ease-out"></span>
               </a>
             ))}
           </div>
@@ -238,30 +308,53 @@ export default function OuibooLanding() {
             </Dialog.Panel>
           </Dialog>
         </Transition.Root>
-      </header>
+      </motion.header>
 
       <main className="isolate">
         {/* Hero Section */}
-        <div className="relative pt-14 overflow-hidden">
+        <div className="relative pt-24 sm:pt-32 overflow-hidden">
             <div aria-hidden="true" className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
-                <div style={{ clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)' }} className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-sunset-orange to-cyan-500 opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"/>
+                <div style={{ clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)' }} className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-sunset-orange opacity-10 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"/>
             </div>
             <div className="py-24 sm:py-32">
                 <div className="mx-auto max-w-7xl px-6 lg:px-8">
-                    <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="mx-auto max-w-3xl text-center">
-                        <motion.h1 variants={fadeInUp} className="text-4xl font-bold tracking-tight sm:text-6xl text-deep-blue">
+                    <motion.div 
+                      variants={staggerContainer} 
+                      initial="hidden" 
+                      animate="visible" 
+                      className="mx-auto max-w-3xl text-center"
+                    >
+                        <motion.h1 
+                          variants={fadeInUp} 
+                          className="text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl text-deep-blue leading-tight"
+                        >
                           {t('hero.title')}
                         </motion.h1>
-                        <motion.p variants={fadeInUp} className="mt-6 text-lg leading-8 text-gray-600">
+                        <motion.p 
+                          variants={fadeInUp} 
+                          className="mt-6 text-lg sm:text-xl leading-8 text-gray-600 max-w-2xl mx-auto"
+                        >
                           {t('hero.subtitle')}
                         </motion.p>
-                        <motion.div variants={fadeInUp} className="mt-10 flex items-center justify-center gap-x-6">
-                            <a href="#waitlist" className="rounded-md bg-sunset-orange px-5 py-3 text-base font-semibold text-white shadow-lg transform hover:scale-105 transition-transform duration-300">
+                        <motion.div 
+                          variants={fadeInUp} 
+                          className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-x-6 gap-y-4"
+                        >
+                            <motion.a 
+                              href="#waitlist" 
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              className="rounded-md bg-sunset-orange px-6 py-3.5 text-base font-semibold text-white shadow-md hover:shadow-lg hover:bg-orange-600 transition-all duration-300"
+                            >
                                 {t('hero.ctaPrimary')}
-                            </a>
-                            <a href="#how-it-works" className="text-sm font-semibold leading-6 group">
+                            </motion.a>
+                            <motion.a 
+                              href="#how-it-works" 
+                              whileHover={{ x: 5 }}
+                              className="text-sm font-semibold leading-6 group text-deep-blue hover:text-sunset-orange transition-colors duration-300"
+                            >
                                 {t('hero.ctaSecondary')} <span aria-hidden="true" className="transition-transform group-hover:translate-x-1 inline-block">→</span>
-                            </a>
+                            </motion.a>
                         </motion.div>
                     </motion.div>
                     <motion.div style={{ scale: heroImageScale, rotate: heroImageRotate }} className="mt-16 flow-root sm:mt-24">
@@ -277,15 +370,34 @@ export default function OuibooLanding() {
         <section id="how-it-works" className="py-24 sm:py-32">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="mx-auto max-w-2xl lg:text-center">
-              <h2 className="text-base font-semibold leading-7 text-cyan-500">{t('howItWorks.preTitle')}</h2>
+              <h2 className="text-base font-semibold leading-7 text-sunset-orange uppercase tracking-wide">{t('howItWorks.preTitle')}</h2>
               <p className="mt-2 text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('howItWorks.title')}</p>
               <p className="mt-6 text-lg leading-8 text-gray-600">{t('howItWorks.subtitle')}</p>
             </motion.div>
-            <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 text-center sm:grid-cols-2 lg:grid-cols-3 lg:max-w-7xl">
-              {howItWorksSteps.map((step) => (
-                <motion.div key={step.name} variants={fadeInUp} className="flex flex-col items-center p-8 rounded-2xl transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:bg-white cursor-pointer">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-deep-blue text-white font-bold text-lg">{step.number}</div>
-                  <h3 className="mt-6 text-lg font-semibold text-deep-blue">{step.name}</h3>
+            <motion.div 
+              variants={staggerContainer} 
+              initial="hidden" 
+              whileInView="visible" 
+              viewport={{ once: true, amount: 0.2 }} 
+              className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 text-center sm:grid-cols-2 lg:grid-cols-3 lg:max-w-7xl"
+            >
+              {howItWorksSteps.map((step, index) => (
+                <motion.div 
+                  key={step.name} 
+                  variants={scaleIn}
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  className="flex flex-col items-center p-8 rounded-2xl transition-all duration-300 hover:shadow-xl hover:bg-white cursor-pointer border border-gray-200 hover:border-sunset-orange/30"
+                >
+                  <motion.div 
+                    initial={{ scale: 0 }}
+                    whileInView={{ scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.2, type: "spring", stiffness: 200 }}
+                    className="flex h-14 w-14 items-center justify-center rounded-full bg-deep-blue text-white font-bold text-lg shadow-md"
+                  >
+                    {step.number}
+                  </motion.div>
+                  <h3 className="mt-6 text-lg font-semibold text-deep-blue group-hover:text-sunset-orange transition-colors duration-300">{step.name}</h3>
                   <p className="mt-2 text-base leading-7 text-gray-600">{step.description}</p>
                 </motion.div>
               ))}
@@ -305,17 +417,22 @@ export default function OuibooLanding() {
                 className="lg:pr-8 lg:pt-4"
               >
                 <div className="lg:max-w-lg">
-                  <h2 className="text-base font-semibold leading-7 text-orange-500">{t('travelers.preTitle')}</h2>
+                  <h2 className="text-base font-semibold leading-7 text-sunset-orange uppercase tracking-wide">{t('travelers.preTitle')}</h2>
                   <p className="mt-2 text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('travelers.title')}</p>
                   <p className="mt-6 text-lg leading-8 text-gray-600">{t('travelers.subtitle')}</p>
                   <motion.dl variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mt-10 max-w-xl space-y-8 text-base leading-7 text-gray-600 lg:max-w-none">
-                    {travelerFeatures.map((feature) => (
-                      <motion.div key={feature.name} variants={fadeInUp} className="relative pl-9 transition-transform duration-300 hover:scale-105">
+                    {travelerFeatures.map((feature, index) => (
+                      <motion.div 
+                        key={feature.name} 
+                        variants={fadeInUp}
+                        whileHover={{ x: 5 }}
+                        className="relative pl-9 transition-all duration-300 hover:bg-white/50 p-3 rounded-lg -ml-3"
+                      >
                         <dt className="inline font-semibold text-deep-blue">
-                          <feature.icon className="absolute left-1 top-1 h-5 w-5 text-orange-500" aria-hidden="true" />
+                          <feature.icon className="absolute left-1 top-1 h-6 w-6 text-sunset-orange transition-transform duration-300 group-hover:scale-110 group-hover:text-golden-yellow" aria-hidden="true" />
                           {feature.name}
                         </dt>{' '}
-                        <dd className="inline">{feature.description}</dd>
+                        <dd className="inline text-gray-600">{feature.description}</dd>
                       </motion.div>
                     ))}
                   </motion.dl>
@@ -340,17 +457,22 @@ export default function OuibooLanding() {
                 className="lg:ml-auto lg:pl-4 lg:pt-4 lg:order-last"
               >
                 <div className="lg:max-w-lg">
-                  <h2 className="text-base font-semibold leading-7 text-cyan-500">{t('agencies.preTitle')}</h2>
+                  <h2 className="text-base font-semibold leading-7 text-deep-blue uppercase tracking-wide">{t('agencies.preTitle')}</h2>
                   <p className="mt-2 text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('agencies.title')}</p>
                   <p className="mt-6 text-lg leading-8 text-gray-600">{t('agencies.subtitle')}</p>
                   <motion.dl variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mt-10 max-w-xl space-y-8 text-base leading-7 text-gray-600 lg:max-w-none">
-                    {agencyFeatures.map((feature) => (
-                      <motion.div key={feature.name} variants={fadeInUp} className="relative pl-9 transition-transform duration-300 hover:scale-105">
+                    {agencyFeatures.map((feature, index) => (
+                      <motion.div 
+                        key={feature.name} 
+                        variants={fadeInUp}
+                        whileHover={{ x: isRTL ? -5 : 5 }}
+                        className="relative pl-9 transition-all duration-300 hover:bg-white/50 p-3 rounded-lg -ml-3"
+                      >
                         <dt className="inline font-semibold text-deep-blue">
-                          <feature.icon className="absolute left-1 top-1 h-5 w-5 text-cyan-500" aria-hidden="true" />
+                          <feature.icon className="absolute left-1 top-1 h-6 w-6 text-deep-blue transition-transform duration-300 group-hover:scale-110 group-hover:text-sunset-orange" aria-hidden="true" />
                           {feature.name}
                         </dt>{' '}
-                        <dd className="inline">{feature.description}</dd>
+                        <dd className="inline text-gray-600">{feature.description}</dd>
                       </motion.div>
                     ))}
                   </motion.dl>
@@ -373,7 +495,7 @@ export default function OuibooLanding() {
                     viewport={{ once: true, amount: 0.5 }}
                     className="mx-auto max-w-2xl lg:text-center"
                 >
-                    <h2 className="text-base font-semibold leading-7 text-sunset-orange">{t('testimonials.preTitle')}</h2>
+                    <h2 className="text-base font-semibold leading-7 text-sunset-orange uppercase tracking-wide">{t('testimonials.preTitle')}</h2>
                     <p className="mt-2 text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('testimonials.title')}</p>
                 </motion.div>
                 <motion.div
@@ -386,8 +508,9 @@ export default function OuibooLanding() {
                     {testimonials.map((testimonial, index) => (
                         <motion.figure
                             key={index}
-                            variants={fadeInUp}
-                            className="flex flex-col justify-between rounded-2xl bg-gray-50 p-8 shadow-sm ring-1 ring-gray-900/5 transition-transform duration-300 hover:scale-105 hover:shadow-lg"
+                            variants={scaleIn}
+                            whileHover={{ scale: 1.03, y: -5 }}
+                            className="flex flex-col justify-between rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200 transition-all duration-300 hover:shadow-lg hover:ring-sunset-orange/20"
                         >
                             <blockquote className="text-lg leading-7 text-gray-700">
                                 <p>“{testimonial.quote}”</p>
@@ -415,7 +538,7 @@ export default function OuibooLanding() {
               viewport={{ once: true }} 
               className="mx-auto max-w-4xl text-center"
             >
-              <h2 className="text-base font-semibold leading-7 text-deep-blue">{t('pricing.preTitle')}</h2>
+              <h2 className="text-base font-semibold leading-7 text-sunset-orange uppercase tracking-wide">{t('pricing.preTitle')}</h2>
               <p className="mt-2 text-4xl font-bold tracking-tight text-deep-blue sm:text-5xl">
                 {t('pricing.title')}
               </p>
@@ -436,80 +559,170 @@ export default function OuibooLanding() {
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
-              className="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-8 lg:mx-0 lg:max-w-none lg:grid-cols-3"
+              className="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-8 lg:mx-0 lg:max-w-none lg:grid-cols-4"
             >
-              {/* Pro Plan (Disabled) */}
-              <motion.div variants={fadeInUp} className="rounded-3xl p-8 opacity-60 ring-1 ring-gray-200 xl:p-10">
-                <h3 className="text-lg font-semibold leading-8 text-gray-900">{t('pricing.pro.title')}</h3>
-                <p className="mt-4 text-sm leading-6 text-gray-600">{t('pricing.pro.description')}</p>
+              {/* Free Plan */}
+              <motion.div 
+                variants={scaleIn}
+                whileHover={{ scale: 1.02, y: -5 }}
+                className="rounded-3xl p-8 ring-1 ring-gray-200 xl:p-10 bg-white hover:ring-sunset-orange/30 transition-all duration-300"
+              >
+                <h3 className="text-lg font-semibold leading-8 text-gray-900">{t('pricing.free.title')}</h3>
+                <p className="mt-4 text-sm leading-6 text-gray-600">{t('pricing.free.description')}</p>
                 <p className="mt-6 flex items-baseline gap-x-1">
-                  <span className="text-4xl font-bold tracking-tight text-gray-900">{t('pricing.pro.price')}</span>
-                  <span className="text-sm font-semibold leading-6 text-gray-600">{t('pricing.pro.currency')}</span>
+                  <span className="text-4xl font-bold tracking-tight text-gray-900">{t('pricing.free.price')}</span>
+                  <span className="text-sm font-semibold leading-6 text-gray-600">{t('pricing.free.currency')}</span>
                 </p>
-                <a href="#" className="mt-8 block rounded-md bg-gray-200 px-3 py-2 text-center text-sm font-semibold leading-6 text-gray-500 cursor-not-allowed">
-                  {t('pricing.pro.button')}
-                </a>
+                <p className="mt-2 text-xs text-gray-500 font-medium">{t('pricing.free.commission')}</p>
+                <motion.a 
+                  href="#waitlist" 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="mt-8 block rounded-md bg-deep-blue px-3 py-2 text-center text-sm font-semibold leading-6 text-white shadow-sm hover:shadow-md hover:bg-blue-900 transition-all duration-300"
+                >
+                  {t('pricing.free.button')}
+                </motion.a>
                 <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
                   <li className="flex gap-x-3">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
-                    {t('pricing.pro.feature1')}
+                    <CheckCircleIcon className="h-6 w-5 flex-none text-sunset-orange" aria-hidden="true" />
+                    {t('pricing.free.feature1')}
                   </li>
                   <li className="flex gap-x-3">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
-                    {t('pricing.pro.feature2')}
+                    <CheckCircleIcon className="h-6 w-5 flex-none text-sunset-orange" aria-hidden="true" />
+                    {t('pricing.free.feature2')}
                   </li>
                   <li className="flex gap-x-3">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
-                    {t('pricing.pro.feature3')}
+                    <CheckCircleIcon className="h-6 w-5 flex-none text-sunset-orange" aria-hidden="true" />
+                    {t('pricing.free.feature3')}
                   </li>
                 </ul>
               </motion.div>
 
-              {/* Exclusive Waitlist Offer (Highlighted) */}
-              <motion.div variants={fadeInUp} className="relative rounded-3xl p-8 ring-2 ring-deep-blue xl:p-10 lg:z-10 lg:scale-105 transition-shadow duration-300 hover:shadow-2xl">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                    <span className="inline-flex items-center rounded-full bg-cyan-500 px-4 py-1 text-sm font-medium text-white">
+              {/* Pro Plan (Highlighted) */}
+              <motion.div 
+                variants={scaleIn}
+                whileHover={{ scale: 1.05, y: -8 }}
+                className="relative rounded-3xl p-8 ring-2 ring-sunset-orange xl:p-10 lg:z-10 bg-white transition-all duration-300 hover:shadow-2xl"
+              >
+                <motion.div 
+                  initial={{ scale: 0 }}
+                  whileInView={{ scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ type: "spring", stiffness: 200 }}
+                  className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                >
+                    <span className="inline-flex items-center rounded-full bg-sunset-orange px-4 py-1 text-sm font-medium text-white shadow-md">
                         {t('pricing.waitlist.badge')}
                     </span>
-                </div>
-                <h3 className="text-2xl font-bold tracking-tight text-deep-blue">{t('pricing.waitlist.title')}</h3>
-                <p className="mt-4 text-base leading-7 text-gray-600">{t('pricing.waitlist.description')}</p>
+                </motion.div>
+                <h3 className="text-2xl font-bold tracking-tight text-deep-blue mt-2">{t('pricing.pro.title')}</h3>
+                <p className="mt-4 text-base leading-7 text-gray-600">{t('pricing.pro.description')}</p>
                 <p className="mt-6 flex items-baseline gap-x-1">
-                  <span className="text-5xl font-bold tracking-tight bg-gradient-to-r from-sunset-orange to-golden-yellow text-transparent bg-clip-text">{t('pricing.waitlist.price')}</span>
+                  <span className="text-5xl font-bold tracking-tight text-deep-blue">{t('pricing.pro.price')}</span>
+                  <span className="text-sm font-semibold leading-6 text-gray-600">{t('pricing.pro.currency')}</span>
                 </p>
-                <a href="#waitlist" className="mt-8 block rounded-md bg-sunset-orange px-3 py-2 text-center text-sm font-semibold leading-6 text-white shadow-sm hover:bg-opacity-90 transition-transform hover:scale-105">
-                  {t('pricing.waitlist.button')}
-                </a>
+                <p className="mt-2 text-xs text-sunset-orange font-semibold">{t('pricing.pro.commission')}</p>
+                <motion.a 
+                  href="#waitlist" 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="mt-8 block rounded-md bg-sunset-orange px-3 py-2 text-center text-sm font-semibold leading-6 text-white shadow-md hover:shadow-lg hover:bg-orange-600 transition-all duration-300"
+                >
+                  {t('pricing.pro.button')}
+                </motion.a>
                 <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
                   <li className="flex gap-x-3 font-semibold">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-cyan-500" aria-hidden="true" />
-                    {t('pricing.waitlist.feature1')}
+                    <CheckCircleIcon className="h-6 w-5 flex-none text-sunset-orange" aria-hidden="true" />
+                    {t('pricing.pro.feature1')}
+                  </li>
+                  <li className="flex gap-x-3 font-semibold">
+                    <CheckCircleIcon className="h-6 w-5 flex-none text-sunset-orange" aria-hidden="true" />
+                    {t('pricing.pro.feature2')}
+                  </li>
+                  <li className="flex gap-x-3 font-semibold">
+                    <CheckCircleIcon className="h-6 w-5 flex-none text-sunset-orange" aria-hidden="true" />
+                    {t('pricing.pro.feature3')}
+                  </li>
+                  <li className="flex gap-x-3 font-semibold">
+                    <CheckCircleIcon className="h-6 w-5 flex-none text-sunset-orange" aria-hidden="true" />
+                    {t('pricing.pro.feature4')}
                   </li>
                 </ul>
               </motion.div>
 
-              {/* Scale Plan (Disabled) */}
-              <motion.div variants={fadeInUp} className="rounded-3xl p-8 opacity-60 ring-1 ring-gray-200 xl:p-10">
-                <h3 className="text-lg font-semibold leading-8 text-gray-900">{t('pricing.scale.title')}</h3>
-                <p className="mt-4 text-sm leading-6 text-gray-600">{t('pricing.scale.description')}</p>
+              {/* Premium Plan */}
+              <motion.div 
+                variants={scaleIn}
+                whileHover={{ scale: 1.02, y: -5 }}
+                className="rounded-3xl p-8 ring-1 ring-gray-200 xl:p-10 bg-white hover:ring-sunset-orange/30 transition-all duration-300"
+              >
+                <h3 className="text-lg font-semibold leading-8 text-gray-900">{t('pricing.premium.title')}</h3>
+                <p className="mt-4 text-sm leading-6 text-gray-600">{t('pricing.premium.description')}</p>
                 <p className="mt-6 flex items-baseline gap-x-1">
-                  <span className="text-4xl font-bold tracking-tight text-gray-900">{t('pricing.scale.price')}</span>
+                  <span className="text-4xl font-bold tracking-tight text-gray-900">{t('pricing.premium.price')}</span>
+                  <span className="text-sm font-semibold leading-6 text-gray-600">{t('pricing.premium.currency')}</span>
                 </p>
+                <p className="mt-2 text-xs text-gray-500 font-medium">{t('pricing.premium.commission')}</p>
                 <a href="#" className="mt-8 block rounded-md bg-gray-200 px-3 py-2 text-center text-sm font-semibold leading-6 text-gray-500 cursor-not-allowed">
-                  {t('pricing.scale.button')}
+                  {t('pricing.premium.button')}
                 </a>
                 <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
                   <li className="flex gap-x-3">
                     <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
-                    {t('pricing.scale.feature1')}
+                    {t('pricing.premium.feature1')}
                   </li>
                   <li className="flex gap-x-3">
                     <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
-                    {t('pricing.scale.feature2')}
+                    {t('pricing.premium.feature2')}
                   </li>
                   <li className="flex gap-x-3">
                     <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
-                    {t('pricing.scale.feature3')}
+                    {t('pricing.premium.feature3')}
+                  </li>
+                  <li className="flex gap-x-3">
+                    <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
+                    {t('pricing.premium.feature4')}
+                  </li>
+                </ul>
+              </motion.div>
+
+              {/* Enterprise Plan */}
+              <motion.div 
+                variants={scaleIn}
+                whileHover={{ scale: 1.02, y: -5 }}
+                className="rounded-3xl p-8 ring-1 ring-gray-200 xl:p-10 bg-white hover:ring-deep-blue/30 transition-all duration-300"
+              >
+                <h3 className="text-lg font-semibold leading-8 text-gray-900">{t('pricing.enterprise.title')}</h3>
+                <p className="mt-4 text-sm leading-6 text-gray-600">{t('pricing.enterprise.description')}</p>
+                <p className="mt-6 flex items-baseline gap-x-1">
+                  <span className="text-4xl font-bold tracking-tight text-gray-900">{t('pricing.enterprise.price')}</span>
+                  <span className="text-sm font-semibold leading-6 text-gray-600">{t('pricing.enterprise.currency')}</span>
+                </p>
+                <p className="mt-2 text-xs text-gray-500 font-medium">{t('pricing.enterprise.commission')}</p>
+                <motion.a 
+                  href="#waitlist" 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="mt-8 block rounded-md bg-deep-blue px-3 py-2 text-center text-sm font-semibold leading-6 text-white shadow-sm hover:shadow-md transition-all duration-300"
+                >
+                  {t('pricing.enterprise.button')}
+                </motion.a>
+                <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
+                  <li className="flex gap-x-3">
+                    <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
+                    {t('pricing.enterprise.feature1')}
+                  </li>
+                  <li className="flex gap-x-3">
+                    <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
+                    {t('pricing.enterprise.feature2')}
+                  </li>
+                  <li className="flex gap-x-3">
+                    <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
+                    {t('pricing.enterprise.feature3')}
+                  </li>
+                  <li className="flex gap-x-3">
+                    <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
+                    {t('pricing.enterprise.feature4')}
                   </li>
                 </ul>
               </motion.div>
@@ -520,10 +733,21 @@ export default function OuibooLanding() {
         {/* Waitlist Section */}
         <section id="waitlist" className="py-24 sm:py-32 bg-white">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <div className="relative isolate overflow-hidden bg-deep-blue px-6 py-24 text-center shadow-2xl sm:rounded-3xl sm:px-16">
-              <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-                  <h2 className="mx-auto max-w-2xl text-3xl font-bold tracking-tight text-white sm:text-4xl">{t('waitlist.title')}</h2>
-                  <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-300">{t('waitlist.subtitle')}</p>
+              <motion.div 
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8 }}
+                className="relative isolate overflow-hidden bg-deep-blue px-6 py-24 text-center shadow-2xl sm:rounded-3xl sm:px-16"
+              >
+              <motion.div 
+                variants={fadeInUp} 
+                initial="hidden" 
+                whileInView="visible" 
+                viewport={{ once: true }}
+              >
+                  <h2 className="mx-auto max-w-2xl text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">{t('waitlist.title')}</h2>
+                  <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-200">{t('waitlist.subtitle')}</p>
               </motion.div>
               <motion.form 
                 variants={staggerContainer}
@@ -534,13 +758,40 @@ export default function OuibooLanding() {
                 className="mt-10 mx-auto max-w-md grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2"
               >
                 <motion.div variants={fadeInUp} className="sm:col-span-2">
-                    <input name="name" type="text" autoComplete="name" required className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/10 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6 placeholder:text-gray-300" placeholder={t('waitlist.form.name')} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}/>
+                    <input 
+                      name="name" 
+                      type="text" 
+                      autoComplete="name" 
+                      required 
+                      className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/10 backdrop-blur-sm px-3.5 py-2.5 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white focus:bg-white/20 transition-all duration-300 sm:text-sm sm:leading-6 placeholder:text-gray-300" 
+                      placeholder={t('waitlist.form.name')} 
+                      value={formData.name} 
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    />
                 </motion.div>
                 <motion.div variants={fadeInUp} className="sm:col-span-2">
-                    <input name="email" type="email" autoComplete="email" required className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/10 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6 placeholder:text-gray-300" placeholder={t('waitlist.form.email')} value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })}/>
+                    <input 
+                      name="email" 
+                      type="email" 
+                      autoComplete="email" 
+                      required 
+                      className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/10 backdrop-blur-sm px-3.5 py-2.5 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white focus:bg-white/20 transition-all duration-300 sm:text-sm sm:leading-6 placeholder:text-gray-300" 
+                      placeholder={t('waitlist.form.email')} 
+                      value={formData.email} 
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    />
                 </motion.div>
                 <motion.div variants={fadeInUp} className="sm:col-span-2">
-                  <input name="phoneNumber" type="tel" autoComplete="tel" required className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/10 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6 placeholder:text-gray-300" placeholder={t('waitlist.form.phone')} value={formData.phoneNumber} onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}/>
+                  <input 
+                    name="phoneNumber" 
+                    type="tel" 
+                    autoComplete="tel" 
+                    required 
+                    className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/10 backdrop-blur-sm px-3.5 py-2.5 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white focus:bg-white/20 transition-all duration-300 sm:text-sm sm:leading-6 placeholder:text-gray-300" 
+                    placeholder={t('waitlist.form.phone')} 
+                    value={formData.phoneNumber} 
+                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  />
                 </motion.div>
                 <motion.div variants={fadeInUp}>
                     <select name="userType" className="min-w-0 w-full h-full flex-auto rounded-md border-0 bg-white/10 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6" value={formData.userType} onChange={(e) => setFormData({ ...formData, userType: e.target.value })}>
@@ -549,14 +800,34 @@ export default function OuibooLanding() {
                     </select>
                 </motion.div>
                 <motion.div variants={fadeInUp}>
-                    <button type="submit" disabled={loading} className="w-full flex-none rounded-md bg-sunset-orange px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-opacity disabled:opacity-50">
+                    <motion.button 
+                      type="submit" 
+                      disabled={loading}
+                      whileHover={{ scale: loading ? 1 : 1.02 }}
+                      whileTap={{ scale: loading ? 1 : 0.98 }}
+                      className="w-full flex-none rounded-md bg-sunset-orange px-3.5 py-2.5 text-sm font-semibold text-white shadow-md hover:shadow-lg hover:bg-orange-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                       {loading ? t('waitlist.form.submitting') : t('waitlist.form.submit')}
-                    </button>
+                    </motion.button>
                 </motion.div>
 
                 {formData.userType === 'Agency' && (
-                  <motion.div className="sm:col-span-2" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.4, ease: 'easeInOut' }}>
-                    <input name="agencyName" type="text" required className="mt-4 min-w-0 w-full flex-auto rounded-md border-0 bg-white/10 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6 placeholder:text-gray-300" placeholder={t('waitlist.form.agencyName')} value={formData.agencyName} onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}/>
+                  <motion.div 
+                    className="sm:col-span-2" 
+                    initial={{ opacity: 0, height: 0 }} 
+                    animate={{ opacity: 1, height: 'auto' }} 
+                    exit={{ opacity: 0, height: 0 }} 
+                    transition={{ duration: 0.4, ease: 'easeInOut' }}
+                  >
+                    <input 
+                      name="agencyName" 
+                      type="text" 
+                      required 
+                      className="mt-4 min-w-0 w-full flex-auto rounded-md border-0 bg-white/10 backdrop-blur-sm px-3.5 py-2.5 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white focus:bg-white/20 transition-all duration-300 sm:text-sm sm:leading-6 placeholder:text-gray-300" 
+                      placeholder={t('waitlist.form.agencyName')} 
+                      value={formData.agencyName} 
+                      onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}
+                    />
                   </motion.div>
                 )}
               </motion.form>
@@ -599,21 +870,22 @@ export default function OuibooLanding() {
                 </Dialog>
               </Transition>
               
-              <svg viewBox="0 0 1024 1024" aria-hidden="true" className="absolute left-1/2 top-1/2 -z-10 h-[64rem] w-[64rem] -translate-x-1/2">
-                <circle cx={512} cy={512} r={512} fill="url(#759c1415-0410-454c-8f7c-9a820de03641)" fillOpacity="0.7" />
-                <defs><radialGradient id="759c1415-0410-454c-8f7c-9a820de03641" cx={0} cy={0} r={1} gradientUnits="userSpaceOnUse" gradientTransform="translate(512 512) rotate(90) scale(512)"><stop stopColor="#FACC15" /><stop offset={1} stopColor="#0EA5E9" stopOpacity={0} /></radialGradient></defs>
+              <svg viewBox="0 0 1024 1024" aria-hidden="true" className="absolute left-1/2 top-1/2 -z-10 h-[64rem] w-[64rem] -translate-x-1/2 opacity-5">
+                <circle cx={512} cy={512} r={512} fill="#F97316" fillOpacity="0.1" />
               </svg>
-            </div>
+            </motion.div>
           </div>
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="bg-white">
+      <footer className="bg-white border-t border-gray-200">
         <div className="mx-auto max-w-7xl overflow-hidden px-6 py-20 sm:py-24 lg:px-8">
             <div className="flex justify-center flex-wrap gap-x-10 gap-y-4">
                 {navigation.map((item) => (
-                    <a key={item.name} href={item.href} className="text-sm leading-6 text-gray-600 hover:text-deep-blue transition-colors">{item.name}</a>
+                    <a key={item.name} href={item.href} className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300">
+                      {item.name}
+                    </a>
                 ))}
             </div>
             <p className="mt-10 text-center text-xs leading-5 text-gray-500">&copy; {new Date().getFullYear()} Ouiboo. {t('footer.rights')}</p>
@@ -632,8 +904,16 @@ export default function OuibooLanding() {
         .bg-deep-blue { background-color: var(--deep-blue); }
         .bg-off-white { background-color: var(--off-white); }
         .bg-sunset-orange { background-color: var(--sunset-orange); }
+        .text-sunset-orange { color: var(--sunset-orange); }
         .text-cyan-500 { color: var(--cyan-500); }
         .bg-cyan-500 { background-color: var(--cyan-500); }
+        .text-golden-yellow { color: var(--golden-yellow); }
+        .bg-golden-yellow { background-color: var(--golden-yellow); }
+        .ring-golden-yellow\/20 { --tw-ring-color: rgba(250, 204, 21, 0.2); }
+        .ring-golden-yellow\/30 { --tw-ring-color: rgba(250, 204, 21, 0.3); }
+        .ring-golden-yellow\/50 { --tw-ring-color: rgba(250, 204, 21, 0.5); }
+        .from-golden-yellow { --tw-gradient-from: var(--golden-yellow); }
+        .via-golden-yellow\/5 { --tw-gradient-stops: var(--tw-gradient-from), rgba(250, 204, 21, 0.05) var(--tw-gradient-to); }
         .logo-placeholder {
           width: 32px;
           height: 32px;

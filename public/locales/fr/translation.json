@@ -45,34 +45,63 @@
   },
   "pricing": {
     "preTitle": "Tarifs",
-    "title": "Une Offre de Lancement Imbattable",
-    "subtitle": "Nos tarifs complets arrivent bientôt. Pour remercier nos pionniers, nous offrons une offre exclusive que vous ne reverrez plus.",
+    "title": "Tarification Simple et Transparente",
+    "subtitle": "Choisissez le plan qui convient à votre agence. Tous les plans incluent l'accès à la place de marché et le traitement sécurisé des paiements.",
+    "free": {
+      "title": "Gratuit",
+      "description": "Parfait pour commencer",
+      "price": "0",
+      "currency": "MAD/mois",
+      "commission": "Frais de commission 5%",
+      "button": "Commencer",
+      "feature1": "3 voyages",
+      "feature2": "Profil de base",
+      "feature3": "Accès à la place de marché"
+    },
     "pro": {
-      "title": "Plan Pro",
-      "description": "La boîte à outils complète pour les agences de voyages en croissance.",
+      "title": "Pro",
+      "description": "Pour les agences de voyages en croissance",
+      "price": "499",
+      "currency": "MAD/mois",
+      "commission": "Frais de commission 3%",
+      "button": "Bientôt disponible",
+      "feature1": "Voyages illimités",
+      "feature2": "Marque et personnalisation",
+      "feature3": "Analyses de base",
+      "feature4": "Annonce prioritaire"
+    },
+    "premium": {
+      "title": "Premium",
+      "description": "Pour les agences établies",
       "price": "999",
       "currency": "MAD/mois",
-      "button": "Bientôt disponible",
-      "feature1": "Annonces de voyages illimitées",
-      "feature2": "Analyses et rapports avancés",
-      "feature3": "Traitement des paiements sécurisé"
-    },
-    "waitlist": {
-      "badge": "Meilleure Offre",
-      "title": "Offre Exclusive Liste d'Attente",
-      "description": "Obtenez tout ce qui est inclus dans notre plan Pro, absolutely gratuitement, pour vous remercier de votre soutien précoce.",
-      "price": "3 Mois Gratuits",
-      "button": "Réclamez Vos Mois Gratuits",
-      "feature1": "Tout ce qui est inclus dans le futur plan Pro"
-    },
-    "scale": {
-      "title": "Plan Scale",
-      "description": "Pour les opérations à grande échelle et les besoins personnalisés.",
-      "price": "Personnalisé",
+      "commission": "Frais de commission 2%",
       "button": "Bientôt disponible",
       "feature1": "Tout du plan Pro",
-      "feature2": "Gestionnaire de compte dédié",
-      "feature3": "Accès API et intégrations personnalisées"
+      "feature2": "Analyses avancées",
+      "feature3": "Boost marketing",
+      "feature4": "Support prioritaire"
+    },
+    "enterprise": {
+      "title": "Enterprise",
+      "description": "Pour les opérations à grande échelle",
+      "price": "Personnalisé",
+      "currency": "",
+      "commission": "Commission négociable",
+      "button": "Contacter les ventes",
+      "feature1": "Tout du plan Premium",
+      "feature2": "Solution white-label",
+      "feature3": "Intégrations personnalisées",
+      "feature4": "Support dédié"
+    },
+    "waitlist": {
+      "badge": "Temps Limité",
+      "title": "Offre d'Accès Anticipé",
+      "description": "Rejoignez notre liste d'attente et obtenez 3 mois gratuits du plan Pro lors du lancement.",
+      "price": "3 Mois Gratuits",
+      "button": "Rejoindre la liste d'attente",
+      "feature1": "Accès anticipé à la plateforme",
+      "feature2": "3 mois du plan Pro gratuits"
     }
   },
   "waitlist": {

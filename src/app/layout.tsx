@@ -1,4 +1,5 @@
-// app/layout.js
+// app/layout.tsx
+import React from "react";
 import { Metadata } from "next";
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
@@ -22,9 +23,20 @@ export const metadata: Metadata = {
 };
 
 // The signature of RootLayout now accepts `params` to get the locale
-export default function RootLayout({ children, params: { locale } }) {
+// In Next.js 16, params is a Promise and needs to be awaited
+export default async function RootLayout({ 
+  children, 
+  params 
+}: { 
+  children: React.ReactNode;
+  params: Promise<{ locale?: string }>;
+}) {
+  // Await params in Next.js 16
+  const resolvedParams = await params;
+  const locale = resolvedParams?.locale;
+  
   // Use the locale from the URL, or fall back to the default
-  const currentLocale = i18n.locales.includes(locale) ? locale : i18n.defaultLocale;
+  const currentLocale = locale && i18n.locales.includes(locale) ? locale : i18n.defaultLocale;
 
   return (
     // The `lang` attribute is now dynamic
