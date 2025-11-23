@@ -7,16 +7,110 @@ import nodemailer from 'nodemailer';
 
 // --- NEW HELPER FUNCTION TO GENERATE DYNAMIC EMAILS ---
 // This keeps your main API route clean and focused.
-const generateEmailHtml = (name: string, userType: string) => {
+// Supports multiple languages: en, fr, ar
+const generateEmailHtml = (name: string, userType: string, language: string = 'en') => {
   let subject: string;
   let html: string;
   const officialWebsiteUrl = 'https://ouiboo.vercel.app/';
+  
+  // Normalize language code
+  const lang = ['en', 'fr', 'ar'].includes(language) ? language : 'en';
+  const isRTL = lang === 'ar';
+  const dir = isRTL ? 'rtl' : 'ltr';
+  const textAlign = isRTL ? 'right' : 'left';
+  const fontFamily = isRTL 
+    ? "'Segoe UI', Tahoma, Arial, sans-serif" 
+    : "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+
+  // Email content based on language and user type
+  const content: Record<string, Record<string, any>> = {
+    en: {
+      agency: {
+        subject: `Welcome aboard, ${name}. Your agency just unlocked its next chapter.`,
+        title: "A smarter, faster agency starts here.",
+        greeting: `Hi ${name}, welcome to Ouiboo. You've secured priority access to a platform designed to reduce operational friction and accelerate your agency's growth.`,
+        featuresTitle: "What this means for your team:",
+        features: [
+          "🚀 A unified dashboard for trips, bookings, and payments.",
+          "📊 Analytics that highlight trends and uncover revenue opportunities.",
+          "🌍 Instant visibility inside a curated marketplace of global travelers."
+        ],
+        cta: "Discover the Vision",
+        footer: "Have a question? Just reply — we read every message.",
+        footerBottom: "Your early access link is on its way."
+      },
+      traveler: {
+        subject: `${name}, your next adventure starts here. ✈️`,
+        title: "Travel that finally feels personal.",
+        greeting: `Hey ${name}, thanks for joining the Ouiboo waitlist. You're getting closer to authentic travel experiences crafted by real local agencies — not mass-produced tours.`,
+        highlight: "We curate the best independent agencies so you can skip the tourist traps and explore the world like a local.",
+        closing: "Your next story is waiting. We'll help you write it.",
+        cta: "See What's Coming",
+        footer: "Have questions or ideas? Reply anytime — we read everything.",
+        footerBottom: "Your early access pass is on its way."
+      }
+    },
+    fr: {
+      agency: {
+        subject: `Bienvenue à bord, ${name}. Votre agence vient de débloquer son prochain chapitre.`,
+        title: "Une agence plus intelligente et plus rapide commence ici.",
+        greeting: `Bonjour ${name}, bienvenue sur Ouiboo. Vous avez obtenu un accès prioritaire à une plateforme conçue pour réduire les frictions opérationnelles et accélérer la croissance de votre agence.`,
+        featuresTitle: "Ce que cela signifie pour votre équipe :",
+        features: [
+          "🚀 Un tableau de bord unifié pour les voyages, réservations et paiements.",
+          "📊 Des analyses qui mettent en évidence les tendances et révèlent des opportunités de revenus.",
+          "🌍 Une visibilité instantanée dans une place de marché sélectionnée de voyageurs internationaux."
+        ],
+        cta: "Découvrir la Vision",
+        footer: "Une question ? Répondez simplement — nous lisons chaque message.",
+        footerBottom: "Votre lien d'accès anticipé arrive bientôt."
+      },
+      traveler: {
+        subject: `${name}, votre prochaine aventure commence ici. ✈️`,
+        title: "Un voyage qui se sent enfin personnel.",
+        greeting: `Salut ${name}, merci d'avoir rejoint la liste d'attente Ouiboo. Vous vous rapprochez d'expériences de voyage authentiques créées par de vraies agences locales — pas de circuits produits en masse.`,
+        highlight: "Nous sélectionnons les meilleures agences indépendantes pour que vous puissiez éviter les pièges à touristes et explorer le monde comme un local.",
+        closing: "Votre prochaine histoire vous attend. Nous vous aiderons à l'écrire.",
+        cta: "Voir ce qui arrive",
+        footer: "Des questions ou des idées ? Répondez à tout moment — nous lisons tout.",
+        footerBottom: "Votre passe d'accès anticipé arrive bientôt."
+      }
+    },
+    ar: {
+      agency: {
+        subject: `مرحباً بك، ${name}. وكالتك فتحت للتو فصلها التالي.`,
+        title: "وكالة أذكى وأسرع تبدأ من هنا.",
+        greeting: `مرحباً ${name}، أهلاً بك في Ouiboo. لقد حصلت على وصول ذو أولوية لمنصة مصممة لتقليل الاحتكاك التشغيلي وتسريع نمو وكالتك.`,
+        featuresTitle: "ما يعنيه هذا لفريقك:",
+        features: [
+          "🚀 لوحة تحكم موحدة للرحلات والحجوزات والمدفوعات.",
+          "📊 تحليلات تسلط الضوء على الاتجاهات وتكشف فرص الإيرادات.",
+          "🌍 رؤية فورية داخل سوق منسق من المسافرين العالميين."
+        ],
+        cta: "اكتشف الرؤية",
+        footer: "لديك سؤال؟ فقط رد — نقرأ كل رسالة.",
+        footerBottom: "رابط الوصول المبكر في طريقه إليك."
+      },
+      traveler: {
+        subject: `${name}، مغامرتك القادمة تبدأ من هنا. ✈️`,
+        title: "سفر يشعر أخيراً بأنه شخصي.",
+        greeting: `مرحباً ${name}، شكراً لانضمامك إلى قائمة انتظار Ouiboo. أنت تقترب من تجارب سفر أصيلة من صنع وكالات محلية حقيقية — وليست جولات منتجة بكميات كبيرة.`,
+        highlight: "نحن نختار أفضل الوكالات المستقلة حتى تتمكن من تخطي فخاخ السياح واستكشاف العالم مثل السكان المحليين.",
+        closing: "قصتك التالية في انتظارك. سنساعدك على كتابتها.",
+        cta: "شاهد ما قادم",
+        footer: "لديك أسئلة أو أفكار؟ رد في أي وقت — نقرأ كل شيء.",
+        footerBottom: "بطاقة الوصول المبكر في طريقها إليك."
+      }
+    }
+  };
+
+  const emailContent = content[lang][userType === 'Agency' ? 'agency' : 'traveler'];
 
   if (userType === 'Agency') {
-    subject = `Welcome aboard, ${name}. Your agency just unlocked its next chapter.`;
+    subject = emailContent.subject;
     html = `
     <!DOCTYPE html>
-    <html lang="en">
+    <html lang="${lang}" dir="${dir}">
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -27,7 +121,7 @@ const generateEmailHtml = (name: string, userType: string) => {
       </style>
     </head>
 
-    <body style="margin:0; padding:0; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background:#F9FAFB;">
+    <body style="margin:0; padding:0; font-family:${fontFamily}; background:#F9FAFB;">
 
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
@@ -47,37 +141,34 @@ const generateEmailHtml = (name: string, userType: string) => {
 
               <!-- BODY -->
               <tr>
-                <td style="padding:42px 34px;">
+                <td style="padding:42px 34px; direction:${dir}; text-align:${textAlign};">
 
                   <h2 style="font-size:26px; color:#1E3A8A; font-weight:700; text-align:center; margin-top:0;">
-                    A smarter, faster agency starts here.
+                    ${emailContent.title}
                   </h2>
 
                   <p style="font-size:17px; color:#374151; text-align:center; line-height:1.6;">
-                    Hi ${name}, welcome to Ouiboo. You've secured priority access to a platform designed 
-                    to reduce operational friction and accelerate your agency’s growth.
+                    ${emailContent.greeting}
                   </p>
 
                   <div style="margin-top:32px; padding:22px; background:#F9FAFB; border-radius:10px;">
                     <p style="font-size:16px; color:#1E3A8A; font-weight:600; margin:0 0 12px 0;">
-                      What this means for your team:
+                      ${emailContent.featuresTitle}
                     </p>
-                    <p style="margin:8px 0; font-size:16px; color:#374151;">🚀 A unified dashboard for trips, bookings, and payments.</p>
-                    <p style="margin:8px 0; font-size:16px; color:#374151;">📊 Analytics that highlight trends and uncover revenue opportunities.</p>
-                    <p style="margin:8px 0; font-size:16px; color:#374151;">🌍 Instant visibility inside a curated marketplace of global travelers.</p>
+                    ${emailContent.features.map((feature: string) => `<p style="margin:8px 0; font-size:16px; color:#374151;">${feature}</p>`).join('')}
                   </div>
 
                   <!-- CTA -->
                   <div style="text-align:center; margin-top:40px;">
                     <a href="${officialWebsiteUrl}"
                       style="background:#0EA5E9; padding:16px 40px; color:#fff; border-radius:8px; 
-                      text-decoration:none; font-weight:600; font-size:17px;">
-                      Discover the Vision
+                      text-decoration:none; font-weight:600; font-size:17px; display:inline-block;">
+                      ${emailContent.cta}
                     </a>
                   </div>
 
                   <p style="margin-top:32px; font-size:14px; color:#6B7280; text-align:center;">
-                    Have a question? Just reply — we read every message.
+                    ${emailContent.footer}
                   </p>
                 </td>
               </tr>
@@ -85,7 +176,7 @@ const generateEmailHtml = (name: string, userType: string) => {
               <!-- FOOTER -->
               <tr>
                 <td align="center" style="padding:20px; background:#F9FAFB; font-size:12px; color:#6B7280;">
-                  Your early access link is on its way.
+                  ${emailContent.footerBottom}
                 </td>
               </tr>
 
@@ -98,11 +189,11 @@ const generateEmailHtml = (name: string, userType: string) => {
     </body>
     </html>
     `;
-  }   else {
-    subject = `${name}, your next adventure starts here. ✈️`;
+  } else {
+    subject = emailContent.subject;
     html = `
     <!DOCTYPE html>
-    <html lang="en">
+    <html lang="${lang}" dir="${dir}">
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -113,7 +204,7 @@ const generateEmailHtml = (name: string, userType: string) => {
       </style>
     </head>
 
-    <body style="margin:0; padding:0; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background:#F9FAFB;">
+    <body style="margin:0; padding:0; font-family:${fontFamily}; background:#F9FAFB;">
 
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
@@ -133,38 +224,37 @@ const generateEmailHtml = (name: string, userType: string) => {
 
               <!-- BODY -->
               <tr>
-                <td style="padding:42px 34px;">
+                <td style="padding:42px 34px; direction:${dir}; text-align:${textAlign};">
 
                   <h2 style="font-size:26px; color:#1E3A8A; font-weight:700; text-align:center; margin-top:0;">
-                    Travel that finally feels personal.
+                    ${emailContent.title}
                   </h2>
 
                   <p style="font-size:17px; color:#374151; text-align:center; line-height:1.6;">
-                    Hey ${name}, thanks for joining the Ouiboo waitlist. You're getting closer to authentic travel 
-                    experiences crafted by real local agencies — not mass-produced tours.
+                    ${emailContent.greeting}
                   </p>
 
                   <div style="margin:30px 0; padding:24px 0; border-top:1px solid #e5e7eb; border-bottom:1px solid #e5e7eb; text-align:center;">
                     <p style="font-size:17px; color:#1E3A8A; margin:0; line-height:1.6;">
-                      We curate the best independent agencies so you can skip the tourist traps and explore the world like a local.
+                      ${emailContent.highlight}
                     </p>
                   </div>
 
                   <p style="font-size:17px; color:#374151; text-align:center; line-height:1.6;">
-                    Your next story is waiting. We’ll help you write it.
+                    ${emailContent.closing}
                   </p>
 
                   <!-- CTA -->
                   <div style="text-align:center; margin-top:40px;">
                     <a href="${officialWebsiteUrl}"
                       style="background:#F97316; padding:16px 40px; color:#fff; border-radius:8px; 
-                      text-decoration:none; font-weight:600; font-size:17px;">
-                      See What’s Coming
+                      text-decoration:none; font-weight:600; font-size:17px; display:inline-block;">
+                      ${emailContent.cta}
                     </a>
                   </div>
 
                   <p style="margin-top:32px; font-size:14px; color:#6B7280; text-align:center;">
-                    Have questions or ideas? Reply anytime — we read everything.
+                    ${emailContent.footer}
                   </p>
                 </td>
               </tr>
@@ -172,7 +262,7 @@ const generateEmailHtml = (name: string, userType: string) => {
               <!-- FOOTER -->
               <tr>
                 <td align="center" style="padding:20px; background:#F9FAFB; font-size:12px; color:#6B7280;">
-                  Your early access pass is on its way.
+                  ${emailContent.footerBottom}
                 </td>
               </tr>
 
@@ -196,14 +286,14 @@ const generateEmailHtml = (name: string, userType: string) => {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, email, userType, phoneNumber, agencyName } = body;
+    const { name, email, userType, phoneNumber, agencyName, language } = body;
     
     if (!name || !email || !userType || !phoneNumber) {
       return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
     }
 
-    // Generate the customized email based on user type
-    const { subject, html } = generateEmailHtml(name, userType);
+    // Generate the customized email based on user type and language
+    const { subject, html } = generateEmailHtml(name, userType, language || 'en');
 
     // Configure the "transporter" with your Gmail credentials
     const transporter = nodemailer.createTransport({
