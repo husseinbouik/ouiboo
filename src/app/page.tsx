@@ -397,8 +397,8 @@ export default function OuibooLanding() {
                   >
                     {step.number}
                   </motion.div>
-                  <h3 className="mt-6 text-lg font-semibold text-deep-blue group-hover:text-sunset-orange transition-colors duration-300">{step.name}</h3>
-                  <p className="mt-2 text-base leading-7 text-gray-600">{step.description}</p>
+                  <h3 className="mt-6 text-lg font-semibold text-deep-blue">{step.name}</h3>
+                  <p className="mt-3 text-base leading-7 text-gray-600">{step.description}</p>
                 </motion.div>
               ))}
             </motion.div>
@@ -420,16 +420,15 @@ export default function OuibooLanding() {
                   <h2 className="text-base font-semibold leading-7 text-sunset-orange uppercase tracking-wide">{t('travelers.preTitle')}</h2>
                   <p className="mt-2 text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('travelers.title')}</p>
                   <p className="mt-6 text-lg leading-8 text-gray-600">{t('travelers.subtitle')}</p>
-                  <motion.dl variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mt-10 max-w-xl space-y-8 text-base leading-7 text-gray-600 lg:max-w-none">
+                  <motion.dl variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mt-10 max-w-xl space-y-6 text-base leading-7 text-gray-600 lg:max-w-none">
                     {travelerFeatures.map((feature, index) => (
                       <motion.div 
                         key={feature.name} 
                         variants={fadeInUp}
-                        whileHover={{ x: 5 }}
-                        className="relative pl-9 transition-all duration-300 hover:bg-white/50 p-3 rounded-lg -ml-3"
+                        className="relative pl-9 transition-all duration-300 hover:bg-gray-50 p-4 rounded-lg -ml-3"
                       >
                         <dt className="inline font-semibold text-deep-blue">
-                          <feature.icon className="absolute left-1 top-1 h-6 w-6 text-sunset-orange transition-transform duration-300 group-hover:scale-110 group-hover:text-golden-yellow" aria-hidden="true" />
+                          <feature.icon className="absolute left-1 top-1 h-6 w-6 text-sunset-orange transition-colors duration-300" aria-hidden="true" />
                           {feature.name}
                         </dt>{' '}
                         <dd className="inline text-gray-600">{feature.description}</dd>
@@ -460,13 +459,12 @@ export default function OuibooLanding() {
                   <h2 className="text-base font-semibold leading-7 text-deep-blue uppercase tracking-wide">{t('agencies.preTitle')}</h2>
                   <p className="mt-2 text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('agencies.title')}</p>
                   <p className="mt-6 text-lg leading-8 text-gray-600">{t('agencies.subtitle')}</p>
-                  <motion.dl variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mt-10 max-w-xl space-y-8 text-base leading-7 text-gray-600 lg:max-w-none">
+                  <motion.dl variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mt-10 max-w-xl space-y-6 text-base leading-7 text-gray-600 lg:max-w-none">
                     {agencyFeatures.map((feature, index) => (
                       <motion.div 
                         key={feature.name} 
                         variants={fadeInUp}
-                        whileHover={{ x: isRTL ? -5 : 5 }}
-                        className="relative pl-9 transition-all duration-300 hover:bg-white/50 p-3 rounded-lg -ml-3"
+                        className="relative pl-9 transition-all duration-300 hover:bg-gray-50 p-4 rounded-lg -ml-3"
                       >
                         <dt className="inline font-semibold text-deep-blue">
                           <feature.icon className="absolute left-1 top-1 h-6 w-6 text-deep-blue transition-transform duration-300 group-hover:scale-110 group-hover:text-sunset-orange" aria-hidden="true" />
