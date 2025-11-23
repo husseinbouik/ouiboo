@@ -14,8 +14,18 @@ export default function TranslationsProvider({ children, locale = 'en' }) {
   useEffect(() => {
     const initializeI18n = async () => {
       try {
+        // Check localStorage for saved language preference first
+        // This ensures the user's choice persists across page refreshes
+        let initialLocale = locale;
+        if (typeof window !== 'undefined') {
+          const savedLang = localStorage.getItem('i18nextLng');
+          if (savedLang && ['en', 'fr', 'ar'].includes(savedLang)) {
+            initialLocale = savedLang;
+          }
+        }
+        
         const instance = createInstance();
-        await initTranslations(instance, locale);
+        await initTranslations(instance, initialLocale);
         setI18n(instance);
       } catch (error) {
         console.error('Failed to initialize i18n:', error);

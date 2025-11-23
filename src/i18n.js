@@ -6,14 +6,24 @@ import Backend from 'i18next-http-backend';
 
 // The 'i18n' instance is passed in from your TranslationsProvider
 const initTranslations = (i18n, lng = 'en') => {
+  // Check for stored language preference first (client-side only)
+  let initialLng = lng;
+  if (typeof window !== 'undefined') {
+    const storedLang = localStorage.getItem('i18nextLng');
+    if (storedLang && ['en', 'fr', 'ar'].includes(storedLang)) {
+      initialLng = storedLang;
+    }
+  }
+
   return i18n
     .use(Backend) // Loads translations from a server (e.g., /public/locales)
     .use(LanguageDetector) // This plugin detects the user's language
     .use(initReactI18next) // Passes the i18n instance to react-i18next
     .init({
-      // The `lng` passed from the layout/page is used for the initial server-side render.
-      // On the client, the LanguageDetector will take precedence.
-      lng: lng,
+      // Use stored preference if available, otherwise use the passed lng
+      // The LanguageDetector will still run and can override this, but this ensures
+      // we start with the user's saved preference
+      lng: initialLng,
       fallbackLng: 'en', // Use 'en' if the detected language is not available
       debug: process.env.NODE_ENV === 'development', // Logs info to console in dev mode
 
@@ -37,6 +47,9 @@ const initTranslations = (i18n, lng = 'en') => {
         
         // A key to exclude from caching (standard setting)
         excludeCacheFor: ['cimode'],
+        
+        // Lookup localStorage key
+        lookupLocalStorage: 'i18nextLng',
       },
 
       interpolation: {

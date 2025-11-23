@@ -111,7 +111,8 @@ export default function OuibooLanding() {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post('/api/subscribe', formData);
+      // Include the current language in the form submission
+      await axios.post('/api/subscribe', { ...formData, language: currentLang });
       setIsSuccessModalOpen(true);
       setFormData({ name: '', email: '', userType: 'Traveler', phoneNumber: '', agencyName: '' });
     } catch (err) {
