@@ -1,0 +1,128 @@
+{
+  "joinWaitlist": "Rejoindre la liste d'attente",
+  "nav": {
+    "howItWorks": "Comment ça marche",
+    "forTravelers": "Pour les Voyageurs",
+    "forAgencies": "Pour les Agences",
+    "pricing": "Tarifs"
+  },
+  "hero": {
+    "title": "Votre Prochaine Aventure, Connectée Sans Effort.",
+    "subtitle": "Pour les voyageurs, un monde de voyages organisés. Pour les agences, une plateforme puissante pour se développer. Ouiboo est le point de rencontre du voyage.",
+    "ctaPrimary": "Rejoignez la liste d'attente et obtenez un mois gratuit",
+    "ctaSecondary": "En savoir plus"
+  },
+  "howItWorks": {
+    "preTitle": "Le Processus",
+    "title": "Démarrer est facile",
+    "subtitle": "Que vous cherchiez une aventure ou que vous en proposiez une, le chemin est simple et clair.",
+    "step1": { "title": "Découvrez ou Créez", "description": "Les voyageurs parcourent une place de marché sélectionnée. Les agences créent et publient facilement leurs offres de voyage uniques." },
+    "step2": { "title": "Réservez Simplement", "description": "Un processus de réservation simple et sécurisé pour les voyageurs. Les agences gèrent tout depuis un tableau de bord intuitif." },
+    "step3": { "title": "Vivez & Grandissez", "description": "Les voyageurs se lancent dans leur aventure. Les agences obtiennent des informations précieuses et une audience mondiale." }
+  },
+  "travelers": {
+    "preTitle": "Pour les Voyageurs",
+    "title": "Votre Histoire vous Attend",
+    "subtitle": "Échangez le défilement infini contre des aventures authentiques. Nous vous connectons à des voyages uniques d'agences indépendantes de confiance.",
+    "feature1": { "title": "Découvrez des Voyages Uniques", "description": "Trouvez des expériences que vous ne verrez nulle part ailleurs, des circuits culinaires aux treks en montagne." },
+    "feature2": { "title": "Réservez en Confiance", "description": "Chaque agence est vérifiée. Chaque réservation est sécurisée. Voyagez en toute tranquillité d'esprit." },
+    "feature3": { "title": "Économisez Temps & Efforts", "description": "Fini de jongler avec 20 onglets. Trouvez, comparez et réservez votre voyage parfait, tout en un seul endroit." }
+  },
+  "agencies": {
+    "preTitle": "Pour les Agences",
+    "title": "Votre Entreprise, Amplifiée",
+    "subtitle": "Arrêtez de vous battre avec des outils obsolètes. Notre plateforme vous donne tout ce dont vous avez besoin pour gérer votre entreprise et atteindre un public mondial.",
+    "feature1": { "title": "Numérisez Vos Offres", "description": "Créez, publiez et gérez facilement de belles pages de voyage qui convertissent." },
+    "feature2": { "title": "Accédez à des Données de Croissance", "description": "Utilisez notre tableau de bord pour comprendre vos clients, suivre les ventes et prendre des décisions basées sur les données." },
+    "feature3": { "title": "Atteignez une Audience Mondiale", "description": "Accédez à notre marché de voyageurs passionnés qui recherchent activement des voyages comme les vôtres." }
+  },
+  "testimonials": {
+    "preTitle": "Témoignages",
+    "title": "Apprécié par les Voyageurs et les Agences",
+    "quote1": "Enfin, une plateforme qui comprend les besoins des agences de voyages indépendantes. Le tableau de bord change la donne.",
+    "quote2": "En tant que voyageur, trouver des voyages uniques a toujours été un défi. La place de marché de Ouiboo est magnifiquement organisée. J'ai hâte !",
+    "quote3": "La capacité d'atteindre un public mondial sans un énorme budget marketing est incroyable. Ouiboo est en passe de devenir essentiel."
+  },
+  "pricing": {
+    "preTitle": "Tarifs",
+    "title": "Tarification Simple et Transparente",
+    "subtitle": "Choisissez le plan qui convient à votre agence. Tous les plans incluent l'accès à la place de marché et le traitement sécurisé des paiements.",
+    "free": {
+      "title": "Gratuit",
+      "description": "Parfait pour commencer",
+      "price": "0",
+      "currency": "MAD/mois",
+      "commission": "Frais de commission 5%",
+      "button": "Commencer",
+      "feature1": "3 voyages",
+      "feature2": "Profil de base",
+      "feature3": "Accès à la place de marché"
+    },
+    "pro": {
+      "title": "Pro",
+      "description": "Pour les agences de voyages en croissance",
+      "price": "499",
+      "currency": "MAD/mois",
+      "commission": "Frais de commission 3%",
+      "button": "Bientôt disponible",
+      "feature1": "Voyages illimités",
+      "feature2": "Marque et personnalisation",
+      "feature3": "Analyses de base",
+      "feature4": "Annonce prioritaire"
+    },
+    "premium": {
+      "title": "Premium",
+      "description": "Pour les agences établies",
+      "price": "999",
+      "currency": "MAD/mois",
+      "commission": "Frais de commission 2%",
+      "button": "Bientôt disponible",
+      "feature1": "Tout du plan Pro",
+      "feature2": "Analyses avancées",
+      "feature3": "Boost marketing",
+      "feature4": "Support prioritaire"
+    },
+    "enterprise": {
+      "title": "Enterprise",
+      "description": "Pour les opérations à grande échelle",
+      "price": "Personnalisé",
+      "currency": "",
+      "commission": "Commission négociable",
+      "button": "Contacter les ventes",
+      "feature1": "Tout du plan Premium",
+      "feature2": "Solution white-label",
+      "feature3": "Intégrations personnalisées",
+      "feature4": "Support dédié"
+    },
+    "waitlist": {
+      "badge": "Temps Limité",
+      "title": "Offre d'Accès Anticipé",
+      "description": "Rejoignez notre liste d'attente et obtenez 3 mois gratuits du plan Pro lors du lancement.",
+      "price": "3 Mois Gratuits",
+      "button": "Rejoindre la liste d'attente",
+      "feature1": "Accès anticipé à la plateforme",
+      "feature2": "3 mois du plan Pro gratuits"
+    }
+  },
+  "waitlist": {
+    "title": "Soyez le Premier à Découvrir Ouiboo",
+    "subtitle": "Rejoignez notre liste d'attente pour un accès anticipé exclusif, un mois gratuit de notre plan Pro pour les agences, et des mises à jour sur notre lancement.",
+    "form": {
+      "name": "Entrez votre nom",
+      "email": "Entrez votre email",
+      "phone": "Entrez votre numéro de téléphone",
+      "userType": { "traveler": "Voyageur", "agency": "Agence" },
+      "agencyName": "Entrez le nom de votre agence",
+      "submit": "Rejoindre la liste d'attente",
+      "submitting": "Inscription..."
+    }
+  },
+  "modal": {
+    "title": "Vous êtes sur la liste ! 🎉",
+    "subtitle": "Merci de vous être inscrit ! Nous vous informerons du lancement de l'accès anticipé.",
+    "button": "Génial !"
+  },
+  "footer": {
+    "rights": "Tous droits réservés."
+  }
+}
