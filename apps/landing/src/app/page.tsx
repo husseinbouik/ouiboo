@@ -248,7 +248,7 @@ export default function OuibooLanding() {
               <Bars3Icon aria-hidden="true" className="h-6 w-6" />
             </button>
           </div>
-          <div className="hidden lg:flex lg:gap-x-12">
+          <div className="hidden lg:flex lg:gap-x-12 items-center">
             {navigation.map((item) => (
               <a 
                 key={item.name} 
@@ -256,19 +256,12 @@ export default function OuibooLanding() {
                 className="text-sm font-semibold leading-6 hover:text-sunset-orange transition-all duration-300 relative group"
               >
                 {item.name}
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-sunset-orange group-hover:w-full transition-all duration-300 ease-out"></span>
               </a>
             ))}
-          </div>
-          <div className="hidden lg:flex lg:flex-1 lg:justify-end items-center gap-x-6">
             <LanguageSwitcher />
-            <a href="#waitlist" className="rounded-md bg-sunset-orange px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-opacity-90 transition-transform hover:scale-105">
-                {t('joinWaitlist')}
-            </a>
           </div>
         </nav>
-
-        {/* --- IMPROVED MOBILE MENU --- */}
+        
         <Transition.Root show={mobileMenuOpen} as={Fragment}>
           <Dialog as="div" className="lg:hidden" onClose={setMobileMenuOpen}>
             <Transition.Child as={Fragment} enter="ease-in-out duration-500" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in-out duration-500" leaveFrom="opacity-100" leaveTo="opacity-0">
@@ -336,31 +329,6 @@ export default function OuibooLanding() {
                         >
                           {t('hero.subtitle')}
                         </motion.p>
-                        <motion.div 
-                          variants={fadeInUp} 
-                          className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-x-6 gap-y-4"
-                        >
-                            <motion.a 
-                              href="#waitlist" 
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              className="rounded-md bg-sunset-orange px-6 py-3.5 text-base font-semibold text-white shadow-md hover:shadow-lg hover:bg-orange-600 transition-all duration-300"
-                            >
-                                {t('hero.ctaPrimary')}
-                            </motion.a>
-                            <motion.a 
-                              href="#how-it-works" 
-                              whileHover={{ x: 5 }}
-                              className="text-sm font-semibold leading-6 group text-deep-blue hover:text-sunset-orange transition-colors duration-300"
-                            >
-                                {t('hero.ctaSecondary')} <span aria-hidden="true" className="transition-transform group-hover:translate-x-1 inline-block">→</span>
-                            </motion.a>
-                        </motion.div>
-                    </motion.div>
-                    <motion.div style={{ scale: heroImageScale, rotate: heroImageRotate }} className="mt-16 flow-root sm:mt-24">
-                        <div className="-m-2 rounded-xl bg-gray-900/5 p-2 ring-1 ring-inset ring-gray-900/10 lg:-m-4 lg:rounded-2xl lg:p-4">
-                            <img src="/Dashboard.png" alt="App screenshot" width={2432} height={1442} className="rounded-md shadow-2xl ring-1 ring-gray-900/10"/>
-                        </div>
                     </motion.div>
                 </div>
             </div>

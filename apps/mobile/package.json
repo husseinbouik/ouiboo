@@ -1,0 +1,8 @@
+{
+    "name": "@ouiboo/mobile",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "echo 'No dev script yet'"
+    }
+}
