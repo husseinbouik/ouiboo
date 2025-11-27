@@ -221,7 +221,6 @@ export default function OuibooLanding() {
     </Menu>
   );
 
-
   return (
     <div className="bg-off-white text-deep-blue font-sans">
       {/* Header - Fixed with scroll effect */}
@@ -243,9 +242,13 @@ export default function OuibooLanding() {
             </a>
           </div>
           <div className="flex lg:hidden">
-            <button type="button" onClick={() => setMobileMenuOpen(true)} className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700">
+            <button
+              type="button"
+              className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700"
+              onClick={() => setMobileMenuOpen(true)}
+            >
               <span className="sr-only">Open main menu</span>
-              <Bars3Icon aria-hidden="true" className="h-6 w-6" />
+              <Bars3Icon className="h-6 w-6" aria-hidden="true" />
             </button>
           </div>
           <div className="hidden lg:flex lg:gap-x-12">
@@ -262,56 +265,74 @@ export default function OuibooLanding() {
           </div>
           <div className="hidden lg:flex lg:flex-1 lg:justify-end items-center gap-x-6">
             <LanguageSwitcher />
-            <a href="#waitlist" className="rounded-md bg-sunset-orange px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-opacity-90 transition-transform hover:scale-105">
-                {t('joinWaitlist')}
-            </a>
+            <div className="flex items-center gap-x-4">
+              <a href={`${process.env.NEXT_PUBLIC_TRAVELER_URL}/login`} className="text-sm font-semibold leading-6 text-deep-blue hover:text-sunset-orange transition-colors">
+                Traveler Login
+              </a>
+              <a href={`${process.env.NEXT_PUBLIC_AGENCY_URL}/login`} className="rounded-md bg-sunset-orange px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-opacity-90 transition-transform hover:scale-105">
+                Agency Login
+              </a>
+            </div>
           </div>
         </nav>
-
-        {/* --- IMPROVED MOBILE MENU --- */}
-        <Transition.Root show={mobileMenuOpen} as={Fragment}>
-          <Dialog as="div" className="lg:hidden" onClose={setMobileMenuOpen}>
-            <Transition.Child as={Fragment} enter="ease-in-out duration-500" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in-out duration-500" leaveFrom="opacity-100" leaveTo="opacity-0">
-                <div className="fixed inset-0 bg-gray-800 bg-opacity-75 transition-opacity" />
-            </Transition.Child>
-            <div className="fixed inset-0 z-50" />
-            <Dialog.Panel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10">
-              <div className="flex items-center justify-between">
-                <a href="#" className="-m-1.5 p-1.5 flex items-center gap-2">
-                    <div className="logo-placeholder bg-deep-blue text-white" aria-hidden>O</div>
-                    <span className="font-bold text-xl tracking-tight">Ouiboo</span>
-                </a>
-                <button type="button" className="-m-2.5 rounded-md p-2.5 text-gray-700" onClick={() => setMobileMenuOpen(false)}>
-                  <span className="sr-only">Close menu</span>
-                  <XMarkIcon className="h-6 w-6" aria-hidden="true" />
-                </button>
-              </div>
-              <div className="mt-6 flow-root">
-                <div className="-my-6 divide-y divide-gray-500/10">
-                  <div className="space-y-2 py-6">
-                    {navigation.map((item) => (
-                      <a key={item.name} href={item.href} onClick={() => setMobileMenuOpen(false)} className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50">
-                        {item.name}
-                      </a>
-                    ))}
-                  </div>
-                  <div className="py-6">
-                    <a href="#waitlist" onClick={() => setMobileMenuOpen(false)} className="w-full text-center rounded-md bg-sunset-orange px-4 py-2.5 text-base font-semibold text-white shadow-sm hover:bg-opacity-90 transition-transform hover:scale-105">
-                        {t('joinWaitlist')}
+        
+        {/* Mobile Menu Dialog */}
+        <Dialog as="div" className="lg:hidden" open={mobileMenuOpen} onClose={setMobileMenuOpen}>
+          <div className="fixed inset-0 z-50" />
+          <Dialog.Panel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10">
+            <div className="flex items-center justify-between">
+              <a href="#" className="-m-1.5 p-1.5 flex items-center gap-2">
+                <div className="logo-placeholder bg-deep-blue text-white" aria-hidden>O</div>
+                <span className="font-bold text-xl tracking-tight">Ouiboo</span>
+              </a>
+              <button
+                type="button"
+                className="-m-2.5 rounded-md p-2.5 text-gray-700"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span className="sr-only">Close menu</span>
+                <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+              </button>
+            </div>
+            <div className="mt-6 flow-root">
+              <div className="-my-6 divide-y divide-gray-500/10">
+                <div className="space-y-2 py-6">
+                  {navigation.map((item) => (
+                    <a
+                      key={item.name}
+                      href={item.href}
+                      className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      {item.name}
                     </a>
-                    <div className="mt-6">
-                        <LanguageSwitcher />
-                    </div>
+                  ))}
+                </div>
+                <div className="py-6 space-y-4">
+                  <div className="flex items-center">
+                    <LanguageSwitcher />
                   </div>
+                  <a
+                    href={`${process.env.NEXT_PUBLIC_TRAVELER_URL}/login`}
+                    className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
+                  >
+                    Traveler Login
+                  </a>
+                  <a
+                    href={`${process.env.NEXT_PUBLIC_AGENCY_URL}/login`}
+                    className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
+                  >
+                    Agency Login
+                  </a>
                 </div>
               </div>
-            </Dialog.Panel>
-          </Dialog>
-        </Transition.Root>
+            </div>
+          </Dialog.Panel>
+        </Dialog>
       </motion.header>
 
+      {/* Hero Section */}
       <main className="isolate">
-        {/* Hero Section */}
         <div className="relative pt-24 sm:pt-32 overflow-hidden">
             <div aria-hidden="true" className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
                 <div style={{ clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)' }} className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-sunset-orange opacity-10 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"/>
@@ -366,50 +387,49 @@ export default function OuibooLanding() {
             </div>
         </div>
 
-        {/* How It Works Section */}
-        <section id="how-it-works" className="py-24 sm:py-32">
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="mx-auto max-w-2xl lg:text-center">
-              <h2 className="text-base font-semibold leading-7 text-sunset-orange uppercase tracking-wide">{t('howItWorks.preTitle')}</h2>
-              <p className="mt-2 text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('howItWorks.title')}</p>
-              <p className="mt-6 text-lg leading-8 text-gray-600">{t('howItWorks.subtitle')}</p>
-            </motion.div>
-            <motion.div 
-              variants={staggerContainer} 
-              initial="hidden" 
-              whileInView="visible" 
-              viewport={{ once: true, amount: 0.2 }} 
-              className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 text-center sm:grid-cols-2 lg:grid-cols-3 lg:max-w-7xl"
-            >
-              {howItWorksSteps.map((step, index) => (
-                <motion.div 
-                  key={step.name} 
-                  variants={scaleIn}
-                  whileHover={{ scale: 1.05, y: -5 }}
-                  className="flex flex-col items-center p-8 rounded-2xl transition-all duration-300 hover:shadow-xl hover:bg-white cursor-pointer border border-gray-200 hover:border-sunset-orange/30"
-                >
-                  <motion.div 
-                    initial={{ scale: 0 }}
-                    whileInView={{ scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.2, type: "spring", stiffness: 200 }}
-                    className="flex h-14 w-14 items-center justify-center rounded-full bg-deep-blue text-white font-bold text-lg shadow-md"
-                  >
-                    {step.number}
-                  </motion.div>
-                  <h3 className="mt-6 text-lg font-semibold text-deep-blue">{step.name}</h3>
-                  <p className="mt-3 text-base leading-7 text-gray-600">{step.description}</p>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Benefits for Travelers Section */}
-        <section id="travelers" className="overflow-hidden bg-white py-24 sm:py-32">
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <div className="mx-auto grid max-w-2xl grid-cols-1 gap-x-8 gap-y-16 sm:gap-y-20 lg:mx-0 lg:max-w-none lg:grid-cols-2 lg:items-center">
+      <section id="how-it-works" className="py-24 sm:py-32">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="mx-auto max-w-2xl lg:text-center">
+            <h2 className="text-base font-semibold leading-7 text-sunset-orange uppercase tracking-wide">{t('howItWorks.preTitle')}</h2>
+            <p className="mt-2 text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('howItWorks.title')}</p>
+            <p className="mt-6 text-lg leading-8 text-gray-600">{t('howItWorks.subtitle')}</p>
+          </motion.div>
+          <motion.div 
+            variants={staggerContainer} 
+            initial="hidden" 
+            whileInView="visible" 
+            viewport={{ once: true, amount: 0.2 }} 
+            className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 text-center sm:grid-cols-2 lg:grid-cols-3 lg:max-w-7xl"
+          >
+            {howItWorksSteps.map((step, index) => (
               <motion.div 
+                key={step.name} 
+                variants={scaleIn}
+                whileHover={{ scale: 1.05, y: -5 }}
+                className="flex flex-col items-center p-8 rounded-2xl transition-all duration-300 hover:shadow-xl hover:bg-white cursor-pointer border border-gray-200 hover:border-sunset-orange/30"
+              >
+                <motion.div 
+                  initial={{ scale: 0 }}
+                  whileInView={{ scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.2, type: "spring", stiffness: 200 }}
+                  className="flex h-14 w-14 items-center justify-center rounded-full bg-deep-blue text-white font-bold text-lg shadow-md"
+                >
+                  {step.number}
+                </motion.div>
+                <h3 className="mt-6 text-lg font-semibold text-deep-blue">{step.name}</h3>
+                <p className="mt-3 text-base leading-7 text-gray-600">{step.description}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Benefits for Travelers Section */}
+      <section id="travelers" className="overflow-hidden bg-white py-24 sm:py-32">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mx-auto grid max-w-2xl grid-cols-1 gap-x-8 gap-y-16 sm:gap-y-20 lg:mx-0 lg:max-w-none lg:grid-cols-2 lg:items-center">
+            <motion.div 
                 variants={isRTL ? slideInRight : slideInLeft} 
                 initial="hidden" 
                 whileInView="visible" 

@@ -1,8 +1,0 @@
-{
-    "name": "@ouiboo/backend",
-    "version": "0.0.0",
-    "private": true,
-    "scripts": {
-        "dev": "echo 'No dev script yet'"
-    }
-}
