@@ -43,6 +43,8 @@ export default function OuibooLanding() {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language;
   const isRTL = currentLang === 'ar';
+  const travelerUrl = process.env.NEXT_PUBLIC_TRAVELER_URL || 'http://localhost:3001';
+  const agencyUrl = process.env.NEXT_PUBLIC_AGENCY_URL || 'http://localhost:3002';
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [formData, setFormData] = useState({
@@ -266,10 +268,10 @@ export default function OuibooLanding() {
           <div className="hidden lg:flex lg:flex-1 lg:justify-end items-center gap-x-6">
             <LanguageSwitcher />
             <div className="flex items-center gap-x-4">
-              <a href={`${process.env.NEXT_PUBLIC_TRAVELER_URL}/login`} className="text-sm font-semibold leading-6 text-deep-blue hover:text-sunset-orange transition-colors">
+              <a href={`${travelerUrl}/login?lang=${currentLang}`} className="text-sm font-semibold leading-6 text-deep-blue hover:text-sunset-orange transition-colors">
                 Traveler Login
               </a>
-              <a href={`${process.env.NEXT_PUBLIC_AGENCY_URL}/login`} className="rounded-md bg-sunset-orange px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-opacity-90 transition-transform hover:scale-105">
+              <a href={`${agencyUrl}/login?lang=${currentLang}`} className="rounded-md bg-sunset-orange px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-opacity-90 transition-transform hover:scale-105">
                 Agency Login
               </a>
             </div>
@@ -313,13 +315,13 @@ export default function OuibooLanding() {
                     <LanguageSwitcher />
                   </div>
                   <a
-                    href={`${process.env.NEXT_PUBLIC_TRAVELER_URL}/login`}
+                    href={`${travelerUrl}/login?lang=${currentLang}`}
                     className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
                   >
                     Traveler Login
                   </a>
                   <a
-                    href={`${process.env.NEXT_PUBLIC_AGENCY_URL}/login`}
+                    href={`${agencyUrl}/login?lang=${currentLang}`}
                     className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
                   >
                     Agency Login
@@ -455,6 +457,23 @@ export default function OuibooLanding() {
                       </motion.div>
                     ))}
                   </motion.dl>
+                  <motion.div 
+                    variants={fadeInUp}
+                    className="mt-10 flex items-center gap-x-6"
+                  >
+                    <a
+                      href={`${travelerUrl}/signup?lang=${currentLang}`}
+                      className="rounded-md bg-sunset-orange px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-orange-600 transition-all duration-300 hover:scale-105"
+                    >
+                      {t('travelers.cta.getStarted')}
+                    </a>
+                    <a
+                      href={`${travelerUrl}/login?lang=${currentLang}`}
+                      className="text-sm font-semibold leading-6 text-deep-blue hover:text-sunset-orange transition-colors"
+                    >
+                      {t('travelers.cta.alreadyMember')} <span aria-hidden="true">→</span>
+                    </a>
+                  </motion.div>
                 </div>
               </motion.div>
               <div ref={refTravelerImage} className="w-full h-[30rem] sm:h-[40rem] overflow-hidden rounded-xl shadow-xl">
@@ -494,6 +513,23 @@ export default function OuibooLanding() {
                       </motion.div>
                     ))}
                   </motion.dl>
+                  <motion.div 
+                    variants={fadeInUp}
+                    className="mt-10 flex items-center gap-x-6"
+                  >
+                    <a
+                      href={`${agencyUrl}/signup?lang=${currentLang}`}
+                      className="rounded-md bg-deep-blue px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-blue-900 transition-all duration-300 hover:scale-105"
+                    >
+                      {t('agencies.cta.registerAgency')}
+                    </a>
+                    <a
+                      href={`${agencyUrl}/login?lang=${currentLang}`}
+                      className="text-sm font-semibold leading-6 text-deep-blue hover:text-blue-700 transition-colors"
+                    >
+                      {t('agencies.cta.alreadyPartner')} <span aria-hidden="true">→</span>
+                    </a>
+                  </motion.div>
                 </div>
               </motion.div>
               <div ref={refAgencyImage} className="lg:order-first w-full h-[30rem] sm:h-[40rem] overflow-hidden rounded-xl shadow-xl">
