@@ -1,0 +1,33 @@
+{
+    "login": {
+        "title": "Welcome back",
+        "subtitle": "Please enter your details to sign in.",
+        "email": "Email",
+        "emailPlaceholder": "Enter your email",
+        "password": "Password",
+        "passwordPlaceholder": "••••••••",
+        "forgotPassword": "Forgot password?",
+        "signIn": "Sign In",
+        "orContinue": "Or continue with",
+        "google": "Google",
+        "facebook": "Facebook",
+        "noAccount": "Don't have an account?",
+        "signUpLink": "Sign up for free"
+    },
+    "signup": {
+        "title": "Create an account",
+        "subtitle": "Join Ouiboo and start your journey.",
+        "name": "Full Name",
+        "namePlaceholder": "John Doe",
+        "email": "Email",
+        "emailPlaceholder": "Enter your email",
+        "password": "Password",
+        "passwordPlaceholder": "Create a password",
+        "createAccount": "Create Account",
+        "orSignUp": "Or sign up with",
+        "google": "Google",
+        "facebook": "Facebook",
+        "hasAccount": "Already have an account?",
+        "logInLink": "Log in"
+    }
+}

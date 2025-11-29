@@ -1,0 +1,33 @@
+{
+    "login": {
+        "title": "Portail Agence",
+        "subtitle": "Bon retour. Gérez vos réservations et développez votre entreprise.",
+        "email": "Email professionnel",
+        "emailPlaceholder": "nom@agence.com",
+        "password": "Mot de passe",
+        "passwordPlaceholder": "••••••••",
+        "forgotPassword": "Mot de passe oublié?",
+        "signIn": "Se connecter au tableau de bord",
+        "orContinue": "Ou continuer avec",
+        "google": "Google",
+        "linkedin": "LinkedIn",
+        "noAccount": "Nouvelle agence?",
+        "signUpLink": "Enregistrez votre entreprise"
+    },
+    "signup": {
+        "title": "Partenaire avec Ouiboo",
+        "subtitle": "Créez votre compte d'agence et commencez à grandir.",
+        "agencyName": "Nom de l'agence",
+        "agencyPlaceholder": "Voyages Globaux Ltée",
+        "email": "Email professionnel",
+        "emailPlaceholder": "nom@agence.com",
+        "password": "Mot de passe",
+        "passwordPlaceholder": "Créer un mot de passe",
+        "createAccount": "Créer un compte d'agence",
+        "orSignUp": "Ou s'inscrire avec",
+        "google": "Google",
+        "linkedin": "LinkedIn",
+        "hasAccount": "Déjà partenaire?",
+        "logInLink": "Se connecter au tableau de bord"
+    }
+}

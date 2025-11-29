@@ -1,0 +1,33 @@
+{
+    "login": {
+        "title": "Bon retour",
+        "subtitle": "Veuillez entrer vos informations pour vous connecter.",
+        "email": "Email",
+        "emailPlaceholder": "Entrez votre email",
+        "password": "Mot de passe",
+        "passwordPlaceholder": "••••••••",
+        "forgotPassword": "Mot de passe oublié?",
+        "signIn": "Se connecter",
+        "orContinue": "Ou continuer avec",
+        "google": "Google",
+        "facebook": "Facebook",
+        "noAccount": "Pas de compte?",
+        "signUpLink": "Inscrivez-vous gratuitement"
+    },
+    "signup": {
+        "title": "Créer un compte",
+        "subtitle": "Rejoignez Ouiboo et commencez votre voyage.",
+        "name": "Nom complet",
+        "namePlaceholder": "Jean Dupont",
+        "email": "Email",
+        "emailPlaceholder": "Entrez votre email",
+        "password": "Mot de passe",
+        "passwordPlaceholder": "Créer un mot de passe",
+        "createAccount": "Créer un compte",
+        "orSignUp": "Ou s'inscrire avec",
+        "google": "Google",
+        "facebook": "Facebook",
+        "hasAccount": "Vous avez déjà un compte?",
+        "logInLink": "Se connecter"
+    }
+}

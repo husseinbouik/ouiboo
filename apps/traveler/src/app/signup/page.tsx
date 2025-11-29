@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Mail, Lock, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 // Make sure this path points to your actual i18n config file
-import '../lib/i18n'; 
+import '../../lib/i18n'; 
 
 export default function TravelerSignupPage() {
   const { t, i18n } = useTranslation();

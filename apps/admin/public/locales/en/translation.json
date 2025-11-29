@@ -1,0 +1,9 @@
+{
+    "login": {
+        "title": "Admin Access",
+        "subtitle": "Restricted area. Authorized personnel only.",
+        "username": "Username",
+        "password": "Password",
+        "authenticate": "Authenticate"
+    }
+}

@@ -269,10 +269,10 @@ export default function OuibooLanding() {
             <LanguageSwitcher />
             <div className="flex items-center gap-x-4">
               <a href={`${travelerUrl}/login?lang=${currentLang}`} className="text-sm font-semibold leading-6 text-deep-blue hover:text-sunset-orange transition-colors">
-                Traveler Login
+                {t('nav.travelerLogin')}
               </a>
               <a href={`${agencyUrl}/login?lang=${currentLang}`} className="rounded-md bg-sunset-orange px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-opacity-90 transition-transform hover:scale-105">
-                Agency Login
+                {t('nav.agencyLogin')}
               </a>
             </div>
           </div>
@@ -318,13 +318,13 @@ export default function OuibooLanding() {
                     href={`${travelerUrl}/login?lang=${currentLang}`}
                     className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
                   >
-                    Traveler Login
+                    {t('nav.travelerLogin')}
                   </a>
                   <a
                     href={`${agencyUrl}/login?lang=${currentLang}`}
                     className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"
                   >
-                    Agency Login
+                    {t('nav.agencyLogin')}
                   </a>
                 </div>
               </div>

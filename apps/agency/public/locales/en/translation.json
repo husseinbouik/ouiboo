@@ -1,0 +1,33 @@
+{
+    "login": {
+        "title": "Agency Portal",
+        "subtitle": "Welcome back. Manage your bookings and grow your business.",
+        "email": "Work Email",
+        "emailPlaceholder": "name@agency.com",
+        "password": "Password",
+        "passwordPlaceholder": "••••••••",
+        "forgotPassword": "Forgot password?",
+        "signIn": "Sign In to Dashboard",
+        "orContinue": "Or continue with",
+        "google": "Google",
+        "linkedin": "LinkedIn",
+        "noAccount": "New agency?",
+        "signUpLink": "Register your business"
+    },
+    "signup": {
+        "title": "Partner with Ouiboo",
+        "subtitle": "Create your agency account and start growing.",
+        "agencyName": "Agency Name",
+        "agencyPlaceholder": "Global Travels Ltd.",
+        "email": "Work Email",
+        "emailPlaceholder": "name@agency.com",
+        "password": "Password",
+        "passwordPlaceholder": "Create a password",
+        "createAccount": "Create Agency Account",
+        "orSignUp": "Or sign up with",
+        "google": "Google",
+        "linkedin": "LinkedIn",
+        "hasAccount": "Already a partner?",
+        "logInLink": "Log in to dashboard"
+    }
+}

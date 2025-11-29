@@ -1,0 +1,33 @@
+{
+    "login": {
+        "title": "مرحباً بعودتك",
+        "subtitle": "الرجاء إدخال بياناتك لتسجيل الدخول.",
+        "email": "البريد الإلكتروني",
+        "emailPlaceholder": "أدخل بريدك الإلكتروني",
+        "password": "كلمة المرور",
+        "passwordPlaceholder": "••••••••",
+        "forgotPassword": "نسيت كلمة المرور؟",
+        "signIn": "تسجيل الدخول",
+        "orContinue": "أو تابع مع",
+        "google": "جوجل",
+        "facebook": "فيسبوك",
+        "noAccount": "ليس لديك حساب؟",
+        "signUpLink": "سجل مجاناً"
+    },
+    "signup": {
+        "title": "إنشاء حساب",
+        "subtitle": "انضم إلى Ouiboo وابدأ رحلتك.",
+        "name": "الاسم الكامل",
+        "namePlaceholder": "أحمد محمد",
+        "email": "البريد الإلكتروني",
+        "emailPlaceholder": "أدخل بريدك الإلكتروني",
+        "password": "كلمة المرور",
+        "passwordPlaceholder": "أنشئ كلمة مرور",
+        "createAccount": "إنشاء حساب",
+        "orSignUp": "أو سجل مع",
+        "google": "جوجل",
+        "facebook": "فيسبوك",
+        "hasAccount": "لديك حساب بالفعل؟",
+        "logInLink": "تسجيل الدخول"
+    }
+}

@@ -1,14 +1,12 @@
 'use client';
-
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input } from '@ouiboo/ui';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Mail, Lock } from 'lucide-react';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
+import { Button, Input } from '@ouiboo/ui';
 import { useTranslation } from 'react-i18next';
-import '../lib/i18n';
-
+import '../../lib/i18n';
 export default function TravelerLoginPage() {
   const { t, i18n } = useTranslation();
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -111,7 +109,7 @@ export default function TravelerLoginPage() {
 
             <Button 
               type="submit" 
-              className="w-full h-12 bg-gradient-to-r from-sunset-orange to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+              className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
             >
               {t('login.signIn')} <ArrowRight className="ml-2 h-5 w-5 inline" />
             </Button>
