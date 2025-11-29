@@ -16,25 +16,60 @@
     "preTitle": "Le Processus",
     "title": "Démarrer est facile",
     "subtitle": "Que vous cherchiez une aventure ou que vous en proposiez une, le chemin est simple et clair.",
-    "step1": { "title": "Découvrez ou Créez", "description": "Les voyageurs parcourent une place de marché sélectionnée. Les agences créent et publient facilement leurs offres de voyage uniques." },
-    "step2": { "title": "Réservez Simplement", "description": "Un processus de réservation simple et sécurisé pour les voyageurs. Les agences gèrent tout depuis un tableau de bord intuitif." },
-    "step3": { "title": "Vivez & Grandissez", "description": "Les voyageurs se lancent dans leur aventure. Les agences obtiennent des informations précieuses et une audience mondiale." }
+    "step1": {
+      "title": "Découvrez ou Créez",
+      "description": "Les voyageurs parcourent une place de marché sélectionnée. Les agences créent et publient facilement leurs offres de voyage uniques."
+    },
+    "step2": {
+      "title": "Réservez Simplement",
+      "description": "Un processus de réservation simple et sécurisé pour les voyageurs. Les agences gèrent tout depuis un tableau de bord intuitif."
+    },
+    "step3": {
+      "title": "Vivez & Grandissez",
+      "description": "Les voyageurs se lancent dans leur aventure. Les agences obtiennent des informations précieuses et une audience mondiale."
+    }
   },
   "travelers": {
     "preTitle": "Pour les Voyageurs",
     "title": "Votre Histoire vous Attend",
     "subtitle": "Échangez le défilement infini contre des aventures authentiques. Nous vous connectons à des voyages uniques d'agences indépendantes de confiance.",
-    "feature1": { "title": "Découvrez des Voyages Uniques", "description": "Trouvez des expériences que vous ne verrez nulle part ailleurs, des circuits culinaires aux treks en montagne." },
-    "feature2": { "title": "Réservez en Confiance", "description": "Chaque agence est vérifiée. Chaque réservation est sécurisée. Voyagez en toute tranquillité d'esprit." },
-    "feature3": { "title": "Économisez Temps & Efforts", "description": "Fini de jongler avec 20 onglets. Trouvez, comparez et réservez votre voyage parfait, tout en un seul endroit." }
+    "feature1": {
+      "title": "Découvrez des Voyages Uniques",
+      "description": "Trouvez des expériences que vous ne verrez nulle part ailleurs, des circuits culinaires aux treks en montagne."
+    },
+    "feature2": {
+      "title": "Réservez en Confiance",
+      "description": "Chaque agence est vérifiée. Chaque réservation est sécurisée. Voyagez en toute tranquillité d'esprit."
+    },
+    "feature3": {
+      "title": "Économisez Temps & Efforts",
+      "description": "Fini de jongler avec 20 onglets. Trouvez, comparez et réservez votre voyage parfait, tout en un seul endroit."
+    },
+    "cta": {
+      "getStarted": "Commencer",
+      "alreadyMember": "Déjà membre ? Se connecter"
+    }
   },
   "agencies": {
     "preTitle": "Pour les Agences",
     "title": "Votre Entreprise, Amplifiée",
     "subtitle": "Arrêtez de vous battre avec des outils obsolètes. Notre plateforme vous donne tout ce dont vous avez besoin pour gérer votre entreprise et atteindre un public mondial.",
-    "feature1": { "title": "Numérisez Vos Offres", "description": "Créez, publiez et gérez facilement de belles pages de voyage qui convertissent." },
-    "feature2": { "title": "Accédez à des Données de Croissance", "description": "Utilisez notre tableau de bord pour comprendre vos clients, suivre les ventes et prendre des décisions basées sur les données." },
-    "feature3": { "title": "Atteignez une Audience Mondiale", "description": "Accédez à notre marché de voyageurs passionnés qui recherchent activement des voyages comme les vôtres." }
+    "feature1": {
+      "title": "Numérisez Vos Offres",
+      "description": "Créez, publiez et gérez facilement de belles pages de voyage qui convertissent."
+    },
+    "feature2": {
+      "title": "Accédez à des Données de Croissance",
+      "description": "Utilisez notre tableau de bord pour comprendre vos clients, suivre les ventes et prendre des décisions basées sur les données."
+    },
+    "feature3": {
+      "title": "Atteignez une Audience Mondiale",
+      "description": "Accédez à notre marché de voyageurs passionnés qui recherchent activement des voyages comme les vôtres."
+    },
+    "cta": {
+      "registerAgency": "Inscrire l'Agence",
+      "alreadyPartner": "Déjà partenaire ? Se connecter"
+    }
   },
   "testimonials": {
     "preTitle": "Témoignages",
@@ -111,7 +146,10 @@
       "name": "Entrez votre nom",
       "email": "Entrez votre email",
       "phone": "Entrez votre numéro de téléphone",
-      "userType": { "traveler": "Voyageur", "agency": "Agence" },
+      "userType": {
+        "traveler": "Voyageur",
+        "agency": "Agence"
+      },
       "agencyName": "Entrez le nom de votre agence",
       "submit": "Rejoindre la liste d'attente",
       "submitting": "Inscription..."

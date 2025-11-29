@@ -16,25 +16,60 @@
     "preTitle": "The Process",
     "title": "Getting Started is Easy",
     "subtitle": "Whether you're finding an adventure or listing one, the path is simple and clear.",
-    "step1": { "title": "Discover or Create", "description": "Travelers browse a curated marketplace. Agencies easily build and publish their unique travel packages." },
-    "step2": { "title": "Book Seamlessly", "description": "A simple, secure booking process for travelers. Agencies manage everything from a single, intuitive dashboard." },
-    "step3": { "title": "Experience & Grow", "description": "Travelers embark on their adventure. Agencies gain valuable insights and a global audience." }
+    "step1": {
+      "title": "Discover or Create",
+      "description": "Travelers browse a curated marketplace. Agencies easily build and publish their unique travel packages."
+    },
+    "step2": {
+      "title": "Book Seamlessly",
+      "description": "A simple, secure booking process for travelers. Agencies manage everything from a single, intuitive dashboard."
+    },
+    "step3": {
+      "title": "Experience & Grow",
+      "description": "Travelers embark on their adventure. Agencies gain valuable insights and a global audience."
+    }
   },
   "travelers": {
     "preTitle": "For Travelers",
     "title": "Your Story is Waiting",
     "subtitle": "Trade endless scrolling for authentic adventures. We connect you with unique trips from trusted, independent agencies.",
-    "feature1": { "title": "Discover Unique Trips", "description": "Find experiences you won’t see anywhere else, from culinary tours to mountain treks." },
-    "feature2": { "title": "Book with Confidence", "description": "Every agency is vetted. Every booking is secure. Travel with total peace of mind." },
-    "feature3": { "title": "Save Time & Effort", "description": "No more juggling 20 tabs. Find, compare, and book your perfect trip, all in one place." }
+    "feature1": {
+      "title": "Discover Unique Trips",
+      "description": "Find experiences you won’t see anywhere else, from culinary tours to mountain treks."
+    },
+    "feature2": {
+      "title": "Book with Confidence",
+      "description": "Every agency is vetted. Every booking is secure. Travel with total peace of mind."
+    },
+    "feature3": {
+      "title": "Save Time & Effort",
+      "description": "No more juggling 20 tabs. Find, compare, and book your perfect trip, all in one place."
+    },
+    "cta": {
+      "getStarted": "Get Started",
+      "alreadyMember": "Already a member? Log in"
+    }
   },
   "agencies": {
     "preTitle": "For Agencies",
     "title": "Your Business, Amplified",
     "subtitle": "Stop wrestling with outdated tools. Our platform gives you everything you need to manage your business and reach a global audience.",
-    "feature1": { "title": "Digitize Your Offerings", "description": "Easily create, publish, and manage beautiful trip pages that convert." },
-    "feature2": { "title": "Unlock Growth Insights", "description": "Use our dashboard to understand your customers, track sales, and make data-driven decisions." },
-    "feature3": { "title": "Reach a Global Audience", "description": "Tap into our marketplace of passionate travelers actively looking for trips just like yours." }
+    "feature1": {
+      "title": "Digitize Your Offerings",
+      "description": "Easily create, publish, and manage beautiful trip pages that convert."
+    },
+    "feature2": {
+      "title": "Unlock Growth Insights",
+      "description": "Use our dashboard to understand your customers, track sales, and make data-driven decisions."
+    },
+    "feature3": {
+      "title": "Reach a Global Audience",
+      "description": "Tap into our marketplace of passionate travelers actively looking for trips just like yours."
+    },
+    "cta": {
+      "registerAgency": "Register Agency",
+      "alreadyPartner": "Already a partner? Log in"
+    }
   },
   "testimonials": {
     "preTitle": "Testimonials",
@@ -111,7 +146,10 @@
       "name": "Enter your name",
       "email": "Enter your email",
       "phone": "Enter your phone number",
-      "userType": { "traveler": "Traveler", "agency": "Agency" },
+      "userType": {
+        "traveler": "Traveler",
+        "agency": "Agency"
+      },
       "agencyName": "Enter your agency name",
       "submit": "Join Waitlist",
       "submitting": "Joining..."
