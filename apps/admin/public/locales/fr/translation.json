@@ -1,0 +1,9 @@
+{
+    "login": {
+        "title": "Accès Admin",
+        "subtitle": "Zone restreinte. Personnel autorisé uniquement.",
+        "username": "Nom d'utilisateur",
+        "password": "Mot de passe",
+        "authenticate": "S'authentifier"
+    }
+}

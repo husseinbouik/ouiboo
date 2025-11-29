@@ -1,13 +1,19 @@
-'use client';
-
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, Input } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Mail, Lock, Building2, User } from 'lucide-react';
+import { ArrowRight, Mail, Lock, Building2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import '../lib/i18n';
 
 export default function AgencySignupPage() {
+  const { t, i18n } = useTranslation();
   const { register, handleSubmit, formState: { errors } } = useForm();
+
+  useEffect(() => {
+    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+  }, [i18n.language]);
 
   const onSubmit = (data: any) => {
     console.log('Agency Signup Data:', data);
@@ -25,20 +31,20 @@ export default function AgencySignupPage() {
           className="w-full max-w-md space-y-8"
         >
           <div className="text-center lg:text-left">
-            <h2 className="text-3xl font-bold text-deep-blue">Partner with Ouiboo</h2>
-            <p className="mt-2 text-gray-600">Create your agency account and start growing.</p>
+            <h2 className="text-3xl font-bold text-deep-blue">{t('signup.title')}</h2>
+            <p className="mt-2 text-gray-600">{t('signup.subtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="agencyName" className="text-sm font-medium text-gray-700">Agency Name</label>
+                <label htmlFor="agencyName" className="text-sm font-medium text-gray-700">{t('signup.agencyName')}</label>
                 <div className="relative">
                   <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <Input 
                     id="agencyName" 
                     type="text" 
-                    placeholder="Global Travels Ltd." 
+                    placeholder={t('signup.agencyPlaceholder')}
                     className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white transition-all duration-200"
                     {...register('agencyName', { required: 'Agency Name is required' })} 
                   />
@@ -47,13 +53,13 @@ export default function AgencySignupPage() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-gray-700">Work Email</label>
+                <label htmlFor="email" className="text-sm font-medium text-gray-700">{t('signup.email')}</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <Input 
                     id="email" 
                     type="email" 
-                    placeholder="name@agency.com" 
+                    placeholder={t('signup.emailPlaceholder')}
                     className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white transition-all duration-200"
                     {...register('email', { required: 'Email is required' })} 
                   />
@@ -62,13 +68,13 @@ export default function AgencySignupPage() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-gray-700">Password</label>
+                <label htmlFor="password" className="text-sm font-medium text-gray-700">{t('signup.password')}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <Input 
                     id="password" 
                     type="password" 
-                    placeholder="Create a password" 
+                    placeholder={t('signup.passwordPlaceholder')}
                     className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white transition-all duration-200"
                     {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Password must be at least 6 characters' } })} 
                   />
@@ -81,7 +87,7 @@ export default function AgencySignupPage() {
               type="submit" 
               className="w-full h-12 bg-deep-blue hover:bg-blue-900 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
             >
-              Create Agency Account <ArrowRight className="ml-2 h-5 w-5" />
+              {t('signup.createAccount')} <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
 
             <div className="relative">
@@ -89,26 +95,26 @@ export default function AgencySignupPage() {
                 <span className="w-full border-t border-gray-200" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-2 text-gray-500">Or sign up with</span>
+                <span className="bg-white px-2 text-gray-500">{t('signup.orSignUp')}</span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-5 w-5 mr-2" alt="Google" />
-                <span className="text-sm font-medium text-gray-700">Google</span>
+                <span className="text-sm font-medium text-gray-700">{t('signup.google')}</span>
               </button>
               <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                 <img src="https://www.svgrepo.com/show/448234/linkedin.svg" className="h-5 w-5 mr-2" alt="LinkedIn" />
-                <span className="text-sm font-medium text-gray-700">LinkedIn</span>
+                <span className="text-sm font-medium text-gray-700">{t('signup.linkedin')}</span>
               </button>
             </div>
           </form>
 
           <p className="text-center text-sm text-gray-600">
-            Already a partner?{' '}
-            <Link href="/login" className="font-semibold text-deep-blue hover:text-blue-700 hover:underline">
-              Log in to dashboard
+            {t('signup.hasAccount')}{' '}
+            <Link href={`/login?lang=${i18n.language}`} className="font-semibold text-deep-blue hover:text-blue-700 hover:underline">
+              {t('signup.logInLink')}
             </Link>
           </p>
         </motion.div>
