@@ -47,7 +47,7 @@ export default function AgencyLoginPage() {
                     id="email" 
                     type="email" 
                     placeholder={t('login.emailPlaceholder')}
-                    className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white transition-all duration-200"
+                    className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-deep-blue focus:ring-deep-blue transition-all duration-200"
                     {...register('email', { required: 'Email is required' })} 
                   />
                 </div>
@@ -65,9 +65,24 @@ export default function AgencyLoginPage() {
                     id="password" 
                     type="password" 
                     placeholder={t('login.passwordPlaceholder')}
-                    className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white transition-all duration-200"
+                    className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-deep-blue focus:ring-deep-blue transition-all duration-200"
                     {...register('password', { required: 'Password is required' })} 
                   />
+                </div>
+                 {errors.password && <span className="text-red-500 text-sm">{errors.password.message as string}</span>}
+              </div>
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full h-12 bg-deep-blue hover:bg-blue-800 text-white font-semibold rounded-lg transition-colors duration-200"
+            >
+              {t('login.signIn')} <ArrowRight className="ml-2 h-5 w-5 inline" />
+            </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-200" />
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="bg-white px-2 text-gray-500">{t('login.orContinue')}</span>

@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, Input } from '@ouiboo/ui';
@@ -5,7 +7,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, Mail, Lock, Building2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import '../lib/i18n';
+import '../../lib/i18n';
 
 export default function AgencySignupPage() {
   const { t, i18n } = useTranslation();
@@ -85,7 +87,7 @@ export default function AgencySignupPage() {
 
             <Button 
               type="submit" 
-              className="w-full h-12 bg-deep-blue hover:bg-blue-900 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+              className="w-full h-12 bg-deep-blue hover:bg-blue-900 text-white font-semibold rounded-lg transition-colors duration-200"
             >
               {t('signup.createAccount')} <ArrowRight className="ml-2 h-5 w-5" />
             </Button>

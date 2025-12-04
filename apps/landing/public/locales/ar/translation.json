@@ -4,7 +4,9 @@
     "howItWorks": "كيف نعمل",
     "forTravelers": "للمسافرين",
     "forAgencies": "للوكالات",
-    "pricing": "الأسعار"
+    "pricing": "الأسعار",
+    "travelerLogin": "Traveler Login",
+    "agencyLogin": "Agency Login"
   },
   "hero": {
     "title": "مغامرتك القادمة، متصلة بسلاسة.",
