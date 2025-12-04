@@ -109,7 +109,7 @@ export default function TravelerLoginPage() {
 
             <Button 
               type="submit" 
-              className="w-full h-12 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+              className="w-full h-12 bg-sunset-orange hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors duration-200"
             >
               {t('login.signIn')} <ArrowRight className="ml-2 h-5 w-5 inline" />
             </Button>

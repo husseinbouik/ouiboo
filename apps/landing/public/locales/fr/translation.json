@@ -4,7 +4,9 @@
     "howItWorks": "Comment ça marche",
     "forTravelers": "Pour les Voyageurs",
     "forAgencies": "Pour les Agences",
-    "pricing": "Tarifs"
+    "pricing": "Tarifs",
+    "travelerLogin": "Traveler Login",
+    "agencyLogin": "Agency Login"
   },
   "hero": {
     "title": "Votre Prochaine Aventure, Connectée Sans Effort.",
@@ -133,7 +135,7 @@
       "badge": "Temps Limité",
       "title": "Offre d'Accès Anticipé",
       "description": "Rejoignez notre liste d'attente et obtenez 3 mois gratuits du plan Pro lors du lancement.",
-      "price": "3 Mois Gratuits",
+      "price": "3 Moes Gratuits",
       "button": "Rejoindre la liste d'attente",
       "feature1": "Accès anticipé à la plateforme",
       "feature2": "3 mois du plan Pro gratuits"
