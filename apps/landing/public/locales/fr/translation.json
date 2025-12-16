@@ -5,12 +5,12 @@
     "forTravelers": "Pour les Voyageurs",
     "forAgencies": "Pour les Agences",
     "pricing": "Tarifs",
-    "travelerLogin": "Traveler Login",
-    "agencyLogin": "Agency Login"
+    "travelerLogin": "Espace Voyageurs",
+    "agencyLogin": "Espace Agences"
   },
   "hero": {
-    "title": "Votre Prochaine Aventure, Connectée Sans Effort.",
-    "subtitle": "Pour les voyageurs, un monde de voyages organisés. Pour les agences, une plateforme puissante pour se développer. Ouiboo est le point de rencontre du voyage.",
+    "title": "Votre Prochaine Aventure, Connectée en Toute Simplicité.",
+    "subtitle": "Pour les voyageurs, un monde de séjours organisés. Pour les agences, une plateforme puissante pour se développer. Ouiboo est le point de rencontre du voyage.",
     "ctaPrimary": "Rejoignez la liste d'attente et obtenez un mois gratuit",
     "ctaSecondary": "En savoir plus"
   },
@@ -76,7 +76,7 @@
   "testimonials": {
     "preTitle": "Témoignages",
     "title": "Apprécié par les Voyageurs et les Agences",
-    "quote1": "Enfin, une plateforme qui comprend les besoins des agences de voyages indépendantes. Le tableau de bord change la donne.",
+    "quote1": "Enfin une plateforme qui comprend les besoins des agences de voyages indépendantes. Le tableau de bord change la donne.",
     "quote2": "En tant que voyageur, trouver des voyages uniques a toujours été un défi. La place de marché de Ouiboo est magnifiquement organisée. J'ai hâte !",
     "quote3": "La capacité d'atteindre un public mondial sans un énorme budget marketing est incroyable. Ouiboo est en passe de devenir essentiel."
   },
@@ -89,7 +89,7 @@
       "description": "Parfait pour commencer",
       "price": "0",
       "currency": "MAD/mois",
-      "commission": "Frais de commission 5%",
+      "commission": "Commission de 5%",
       "button": "Commencer",
       "feature1": "3 voyages",
       "feature2": "Profil de base",
@@ -97,10 +97,10 @@
     },
     "pro": {
       "title": "Pro",
-      "description": "Pour les agences de voyages en croissance",
+      "description": "Pour les agences en croissance",
       "price": "499",
       "currency": "MAD/mois",
-      "commission": "Frais de commission 3%",
+      "commission": "Commission de 3%",
       "button": "Bientôt disponible",
       "feature1": "Voyages illimités",
       "feature2": "Marque et personnalisation",
@@ -112,7 +112,7 @@
       "description": "Pour les agences établies",
       "price": "999",
       "currency": "MAD/mois",
-      "commission": "Frais de commission 2%",
+      "commission": "Commission de 2%",
       "button": "Bientôt disponible",
       "feature1": "Tout du plan Pro",
       "feature2": "Analyses avancées",
@@ -122,12 +122,12 @@
     "enterprise": {
       "title": "Enterprise",
       "description": "Pour les opérations à grande échelle",
-      "price": "Personnalisé",
+      "price": "Sur mesure",
       "currency": "",
       "commission": "Commission négociable",
       "button": "Contacter les ventes",
       "feature1": "Tout du plan Premium",
-      "feature2": "Solution white-label",
+      "feature2": "Solution en marque blanche",
       "feature3": "Intégrations personnalisées",
       "feature4": "Support dédié"
     },
@@ -135,7 +135,7 @@
       "badge": "Temps Limité",
       "title": "Offre d'Accès Anticipé",
       "description": "Rejoignez notre liste d'attente et obtenez 3 mois gratuits du plan Pro lors du lancement.",
-      "price": "3 Moes Gratuits",
+      "price": "3 Mois Gratuits",
       "button": "Rejoindre la liste d'attente",
       "feature1": "Accès anticipé à la plateforme",
       "feature2": "3 mois du plan Pro gratuits"
