@@ -1,27 +1,35 @@
 {
   "joinWaitlist": "Join Waitlist",
   "nav": {
-    "howItWorks": "How it Works",
+    "howItWorks": "How It Works",
     "forTravelers": "For Travelers",
     "forAgencies": "For Agencies",
     "pricing": "Pricing",
     "travelerLogin": "Traveler Login",
     "agencyLogin": "Agency Login"
   },
-  "preTitle": "The Process",
-  "title": "Getting Started is Easy",
-  "subtitle": "Whether you're finding an adventure or listing one, the path is simple and clear.",
-  "step1": {
-    "title": "Discover or Create",
-    "description": "Travelers browse a curated marketplace. Agencies easily build and publish their unique travel packages."
+  "hero": {
+    "title": "Your Next Adventure, Effortlessly Connected.",
+    "subtitle": "For travelers, a world of curated journeys. For agencies, a powerful growth platform. Ouiboo is the meeting point of travel.",
+    "ctaPrimary": "Join the waitlist and get a free month",
+    "ctaSecondary": "Learn more"
   },
-  "step2": {
-    "title": "Book Seamlessly",
-    "description": "A simple, secure booking process for travelers. Agencies manage everything from a single, intuitive dashboard."
-  },
-  "step3": {
-    "title": "Experience & Grow",
-    "description": "Travelers embark on their adventure. Agencies gain valuable insights and a global audience."
+  "howItWorks": {
+    "preTitle": "The Process",
+    "title": "Getting Started is Easy",
+    "subtitle": "Whether you're finding an adventure or listing one, the path is simple and clear.",
+    "step1": {
+      "title": "Discover or Create",
+      "description": "Travelers browse a curated marketplace. Agencies easily build and publish their unique travel packages."
+    },
+    "step2": {
+      "title": "Book Seamlessly",
+      "description": "A simple, secure booking process for travelers. Agencies manage everything from a single, intuitive dashboard."
+    },
+    "step3": {
+      "title": "Experience & Grow",
+      "description": "Travelers embark on their adventure. Agencies gain valuable insights and a global audience."
+    }
   },
   "travelers": {
     "preTitle": "For Travelers",
