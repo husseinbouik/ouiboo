@@ -12,14 +12,14 @@ const generateEmailHtml = (name: string, userType: string, language: string = 'e
   let subject: string;
   let html: string;
   const officialWebsiteUrl = 'https://ouiboo.vercel.app/';
-  
+
   // Normalize language code
   const lang = ['en', 'fr', 'ar'].includes(language) ? language : 'en';
   const isRTL = lang === 'ar';
   const dir = isRTL ? 'rtl' : 'ltr';
   const textAlign = isRTL ? 'right' : 'left';
-  const fontFamily = isRTL 
-    ? "'Segoe UI', Tahoma, Arial, sans-serif" 
+  const fontFamily = isRTL
+    ? "'Segoe UI', Tahoma, Arial, sans-serif"
     : "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
   // Email content based on language and user type
@@ -287,58 +287,105 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { name, email, userType, phoneNumber, agencyName, language } = body;
-    
+
+    // 1. Basic Validation
     if (!name || !email || !userType || !phoneNumber) {
       return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
     }
 
-    // Generate the customized email based on user type and language
+    // 2. Environment Variable Validation
+    const requiredEnvVars = [
+      'GMAIL_EMAIL',
+      'GMAIL_APP_PASSWORD',
+      'GOOGLE_SERVICE_ACCOUNT_EMAIL',
+      'GOOGLE_PRIVATE_KEY',
+      'GOOGLE_SHEET_ID'
+    ];
+
+    const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+    if (missingEnvVars.length > 0) {
+      console.error('Missing Environment Variables:', missingEnvVars);
+      return NextResponse.json({
+        message: 'Server configuration error',
+        details: `Missing: ${missingEnvVars.join(', ')}`
+      }, { status: 500 });
+    }
+
+    // 3. Generate the customized email
     const { subject, html } = generateEmailHtml(name, userType, language || 'en');
 
-    // Configure the "transporter" with your Gmail credentials
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_EMAIL,
-        pass: process.env.GMAIL_APP_PASSWORD,
-      },
-    });
+    // 4. Execute Tasks
+    const results = await Promise.allSettled([
+      // Task A: Send Email
+      (async () => {
+        try {
+          const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+              user: process.env.GMAIL_EMAIL,
+              pass: process.env.GMAIL_APP_PASSWORD,
+            },
+          });
 
-    // Define the email options with the dynamic subject and HTML
-    const mailOptions = {
-      from: `"Ouiboo" <${process.env.GMAIL_EMAIL}>`,
-      to: email,
-      subject: subject,
-      html: html,
-    };
+          await transporter.sendMail({
+            from: `"Ouiboo" <${process.env.GMAIL_EMAIL}>`,
+            to: email,
+            subject: subject,
+            html: html,
+          });
+          return { task: 'email', status: 'success' };
+        } catch (err: any) {
+          console.error('Email Error:', err.message);
+          throw new Error(`Email failed: ${err.message}`);
+        }
+      })(),
 
-    // Send the email and save to Google Sheets concurrently
-    await Promise.all([
-        transporter.sendMail(mailOptions),
-        (async () => {
-            const auth = new google.auth.GoogleAuth({
-                credentials: {
-                    client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-                    private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-                },
-                scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-            });
-            const sheets = google.sheets({ auth, version: 'v4' });
-            const timestamp = format(new Date(), 'yyyy-MM-dd HH:mm:ss');
-            const newRow = [name, email, phoneNumber, userType, agencyName || '', timestamp];
-            await sheets.spreadsheets.values.append({
-                spreadsheetId: process.env.GOOGLE_SHEET_ID,
-                range: 'A1',
-                valueInputOption: 'USER_ENTERED',
-                requestBody: { values: [newRow] },
-            });
-        })()
+      // Task B: Save to Google Sheets
+      (async () => {
+        try {
+          const auth = new google.auth.GoogleAuth({
+            credentials: {
+              client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+              private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+            },
+            scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+          });
+
+          const sheets = google.sheets({ auth, version: 'v4' });
+          const timestamp = format(new Date(), 'yyyy-MM-dd HH:mm:ss');
+          const newRow = [name, email, phoneNumber, userType, agencyName || '', timestamp, language || 'en'];
+
+          await sheets.spreadsheets.values.append({
+            spreadsheetId: process.env.GOOGLE_SHEET_ID,
+            range: 'Sheet1!A:G', // Explicit range with sheet name
+            valueInputOption: 'USER_ENTERED',
+            requestBody: { values: [newRow] },
+          });
+          return { task: 'sheets', status: 'success' };
+        } catch (err: any) {
+          console.error('Sheets Error:', err.message);
+          throw new Error(`Sheets failed: ${err.message}`);
+        }
+      })()
     ]);
+
+    // Check results
+    const failures = results.filter(r => r.status === 'rejected');
+    if (failures.length > 0) {
+      const errors = failures.map(f => (f as PromiseRejectedResult).reason.message);
+      console.error('Partial API Failure:', errors);
+      // We still return 200 if at least one succeeded, or 500 if critical ones failed?
+      // Usually, if email fails, it's a "fallback" error.
+      return NextResponse.json({
+        message: 'Partial success',
+        errors
+      }, { status: 207 });
+    }
 
     return NextResponse.json({ message: 'Success!' }, { status: 200 });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('API Error:', error);
-    return NextResponse.json({ message: 'Something went wrong' }, { status: 500 });
+    return NextResponse.json({ message: 'Internal server error', error: error.message }, { status: 500 });
   }
 }

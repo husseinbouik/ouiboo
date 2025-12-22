@@ -29,5 +29,37 @@
         "linkedin": "لينكد إن",
         "hasAccount": "شريك بالفعل؟",
         "logInLink": "تسجيل الدخول إلى لوحة التحكم"
+    },
+    "sidebar": {
+        "dashboard": "لوحة التحكم",
+        "myTrips": "رحلاتي",
+        "bookings": "الحجوزات",
+        "customers": "العملاء",
+        "settings": "الإعدادات",
+        "createNew": "إنشاء رحلة جديدة",
+        "signOut": "تسجيل الخروج"
+    },
+    "dashboard": {
+        "greeting": "صباح الخير، {{name}}",
+        "stats": {
+            "revenue": "إجمالي الإيرادات",
+            "activeTrips": "الرحلات النشطة",
+            "totalBookings": "إجمالي الحجوزات",
+            "newCustomers": "العملاء الجدد"
+        },
+        "tripsSubtitle": "إدارة باقات السفر الحالية الخاصة بك",
+        "viewAll": "عرض الكل"
+    },
+    "trips": {
+        "create": {
+            "title": "إنشاء مغامرة جديدة",
+            "subtitle": "املأ التفاصيل أدناه لنشر رحلتك في السوق.",
+            "steps": {
+                "basic": "المعلومات الأساسية",
+                "location": "الموقع والمدة",
+                "media": "الوسائط والصور",
+                "pricing": "التسعير والمخزون"
+            }
+        }
     }
 }
