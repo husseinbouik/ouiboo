@@ -29,5 +29,37 @@
         "linkedin": "LinkedIn",
         "hasAccount": "Already a partner?",
         "logInLink": "Log in to dashboard"
+    },
+    "sidebar": {
+        "dashboard": "Dashboard",
+        "myTrips": "My Trips",
+        "bookings": "Bookings",
+        "customers": "Customers",
+        "settings": "Settings",
+        "createNew": "Create New Trip",
+        "signOut": "Sign Out"
+    },
+    "dashboard": {
+        "greeting": "Good Morning, {{name}}",
+        "stats": {
+            "revenue": "Total Revenue",
+            "activeTrips": "Active Trips",
+            "totalBookings": "Total Bookings",
+            "newCustomers": "New Customers"
+        },
+        "tripsSubtitle": "Manage your current travel packages",
+        "viewAll": "View All"
+    },
+    "trips": {
+        "create": {
+            "title": "Create a New Adventure",
+            "subtitle": "Fill in the details below to publish your trip to the marketplace.",
+            "steps": {
+                "basic": "Basic Information",
+                "location": "Location & Duration",
+                "media": "Media & Photos",
+                "pricing": "Pricing & Inventory"
+            }
+        }
     }
 }

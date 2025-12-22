@@ -9,8 +9,11 @@ import { ArrowRight, Mail, Lock, Building2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
 
+import { useRouter } from 'next/navigation';
+
 export default function AgencySignupPage() {
   const { t, i18n } = useTranslation();
+  const router = useRouter();
   const { register, handleSubmit, formState: { errors } } = useForm();
 
   useEffect(() => {
@@ -19,7 +22,7 @@ export default function AgencySignupPage() {
 
   const onSubmit = (data: any) => {
     console.log('Agency Signup Data:', data);
-    alert('Signup simulated! Check console for data.');
+    router.push('/dashboard');
   };
 
   return (

@@ -29,5 +29,37 @@
         "linkedin": "LinkedIn",
         "hasAccount": "Déjà partenaire?",
         "logInLink": "Se connecter au tableau de bord"
+    },
+    "sidebar": {
+        "dashboard": "Tableau de Bord",
+        "myTrips": "Mes Voyages",
+        "bookings": "Réservations",
+        "customers": "Clients",
+        "settings": "Paramètres",
+        "createNew": "Créer un Voyage",
+        "signOut": "Déconnexion"
+    },
+    "dashboard": {
+        "greeting": "Bonjour, {{name}}",
+        "stats": {
+            "revenue": "Revenu Total",
+            "activeTrips": "Voyages Actifs",
+            "totalBookings": "Total Réservations",
+            "newCustomers": "Nouveaux Clients"
+        },
+        "tripsSubtitle": "Gérez vos forfaits de voyage actuels",
+        "viewAll": "Voir Tout"
+    },
+    "trips": {
+        "create": {
+            "title": "Créer une Nouvelle Aventure",
+            "subtitle": "Remplissez les détails ci-dessous pour publier votre voyage sur la place de marché.",
+            "steps": {
+                "basic": "Informations de Base",
+                "location": "Lieu & Durée",
+                "media": "Médias & Photos",
+                "pricing": "Prix & Inventaire"
+            }
+        }
     }
 }
