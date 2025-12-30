@@ -16,11 +16,17 @@ let TripsService = class TripsService {
     constructor(db) {
         this.db = db;
     }
-    async createTemplate(agencyId, dto) {
+    async createTemplate(userId, dto) {
+        const agency = await this.db.agencyProfile.findUnique({
+            where: { userId }
+        });
+        if (!agency) {
+            throw new Error('Agency profile not found');
+        }
         return this.db.tripTemplate.create({
             data: {
                 ...dto,
-                agencyId,
+                agencyId: agency.id,
             },
         });
     }

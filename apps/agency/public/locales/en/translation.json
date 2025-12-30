@@ -1,4 +1,12 @@
 {
+    "common": {
+        "back": "Back to Trips",
+        "saveDraft": "Save Draft",
+        "submit": "Submit",
+        "success": "Success!",
+        "error": "Something went wrong",
+        "submitting": "Submitting..."
+    },
     "login": {
         "title": "Agency Portal",
         "subtitle": "Welcome back. Manage your bookings and grow your business.",
@@ -61,5 +69,23 @@
                 "pricing": "Pricing & Inventory"
             }
         }
+    },
+    "onboarding": {
+        "title": "Onboarding & Compliance",
+        "subtitle": "Complete your profile to start publishing trips.",
+        "status": {
+            "verified": "Account Verified",
+            "pending": "Verification Pending"
+        },
+        "sections": {
+            "agency": "Agency Details",
+            "legal": "Legal Documents",
+            "payment": "Payment Details"
+        },
+        "submit": "Submit for Verification"
+    },
+    "wallet": {
+        "title": "Wallet & Payouts",
+        "subtitle": "Manage your earnings and request payouts."
     }
 }
