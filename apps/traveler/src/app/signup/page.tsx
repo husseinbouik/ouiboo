@@ -10,19 +10,48 @@ import { useTranslation } from 'react-i18next';
 // Make sure this path points to your actual i18n config file
 import '../../lib/i18n';
 
+import { useRouter } from 'next/navigation';
+import { useMutation } from '@tanstack/react-query';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { RegisterSchema, type RegisterInput } from '@ouiboo/schemas';
+import { apiClient } from '@/lib/api-client';
+
 export default function TravelerSignupPage() {
   const { t, i18n } = useTranslation();
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const router = useRouter();
+  const { register, handleSubmit, formState: { errors } } = useForm<RegisterInput>({
+    resolver: zodResolver(RegisterSchema),
+    defaultValues: {
+      role: 'TRAVELER'
+    }
+  });
 
   // Handle RTL direction for Arabic language
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
-  const onSubmit = (data: any) => {
-    console.log('Traveler Signup Data:', data);
-    // TODO: Add API call here
-    alert('Signup simulated! Check console for data.');
+  const signupMutation = useMutation({
+    mutationFn: async (data: RegisterInput) => {
+      const response = await apiClient.post('/auth/register', data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      const { accessToken, refreshToken } = data;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('token', accessToken);
+        localStorage.setItem('refresh_token', refreshToken);
+      }
+      router.push('/');
+    },
+    onError: (err: any) => {
+      console.error('Signup failed:', err);
+      alert(err?.response?.data?.message || 'Signup failed. Please try again.');
+    }
+  });
+
+  const onSubmit = (data: RegisterInput) => {
+    signupMutation.mutate(data);
   };
 
   return (
@@ -129,9 +158,11 @@ export default function TravelerSignupPage() {
               {/* Submit Button */}
               <Button
                 type="submit"
+                disabled={signupMutation.isPending}
                 className="w-full h-12 bg-sunset-orange hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors duration-200"
               >
-                {t('signup.createAccount')} <ArrowRight className="ml-2 h-5 w-5 inline" />
+                {signupMutation.isPending ? 'Creating account...' : t('signup.createAccount')} 
+                {!signupMutation.isPending && <ArrowRight className="ml-2 h-5 w-5 inline" />}
               </Button>
             </div>
           </form>

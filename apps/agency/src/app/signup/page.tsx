@@ -1,29 +1,62 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, Mail, Lock, Building2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
-
+import { apiClient } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
+import { useMutation } from '@tanstack/react-query';
+import { RegisterSchema, type RegisterInput } from '@ouiboo/schemas';
 
 export default function AgencySignupPage() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { register, handleSubmit, formState: { errors } } = useForm<RegisterInput>({
+    resolver: zodResolver(RegisterSchema),
+    defaultValues: {
+      role: 'AGENCY'
+    }
+  });
 
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
-  const onSubmit = (data: any) => {
-    console.log('Agency Signup Data:', data);
-    router.push('/dashboard');
+  const [error, setError] = useState<string | null>(null);
+
+  const signupMutation = useMutation({
+    mutationFn: async (data: RegisterInput) => {
+      const response = await apiClient.post('/auth/register', data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      const { accessToken, refreshToken } = data;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('token', accessToken);
+        localStorage.setItem('refresh_token', refreshToken);
+      }
+      router.push('/dashboard');
+    },
+    onError: (err: any) => {
+      console.error('Signup failed:', err);
+      setError(err?.response?.data?.message || 'Signup failed. Please try again.');
+    }
+  });
+
+  const onSubmit = (data: RegisterInput) => {
+    console.log('Submitting signup data:', data);
+    signupMutation.mutate(data);
   };
+
+  if (Object.keys(errors).length > 0) {
+    console.log('Form validation errors:', errors);
+  }
 
   return (
     <div className="min-h-screen flex bg-white">
@@ -43,18 +76,18 @@ export default function AgencySignupPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="agencyName" className="text-sm font-medium text-gray-700">{t('signup.agencyName')}</label>
+                <label htmlFor="name" className="text-sm font-medium text-gray-700">{t('signup.agencyName')}</label>
                 <div className="relative">
                   <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <Input 
-                    id="agencyName" 
+                    id="name" 
                     type="text" 
                     placeholder={t('signup.agencyPlaceholder')}
                     className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white transition-all duration-200"
-                    {...register('agencyName', { required: 'Agency Name is required' })} 
+                    {...register('name')} 
                   />
                 </div>
-                {errors.agencyName && <span className="text-red-500 text-sm">{errors.agencyName.message as string}</span>}
+                {errors.name && <span className="text-red-500 text-sm">{errors.name.message as string}</span>}
               </div>
 
               <div className="space-y-2">
@@ -81,18 +114,26 @@ export default function AgencySignupPage() {
                     type="password" 
                     placeholder={t('signup.passwordPlaceholder')}
                     className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white transition-all duration-200"
-                    {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Password must be at least 6 characters' } })} 
+                    {...register('password', { required: 'Password is required', minLength: { value: 8, message: 'Password must be at least 8 characters' } })} 
                   />
                 </div>
                 {errors.password && <span className="text-red-500 text-sm">{errors.password.message as string}</span>}
               </div>
             </div>
 
+            {error && (
+              <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-100 rounded-lg">
+                {error}
+              </div>
+            )}
+
             <Button 
               type="submit" 
+              disabled={signupMutation.isPending}
               className="w-full h-12 bg-deep-blue hover:bg-blue-900 text-white font-semibold rounded-lg transition-colors duration-200"
             >
-              {t('signup.createAccount')} <ArrowRight className="ml-2 h-5 w-5" />
+              {signupMutation.isPending ? 'Creating account...' : t('signup.createAccount')} 
+              {!signupMutation.isPending && <ArrowRight className="ml-2 h-5 w-5 inline" />}
             </Button>
 
             <div className="relative">

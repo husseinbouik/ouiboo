@@ -1,28 +1,53 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Mail, Lock, Building2 } from 'lucide-react';
+import { ArrowRight, Mail, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
-
+import { apiClient } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
+import { useMutation } from '@tanstack/react-query';
+import { LoginSchema, type LoginInput } from '@ouiboo/schemas';
 
 export default function AgencyLoginPage() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginInput>({
+    resolver: zodResolver(LoginSchema)
+  });
 
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
-  const onSubmit = (data: any) => {
-    console.log('Agency Login Data:', data);
-    router.push('/dashboard');
+  const [error, setError] = useState<string | null>(null);
+
+  const loginMutation = useMutation({
+    mutationFn: async (data: LoginInput) => {
+      const response = await apiClient.post('/auth/login', data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      const { accessToken, refreshToken } = data;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('token', accessToken);
+        localStorage.setItem('refresh_token', refreshToken);
+      }
+      router.push('/dashboard');
+    },
+    onError: (err: any) => {
+      console.error('Login failed:', err);
+      setError(err?.response?.data?.message || 'Login failed. Please try again.');
+    }
+  });
+
+  const onSubmit = (data: LoginInput) => {
+    loginMutation.mutate(data);
   };
 
   return (
@@ -76,11 +101,19 @@ export default function AgencyLoginPage() {
               </div>
             </div>
 
+            {error && (
+              <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-100 rounded-lg">
+                {error}
+              </div>
+            )}
+
             <Button 
               type="submit" 
+              disabled={loginMutation.isPending}
               className="w-full h-12 bg-deep-blue hover:bg-blue-800 text-white font-semibold rounded-lg transition-colors duration-200"
             >
-              {t('login.signIn')} <ArrowRight className="ml-2 h-5 w-5 inline" />
+              {loginMutation.isPending ? 'Logging in...' : t('login.signIn')} 
+              {!loginMutation.isPending && <ArrowRight className="ml-2 h-5 w-5 inline" />}
             </Button>
 
             <div className="relative">
