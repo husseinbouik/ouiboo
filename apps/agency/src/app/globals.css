@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: var(--font-geist-sans);
@@ -19,11 +20,9 @@
   --foreground: #1E3A8A;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0F172A;
-    --foreground: #F8FAFC;
-  }
+.dark {
+  --background: #020617;
+  --foreground: #f8fafc;
 }
 
 body {
@@ -31,4 +30,7 @@ body {
   color: var(--foreground);
   @apply antialiased;
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
 }

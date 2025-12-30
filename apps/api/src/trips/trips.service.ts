@@ -6,11 +6,19 @@ import { CreateTripTemplateDto, CreateTripSessionDto } from './dto/create-trip.d
 export class TripsService {
     constructor(private db: DatabaseService) { }
 
-    async createTemplate(agencyId: string, dto: CreateTripTemplateDto) {
+    async createTemplate(userId: string, dto: CreateTripTemplateDto) {
+        const agency = await this.db.agencyProfile.findUnique({
+            where: { userId }
+        });
+
+        if (!agency) {
+            throw new Error('Agency profile not found');
+        }
+
         return this.db.tripTemplate.create({
             data: {
                 ...dto,
-                agencyId,
+                agencyId: agency.id,
             },
         });
     }

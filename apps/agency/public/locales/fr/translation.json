@@ -1,4 +1,12 @@
 {
+    "common": {
+        "back": "Retour aux Voyages",
+        "saveDraft": "Enregistrer le brouillon",
+        "submit": "Soumettre",
+        "success": "Succès !",
+        "error": "Une erreur est survenue",
+        "submitting": "Envoi en cours..."
+    },
     "login": {
         "title": "Portail Agence",
         "subtitle": "Bon retour. Gérez vos réservations et développez votre entreprise.",
@@ -61,5 +69,23 @@
                 "pricing": "Prix & Inventaire"
             }
         }
+    },
+    "onboarding": {
+        "title": "Onboarding & Conformité",
+        "subtitle": "Complétez votre profil pour commencer à publier des voyages.",
+        "status": {
+            "verified": "Compte Vérifié",
+            "pending": "Vérification en Cours"
+        },
+        "sections": {
+            "agency": "Détails de l'Agence",
+            "legal": "Documents Légaux",
+            "payment": "Détails de Paiement"
+        },
+        "submit": "Soumettre pour Vérification"
+    },
+    "wallet": {
+        "title": "Portefeuille & Virements",
+        "subtitle": "Gérez vos revenus et demandez des virements."
     }
 }
