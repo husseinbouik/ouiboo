@@ -74,9 +74,7 @@ export default function CreateTripPage() {
     formData.append('file', file);
 
     try {
-      const response = await apiClient.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const response = await apiClient.post('/upload', formData);
       const currentImages = watch('images') || [];
       setValue('images', [...currentImages, response.data.url], { shouldValidate: true });
     } catch (error) {

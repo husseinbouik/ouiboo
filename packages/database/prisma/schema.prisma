@@ -59,6 +59,8 @@ model User {
   password      String
   role          UserRole       @default(TRAVELER)
   avatar        String?
+  isEmailVerified Boolean     @default(false)
+  otp           String?
   agencyProfile AgencyProfile?
   bookings      Booking[]
   createdAt     DateTime       @default(now())

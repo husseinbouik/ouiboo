@@ -24,14 +24,19 @@ export class TripsService {
     }
 
     async findAllTemplates(featured?: boolean) {
-        return this.db.tripTemplate.findMany({
-            where: featured ? { featured: true } : {},
-            include: {
-                _count: {
-                    select: { sessions: true },
+        try {
+            return await this.db.tripTemplate.findMany({
+                where: featured ? { featured: true } : {},
+                include: {
+                    _count: {
+                        select: { sessions: true },
+                    },
                 },
-            },
-        });
+            });
+        } catch (error) {
+            console.error('Error in findAllTemplates:', error);
+            throw error;
+        }
     }
 
     async findOneTemplate(id: string) {

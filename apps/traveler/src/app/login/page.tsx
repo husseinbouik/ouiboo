@@ -1,14 +1,20 @@
 'use client';
-import { useEffect } from 'react';
+
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useMutation } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
 import { Button, Input } from '@ouiboo/ui';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
 export default function TravelerLoginPage() {
   const { t, i18n } = useTranslation();
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
   const { register, handleSubmit, formState: { errors } } = useForm();
 
   useEffect(() => {
@@ -16,9 +22,32 @@ export default function TravelerLoginPage() {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
+  const loginMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiClient.post('/auth/login', data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      const { accessToken, refreshToken } = data;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('token', accessToken);
+        localStorage.setItem('refresh_token', refreshToken);
+      }
+      router.push('/');
+    },
+    onError: (err: any) => {
+      const message = err?.response?.data?.message;
+      if (message === 'EMAIL_NOT_VERIFIED') {
+        const email = (document.getElementById('email') as HTMLInputElement)?.value;
+        router.push(`/verify?email=${email}`);
+        return;
+      }
+      setError(message || 'Login failed. Please try again.');
+    },
+  });
+
   const onSubmit = (data: any) => {
-    console.log('Traveler Login Data:', data);
-    alert('Login simulated! Check console for data.');
+    loginMutation.mutate(data);
   };
 
   return (
@@ -106,6 +135,12 @@ export default function TravelerLoginPage() {
                 {errors.password && <span className="text-red-500 text-sm">{errors.password.message as string}</span>}
               </div>
             </div>
+
+            {error && (
+              <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-100 rounded-lg">
+                {error}
+              </div>
+            )}
 
             <Button 
               type="submit" 

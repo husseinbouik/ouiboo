@@ -8,6 +8,7 @@ import { BookingsModule } from './bookings/bookings.module';
 import { AgencyModule } from './agency/agency.module';
 import { AdminModule } from './admin/admin.module';
 import { WalletsModule } from './wallets/wallets.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
     imports: [
@@ -20,6 +21,7 @@ import { WalletsModule } from './wallets/wallets.module';
         AgencyModule,
         AdminModule,
         WalletsModule,
+        EmailModule,
     ],
 })
 export class AppModule { }

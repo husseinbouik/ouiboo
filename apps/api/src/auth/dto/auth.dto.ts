@@ -38,3 +38,20 @@ export class RefreshTokenDto {
     @IsString()
     refresh_token: string;
 }
+
+export class VerifyEmailDto {
+    @ApiProperty({ example: 'agency@ouiboo.com' })
+    @IsEmail()
+    email: string;
+
+    @ApiProperty({ example: '123456' })
+    @IsString()
+    @MinLength(6)
+    otp: string;
+}
+
+export class ResendOtpDto {
+    @ApiProperty({ example: 'agency@ouiboo.com' })
+    @IsEmail()
+    email: string;
+}
