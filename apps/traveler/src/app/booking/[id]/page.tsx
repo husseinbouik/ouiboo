@@ -72,9 +72,7 @@ export default function BookingPage() {
     formData.append('file', file);
 
     try {
-      const response = await apiClient.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const response = await apiClient.post('/upload', formData);
       uploadProofMutation.mutate(response.data.url);
     } catch (error) {
       console.error('Upload failed:', error);
@@ -213,7 +211,7 @@ export default function BookingPage() {
                       </p>
                    </div>
                    <div className="pt-8">
-                      <Link href="/my-bookings">
+                      <Link href="/bookings">
                          <Button className="h-16 px-12 bg-deep-blue hover:bg-blue-900 border-none rounded-2xl text-lg font-black shadow-xl">
                             Go to My Bookings
                          </Button>

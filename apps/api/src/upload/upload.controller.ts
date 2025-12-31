@@ -37,13 +37,15 @@ export class UploadController {
         @UploadedFile(
             new ParseFilePipe({
                 validators: [
-                    new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 5 }), // 5MB
-                    new FileTypeValidator({ fileType: '.(png|jpeg|jpg|webp)' }),
+                    new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 10 }), // 10MB
                 ],
+                errorHttpStatusCode: 400,
             }),
         )
         file: Express.Multer.File,
     ) {
+        console.log('--- UPLOAD VERSION 2 ---');
+        console.log('Received file for upload:', file.originalname, file.mimetype, file.size);
         return this.uploadService.uploadFile(file);
     }
 }

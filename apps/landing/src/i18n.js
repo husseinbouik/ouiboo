@@ -1,3 +1,4 @@
+'use client';
 // src/i18n.js
 
 import { initReactI18next } from 'react-i18next';

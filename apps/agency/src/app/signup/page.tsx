@@ -36,12 +36,12 @@ export default function AgencySignupPage() {
       return response.data;
     },
     onSuccess: (data) => {
-      const { accessToken, refreshToken } = data;
+      const { accessToken, refreshToken, user } = data;
       if (typeof window !== 'undefined') {
         localStorage.setItem('token', accessToken);
         localStorage.setItem('refresh_token', refreshToken);
       }
-      router.push('/dashboard');
+      router.push(`/verify?email=${user.email}`);
     },
     onError: (err: any) => {
       console.error('Signup failed:', err);

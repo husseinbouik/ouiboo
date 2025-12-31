@@ -3,17 +3,24 @@ import { JwtService } from '@nestjs/jwt';
 import { DatabaseService } from '../database/database.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
     constructor(
         private db: DatabaseService,
         private jwtService: JwtService,
+        private emailService: EmailService,
     ) { }
 
     async validateUser(email: string, pass: string): Promise<any> {
         const user = await this.db.user.findUnique({ where: { email } });
         if (user && await bcrypt.compare(pass, user.password)) {
+            if (!user.isEmailVerified) {
+                // We can either throw an error or handle it in the frontend
+                // Throwing an error for now
+                throw new UnauthorizedException('EMAIL_NOT_VERIFIED');
+            }
             const { password, ...result } = user;
             return result;
         }
@@ -42,6 +49,7 @@ export class AuthService {
 
     async register(dto: RegisterDto) {
         const hashedPassword = await bcrypt.hash(dto.password, 10);
+        const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generate 6-digit OTP
 
         const user = await this.db.$transaction(async (tx) => {
             const newUser = await tx.user.create({
@@ -50,6 +58,7 @@ export class AuthService {
                     email: dto.email,
                     password: hashedPassword,
                     role: dto.role as any,
+                    otp, // Store OTP
                 },
             });
 
@@ -74,7 +83,53 @@ export class AuthService {
             return newUser;
         });
 
-        return this.login(user);
+        // Send OTP email
+        const html = this.emailService.getOTPTemplate(otp);
+        await this.emailService.sendMail(dto.email, 'Verify your Ouiboo account', html);
+
+        return this.login(user); // Still return tokens so they can stay logged in during verification
+    }
+
+    async verifyEmail(email: string, otp: string) {
+        const user = await this.db.user.findUnique({ where: { email } });
+
+        if (!user) {
+            throw new UnauthorizedException('User not found');
+        }
+
+        if (user.otp !== otp) {
+            throw new UnauthorizedException('Invalid OTP');
+        }
+
+        await this.db.user.update({
+            where: { id: user.id },
+            data: {
+                isEmailVerified: true,
+                otp: null, // Clear OTP after success
+            }
+        });
+
+        // Send welcome email now that they are verified
+        const welcomeHtml = this.emailService.getWelcomeTemplate(user.name);
+        await this.emailService.sendMail(user.email, 'Welcome to Ouiboo!', welcomeHtml);
+
+        return { message: 'Email verified successfully' };
+    }
+
+    async resendOTP(email: string) {
+        const user = await this.db.user.findUnique({ where: { email } });
+        if (!user) throw new UnauthorizedException('User not found');
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        await this.db.user.update({
+            where: { id: user.id },
+            data: { otp }
+        });
+
+        const html = this.emailService.getOTPTemplate(otp);
+        await this.emailService.sendMail(user.email, 'Your new verification code', html);
+
+        return { message: 'OTP resent successfully' };
     }
 
     async refreshToken(token: string) {
