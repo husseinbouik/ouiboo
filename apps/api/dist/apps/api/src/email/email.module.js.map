@@ -1,0 +1,1 @@
+{"version":3,"file":"email.module.js","sourceRoot":"","sources":["../../../../../src/email/email.module.ts"],"names":[],"mappings":";;;;;;;;;AACA,2CAAgD;AAChD,mDAA+C;AAOxC,IAAM,WAAW,GAAjB,MAAM,WAAW;CAAI,CAAA;AAAf,kCAAW;sBAAX,WAAW;IALvB,IAAA,eAAM,GAAE;IACR,IAAA,eAAM,EAAC;QACJ,SAAS,EAAE,CAAC,4BAAY,CAAC;QACzB,OAAO,EAAE,CAAC,4BAAY,CAAC;KAC1B,CAAC;GACW,WAAW,CAAI"}

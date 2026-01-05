@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsEnum, IsNumber, IsPositive, IsInt, Min, IsArray, IsUrl, MinLength } from 'class-validator';
+import { ApiProperty, PartialType } from '@nestjs/swagger';
+import { IsString, IsEnum, IsNumber, IsPositive, IsInt, Min, IsArray, IsUrl, MinLength, IsOptional } from 'class-validator';
 import { TripCategory, TripStatus } from '@ouiboo/types';
 
 export class CreateTripTemplateDto {
@@ -38,13 +38,15 @@ export class CreateTripTemplateDto {
 
     @ApiProperty({ example: ['https://example.com/image1.jpg'] })
     @IsArray()
-    @IsUrl({}, { each: true })
+    @IsString({ each: true })
     images: string[];
 
     @ApiProperty({ enum: TripStatus, example: TripStatus.Draft })
     @IsEnum(TripStatus)
     status: TripStatus;
 }
+
+export class UpdateTripTemplateDto extends PartialType(CreateTripTemplateDto) { }
 
 export class CreateTripSessionDto {
     @ApiProperty({ example: '2025-01-01T00:00:00Z' })

@@ -10,201 +10,245 @@ import {
   X, 
   User, 
   LogOut, 
-  Calendar, 
+  Calendar as CalendarIcon, 
   Heart,
-  ChevronDown
+  ChevronDown,
+  Globe,
+  LayoutDashboard,
+  Compass,
+  Zap
 } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 
 export function Navbar() {
+  const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const pathname = usePathname();
 
-  // Handle scroll effect
   useEffect(() => {
+    setMounted(true);
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const isHome = pathname === '/';
+  const isTransparent = isHome && !scrolled;
+
+  const navLinks = [
+    { name: t('nav.explore'), href: '/search', icon: <Compass className="w-4 h-4" /> },
+    { name: t('nav.featured'), href: '/trips/featured', icon: <Zap className="w-4 h-4" /> },
+  ];
 
   return (
-    <nav className={cn(
-      "fixed top-0 w-full z-50 transition-all duration-300",
-      scrolled || !isHome ? "bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-100 py-3" : "bg-transparent py-5"
-    )}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className={cn(
-              "w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xl transition-colors",
-              scrolled || !isHome ? "bg-deep-blue text-white" : "bg-white text-deep-blue"
-            )}>
-              O
+    <div className="fixed top-0 w-full z-50 flex justify-center p-6 pointer-events-none">
+      <motion.nav 
+        initial={false}
+        animate={{
+            y: scrolled ? 0 : 0,
+            width: scrolled ? "auto" : "100%",
+            maxWidth: scrolled ? "800px" : "1200px",
+        }}
+        className={cn(
+          "pointer-events-auto flex items-center justify-between transition-all duration-500 ease-in-out px-6 h-16 rounded-[2rem]",
+          scrolled 
+            ? "bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-none ring-1 ring-black/5 dark:ring-white/5" 
+            : "bg-transparent"
+        )}
+      >
+        {/* Logo Section */}
+        <Link href="/" className="flex items-center gap-3 group shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-sunset-orange text-white flex items-center justify-center font-black text-xl shadow-lg group-hover:rotate-12 transition-transform">
+                O
             </div>
-            <span className={cn(
-              "text-2xl font-bold tracking-tight transition-colors",
-              scrolled || !isHome ? "text-deep-blue" : "text-white"
-            )}>
-              Ouiboo
-            </span>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
-            <Link 
-              href="/search" 
-              className={cn(
-                "font-medium transition-colors hover:text-sunset-orange",
-                scrolled || !isHome ? "text-gray-600" : "text-gray-200"
-              )}
-            >
-              Explore
-            </Link>
-            <Link 
-              href="/trips/featured" 
-              className={cn(
-                "font-medium transition-colors hover:text-sunset-orange",
-                scrolled || !isHome ? "text-gray-600" : "text-gray-200"
-              )}
-            >
-              Featured
-            </Link>
-            
-            {user ? (
-              <div className="relative">
-                <button 
-                  onClick={() => setProfileOpen(!profileOpen)}
-                  className="flex items-center gap-2 pl-2 pr-4 py-1.5 rounded-full border border-gray-200 bg-white hover:shadow-md transition-all"
-                >
-                  <div className="w-8 h-8 rounded-full bg-deep-blue text-white flex items-center justify-center font-bold text-sm">
-                    {user.name?.[0]?.toUpperCase() || 'U'}
-                  </div>
-                  <span className="text-sm font-semibold text-gray-700 max-w-[100px] truncate">{user.name}</span>
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
-                </button>
-
-                <AnimatePresence>
-                  {profileOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden py-1"
-                      onMouseLeave={() => setProfileOpen(false)}
-                    >
-                      <div className="px-4 py-3 border-b border-gray-50">
-                        <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
-                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                      </div>
-                      <Link href="/profile" className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-deep-blue">
-                        <User className="h-4 w-4" /> Profile
-                      </Link>
-                      <Link href="/bookings" className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-deep-blue">
-                        <Calendar className="h-4 w-4" /> My Bookings
-                      </Link>
-                      <Link href="/wishlist" className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-deep-blue">
-                        <Heart className="h-4 w-4" /> Wishlist
-                      </Link>
-                      <div className="border-t border-gray-50 mt-1">
-                        <button 
-                          onClick={logout}
-                          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
-                        >
-                          <LogOut className="h-4 w-4" /> Sign Out
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                <div className="ml-4 border-l border-gray-200 pl-4 flex items-center gap-2">
-                    <ThemeToggle />
-                    <LanguageSwitcher />
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-4">
-                <Link 
-                  href="/login"
-                  className={cn(
-                    "font-bold transition-colors hover:text-sunset-orange",
-                    scrolled || !isHome ? "text-deep-blue" : "text-white"
-                  )}
-                >
-                  Log in
-                </Link>
-                <Link href="/signup">
-                  <Button className="bg-sunset-orange hover:bg-orange-600 text-white border-none rounded-xl font-bold px-6 shadow-lg shadow-orange-900/20">
-                    Sign up
-                  </Button>
-                </Link>
-                <div className="border-l border-gray-200 h-6 mx-2"></div>
-                <ThemeToggle />
-                <LanguageSwitcher />
-              </div>
+            {!scrolled && (
+                <span className={cn(
+                    "text-xl font-black tracking-tighter transition-all duration-300",
+                    isTransparent ? "text-white" : "text-foreground"
+                )}>
+                    Ouiboo
+                </span>
             )}
-          </div>
+        </Link>
 
-          {/* Mobile Menu Button */}
-          <button 
-            className="md:hidden p-2 rounded-lg bg-white/10 backdrop-blur-sm text-white"
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            {isOpen ? <X className="h-6 w-6 text-gray-900" /> : <Menu className={cn("h-6 w-6", scrolled || !isHome ? "text-gray-900" : "text-white")} />}
-          </button>
+        {/* Desktop Nav Links */}
+        <div className="hidden md:flex items-center gap-2 mx-6">
+            {mounted && navLinks.map((link) => (
+                <Link 
+                    key={link.href}
+                    href={link.href}
+                    className={cn(
+                        "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300",
+                        isTransparent 
+                            ? "text-white/80 hover:text-white hover:bg-white/10" 
+                            : scrolled 
+                                ? "text-foreground/70 hover:text-foreground hover:bg-foreground/5" 
+                                : "text-foreground/70 hover:text-foreground hover:bg-foreground/5"
+                    )}
+                >
+                    {link.icon}
+                    {link.name}
+                </Link>
+            ))}
         </div>
-      </div>
 
-      {/* Mobile Menu */}
+        {/* Action Buttons */}
+        <div className="flex items-center gap-3">
+            <div className={cn(
+                "hidden sm:flex items-center gap-1.5 p-1 rounded-xl transition-all duration-300",
+                isTransparent ? "bg-white/10" : "bg-muted/50"
+            )}>
+                <LanguageSwitcher isTransparent={isTransparent} />
+                <ThemeToggle isTransparent={isTransparent} />
+            </div>
+
+            {user ? (
+                <div className="relative">
+                    <button 
+                        onMouseEnter={() => setProfileOpen(true)}
+                        className={cn(
+                            "flex items-center gap-2 p-1.5 rounded-xl transition-all duration-300 border",
+                            isTransparent 
+                                ? "bg-white/10 border-white/20 text-white" 
+                                : "bg-white dark:bg-slate-900 border-border shadow-sm text-foreground"
+                        )}
+                    >
+                        <div className="w-7 h-7 rounded-lg bg-sunset-orange text-white flex items-center justify-center font-black text-[10px] shadow-inner">
+                            {user.name?.[0]?.toUpperCase()}
+                        </div>
+                        <ChevronDown className={cn("h-3 w-3 opacity-50", profileOpen && "rotate-180")} />
+                    </button>
+
+                    <AnimatePresence>
+                        {profileOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                onMouseLeave={() => setProfileOpen(false)}
+                                className="absolute right-0 mt-3 w-64 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-border overflow-hidden z-[60]"
+                            >
+                                <div className="p-5 bg-muted/20 border-b border-border">
+                                    <p className="font-bold text-sm text-foreground truncate">{user.name}</p>
+                                    <p className="text-[10px] text-muted-foreground truncate font-medium uppercase tracking-widest">{user.role}</p>
+                                </div>
+                                <div className="p-2 space-y-1">
+                                    <Link href="/profile" className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl transition-all">
+                                        <User className="h-4 w-4" /> {t('nav.profile')}
+                                    </Link>
+                                    <Link href="/bookings" className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl transition-all">
+                                        <CalendarIcon className="h-4 w-4" /> {t('nav.bookings')}
+                                    </Link>
+                                    {user.role === 'AGENCY' && (
+                                        <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-sunset-orange hover:bg-sunset-orange/5 rounded-xl transition-all">
+                                            <LayoutDashboard className="h-4 w-4" /> Agency Panel
+                                        </Link>
+                                    )}
+                                </div>
+                                <div className="p-2 border-t border-border">
+                                    <button 
+                                        onClick={logout}
+                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-all"
+                                    >
+                                        <LogOut className="h-4 w-4" /> {t('nav.logout')}
+                                    </button>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            ) : (
+                <div className="flex items-center gap-2">
+                    <Link href="/login">
+                        <Button variant="ghost" className={cn(
+                            "h-10 px-5 rounded-xl font-bold transition-all",
+                            isTransparent ? "text-white hover:bg-white/10" : "text-foreground"
+                        )}>
+                            {t('nav.login')}
+                        </Button>
+                    </Link>
+                    <Link href="/signup">
+                        <Button className="h-10 px-6 rounded-xl font-black bg-sunset-orange hover:bg-orange-600 text-white border-none shadow-lg shadow-orange-900/20 active:scale-95 transition-all">
+                            Join Now
+                        </Button>
+                    </Link>
+                </div>
+            )}
+
+            {/* Mobile Menu Trigger */}
+            <button 
+                onClick={() => setIsOpen(true)}
+                className={cn(
+                    "md:hidden w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                    isTransparent ? "bg-white/10 text-white" : "bg-muted text-foreground"
+                )}
+            >
+                <Menu className="h-5 w-5" />
+            </button>
+        </div>
+      </motion.nav>
+
+      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isOpen && (
           <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white border-b border-gray-100 overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md md:hidden pointer-events-auto flex justify-end"
+            onClick={() => setIsOpen(false)}
           >
-            <div className="px-4 py-6 space-y-4">
-              <Link href="/search" className="block text-lg font-medium text-gray-900">Explore</Link>
-              <Link href="/trips/featured" className="block text-lg font-medium text-gray-900">Featured Trips</Link>
-              <div className="pt-4 border-t border-gray-100">
-                {user ? (
-                  <>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-full bg-deep-blue text-white flex items-center justify-center font-bold">
-                        {user.name?.[0]?.toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{user.name}</p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
-                      </div>
-                    </div>
-                    <Link href="/bookings" className="block py-2 text-gray-600">My Bookings</Link>
-                    <Link href="/profile" className="block py-2 text-gray-600">Profile</Link>
-                    <button onClick={logout} className="block w-full text-left py-2 text-red-600 font-medium">Sign Out</button>
-                  </>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    <Link href="/login" className="block w-full py-3 text-center rounded-xl border border-gray-200 font-bold text-gray-700">Log in</Link>
-                    <Link href="/signup" className="block w-full py-3 text-center rounded-xl bg-sunset-orange text-white font-bold">Sign up</Link>
+            <motion.div 
+               initial={{ x: "100%" }}
+               animate={{ x: 0 }}
+               transition={{ type: "spring", damping: 25 }}
+               className="w-[80%] max-w-sm h-full bg-background p-8 space-y-12"
+               onClick={(e) => e.stopPropagation()}
+            >
+               <div className="flex justify-between items-center text-foreground">
+                  <div className="flex items-center gap-2">
+                     <div className="w-8 h-8 rounded-xl bg-sunset-orange text-white flex items-center justify-center font-black text-lg">O</div>
+                     <span className="text-xl font-black">Ouiboo</span>
                   </div>
-                )}
-              </div>
-            </div>
+                  <button onClick={() => setIsOpen(false)} className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                     <X className="h-5 w-5" />
+                  </button>
+               </div>
+
+               <div className="space-y-6">
+                  <Link onClick={() => setIsOpen(false)} href="/search" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
+                     Explore <Zap className="text-sunset-orange" />
+                  </Link>
+                  <Link onClick={() => setIsOpen(false)} href="/trips/featured" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
+                     Featured <Heart className="text-pink-500" />
+                  </Link>
+               </div>
+
+               {!user && (
+                 <div className="space-y-4 pt-10">
+                    <Link onClick={() => setIsOpen(false)} href="/signup" className="block w-full py-5 rounded-2xl bg-sunset-orange text-white font-black text-center text-xl shadow-xl shadow-orange-900/20">
+                       Start Your Story
+                    </Link>
+                    <Link onClick={() => setIsOpen(false)} href="/login" className="block w-full py-5 rounded-2xl bg-muted font-bold text-center text-xl">
+                       Sign In
+                    </Link>
+                 </div>
+               )}
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </div>
   );
 }

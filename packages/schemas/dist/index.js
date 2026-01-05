@@ -7,7 +7,7 @@ exports.UserSchema = zod_1.z.object({
     name: zod_1.z.string(),
     email: zod_1.z.string().email(),
     role: zod_1.z.enum(["AGENCY", "TRAVELER", "ADMIN"]),
-    avatar: zod_1.z.string().url().optional(),
+    avatar: zod_1.z.string().optional(),
 });
 exports.AgencyProfileSchema = zod_1.z.object({
     id: zod_1.z.string(),
@@ -18,20 +18,20 @@ exports.AgencyProfileSchema = zod_1.z.object({
     rib: zod_1.z.string().regex(/^[0-9]{24}$/, "RIB must be 24 digits"),
     verificationStatus: zod_1.z.enum(["PENDING", "VERIFIED", "REJECTED"]),
     bio: zod_1.z.string().optional(),
-    logo: zod_1.z.string().url().optional(),
+    logo: zod_1.z.string().optional(),
 });
 exports.TripTemplateSchema = zod_1.z.object({
     id: zod_1.z.string(),
     agencyId: zod_1.z.string(),
     title: zod_1.z.string().min(3, "Title must be at least 3 characters"),
     description: zod_1.z.string().min(10, "Description must be at least 10 characters"),
-    category: zod_1.z.enum(["Adventure", "Cultural", "Luxury", "Budget"]),
+    category: zod_1.z.enum(["ADVENTURE", "CULTURAL", "LUXURY", "BUDGET"]),
     startLocation: zod_1.z.string(),
     durationDays: zod_1.z.number().int().positive(),
     durationNights: zod_1.z.number().int().nonnegative(),
     inclusions: zod_1.z.array(zod_1.z.string()),
-    images: zod_1.z.array(zod_1.z.string().url()).min(1, "At least one image is required"),
-    status: zod_1.z.enum(["Active", "Draft", "Archived"]),
+    images: zod_1.z.array(zod_1.z.string()).min(1, "At least one image is required"),
+    status: zod_1.z.enum(["ACTIVE", "DRAFT", "ARCHIVED"]),
     createdAt: zod_1.z.string().datetime(),
 });
 exports.CreateTripTemplateSchema = exports.TripTemplateSchema.omit({
@@ -66,7 +66,7 @@ exports.BookingSchema = zod_1.z.object({
 exports.PaymentProofSchema = zod_1.z.object({
     id: zod_1.z.string(),
     bookingId: zod_1.z.string(),
-    imageUrl: zod_1.z.string().url(),
+    imageUrl: zod_1.z.string(),
     uploadedAt: zod_1.z.string().datetime(),
     status: zod_1.z.enum(["Pending", "Verified", "Rejected"]),
 });

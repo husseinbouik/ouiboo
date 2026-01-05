@@ -88,39 +88,51 @@ export default function VerifyEmailPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+      <div className="min-h-screen flex items-center justify-center bg-background px-6 transition-colors duration-300">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white p-12 rounded-3xl shadow-xl text-center max-w-md w-full space-y-6"
+          className="bg-card p-12 rounded-[2.5rem] shadow-2xl border border-border/50 text-center max-w-md w-full space-y-8"
         >
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-            <ShieldCheck className="h-10 w-10 text-green-600" />
+          <div className="w-24 h-24 bg-emerald-500/10 rounded-[2rem] flex items-center justify-center mx-auto shadow-inner">
+            <ShieldCheck className="h-12 w-12 text-emerald-500" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900">Verified Successfully!</h2>
-          <p className="text-gray-500">Welcome to Ouiboo. One moment while we get you home...</p>
+          <div className="space-y-3">
+              <h2 className="text-4xl font-black text-foreground font-display tracking-tight">Verified Successfully!</h2>
+              <p className="text-muted-foreground font-medium">Welcome to Ouiboo. One moment while we get you home...</p>
+          </div>
+          <div className="flex justify-center pt-4">
+              <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ x: '-100%' }}
+                    animate={{ x: '100%' }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                    className="w-full h-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                  />
+              </div>
+          </div>
         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+    <div className="min-h-screen flex items-center justify-center bg-background px-6 transition-colors duration-300">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white p-8 lg:p-12 rounded-3xl shadow-xl max-w-md w-full space-y-8"
+        className="bg-card p-10 lg:p-14 rounded-[3rem] shadow-2xl border border-border/50 max-w-md w-full space-y-10"
       >
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Mail className="h-8 w-8 text-sunset-orange" />
+        <div className="text-center space-y-4">
+          <div className="w-20 h-20 bg-sunset-orange/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-inner">
+            <Mail className="h-10 w-10 text-sunset-orange" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900">Check your email</h2>
-          <p className="text-gray-500">We sent a verification code to <span className="font-semibold text-gray-700">{email}</span></p>
+          <h2 className="text-4xl font-black text-foreground font-display tracking-tight">Check your email</h2>
+          <p className="text-muted-foreground font-medium px-4">We've sent a 6-digit verification code to <span className="font-bold text-foreground">{email}</span></p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="flex justify-between gap-2">
+        <form onSubmit={handleSubmit} className="space-y-10">
+          <div className="flex justify-between gap-3">
             {otp.map((digit, idx) => (
               <input
                 key={idx}
@@ -129,37 +141,42 @@ export default function VerifyEmailPage() {
                 value={digit}
                 onChange={(e) => handleChange(idx, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(idx, e)}
-                className="w-12 h-14 text-center text-2xl font-bold bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-sunset-orange focus:bg-white outline-none transition-all"
+                className="w-full h-16 text-center text-3xl font-black bg-muted/50 dark:bg-slate-900 border-2 border-border/50 rounded-2xl focus:border-sunset-orange focus:ring-4 focus:ring-sunset-orange/10 focus:bg-background outline-none transition-all font-display"
                 maxLength={1}
               />
             ))}
           </div>
 
           {error && (
-            <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-100 rounded-xl text-center">
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-4 text-sm font-bold text-red-500 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center gap-3"
+            >
+              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
               {error}
-            </div>
+            </motion.div>
           )}
 
           <Button 
             type="submit" 
             disabled={verifyMutation.isPending}
-            className="w-full h-14 bg-sunset-orange hover:bg-orange-600 text-white font-bold rounded-xl shadow-lg shadow-orange-900/10"
+            className="w-full h-16 bg-sunset-orange hover:bg-orange-600 text-white font-black rounded-2xl shadow-xl shadow-orange-900/20 active:scale-95 transition-all text-xl"
           >
             {verifyMutation.isPending ? 'Verifying...' : 'Verify Account'}
-            {!verifyMutation.isPending && <ArrowRight className="ml-2 h-5 w-5 inline" />}
+            {!verifyMutation.isPending && <ArrowRight className="ml-3 h-6 w-6 inline" />}
           </Button>
         </form>
 
-        <div className="text-center space-y-4">
-          <p className="text-sm text-gray-500">
+        <div className="text-center space-y-6 pt-4 border-t border-border/50">
+          <p className="text-sm font-medium text-muted-foreground">
             Didn't receive the code?
           </p>
           <button 
             type="button" 
             onClick={() => resendMutation.mutate()}
             disabled={resendMutation.isPending}
-            className="flex items-center gap-2 mx-auto text-sunset-orange font-bold hover:underline disabled:opacity-50"
+            className="flex items-center gap-2 mx-auto text-sunset-orange font-black text-sm uppercase tracking-widest hover:underline disabled:opacity-50 transition-all active:scale-95"
           >
             <RefreshCw className={`h-4 w-4 ${resendMutation.isPending ? 'animate-spin' : ''}`} />
             Resend Code

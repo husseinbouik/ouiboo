@@ -14,11 +14,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" suppressHydrationWarning>
+      <body className="antialiased selection:bg-sunset-orange selection:text-white" suppressHydrationWarning>
         <Providers>
           <Navbar />
-          <main className="pt-20">
+          <main className="min-h-screen">
             {children}
           </main>
         </Providers>

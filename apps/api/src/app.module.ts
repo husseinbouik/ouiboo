@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { AuthModule } from './auth/auth.module';
 import { TripsModule } from './trips/trips.module';
 import { UsersModule } from './users/users.module';
@@ -12,6 +14,10 @@ import { EmailModule } from './email/email.module';
 
 @Module({
     imports: [
+        ServeStaticModule.forRoot({
+            rootPath: join(process.cwd(), 'uploads'),
+            serveRoot: '/uploads',
+        }),
         DatabaseModule,
         AuthModule,
         TripsModule,

@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { AuthProvider } from './AuthContext';
 
 import { ThemeProvider } from 'next-themes';
+import '@/lib/i18n';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
     const [queryClient] = useState(() => new QueryClient());

@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Request, Query, Patch, Delete } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { TripsService } from './trips.service';
-import { CreateTripTemplateDto, CreateTripSessionDto } from './dto/create-trip.dto';
+import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripTemplateDto } from './dto/create-trip.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -23,8 +23,8 @@ export class TripsController {
 
     @Get()
     @ApiOperation({ summary: 'Get all trip templates' })
-    findAll(@Query('featured') featured?: string) {
-        return this.tripsService.findAllTemplates(featured === 'true');
+    findAll(@Query('featured') featured?: string, @Query('status') status?: string) {
+        return this.tripsService.findAllTemplates(featured === 'true', status);
     }
 
     @Get(':id')
@@ -46,5 +46,23 @@ export class TripsController {
     @ApiOperation({ summary: 'Get all sessions for a trip template' })
     findSessions(@Param('id') id: string) {
         return this.tripsService.findSessionsByTemplate(id);
+    }
+
+    @Patch(':id')
+    @ApiOperation({ summary: 'Update a trip template' })
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.Agency)
+    update(@Param('id') id: string, @Body() updateTripDto: UpdateTripTemplateDto) {
+        return this.tripsService.updateTemplate(id, updateTripDto);
+    }
+
+    @Delete(':id')
+    @ApiOperation({ summary: 'Delete a trip template' })
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.Agency)
+    remove(@Param('id') id: string) {
+        return this.tripsService.deleteTemplate(id);
     }
 }

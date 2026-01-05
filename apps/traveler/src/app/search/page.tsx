@@ -3,135 +3,189 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { Search, MapPin, Calendar, Star, SlidersHorizontal, ChevronDown } from 'lucide-react';
-import { Button, Input, Card, CardContent } from '@ouiboo/ui';
+import { 
+  Search, MapPin, Calendar, Star, SlidersHorizontal, ChevronDown, 
+  Map as MapIcon, Filter, Layers, Navigation, ArrowRight, Heart,
+  Compass, Zap, Mountain, Camera, Coffee
+} from 'lucide-react';
+import { Button, Input, Card, CardContent, Badge } from '@ouiboo/ui';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@ouiboo/ui/utils';
+import { TripCard } from "@/components/TripCard";
 
 export default function SearchPage() {
   const [filters, setFilters] = useState({
     category: '',
     duration: '',
-    priceMax: ''
+    priceMax: '',
+    searchQuery: ''
   });
+
+  const [activeFiltersCount, setActiveFiltersCount] = useState(0);
 
   const { data: trips, isLoading } = useQuery({
     queryKey: ['trips', filters],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (filters.category) params.append('category', filters.category);
-      // Backend doesn't support these yet, but we'll prepare the UI
-      const response = await apiClient.get(`/trips?${params.toString()}`);
+      if (filters.searchQuery) params.append('q', filters.searchQuery);
+      const response = await apiClient.get(`/trips?status=ACTIVE&${params.toString()}`);
       return response.data;
     }
   });
 
+  const updateFilter = (key: string, value: string) => {
+    const newFilters = { ...filters, [key]: value };
+    setFilters(newFilters);
+    
+    // Calculate active filters (excluding searchQuery)
+    const count = Object.entries(newFilters).filter(([k, v]) => k !== 'searchQuery' && v !== '').length;
+    setActiveFiltersCount(count);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-20">
-      <div className="max-w-7xl mx-auto px-4">
-        {/* Header & Search */}
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-12 flex flex-col lg:flex-row gap-6 items-center">
-          <div className="flex-1 w-full relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input 
-              type="text" 
-              placeholder="Search by destination or experience..." 
-              className="w-full h-14 pl-12 pr-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-sunset-orange/20 outline-none"
-            />
-          </div>
-          
-          <div className="flex flex-wrap gap-4 w-full lg:w-auto">
-             <div className="relative min-w-[160px]">
-                <select 
-                  className="w-full h-14 pl-4 pr-10 bg-gray-50 border-none rounded-2xl outline-none appearance-none font-semibold text-gray-700"
-                  onChange={(e) => setFilters({...filters, category: e.target.value})}
-                >
-                   <option value="">Any Category</option>
-                   <option value="Adventure">Adventure</option>
-                   <option value="Cultural">Cultural</option>
-                   <option value="Luxury">Luxury</option>
-                   <option value="Budget">Budget</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-             </div>
-             
-             <Button className="h-14 px-8 bg-sunset-orange hover:bg-orange-600 border-none">
-                <SlidersHorizontal className="h-5 w-5 mr-2" /> Filters
-             </Button>
-          </div>
+    <div className="min-h-screen bg-background pb-32">
+      {/* Search Header - Immersive */}
+      <div className="relative bg-slate-950 pt-32 pb-20 px-6 overflow-hidden">
+        <div className="absolute inset-0 opacity-20 pointer-events-none">
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-sunset-orange/20 blur-[150px] rounded-full" />
+            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-ocean/10 blur-[150px] rounded-full" />
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Main Content */}
-          <div className="flex-1 space-y-6">
-            <div className="flex justify-between items-center mb-6">
-               <h1 className="text-2xl font-bold text-deep-blue">
-                 {isLoading ? 'Searching...' : `${trips?.length || 0} adventures found`}
-               </h1>
+        <div className="max-w-7xl mx-auto relative z-10">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-12"
+          >
+            <Badge className="bg-white/10 text-white border-white/20 px-4 py-1.5 rounded-full mb-6 text-[10px] font-black uppercase tracking-[0.3em]">
+                Directory
+            </Badge>
+            <h1 className="text-5xl md:text-7xl font-black text-white font-display tracking-tighter mb-4">
+              Find your next <span className="text-sunset-orange">Story</span>
+            </h1>
+          </motion.div>
+
+          {/* Integrated Search Bar */}
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="max-w-4xl mx-auto"
+          >
+            <div className="bg-white/5 backdrop-blur-3xl p-2 rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-col md:flex-row gap-2">
+                <div className="flex-1 relative group">
+                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40 group-focus-within:text-sunset-orange transition-colors" />
+                    <input 
+                        type="text" 
+                        placeholder="Destination, activity, or keyword..." 
+                        className="w-full h-16 pl-16 pr-6 bg-transparent border-none rounded-3xl focus:ring-0 outline-none text-white font-bold text-lg placeholder:text-white/20"
+                        value={filters.searchQuery}
+                        onChange={(e) => updateFilter('searchQuery', e.target.value)}
+                    />
+                </div>
+                <div className="hidden md:block w-px h-10 self-center bg-white/10" />
+                <div className="px-4 flex items-center gap-4">
+                    <button className="h-16 px-8 rounded-[1.5rem] bg-white/5 border border-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all font-bold flex items-center gap-3">
+                        <Calendar className="h-5 w-5" />
+                        <span>Anytime</span>
+                    </button>
+                    <Button className="h-16 px-10 rounded-[1.5rem] bg-sunset-orange hover:bg-orange-600 text-white font-black text-lg shadow-xl shadow-orange-900/40 border-none transition-all hover:scale-105 active:scale-95">
+                        Search
+                    </Button>
+                </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto px-6 -mt-10 relative z-20">
+        <div className="flex flex-col lg:flex-row gap-10">
+          
+          {/* Filters Sidebar */}
+          <aside className="lg:w-80 shrink-0 space-y-8">
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-xl border border-border sticky top-28">
+                <div className="flex items-center justify-between mb-10">
+                    <h3 className="text-xl font-black text-foreground font-display tracking-tight flex items-center gap-3">
+                        <Filter className="h-5 w-5 text-sunset-orange" />
+                        Filters
+                    </h3>
+                    {activeFiltersCount > 0 && (
+                        <button 
+                            onClick={() => setFilters({ category: '', duration: '', priceMax: '', searchQuery: filters.searchQuery })}
+                            className="text-[10px] font-black text-muted-foreground hover:text-red-500 uppercase tracking-widest transition-colors"
+                        >
+                            Reset
+                        </button>
+                    )}
+                </div>
+
+                <div className="space-y-10">
+                    {/* Category Filter */}
+                    <div className="space-y-5">
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Travel Styles</p>
+                        <div className="grid grid-cols-1 gap-2">
+                            {['Adventure', 'Cultural', 'Luxury', 'Budget', 'Nature'].map(cat => (
+                                <button 
+                                    key={cat}
+                                    onClick={() => updateFilter('category', filters.category === cat ? '' : cat)}
+                                    className={cn(
+                                        "flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-bold transition-all border",
+                                        filters.category === cat 
+                                            ? "bg-sunset-orange/10 border-sunset-orange text-sunset-orange shadow-sm" 
+                                            : "bg-muted/30 border-transparent text-muted-foreground hover:text-foreground hover:bg-muted"
+                                    )}
+                                >
+                                    {cat}
+                                    {filters.category === cat && <Zap className="h-4 w-4" />}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+          </aside>
+
+          {/* Results Area */}
+          <main className="flex-1 space-y-12">
+            <div className="flex flex-col sm:flex-row justify-between items-center bg-white dark:bg-slate-900 p-6 rounded-[2rem] shadow-sm border border-border">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-[1.25rem] bg-muted flex items-center justify-center">
+                        <Navigation className="h-6 w-6 text-sunset-orange" />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-black text-foreground font-display leading-none">
+                            {isLoading ? 'Scanning Atlas...' : `${trips?.length || 0} Trips Available`}
+                        </h2>
+                        <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mt-1">Found in North Africa</p>
+                    </div>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {isLoading ? (
-                [1,2,3,4].map(i => <div key={i} className="h-96 bg-gray-200 rounded-3xl animate-pulse"></div>)
-              ) : (
-                trips?.map((trip: any) => (
-                  <Link key={trip.id} href={`/trip/${trip.id}`}>
-                    <Card className="group border-none shadow-sm hover:shadow-xl transition-all duration-300 rounded-3xl overflow-hidden bg-white flex flex-col h-full">
-                       <div className="relative h-60 overflow-hidden">
-                          <img 
-                            src={trip.images?.[0] || 'https://images.unsplash.com/photo-1489749798305-4fea3ae63d43'} 
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                            alt=""
-                          />
-                          <div className="absolute top-4 left-4">
-                             <span className="px-3 py-1.5 bg-white/95 backdrop-blur-sm text-deep-blue text-xs font-black rounded-xl uppercase">
-                               {trip.category}
-                             </span>
-                          </div>
-                       </div>
-                       <CardContent className="p-6 flex-1 flex flex-col">
-                          <div className="flex justify-between items-start mb-3">
-                             <h3 className="text-xl font-bold text-deep-blue line-clamp-2 leading-tight flex-1">{trip.title}</h3>
-                             <div className="flex items-center bg-sunset-orange/10 text-sunset-orange px-2 py-1 rounded-lg ml-2">
-                                <Star className="h-3 w-3 fill-current" />
-                                <span className="text-xs font-bold ml-1">4.9</span>
-                             </div>
-                          </div>
-                          
-                          <div className="flex items-center text-gray-500 text-sm mb-6">
-                             <MapPin className="h-4 w-4 mr-1 text-sunset-orange" />
-                             <span>{trip.startLocation}</span>
-                          </div>
-
-                          <div className="mt-auto pt-6 border-t border-gray-50 flex items-center justify-between">
-                             <div className="flex gap-4">
-                                <div className="flex items-center text-xs text-gray-500 font-medium">
-                                   <Calendar className="h-4 w-4 mr-1.5 text-gray-400" />
-                                   <span>{trip.durationDays}D/{trip.durationNights}N</span>
-                                </div>
-                             </div>
-                             <div className="text-right">
-                                <span className="text-2xl font-black text-deep-blue">{trip.sessions?.[0]?.price || '---'} MAD</span>
-                             </div>
-                          </div>
-                       </CardContent>
-                    </Card>
-                  </Link>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+               {isLoading ? (
+                [1,2,3,4].map(i => (
+                    <div key={i} className="h-[480px] bg-muted/20 rounded-[3rem] animate-pulse relative overflow-hidden ring-1 ring-border" />
                 ))
+              ) : (
+                <AnimatePresence mode="popLayout">
+                    {trips?.map((trip: any, idx: number) => (
+                      <motion.div 
+                          key={trip.id} 
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: idx * 0.05 }}
+                      >
+                          <TripCard trip={trip} />
+                      </motion.div>
+                    ))}
+                </AnimatePresence>
               )}
             </div>
-          </div>
-          
-          {/* Map Preview (Optional) */}
-          <div className="hidden lg:block w-[400px]">
-             <div className="sticky top-24 h-[calc(100vh-120px)] bg-gray-200 rounded-3xl overflow-hidden border-4 border-white shadow-2xl">
-                <div className="absolute inset-0 flex items-center justify-center text-gray-400 flex-col gap-4">
-                   <div className="w-16 h-16 bg-white/50 rounded-full flex items-center justify-center animate-bounce">
-                      <MapPin className="h-8 w-8 text-sunset-orange" />
-                   </div>
-                   <p className="font-bold text-sm uppercase tracking-widest">Interactive Map coming soon</p>
-                </div>
-             </div>
-          </div>
+          </main>
         </div>
       </div>
     </div>

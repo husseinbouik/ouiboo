@@ -1,17 +1,48 @@
 {
+    "nav": {
+        "explore": "Explorer",
+        "featured": "En vedette",
+        "login": "Connexion",
+        "signup": "S'inscrire",
+        "profile": "Profil",
+        "bookings": "Mes réservations",
+        "wishlist": "Favoris",
+        "logout": "Déconnexion"
+    },
+    "hero": {
+        "title": "Découvrez les",
+        "accent": "Trésors du Maroc",
+        "subtitle": "Réservez des aventures uniques conçues par des experts locaux. Vivez la culture marocaine authentique.",
+        "where": "Où allez-vous ?",
+        "when": "Quand ?",
+        "search": "Rechercher"
+    },
+    "featured": {
+        "title": "Choix de la rédaction",
+        "subtitle": "Des aventures spécialement sélectionnées pour des souvenirs inoubliables.",
+        "viewAll": "Voir tous les voyages",
+        "from": "À partir de"
+    },
+    "categories": {
+        "title": "Trouvez votre type d'aventure",
+        "adventure": "Aventure",
+        "cultural": "Culturel",
+        "luxury": "Luxe",
+        "budget": "Économique"
+    },
     "login": {
         "title": "Bon retour",
-        "subtitle": "Veuillez entrer vos informations pour vous connecter.",
+        "subtitle": "Veuillez entrer vos coordonnées pour vous connecter.",
         "email": "Email",
         "emailPlaceholder": "Entrez votre email",
         "password": "Mot de passe",
         "passwordPlaceholder": "••••••••",
-        "forgotPassword": "Mot de passe oublié?",
+        "forgotPassword": "Mot de passe oublié ?",
         "signIn": "Se connecter",
         "orContinue": "Ou continuer avec",
         "google": "Google",
         "facebook": "Facebook",
-        "noAccount": "Pas de compte?",
+        "noAccount": "Vous n'avez pas de compte ?",
         "signUpLink": "Inscrivez-vous gratuitement"
     },
     "signup": {
@@ -22,12 +53,12 @@
         "email": "Email",
         "emailPlaceholder": "Entrez votre email",
         "password": "Mot de passe",
-        "passwordPlaceholder": "Créer un mot de passe",
+        "passwordPlaceholder": "Créez un mot de passe",
         "createAccount": "Créer un compte",
-        "orSignUp": "Ou s'inscrire avec",
+        "orSignUp": "Ou inscrivez-vous avec",
         "google": "Google",
         "facebook": "Facebook",
-        "hasAccount": "Vous avez déjà un compte?",
+        "hasAccount": "Vous avez déjà un compte ?",
         "logInLink": "Se connecter"
     }
 }

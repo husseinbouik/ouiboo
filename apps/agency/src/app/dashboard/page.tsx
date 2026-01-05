@@ -2,150 +2,216 @@
 
 import React from 'react';
 import { 
+  Card, 
+  CardContent, 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow,
+  Badge,
+  Button
+} from '@ouiboo/ui';
+import { 
   TrendingUp, 
-  MapPin, 
-  Users, 
-  CreditCard,
-  ArrowRight
+  Clock, 
+  ArrowUpRight, 
+  ArrowDownRight, 
+  Wallet,
+  Calendar,
+  Eye,
+  CheckCircle2,
+  AlertCircle,
+  ChevronRight
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@ouiboo/ui';
+import { motion } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
-import { useAuth } from '@/components/AuthContext';
-import { useTranslation } from 'react-i18next';
+
+const fadeInUp = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5 }
+};
+
+const stats = [
+  { 
+    label: 'Available Balance', 
+    value: '12,450.00', 
+    currency: 'MAD', 
+    icon: Wallet, 
+    color: 'bg-emerald-500',
+    trend: '+12.5%',
+    trendUp: true
+  },
+  { 
+    label: 'Pending Escrow', 
+    value: '4,800.00', 
+    currency: 'MAD', 
+    icon: Clock, 
+    color: 'bg-amber-500',
+    trend: '3 bookings',
+    trendUp: null
+  },
+  { 
+    label: 'Total Withdrawals', 
+    value: '45,200.00', 
+    currency: 'MAD', 
+    icon: TrendingUp, 
+    color: 'bg-slate-500',
+    trend: 'Last: 2 days ago',
+    trendUp: false
+  },
+];
+
+const mockBookings = [
+  { id: '1', trip: 'Sahara Starry Night', customer: 'Hussein B.', date: '2024-05-12', amount: '1,200.00', status: 'Confirmed' },
+  { id: '2', trip: 'Atlas Mountain Hike', customer: 'Sarah M.', date: '2024-05-14', amount: '850.00', status: 'Pending Verification' },
+  { id: '3', trip: 'Chefchaouen Day Trip', customer: 'Anas K.', date: '2024-05-15', amount: '450.00', status: 'Pending Verification' },
+  { id: '4', trip: 'Dakhla Surf Camp', customer: 'Elena R.', date: '2024-05-16', amount: '3,500.00', status: 'Confirmed' },
+];
 
 export default function AgencyDashboard() {
-  const { user } = useAuth();
-  const { t } = useTranslation();
-  
-  const { data: statsData, isLoading: statsLoading } = useQuery({
-    queryKey: ['agency-stats'],
-    queryFn: async () => {
-      const response = await apiClient.get('/agency/stats');
-      return response.data;
-    }
-  });
-
-  const { data: recentTrips } = useQuery({
-    queryKey: ['agency-trips'],
-    queryFn: async () => {
-      const response = await apiClient.get('/agency/trips');
-      return response.data;
-    }
-  });
-
-  const dashboardStats = [
-    { name: t('dashboard.stats.revenue'), value: `${statsData?.revenue?.toLocaleString() || 0} MAD`, icon: CreditCard, change: '+0%', color: 'text-green-600' },
-    { name: t('dashboard.stats.activeTrips'), value: statsData?.activeTrips || 0, icon: MapPin, change: '+0', color: 'text-blue-600' },
-    { name: t('dashboard.stats.totalBookings'), value: statsData?.totalBookings || 0, icon: TrendingUp, change: '+0%', color: 'text-deep-blue dark:text-blue-400' },
-    { name: t('dashboard.stats.newCustomers'), value: statsData?.totalCustomers || 0, icon: Users, change: '+0', color: 'text-sunset-orange' },
-  ];
-
-  if (statsLoading) {
-    return <div className="flex items-center justify-center min-h-[400px]">Loading stats...</div>;
-  }
-
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-3xl font-bold text-deep-blue dark:text-gray-100">
-          {t('dashboard.greeting', { name: user?.name || 'Partner' })}
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">Here's what's happening with your agency today.</p>
+    <div className="space-y-12 max-w-7xl mx-auto">
+      {/* Welcome Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <div>
+          <h1 className="text-4xl font-black font-display tracking-tight">Bonjour, Sunset Travels</h1>
+          <p className="text-muted-foreground font-medium mt-1">Here's what's happening with your agency today.</p>
+        </div>
+        <div className="flex gap-3">
+            <Button variant="outline" className="rounded-xl font-bold h-12 px-6 gap-2">
+                <Calendar className="h-4 w-4" /> This Month
+            </Button>
+            <Button className="rounded-xl font-black h-12 px-8 bg-primary">Withdraw Funds</Button>
+        </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {dashboardStats.map((stat) => (
-          <Card key={stat.name} className="border-none shadow-sm hover:shadow-md transition-shadow dark:bg-slate-900 border dark:border-slate-800">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className={stat.color}>
-                  <stat.icon className="h-6 w-6" />
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {stats.map((stat, i) => (
+          <motion.div 
+            key={stat.label} 
+            variants={fadeInUp} 
+            initial="initial" 
+            animate="animate" 
+            transition={{ delay: i * 0.1 }}
+          >
+            <Card className="border-none shadow-xl shadow-black/5 rounded-[2.5rem] overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+              <CardContent className="p-8">
+                <div className="flex justify-between items-start mb-6">
+                  <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg", stat.color)}>
+                    <stat.icon className="h-7 w-7" />
+                  </div>
+                  {stat.trendUp !== null && (
+                    <div className={cn(
+                        "flex items-center gap-1 text-xs font-black rounded-full px-3 py-1",
+                        stat.trendUp ? "text-emerald-600 bg-emerald-50" : "text-slate-600 bg-slate-50"
+                    )}>
+                        {stat.trendUp ? <ArrowUpRight className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                        {stat.trend}
+                    </div>
+                  )}
+                  {stat.trendUp === null && (
+                     <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                        {stat.trend}
+                     </div>
+                  )}
                 </div>
-                <span className="text-xs font-semibold text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">{stat.change}</span>
-              </div>
-              <div className="mt-4">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{stat.name}</p>
-                <h3 className="text-2xl font-bold text-deep-blue dark:text-gray-100">{stat.value}</h3>
-              </div>
-            </CardContent>
-          </Card>
+                <div>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-1">{stat.label}</p>
+                  <h3 className="text-4xl font-black font-display tracking-tighter">
+                    {stat.value} <span className="text-sm font-bold text-muted-foreground">{stat.currency}</span>
+                  </h3>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Trips */}
-        <Card className="lg:col-span-2 border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-xl">Your Trips</CardTitle>
-              <CardDescription className="dark:text-gray-400">{t('dashboard.tripsSubtitle')}</CardDescription>
-            </div>
-            <Link href="/dashboard/trips" className="text-sm font-semibold text-sunset-orange hover:underline flex items-center gap-1">
-              {t('dashboard.viewAll')} <ArrowRight className="h-4 w-4" />
-            </Link>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentTrips?.slice(0, 3).map((trip: any) => (
-                <div key={trip.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors border border-transparent dark:border-slate-700/50">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-200 dark:bg-slate-700 rounded-lg overflow-hidden">
-                      <img 
-                        src={trip.images?.[0] || `https://ui-avatars.com/api/?name=${trip.title}&background=1E3A8A&color=fff`} 
-                        alt={trip.title} 
-                        className="w-full h-full object-cover" 
-                      />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-deep-blue dark:text-gray-100">{trip.title}</h4>
-                      <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                        <span>{trip.sessions?.[0]?.price?.toLocaleString() || 0} MAD</span>
-                        <span className="w-1 h-1 bg-gray-300 dark:bg-slate-600 rounded-full"></span>
-                        <span>{trip.sessions?.reduce((acc: number, s: any) => acc + (s._count?.bookings || 0), 0)} bookings</span>
-                      </div>
-                    </div>
-                  </div>
-                  <span className={cn(
-                    "text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider",
-                    trip.status === 'ACTIVE' ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-400"
-                  )}>
-                    {trip.status}
-                  </span>
-                </div>
-              ))}
-              {(!recentTrips || recentTrips.length === 0) && (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400 italic">
-                  No trips created yet.
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Recent Activity Table */}
+      <div className="space-y-6">
+        <div className="flex justify-between items-center bg-card p-6 rounded-[2rem] border border-border/50 shadow-sm">
+           <div className="flex items-center gap-4">
+              <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center"><AlertCircle className="h-5 w-5 text-primary" /></div>
+              <h2 className="text-2xl font-black font-display tracking-tight">Recent Bookings</h2>
+           </div>
+           <Button variant="ghost" className="font-bold text-primary gap-2 rounded-xl group">
+             View All <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+           </Button>
+        </div>
 
-        {/* Quick Actions / Tips */}
-        <Card className="border-none bg-deep-blue dark:bg-blue-900 text-white shadow-lg overflow-hidden relative">
-          <CardHeader>
-            <CardTitle className="text-xl">Scale your reach</CardTitle>
-            <CardDescription className="text-blue-100/70">Tips to get more bookings</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 relative z-10">
-            <div className="space-y-2">
-              <p className="text-sm leading-relaxed">Agencies with professional photos get <span className="font-bold text-sunset-orange">3x more</span> bookings.</p>
-              <button className="text-sm font-semibold text-white underline hover:text-sunset-orange transition-colors">Upload Photos</button>
-            </div>
-            <div className="pt-4 border-t border-white/10">
-              <Link href="/dashboard/trips/create" className="block w-full py-3 bg-sunset-orange text-white text-center rounded-xl font-bold shadow-lg shadow-orange-900/40 hover:bg-orange-600 transition-all">
-                {t('sidebar.createNew')}
-              </Link>
-            </div>
+        <Card className="border-none shadow-xl shadow-black/5 rounded-[2.5rem] overflow-hidden">
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow className="hover:bg-transparent border-none h-16">
+                  <TableHead className="pl-10 font-bold uppercase text-[10px] tracking-widest">Trip</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest">Customer</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest">Date</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-right">Amount</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest text-right">Status</TableHead>
+                  <TableHead className="pr-10 text-right font-bold uppercase text-[10px] tracking-widest">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {mockBookings.map((booking) => (
+                  <TableRow key={booking.id} className="h-24 hover:bg-muted/20 border-border/30">
+                    <TableCell className="pl-10">
+                      <div>
+                        <p className="font-black text-foreground text-md leading-none mb-1">{booking.trip}</p>
+                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">Booking ID: #{booking.id}B</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-bold text-foreground/80">{booking.customer}</TableCell>
+                    <TableCell>
+                        <p className="text-sm font-medium text-muted-foreground">{booking.date}</p>
+                    </TableCell>
+                    <TableCell className="text-right">
+                        <span className="font-black text-foreground">{booking.amount}</span>
+                        <span className="text-[10px] ml-1 font-bold text-muted-foreground uppercase">MAD</span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Badge 
+                        className={cn(
+                          "rounded-full px-4 py-1.5 font-black uppercase text-[9px] tracking-widest border-none shadow-sm",
+                          booking.status === 'Confirmed' 
+                            ? "bg-emerald-500/10 text-emerald-600" 
+                            : "bg-amber-500/10 text-amber-600"
+                        )}
+                      >
+                        {booking.status === 'Confirmed' ? <CheckCircle2 className="h-3 w-3 mr-1.5 inline" /> : <Clock className="h-3 w-3 mr-1.5 inline" />}
+                        {booking.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="pr-10 text-right">
+                      <Button variant="ghost" size="icon" className="rounded-xl bg-muted/50 hover:bg-primary hover:text-white transition-all">
+                        <Eye className="h-5 w-5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
-          {/* Decorative element */}
-          <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-sunset-orange/20 rounded-full blur-3xl"></div>
         </Card>
+      </div>
+
+      {/* Quick Action Banner */}
+      <div className="bg-primary rounded-[3rem] p-12 relative overflow-hidden flex flex-col md:flex-row items-center justify-between text-white shadow-2xl shadow-primary/20">
+         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
+         <div className="relative z-10 space-y-4 max-w-xl text-center md:text-left">
+            <h3 className="text-3xl font-black font-display tracking-tight leading-none">Ready to expand your reach?</h3>
+            <p className="text-white/80 font-medium text-lg leading-relaxed">Publish more trips and get verified to access higher withdrawal limits and premium placements.</p>
+         </div>
+         <Link href="/trips/new" className="relative z-10 mt-8 md:mt-0">
+            <Button className="h-20 px-12 rounded-[2rem] bg-white text-primary hover:bg-slate-100 font-black text-xl border-none shadow-2xl transition-all hover:scale-105 active:scale-95">
+                Create New Trip
+            </Button>
+         </Link>
       </div>
     </div>
   );

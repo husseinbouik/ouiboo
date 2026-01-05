@@ -1,4 +1,35 @@
 {
+    "nav": {
+        "explore": "Explore",
+        "featured": "Featured",
+        "login": "Log in",
+        "signup": "Sign up",
+        "profile": "Profile",
+        "bookings": "My Bookings",
+        "wishlist": "Wishlist",
+        "logout": "Sign Out"
+    },
+    "hero": {
+        "title": "Discover Morocco's",
+        "accent": "Hidden Gems",
+        "subtitle": "Book unique adventures curated by local experts. Experience authentic Moroccan culture like never before.",
+        "where": "Where to?",
+        "when": "When?",
+        "search": "Search"
+    },
+    "featured": {
+        "title": "Editor's Choice",
+        "subtitle": "Specially curated adventures for unforgettable memories.",
+        "viewAll": "View all trips",
+        "from": "From"
+    },
+    "categories": {
+        "title": "Find Your Adventure Type",
+        "adventure": "Adventure",
+        "cultural": "Cultural",
+        "luxury": "Luxury",
+        "budget": "Budget"
+    },
     "login": {
         "title": "Welcome back",
         "subtitle": "Please enter your details to sign in.",

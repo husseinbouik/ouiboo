@@ -15,12 +15,17 @@ import {
 import { Button, Card, CardContent, Input } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useTranslation } from 'react-i18next';
 
+import { DeleteConfirmation } from '@/components/DeleteConfirmation';
+
 export default function AgencyTripsPage() {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [deleteTripId, setDeleteTripId] = React.useState<string | null>(null);
+  
   const { data: trips, isLoading } = useQuery({
     queryKey: ['agency-trips'],
     queryFn: async () => {
@@ -28,6 +33,34 @@ export default function AgencyTripsPage() {
       return response.data;
     }
   });
+
+  const deleteTripMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/trips/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agency-trips'] });
+      setDeleteTripId(null);
+    }
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string, status: string }) => {
+      await apiClient.patch(`/trips/${id}`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agency-trips'] });
+    }
+  });
+
+  const handleDelete = (id: string) => {
+    setDeleteTripId(id);
+  };
+
+  const handleToggleStatus = (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'ACTIVE' ? 'DRAFT' : 'ACTIVE';
+    updateStatusMutation.mutate({ id, status: newStatus });
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -87,18 +120,27 @@ export default function AgencyTripsPage() {
                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
                  />
                  <div className="absolute top-4 right-4">
-                    <span className={cn(
-                      "text-[10px] px-2.5 py-1.5 rounded-lg font-bold shadow-sm backdrop-blur-md uppercase tracking-wider",
-                      trip.status === 'ACTIVE' ? "bg-green-500/90 text-white" : "bg-slate-500/90 text-white"
-                    )}>
-                      {trip.status}
-                    </span>
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleToggleStatus(trip.id, trip.status);
+                      }}
+                      disabled={updateStatusMutation.isPending}
+                      className={cn(
+                        "text-[10px] px-2.5 py-1.5 rounded-lg font-bold shadow-sm backdrop-blur-md uppercase tracking-wider transition-all hover:scale-105 active:scale-95",
+                        trip.status === 'ACTIVE' ? "bg-green-500/90 text-white" : "bg-slate-500/90 text-white"
+                      )}
+                    >
+                      {updateStatusMutation.isPending && updateStatusMutation.variables?.id === trip.id ? '...' : trip.status}
+                    </button>
                  </div>
               </div>
               <CardContent className="p-6 flex-1 flex flex-col">
                 <div className="mb-2">
                    <span className="text-[10px] font-bold text-sunset-orange dark:text-orange-400 uppercase tracking-widest">{trip.category}</span>
-                   <h3 className="text-xl font-bold text-deep-blue dark:text-gray-100 mt-1 line-clamp-1">{trip.title}</h3>
+                   <Link href={`/dashboard/trips/${trip.id}`} className="block">
+                    <h3 className="text-xl font-bold text-deep-blue dark:text-gray-100 mt-1 line-clamp-1 hover:text-sunset-orange transition-colors">{trip.title}</h3>
+                   </Link>
                 </div>
                 
                 <div className="flex items-center gap-4 my-4 py-4 border-y border-gray-50 dark:border-slate-800 text-gray-500 dark:text-gray-400 text-sm">
@@ -118,10 +160,16 @@ export default function AgencyTripsPage() {
                       <p className="text-lg font-bold text-deep-blue dark:text-blue-400">{trip.sessions?.[0]?.price?.toLocaleString() || 0} MAD</p>
                    </div>
                    <div className="flex gap-1">
-                      <button className="p-2 text-gray-400 hover:text-deep-blue dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
-                         <Edit className="h-5 w-5" />
-                      </button>
-                      <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors">
+                      <Link href={`/dashboard/trips/${trip.id}`}>
+                        <button className="p-2 text-gray-400 hover:text-deep-blue dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                           <Edit className="h-5 w-5" />
+                        </button>
+                      </Link>
+                      <button 
+                        onClick={() => handleDelete(trip.id)}
+                        disabled={deleteTripMutation.isPending}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors disabled:opacity-50"
+                      >
                          <Trash className="h-5 w-5" />
                       </button>
                    </div>
@@ -144,6 +192,15 @@ export default function AgencyTripsPage() {
            </div>
         </Link>
       </div>
+
+      <DeleteConfirmation 
+        isOpen={!!deleteTripId}
+        onClose={() => setDeleteTripId(null)}
+        onConfirm={() => deleteTripId && deleteTripMutation.mutate(deleteTripId)}
+        isLoading={deleteTripMutation.isPending}
+        title="Delete Trip Template"
+        description="Are you sure you want to delete this trip? All associated sessions and bookings will be permanently removed. This action cannot be undone."
+      />
     </div>
   );
 }

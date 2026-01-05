@@ -54,21 +54,21 @@ export declare const TripTemplateSchema: z.ZodObject<{
     agencyId: z.ZodString;
     title: z.ZodString;
     description: z.ZodString;
-    category: z.ZodEnum<["Adventure", "Cultural", "Luxury", "Budget"]>;
+    category: z.ZodEnum<["ADVENTURE", "CULTURAL", "LUXURY", "BUDGET"]>;
     startLocation: z.ZodString;
     durationDays: z.ZodNumber;
     durationNights: z.ZodNumber;
     inclusions: z.ZodArray<z.ZodString, "many">;
     images: z.ZodArray<z.ZodString, "many">;
-    status: z.ZodEnum<["Active", "Draft", "Archived"]>;
+    status: z.ZodEnum<["ACTIVE", "DRAFT", "ARCHIVED"]>;
     createdAt: z.ZodString;
 }, "strip", z.ZodTypeAny, {
     id: string;
     title: string;
     description: string;
-    status: "Active" | "Draft" | "Archived";
+    status: "ACTIVE" | "DRAFT" | "ARCHIVED";
     agencyId: string;
-    category: "Adventure" | "Cultural" | "Luxury" | "Budget";
+    category: "ADVENTURE" | "CULTURAL" | "LUXURY" | "BUDGET";
     startLocation: string;
     durationDays: number;
     durationNights: number;
@@ -79,9 +79,9 @@ export declare const TripTemplateSchema: z.ZodObject<{
     id: string;
     title: string;
     description: string;
-    status: "Active" | "Draft" | "Archived";
+    status: "ACTIVE" | "DRAFT" | "ARCHIVED";
     agencyId: string;
-    category: "Adventure" | "Cultural" | "Luxury" | "Budget";
+    category: "ADVENTURE" | "CULTURAL" | "LUXURY" | "BUDGET";
     startLocation: string;
     durationDays: number;
     durationNights: number;
@@ -94,19 +94,19 @@ export declare const CreateTripTemplateSchema: z.ZodObject<Omit<{
     agencyId: z.ZodString;
     title: z.ZodString;
     description: z.ZodString;
-    category: z.ZodEnum<["Adventure", "Cultural", "Luxury", "Budget"]>;
+    category: z.ZodEnum<["ADVENTURE", "CULTURAL", "LUXURY", "BUDGET"]>;
     startLocation: z.ZodString;
     durationDays: z.ZodNumber;
     durationNights: z.ZodNumber;
     inclusions: z.ZodArray<z.ZodString, "many">;
     images: z.ZodArray<z.ZodString, "many">;
-    status: z.ZodEnum<["Active", "Draft", "Archived"]>;
+    status: z.ZodEnum<["ACTIVE", "DRAFT", "ARCHIVED"]>;
     createdAt: z.ZodString;
 }, "id" | "agencyId" | "createdAt">, "strip", z.ZodTypeAny, {
     title: string;
     description: string;
-    status: "Active" | "Draft" | "Archived";
-    category: "Adventure" | "Cultural" | "Luxury" | "Budget";
+    status: "ACTIVE" | "DRAFT" | "ARCHIVED";
+    category: "ADVENTURE" | "CULTURAL" | "LUXURY" | "BUDGET";
     startLocation: string;
     durationDays: number;
     durationNights: number;
@@ -115,8 +115,8 @@ export declare const CreateTripTemplateSchema: z.ZodObject<Omit<{
 }, {
     title: string;
     description: string;
-    status: "Active" | "Draft" | "Archived";
-    category: "Adventure" | "Cultural" | "Luxury" | "Budget";
+    status: "ACTIVE" | "DRAFT" | "ARCHIVED";
+    category: "ADVENTURE" | "CULTURAL" | "LUXURY" | "BUDGET";
     startLocation: string;
     durationDays: number;
     durationNights: number;
