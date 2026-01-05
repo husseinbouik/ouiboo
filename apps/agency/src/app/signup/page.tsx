@@ -24,11 +24,13 @@ export default function AgencySignupPage() {
     }
   });
 
+  const [mounted, setMounted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
+    setMounted(true);
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
-
-  const [error, setError] = useState<string | null>(null);
 
   const signupMutation = useMutation({
     mutationFn: async (data: RegisterInput) => {
@@ -57,6 +59,8 @@ export default function AgencySignupPage() {
   if (Object.keys(errors).length > 0) {
     console.log('Form validation errors:', errors);
   }
+
+  if (!mounted) return <div className="min-h-screen bg-white" />;
 
   return (
     <div className="min-h-screen flex bg-white">

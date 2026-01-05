@@ -21,11 +21,13 @@ export default function AgencyLoginPage() {
     resolver: zodResolver(LoginSchema)
   });
 
+  const [mounted, setMounted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
+    setMounted(true);
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
-
-  const [error, setError] = useState<string | null>(null);
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginInput) => {
@@ -55,6 +57,8 @@ export default function AgencyLoginPage() {
   const onSubmit = (data: LoginInput) => {
     loginMutation.mutate(data);
   };
+
+  if (!mounted) return <div className="min-h-screen bg-white" />;
 
   return (
     <div className="min-h-screen flex bg-white">

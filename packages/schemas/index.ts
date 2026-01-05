@@ -5,7 +5,7 @@ export const UserSchema = z.object({
     name: z.string(),
     email: z.string().email(),
     role: z.enum(["AGENCY", "TRAVELER", "ADMIN"]),
-    avatar: z.string().url().optional(),
+    avatar: z.string().optional(),
 });
 
 export const AgencyProfileSchema = z.object({
@@ -17,7 +17,7 @@ export const AgencyProfileSchema = z.object({
     rib: z.string().regex(/^[0-9]{24}$/, "RIB must be 24 digits"),
     verificationStatus: z.enum(["PENDING", "VERIFIED", "REJECTED"]),
     bio: z.string().optional(),
-    logo: z.string().url().optional(),
+    logo: z.string().optional(),
 });
 
 export const TripTemplateSchema = z.object({
@@ -25,13 +25,13 @@ export const TripTemplateSchema = z.object({
     agencyId: z.string(),
     title: z.string().min(3, "Title must be at least 3 characters"),
     description: z.string().min(10, "Description must be at least 10 characters"),
-    category: z.enum(["Adventure", "Cultural", "Luxury", "Budget"]),
+    category: z.enum(["ADVENTURE", "CULTURAL", "LUXURY", "BUDGET"]),
     startLocation: z.string(),
     durationDays: z.number().int().positive(),
     durationNights: z.number().int().nonnegative(),
     inclusions: z.array(z.string()),
-    images: z.array(z.string().url()).min(1, "At least one image is required"),
-    status: z.enum(["Active", "Draft", "Archived"]),
+    images: z.array(z.string()).min(1, "At least one image is required"),
+    status: z.enum(["ACTIVE", "DRAFT", "ARCHIVED"]),
     createdAt: z.string().datetime(),
 });
 
@@ -71,7 +71,7 @@ export const BookingSchema = z.object({
 export const PaymentProofSchema = z.object({
     id: z.string(),
     bookingId: z.string(),
-    imageUrl: z.string().url(),
+    imageUrl: z.string(),
     uploadedAt: z.string().datetime(),
     status: z.enum(["Pending", "Verified", "Rejected"]),
 });

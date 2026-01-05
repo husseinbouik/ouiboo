@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import "@/lib/i18n";
+import { AgencyShell } from "@/components/AgencyShell";
 
 export const metadata: Metadata = {
   title: "Ouiboo Agency",
@@ -14,10 +15,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" suppressHydrationWarning>
+      <body className="bg-muted/20">
         <Providers>
-          {children}
+          <AgencyShell>
+            {children}
+          </AgencyShell>
         </Providers>
       </body>
     </html>

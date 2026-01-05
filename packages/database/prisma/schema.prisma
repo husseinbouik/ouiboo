@@ -105,7 +105,7 @@ model TripTemplate {
 model TripSession {
   id             String       @id @default(cuid())
   templateId     String
-  template       TripTemplate @relation(fields: [templateId], references: [id])
+  template       TripTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
   startDate      DateTime
   endDate        DateTime
   price          Float
@@ -118,7 +118,7 @@ model TripSession {
 model Booking {
   id             String        @id @default(cuid())
   sessionId      String
-  session        TripSession   @relation(fields: [sessionId], references: [id])
+  session        TripSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   travelerId     String
   traveler       User          @relation(fields: [travelerId], references: [id])
   bookingDate    DateTime      @default(now())

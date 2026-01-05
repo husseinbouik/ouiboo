@@ -38,10 +38,10 @@ export default function CreateTripPage() {
   const { register, handleSubmit, control, watch, setValue, trigger, formState: { errors } } = useForm<CreateTripInput>({
     resolver: zodResolver(CreateTripTemplateSchema),
     defaultValues: {
-      category: 'Adventure',
+      category: 'ADVENTURE',
       inclusions: [],
       images: [],
-      status: 'Draft',
+      status: 'DRAFT',
       durationDays: 1,
       durationNights: 0,
     } as any
@@ -91,13 +91,19 @@ export default function CreateTripPage() {
     
     const isValid = await trigger(fieldsToValidate as any);
     if (isValid) {
-      setStep(s => Math.min(s + 1, 3));
+      setStep(3);
     }
   };
 
   const prevStep = () => setStep(s => Math.max(s - 1, 1));
 
   const onSubmit = (data: CreateTripInput) => {
+    // Safety check: only allow submission from the final step
+    if (step < 3) {
+      nextStep();
+      return;
+    }
+    console.log('Finalizing trip submission:', data);
     createTripMutation.mutate(data);
   };
 
@@ -120,7 +126,15 @@ export default function CreateTripPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      <form 
+        onSubmit={handleSubmit(onSubmit)} 
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+            e.preventDefault();
+          }
+        }}
+        className="space-y-8"
+      >
         <div>
           <h1 className="text-3xl font-bold text-deep-blue dark:text-gray-100">
             {step === 1 && t('trips.create.steps.basic', 'Basic Information')}
@@ -154,10 +168,10 @@ export default function CreateTripPage() {
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Category</label>
                         <select {...register('category')} className="w-full h-12 px-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none dark:text-gray-100">
-                          <option value="Adventure">Adventure</option>
-                          <option value="Cultural">Cultural</option>
-                          <option value="Luxury">Luxury</option>
-                          <option value="Budget">Budget</option>
+                          <option value="ADVENTURE">Adventure</option>
+                          <option value="CULTURAL">Cultural</option>
+                          <option value="LUXURY">Luxury</option>
+                          <option value="BUDGET">Budget</option>
                         </select>
                       </div>
                       <div className="space-y-2">
@@ -249,10 +263,12 @@ export default function CreateTripPage() {
                     <div className="space-y-4 pt-4 border-t dark:border-slate-800">
                       <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Publish Status</label>
                       <div className="flex gap-6">
-                        {['Draft', 'Active'].map((s) => (
+                        {['DRAFT', 'ACTIVE'].map((s) => (
                           <label key={s} className="flex items-center gap-3 cursor-pointer group">
                             <input type="radio" value={s} {...register('status')} className="h-4 w-4 text-deep-blue bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 focus:ring-deep-blue" />
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-deep-blue transition-colors">{s}</span>
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-deep-blue transition-colors">
+                              {s === 'DRAFT' ? 'Draft' : 'Active'}
+                            </span>
                           </label>
                         ))}
                       </div>
@@ -274,19 +290,25 @@ export default function CreateTripPage() {
               </Button>
               {step < 3 ? (
                 <Button 
+                  key="continue-btn"
                   type="button"
-                  onClick={nextStep}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    nextStep();
+                  }}
                   className="px-10 h-12 bg-deep-blue hover:bg-blue-900 text-white border-none shadow-lg shadow-blue-900/20"
                 >
-                  Continue
+                  {t('common.continue', 'Continue')}
                 </Button>
               ) : (
                 <Button 
+                  key="submit-btn"
                   type="submit"
                   disabled={createTripMutation.isPending}
                   className="px-10 h-12 bg-sunset-orange hover:bg-orange-600 text-white border-none shadow-lg shadow-orange-900/20 font-bold"
                 >
-                  {createTripMutation.isPending ? 'Publishing...' : 'Publish Trip'}
+                  {createTripMutation.isPending ? t('common.publishing', 'Publishing...') : t('common.publish', 'Publish Trip')}
                 </Button>
               )}
             </div>

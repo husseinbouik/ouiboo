@@ -23,11 +23,22 @@ export class TripsService {
         });
     }
 
-    async findAllTemplates(featured?: boolean) {
+    async findAllTemplates(featured?: boolean, status?: string) {
         try {
+            const where: any = {};
+            if (featured) where.featured = true;
+            if (status) where.status = status;
+
             return await this.db.tripTemplate.findMany({
-                where: featured ? { featured: true } : {},
+                where,
                 include: {
+                    sessions: {
+                        where: {
+                            status: 'OPEN',
+                            startDate: { gte: new Date() }
+                        },
+                        orderBy: { startDate: 'asc' }
+                    },
                     _count: {
                         select: { sessions: true },
                     },
@@ -64,6 +75,20 @@ export class TripsService {
     async findSessionsByTemplate(templateId: string) {
         return this.db.tripSession.findMany({
             where: { templateId },
+        });
+    }
+
+    async updateTemplate(id: string, dto: Partial<CreateTripTemplateDto>) {
+        return this.db.tripTemplate.update({
+            where: { id },
+            data: dto,
+        });
+    }
+
+    async deleteTemplate(id: string) {
+        // Delete sessions first or let prisma handle it with cascade
+        return this.db.tripTemplate.delete({
+            where: { id },
         });
     }
 }

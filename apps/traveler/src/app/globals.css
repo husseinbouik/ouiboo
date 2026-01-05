@@ -1,24 +1,89 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Outfit', sans-serif;
+  
+  --color-deep-blue: #0A192F;
+  --color-sunset-orange: #FF6B35;
+  --color-sand: #F7E1C3;
+  --color-ocean: #2EC4B6;
+  
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
 }
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0A192F;
+  --primary: #0A192F;
+  --primary-foreground: #ffffff;
+  --card: #ffffff;
+  --card-foreground: #0A192F;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #FF6B35;
+  --accent-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #f8fafc;
+  scroll-behavior: smooth;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #020617;
+  --foreground: #f8fafc;
+  --primary: #FF6B35;
+  --primary-foreground: #ffffff;
+  --card: #0f172a;
+  --card-foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #FF6B35;
+  --accent-foreground: #ffffff;
+  --border: #1e293b;
+  --input: #0f172a;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #FF6B35 0%, #F7B801 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.bg-premium-gradient {
+  background: linear-gradient(135deg, #0A192F 0%, #112240 100%);
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
 }

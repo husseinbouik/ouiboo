@@ -1,10 +1,10 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { Button } from '@ouiboo/ui';
 import { Globe } from 'lucide-react';
+import { cn } from '@ouiboo/ui/utils';
 
-export function LanguageSwitcher() {
+export function LanguageSwitcher({ isTransparent }: { isTransparent?: boolean }) {
   const { i18n } = useTranslation();
 
   const toggleLanguage = () => {
@@ -15,19 +15,31 @@ export function LanguageSwitcher() {
     document.documentElement.lang = next;
   };
 
+  const getLangLabel = (code: string) => {
+    switch (code) {
+        case 'en': return 'EN';
+        case 'fr': return 'FR';
+        case 'ar': return 'AR';
+        default: return 'EN';
+    }
+  };
+
   return (
-    <Button
-      variant="ghost"
-      size="icon"
+    <button
       onClick={toggleLanguage}
-      className="text-gray-500 hover:text-deep-blue"
-      title={`Current: ${(i18n.language || 'en').toUpperCase()}`}
+      className={cn(
+        "flex items-center gap-1.5 px-2.5 h-9 rounded-xl transition-all duration-300 group hover:bg-foreground/5",
+        isTransparent 
+          ? "text-white/80 hover:text-white" 
+          : "text-muted-foreground hover:text-foreground border border-transparent hover:border-border"
+      )}
+      title={`Switch from ${getLangLabel(i18n.language)}`}
+      aria-label={`Switch language current is ${getLangLabel(i18n.language)}`}
     >
-      <Globe className="h-5 w-5" />
-      <span className="sr-only">Switch Language</span>
-      <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-gray-100 rounded-full w-4 h-4 flex items-center justify-center">
-        {i18n.language === 'en' ? 'EN' : i18n.language === 'fr' ? 'FR' : 'AR'}
+      <Globe className="h-4 w-4 transition-transform group-hover:rotate-12" />
+      <span className="text-[11px] font-black tracking-tighter">
+        {getLangLabel(i18n.language)}
       </span>
-    </Button>
+    </button>
   );
 }
