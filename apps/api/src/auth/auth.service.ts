@@ -70,6 +70,8 @@ export class AuthService {
                         ice: 'PENDING_' + newUser.id.substring(0, 7), // Temporary unique value
                         patente: 'PENDING',
                         rib: 'PENDING',
+                        subscriptionStatus: 'TRIAL',
+                        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days trial
                     }
                 });
 

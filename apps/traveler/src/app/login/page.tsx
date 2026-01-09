@@ -3,17 +3,20 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { Mail, Lock, ArrowRight, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { Button, Input } from '@ouiboo/ui';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/components/AuthContext';
 import '../../lib/i18n';
+
 export default function TravelerLoginPage() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
+  const { refetch } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -28,12 +31,14 @@ export default function TravelerLoginPage() {
       const response = await apiClient.post('/auth/login', data);
       return response.data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       const { accessToken, refreshToken } = data;
       if (typeof window !== 'undefined') {
         localStorage.setItem('token', accessToken);
         localStorage.setItem('refresh_token', refreshToken);
       }
+      // Force update user state
+      await refetch();
       router.push('/');
     },
     onError: (err: any) => {
@@ -54,158 +59,90 @@ export default function TravelerLoginPage() {
   if (!mounted) return <div className="min-h-screen bg-background" />;
 
   return (
-    <div className="min-h-screen flex bg-background text-foreground transition-all duration-300">
-      {/* Left Side - Image */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-950">
-        <motion.div 
-          initial={{ scale: 1.1, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 1.5 }}
-          className="absolute inset-0"
-        >
-          <img 
-            src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2021&auto=format&fit=crop" 
-            alt="Travel Adventure" 
-            className="w-full h-full object-cover opacity-50 dark:opacity-40"
-          />
-        </motion.div>
-        {/* Overlay gradient */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-deep-blue/80 via-transparent to-transparent z-10" />
-        
-        <div className="relative z-20 flex flex-col justify-between p-16 text-white w-full">
-          <motion.div
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.8 }}
-          >
-            <Link href="/" className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-sunset-orange text-white flex items-center justify-center font-black text-xl">O</div>
-                <span className="text-3xl font-black tracking-tight tracking-tighter">Ouiboo</span>
+    <div className="min-h-screen relative flex items-center justify-center bg-background overflow-hidden p-6 font-sans">
+      
+      {/* Background Blobs */}
+      <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[40rem] h-[40rem] bg-sunset-orange/10 dark:bg-sunset-orange/5 rounded-full blur-3xl opacity-50" />
+      <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-[40rem] h-[40rem] bg-blue-100 dark:bg-blue-900/20 rounded-full blur-3xl opacity-50" />
+
+      <motion.div 
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="relative w-full max-w-md bg-card backdrop-blur-xl border border-border shadow-2xl rounded-[2.5rem] p-8 md:p-12"
+      >
+        <div className="text-center mb-10">
+            <Link href="/" className="inline-flex items-center justify-center gap-2 mb-8 group">
+                <div className="w-10 h-10 rounded-xl bg-deep-blue dark:bg-white text-white dark:text-deep-blue flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">O</div>
+                <span className="text-2xl font-bold text-deep-blue dark:text-white">Ouiboo</span>
             </Link>
-          </motion.div>
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.8, duration: 0.8 }}
-          >
-            <h2 className="text-5xl font-black mb-6 leading-tight font-display">Explore the world <br /> with confidence.</h2>
-            <p className="text-xl text-blue-100/70 max-w-md font-medium leading-relaxed">
-              Join thousands of travelers discovering unique experiences and unforgettable journeys across Morocco.
-            </p>
-          </motion.div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">{t('login.title', 'Welcome Back')}</h2>
+            <p className="text-muted-foreground font-medium text-sm">{t('login.subtitle', 'Enter your details to sign in')}</p>
         </div>
-      </div>
 
-      {/* Right Side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 lg:p-12 bg-background">
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
-          className="w-full max-w-md space-y-10"
-        >
-          <div className="text-center lg:text-left space-y-3">
-            <h2 className="text-4xl font-black text-foreground font-display">{t('login.title')}</h2>
-            <p className="text-muted-foreground font-medium">{t('login.subtitle')}</p>
-          </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div className="space-y-4">
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-foreground ml-1">{t('login.email', 'Email')}</label>
+                    <div className="relative group">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground group-focus-within:text-sunset-orange transition-colors">
+                            <Mail className="h-5 w-5" />
+                        </div>
+                        <Input 
+                            id="email" 
+                            type="email" 
+                            placeholder={t('login.emailPlaceholder', 'hello@example.com')}
+                            className="pl-12 h-14 bg-muted border-border rounded-2xl focus:bg-background focus:ring-2 focus:ring-sunset-orange/10 focus:border-sunset-orange transition-all font-medium text-foreground placeholder:text-muted-foreground"
+                            {...register('email', { required: 'Email is required' })} 
+                        />
+                    </div>
+                    {errors.email && <span className="text-red-500 text-xs font-semibold pl-1">{errors.email.message as string}</span>}
+                </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-bold text-foreground/80 ml-1">{t('login.email')}</label>
-                <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 transition-colors group-focus-within:text-sunset-orange text-muted-foreground z-10">
-                    <Mail className="h-5 w-5" />
-                  </div>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder={t('login.emailPlaceholder')}
-                    className="pl-12 h-14 bg-muted/50 dark:bg-slate-900/50 border-border rounded-2xl focus:bg-background focus:ring-2 focus:ring-sunset-orange/20 focus:border-sunset-orange transition-all duration-300 font-medium"
-                    {...register('email', { required: 'Email is required' })} 
-                  />
+                <div className="space-y-1.5">
+                    <div className="flex items-center justify-between ml-1">
+                        <label className="text-sm font-semibold text-foreground">{t('login.password', 'Password')}</label>
+                        <a href="#" className="text-xs font-semibold text-sunset-orange hover:text-orange-600 transition-colors">{t('login.forgotPassword', 'Forgot password?')}</a>
+                    </div>
+                    <div className="relative group">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground group-focus-within:text-sunset-orange transition-colors">
+                            <Lock className="h-5 w-5" />
+                        </div>
+                        <Input 
+                            id="password" 
+                            type="password" 
+                            placeholder="••••••••"
+                            className="pl-12 h-14 bg-muted border-border rounded-2xl focus:bg-background focus:ring-2 focus:ring-sunset-orange/10 focus:border-sunset-orange transition-all font-medium text-foreground placeholder:text-muted-foreground"
+                            {...register('password', { required: 'Password is required' })} 
+                        />
+                    </div>
+                    {errors.password && <span className="text-red-500 text-xs font-semibold pl-1">{errors.password.message as string}</span>}
                 </div>
-                {errors.email && (
-                    <motion.span initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-xs font-bold pl-1 block">
-                        {errors.email.message as string}
-                    </motion.span>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between ml-1">
-                  <label htmlFor="password" className="text-sm font-bold text-foreground/80">{t('login.password')}</label>
-                  <a href="#" className="text-xs font-bold text-sunset-orange hover:underline">{t('login.forgotPassword')}</a>
-                </div>
-                <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 transition-colors group-focus-within:text-sunset-orange text-muted-foreground z-10">
-                    <Lock className="h-5 w-5" />
-                  </div>
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    placeholder={t('login.passwordPlaceholder')}
-                    className="pl-12 h-14 bg-muted/50 dark:bg-slate-900/50 border-border rounded-2xl focus:bg-background focus:ring-2 focus:ring-sunset-orange/20 focus:border-sunset-orange transition-all duration-300 font-medium"
-                    {...register('password', { required: 'Password is required' })} 
-                  />
-                </div>
-                {errors.password && (
-                    <motion.span initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-xs font-bold pl-1 block">
-                        {errors.password.message as string}
-                    </motion.span>
-                )}
-              </div>
             </div>
 
             {error && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="p-4 text-sm font-bold text-red-500 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3"
-              >
-                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                {error}
-              </motion.div>
+                <div className="p-4 bg-red-50 text-red-500 text-sm font-semibold rounded-2xl flex items-center gap-2 border border-red-100">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    {error}
+                </div>
             )}
 
             <Button 
-              type="submit" 
-              disabled={loginMutation.isPending}
-              className="w-full h-14 bg-sunset-orange hover:bg-orange-600 text-white font-black rounded-2xl transition-all duration-300 shadow-xl shadow-orange-900/20 hover:scale-[1.02] active:scale-[0.98] border-none"
+                type="submit" 
+                disabled={loginMutation.isPending}
+                className="w-full h-14 bg-deep-blue hover:bg-blue-900 text-white font-bold rounded-2xl shadow-lg shadow-blue-900/20 transition-all hover:scale-[1.02] active:scale-95 text-lg"
             >
-              {loginMutation.isPending ? 'Signing in...' : t('login.signIn')} 
-              {!loginMutation.isPending && <ArrowRight className="ml-2 h-5 w-5 inline" />}
+                {loginMutation.isPending ? 'Verified...' : t('login.signIn', 'Sign In')}
             </Button>
 
-            <div className="relative py-4">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-[10px] font-black uppercase tracking-widest">
-                <span className="bg-background px-4 text-muted-foreground">{t('login.orContinue')}</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <button type="button" className="flex items-center justify-center gap-3 px-4 py-3.5 border border-border rounded-2xl hover:bg-muted/50 transition-all duration-300 font-bold text-sm">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-5 w-5" alt="Google" />
-                <span>Google</span>
-              </button>
-              <button type="button" className="flex items-center justify-center gap-3 px-4 py-3.5 border border-border rounded-2xl hover:bg-muted/50 transition-all duration-300 font-bold text-sm">
-                <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" className="h-5 w-5" alt="Facebook" />
-                <span>Facebook</span>
-              </button>
-            </div>
-          </form>
-
-          <p className="text-center text-sm font-medium text-muted-foreground p-4 bg-muted/20 rounded-2xl">
-            {t('login.noAccount')}{' '}
-            <Link href={`/signup?lang=${i18n.language}`} className="font-black text-sunset-orange hover:text-orange-600 underline-offset-4 hover:underline">
-              {t('login.signUpLink')}
-            </Link>
-          </p>
-        </motion.div>
-      </div>
+             <p className="text-center text-sm text-muted-foreground font-medium">
+                {t('login.noAccount', "Don't have an account?")}{' '}
+                <Link href={`/signup?lang=${i18n.language}`} className="text-sunset-orange font-bold hover:underline">
+                    {t('login.signUpLink', 'Sign up')}
+                </Link>
+            </p>
+        </form>
+      </motion.div>
     </div>
   );
 }

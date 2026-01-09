@@ -51,83 +51,61 @@ export function Navbar() {
     { name: t('nav.featured'), href: '/trips/featured', icon: <Zap className="w-4 h-4" /> },
   ];
 
+  const isAuthPage = ['/login', '/signup', '/verify'].some(path => pathname.startsWith(path));
+
+  if (isAuthPage) return null;
+
   return (
-    <div className="fixed top-0 w-full z-50 flex justify-center p-6 pointer-events-none">
+    <div className="fixed inset-x-0 top-0 z-50 pointer-events-none sticky-like-nav">
       <motion.nav 
-        initial={false}
-        animate={{
-            y: scrolled ? 0 : 0,
-            width: scrolled ? "auto" : "100%",
-            maxWidth: scrolled ? "800px" : "1200px",
-        }}
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.5 }}
         className={cn(
-          "pointer-events-auto flex items-center justify-between transition-all duration-500 ease-in-out px-6 h-16 rounded-[2rem]",
+          "pointer-events-auto flex items-center justify-between transition-all duration-300 w-full px-6 lg:px-8 h-20",
           scrolled 
-            ? "bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-none ring-1 ring-black/5 dark:ring-white/5" 
+            ? "bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm" 
             : "bg-transparent"
         )}
       >
         {/* Logo Section */}
-        <Link href="/" className="flex items-center gap-3 group shrink-0">
-            <div className="w-10 h-10 rounded-2xl bg-sunset-orange text-white flex items-center justify-center font-black text-xl shadow-lg group-hover:rotate-12 transition-transform">
+        <Link href="/" className="flex items-center gap-2 group shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-deep-blue text-white flex items-center justify-center font-bold text-lg">
                 O
             </div>
-            {!scrolled && (
-                <span className={cn(
-                    "text-xl font-black tracking-tighter transition-all duration-300",
-                    isTransparent ? "text-white" : "text-foreground"
-                )}>
-                    Ouiboo
-                </span>
-            )}
+            <span className="text-xl font-bold tracking-tight text-deep-blue dark:text-white">
+                Ouiboo
+            </span>
         </Link>
 
-        {/* Desktop Nav Links */}
-        <div className="hidden md:flex items-center gap-2 mx-6">
+        <div className="hidden md:flex items-center gap-8 mx-6">
             {mounted && navLinks.map((link) => (
                 <Link 
                     key={link.href}
                     href={link.href}
-                    className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300",
-                        isTransparent 
-                            ? "text-white/80 hover:text-white hover:bg-white/10" 
-                            : scrolled 
-                                ? "text-foreground/70 hover:text-foreground hover:bg-foreground/5" 
-                                : "text-foreground/70 hover:text-foreground hover:bg-foreground/5"
-                    )}
+                    className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-sunset-orange transition-colors"
                 >
-                    {link.icon}
                     {link.name}
                 </Link>
             ))}
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3">
-            <div className={cn(
-                "hidden sm:flex items-center gap-1.5 p-1 rounded-xl transition-all duration-300",
-                isTransparent ? "bg-white/10" : "bg-muted/50"
-            )}>
-                <LanguageSwitcher isTransparent={isTransparent} />
-                <ThemeToggle isTransparent={isTransparent} />
+        <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-2">
+                <LanguageSwitcher />
+                <ThemeToggle />
             </div>
 
             {user ? (
                 <div className="relative">
                     <button 
                         onMouseEnter={() => setProfileOpen(true)}
-                        className={cn(
-                            "flex items-center gap-2 p-1.5 rounded-xl transition-all duration-300 border",
-                            isTransparent 
-                                ? "bg-white/10 border-white/20 text-white" 
-                                : "bg-white dark:bg-slate-900 border-border shadow-sm text-foreground"
-                        )}
+                        className="flex items-center gap-2 p-1.5 rounded-full hover:bg-muted/50 transition-colors"
                     >
-                        <div className="w-7 h-7 rounded-lg bg-sunset-orange text-white flex items-center justify-center font-black text-[10px] shadow-inner">
+                        <div className="w-8 h-8 rounded-full bg-deep-blue text-white flex items-center justify-center font-bold text-xs">
                             {user.name?.[0]?.toUpperCase()}
                         </div>
-                        <ChevronDown className={cn("h-3 w-3 opacity-50", profileOpen && "rotate-180")} />
                     </button>
 
                     <AnimatePresence>
@@ -137,31 +115,31 @@ export function Navbar() {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                                 onMouseLeave={() => setProfileOpen(false)}
-                                className="absolute right-0 mt-3 w-64 bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl border border-border overflow-hidden z-[60]"
+                                className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden z-[60]"
                             >
-                                <div className="p-5 bg-muted/20 border-b border-border">
-                                    <p className="font-bold text-sm text-foreground truncate">{user.name}</p>
-                                    <p className="text-[10px] text-muted-foreground truncate font-medium uppercase tracking-widest">{user.role}</p>
+                                <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+                                    <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">{user.name}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{user.role}</p>
                                 </div>
-                                <div className="p-2 space-y-1">
-                                    <Link href="/profile" className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl transition-all">
-                                        <User className="h-4 w-4" /> {t('nav.profile')}
+                                <div className="p-1">
+                                    <Link href="/profile" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
+                                        <User className="w-4 h-4" /> {t('nav.profile')}
                                     </Link>
-                                    <Link href="/bookings" className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl transition-all">
-                                        <CalendarIcon className="h-4 w-4" /> {t('nav.bookings')}
+                                    <Link href="/bookings" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
+                                        <CalendarIcon className="w-4 h-4" /> {t('nav.bookings')}
                                     </Link>
                                     {user.role === 'AGENCY' && (
-                                        <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-sunset-orange hover:bg-sunset-orange/5 rounded-xl transition-all">
-                                            <LayoutDashboard className="h-4 w-4" /> Agency Panel
+                                        <Link href="/dashboard" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-sunset-orange hover:bg-orange-50 dark:hover:bg-orange-950/20 rounded-lg">
+                                            <LayoutDashboard className="w-4 h-4" /> Agency Panel
                                         </Link>
                                     )}
                                 </div>
-                                <div className="p-2 border-t border-border">
+                                <div className="p-1 border-t border-gray-100 dark:border-gray-800">
                                     <button 
                                         onClick={logout}
-                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-all"
+                                        className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg"
                                     >
-                                        <LogOut className="h-4 w-4" /> {t('nav.logout')}
+                                        <LogOut className="w-4 h-4" /> {t('nav.logout')}
                                     </button>
                                 </div>
                             </motion.div>
@@ -169,17 +147,12 @@ export function Navbar() {
                     </AnimatePresence>
                 </div>
             ) : (
-                <div className="flex items-center gap-2">
-                    <Link href="/login">
-                        <Button variant="ghost" className={cn(
-                            "h-10 px-5 rounded-xl font-bold transition-all",
-                            isTransparent ? "text-white hover:bg-white/10" : "text-foreground"
-                        )}>
-                            {t('nav.login')}
-                        </Button>
+                <div className="flex items-center gap-4">
+                    <Link href="/login" className="text-sm font-semibold text-gray-900 dark:text-white hover:text-sunset-orange transition-colors">
+                        {t('nav.login')}
                     </Link>
                     <Link href="/signup">
-                        <Button className="h-10 px-6 rounded-xl font-black bg-sunset-orange hover:bg-orange-600 text-white border-none shadow-lg shadow-orange-900/20 active:scale-95 transition-all">
+                        <Button className="rounded-md bg-sunset-orange hover:bg-orange-600 text-white font-semibold text-sm px-5 py-2.5 h-auto border-none shadow-sm transition-transform hover:scale-105">
                             Join Now
                         </Button>
                     </Link>

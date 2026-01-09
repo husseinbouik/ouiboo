@@ -18,6 +18,7 @@ export class TripsController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.Agency)
     create(@Request() req, @Body() createTripDto: CreateTripTemplateDto) {
+        console.log('Creating trip template with data:', JSON.stringify(createTripDto, null, 2));
         return this.tripsService.createTemplate(req.user.userId, createTripDto);
     }
 
@@ -53,8 +54,9 @@ export class TripsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.Agency)
-    update(@Param('id') id: string, @Body() updateTripDto: UpdateTripTemplateDto) {
-        return this.tripsService.updateTemplate(id, updateTripDto);
+    update(@Request() req, @Param('id') id: string, @Body() updateTripDto: UpdateTripTemplateDto) {
+        console.log('Updating trip template', id, 'with data:', JSON.stringify(updateTripDto, null, 2));
+        return this.tripsService.updateTemplate(id, req.user.userId, updateTripDto);
     }
 
     @Delete(':id')
@@ -62,7 +64,7 @@ export class TripsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.Agency)
-    remove(@Param('id') id: string) {
-        return this.tripsService.deleteTemplate(id);
+    remove(@Request() req, @Param('id') id: string) {
+        return this.tripsService.deleteTemplate(id, req.user.userId);
     }
 }

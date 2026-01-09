@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RegisterSchema = exports.LoginSchema = exports.PayoutRequestSchema = exports.PaymentProofSchema = exports.BookingSchema = exports.CreateTripSessionSchema = exports.TripSessionSchema = exports.CreateTripTemplateSchema = exports.TripTemplateSchema = exports.AgencyProfileSchema = exports.UserSchema = void 0;
+exports.RegisterSchema = exports.LoginSchema = exports.PayoutRequestSchema = exports.PaymentProofSchema = exports.BookingSchema = exports.CreateTripSessionSchema = exports.TripSessionSchema = exports.CreateTripTemplateSchema = exports.TripTemplateSchema = exports.CreateItineraryDaySchema = exports.ItineraryDaySchema = exports.AgencyProfileSchema = exports.UserSchema = void 0;
 const zod_1 = require("zod");
 exports.UserSchema = zod_1.z.object({
     id: zod_1.z.string(),
@@ -20,6 +20,18 @@ exports.AgencyProfileSchema = zod_1.z.object({
     bio: zod_1.z.string().optional(),
     logo: zod_1.z.string().optional(),
 });
+exports.ItineraryDaySchema = zod_1.z.object({
+    id: zod_1.z.string(),
+    templateId: zod_1.z.string(),
+    dayNumber: zod_1.z.number().int().positive(),
+    title: zod_1.z.string().optional(),
+    description: zod_1.z.string(),
+    activities: zod_1.z.array(zod_1.z.string()),
+});
+exports.CreateItineraryDaySchema = exports.ItineraryDaySchema.omit({
+    id: true,
+    templateId: true,
+});
 exports.TripTemplateSchema = zod_1.z.object({
     id: zod_1.z.string(),
     agencyId: zod_1.z.string(),
@@ -31,6 +43,7 @@ exports.TripTemplateSchema = zod_1.z.object({
     durationNights: zod_1.z.number().int().nonnegative(),
     inclusions: zod_1.z.array(zod_1.z.string()),
     images: zod_1.z.array(zod_1.z.string()).min(1, "At least one image is required"),
+    itinerary: zod_1.z.array(exports.ItineraryDaySchema).optional(),
     status: zod_1.z.enum(["ACTIVE", "DRAFT", "ARCHIVED"]),
     createdAt: zod_1.z.string().datetime(),
 });
@@ -38,6 +51,9 @@ exports.CreateTripTemplateSchema = exports.TripTemplateSchema.omit({
     id: true,
     agencyId: true,
     createdAt: true,
+    itinerary: true,
+}).extend({
+    itinerary: zod_1.z.array(exports.CreateItineraryDaySchema).optional(),
 });
 exports.TripSessionSchema = zod_1.z.object({
     id: zod_1.z.string(),

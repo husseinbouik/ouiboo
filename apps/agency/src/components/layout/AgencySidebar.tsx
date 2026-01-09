@@ -48,13 +48,14 @@ export function AgencySidebar() {
     localStorage.setItem('sidebar-collapsed', String(newState));
   };
 
-  if (!mounted) return <div className="h-full w-64 bg-white border-r border-gray-200" />;
+  if (!mounted) return <div className="h-full w-64 bg-white border-r border-gray-200" suppressHydrationWarning />;
 
   return (
     <motion.div 
       initial={false}
       animate={{ width: isCollapsed ? 80 : 256 }}
       className="flex h-full flex-col bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 transition-colors duration-200 relative group"
+      suppressHydrationWarning
     >
       <button 
         onClick={toggleCollapse}

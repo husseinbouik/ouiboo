@@ -15,12 +15,12 @@ export function AgencyShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen bg-off-white dark:bg-slate-950 overflow-hidden transition-colors duration-200">
+    <div className="flex h-screen bg-off-white dark:bg-slate-950 overflow-hidden transition-colors duration-200" suppressHydrationWarning>
       <aside className="hidden md:flex flex-shrink-0">
         <AgencySidebar />
       </aside>
       
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden" suppressHydrationWarning>
         <header className="flex items-center bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800">
             <div className="pl-4 md:hidden">
                 <AgencyMobileNav />
@@ -31,7 +31,7 @@ export function AgencyShell({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-7xl mx-auto" suppressHydrationWarning>
             {children}
           </div>
         </main>

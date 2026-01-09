@@ -1,0 +1,150 @@
+'use client';
+
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Mail, Lock, LogIn, UserPlus } from 'lucide-react';
+import { Button, Input } from '@ouiboo/ui';
+import { useAuth } from './AuthContext';
+import { useMutation } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
+import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import { cn } from '@ouiboo/ui/utils';
+
+export function AuthModal() {
+    const { t } = useTranslation();
+    const { showLoginModal, setShowLoginModal, refetch } = useAuth();
+    const [error, setError] = useState<string | null>(null);
+    const { register, handleSubmit, formState: { errors }, reset } = useForm();
+
+    const loginMutation = useMutation({
+        mutationFn: async (data: any) => {
+            const response = await apiClient.post('/auth/login', data);
+            return response.data;
+        },
+        onSuccess: async (data) => {
+            const { accessToken, refreshToken } = data;
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('token', accessToken);
+                localStorage.setItem('refresh_token', refreshToken);
+            }
+            await refetch();
+            setShowLoginModal(false);
+            reset();
+            setError(null);
+        },
+        onError: (err: any) => {
+            setError(err?.response?.data?.message || 'Login failed. Please try again.');
+        },
+    });
+
+    const onSubmit = (data: any) => {
+        loginMutation.mutate(data);
+    };
+
+    if (!showLoginModal) return null;
+
+    return (
+        <AnimatePresence>
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                {/* Backdrop */}
+                <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setShowLoginModal(false)}
+                    className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                />
+
+                {/* Modal Content */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-white/20 dark:border-slate-800 overflow-hidden"
+                >
+                    <button 
+                        onClick={() => setShowLoginModal(false)}
+                        className="absolute top-6 right-6 p-2 rounded-full hover:bg-muted transition-colors z-10"
+                    >
+                        <X className="h-5 w-5 text-muted-foreground" />
+                    </button>
+
+                    <div className="p-8 md:p-10">
+                        <div className="text-center mb-8">
+                            <div className="w-12 h-12 rounded-2xl bg-sunset-orange/10 text-sunset-orange flex items-center justify-center font-bold text-2xl mx-auto mb-4">
+                                O
+                            </div>
+                            <h2 className="text-2xl font-bold text-foreground">Login to Continue</h2>
+                            <p className="text-sm text-muted-foreground mt-2 font-medium">Please sign in to book your adventure.</p>
+                        </div>
+
+                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Email</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input 
+                                            placeholder="hello@ouiboo.com"
+                                            className="pl-11 h-12 bg-muted/50 border-border rounded-xl focus:bg-background transition-all"
+                                            {...register('email', { required: true })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Password</label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input 
+                                            type="password"
+                                            placeholder="••••••••"
+                                            className="pl-11 h-12 bg-muted/50 border-border rounded-xl focus:bg-background transition-all"
+                                            {...register('password', { required: true })}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {error && (
+                                <div className="p-3 bg-red-50 dark:bg-red-900/10 text-red-500 text-xs font-bold rounded-xl border border-red-100 dark:border-red-900/20">
+                                    {error}
+                                </div>
+                            )}
+
+                            <Button 
+                                type="submit" 
+                                disabled={loginMutation.isPending}
+                                className="w-full h-12 bg-sunset-orange hover:bg-orange-600 text-white font-bold rounded-xl shadow-lg shadow-orange-900/20 transition-all active:scale-[0.98]"
+                            >
+                                {loginMutation.isPending ? 'Logging in...' : 'Sign In'}
+                            </Button>
+
+                            <div className="text-center space-y-4">
+                                <div className="flex items-center gap-4 py-2">
+                                    <div className="h-px flex-1 bg-border" />
+                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Or</span>
+                                    <div className="h-px flex-1 bg-border" />
+                                </div>
+                                <p className="text-sm font-medium text-muted-foreground">
+                                    Don't have an account?{' '}
+                                    <button 
+                                        type="button"
+                                        onClick={() => {
+                                            setShowLoginModal(false);
+                                            window.location.href = '/signup';
+                                        }}
+                                        className="text-sunset-orange font-bold hover:underline"
+                                    >
+                                        Sign Up
+                                    </button>
+                                </p>
+                            </div>
+                        </form>
+                    </div>
+                </motion.div>
+            </div>
+        </AnimatePresence>
+    );
+}

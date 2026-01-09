@@ -20,6 +20,20 @@ export const AgencyProfileSchema = z.object({
     logo: z.string().optional(),
 });
 
+export const ItineraryDaySchema = z.object({
+    id: z.string(),
+    templateId: z.string(),
+    dayNumber: z.number().int().positive(),
+    title: z.string().optional(),
+    description: z.string(),
+    activities: z.array(z.string()),
+});
+
+export const CreateItineraryDaySchema = ItineraryDaySchema.omit({
+    id: true,
+    templateId: true,
+});
+
 export const TripTemplateSchema = z.object({
     id: z.string(),
     agencyId: z.string(),
@@ -30,7 +44,10 @@ export const TripTemplateSchema = z.object({
     durationDays: z.number().int().positive(),
     durationNights: z.number().int().nonnegative(),
     inclusions: z.array(z.string()),
+    exclusions: z.array(z.string()),
+    checklist: z.array(z.string()),
     images: z.array(z.string()).min(1, "At least one image is required"),
+    itinerary: z.array(ItineraryDaySchema).optional(),
     status: z.enum(["ACTIVE", "DRAFT", "ARCHIVED"]),
     createdAt: z.string().datetime(),
 });
@@ -39,6 +56,9 @@ export const CreateTripTemplateSchema = TripTemplateSchema.omit({
     id: true,
     agencyId: true,
     createdAt: true,
+    itinerary: true,
+}).extend({
+    itinerary: z.array(CreateItineraryDaySchema).optional(),
 });
 
 export const TripSessionSchema = z.object({
@@ -47,6 +67,7 @@ export const TripSessionSchema = z.object({
     startDate: z.string().datetime(),
     endDate: z.string().datetime(),
     price: z.number().positive(),
+    deposit: z.number().nonnegative(),
     totalSeats: z.number().int().positive(),
     availableSeats: z.number().int().nonnegative(),
     status: z.enum(["OPEN", "CLOSED", "CANCELLED"]),

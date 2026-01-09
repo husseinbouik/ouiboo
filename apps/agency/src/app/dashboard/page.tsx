@@ -73,8 +73,16 @@ const mockBookings = [
 ];
 
 export default function AgencyDashboard() {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
   return (
-    <div className="space-y-12 max-w-7xl mx-auto">
+    <div className="space-y-12 max-w-7xl mx-auto" suppressHydrationWarning>
       {/* Welcome Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>

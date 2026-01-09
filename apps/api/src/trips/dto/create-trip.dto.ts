@@ -1,6 +1,28 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsString, IsEnum, IsNumber, IsPositive, IsInt, Min, IsArray, IsUrl, MinLength, IsOptional } from 'class-validator';
+import { IsString, IsEnum, IsNumber, IsPositive, IsInt, Min, IsArray, IsUrl, MinLength, IsOptional, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { TripCategory, TripStatus } from '@ouiboo/types';
+
+export class ItineraryDayDto {
+    @ApiProperty({ example: 1 })
+    @IsInt()
+    @IsPositive()
+    dayNumber: number;
+
+    @ApiProperty({ example: 'Arrival in Marrakech' })
+    @IsOptional()
+    @IsString()
+    title?: string;
+
+    @ApiProperty({ example: 'We will pick you up from the airport...' })
+    @IsString()
+    description: string;
+
+    @ApiProperty({ example: ['Airport transfer', 'Welcome dinner'] })
+    @IsArray()
+    @IsString({ each: true })
+    activities: string[];
+}
 
 export class CreateTripTemplateDto {
     @ApiProperty({ example: 'Marrakech Desert Adventure' })
@@ -36,6 +58,18 @@ export class CreateTripTemplateDto {
     @IsString({ each: true })
     inclusions: string[];
 
+    @ApiProperty({ example: ['Safari Nature', 'Kayak'] })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    exclusions: string[];
+
+    @ApiProperty({ example: ['Hiking shoes', 'Backpack'] })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    checklist: string[];
+
     @ApiProperty({ example: ['https://example.com/image1.jpg'] })
     @IsArray()
     @IsString({ each: true })
@@ -44,6 +78,13 @@ export class CreateTripTemplateDto {
     @ApiProperty({ enum: TripStatus, example: TripStatus.Draft })
     @IsEnum(TripStatus)
     status: TripStatus;
+
+    @ApiProperty({ type: [ItineraryDayDto], required: false })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ItineraryDayDto)
+    itinerary?: ItineraryDayDto[];
 }
 
 export class UpdateTripTemplateDto extends PartialType(CreateTripTemplateDto) { }
@@ -61,6 +102,12 @@ export class CreateTripSessionDto {
     @IsNumber()
     @IsPositive()
     price: number;
+
+    @ApiProperty({ example: 500.00 })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    deposit: number;
 
     @ApiProperty({ example: 20 })
     @IsInt()
