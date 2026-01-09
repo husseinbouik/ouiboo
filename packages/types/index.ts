@@ -18,6 +18,13 @@ export enum VerificationStatus {
     Rejected = "REJECTED",
 }
 
+export enum SubscriptionStatus {
+    Trial = "TRIAL",
+    Active = "ACTIVE",
+    Cancelled = "CANCELLED",
+    Expired = "EXPIRED",
+}
+
 export interface AgencyProfile {
     id: string;
     userId: string;
@@ -28,6 +35,9 @@ export interface AgencyProfile {
     verificationStatus: VerificationStatus;
     bio?: string;
     logo?: string;
+    subscriptionStatus: SubscriptionStatus;
+    trialEndsAt?: string;
+    subscriptionEndsAt?: string;
 }
 
 export enum TripStatus {
@@ -43,6 +53,15 @@ export enum TripCategory {
     Budget = "BUDGET",
 }
 
+export interface ItineraryDay {
+    id: string;
+    templateId: string;
+    dayNumber: number;
+    title?: string;
+    description: string;
+    activities: string[];
+}
+
 /**
  * TripTemplate represents the "Master" trip definition.
  */
@@ -56,8 +75,11 @@ export interface TripTemplate {
     durationDays: number;
     durationNights: number;
     inclusions: string[];
+    exclusions: string[];
+    checklist: string[];
     images: string[];
     status: TripStatus;
+    itinerary: ItineraryDay[];
     createdAt: string;
 }
 
@@ -70,6 +92,7 @@ export interface TripSession {
     startDate: string;
     endDate: string;
     price: number;
+    deposit: number;
     totalSeats: number;
     availableSeats: number;
     status: "OPEN" | "CLOSED" | "CANCELLED";

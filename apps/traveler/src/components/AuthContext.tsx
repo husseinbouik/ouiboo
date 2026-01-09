@@ -18,6 +18,8 @@ interface AuthContextType {
     isLoading: boolean;
     logout: () => void;
     refetch: () => void;
+    showLoginModal: boolean;
+    setShowLoginModal: (show: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,6 +41,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         retry: false,
     });
 
+    const [showLoginModal, setShowLoginModal] = useState(false);
+
     const logout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('refresh_token');
@@ -47,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, logout, refetch }}>
+        <AuthContext.Provider value={{ user, isLoading, logout, refetch, showLoginModal, setShowLoginModal }}>
             {children}
         </AuthContext.Provider>
     );

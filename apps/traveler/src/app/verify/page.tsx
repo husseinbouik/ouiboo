@@ -8,6 +8,7 @@ import { Button } from '@ouiboo/ui';
 import { apiClient } from '@/lib/api-client';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import Link from 'next/link';
 
 export default function VerifyEmailPage() {
   const { t } = useTranslation();
@@ -88,26 +89,30 @@ export default function VerifyEmailPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-6 transition-colors duration-300">
+      <div className="min-h-screen flex items-center justify-center bg-background px-6 font-sans relative overflow-hidden">
+        {/* Background Blobs */}
+        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[40rem] h-[40rem] bg-green-50 dark:bg-green-900/20 rounded-full blur-3xl opacity-50" />
+        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-[40rem] h-[40rem] bg-blue-50 dark:bg-blue-900/20 rounded-full blur-3xl opacity-50" />
+        
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-card p-12 rounded-[2.5rem] shadow-2xl border border-border/50 text-center max-w-md w-full space-y-8"
+          className="bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl p-12 rounded-[2.5rem] shadow-xl border border-gray-100 dark:border-slate-800 text-center max-w-md w-full space-y-8 relative z-10"
         >
-          <div className="w-24 h-24 bg-emerald-500/10 rounded-[2rem] flex items-center justify-center mx-auto shadow-inner">
-            <ShieldCheck className="h-12 w-12 text-emerald-500" />
+          <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto shadow-sm">
+            <ShieldCheck className="h-10 w-10 text-green-600 dark:text-green-400" />
           </div>
           <div className="space-y-3">
-              <h2 className="text-4xl font-black text-foreground font-display tracking-tight">Verified Successfully!</h2>
-              <p className="text-muted-foreground font-medium">Welcome to Ouiboo. One moment while we get you home...</p>
+              <h2 className="text-3xl font-bold text-foreground tracking-tight">Verified Successfully!</h2>
+              <p className="text-muted-foreground font-medium">Welcome to Ouiboo. Redirecting you...</p>
           </div>
-          <div className="flex justify-center pt-4">
-              <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
+          <div className="flex justify-center pt-2">
+              <div className="w-12 h-1 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
                   <motion.div 
                     initial={{ x: '-100%' }}
                     animate={{ x: '100%' }}
                     transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                    className="w-full h-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                    className="w-full h-full bg-green-500"
                   />
               </div>
           </div>
@@ -117,22 +122,27 @@ export default function VerifyEmailPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-6 transition-colors duration-300">
+    <div className="min-h-screen flex items-center justify-center bg-background px-6 font-sans relative overflow-hidden">
+         {/* Background Blobs */}
+      <div className="absolute top-0 left-0 -translate-y-1/2 -translate-x-1/2 w-[40rem] h-[40rem] bg-sunset-orange/10 dark:bg-sunset-orange/5 rounded-full blur-3xl opacity-50" />
+      <div className="absolute bottom-0 right-0 translate-y-1/2 translate-x-1/2 w-[40rem] h-[40rem] bg-blue-100 dark:bg-blue-900/20 rounded-full blur-3xl opacity-50" />
+
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-card p-10 lg:p-14 rounded-[3rem] shadow-2xl border border-border/50 max-w-md w-full space-y-10"
+        className="bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-xl border border-gray-100 dark:border-slate-800 max-w-md w-full space-y-8 relative z-10"
       >
         <div className="text-center space-y-4">
-          <div className="w-20 h-20 bg-sunset-orange/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-inner">
-            <Mail className="h-10 w-10 text-sunset-orange" />
-          </div>
-          <h2 className="text-4xl font-black text-foreground font-display tracking-tight">Check your email</h2>
-          <p className="text-muted-foreground font-medium px-4">We've sent a 6-digit verification code to <span className="font-bold text-foreground">{email}</span></p>
+             <div className="inline-flex items-center justify-center gap-2 mb-4 group">
+                <div className="w-10 h-10 rounded-xl bg-deep-blue dark:bg-white text-white dark:text-deep-blue flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">O</div>
+                <span className="text-2xl font-bold text-deep-blue dark:text-white">Ouiboo</span>
+            </div>
+          <h2 className="text-3xl font-bold text-foreground tracking-tight">Check your email</h2>
+          <p className="text-muted-foreground font-medium text-sm">We've sent a 6-digit verification code to <br/> <span className="font-semibold text-foreground">{email}</span></p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-10">
-          <div className="flex justify-between gap-3">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="flex justify-between gap-2">
             {otp.map((digit, idx) => (
               <input
                 key={idx}
@@ -141,34 +151,29 @@ export default function VerifyEmailPage() {
                 value={digit}
                 onChange={(e) => handleChange(idx, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(idx, e)}
-                className="w-full h-16 text-center text-3xl font-black bg-muted/50 dark:bg-slate-900 border-2 border-border/50 rounded-2xl focus:border-sunset-orange focus:ring-4 focus:ring-sunset-orange/10 focus:bg-background outline-none transition-all font-display"
+                className="w-full h-14 text-center text-2xl font-bold bg-gray-50 dark:bg-slate-800 border border-gray-200 rounded-xl focus:border-sunset-orange focus:ring-2 focus:ring-sunset-orange/10 focus:bg-white outline-none transition-all text-foreground"
                 maxLength={1}
               />
             ))}
           </div>
 
           {error && (
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="p-4 text-sm font-bold text-red-500 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center gap-3"
-            >
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <div className="p-3 text-sm font-semibold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-xl flex items-center justify-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-500 dark:bg-red-400" />
               {error}
-            </motion.div>
+            </div>
           )}
 
           <Button 
             type="submit" 
             disabled={verifyMutation.isPending}
-            className="w-full h-16 bg-sunset-orange hover:bg-orange-600 text-white font-black rounded-2xl shadow-xl shadow-orange-900/20 active:scale-95 transition-all text-xl"
+            className="w-full h-14 bg-deep-blue hover:bg-blue-900 text-white font-bold rounded-2xl shadow-lg shadow-blue-900/20 active:scale-95 transition-all text-lg"
           >
-            {verifyMutation.isPending ? 'Verifying...' : 'Verify Account'}
-            {!verifyMutation.isPending && <ArrowRight className="ml-3 h-6 w-6 inline" />}
+            {verifyMutation.isPending ? 'Verifying...' : 'Verify Code'}
           </Button>
         </form>
 
-        <div className="text-center space-y-6 pt-4 border-t border-border/50">
+        <div className="text-center space-y-4 pt-4 border-t border-gray-100">
           <p className="text-sm font-medium text-muted-foreground">
             Didn't receive the code?
           </p>
@@ -176,10 +181,10 @@ export default function VerifyEmailPage() {
             type="button" 
             onClick={() => resendMutation.mutate()}
             disabled={resendMutation.isPending}
-            className="flex items-center gap-2 mx-auto text-sunset-orange font-black text-sm uppercase tracking-widest hover:underline disabled:opacity-50 transition-all active:scale-95"
+            className="flex items-center gap-2 mx-auto text-sunset-orange font-bold text-sm uppercase tracking-wider hover:text-orange-600 disabled:opacity-50 transition-all active:scale-95"
           >
-            <RefreshCw className={`h-4 w-4 ${resendMutation.isPending ? 'animate-spin' : ''}`} />
-            Resend Code
+            <RefreshCw className={`h-3.5 w-3.5 ${resendMutation.isPending ? 'animate-spin' : ''}`} />
+            Resend
           </button>
         </div>
       </motion.div>

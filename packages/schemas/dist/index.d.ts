@@ -49,6 +49,46 @@ export declare const AgencyProfileSchema: z.ZodObject<{
     bio?: string | undefined;
     logo?: string | undefined;
 }>;
+export declare const ItineraryDaySchema: z.ZodObject<{
+    id: z.ZodString;
+    templateId: z.ZodString;
+    dayNumber: z.ZodNumber;
+    title: z.ZodOptional<z.ZodString>;
+    description: z.ZodString;
+    activities: z.ZodArray<z.ZodString, "many">;
+}, "strip", z.ZodTypeAny, {
+    id: string;
+    description: string;
+    templateId: string;
+    dayNumber: number;
+    activities: string[];
+    title?: string | undefined;
+}, {
+    id: string;
+    description: string;
+    templateId: string;
+    dayNumber: number;
+    activities: string[];
+    title?: string | undefined;
+}>;
+export declare const CreateItineraryDaySchema: z.ZodObject<Omit<{
+    id: z.ZodString;
+    templateId: z.ZodString;
+    dayNumber: z.ZodNumber;
+    title: z.ZodOptional<z.ZodString>;
+    description: z.ZodString;
+    activities: z.ZodArray<z.ZodString, "many">;
+}, "id" | "templateId">, "strip", z.ZodTypeAny, {
+    description: string;
+    dayNumber: number;
+    activities: string[];
+    title?: string | undefined;
+}, {
+    description: string;
+    dayNumber: number;
+    activities: string[];
+    title?: string | undefined;
+}>;
 export declare const TripTemplateSchema: z.ZodObject<{
     id: z.ZodString;
     agencyId: z.ZodString;
@@ -60,6 +100,28 @@ export declare const TripTemplateSchema: z.ZodObject<{
     durationNights: z.ZodNumber;
     inclusions: z.ZodArray<z.ZodString, "many">;
     images: z.ZodArray<z.ZodString, "many">;
+    itinerary: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        templateId: z.ZodString;
+        dayNumber: z.ZodNumber;
+        title: z.ZodOptional<z.ZodString>;
+        description: z.ZodString;
+        activities: z.ZodArray<z.ZodString, "many">;
+    }, "strip", z.ZodTypeAny, {
+        id: string;
+        description: string;
+        templateId: string;
+        dayNumber: number;
+        activities: string[];
+        title?: string | undefined;
+    }, {
+        id: string;
+        description: string;
+        templateId: string;
+        dayNumber: number;
+        activities: string[];
+        title?: string | undefined;
+    }>, "many">>;
     status: z.ZodEnum<["ACTIVE", "DRAFT", "ARCHIVED"]>;
     createdAt: z.ZodString;
 }, "strip", z.ZodTypeAny, {
@@ -75,6 +137,14 @@ export declare const TripTemplateSchema: z.ZodObject<{
     inclusions: string[];
     images: string[];
     createdAt: string;
+    itinerary?: {
+        id: string;
+        description: string;
+        templateId: string;
+        dayNumber: number;
+        activities: string[];
+        title?: string | undefined;
+    }[] | undefined;
 }, {
     id: string;
     title: string;
@@ -88,6 +158,14 @@ export declare const TripTemplateSchema: z.ZodObject<{
     inclusions: string[];
     images: string[];
     createdAt: string;
+    itinerary?: {
+        id: string;
+        description: string;
+        templateId: string;
+        dayNumber: number;
+        activities: string[];
+        title?: string | undefined;
+    }[] | undefined;
 }>;
 export declare const CreateTripTemplateSchema: z.ZodObject<Omit<{
     id: z.ZodString;
@@ -100,9 +178,50 @@ export declare const CreateTripTemplateSchema: z.ZodObject<Omit<{
     durationNights: z.ZodNumber;
     inclusions: z.ZodArray<z.ZodString, "many">;
     images: z.ZodArray<z.ZodString, "many">;
+    itinerary: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        id: z.ZodString;
+        templateId: z.ZodString;
+        dayNumber: z.ZodNumber;
+        title: z.ZodOptional<z.ZodString>;
+        description: z.ZodString;
+        activities: z.ZodArray<z.ZodString, "many">;
+    }, "strip", z.ZodTypeAny, {
+        id: string;
+        description: string;
+        templateId: string;
+        dayNumber: number;
+        activities: string[];
+        title?: string | undefined;
+    }, {
+        id: string;
+        description: string;
+        templateId: string;
+        dayNumber: number;
+        activities: string[];
+        title?: string | undefined;
+    }>, "many">>;
     status: z.ZodEnum<["ACTIVE", "DRAFT", "ARCHIVED"]>;
     createdAt: z.ZodString;
-}, "id" | "agencyId" | "createdAt">, "strip", z.ZodTypeAny, {
+}, "id" | "agencyId" | "itinerary" | "createdAt"> & {
+    itinerary: z.ZodOptional<z.ZodArray<z.ZodObject<Omit<{
+        id: z.ZodString;
+        templateId: z.ZodString;
+        dayNumber: z.ZodNumber;
+        title: z.ZodOptional<z.ZodString>;
+        description: z.ZodString;
+        activities: z.ZodArray<z.ZodString, "many">;
+    }, "id" | "templateId">, "strip", z.ZodTypeAny, {
+        description: string;
+        dayNumber: number;
+        activities: string[];
+        title?: string | undefined;
+    }, {
+        description: string;
+        dayNumber: number;
+        activities: string[];
+        title?: string | undefined;
+    }>, "many">>;
+}, "strip", z.ZodTypeAny, {
     title: string;
     description: string;
     status: "ACTIVE" | "DRAFT" | "ARCHIVED";
@@ -112,6 +231,12 @@ export declare const CreateTripTemplateSchema: z.ZodObject<Omit<{
     durationNights: number;
     inclusions: string[];
     images: string[];
+    itinerary?: {
+        description: string;
+        dayNumber: number;
+        activities: string[];
+        title?: string | undefined;
+    }[] | undefined;
 }, {
     title: string;
     description: string;
@@ -122,6 +247,12 @@ export declare const CreateTripTemplateSchema: z.ZodObject<Omit<{
     durationNights: number;
     inclusions: string[];
     images: string[];
+    itinerary?: {
+        description: string;
+        dayNumber: number;
+        activities: string[];
+        title?: string | undefined;
+    }[] | undefined;
 }>;
 export declare const TripSessionSchema: z.ZodObject<{
     id: z.ZodString;

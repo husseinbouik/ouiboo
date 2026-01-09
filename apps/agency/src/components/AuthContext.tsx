@@ -18,6 +18,8 @@ interface User {
         verificationStatus: string;
         bio?: string;
         logo?: string;
+        subscriptionStatus?: string;
+        trialEndsAt?: string;
     };
 }
 

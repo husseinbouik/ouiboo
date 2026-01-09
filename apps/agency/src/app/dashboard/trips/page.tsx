@@ -25,6 +25,11 @@ export default function AgencyTripsPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [deleteTripId, setDeleteTripId] = React.useState<string | null>(null);
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const { data: trips, isLoading } = useQuery({
     queryKey: ['agency-trips'],
@@ -62,8 +67,10 @@ export default function AgencyTripsPage() {
     updateStatusMutation.mutate({ id, status: newStatus });
   };
 
+  if (!mounted) return null;
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500" suppressHydrationWarning>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-deep-blue dark:text-gray-100">{t('sidebar.myTrips')}</h1>

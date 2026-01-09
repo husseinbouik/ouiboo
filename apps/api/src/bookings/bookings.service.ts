@@ -11,12 +11,46 @@ export class BookingsService {
             where: { id: dto.sessionId },
         });
 
-        if (!session || session.availableSeats < dto.guestsCount) {
-            throw new BadRequestException('Not enough seats available');
+        if (!session) {
+            throw new BadRequestException('Session not found');
         }
 
         return this.db.$transaction(async (tx) => {
-            // Create booking
+            // 1. Check for duplicates
+            const existing = await tx.booking.findFirst({
+                where: {
+                    sessionId: dto.sessionId,
+                    travelerId,
+                    status: { not: 'CANCELLED' }
+                }
+            });
+
+            if (existing) {
+                throw new BadRequestException('You already have a booking for this session');
+            }
+
+            // 2. Atomic update to reserve seats (Concurrent Safe)
+            // returning count helps know if it succeeded
+            const result = await tx.tripSession.updateMany({
+                where: {
+                    id: dto.sessionId,
+                    availableSeats: { gte: dto.guestsCount }
+                },
+                data: {
+                    availableSeats: {
+                        decrement: dto.guestsCount,
+                    },
+                },
+            });
+
+            if (result.count === 0) {
+                throw new BadRequestException('Not enough seats available');
+            }
+
+            // 3. Create booking
+            // Re-fetch session for price info (or pass it in if we trust it doesn't change much, safer to fetch)
+            const session = await tx.tripSession.findUnique({ where: { id: dto.sessionId } });
+
             const booking = await tx.booking.create({
                 data: {
                     sessionId: dto.sessionId,
@@ -24,16 +58,6 @@ export class BookingsService {
                     guestsCount: dto.guestsCount,
                     totalAmount: session.price * dto.guestsCount,
                     status: 'PENDING',
-                },
-            });
-
-            // Update seats
-            await tx.tripSession.update({
-                where: { id: dto.sessionId },
-                data: {
-                    availableSeats: {
-                        decrement: dto.guestsCount,
-                    },
                 },
             });
 
@@ -50,6 +74,7 @@ export class BookingsService {
                         template: true,
                     },
                 },
+                paymentProof: true,
             },
         });
     }
@@ -79,7 +104,19 @@ export class BookingsService {
         });
     }
 
-    async uploadPaymentProof(bookingId: string, imageUrl: string) {
+    async uploadPaymentProof(bookingId: string, travelerId: string, imageUrl: string) {
+        const booking = await this.db.booking.findUnique({
+            where: { id: bookingId },
+        });
+
+        if (!booking) {
+            throw new BadRequestException('Booking not found');
+        }
+
+        if (booking.travelerId !== travelerId) {
+            throw new BadRequestException('Unauthorized: You can only upload proof for your own bookings');
+        }
+
         return this.db.$transaction(async (tx) => {
             const proof = await tx.paymentProof.create({
                 data: {

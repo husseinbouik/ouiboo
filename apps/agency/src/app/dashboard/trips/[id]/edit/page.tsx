@@ -9,6 +9,8 @@ import {
   X,
   Clock,
   MapPin,
+  AlertCircle,
+  Check,
   Save
 } from 'lucide-react';
 import { Button, Input, Card, CardContent } from '@ouiboo/ui';
@@ -57,15 +59,33 @@ export default function EditTripPage() {
         durationDays: trip.durationDays,
         durationNights: trip.durationNights,
         inclusions: trip.inclusions || [],
+        exclusions: trip.exclusions || [],
+        checklist: trip.checklist || [],
         images: trip.images || [],
+        itinerary: trip.itinerary || [],
         status: trip.status,
       });
     }
   }, [trip, reset]);
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields: inclusionFields, append: appendInclusion, remove: removeInclusion } = useFieldArray({
     control,
     name: 'inclusions' as any
+  });
+
+  const { fields: exclusionFields, append: appendExclusion, remove: removeExclusion } = useFieldArray({
+    control,
+    name: 'exclusions' as any
+  });
+
+  const { fields: checklistFields, append: appendChecklistItem, remove: removeChecklistItem } = useFieldArray({
+    control,
+    name: 'checklist' as any
+  });
+
+  const { fields: itineraryFields, append: appendDay, remove: removeDay } = useFieldArray({
+    control,
+    name: 'itinerary' as any
   });
 
   const watchedImages = watch('images') || [];
@@ -104,11 +124,19 @@ export default function EditTripPage() {
   const nextStep = async () => {
     let fieldsToValidate: any[] = [];
     if (step === 1) fieldsToValidate = ['title', 'description', 'category', 'startLocation', 'durationDays', 'durationNights'];
-    if (step === 2) fieldsToValidate = ['images'];
+    if (step === 2) fieldsToValidate = ['itinerary'];
+    if (step === 3) fieldsToValidate = ['images'];
     
     const isValid = await trigger(fieldsToValidate as any);
     if (isValid) {
-      setStep(3);
+      if (step === 1 && (!itineraryFields || itineraryFields.length === 0)) {
+        // Initialize itinerary based on durationDays if empty
+        const days = watch('durationDays');
+        for (let i = 1; i <= days; i++) {
+          appendDay({ dayNumber: i, title: `Day ${i}`, description: '', activities: [] });
+        }
+      }
+      setStep(s => s + 1);
     }
   };
 
@@ -116,11 +144,27 @@ export default function EditTripPage() {
 
   const onSubmit = (data: CreateTripInput) => {
     // Safety check: only allow submission from the final step
-    if (step < 3) {
+    if (step < 4) {
       nextStep();
       return;
     }
-    updateTripMutation.mutate(data);
+
+    // Clean up itinerary data to remove IDs and ensure proper types
+    const cleanedData = {
+      ...data,
+      itinerary: data.itinerary?.map((day: { dayNumber: number; title?: string; description: string; activities: string[] }) => ({
+        dayNumber: Number(day.dayNumber),
+        title: day.title,
+        description: day.description,
+        activities: Array.isArray(day.activities) ? day.activities : []
+      })),
+      // Ensure inclusions, exclusions, and checklist are arrays of strings
+      inclusions: data.inclusions?.filter((item: string) => typeof item === 'string' && item.trim() !== '') || [],
+      exclusions: data.exclusions?.filter((item: string) => typeof item === 'string' && item.trim() !== '') || [],
+      checklist: data.checklist?.filter((item: string) => typeof item === 'string' && item.trim() !== '') || [],
+    };
+
+    updateTripMutation.mutate(cleanedData as any);
   };
 
   if (!mounted || isLoadingTrip) return (
@@ -137,10 +181,10 @@ export default function EditTripPage() {
           Back to Trip Detail
         </Link>
         <div className="flex gap-2">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className={cn(
                 "h-1.5 w-8 rounded-full transition-all duration-300",
-                i === step ? "bg-deep-blue dark:bg-blue-600 w-12" : i < step ? "bg-emerald-500" : "bg-gray-200 dark:bg-slate-800"
+                i <= step ? "bg-deep-blue dark:bg-blue-600" : "bg-gray-200 dark:bg-slate-800"
               )}></div>
             ))}
         </div>
@@ -161,8 +205,9 @@ export default function EditTripPage() {
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-2">
             {step === 1 && "Update basic trip information and logistics."}
-            {step === 2 && "Manage your trip gallery and visual representation."}
-            {step === 3 && "Finalize inclusions and trip status."}
+            {step === 2 && "Update the day-by-day plan."}
+            {step === 3 && "Manage your trip gallery and visual representation."}
+            {step === 4 && "Finalize inclusions and trip status."}
           </p>
         </div>
 
@@ -218,6 +263,48 @@ export default function EditTripPage() {
 
             {step === 2 && (
               <section className="space-y-6 animate-in fade-in duration-300">
+                <div className="flex flex-col gap-6">
+                  {itineraryFields.map((field, index) => (
+                    <Card key={field.id} className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
+                      <CardContent className="p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-bold text-lg flex items-center gap-2">
+                            <span className="w-8 h-8 rounded-lg bg-sunset-orange/10 text-sunset-orange flex items-center justify-center text-sm">{index + 1}</span>
+                            Day {index + 1}
+                          </h3>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Title</label>
+                            <Input {...register(`itinerary.${index}.title` as any)} placeholder="e.g. Arrival and City Tour" className="h-12 dark:bg-slate-800 dark:border-slate-700" />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">What happens on this day?</label>
+                            <textarea 
+                              {...register(`itinerary.${index}.description` as any)}
+                              className="w-full h-24 p-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-deep-blue/5 focus:border-deep-blue dark:focus:border-blue-500 transition-all text-gray-900 dark:text-gray-100"
+                              placeholder="Describe the plan for the day..."
+                            ></textarea>
+                            <input type="hidden" {...register(`itinerary.${index}.dayNumber` as any, { valueAsNumber: true })} />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  {errors.itinerary && (
+                    <p className="text-red-500 text-sm font-medium p-4 bg-red-50 dark:bg-red-900/10 rounded-xl">
+                      Please fill in all itinerary days. All descriptions are required.
+                    </p>
+                  )}
+                  <Button type="button" variant="outline" onClick={() => appendDay({ dayNumber: itineraryFields.length + 1, title: '', description: '', activities: [] })} className="h-14 rounded-2xl border-dashed">
+                    <Plus className="h-5 w-5 mr-2" /> Add Another Day
+                  </Button>
+                </div>
+              </section>
+            )}
+
+            {step === 3 && (
+              <section className="space-y-6 animate-in fade-in duration-300">
                 <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
                   <CardContent className="p-6 space-y-6">
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -255,41 +342,110 @@ export default function EditTripPage() {
               </section>
             )}
 
-            {step === 3 && (
-              <section className="space-y-6 animate-in fade-in duration-300">
+            {step === 4 && (
+              <section className="space-y-8 animate-in fade-in duration-300">
                 <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
-                  <CardContent className="p-6 space-y-6">
-                    <div className="space-y-3">
-                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">What's Included</label>
-                      <div className="space-y-3">
-                        {fields.map((field, index) => (
-                          <div key={field.id} className="flex gap-2">
-                            <Input {...register(`inclusions.${index}` as any)} className="h-12 dark:bg-slate-800 dark:border-slate-700" placeholder="e.g. Daily Breakfast..." />
-                            <Button type="button" variant="ghost" onClick={() => remove(index)} className="text-red-500 hover:bg-red-50 h-12">
-                               <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                        <Button type="button" variant="outline" onClick={() => append("")} className="w-full h-12 dark:border-slate-700 border-dashed">
-                          <Plus className="h-4 w-4 mr-2" /> Add Inclusion
-                        </Button>
-                      </div>
+                  <header className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                      <Check className="h-5 w-5 text-emerald-500" />
                     </div>
-                    <div className="space-y-4 pt-4 border-t dark:border-slate-800">
+                    <div>
+                      <h3 className="font-bold text-gray-900 dark:text-gray-100">Included in the trip</h3>
+                      <p className="text-xs text-gray-500">List everything the traveler gets</p>
+                    </div>
+                  </header>
+                  <CardContent className="p-6 space-y-4">
+                    <div className="space-y-4">
+                      {inclusionFields.map((field, index) => (
+                        <div key={field.id} className="flex gap-2">
+                          <Input {...register(`inclusions.${index}` as any)} placeholder="e.g. Comfy transport" className="dark:bg-slate-800" />
+                          <Button type="button" variant="ghost" size="icon" onClick={() => removeInclusion(index)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button type="button" variant="outline" size="sm" onClick={() => appendInclusion('')} className="w-full border-dashed">
+                        <Plus className="h-4 w-4 mr-2" /> Add Included Item
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
+                  <header className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                      <X className="h-5 w-5 text-red-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-900 dark:text-gray-100">Excluded / Optional</h3>
+                      <p className="text-xs text-gray-500">Extras that travelers pay separately</p>
+                    </div>
+                  </header>
+                  <CardContent className="p-6 space-y-4">
+                    <div className="space-y-4">
+                      {exclusionFields.map((field, index) => (
+                        <div key={field.id} className="flex gap-2">
+                          <Input {...register(`exclusions.${index}` as any)} placeholder="e.g. Safari Nature (150 Dhs)" className="dark:bg-slate-800" />
+                          <Button type="button" variant="ghost" size="icon" onClick={() => removeExclusion(index)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button type="button" variant="outline" size="sm" onClick={() => appendExclusion('')} className="w-full border-dashed">
+                        <Plus className="h-4 w-4 mr-2" /> Add Excluded Item
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
+                  <header className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                      <Info className="h-5 w-5 text-amber-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-900 dark:text-gray-100">Traveler Checklist</h3>
+                      <p className="text-xs text-gray-500">What should they pack? (e.g. Hiking shoes)</p>
+                    </div>
+                  </header>
+                  <CardContent className="p-6 space-y-4">
+                    <div className="space-y-4">
+                      {checklistFields.map((field, index) => (
+                        <div key={field.id} className="flex gap-2">
+                          <Input {...register(`checklist.${index}` as any)} placeholder="e.g. Your smile 😊" className="dark:bg-slate-800" />
+                          <Button type="button" variant="ghost" size="icon" onClick={() => removeChecklistItem(index)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button type="button" variant="outline" size="sm" onClick={() => appendChecklistItem('')} className="w-full border-dashed">
+                        <Plus className="h-4 w-4 mr-2" /> Add Checklist Item
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <div className="space-y-4 pt-4 border-t dark:border-slate-800">
                       <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Publish Status</label>
                       <div className="flex gap-6">
                         {['DRAFT', 'ACTIVE'].map((s) => (
                           <label key={s} className="flex items-center gap-3 cursor-pointer group">
-                            <input type="radio" value={s} {...register('status')} className="h-4 w-4 text-deep-blue bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 focus:ring-deep-blue" />
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-deep-blue transition-colors">
-                              {s === 'DRAFT' ? 'Draft' : 'Active'}
-                            </span>
+                             <input 
+                               type="radio" 
+                               {...register('status')} 
+                               value={s}
+                               className="w-5 h-5 text-sunset-orange bg-muted border-border focus:ring-sunset-orange"
+                             />
+                             <span className={cn(
+                               "text-sm font-bold transition-colors",
+                               watch('status') === s ? "text-deep-blue dark:text-blue-400" : "text-gray-400 group-hover:text-gray-600"
+                             )}>
+                               {s}
+                             </span>
                           </label>
                         ))}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
               </section>
             )}
 
@@ -304,7 +460,7 @@ export default function EditTripPage() {
               >
                 Previous
               </Button>
-              {step < 3 ? (
+              {step < 4 ? (
                 <Button 
                   key="continue-btn"
                   type="button"

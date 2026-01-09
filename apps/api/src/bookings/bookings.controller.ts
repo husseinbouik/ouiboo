@@ -32,7 +32,7 @@ export class BookingsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Upload payment proof for a booking' })
-    uploadPaymentProof(@Param('id') id: string, @Body('imageUrl') imageUrl: string) {
-        return this.bookingsService.uploadPaymentProof(id, imageUrl);
+    uploadPaymentProof(@Request() req, @Param('id') id: string, @Body('imageUrl') imageUrl: string) {
+        return this.bookingsService.uploadPaymentProof(id, req.user.userId, imageUrl);
     }
 }

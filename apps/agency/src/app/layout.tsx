@@ -3,6 +3,7 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 import "@/lib/i18n";
 import { AgencyShell } from "@/components/AgencyShell";
+import { TrialBanner } from "@/components/TrialBanner";
 
 export const metadata: Metadata = {
   title: "Ouiboo Agency",
@@ -16,11 +17,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="bg-muted/20">
+      <body className="bg-muted/20" suppressHydrationWarning>
         <Providers>
           <AgencyShell>
             {children}
           </AgencyShell>
+          <TrialBanner />
         </Providers>
       </body>
     </html>
