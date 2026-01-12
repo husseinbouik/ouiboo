@@ -10,7 +10,8 @@ import {
   Calendar,
   DollarSign,
   Info,
-  X
+  X,
+  Check
 } from 'lucide-react';
 import { Button, Input, Card, CardContent } from '@ouiboo/ui';
 import Link from 'next/link';
@@ -415,8 +416,6 @@ export default function CreateTripPage() {
                         ))}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
               </section>
             )}
 

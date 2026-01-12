@@ -147,7 +147,8 @@ exports.Prisma.AgencyProfileScalarFieldEnum = {
   logo: 'logo',
   subscriptionStatus: 'subscriptionStatus',
   trialEndsAt: 'trialEndsAt',
-  subscriptionEndsAt: 'subscriptionEndsAt'
+  subscriptionEndsAt: 'subscriptionEndsAt',
+  bankDetails: 'bankDetails'
 };
 
 exports.Prisma.TripTemplateScalarFieldEnum = {

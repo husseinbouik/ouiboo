@@ -2952,6 +2952,7 @@ export namespace Prisma {
     subscriptionStatus: $Enums.SubscriptionStatus | null
     trialEndsAt: Date | null
     subscriptionEndsAt: Date | null
+    bankDetails: string | null
   }
 
   export type AgencyProfileMaxAggregateOutputType = {
@@ -2967,6 +2968,7 @@ export namespace Prisma {
     subscriptionStatus: $Enums.SubscriptionStatus | null
     trialEndsAt: Date | null
     subscriptionEndsAt: Date | null
+    bankDetails: string | null
   }
 
   export type AgencyProfileCountAggregateOutputType = {
@@ -2982,6 +2984,7 @@ export namespace Prisma {
     subscriptionStatus: number
     trialEndsAt: number
     subscriptionEndsAt: number
+    bankDetails: number
     _all: number
   }
 
@@ -2999,6 +3002,7 @@ export namespace Prisma {
     subscriptionStatus?: true
     trialEndsAt?: true
     subscriptionEndsAt?: true
+    bankDetails?: true
   }
 
   export type AgencyProfileMaxAggregateInputType = {
@@ -3014,6 +3018,7 @@ export namespace Prisma {
     subscriptionStatus?: true
     trialEndsAt?: true
     subscriptionEndsAt?: true
+    bankDetails?: true
   }
 
   export type AgencyProfileCountAggregateInputType = {
@@ -3029,6 +3034,7 @@ export namespace Prisma {
     subscriptionStatus?: true
     trialEndsAt?: true
     subscriptionEndsAt?: true
+    bankDetails?: true
     _all?: true
   }
 
@@ -3117,6 +3123,7 @@ export namespace Prisma {
     subscriptionStatus: $Enums.SubscriptionStatus
     trialEndsAt: Date | null
     subscriptionEndsAt: Date | null
+    bankDetails: string | null
     _count: AgencyProfileCountAggregateOutputType | null
     _min: AgencyProfileMinAggregateOutputType | null
     _max: AgencyProfileMaxAggregateOutputType | null
@@ -3149,6 +3156,7 @@ export namespace Prisma {
     subscriptionStatus?: boolean
     trialEndsAt?: boolean
     subscriptionEndsAt?: boolean
+    bankDetails?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     templates?: boolean | AgencyProfile$templatesArgs<ExtArgs>
     wallet?: boolean | AgencyProfile$walletArgs<ExtArgs>
@@ -3169,6 +3177,7 @@ export namespace Prisma {
     subscriptionStatus?: boolean
     trialEndsAt?: boolean
     subscriptionEndsAt?: boolean
+    bankDetails?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["agencyProfile"]>
 
@@ -3185,6 +3194,7 @@ export namespace Prisma {
     subscriptionStatus?: boolean
     trialEndsAt?: boolean
     subscriptionEndsAt?: boolean
+    bankDetails?: boolean
   }
 
   export type AgencyProfileInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3219,6 +3229,7 @@ export namespace Prisma {
       subscriptionStatus: $Enums.SubscriptionStatus
       trialEndsAt: Date | null
       subscriptionEndsAt: Date | null
+      bankDetails: string | null
     }, ExtArgs["result"]["agencyProfile"]>
     composites: {}
   }
@@ -3628,6 +3639,7 @@ export namespace Prisma {
     readonly subscriptionStatus: FieldRef<"AgencyProfile", 'SubscriptionStatus'>
     readonly trialEndsAt: FieldRef<"AgencyProfile", 'DateTime'>
     readonly subscriptionEndsAt: FieldRef<"AgencyProfile", 'DateTime'>
+    readonly bankDetails: FieldRef<"AgencyProfile", 'String'>
   }
     
 
@@ -12142,7 +12154,8 @@ export namespace Prisma {
     logo: 'logo',
     subscriptionStatus: 'subscriptionStatus',
     trialEndsAt: 'trialEndsAt',
-    subscriptionEndsAt: 'subscriptionEndsAt'
+    subscriptionEndsAt: 'subscriptionEndsAt',
+    bankDetails: 'bankDetails'
   };
 
   export type AgencyProfileScalarFieldEnum = (typeof AgencyProfileScalarFieldEnum)[keyof typeof AgencyProfileScalarFieldEnum]
@@ -12563,6 +12576,7 @@ export namespace Prisma {
     subscriptionStatus?: EnumSubscriptionStatusFilter<"AgencyProfile"> | $Enums.SubscriptionStatus
     trialEndsAt?: DateTimeNullableFilter<"AgencyProfile"> | Date | string | null
     subscriptionEndsAt?: DateTimeNullableFilter<"AgencyProfile"> | Date | string | null
+    bankDetails?: StringNullableFilter<"AgencyProfile"> | string | null
     user?: XOR<UserRelationFilter, UserWhereInput>
     templates?: TripTemplateListRelationFilter
     wallet?: XOR<WalletNullableRelationFilter, WalletWhereInput> | null
@@ -12582,6 +12596,7 @@ export namespace Prisma {
     subscriptionStatus?: SortOrder
     trialEndsAt?: SortOrderInput | SortOrder
     subscriptionEndsAt?: SortOrderInput | SortOrder
+    bankDetails?: SortOrderInput | SortOrder
     user?: UserOrderByWithRelationInput
     templates?: TripTemplateOrderByRelationAggregateInput
     wallet?: WalletOrderByWithRelationInput
@@ -12604,6 +12619,7 @@ export namespace Prisma {
     subscriptionStatus?: EnumSubscriptionStatusFilter<"AgencyProfile"> | $Enums.SubscriptionStatus
     trialEndsAt?: DateTimeNullableFilter<"AgencyProfile"> | Date | string | null
     subscriptionEndsAt?: DateTimeNullableFilter<"AgencyProfile"> | Date | string | null
+    bankDetails?: StringNullableFilter<"AgencyProfile"> | string | null
     user?: XOR<UserRelationFilter, UserWhereInput>
     templates?: TripTemplateListRelationFilter
     wallet?: XOR<WalletNullableRelationFilter, WalletWhereInput> | null
@@ -12623,6 +12639,7 @@ export namespace Prisma {
     subscriptionStatus?: SortOrder
     trialEndsAt?: SortOrderInput | SortOrder
     subscriptionEndsAt?: SortOrderInput | SortOrder
+    bankDetails?: SortOrderInput | SortOrder
     _count?: AgencyProfileCountOrderByAggregateInput
     _max?: AgencyProfileMaxOrderByAggregateInput
     _min?: AgencyProfileMinOrderByAggregateInput
@@ -12644,6 +12661,7 @@ export namespace Prisma {
     subscriptionStatus?: EnumSubscriptionStatusWithAggregatesFilter<"AgencyProfile"> | $Enums.SubscriptionStatus
     trialEndsAt?: DateTimeNullableWithAggregatesFilter<"AgencyProfile"> | Date | string | null
     subscriptionEndsAt?: DateTimeNullableWithAggregatesFilter<"AgencyProfile"> | Date | string | null
+    bankDetails?: StringNullableWithAggregatesFilter<"AgencyProfile"> | string | null
   }
 
   export type TripTemplateWhereInput = {
@@ -13334,6 +13352,7 @@ export namespace Prisma {
     subscriptionStatus?: $Enums.SubscriptionStatus
     trialEndsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
+    bankDetails?: string | null
     user: UserCreateNestedOneWithoutAgencyProfileInput
     templates?: TripTemplateCreateNestedManyWithoutAgencyInput
     wallet?: WalletCreateNestedOneWithoutAgencyInput
@@ -13353,6 +13372,7 @@ export namespace Prisma {
     subscriptionStatus?: $Enums.SubscriptionStatus
     trialEndsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
+    bankDetails?: string | null
     templates?: TripTemplateUncheckedCreateNestedManyWithoutAgencyInput
     wallet?: WalletUncheckedCreateNestedOneWithoutAgencyInput
     payoutRequests?: PayoutRequestUncheckedCreateNestedManyWithoutAgencyInput
@@ -13370,6 +13390,7 @@ export namespace Prisma {
     subscriptionStatus?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
     trialEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bankDetails?: NullableStringFieldUpdateOperationsInput | string | null
     user?: UserUpdateOneRequiredWithoutAgencyProfileNestedInput
     templates?: TripTemplateUpdateManyWithoutAgencyNestedInput
     wallet?: WalletUpdateOneWithoutAgencyNestedInput
@@ -13389,6 +13410,7 @@ export namespace Prisma {
     subscriptionStatus?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
     trialEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bankDetails?: NullableStringFieldUpdateOperationsInput | string | null
     templates?: TripTemplateUncheckedUpdateManyWithoutAgencyNestedInput
     wallet?: WalletUncheckedUpdateOneWithoutAgencyNestedInput
     payoutRequests?: PayoutRequestUncheckedUpdateManyWithoutAgencyNestedInput
@@ -13407,6 +13429,7 @@ export namespace Prisma {
     subscriptionStatus?: $Enums.SubscriptionStatus
     trialEndsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
+    bankDetails?: string | null
   }
 
   export type AgencyProfileUpdateManyMutationInput = {
@@ -13421,6 +13444,7 @@ export namespace Prisma {
     subscriptionStatus?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
     trialEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bankDetails?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type AgencyProfileUncheckedUpdateManyInput = {
@@ -13436,6 +13460,7 @@ export namespace Prisma {
     subscriptionStatus?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
     trialEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bankDetails?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type TripTemplateCreateInput = {
@@ -14292,6 +14317,7 @@ export namespace Prisma {
     subscriptionStatus?: SortOrder
     trialEndsAt?: SortOrder
     subscriptionEndsAt?: SortOrder
+    bankDetails?: SortOrder
   }
 
   export type AgencyProfileMaxOrderByAggregateInput = {
@@ -14307,6 +14333,7 @@ export namespace Prisma {
     subscriptionStatus?: SortOrder
     trialEndsAt?: SortOrder
     subscriptionEndsAt?: SortOrder
+    bankDetails?: SortOrder
   }
 
   export type AgencyProfileMinOrderByAggregateInput = {
@@ -14322,6 +14349,7 @@ export namespace Prisma {
     subscriptionStatus?: SortOrder
     trialEndsAt?: SortOrder
     subscriptionEndsAt?: SortOrder
+    bankDetails?: SortOrder
   }
 
   export type EnumVerificationStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -15859,6 +15887,7 @@ export namespace Prisma {
     subscriptionStatus?: $Enums.SubscriptionStatus
     trialEndsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
+    bankDetails?: string | null
     templates?: TripTemplateCreateNestedManyWithoutAgencyInput
     wallet?: WalletCreateNestedOneWithoutAgencyInput
     payoutRequests?: PayoutRequestCreateNestedManyWithoutAgencyInput
@@ -15876,6 +15905,7 @@ export namespace Prisma {
     subscriptionStatus?: $Enums.SubscriptionStatus
     trialEndsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
+    bankDetails?: string | null
     templates?: TripTemplateUncheckedCreateNestedManyWithoutAgencyInput
     wallet?: WalletUncheckedCreateNestedOneWithoutAgencyInput
     payoutRequests?: PayoutRequestUncheckedCreateNestedManyWithoutAgencyInput
@@ -15941,6 +15971,7 @@ export namespace Prisma {
     subscriptionStatus?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
     trialEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bankDetails?: NullableStringFieldUpdateOperationsInput | string | null
     templates?: TripTemplateUpdateManyWithoutAgencyNestedInput
     wallet?: WalletUpdateOneWithoutAgencyNestedInput
     payoutRequests?: PayoutRequestUpdateManyWithoutAgencyNestedInput
@@ -15958,6 +15989,7 @@ export namespace Prisma {
     subscriptionStatus?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
     trialEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bankDetails?: NullableStringFieldUpdateOperationsInput | string | null
     templates?: TripTemplateUncheckedUpdateManyWithoutAgencyNestedInput
     wallet?: WalletUncheckedUpdateOneWithoutAgencyNestedInput
     payoutRequests?: PayoutRequestUncheckedUpdateManyWithoutAgencyNestedInput
@@ -16266,6 +16298,7 @@ export namespace Prisma {
     subscriptionStatus?: $Enums.SubscriptionStatus
     trialEndsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
+    bankDetails?: string | null
     user: UserCreateNestedOneWithoutAgencyProfileInput
     wallet?: WalletCreateNestedOneWithoutAgencyInput
     payoutRequests?: PayoutRequestCreateNestedManyWithoutAgencyInput
@@ -16284,6 +16317,7 @@ export namespace Prisma {
     subscriptionStatus?: $Enums.SubscriptionStatus
     trialEndsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
+    bankDetails?: string | null
     wallet?: WalletUncheckedCreateNestedOneWithoutAgencyInput
     payoutRequests?: PayoutRequestUncheckedCreateNestedManyWithoutAgencyInput
   }
@@ -16376,6 +16410,7 @@ export namespace Prisma {
     subscriptionStatus?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
     trialEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bankDetails?: NullableStringFieldUpdateOperationsInput | string | null
     user?: UserUpdateOneRequiredWithoutAgencyProfileNestedInput
     wallet?: WalletUpdateOneWithoutAgencyNestedInput
     payoutRequests?: PayoutRequestUpdateManyWithoutAgencyNestedInput
@@ -16394,6 +16429,7 @@ export namespace Prisma {
     subscriptionStatus?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
     trialEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bankDetails?: NullableStringFieldUpdateOperationsInput | string | null
     wallet?: WalletUncheckedUpdateOneWithoutAgencyNestedInput
     payoutRequests?: PayoutRequestUncheckedUpdateManyWithoutAgencyNestedInput
   }
@@ -16949,6 +16985,7 @@ export namespace Prisma {
     subscriptionStatus?: $Enums.SubscriptionStatus
     trialEndsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
+    bankDetails?: string | null
     user: UserCreateNestedOneWithoutAgencyProfileInput
     templates?: TripTemplateCreateNestedManyWithoutAgencyInput
     payoutRequests?: PayoutRequestCreateNestedManyWithoutAgencyInput
@@ -16967,6 +17004,7 @@ export namespace Prisma {
     subscriptionStatus?: $Enums.SubscriptionStatus
     trialEndsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
+    bankDetails?: string | null
     templates?: TripTemplateUncheckedCreateNestedManyWithoutAgencyInput
     payoutRequests?: PayoutRequestUncheckedCreateNestedManyWithoutAgencyInput
   }
@@ -17025,6 +17063,7 @@ export namespace Prisma {
     subscriptionStatus?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
     trialEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bankDetails?: NullableStringFieldUpdateOperationsInput | string | null
     user?: UserUpdateOneRequiredWithoutAgencyProfileNestedInput
     templates?: TripTemplateUpdateManyWithoutAgencyNestedInput
     payoutRequests?: PayoutRequestUpdateManyWithoutAgencyNestedInput
@@ -17043,6 +17082,7 @@ export namespace Prisma {
     subscriptionStatus?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
     trialEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bankDetails?: NullableStringFieldUpdateOperationsInput | string | null
     templates?: TripTemplateUncheckedUpdateManyWithoutAgencyNestedInput
     payoutRequests?: PayoutRequestUncheckedUpdateManyWithoutAgencyNestedInput
   }
@@ -17131,6 +17171,7 @@ export namespace Prisma {
     subscriptionStatus?: $Enums.SubscriptionStatus
     trialEndsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
+    bankDetails?: string | null
     user: UserCreateNestedOneWithoutAgencyProfileInput
     templates?: TripTemplateCreateNestedManyWithoutAgencyInput
     wallet?: WalletCreateNestedOneWithoutAgencyInput
@@ -17149,6 +17190,7 @@ export namespace Prisma {
     subscriptionStatus?: $Enums.SubscriptionStatus
     trialEndsAt?: Date | string | null
     subscriptionEndsAt?: Date | string | null
+    bankDetails?: string | null
     templates?: TripTemplateUncheckedCreateNestedManyWithoutAgencyInput
     wallet?: WalletUncheckedCreateNestedOneWithoutAgencyInput
   }
@@ -17181,6 +17223,7 @@ export namespace Prisma {
     subscriptionStatus?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
     trialEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bankDetails?: NullableStringFieldUpdateOperationsInput | string | null
     user?: UserUpdateOneRequiredWithoutAgencyProfileNestedInput
     templates?: TripTemplateUpdateManyWithoutAgencyNestedInput
     wallet?: WalletUpdateOneWithoutAgencyNestedInput
@@ -17199,6 +17242,7 @@ export namespace Prisma {
     subscriptionStatus?: EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
     trialEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     subscriptionEndsAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    bankDetails?: NullableStringFieldUpdateOperationsInput | string | null
     templates?: TripTemplateUncheckedUpdateManyWithoutAgencyNestedInput
     wallet?: WalletUncheckedUpdateOneWithoutAgencyNestedInput
   }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Patch } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { DatabaseService } from '../database/database.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -87,6 +87,39 @@ export class AdminController {
         return this.db.tripTemplate.update({
             where: { id },
             data: { status: status }
+        });
+    }
+
+    @Get('agencies')
+    @ApiOperation({ summary: 'Get all agencies' })
+    getAgencies() {
+        return this.db.agencyProfile.findMany({
+            include: { user: true }
+        });
+    }
+
+    @Patch('agencies/:id/status')
+    @ApiOperation({ summary: 'Update agency verification or subscription status' })
+    async updateAgencyStatus(@Param('id') id: string, @Body() data: { verificationStatus?: any, subscriptionStatus?: any }) {
+        return this.db.agencyProfile.update({
+            where: { id },
+            data: {
+                verificationStatus: data.verificationStatus,
+                subscriptionStatus: data.subscriptionStatus
+            }
+        });
+    }
+
+    @Get('bookings')
+    @ApiOperation({ summary: 'Get all bookings in the system' })
+    getBookings() {
+        return this.db.booking.findMany({
+            include: {
+                traveler: true,
+                session: { include: { template: true } },
+                paymentProof: true
+            },
+            orderBy: { bookingDate: 'desc' }
         });
     }
 

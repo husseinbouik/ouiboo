@@ -18,7 +18,7 @@ export class LocalStorageProvider implements IStorageProvider {
         }
     }
 
-    async upload(file: Express.Multer.File): Promise<{ url: string; key: string }> {
+    async upload(file: Express.Multer.File, folder: string): Promise<{ url: string; key: string }> {
         // Validation
         if (!this.allowedMimeTypes.includes(file.mimetype)) {
             throw new BadRequestException('Invalid file type. Allowed: JPG, PNG, WEBP, PDF');
@@ -30,8 +30,18 @@ export class LocalStorageProvider implements IStorageProvider {
 
         // Sanitize filename
         const sanitizedOriginal = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const filename = `${Date.now()}-${sanitizedOriginal}`;
-        const filePath = path.join(this.uploadDir, filename);
+        const filename = sanitizedOriginal;
+
+        // Create folder structure: uploads/{folder}
+        // folder usually passed as: agencyId/YYYY-MM-DD
+        const relativePath = path.join(folder);
+        const fullPath = path.join(this.uploadDir, relativePath);
+
+        if (!fs.existsSync(fullPath)) {
+            fs.mkdirSync(fullPath, { recursive: true });
+        }
+
+        const filePath = path.join(fullPath, filename);
 
         // Prevent path traversal
         if (!filePath.startsWith(this.uploadDir)) {
@@ -41,9 +51,12 @@ export class LocalStorageProvider implements IStorageProvider {
         fs.writeFileSync(filePath, file.buffer);
 
         const baseUrl = process.env.API_URL || 'http://localhost:3000/api';
-        const url = `${baseUrl.replace('/api', '')}/uploads/${filename}`;
+        // URL format: uploads/agencyId/date/filename
+        // Windows path separator handling for URL
+        const urlPath = path.join('uploads', relativePath, filename).split(path.sep).join('/');
+        const url = `${baseUrl.replace('/api', '')}/${urlPath}`;
 
-        return { url, key: filename };
+        return { url, key: path.join(relativePath, filename) };
     }
 
     async delete(key: string): Promise<void> {

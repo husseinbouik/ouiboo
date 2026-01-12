@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards, Request, Param } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Request, Param, Patch } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -34,5 +34,17 @@ export class BookingsController {
     @ApiOperation({ summary: 'Upload payment proof for a booking' })
     uploadPaymentProof(@Request() req, @Param('id') id: string, @Body('imageUrl') imageUrl: string) {
         return this.bookingsService.uploadPaymentProof(id, req.user.userId, imageUrl);
+    }
+    @Patch(':id/verify-payment')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.Agency)
+    @ApiOperation({ summary: 'Verify payment proof (Agency only)' })
+    verifyPayment(
+        @Request() req,
+        @Param('id') id: string,
+        @Body('approved') approved: boolean
+    ) {
+        return this.bookingsService.verifyPayment(id, req.user.userId, approved);
     }
 }

@@ -31,12 +31,15 @@ export class TripsService {
 
         console.log(`[TripsService] Prisma Create Data:`, JSON.stringify(data, null, 2));
 
-        return this.db.tripTemplate.create({
+        const result = await this.db.tripTemplate.create({
             data,
             include: {
                 itinerary: true
             }
         });
+
+        console.log(`[TripsService] Created template ${result.id} for agency ${agency.id}.Status: DRAFT`);
+        return result;
     }
 
     async findAllTemplates(featured?: boolean, status?: string, agencyId?: string) {
@@ -75,7 +78,8 @@ export class TripsService {
     }
 
     async findOneTemplate(id: string) {
-        return this.db.tripTemplate.findUnique({
+        console.log('[TripsService] findOneTemplate called with ID:', id);
+        const result = await this.db.tripTemplate.findUnique({
             where: { id },
             include: {
                 sessions: true,
@@ -85,6 +89,8 @@ export class TripsService {
                 },
             },
         });
+        console.log('[TripsService] Result found:', !!result);
+        return result;
     }
 
     async createSession(templateId: string, dto: CreateTripSessionDto) {

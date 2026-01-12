@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { apiClient } from '@/lib/api-client';
 import { 
   Card, 
   CardContent, 
@@ -33,18 +34,33 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { i18n, t } = useTranslation();
 
-  const { register, handleSubmit } = useForm({
+  const { register, handleSubmit, reset } = useForm({
     defaultValues: {
       name: user?.name || '',
       email: user?.email || '',
       companyName: user?.agencyProfile?.companyName || '',
       bio: user?.agencyProfile?.bio || '',
+      bankDetails: user?.agencyProfile?.bankDetails || '',
     }
   });
 
-  const onSubmit = (data: any) => {
-    console.log('Update settings:', data);
-    alert('Settings updated successfully!');
+  const [isSaving, setIsSaving] = React.useState(false);
+
+  const onSubmit = async (data: any) => {
+    try {
+      setIsSaving(true);
+      await apiClient.patch('/agency/profile', {
+        companyName: data.companyName,
+        bio: data.bio,
+        bankDetails: data.bankDetails
+      });
+      alert('Settings updated successfully!');
+    } catch (error) {
+      console.error('Failed to update settings:', error);
+      alert('Failed to update settings');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -103,6 +119,24 @@ export default function SettingsPage() {
 
             <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
               <CardHeader>
+                <CardTitle className="text-xl">Payment & Bank Details</CardTitle>
+                <CardDescription>Instructions for travelers to pay you manually.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Label>Manual Payment Instructions (RIB, Bank Name, etc.)</Label>
+                    <Textarea 
+                      {...register('bankDetails')} 
+                      placeholder="Example: Bank Populaire, RIB: 011 780 0000 1234 5678 9012 34" 
+                      className="h-32 dark:bg-slate-800 dark:border-slate-700" 
+                    />
+                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">This will be displayed prominently on the checkout page.</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
+              <CardHeader>
                 <CardTitle className="text-xl">Appearance & Language</CardTitle>
                 <CardDescription>Customize your dashboard experience.</CardDescription>
               </CardHeader>
@@ -149,9 +183,9 @@ export default function SettingsPage() {
             </Card>
 
             <div className="flex justify-end gap-3">
-              <Button variant="outline" type="button">Discard Changes</Button>
-              <Button type="submit" className="bg-deep-blue hover:bg-blue-800 text-white flex items-center gap-2">
-                <Save className="h-4 w-4" /> Save Changes
+              <Button variant="outline" type="button" onClick={() => reset()}>Discard Changes</Button>
+              <Button type="submit" disabled={isSaving} className="bg-deep-blue hover:bg-blue-800 text-white flex items-center gap-2">
+                {isSaving ? 'Saving...' : <><Save className="h-4 w-4" /> Save Changes</>}
               </Button>
             </div>
           </form>

@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request, Patch, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -136,6 +136,20 @@ export class AgencyController {
             where: { agencyId: agency.id },
             orderBy: { requestedAt: 'desc' },
             take: 20
+        });
+    }
+    @Patch('profile') // Use Patch/Put, no ID param needed as we use req.user
+    @ApiOperation({ summary: 'Update agency profile' })
+    async updateProfile(@Request() req, @Body() data: { companyName?: string; bio?: string; logo?: string; bankDetails?: string; }) {
+        // Validation could be added here or via DTO
+        return this.prisma.agencyProfile.update({
+            where: { userId: req.user.userId },
+            data: {
+                companyName: data.companyName,
+                bio: data.bio,
+                logo: data.logo,
+                bankDetails: data.bankDetails
+            }
         });
     }
 }
