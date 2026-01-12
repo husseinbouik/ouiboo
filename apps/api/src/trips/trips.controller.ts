@@ -24,13 +24,14 @@ export class TripsController {
 
     @Get()
     @ApiOperation({ summary: 'Get all trip templates' })
-    findAll(@Query('featured') featured?: string, @Query('status') status?: string) {
-        return this.tripsService.findAllTemplates(featured === 'true', status);
+    findAll(@Query('featured') featured?: string, @Query('status') status?: string, @Query('agencyId') agencyId?: string) {
+        return this.tripsService.findAllTemplates(featured === 'true', status, agencyId);
     }
 
     @Get(':id')
     @ApiOperation({ summary: 'Get trip template by ID' })
     findOne(@Param('id') id: string) {
+        console.log('[TripsController] Finding trip with ID:', id);
         return this.tripsService.findOneTemplate(id);
     }
 

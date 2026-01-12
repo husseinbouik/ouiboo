@@ -1,14 +1,19 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class BookingsService {
-    constructor(private db: DatabaseService) { }
+    constructor(
+        private db: DatabaseService,
+        private emailService: EmailService,
+    ) { }
 
     async create(travelerId: string, dto: CreateBookingDto) {
         const session = await this.db.tripSession.findUnique({
             where: { id: dto.sessionId },
+            include: { template: { include: { agency: true } } }
         });
 
         if (!session) {
@@ -48,18 +53,36 @@ export class BookingsService {
             }
 
             // 3. Create booking
-            // Re-fetch session for price info (or pass it in if we trust it doesn't change much, safer to fetch)
-            const session = await tx.tripSession.findUnique({ where: { id: dto.sessionId } });
+            // Re-fetch session with template/agency info for email notifications
+            const sessionWithInfo = await tx.tripSession.findUnique({
+                where: { id: dto.sessionId },
+                include: { template: { include: { agency: true } } }
+            });
 
             const booking = await tx.booking.create({
                 data: {
                     sessionId: dto.sessionId,
                     travelerId,
                     guestsCount: dto.guestsCount,
-                    totalAmount: session.price * dto.guestsCount,
+                    totalAmount: sessionWithInfo.price * dto.guestsCount,
                     status: 'PENDING',
                 },
             });
+
+            console.log(`[BookingsService] Created booking ${booking.id} for session ${dto.sessionId}. Travelers: ${dto.guestsCount}`);
+
+            // Send Email Notifications (Async)
+            const traveler = await tx.user.findUnique({ where: { id: travelerId } });
+            const agencyUser = await tx.user.findUnique({ where: { id: sessionWithInfo.template.agency.userId } });
+
+            if (traveler && agencyUser) {
+                this.emailService.sendBookingNotification(
+                    traveler.email,
+                    agencyUser.email,
+                    booking.id,
+                    sessionWithInfo.template.title
+                ).catch(err => console.error('Failed to send booking email', err));
+            }
 
             return booking;
         });
@@ -135,6 +158,57 @@ export class BookingsService {
             });
 
             return proof;
+        });
+    }
+
+    async verifyPayment(bookingId: string, agencyUserId: string, approved: boolean) {
+        // 1. Get Booking and verify Agency ownership
+        const booking = await this.db.booking.findUnique({
+            where: { id: bookingId },
+            include: {
+                session: { include: { template: true } },
+                paymentProof: true
+            }
+        });
+
+        if (!booking) throw new BadRequestException('Booking not found');
+
+        const agency = await this.db.agencyProfile.findUnique({ where: { userId: agencyUserId } });
+        if (!agency || booking.session.template.agencyId !== agency.id) {
+            throw new BadRequestException('Unauthorized: Booking does not belong to your agency');
+        }
+
+        if (!booking.paymentProof) {
+            throw new BadRequestException('No payment proof uploaded');
+        }
+
+        return this.db.$transaction(async (tx) => {
+            // Update Proof Status
+            await tx.paymentProof.update({
+                where: { id: booking.paymentProofId },
+                data: { status: approved ? 'VERIFIED' : 'REJECTED' }
+            });
+
+            // Update Booking Status
+            const newStatus = approved ? 'CONFIRMED' : 'PENDING_PAYMENT';
+
+            console.log(`[BookingsService] Payment verification for booking ${bookingId}: ${approved ? 'APPROVED' : 'REJECTED'}`);
+
+            if (approved) {
+                // Send Payment Confirmation Email (Async)
+                const traveler = await tx.user.findUnique({ where: { id: booking.travelerId } });
+                if (traveler) {
+                    this.emailService.sendPaymentConfirmation(
+                        traveler.email,
+                        booking.session.template.title
+                    ).catch(err => console.error('Failed to send payment confirmation email', err));
+                }
+            }
+
+            return tx.booking.update({
+                where: { id: bookingId },
+                data: { status: newStatus }
+            });
         });
     }
 }

@@ -92,6 +92,7 @@ model AgencyProfile {
   subscriptionStatus SubscriptionStatus @default(TRIAL)
   trialEndsAt        DateTime?
   subscriptionEndsAt DateTime?
+  bankDetails        String?            @db.Text
 }
 
 model TripTemplate {

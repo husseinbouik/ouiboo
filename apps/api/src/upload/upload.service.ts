@@ -9,9 +9,9 @@ export class UploadService {
         this.storageProvider = new LocalStorageProvider();
     }
 
-    async uploadFile(file: Express.Multer.File) {
+    async uploadFile(file: Express.Multer.File, folder: string) {
         // Delegate to secure storage provider
-        const result = await this.storageProvider.upload(file);
+        const result = await this.storageProvider.upload(file, folder);
 
         return {
             url: result.url,

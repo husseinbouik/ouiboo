@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -38,6 +38,19 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [paymentMethod, setPaymentMethod] = useState('virement');
   const [proof, setProof] = useState<string | null>(null);
+  const [timeLeft, setTimeLeft] = useState(15 * 60);
+
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const timer = setInterval(() => setTimeLeft(t => t - 1), 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const { data: trip, isLoading } = useQuery({
     queryKey: ['trip', tripId],
@@ -134,44 +147,55 @@ export default function CheckoutPage() {
                             </div>
                         </RadioGroup>
 
-                        {/* Agency Details Card */}
-                        <div className="p-8 rounded-[2.5rem] bg-card border-4 border-dashed border-muted shadow-inner space-y-6">
-                            <div className="flex justify-between items-start">
-                                <div className="space-y-1">
-                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{paymentMethod === 'virement' ? 'Bank Information' : 'Cash Details'}</p>
-                                    <h3 className="text-xl font-black font-display">{trip.agency?.companyName || 'Sun Travels Morocco'}</h3>
-                                </div>
-                                <Badge className="bg-primary/10 text-primary border-none text-[8px] font-black uppercase tracking-widest">Official Account</Badge>
-                            </div>
-                            
-                            {paymentMethod === 'virement' ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/30 p-6 rounded-2xl">
-                                    <div>
-                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">RIB (24 Digits)</p>
-                                        <p className="text-md font-mono font-black tracking-widest text-foreground">011 780 0000 1234 5678 9012 34</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Bank Name</p>
-                                        <p className="text-md font-bold text-foreground">Attijariwafa Bank</p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-amber-50 p-6 rounded-2xl">
-                                    <div>
-                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">CIN Receiver</p>
-                                        <p className="text-md font-bold text-foreground">AB 123456</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Full Name</p>
-                                        <p className="text-md font-bold text-foreground">Sunset Management S.A.R.L</p>
-                                    </div>
-                                </div>
-                            )}
+                            <AnimatePresence>
+                                {paymentMethod === 'virement' && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="p-6 bg-primary/5 rounded-2xl border-2 border-primary/20 space-y-4"
+                                    >
+                                        <div className="flex items-center gap-2 text-primary">
+                                            <Info className="h-4 w-4" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest">Official Bank Instructions</span>
+                                        </div>
+                                        <div className="bg-white/50 p-4 rounded-xl font-mono text-sm whitespace-pre-wrap break-all leading-relaxed">
+                                            {trip.agency?.bankDetails || 'Bank Name: Attijariwafa Bank\nRIB: 011 780 0000 1234 5678 9012 34\nAccount Name: Sun Travels Morocco'}
+                                        </div>
+                                        <div className="p-4 bg-amber-50 rounded-xl flex gap-3 items-center">
+                                            <div className="h-8 w-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0">
+                                                <Calendar className="h-4 w-4" />
+                                            </div>
+                                            <p className="text-[10px] font-bold text-amber-800 uppercase tracking-tight">
+                                                Seats are reserved for <span className="text-sm font-black underline">{formatTime(timeLeft)} minutes</span>. Please upload proof before the timer expires.
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            <AnimatePresence>
+                                {paymentMethod === 'cash' && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="p-6 bg-amber-50 rounded-2xl border-2 border-amber-200 space-y-2"
+                                    >
+                                        <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1 text-center">Cash Payment Details</p>
+                                        <p className="text-center font-bold text-amber-900">{trip.agency?.companyName}</p>
+                                        <p className="text-center text-xs text-amber-700">Visit any Agency local point or use CashPlus/Wafacash with the details provided by the agency upon arrival.</p>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             <div className="space-y-4 pt-4">
-                                <p className="text-xs font-black text-foreground uppercase tracking-widest">3. Upload Proof of Payment</p>
+                                <div className="flex justify-between items-end">
+                                    <p className="text-xs font-black text-foreground uppercase tracking-widest">3. Upload Proof of Payment</p>
+                                    <Badge variant="outline" className="text-[8px] font-black border-primary/20 text-primary">Required to Confirm</Badge>
+                                </div>
                                 <div 
-                                    className="h-44 border-4 border-dashed border-muted rounded-[2rem] flex flex-col items-center justify-center gap-4 hover:bg-muted/30 transition-all cursor-pointer group"
+                                    className="h-44 border-4 border-dashed border-muted rounded-[2rem] flex flex-col items-center justify-center gap-4 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-pointer group"
                                     onClick={() => setProof('https://images.unsplash.com/photo-1614028674026-a65e31bfd27c?q=80&w=2070&auto=format&fit=crop')}
                                 >
                                     <AnimatePresence mode="wait">
@@ -182,6 +206,9 @@ export default function CheckoutPage() {
                                                 className="relative w-full h-full p-4"
                                             >
                                                 <img src={proof} className="w-full h-full object-cover rounded-xl" alt="Proof" />
+                                                <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
+                                                    <p className="text-white font-black text-xs">Change Photo</p>
+                                                </div>
                                                 <button 
                                                     onClick={(e) => { e.stopPropagation(); setProof(null); }}
                                                     className="absolute top-6 right-6 h-8 w-8 bg-black/60 text-white rounded-full flex items-center justify-center hover:bg-black transition-all"
@@ -191,35 +218,35 @@ export default function CheckoutPage() {
                                             </motion.div>
                                         ) : (
                                             <div className="flex flex-col items-center gap-2">
-                                                <UploadCloud className="h-10 w-10 text-muted-foreground group-hover:scale-110 transition-transform" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Click to upload receipt photo</span>
+                                                <UploadCloud className="h-10 w-10 text-muted-foreground group-hover:text-primary group-hover:scale-110 transition-all" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-primary">Click to upload transfer receipt</span>
                                             </div>
                                         )}
                                     </AnimatePresence>
                                 </div>
+                                <p className="text-[10px] text-muted-foreground text-center font-medium italic">Your booking is secured as soon as you upload this proof.</p>
                             </div>
                         </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
 
-            <div className="p-8 bg-blue-50 dark:bg-blue-950/20 rounded-[2.5rem] border border-blue-100 dark:border-blue-900/50 flex gap-6">
-                <div className="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20"><Info className="h-6 w-6" /></div>
-                <div className="space-y-1">
-                    <h4 className="font-black text-blue-900 dark:text-blue-200 uppercase text-[10px] tracking-widest">Important Disclaimer</h4>
-                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium leading-relaxed">Your booking will be marked as "Pending Verification" until the agency confirms receipt of your payment manually. This usually takes 2-4 business hours.</p>
+                <div className="p-8 bg-blue-50 dark:bg-blue-950/20 rounded-[2.5rem] border border-blue-100 dark:border-blue-900/50 flex gap-6">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20"><Info className="h-6 w-6" /></div>
+                    <div className="space-y-1">
+                        <h4 className="font-black text-blue-900 dark:text-blue-200 uppercase text-[10px] tracking-widest">Important Disclaimer</h4>
+                        <p className="text-sm text-blue-700 dark:text-blue-300 font-medium leading-relaxed">Your booking will be marked as "Pending Verification" until the agency confirms receipt of your payment manually. This usually takes 2-4 business hours.</p>
+                    </div>
                 </div>
             </div>
-          </div>
 
-          {/* Right: Summary */}
-          <div className="lg:col-span-4 sticky top-32">
-            <Card className="border-none shadow-2xl shadow-black/10 rounded-[3rem] overflow-hidden p-10 space-y-8 bg-card ring-1 ring-border/50">
-               <div className="space-y-6">
-                  <div className="flex gap-4">
-                     <div className="h-20 w-20 rounded-2xl overflow-hidden shrink-0 shadow-lg">
-                        <img src={trip.images?.[0]} className="w-full h-full object-cover" alt="" />
-                     </div>
+            {/* Right: Summary */}
+            <div className="lg:col-span-4 sticky top-32">
+                <Card className="border-none shadow-2xl shadow-black/10 rounded-[3rem] overflow-hidden p-10 space-y-8 bg-card ring-1 ring-border/50">
+                   <div className="space-y-6">
+                      <div className="flex gap-4">
+                         <div className="h-20 w-20 rounded-2xl overflow-hidden shrink-0 shadow-lg">
+                            <img src={trip.images?.[0]} className="w-full h-full object-cover" alt="" />
+                         </div>
                      <div className="space-y-1">
                         <h3 className="font-black text-lg leading-tight line-clamp-2">{trip.title}</h3>
                         <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">

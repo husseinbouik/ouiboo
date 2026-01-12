@@ -8,12 +8,16 @@ import {
     FileTypeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UploadService } from './upload.service';
 import { UploadResponseDto } from './dto/upload-response.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UseGuards, Request } from '@nestjs/common';
 
 @ApiTags('Upload')
 @Controller('upload')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 export class UploadController {
     constructor(private readonly uploadService: UploadService) { }
 
@@ -43,9 +47,11 @@ export class UploadController {
             }),
         )
         file: Express.Multer.File,
+        @Request() req,
     ) {
         console.log('--- UPLOAD VERSION 2 ---');
         console.log('Received file for upload:', file.originalname, file.mimetype, file.size);
-        return this.uploadService.uploadFile(file);
+        const folder = req.user.userId;
+        return this.uploadService.uploadFile(file, folder);
     }
 }
