@@ -6,12 +6,16 @@ import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
     try {
-        console.log('DATABASE_URL:', process.env.DATABASE_URL);
         const app = await NestFactory.create(AppModule);
+
+        const corsOrigins = process.env.CORS_ORIGINS
+            ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+            : undefined;
+        const allowAllOrigins = process.env.NODE_ENV !== 'production' && !corsOrigins;
 
         // Enable CORS
         app.enableCors({
-            origin: true,
+            origin: corsOrigins ?? allowAllOrigins,
             methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
             credentials: true,
             allowedHeaders: 'Content-Type, Accept, Authorization',

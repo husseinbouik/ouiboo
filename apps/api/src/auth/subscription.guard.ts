@@ -15,7 +15,7 @@ export class SubscriptionGuard implements CanActivate {
         }
 
         const agency = await this.db.agencyProfile.findUnique({
-            where: { userId: user.id },
+            where: { userId: user.userId },
             select: { subscriptionStatus: true, trialEndsAt: true, subscriptionEndsAt: true }
         });
 

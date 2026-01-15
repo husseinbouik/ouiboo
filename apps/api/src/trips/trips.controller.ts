@@ -37,6 +37,9 @@ export class TripsController {
 
     @Post(':id/sessions')
     @ApiOperation({ summary: 'Add a session to a trip template' })
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.Agency)
     createSession(
         @Param('id') id: string,
         @Body() createSessionDto: CreateTripSessionDto,
