@@ -28,14 +28,19 @@ export class AuthService {
     }
 
     async login(user: any) {
+        const accessSecret = process.env.JWT_SECRET;
+        const refreshSecret = process.env.JWT_REFRESH_SECRET;
+        if (!accessSecret || !refreshSecret) {
+            throw new Error('JWT secrets are not configured');
+        }
         const payload = { email: user.email, sub: user.id, role: user.role };
         return {
             accessToken: this.jwtService.sign(payload, {
-                secret: process.env.JWT_SECRET || 'access-secret',
+                secret: accessSecret,
                 expiresIn: '15m',
             }),
             refreshToken: this.jwtService.sign(payload, {
-                secret: process.env.JWT_REFRESH_SECRET || 'refresh-secret',
+                secret: refreshSecret,
                 expiresIn: '7d',
             }),
             user: {
@@ -50,6 +55,7 @@ export class AuthService {
     async register(dto: RegisterDto) {
         const hashedPassword = await bcrypt.hash(dto.password, 10);
         const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generate 6-digit OTP
+        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
         const user = await this.db.$transaction(async (tx) => {
             const newUser = await tx.user.create({
@@ -59,6 +65,7 @@ export class AuthService {
                     password: hashedPassword,
                     role: dto.role as any,
                     otp, // Store OTP
+                    otpExpiresAt,
                 },
             });
 
@@ -103,11 +110,16 @@ export class AuthService {
             throw new UnauthorizedException('Invalid OTP');
         }
 
+        if (!user.otpExpiresAt || user.otpExpiresAt < new Date()) {
+            throw new UnauthorizedException('OTP_EXPIRED');
+        }
+
         await this.db.user.update({
             where: { id: user.id },
             data: {
                 isEmailVerified: true,
                 otp: null, // Clear OTP after success
+                otpExpiresAt: null,
             }
         });
 
@@ -123,9 +135,10 @@ export class AuthService {
         if (!user) throw new UnauthorizedException('User not found');
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
         await this.db.user.update({
             where: { id: user.id },
-            data: { otp }
+            data: { otp, otpExpiresAt }
         });
 
         const html = this.emailService.getOTPTemplate(otp);
@@ -136,8 +149,12 @@ export class AuthService {
 
     async refreshToken(token: string) {
         try {
+            const refreshSecret = process.env.JWT_REFRESH_SECRET;
+            if (!refreshSecret) {
+                throw new UnauthorizedException('JWT refresh secret not configured');
+            }
             const payload = this.jwtService.verify(token, {
-                secret: process.env.JWT_REFRESH_SECRET || 'refresh-secret',
+                secret: refreshSecret,
             });
             const user = await this.db.user.findUnique({ where: { id: payload.sub } });
             if (!user) throw new UnauthorizedException();
