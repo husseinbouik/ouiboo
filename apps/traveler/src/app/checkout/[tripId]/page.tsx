@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -44,6 +44,7 @@ export default function CheckoutPage() {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [guestCount, setGuestCount] = useState(1);
   const [uploading, setUploading] = useState(false);
+  const hasInitializedFromQuery = useRef(false);
 
   useEffect(() => {
     if (timeLeft <= 0) return;
@@ -66,10 +67,26 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
-    if (trip?.sessions?.length && !selectedSessionId) {
+    if (hasInitializedFromQuery.current) return;
+
+    const sessionParam = searchParams.get('session');
+    const parsedGuestsCount = Number(searchParams.get('guests'));
+    const hasGuestsCount = Number.isFinite(parsedGuestsCount) && parsedGuestsCount > 0;
+
+    if (sessionParam) {
+      setSelectedSessionId(sessionParam);
+    } else if (trip?.sessions?.length) {
       setSelectedSessionId(trip.sessions[0].id);
     }
-  }, [trip?.sessions, selectedSessionId]);
+
+    if (hasGuestsCount) {
+      setGuestCount(parsedGuestsCount);
+    }
+
+    if (sessionParam || hasGuestsCount || trip?.sessions?.length) {
+      hasInitializedFromQuery.current = true;
+    }
+  }, [searchParams, trip?.sessions]);
 
   const selectedSession = trip?.sessions?.find((session: any) => session.id === selectedSessionId);
   const sessionPrice = selectedSession?.price ?? 0;
@@ -77,10 +94,6 @@ export default function CheckoutPage() {
   const sessionDateLabel = selectedSession
     ? `${new Date(selectedSession.startDate).toLocaleDateString()} - ${new Date(selectedSession.endDate).toLocaleDateString()}`
     : 'Select a session';
-  const selectedSessionId = searchParams.get('session') || trip?.sessions?.[0]?.id;
-  const selectedSession = trip?.sessions?.find((session: any) => session.id === selectedSessionId);
-  const parsedGuestsCount = Number(searchParams.get('guests'));
-  const guestsCount = Number.isFinite(parsedGuestsCount) && parsedGuestsCount > 0 ? parsedGuestsCount : 1;
 
   const createBookingMutation = useMutation({
     mutationFn: async () => {
@@ -90,7 +103,7 @@ export default function CheckoutPage() {
 
       const response = await apiClient.post('/bookings', {
         sessionId: selectedSessionId,
-        guestsCount
+        guestsCount: guestCount
       });
       return response.data;
     },
