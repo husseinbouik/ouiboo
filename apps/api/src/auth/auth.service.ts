@@ -33,7 +33,18 @@ export class AuthService {
         if (!accessSecret || !refreshSecret) {
             throw new Error('JWT secrets are not configured');
         }
-        const payload = { email: user.email, sub: user.id, role: user.role };
+        let agencyId: string | undefined;
+        if (user.role === 'AGENCY') {
+            const agencyProfile = await this.db.agencyProfile.findUnique({
+                where: { userId: user.id },
+            });
+            if (!agencyProfile) {
+                throw new UnauthorizedException('Agency profile not found');
+            }
+            agencyId = agencyProfile.id;
+        }
+
+        const payload = { email: user.email, sub: user.id, role: user.role, agencyId };
         return {
             accessToken: this.jwtService.sign(payload, {
                 secret: accessSecret,

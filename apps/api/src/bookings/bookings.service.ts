@@ -105,12 +105,12 @@ export class BookingsService {
         });
     }
 
-    async findAllByAgency(agencyId: string) {
+    async findAllByAgency(tenantId: string) {
         return this.db.booking.findMany({
             where: {
                 session: {
                     template: {
-                        agencyId,
+                        agencyId: tenantId,
                     },
                 },
             },
@@ -144,9 +144,21 @@ export class BookingsService {
             throw new BadRequestException('Unauthorized: You can only upload proof for your own bookings');
         }
 
+        const allowedStatuses = new Set(['PENDING', 'REJECTED']);
+        if (!allowedStatuses.has(booking.status)) {
+            throw new BadRequestException('Payment proof can only be uploaded for pending or rejected bookings');
+        }
+
         return this.db.$transaction(async (tx) => {
-            const proof = await tx.paymentProof.create({
-                data: {
+            const proof = await tx.paymentProof.upsert({
+                where: { bookingId },
+                update: {
+                    imageUrl,
+                    uploadedAt: new Date(),
+                    status: 'PENDING',
+                    rejectionReason: null,
+                },
+                create: {
                     bookingId,
                     imageUrl,
                     status: 'PENDING',
@@ -156,7 +168,7 @@ export class BookingsService {
             await tx.booking.update({
                 where: { id: bookingId },
                 data: {
-                    status: 'PENDING_PAYMENT',
+                    status: 'AWAITING_VALIDATION',
                     paymentProofUrl: imageUrl,
                     paymentProofId: proof.id,
                 },
@@ -166,7 +178,7 @@ export class BookingsService {
         });
     }
 
-    async verifyPayment(bookingId: string, agencyUserId: string, approved: boolean) {
+    async verifyPayment(bookingId: string, tenantId: string, approved: boolean) {
         // 1. Get Booking and verify Agency ownership
         const booking = await this.db.booking.findUnique({
             where: { id: bookingId },
@@ -178,8 +190,7 @@ export class BookingsService {
 
         if (!booking) throw new BadRequestException('Booking not found');
 
-        const agency = await this.db.agencyProfile.findUnique({ where: { userId: agencyUserId } });
-        if (!agency || booking.session.template.agencyId !== agency.id) {
+        if (booking.session.template.agencyId !== tenantId) {
             throw new BadRequestException('Unauthorized: Booking does not belong to your agency');
         }
 
@@ -187,15 +198,30 @@ export class BookingsService {
             throw new BadRequestException('No payment proof uploaded');
         }
 
+        if (booking.paymentProof.status !== 'PENDING') {
+            throw new BadRequestException('Payment proof has already been reviewed');
+        }
+
+        if (booking.status !== 'AWAITING_VALIDATION') {
+            throw new BadRequestException('Booking is not awaiting payment validation');
+        }
+
+        if (!approved && !rejectionReason) {
+            throw new BadRequestException('Rejection reason is required when rejecting a payment');
+        }
+
         return this.db.$transaction(async (tx) => {
             // Update Proof Status
             await tx.paymentProof.update({
                 where: { id: booking.paymentProofId },
-                data: { status: approved ? 'VERIFIED' : 'REJECTED' }
+                data: {
+                    status: approved ? 'VERIFIED' : 'REJECTED',
+                    rejectionReason: approved ? null : rejectionReason,
+                }
             });
 
             // Update Booking Status
-            const newStatus = approved ? 'CONFIRMED' : 'PENDING_PAYMENT';
+            const newStatus = approved ? 'CONFIRMED' : 'REJECTED';
 
             console.log(`[BookingsService] Payment verification for booking ${bookingId}: ${approved ? 'APPROVED' : 'REJECTED'}`);
 
@@ -231,7 +257,7 @@ export class BookingsService {
             throw new BadRequestException('Unauthorized: You can only cancel your own bookings');
         }
 
-        const cancellableStatuses = new Set(['PENDING', 'PENDING_PAYMENT', 'CONFIRMED']);
+        const cancellableStatuses = new Set(['PENDING', 'AWAITING_VALIDATION', 'CONFIRMED']);
         if (!cancellableStatuses.has(booking.status)) {
             throw new BadRequestException('Booking cannot be cancelled');
         }
