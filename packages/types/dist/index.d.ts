@@ -82,6 +82,7 @@ export interface Booking {
     status: BookingStatus;
     totalAmount: number;
     guestsCount: number;
+    paymentProofUrl?: string;
     paymentProofId?: string;
 }
 export interface PaymentProof {
