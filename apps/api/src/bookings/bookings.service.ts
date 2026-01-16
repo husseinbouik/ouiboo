@@ -66,6 +66,9 @@ export class BookingsService {
                     guestsCount: dto.guestsCount,
                     totalAmount: sessionWithInfo.price * dto.guestsCount,
                     status: 'PENDING',
+                    fullName: dto.fullName,
+                    phoneNumber: dto.phoneNumber,
+                    documentNumber: dto.documentNumber,
                 },
             });
 
