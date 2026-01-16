@@ -2,6 +2,7 @@ import { Controller, Get, UseGuards, Request, Patch, Body } from '@nestjs/common
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { TenantGuard } from '../auth/guards/tenant.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@ouiboo/types';
 import { DatabaseService } from '../database/database.service';
@@ -9,7 +10,7 @@ import { DatabaseService } from '../database/database.service';
 @ApiTags('Agency')
 @Controller('agency')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
 @Roles(UserRole.Agency)
 export class AgencyController {
     constructor(private readonly prisma: DatabaseService) { }
@@ -17,27 +18,16 @@ export class AgencyController {
     @Get('stats')
     @ApiOperation({ summary: 'Get agency dashboard stats' })
     async getStats(@Request() req) {
-        const agency = await this.prisma.agencyProfile.findUnique({
-            where: { userId: req.user.userId },
-        });
-
-        if (!agency) {
-            return {
-                revenue: 0,
-                activeTrips: 0,
-                totalBookings: 0,
-                totalCustomers: 0,
-            };
-        }
+        const agencyId = req.tenantId;
 
         const [tripsCount, bookings, wallet] = await Promise.all([
             this.prisma.tripTemplate.count({
-                where: { agencyId: agency.id, status: 'ACTIVE' },
+                where: { agencyId, status: 'ACTIVE' },
             }),
             this.prisma.booking.findMany({
                 where: {
                     session: {
-                        template: { agencyId: agency.id }
+                        template: { agencyId }
                     },
                 },
                 select: {
@@ -47,7 +37,7 @@ export class AgencyController {
                 }
             }),
             this.prisma.wallet.findUnique({
-                where: { agencyId: agency.id }
+                where: { agencyId }
             })
         ]);
 
@@ -69,14 +59,10 @@ export class AgencyController {
     @Get('trips')
     @ApiOperation({ summary: 'Get agency trips' })
     async getTrips(@Request() req) {
-        const agency = await this.prisma.agencyProfile.findUnique({
-            where: { userId: req.user.userId },
-        });
-
-        if (!agency) return [];
+        const agencyId = req.tenantId;
 
         return this.prisma.tripTemplate.findMany({
-            where: { agencyId: agency.id },
+            where: { agencyId },
             include: {
                 sessions: {
                     include: {
@@ -92,16 +78,12 @@ export class AgencyController {
     @Get('bookings')
     @ApiOperation({ summary: 'Get agency bookings' })
     async getBookings(@Request() req) {
-        const agency = await this.prisma.agencyProfile.findUnique({
-            where: { userId: req.user.userId },
-        });
-
-        if (!agency) return [];
+        const agencyId = req.tenantId;
 
         return this.prisma.booking.findMany({
             where: {
                 session: {
-                    template: { agencyId: agency.id }
+                    template: { agencyId }
                 },
             },
             include: {
@@ -127,14 +109,10 @@ export class AgencyController {
     @Get('payouts')
     @ApiOperation({ summary: 'Get agency payout history' })
     async getPayouts(@Request() req) {
-        const agency = await this.prisma.agencyProfile.findUnique({
-            where: { userId: req.user.userId },
-        });
-
-        if (!agency) return [];
+        const agencyId = req.tenantId;
 
         return this.prisma.payoutRequest.findMany({
-            where: { agencyId: agency.id },
+            where: { agencyId },
             orderBy: { requestedAt: 'desc' },
             take: 20
         });
@@ -144,7 +122,7 @@ export class AgencyController {
     async updateProfile(@Request() req, @Body() data: { companyName?: string; bio?: string; logo?: string; bankDetails?: string; }) {
         // Validation could be added here or via DTO
         return this.prisma.agencyProfile.update({
-            where: { userId: req.user.userId },
+            where: { id: req.tenantId },
             data: {
                 companyName: data.companyName,
                 bio: data.bio,

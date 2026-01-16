@@ -105,12 +105,12 @@ export class BookingsService {
         });
     }
 
-    async findAllByAgency(agencyId: string) {
+    async findAllByAgency(tenantId: string) {
         return this.db.booking.findMany({
             where: {
                 session: {
                     template: {
-                        agencyId,
+                        agencyId: tenantId,
                     },
                 },
             },
@@ -178,7 +178,7 @@ export class BookingsService {
         });
     }
 
-    async verifyPayment(bookingId: string, agencyUserId: string, approved: boolean, rejectionReason?: string) {
+    async verifyPayment(bookingId: string, tenantId: string, approved: boolean) {
         // 1. Get Booking and verify Agency ownership
         const booking = await this.db.booking.findUnique({
             where: { id: bookingId },
@@ -190,8 +190,7 @@ export class BookingsService {
 
         if (!booking) throw new BadRequestException('Booking not found');
 
-        const agency = await this.db.agencyProfile.findUnique({ where: { userId: agencyUserId } });
-        if (!agency || booking.session.template.agencyId !== agency.id) {
+        if (booking.session.template.agencyId !== tenantId) {
             throw new BadRequestException('Unauthorized: Booking does not belong to your agency');
         }
 
