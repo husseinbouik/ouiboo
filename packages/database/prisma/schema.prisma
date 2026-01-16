@@ -70,6 +70,7 @@ model User {
   isEmailVerified Boolean     @default(false)
   otp           String?
   otpExpiresAt  DateTime?
+  otpLastSentAt DateTime?
   agencyProfile AgencyProfile?
   bookings      Booking[]
   createdAt     DateTime       @default(now())

@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, TooManyRequestsException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { DatabaseService } from '../database/database.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
@@ -56,6 +56,7 @@ export class AuthService {
         const hashedPassword = await bcrypt.hash(dto.password, 10);
         const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generate 6-digit OTP
         const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        const otpLastSentAt = new Date();
 
         const user = await this.db.$transaction(async (tx) => {
             const newUser = await tx.user.create({
@@ -66,6 +67,7 @@ export class AuthService {
                     role: dto.role as any,
                     otp, // Store OTP
                     otpExpiresAt,
+                    otpLastSentAt,
                 },
             });
 
@@ -134,11 +136,19 @@ export class AuthService {
         const user = await this.db.user.findUnique({ where: { email } });
         if (!user) throw new UnauthorizedException('User not found');
 
+        if (user.otpLastSentAt) {
+            const cooldownMs = 60 * 1000;
+            const nextAllowed = new Date(user.otpLastSentAt.getTime() + cooldownMs);
+            if (nextAllowed > new Date()) {
+                throw new TooManyRequestsException('OTP_RESEND_COOLDOWN');
+            }
+        }
+
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
         await this.db.user.update({
             where: { id: user.id },
-            data: { otp, otpExpiresAt }
+            data: { otp, otpExpiresAt, otpLastSentAt: new Date() }
         });
 
         const html = this.emailService.getOTPTemplate(otp);
