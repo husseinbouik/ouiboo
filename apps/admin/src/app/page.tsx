@@ -19,11 +19,12 @@ import {
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge } from '@ouiboo/ui';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'PAYMENTS'>('PENDING');
+  const [activeTab, setActiveTab] = useState<'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'PAYMENT_PROOFS' | 'PAYOUTS'>('PENDING');
   const [selectedAgency, setSelectedAgency] = useState<any | null>(null);
-  const [selectedPayment, setSelectedPayment] = useState<any | null>(null);
+  const [selectedPayout, setSelectedPayout] = useState<any | null>(null);
   const [agencyFeedback, setAgencyFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [paymentFeedback, setPaymentFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [paymentProofFeedback, setPaymentProofFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [payoutFeedback, setPayoutFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const queryClient = useQueryClient();
 
   const { data: pendingAgencies, isLoading: loadingAgencies } = useQuery({
@@ -58,10 +59,18 @@ export default function AdminDashboard() {
     }
   });
 
-  const { data: pendingPayments, isLoading: loadingPayments } = useQuery({
+  const { data: pendingPaymentProofs, isLoading: loadingPayments } = useQuery({
     queryKey: ['pending-payments'],
     queryFn: async () => {
       const resp = await apiClient.get('/admin/pending-payments');
+      return resp.data;
+    }
+  });
+
+  const { data: payoutRequests, isLoading: loadingPayoutRequests } = useQuery({
+    queryKey: ['payout-requests'],
+    queryFn: async () => {
+      const resp = await apiClient.get('/admin/payout-requests');
       return resp.data;
     }
   });
@@ -99,13 +108,32 @@ export default function AdminDashboard() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
-      setPaymentFeedback({
+      setPaymentProofFeedback({
         type: 'success',
-        message: `Payout ${variables.status === 'APPROVED' ? 'approved' : 'rejected'} successfully.`
+        message: `Payment proof ${variables.status === 'APPROVED' ? 'approved' : 'rejected'} successfully.`
       });
     },
     onError: (error: any) => {
-      setPaymentFeedback({
+      setPaymentProofFeedback({
+        type: 'error',
+        message: error?.response?.data?.message || 'Unable to update payment proof. Please try again.'
+      });
+    }
+  });
+
+  const processPayoutMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string, status: string }) => {
+      return apiClient.post(`/admin/payouts/${id}/process`, { status });
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['payout-requests'] });
+      setPayoutFeedback({
+        type: 'success',
+        message: `Payout ${variables.status === 'PAID' ? 'marked as paid' : 'rejected'} successfully.`
+      });
+    },
+    onError: (error: any) => {
+      setPayoutFeedback({
         type: 'error',
         message: error?.response?.data?.message || 'Unable to update payout request. Please try again.'
       });
@@ -139,12 +167,40 @@ export default function AdminDashboard() {
       tone: 'bg-emerald-50 text-emerald-700'
     },
     {
-      label: 'Payout requests',
-      value: pendingPayments?.length || 0,
+      label: 'Payment proofs',
+      value: pendingPaymentProofs?.length || 0,
       icon: CalendarClock,
       tone: 'bg-slate-100 text-slate-700'
     }
   ];
+
+  const renderBankDetails = (bankDetails?: string) => {
+    if (!bankDetails) {
+      return <p className="text-gray-500">No bank details on file.</p>;
+    }
+
+    let details: any = bankDetails;
+    try {
+      details = JSON.parse(bankDetails);
+    } catch (error) {
+      details = bankDetails;
+    }
+
+    if (typeof details === 'string') {
+      return <p className="text-sm text-gray-600 whitespace-pre-line">{details}</p>;
+    }
+
+    return (
+      <div className="bg-gray-50 rounded-xl p-3 space-y-1 text-sm">
+        {Object.entries(details || {}).map(([key, value]) => (
+          <div key={key} className="flex justify-between gap-4">
+            <span className="text-gray-500 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+            <span className="font-medium text-deep-blue">{String(value || '—')}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -178,10 +234,17 @@ export default function AdminDashboard() {
                <span className="font-bold text-sm text-left">System Bookings</span>
             </button>
             <button 
-              onClick={() => setActiveTab('PAYMENTS')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'PAYMENTS' ? "bg-white/10 text-white" : "text-white/60 hover:text-white"}`}
+              onClick={() => setActiveTab('PAYMENT_PROOFS')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'PAYMENT_PROOFS' ? "bg-white/10 text-white" : "text-white/60 hover:text-white"}`}
             >
                <CreditCard className="h-5 w-5" />
+               <span className="font-bold text-sm text-left">Payment Proofs</span>
+            </button>
+            <button 
+              onClick={() => setActiveTab('PAYOUTS')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'PAYOUTS' ? "bg-white/10 text-white" : "text-white/60 hover:text-white"}`}
+            >
+               <CalendarClock className="h-5 w-5" />
                <span className="font-bold text-sm text-left">Payout Requests</span>
             </button>
          </nav>
@@ -368,36 +431,58 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {activeTab === 'PAYMENTS' && (
+            {activeTab === 'PAYMENT_PROOFS' && (
               <div className="space-y-6 animate-in fade-in duration-500">
                   <h2 className="text-xl font-bold text-deep-blue flex items-center gap-2">
                     <CreditCard className="h-5 w-5 text-sunset-orange" />
-                    Pending Payout Confirmations ({pendingPayments?.length || 0})
+                    Pending Payment Proofs ({pendingPaymentProofs?.length || 0})
                  </h2>
+                 {paymentProofFeedback && (
+                   <div className={`text-sm font-medium ${paymentProofFeedback.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                     {paymentProofFeedback.message}
+                   </div>
+                 )}
                  <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100">
-                    {pendingPayments?.length ? (
+                    {pendingPaymentProofs?.length ? (
                       <table className="w-full text-left">
                         <thead className="bg-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-400 border-b">
                            <tr>
-                              <th className="px-6 py-4">Agency</th>
+                              <th className="px-6 py-4">Booking</th>
+                              <th className="px-6 py-4">Traveler</th>
                               <th className="px-6 py-4">Amount</th>
-                              <th className="px-6 py-4">Requested</th>
+                              <th className="px-6 py-4">Submitted</th>
                               <th className="px-6 py-4 text-right">Action</th>
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                           {pendingPayments?.map((payment: any) => (
+                           {pendingPaymentProofs?.map((payment: any) => (
                               <tr key={payment.id} className="hover:bg-gray-50/50 transition-colors">
                                  <td className="px-6 py-4">
-                                    <p className="font-bold text-sm">{payment.agency?.companyName || 'Unknown agency'}</p>
-                                    <p className="text-[10px] text-gray-400 font-mono italic">#{payment.id?.substring(0, 8)}</p>
+                                    <p className="font-bold text-sm">{payment.booking?.session?.template?.title || 'Booking'}</p>
+                                    <p className="text-[10px] text-gray-400 font-mono italic">#{payment.booking?.id?.substring(0, 8)}</p>
                                  </td>
-                                 <td className="px-6 py-4 text-sm font-semibold">{payment.amount} MAD</td>
+                                 <td className="px-6 py-4 text-sm font-medium">
+                                    {payment.booking?.traveler?.name || 'Traveler'}
+                                 </td>
+                                 <td className="px-6 py-4 text-sm font-semibold">{payment.booking?.totalAmount ?? payment.amount} MAD</td>
                                  <td className="px-6 py-4 text-sm text-gray-500">
-                                    {payment.requestedAt ? new Date(payment.requestedAt).toLocaleDateString() : '—'}
+                                    {payment.uploadedAt ? new Date(payment.uploadedAt).toLocaleDateString() : '—'}
                                  </td>
-                                 <td className="px-6 py-4 text-right">
-                                    <Button size="sm" className="bg-deep-blue text-white">Review</Button>
+                                 <td className="px-6 py-4 text-right space-x-2">
+                                    <Button
+                                      size="sm"
+                                      className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
+                                      onClick={() => verifyPaymentMutation.mutate({ id: payment.id, status: 'REJECTED' })}
+                                    >
+                                      Reject
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      className="bg-green-600 hover:bg-green-700 text-white border-none"
+                                      onClick={() => verifyPaymentMutation.mutate({ id: payment.id, status: 'APPROVED' })}
+                                    >
+                                      Approve
+                                    </Button>
                                  </td>
                               </tr>
                            ))}
@@ -405,19 +490,30 @@ export default function AdminDashboard() {
                       </table>
                     ) : (
                       <div className="p-10 text-center text-sm text-gray-500">
-                        No payout requests are waiting for review.
+                        No payment proofs are waiting for review.
                       </div>
                     )}
+                 </div>
+              </div>
+            )}
+
+            {activeTab === 'PAYOUTS' && (
+              <div className="space-y-6 animate-in fade-in duration-500">
+                 <h2 className="text-xl font-bold text-deep-blue flex items-center gap-2">
+                    <CalendarClock className="h-5 w-5 text-sunset-orange" />
+                    Payout Requests ({payoutRequests?.length || 0})
+                 </h2>
                  <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6">
                     <div className="space-y-4">
-                       {pendingPayments?.map((payment: any) => (
-                          <Card key={payment.id} className="border-none shadow-sm p-5 bg-white">
+                       {payoutRequests?.length ? (
+                         payoutRequests?.map((payout: any) => (
+                          <Card key={payout.id} className="border-none shadow-sm p-5 bg-white">
                              <div className="flex items-center justify-between gap-4">
                                 <div className="space-y-1">
-                                   <p className="text-sm text-gray-500">Request #{payment.id?.slice(0, 8)}</p>
-                                   <h3 className="font-bold text-deep-blue">{payment.agency?.companyName || 'Agency payout'}</h3>
+                                   <p className="text-sm text-gray-500">Request #{payout.id?.slice(0, 8)}</p>
+                                   <h3 className="font-bold text-deep-blue">{payout.agency?.companyName || 'Agency payout'}</h3>
                                    <p className="text-xs text-gray-400">
-                                     {new Date(payment.createdAt).toLocaleDateString()} • {payment.amount} MAD
+                                     {payout.requestedAt ? new Date(payout.requestedAt).toLocaleDateString() : '—'} • {payout.amount} MAD
                                    </p>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -425,8 +521,8 @@ export default function AdminDashboard() {
                                      variant="outline"
                                      size="sm"
                                      onClick={() => {
-                                       setSelectedPayment(payment);
-                                       setPaymentFeedback(null);
+                                       setSelectedPayout(payout);
+                                       setPayoutFeedback(null);
                                      }}
                                    >
                                      <Eye className="h-4 w-4 mr-2" />
@@ -435,97 +531,75 @@ export default function AdminDashboard() {
                                    <Button
                                      size="sm"
                                      className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
-                                     onClick={() => verifyPaymentMutation.mutate({ id: payment.id, status: 'REJECTED' })}
+                                     onClick={() => processPayoutMutation.mutate({ id: payout.id, status: 'REJECTED' })}
                                    >
                                      Reject
                                    </Button>
                                    <Button
                                      size="sm"
                                      className="bg-green-600 hover:bg-green-700 text-white border-none"
-                                     onClick={() => verifyPaymentMutation.mutate({ id: payment.id, status: 'APPROVED' })}
+                                     onClick={() => processPayoutMutation.mutate({ id: payout.id, status: 'PAID' })}
                                    >
                                      Approve
                                    </Button>
                                 </div>
                              </div>
                           </Card>
-                       ))}
+                       ))
+                       ) : (
+                         <Card className="border-none shadow-sm p-6 bg-white text-sm text-gray-500">
+                           No payout requests are waiting for review.
+                         </Card>
+                       )}
                     </div>
                     <Card className="border-none shadow-sm p-6 bg-white h-fit">
                       <div className="flex items-center justify-between">
                         <h3 className="text-lg font-bold text-deep-blue">Payout Details</h3>
-                        {selectedPayment && (
+                        {selectedPayout && (
                           <Badge className="bg-sunset-orange/10 text-sunset-orange">Selected</Badge>
                         )}
                       </div>
-                      {!selectedPayment && (
+                      {!selectedPayout && (
                         <p className="text-sm text-gray-500 mt-4">Select a payout request to review agency bank details and approve or reject.</p>
                       )}
-                      {selectedPayment && (
+                      {selectedPayout && (
                         <div className="mt-4 space-y-5">
                           <div>
                             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Agency</p>
-                            <p className="text-base font-bold text-deep-blue">{selectedPayment.agency?.companyName || 'Agency payout'}</p>
-                            <p className="text-sm text-gray-500">{selectedPayment.agency?.user?.email}</p>
+                            <p className="text-base font-bold text-deep-blue">{selectedPayout.agency?.companyName || 'Agency payout'}</p>
+                            <p className="text-sm text-gray-500">{selectedPayout.agency?.user?.email}</p>
                           </div>
                           <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
                               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Requested</p>
-                              <p className="font-medium text-deep-blue">{new Date(selectedPayment.createdAt).toLocaleDateString()}</p>
+                              <p className="font-medium text-deep-blue">{selectedPayout.requestedAt ? new Date(selectedPayout.requestedAt).toLocaleDateString() : '—'}</p>
                             </div>
                             <div>
                               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Amount</p>
-                              <p className="font-medium text-deep-blue">{selectedPayment.amount} MAD</p>
+                              <p className="font-medium text-deep-blue">{selectedPayout.amount} MAD</p>
                             </div>
                           </div>
                           <div>
                             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Agency Bank Details</p>
                             <div className="space-y-2 text-sm">
-                              {(() => {
-                                const bankDetails = selectedPayment.agency?.profile?.bankDetails;
-                                if (!bankDetails) {
-                                  return <p className="text-gray-500">No bank details on file.</p>;
-                                }
-                                if (Array.isArray(bankDetails)) {
-                                  return bankDetails.map((detail: any, index: number) => (
-                                    <div key={index} className="bg-gray-50 rounded-xl p-3 space-y-1">
-                                      {Object.entries(detail || {}).map(([key, value]) => (
-                                        <div key={key} className="flex justify-between gap-4">
-                                          <span className="text-gray-500 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-                                          <span className="font-medium text-deep-blue">{String(value || '—')}</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ));
-                                }
-                                return (
-                                  <div className="bg-gray-50 rounded-xl p-3 space-y-1">
-                                    {Object.entries(bankDetails || {}).map(([key, value]) => (
-                                      <div key={key} className="flex justify-between gap-4">
-                                        <span className="text-gray-500 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-                                        <span className="font-medium text-deep-blue">{String(value || '—')}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                );
-                              })()}
+                              {renderBankDetails(selectedPayout.bankDetails)}
                             </div>
                           </div>
-                          {paymentFeedback && (
-                            <div className={`text-sm font-medium ${paymentFeedback.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
-                              {paymentFeedback.message}
+                          {payoutFeedback && (
+                            <div className={`text-sm font-medium ${payoutFeedback.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                              {payoutFeedback.message}
                             </div>
                           )}
                           <div className="flex flex-wrap gap-2">
                             <Button
                               className="bg-green-600 hover:bg-green-700 text-white border-none"
-                              onClick={() => verifyPaymentMutation.mutate({ id: selectedPayment.id, status: 'APPROVED' })}
+                              onClick={() => processPayoutMutation.mutate({ id: selectedPayout.id, status: 'PAID' })}
                             >
                               Approve payout
                             </Button>
                             <Button
                               className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
-                              onClick={() => verifyPaymentMutation.mutate({ id: selectedPayment.id, status: 'REJECTED' })}
+                              onClick={() => processPayoutMutation.mutate({ id: selectedPayout.id, status: 'REJECTED' })}
                             >
                               Reject payout
                             </Button>
