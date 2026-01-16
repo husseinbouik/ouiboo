@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PayoutStatus = exports.BookingStatus = exports.TripCategory = exports.TripStatus = exports.VerificationStatus = exports.UserRole = void 0;
+exports.PayoutStatus = exports.BookingStatus = exports.TripCategory = exports.TripStatus = exports.SubscriptionStatus = exports.VerificationStatus = exports.UserRole = void 0;
 var UserRole;
 (function (UserRole) {
     UserRole["Agency"] = "AGENCY";
@@ -13,6 +13,13 @@ var VerificationStatus;
     VerificationStatus["Verified"] = "VERIFIED";
     VerificationStatus["Rejected"] = "REJECTED";
 })(VerificationStatus || (exports.VerificationStatus = VerificationStatus = {}));
+var SubscriptionStatus;
+(function (SubscriptionStatus) {
+    SubscriptionStatus["Trial"] = "TRIAL";
+    SubscriptionStatus["Active"] = "ACTIVE";
+    SubscriptionStatus["Cancelled"] = "CANCELLED";
+    SubscriptionStatus["Expired"] = "EXPIRED";
+})(SubscriptionStatus || (exports.SubscriptionStatus = SubscriptionStatus = {}));
 var TripStatus;
 (function (TripStatus) {
     TripStatus["Active"] = "ACTIVE";
@@ -29,10 +36,11 @@ var TripCategory;
 var BookingStatus;
 (function (BookingStatus) {
     BookingStatus["Pending"] = "PENDING";
+    BookingStatus["AwaitingValidation"] = "AWAITING_VALIDATION";
     BookingStatus["Confirmed"] = "CONFIRMED";
+    BookingStatus["Rejected"] = "REJECTED";
     BookingStatus["Cancelled"] = "CANCELLED";
     BookingStatus["Completed"] = "COMPLETED";
-    BookingStatus["PendingPayment"] = "PENDING_PAYMENT";
 })(BookingStatus || (exports.BookingStatus = BookingStatus = {}));
 var PayoutStatus;
 (function (PayoutStatus) {

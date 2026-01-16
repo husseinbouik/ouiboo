@@ -26,4 +26,19 @@ __decorate([
     (0, class_validator_1.IsPositive)(),
     __metadata("design:type", Number)
 ], CreateBookingDto.prototype, "guestsCount", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Abderrahmane El Amrani' }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateBookingDto.prototype, "fullName", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: '+212612345678' }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateBookingDto.prototype, "phoneNumber", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'CIN AE123456' }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateBookingDto.prototype, "documentNumber", void 0);
 //# sourceMappingURL=create-booking.dto.js.map

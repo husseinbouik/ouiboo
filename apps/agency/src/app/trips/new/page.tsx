@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { apiClient } from '@/lib/api-client';
 import { 
   Button, 
   Input, 
@@ -31,6 +32,7 @@ import {
   X
 } from 'lucide-react';
 import { cn } from '@ouiboo/ui/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Combined Schema for the Multi-step form
 const TripFormSchema = z.object({
@@ -241,26 +243,41 @@ export default function NewTripPage() {
           <TabsContent value="media">
             <Card className="border-none shadow-xl shadow-black/5 rounded-[2.5rem] overflow-hidden">
                <CardContent className="p-10 space-y-10">
-                  <div className="space-y-4">
+                    <div className="space-y-4">
                      <h3 className="text-2xl font-black font-display tracking-tight text-foreground">Trip Gallery</h3>
                      <p className="text-muted-foreground font-medium">Add at least one high-quality cover photo and additional shots of the experience.</p>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    {/* Placeholder Upload Box */}
-                    <div 
-                        className="aspect-square rounded-[2rem] border-4 border-dashed border-muted flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-muted/30 transition-all group"
-                        onClick={() => {
-                            // Mock adding image URL for now
-                            const url = `https://images.unsplash.com/photo-${Math.random() > 0.5 ? '1489749798305-4fea3ae63d43' : '1539635278303-d4002c07eae3'}?q=80&w=2070&auto=format&fit=crop`;
-                            const current = watch("images") || [];
-                            setValue("images", [...current, url]);
-                            setPreviews([...previews, url]);
-                        }}
+                    {/* Real Upload Box */}
+                    <label 
+                        className="aspect-square rounded-[2rem] border-4 border-dashed border-muted flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-muted/30 transition-all group relative"
                     >
+                        <input 
+                            type="file" 
+                            className="absolute inset-0 opacity-0 cursor-pointer" 
+                            accept="image/*"
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                
+                                const formData = new FormData();
+                                formData.append('file', file);
+                                
+                                try {
+                                    const response = await apiClient.post('/upload', formData);
+                                    const url = response.data.url;
+                                    const current = watch("images") || [];
+                                    setValue("images", [...current, url]);
+                                    setPreviews([...previews, url]);
+                                } catch (error) {
+                                    console.error("Upload failed", error);
+                                }
+                            }}
+                        />
                         <UploadCloud className="h-10 w-10 text-muted-foreground group-hover:scale-110 transition-transform" />
                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Upload Image</span>
-                    </div>
+                    </label>
 
                     <AnimatePresence>
                         {previews.map((url, idx) => (

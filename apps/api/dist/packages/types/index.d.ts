@@ -15,6 +15,13 @@ export declare enum VerificationStatus {
     Verified = "VERIFIED",
     Rejected = "REJECTED"
 }
+export type VerificationStatusType = (typeof VerificationStatus)[keyof typeof VerificationStatus];
+export declare enum SubscriptionStatus {
+    Trial = "TRIAL",
+    Active = "ACTIVE",
+    Cancelled = "CANCELLED",
+    Expired = "EXPIRED"
+}
 export interface AgencyProfile {
     id: string;
     userId: string;
@@ -25,6 +32,9 @@ export interface AgencyProfile {
     verificationStatus: VerificationStatus;
     bio?: string;
     logo?: string;
+    subscriptionStatus: SubscriptionStatus;
+    trialEndsAt?: string;
+    subscriptionEndsAt?: string;
 }
 export declare enum TripStatus {
     Active = "ACTIVE",
@@ -37,6 +47,14 @@ export declare enum TripCategory {
     Luxury = "LUXURY",
     Budget = "BUDGET"
 }
+export interface ItineraryDay {
+    id: string;
+    templateId: string;
+    dayNumber: number;
+    title?: string;
+    description: string;
+    activities: string[];
+}
 export interface TripTemplate {
     id: string;
     agencyId: string;
@@ -47,8 +65,11 @@ export interface TripTemplate {
     durationDays: number;
     durationNights: number;
     inclusions: string[];
+    exclusions: string[];
+    checklist: string[];
     images: string[];
     status: TripStatus;
+    itinerary: ItineraryDay[];
     createdAt: string;
 }
 export interface TripSession {
@@ -57,16 +78,18 @@ export interface TripSession {
     startDate: string;
     endDate: string;
     price: number;
+    deposit: number;
     totalSeats: number;
     availableSeats: number;
     status: "OPEN" | "CLOSED" | "CANCELLED";
 }
 export declare enum BookingStatus {
     Pending = "PENDING",
+    AwaitingValidation = "AWAITING_VALIDATION",
     Confirmed = "CONFIRMED",
+    Rejected = "REJECTED",
     Cancelled = "CANCELLED",
-    Completed = "COMPLETED",
-    PendingPayment = "PENDING_PAYMENT"
+    Completed = "COMPLETED"
 }
 export interface Booking {
     id: string;
@@ -76,6 +99,7 @@ export interface Booking {
     status: BookingStatus;
     totalAmount: number;
     guestsCount: number;
+    paymentProofUrl?: string;
     paymentProofId?: string;
 }
 export interface PaymentProof {
@@ -83,7 +107,7 @@ export interface PaymentProof {
     bookingId: string;
     imageUrl: string;
     uploadedAt: string;
-    status: "Pending" | "Verified" | "Rejected";
+    status: VerificationStatus;
 }
 export interface Wallet {
     agencyId: string;

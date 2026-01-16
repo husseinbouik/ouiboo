@@ -5,6 +5,7 @@ export declare class UsersService {
     findOne(id: string): Promise<{
         agencyProfile: {
             id: string;
+            userId: string;
             companyName: string;
             ice: string;
             patente: string;
@@ -12,7 +13,10 @@ export declare class UsersService {
             verificationStatus: import("@ouiboo/database").$Enums.VerificationStatus;
             bio: string | null;
             logo: string | null;
-            userId: string;
+            subscriptionStatus: import("@ouiboo/database").$Enums.SubscriptionStatus;
+            trialEndsAt: Date | null;
+            subscriptionEndsAt: Date | null;
+            bankDetails: string | null;
         };
     } & {
         email: string;
@@ -23,11 +27,14 @@ export declare class UsersService {
         id: string;
         avatar: string | null;
         isEmailVerified: boolean;
+        otpExpiresAt: Date | null;
+        otpLastSentAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
     }>;
     updateAgencyProfile(userId: string, data: any): Promise<{
         id: string;
+        userId: string;
         companyName: string;
         ice: string;
         patente: string;
@@ -35,11 +42,15 @@ export declare class UsersService {
         verificationStatus: import("@ouiboo/database").$Enums.VerificationStatus;
         bio: string | null;
         logo: string | null;
-        userId: string;
+        subscriptionStatus: import("@ouiboo/database").$Enums.SubscriptionStatus;
+        trialEndsAt: Date | null;
+        subscriptionEndsAt: Date | null;
+        bankDetails: string | null;
     }>;
     getMe(userId: string): Promise<{
         agencyProfile: {
             id: string;
+            userId: string;
             companyName: string;
             ice: string;
             patente: string;
@@ -47,7 +58,10 @@ export declare class UsersService {
             verificationStatus: import("@ouiboo/database").$Enums.VerificationStatus;
             bio: string | null;
             logo: string | null;
-            userId: string;
+            subscriptionStatus: import("@ouiboo/database").$Enums.SubscriptionStatus;
+            trialEndsAt: Date | null;
+            subscriptionEndsAt: Date | null;
+            bankDetails: string | null;
         };
     } & {
         email: string;
@@ -58,6 +72,8 @@ export declare class UsersService {
         id: string;
         avatar: string | null;
         isEmailVerified: boolean;
+        otpExpiresAt: Date | null;
+        otpLastSentAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
     }>;

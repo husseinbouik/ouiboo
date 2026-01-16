@@ -10,7 +10,7 @@ export declare class RegisterDto {
     role: UserRole;
 }
 export declare class RefreshTokenDto {
-    refresh_token: string;
+    refresh_token?: string;
 }
 export declare class VerifyEmailDto {
     email: string;

@@ -28,6 +28,11 @@ export default function BookingPage() {
   const [guestsCount, setGuestsCount] = useState(1);
   const [uploading, setUploading] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const [travelerDetails, setTravelerDetails] = useState({
+    fullName: '',
+    phoneNumber: '',
+    documentNumber: ''
+  });
 
   const { data: trip } = useQuery({
     queryKey: ['trip', tripId],
@@ -44,25 +49,18 @@ export default function BookingPage() {
     mutationFn: async () => {
       const response = await apiClient.post('/bookings', {
         sessionId,
-        guestsCount
+        guestsCount,
+        ...travelerDetails
       });
       return response.data;
     },
     onSuccess: (data) => {
       setBookingId(data.id);
       setStep(2);
-    }
-  });
-
-  const uploadProofMutation = useMutation({
-    mutationFn: async (imageUrl: string) => {
-      const response = await apiClient.post(`/bookings/${bookingId}/payment-proof`, {
-        imageUrl
-      });
-      return response.data;
     },
-    onSuccess: () => {
-      setStep(3);
+    onError: (error: any) => {
+      console.error('Booking failed:', error);
+      alert(error.response?.data?.message || 'Failed to create booking. Please make sure all fields are filled.');
     }
   });
 
@@ -70,15 +68,23 @@ export default function BookingPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!bookingId) {
+      alert('Booking ID not found. Please try again.');
+      return;
+    }
+
     setUploading(true);
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-      const response = await apiClient.post('/upload', formData);
-      uploadProofMutation.mutate(response.data.url);
-    } catch (error) {
+      await apiClient.post(`/bookings/${bookingId}/payment-proof`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setStep(3);
+    } catch (error: any) {
       console.error('Upload failed:', error);
+      alert(error.response?.data?.message || 'Failed to upload receipt. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -104,14 +110,14 @@ export default function BookingPage() {
            <div className="lg:col-span-8 space-y-12">
               {step === 1 && (
                 <section className="space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
-                   <div className="space-y-4">
+                  <div className="space-y-4">
                       <Badge className="bg-sunset-orange/10 text-sunset-orange border-none px-4 py-1.5 rounded-full font-black uppercase text-[10px] tracking-widest">Step 01</Badge>
                       <h1 className="text-5xl font-black text-foreground font-display tracking-tight leading-[1.1]">Your Adventure <br />Begins Here</h1>
-                      <p className="text-muted-foreground text-xl font-medium">How many people are joining this incredible journey?</p>
+                      <p className="text-muted-foreground text-xl font-medium">Please provide your details to continue.</p>
                    </div>
                    
-                   <Card className="border-none shadow-2xl shadow-deep-blue/5 dark:shadow-none dark:ring-1 dark:ring-border rounded-[2.5rem] p-8 bg-card">
-                      <div className="flex flex-col sm:flex-row items-center justify-between gap-8">
+                   <Card className="border-none shadow-2xl shadow-deep-blue/5 dark:shadow-none dark:ring-1 dark:ring-border rounded-[2.5rem] p-8 bg-card space-y-8">
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-8 pb-8 border-b border-border/50">
                          <div className="flex items-center gap-6">
                             <div className="h-16 w-16 bg-sunset-orange/10 rounded-[1.5rem] flex items-center justify-center shadow-inner">
                                <Users className="h-8 w-8 text-sunset-orange" />
@@ -123,14 +129,43 @@ export default function BookingPage() {
                          </div>
                          <div className="flex items-center gap-6 bg-muted/50 dark:bg-slate-900 rounded-[2rem] p-3 border border-border/50">
                             <button 
+                              type="button"
                               onClick={() => setGuestsCount(Math.max(1, guestsCount - 1))}
                               className="h-12 w-12 bg-card rounded-[1.25rem] flex items-center justify-center font-black text-2xl hover:bg-sunset-orange hover:text-white transition-all shadow-sm active:scale-95"
                             >-</button>
                             <span className="font-black text-3xl w-10 text-center font-display">{guestsCount}</span>
                             <button 
+                              type="button"
                               onClick={() => setGuestsCount(guestsCount + 1)}
                               className="h-12 w-12 bg-card rounded-[1.25rem] flex items-center justify-center font-black text-2xl hover:bg-sunset-orange hover:text-white transition-all shadow-sm active:scale-95"
                             >+</button>
+                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Full Name</label>
+                            <Input 
+                                placeholder="Abderrahmane..." 
+                                onChange={(e) => setTravelerDetails({...travelerDetails, fullName: e.target.value})}
+                                className="h-14 rounded-2xl bg-muted/30 border-none font-bold"
+                            />
+                         </div>
+                         <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Phone Number</label>
+                            <Input 
+                                placeholder="+212..." 
+                                onChange={(e) => setTravelerDetails({...travelerDetails, phoneNumber: e.target.value})}
+                                className="h-14 rounded-2xl bg-muted/30 border-none font-bold"
+                            />
+                         </div>
+                         <div className="space-y-2 md:col-span-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">CIN / Passport Number</label>
+                            <Input 
+                                placeholder="AE123456" 
+                                onChange={(e) => setTravelerDetails({...travelerDetails, documentNumber: e.target.value})}
+                                className="h-14 rounded-2xl bg-muted/30 border-none font-bold"
+                            />
                          </div>
                       </div>
                    </Card>
@@ -140,15 +175,21 @@ export default function BookingPage() {
                         <Info className="h-6 w-6 text-ocean" />
                       </div>
                       <div className="space-y-2">
-                         <p className="font-black text-ocean uppercase tracking-widest text-[10px]">Important Booking Information</p>
+                         <p className="font-black text-ocean uppercase tracking-widest text-[10px]">Security Notice</p>
                          <p className="text-sm text-foreground/70 leading-relaxed font-medium">
-                            Upon booking, your spots are reserved for <span className="text-foreground font-bold">24 hours</span>. Please complete the bank transfer within this timeframe and upload your receipt to finalize the confirmation.
+                            Upon booking, your spots are reserved for <span className="text-foreground font-bold">24 hours</span>. Please complete the bank transfer within this timeframe.
                          </p>
                       </div>
                    </div>
 
                    <Button 
-                    onClick={() => createBookingMutation.mutate()}
+                    onClick={() => {
+                      if (!travelerDetails.fullName || !travelerDetails.phoneNumber || !travelerDetails.documentNumber) {
+                        alert('Please fill in all traveler details (Full Name, Phone, and ID/Passport).');
+                        return;
+                      }
+                      createBookingMutation.mutate();
+                    }}
                     disabled={createBookingMutation.isPending}
                     className="w-full h-20 bg-sunset-orange hover:bg-orange-600 border-none rounded-[2rem] text-2xl font-black shadow-2xl shadow-orange-900/20 active:scale-95 transition-all"
                    >

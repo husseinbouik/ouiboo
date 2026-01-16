@@ -22,6 +22,9 @@ const mockDatabaseService = {
         create: jest.fn(),
         findMany: jest.fn(),
     },
+    agencyProfile: {
+        findUnique: jest.fn(),
+    },
 };
 
 describe('TripsService', () => {

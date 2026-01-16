@@ -16,18 +16,18 @@ let WalletsService = class WalletsService {
     constructor(db) {
         this.db = db;
     }
-    async getWallet(agencyId) {
+    async getWallet(tenantId) {
         return this.db.wallet.findUnique({
-            where: { agencyId },
+            where: { agencyId: tenantId },
             include: { transactions: { orderBy: { createdAt: 'desc' }, take: 20 } }
         });
     }
-    async creditWallet(agencyId, amount, reason) {
+    async creditWallet(tenantId, amount, reason) {
         return this.db.$transaction(async (tx) => {
             const wallet = await tx.wallet.upsert({
-                where: { agencyId },
+                where: { agencyId: tenantId },
                 update: { availableBalance: { increment: amount } },
-                create: { agencyId, availableBalance: amount, pendingBalance: 0 }
+                create: { agencyId: tenantId, availableBalance: amount, pendingBalance: 0 }
             });
             await tx.walletTransaction.create({
                 data: {
@@ -40,19 +40,19 @@ let WalletsService = class WalletsService {
             return wallet;
         });
     }
-    async requestPayout(agencyId, amount, bankDetails) {
+    async requestPayout(tenantId, amount, bankDetails) {
         return this.db.$transaction(async (tx) => {
-            const wallet = await tx.wallet.findUnique({ where: { agencyId } });
+            const wallet = await tx.wallet.findUnique({ where: { agencyId: tenantId } });
             if (!wallet || wallet.availableBalance < amount) {
                 throw new Error('Insufficient balance');
             }
             await tx.wallet.update({
-                where: { agencyId },
+                where: { agencyId: tenantId },
                 data: { availableBalance: { decrement: amount } }
             });
             const request = await tx.payoutRequest.create({
                 data: {
-                    agencyId,
+                    agencyId: tenantId,
                     amount,
                     bankDetails,
                     status: 'PENDING'

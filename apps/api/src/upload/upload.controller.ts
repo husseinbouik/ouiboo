@@ -51,9 +51,8 @@ export class UploadController {
         file: Express.Multer.File,
         @Request() req,
     ) {
-        console.log('--- UPLOAD VERSION 2 ---');
-        console.log('Received file for upload:', file.originalname, file.mimetype, file.size);
-        const folder = req.user.userId;
+        console.log('[UploadController] Uploading file:', file.originalname, 'Type:', file.mimetype, 'Size:', file.size);
+        const folder = req.user?.userId || 'anonymous';
         return this.uploadService.uploadFile(file, folder);
     }
 }

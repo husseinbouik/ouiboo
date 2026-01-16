@@ -18,20 +18,24 @@ const platform_express_1 = require("@nestjs/platform-express");
 const swagger_1 = require("@nestjs/swagger");
 const upload_service_1 = require("./upload.service");
 const upload_response_dto_1 = require("./dto/upload-response.dto");
+const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const common_2 = require("@nestjs/common");
+const upload_constants_1 = require("./upload.constants");
 let UploadController = class UploadController {
     constructor(uploadService) {
         this.uploadService = uploadService;
     }
-    async uploadFile(file) {
+    async uploadFile(file, req) {
         console.log('--- UPLOAD VERSION 2 ---');
         console.log('Received file for upload:', file.originalname, file.mimetype, file.size);
-        return this.uploadService.uploadFile(file);
+        const folder = req.user.userId;
+        return this.uploadService.uploadFile(file, folder);
     }
 };
 exports.UploadController = UploadController;
 __decorate([
     (0, common_1.Post)(),
-    (0, swagger_1.ApiOperation)({ summary: 'Upload a file (Images only)' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Upload a file (Images or PDF)' }),
     (0, swagger_1.ApiConsumes)('multipart/form-data'),
     (0, swagger_1.ApiBody)({
         schema: {
@@ -48,17 +52,21 @@ __decorate([
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
     __param(0, (0, common_1.UploadedFile)(new common_1.ParseFilePipe({
         validators: [
-            new common_1.MaxFileSizeValidator({ maxSize: 1024 * 1024 * 10 }),
+            new common_1.MaxFileSizeValidator({ maxSize: upload_constants_1.MAX_UPLOAD_SIZE_BYTES }),
+            new common_1.FileTypeValidator({ fileType: upload_constants_1.ALLOWED_MIME_TYPES_REGEX }),
         ],
         errorHttpStatusCode: 400,
     }))),
+    __param(1, (0, common_2.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], UploadController.prototype, "uploadFile", null);
 exports.UploadController = UploadController = __decorate([
     (0, swagger_1.ApiTags)('Upload'),
     (0, common_1.Controller)('upload'),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, common_2.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [upload_service_1.UploadService])
 ], UploadController);
 //# sourceMappingURL=upload.controller.js.map

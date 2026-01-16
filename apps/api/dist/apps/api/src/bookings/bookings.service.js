@@ -12,35 +12,69 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BookingsService = void 0;
 const common_1 = require("@nestjs/common");
 const database_service_1 = require("../database/database.service");
+const email_service_1 = require("../email/email.service");
+const upload_service_1 = require("../upload/upload.service");
 let BookingsService = class BookingsService {
-    constructor(db) {
+    constructor(db, emailService, uploadService) {
         this.db = db;
+        this.emailService = emailService;
+        this.uploadService = uploadService;
     }
     async create(travelerId, dto) {
         const session = await this.db.tripSession.findUnique({
             where: { id: dto.sessionId },
+            include: { template: { include: { agency: true } } }
         });
-        if (!session || session.availableSeats < dto.guestsCount) {
-            throw new common_1.BadRequestException('Not enough seats available');
+        if (!session) {
+            throw new common_1.BadRequestException('Session not found');
         }
         return this.db.$transaction(async (tx) => {
-            const booking = await tx.booking.create({
-                data: {
+            const existing = await tx.booking.findFirst({
+                where: {
                     sessionId: dto.sessionId,
                     travelerId,
-                    guestsCount: dto.guestsCount,
-                    totalAmount: session.price * dto.guestsCount,
-                    status: 'PENDING',
-                },
+                    status: { not: 'CANCELLED' }
+                }
             });
-            await tx.tripSession.update({
-                where: { id: dto.sessionId },
+            if (existing) {
+                throw new common_1.BadRequestException('You already have a booking for this session');
+            }
+            const result = await tx.tripSession.updateMany({
+                where: {
+                    id: dto.sessionId,
+                    availableSeats: { gte: dto.guestsCount }
+                },
                 data: {
                     availableSeats: {
                         decrement: dto.guestsCount,
                     },
                 },
             });
+            if (result.count === 0) {
+                throw new common_1.BadRequestException('Not enough seats available');
+            }
+            const sessionWithInfo = await tx.tripSession.findUnique({
+                where: { id: dto.sessionId },
+                include: { template: { include: { agency: true } } }
+            });
+            const booking = await tx.booking.create({
+                data: {
+                    sessionId: dto.sessionId,
+                    travelerId,
+                    guestsCount: dto.guestsCount,
+                    totalAmount: sessionWithInfo.price * dto.guestsCount,
+                    status: 'PENDING',
+                    fullName: dto.fullName,
+                    phoneNumber: dto.phoneNumber,
+                    documentNumber: dto.documentNumber,
+                },
+            });
+            console.log(`[BookingsService] Created booking ${booking.id} for session ${dto.sessionId}. Travelers: ${dto.guestsCount}`);
+            const traveler = await tx.user.findUnique({ where: { id: travelerId } });
+            const agencyUser = await tx.user.findUnique({ where: { id: sessionWithInfo.template.agency.userId } });
+            if (traveler && agencyUser) {
+                this.emailService.sendBookingNotification(traveler.email, agencyUser.email, booking.id, sessionWithInfo.template.title).catch(err => console.error('Failed to send booking email', err));
+            }
             return booking;
         });
     }
@@ -53,15 +87,16 @@ let BookingsService = class BookingsService {
                         template: true,
                     },
                 },
+                paymentProof: true,
             },
         });
     }
-    async findAllByAgency(agencyId) {
+    async findAllByAgency(tenantId) {
         return this.db.booking.findMany({
             where: {
                 session: {
                     template: {
-                        agencyId,
+                        agencyId: tenantId,
                     },
                 },
             },
@@ -77,32 +112,167 @@ let BookingsService = class BookingsService {
                         email: true,
                     },
                 },
+                paymentProof: true,
             },
         });
     }
-    async uploadPaymentProof(bookingId, imageUrl) {
+    async uploadPaymentProof(bookingId, userId, file) {
+        const booking = await this.db.booking.findUnique({
+            where: { id: bookingId },
+            include: {
+                session: { include: { template: true } },
+            },
+        });
+        if (!booking) {
+            throw new common_1.BadRequestException('Booking not found');
+        }
+        if (booking.travelerId !== userId) {
+            throw new common_1.ForbiddenException('Forbidden');
+        }
+        const uploadResult = await this.uploadService.uploadFile(file, `payment-proofs/${bookingId}`);
+        const downloadUrl = this.buildPaymentProofDownloadUrl(bookingId);
         return this.db.$transaction(async (tx) => {
-            const proof = await tx.paymentProof.create({
-                data: {
+            const proof = await tx.paymentProof.upsert({
+                where: { bookingId },
+                update: {
+                    imageUrl: uploadResult.filename,
+                    uploadedAt: new Date(),
+                    status: 'PENDING',
+                    rejectionReason: null,
+                },
+                create: {
                     bookingId,
-                    imageUrl,
+                    imageUrl: uploadResult.filename,
                     status: 'PENDING',
                 },
             });
             await tx.booking.update({
                 where: { id: bookingId },
                 data: {
-                    status: 'PENDING_PAYMENT',
+                    status: 'PENDING',
+                    paymentProofUrl: downloadUrl,
                     paymentProofId: proof.id,
                 },
             });
-            return proof;
+            return {
+                ...proof,
+                downloadUrl,
+            };
+        });
+    }
+    async getPaymentProofFile(bookingId, userId) {
+        const booking = await this.db.booking.findUnique({
+            where: { id: bookingId },
+            include: {
+                paymentProof: true,
+                session: { include: { template: true } },
+            },
+        });
+        if (!booking) {
+            throw new common_1.BadRequestException('Booking not found');
+        }
+        const agency = await this.db.agencyProfile.findUnique({ where: { userId } });
+        const isTraveler = booking.travelerId === userId;
+        const isAgencyOwner = agency && booking.session.template.agencyId === agency.id;
+        if (!isTraveler && !isAgencyOwner) {
+            throw new common_1.BadRequestException('Unauthorized: Booking does not belong to you');
+        }
+        if (!booking.paymentProof) {
+            throw new common_1.BadRequestException('No payment proof uploaded');
+        }
+        const filePath = this.uploadService.getFilePath(booking.paymentProof.imageUrl);
+        return { filePath };
+    }
+    buildPaymentProofDownloadUrl(bookingId) {
+        const apiUrl = process.env.API_URL || 'http://localhost:3000/api';
+        return `${apiUrl}/bookings/${bookingId}/payment-proof/download`;
+    }
+    async verifyPayment(bookingId, tenantId, approved, rejectionReason) {
+        const booking = await this.db.booking.findUnique({
+            where: { id: bookingId },
+            include: {
+                session: { include: { template: true } },
+                paymentProof: true
+            }
+        });
+        if (!booking)
+            throw new common_1.BadRequestException('Booking not found');
+        const agency = await this.db.agencyProfile.findUnique({
+            where: { id: tenantId }
+        });
+        if (!agency || booking.session.template.agencyId !== agency.id) {
+            throw new common_1.ForbiddenException('Forbidden');
+        }
+        if (!booking.paymentProof) {
+            throw new common_1.BadRequestException('No payment proof uploaded');
+        }
+        if (booking.paymentProof.status !== 'PENDING') {
+            throw new common_1.BadRequestException('Payment proof has already been reviewed');
+        }
+        if (booking.status !== 'AWAITING_VALIDATION') {
+            throw new common_1.BadRequestException('Booking is not awaiting payment validation');
+        }
+        if (!approved && !rejectionReason) {
+            throw new common_1.BadRequestException('Rejection reason is required when rejecting a payment');
+        }
+        return this.db.$transaction(async (tx) => {
+            await tx.paymentProof.update({
+                where: { id: booking.paymentProofId },
+                data: {
+                    status: approved ? 'VERIFIED' : 'REJECTED',
+                    rejectionReason: approved ? null : rejectionReason,
+                }
+            });
+            const newStatus = approved ? 'CONFIRMED' : 'REJECTED';
+            console.log(`[BookingsService] Payment verification for booking ${bookingId}: ${approved ? 'APPROVED' : 'REJECTED'}`);
+            if (approved) {
+                const traveler = await tx.user.findUnique({ where: { id: booking.travelerId } });
+                if (traveler) {
+                    this.emailService.sendPaymentConfirmation(traveler.email, booking.session.template.title).catch(err => console.error('Failed to send payment confirmation email', err));
+                }
+            }
+            return tx.booking.update({
+                where: { id: bookingId },
+                data: { status: newStatus }
+            });
+        });
+    }
+    async cancelBooking(bookingId, travelerId) {
+        const booking = await this.db.booking.findUnique({
+            where: { id: bookingId },
+            include: { session: true }
+        });
+        if (!booking) {
+            throw new common_1.BadRequestException('Booking not found');
+        }
+        if (booking.travelerId !== travelerId) {
+            throw new common_1.ForbiddenException('Forbidden');
+        }
+        const cancellableStatuses = new Set(['PENDING', 'AWAITING_VALIDATION', 'CONFIRMED']);
+        if (!cancellableStatuses.has(booking.status)) {
+            throw new common_1.BadRequestException('Booking cannot be cancelled');
+        }
+        return this.db.$transaction(async (tx) => {
+            await tx.tripSession.update({
+                where: { id: booking.sessionId },
+                data: {
+                    availableSeats: {
+                        increment: booking.guestsCount
+                    }
+                }
+            });
+            return tx.booking.update({
+                where: { id: bookingId },
+                data: { status: 'CANCELLED' }
+            });
         });
     }
 };
 exports.BookingsService = BookingsService;
 exports.BookingsService = BookingsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [database_service_1.DatabaseService])
+    __metadata("design:paramtypes", [database_service_1.DatabaseService,
+        email_service_1.EmailService,
+        upload_service_1.UploadService])
 ], BookingsService);
 //# sourceMappingURL=bookings.service.js.map

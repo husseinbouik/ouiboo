@@ -6,24 +6,21 @@ import { CreateTripTemplateDto, CreateTripSessionDto } from './dto/create-trip.d
 export class TripsService {
     constructor(private db: DatabaseService) { }
 
-    async createTemplate(userId: string, dto: CreateTripTemplateDto) {
+    async createTemplate(agencyId: string, dto: CreateTripTemplateDto) {
         const agency = await this.db.agencyProfile.findUnique({
-            where: { userId }
+            where: { id: agencyId }
         });
 
         if (!agency) {
-            throw new ForbiddenException('Forbidden');
+            throw new ForbiddenException('Agency profile not found');
         }
 
         const { itinerary, ...tripData } = dto;
         console.log(`[TripsService] Creating template. Itinerary count: ${itinerary?.length || 0}`);
-        if (itinerary) {
-            console.log(`[TripsService] Itinerary data:`, JSON.stringify(itinerary, null, 2));
-        }
 
         const data = {
             ...tripData,
-            agencyId: tenantId,
+            agencyId: agencyId,
             itinerary: itinerary && itinerary.length > 0 ? {
                 create: itinerary
             } : undefined
@@ -38,7 +35,7 @@ export class TripsService {
             }
         });
 
-        console.log(`[TripsService] Created template ${result.id} for agency ${tenantId}.Status: DRAFT`);
+        console.log(`[TripsService] Created template ${result.id} for agency ${agencyId}. Status: ${result.status}`);
         return result;
     }
 
@@ -92,23 +89,23 @@ export class TripsService {
         return result;
     }
 
-    async createSession(userId: string, templateId: string, dto: CreateTripSessionDto) {
+    async createSession(agencyId: string, templateId: string, dto: CreateTripSessionDto) {
         const agency = await this.db.agencyProfile.findUnique({
-            where: { userId }
+            where: { id: agencyId }
         });
         if (!agency) {
-            throw new ForbiddenException('Forbidden');
+            throw new ForbiddenException('Agency profile not found');
         }
 
         const template = await this.db.tripTemplate.findFirst({
             where: {
                 id: templateId,
-                agencyId: tenantId,
+                agencyId: agencyId,
             },
         });
 
         if (!template) {
-            throw new ForbiddenException('Forbidden');
+            throw new ForbiddenException('Trip template not found or access denied');
         }
 
         return this.db.tripSession.create({
@@ -128,16 +125,16 @@ export class TripsService {
         });
     }
 
-    async updateTemplate(id: string, userId: string, dto: Partial<CreateTripTemplateDto>) {
-        const agency = await this.db.agencyProfile.findUnique({ where: { userId } });
-        if (!agency) throw new ForbiddenException('Forbidden');
+    async updateTemplate(id: string, agencyId: string, dto: Partial<CreateTripTemplateDto>) {
+        const agency = await this.db.agencyProfile.findUnique({ where: { id: agencyId } });
+        if (!agency) throw new ForbiddenException('Agency profile not found');
 
         const { itinerary, ...tripData } = dto;
-        console.log(`[TripsService] Updating template ${id} for agency ${tenantId}`);
+        console.log(`[TripsService] Updating template ${id} for agency ${agencyId}`);
 
         // Verify ownership
         const existing = await this.db.tripTemplate.findFirst({
-            where: { id, agencyId: tenantId }
+            where: { id, agencyId: agencyId }
         });
         if (!existing) throw new NotFoundException('Trip template not found');
 
@@ -156,15 +153,12 @@ export class TripsService {
         });
     }
 
-    async deleteTemplate(id: string, userId: string) {
-        const agency = await this.db.agencyProfile.findUnique({ where: { userId } });
-        if (!agency) throw new ForbiddenException('Forbidden');
-
-        // Verify ownership implicitly by deleting with agencyId in where (Prisma doesn't support easy delete with composite where unless ID is unique, but we can findFirst then delete)
-        // Actually, deleteMany is safer here to avoid errors if not found, but we want to error if not found.
+    async deleteTemplate(id: string, agencyId: string) {
+        const agency = await this.db.agencyProfile.findUnique({ where: { id: agencyId } });
+        if (!agency) throw new ForbiddenException('Agency profile not found');
 
         const existing = await this.db.tripTemplate.findFirst({
-            where: { id, agencyId: tenantId }
+            where: { id, agencyId: agencyId }
         });
         if (!existing) throw new NotFoundException('Trip template not found');
 

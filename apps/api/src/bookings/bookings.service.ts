@@ -145,7 +145,7 @@ export class BookingsService {
             throw new BadRequestException('Booking not found');
         }
 
-        if (booking.travelerId !== travelerId) {
+        if (booking.travelerId !== userId) {
             throw new ForbiddenException('Forbidden');
         }
 
@@ -156,7 +156,7 @@ export class BookingsService {
             const proof = await tx.paymentProof.upsert({
                 where: { bookingId },
                 update: {
-                    imageUrl,
+                    imageUrl: uploadResult.filename,
                     uploadedAt: new Date(),
                     status: 'PENDING',
                     rejectionReason: null,
@@ -171,7 +171,7 @@ export class BookingsService {
             await tx.booking.update({
                 where: { id: bookingId },
                 data: {
-                    status: 'PENDING_PAYMENT',
+                    status: 'PENDING',
                     paymentProofUrl: downloadUrl,
                     paymentProofId: proof.id,
                 },
@@ -219,7 +219,7 @@ export class BookingsService {
         return `${apiUrl}/bookings/${bookingId}/payment-proof/download`;
     }
 
-    async verifyPayment(bookingId: string, tenantId: string, approved: boolean) {
+    async verifyPayment(bookingId: string, tenantId: string, approved: boolean, rejectionReason?: string) {
         // 1. Get Booking and verify Agency ownership
         const booking = await this.db.booking.findUnique({
             where: { id: bookingId },
@@ -231,7 +231,9 @@ export class BookingsService {
 
         if (!booking) throw new BadRequestException('Booking not found');
 
-        const agency = await this.db.agencyProfile.findUnique({ where: { userId: agencyUserId } });
+        const agency = await this.db.agencyProfile.findUnique({
+            where: { id: tenantId }
+        });
         if (!agency || booking.session.template.agencyId !== agency.id) {
             throw new ForbiddenException('Forbidden');
         }

@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("../auth/guards/roles.guard");
+const tenant_guard_1 = require("../auth/guards/tenant.guard");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
 const types_1 = require("@ouiboo/types");
 const database_service_1 = require("../database/database.service");
@@ -25,25 +26,15 @@ let AgencyController = class AgencyController {
         this.prisma = prisma;
     }
     async getStats(req) {
-        const agency = await this.prisma.agencyProfile.findUnique({
-            where: { userId: req.user.userId },
-        });
-        if (!agency) {
-            return {
-                revenue: 0,
-                activeTrips: 0,
-                totalBookings: 0,
-                totalCustomers: 0,
-            };
-        }
+        const agencyId = req.tenantId;
         const [tripsCount, bookings, wallet] = await Promise.all([
             this.prisma.tripTemplate.count({
-                where: { agencyId: agency.id, status: 'ACTIVE' },
+                where: { agencyId, status: 'ACTIVE' },
             }),
             this.prisma.booking.findMany({
                 where: {
                     session: {
-                        template: { agencyId: agency.id }
+                        template: { agencyId }
                     },
                 },
                 select: {
@@ -53,7 +44,7 @@ let AgencyController = class AgencyController {
                 }
             }),
             this.prisma.wallet.findUnique({
-                where: { agencyId: agency.id }
+                where: { agencyId }
             })
         ]);
         const revenue = bookings
@@ -69,13 +60,9 @@ let AgencyController = class AgencyController {
         };
     }
     async getTrips(req) {
-        const agency = await this.prisma.agencyProfile.findUnique({
-            where: { userId: req.user.userId },
-        });
-        if (!agency)
-            return [];
+        const agencyId = req.tenantId;
         return this.prisma.tripTemplate.findMany({
-            where: { agencyId: agency.id },
+            where: { agencyId },
             include: {
                 sessions: {
                     include: {
@@ -88,15 +75,11 @@ let AgencyController = class AgencyController {
         });
     }
     async getBookings(req) {
-        const agency = await this.prisma.agencyProfile.findUnique({
-            where: { userId: req.user.userId },
-        });
-        if (!agency)
-            return [];
+        const agencyId = req.tenantId;
         return this.prisma.booking.findMany({
             where: {
                 session: {
-                    template: { agencyId: agency.id }
+                    template: { agencyId }
                 },
             },
             include: {
@@ -110,7 +93,8 @@ let AgencyController = class AgencyController {
                         name: true,
                         email: true,
                     }
-                }
+                },
+                paymentProof: true
             },
             orderBy: {
                 bookingDate: 'desc'
@@ -118,15 +102,22 @@ let AgencyController = class AgencyController {
         });
     }
     async getPayouts(req) {
-        const agency = await this.prisma.agencyProfile.findUnique({
-            where: { userId: req.user.userId },
-        });
-        if (!agency)
-            return [];
+        const agencyId = req.tenantId;
         return this.prisma.payoutRequest.findMany({
-            where: { agencyId: agency.id },
+            where: { agencyId },
             orderBy: { requestedAt: 'desc' },
             take: 20
+        });
+    }
+    async updateProfile(req, data) {
+        return this.prisma.agencyProfile.update({
+            where: { id: req.tenantId },
+            data: {
+                companyName: data.companyName,
+                bio: data.bio,
+                logo: data.logo,
+                bankDetails: data.bankDetails
+            }
         });
     }
 };
@@ -163,11 +154,20 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AgencyController.prototype, "getPayouts", null);
+__decorate([
+    (0, common_1.Patch)('profile'),
+    (0, swagger_1.ApiOperation)({ summary: 'Update agency profile' }),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], AgencyController.prototype, "updateProfile", null);
 exports.AgencyController = AgencyController = __decorate([
     (0, swagger_1.ApiTags)('Agency'),
     (0, common_1.Controller)('agency'),
     (0, swagger_1.ApiBearerAuth)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard, tenant_guard_1.TenantGuard),
     (0, roles_decorator_1.Roles)(types_1.UserRole.Agency),
     __metadata("design:paramtypes", [database_service_1.DatabaseService])
 ], AgencyController);

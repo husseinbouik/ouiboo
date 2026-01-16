@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BookingsService } from './bookings.service';
 import { DatabaseService } from '../database/database.service';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { UploadService } from '../upload/upload.service';
 
 const mockBooking = {
     id: 'booking-123',
@@ -69,8 +70,8 @@ describe('BookingsService', () => {
     describe('uploadPaymentProof', () => {
         it('should upload proof if user is the traveler', async () => {
             db.booking.findUnique.mockResolvedValue(mockBooking);
-            db.paymentProof.create.mockResolvedValue({ id: 'proof-123' });
-            db.booking.update.mockResolvedValue({ ...mockBooking, status: 'PENDING_PAYMENT' });
+            db.paymentProof.upsert.mockResolvedValue({ id: 'proof-123' });
+            db.booking.update.mockResolvedValue({ ...mockBooking, status: 'PENDING' });
             db.agencyProfile.findUnique.mockResolvedValue(null);
             uploadService.uploadFile.mockResolvedValue({
                 url: 'http://upload.url',
@@ -89,7 +90,7 @@ describe('BookingsService', () => {
                 where: { id: 'booking-123' },
                 include: { session: { include: { template: true } } },
             });
-            expect(db.paymentProof.create).toHaveBeenCalled();
+            expect(db.paymentProof.upsert).toHaveBeenCalled();
             expect(db.booking.update).toHaveBeenCalled();
         });
 
@@ -105,7 +106,7 @@ describe('BookingsService', () => {
             db.booking.findUnique.mockResolvedValue(mockBooking);
             db.agencyProfile.findUnique.mockResolvedValue(null);
 
-            await expect(service.uploadPaymentProof('booking-123', 'user-999', 'url')).rejects.toThrow(ForbiddenException);
+            await expect(service.uploadPaymentProof('booking-123', 'user-999', {} as any)).rejects.toThrow(ForbiddenException);
         });
     });
 });

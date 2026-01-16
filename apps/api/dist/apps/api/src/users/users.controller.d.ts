@@ -6,6 +6,7 @@ export declare class UsersController {
     getMe(req: any): Promise<{
         agencyProfile: {
             id: string;
+            userId: string;
             companyName: string;
             ice: string;
             patente: string;
@@ -13,7 +14,10 @@ export declare class UsersController {
             verificationStatus: import("@ouiboo/database").$Enums.VerificationStatus;
             bio: string | null;
             logo: string | null;
-            userId: string;
+            subscriptionStatus: import("@ouiboo/database").$Enums.SubscriptionStatus;
+            trialEndsAt: Date | null;
+            subscriptionEndsAt: Date | null;
+            bankDetails: string | null;
         };
     } & {
         email: string;
@@ -24,11 +28,14 @@ export declare class UsersController {
         id: string;
         avatar: string | null;
         isEmailVerified: boolean;
+        otpExpiresAt: Date | null;
+        otpLastSentAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
     }>;
     updateProfile(req: any, body: UpdateAgencyProfileDto): Promise<{
         id: string;
+        userId: string;
         companyName: string;
         ice: string;
         patente: string;
@@ -36,6 +43,9 @@ export declare class UsersController {
         verificationStatus: import("@ouiboo/database").$Enums.VerificationStatus;
         bio: string | null;
         logo: string | null;
-        userId: string;
+        subscriptionStatus: import("@ouiboo/database").$Enums.SubscriptionStatus;
+        trialEndsAt: Date | null;
+        subscriptionEndsAt: Date | null;
+        bankDetails: string | null;
     }>;
 }

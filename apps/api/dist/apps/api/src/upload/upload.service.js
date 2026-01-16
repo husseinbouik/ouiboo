@@ -5,31 +5,32 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UploadService = void 0;
 const common_1 = require("@nestjs/common");
-const fs = require("fs");
-const path = require("path");
+const local_storage_provider_1 = require("./providers/local-storage.provider");
 let UploadService = class UploadService {
-    async uploadFile(file) {
-        const uploadDir = path.join(process.cwd(), 'uploads');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        const filename = `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
-        const filePath = path.join(uploadDir, filename);
-        fs.writeFileSync(filePath, file.buffer);
-        const baseUrl = process.env.API_URL || 'http://localhost:3000/api';
-        const fileUrl = `${baseUrl.replace('/api', '')}/uploads/${filename}`;
+    constructor() {
+        this.storageProvider = new local_storage_provider_1.LocalStorageProvider();
+    }
+    async uploadFile(file, folder) {
+        const result = await this.storageProvider.upload(file, folder);
         return {
-            url: fileUrl,
-            filename: filename,
+            url: result.url,
+            filename: result.key,
             size: file.size,
         };
+    }
+    getFilePath(key) {
+        return this.storageProvider.getFilePath(key);
     }
 };
 exports.UploadService = UploadService;
 exports.UploadService = UploadService = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [])
 ], UploadService);
 //# sourceMappingURL=upload.service.js.map

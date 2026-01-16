@@ -19,6 +19,11 @@ export type PrismaPromise<T> = $Public.PrismaPromise<T>
  */
 export type User = $Result.DefaultSelection<Prisma.$UserPayload>
 /**
+ * Model RefreshToken
+ * 
+ */
+export type RefreshToken = $Result.DefaultSelection<Prisma.$RefreshTokenPayload>
+/**
  * Model AgencyProfile
  * 
  */
@@ -117,10 +122,11 @@ export type TripStatus = (typeof TripStatus)[keyof typeof TripStatus]
 
 export const BookingStatus: {
   PENDING: 'PENDING',
+  AWAITING_VALIDATION: 'AWAITING_VALIDATION',
   CONFIRMED: 'CONFIRMED',
+  REJECTED: 'REJECTED',
   CANCELLED: 'CANCELLED',
-  COMPLETED: 'COMPLETED',
-  PENDING_PAYMENT: 'PENDING_PAYMENT'
+  COMPLETED: 'COMPLETED'
 };
 
 export type BookingStatus = (typeof BookingStatus)[keyof typeof BookingStatus]
@@ -309,6 +315,16 @@ export class PrismaClient<
     * ```
     */
   get user(): Prisma.UserDelegate<ExtArgs>;
+
+  /**
+   * `prisma.refreshToken`: Exposes CRUD operations for the **RefreshToken** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more RefreshTokens
+    * const refreshTokens = await prisma.refreshToken.findMany()
+    * ```
+    */
+  get refreshToken(): Prisma.RefreshTokenDelegate<ExtArgs>;
 
   /**
    * `prisma.agencyProfile`: Exposes CRUD operations for the **AgencyProfile** model.
@@ -841,6 +857,7 @@ export namespace Prisma {
 
   export const ModelName: {
     User: 'User',
+    RefreshToken: 'RefreshToken',
     AgencyProfile: 'AgencyProfile',
     TripTemplate: 'TripTemplate',
     ItineraryDay: 'ItineraryDay',
@@ -865,7 +882,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "agencyProfile" | "tripTemplate" | "itineraryDay" | "tripSession" | "booking" | "paymentProof" | "wallet" | "walletTransaction" | "payoutRequest"
+      modelProps: "user" | "refreshToken" | "agencyProfile" | "tripTemplate" | "itineraryDay" | "tripSession" | "booking" | "paymentProof" | "wallet" | "walletTransaction" | "payoutRequest"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -936,6 +953,76 @@ export namespace Prisma {
           count: {
             args: Prisma.UserCountArgs<ExtArgs>
             result: $Utils.Optional<UserCountAggregateOutputType> | number
+          }
+        }
+      }
+      RefreshToken: {
+        payload: Prisma.$RefreshTokenPayload<ExtArgs>
+        fields: Prisma.RefreshTokenFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.RefreshTokenFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefreshTokenPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.RefreshTokenFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefreshTokenPayload>
+          }
+          findFirst: {
+            args: Prisma.RefreshTokenFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefreshTokenPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.RefreshTokenFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefreshTokenPayload>
+          }
+          findMany: {
+            args: Prisma.RefreshTokenFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefreshTokenPayload>[]
+          }
+          create: {
+            args: Prisma.RefreshTokenCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefreshTokenPayload>
+          }
+          createMany: {
+            args: Prisma.RefreshTokenCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.RefreshTokenCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefreshTokenPayload>[]
+          }
+          delete: {
+            args: Prisma.RefreshTokenDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefreshTokenPayload>
+          }
+          update: {
+            args: Prisma.RefreshTokenUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefreshTokenPayload>
+          }
+          deleteMany: {
+            args: Prisma.RefreshTokenDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.RefreshTokenUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.RefreshTokenUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RefreshTokenPayload>
+          }
+          aggregate: {
+            args: Prisma.RefreshTokenAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateRefreshToken>
+          }
+          groupBy: {
+            args: Prisma.RefreshTokenGroupByArgs<ExtArgs>
+            result: $Utils.Optional<RefreshTokenGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.RefreshTokenCountArgs<ExtArgs>
+            result: $Utils.Optional<RefreshTokenCountAggregateOutputType> | number
           }
         }
       }
@@ -1730,10 +1817,12 @@ export namespace Prisma {
    */
 
   export type UserCountOutputType = {
+    refreshTokens: number
     bookings: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    refreshTokens?: boolean | UserCountOutputTypeCountRefreshTokensArgs
     bookings?: boolean | UserCountOutputTypeCountBookingsArgs
   }
 
@@ -1751,8 +1840,46 @@ export namespace Prisma {
   /**
    * UserCountOutputType without action
    */
+  export type UserCountOutputTypeCountRefreshTokensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RefreshTokenWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
   export type UserCountOutputTypeCountBookingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: BookingWhereInput
+  }
+
+
+  /**
+   * Count Type RefreshTokenCountOutputType
+   */
+
+  export type RefreshTokenCountOutputType = {
+    replacedTokens: number
+  }
+
+  export type RefreshTokenCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    replacedTokens?: boolean | RefreshTokenCountOutputTypeCountReplacedTokensArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * RefreshTokenCountOutputType without action
+   */
+  export type RefreshTokenCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefreshTokenCountOutputType
+     */
+    select?: RefreshTokenCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * RefreshTokenCountOutputType without action
+   */
+  export type RefreshTokenCountOutputTypeCountReplacedTokensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RefreshTokenWhereInput
   }
 
 
@@ -1921,6 +2048,8 @@ export namespace Prisma {
     avatar: string | null
     isEmailVerified: boolean | null
     otp: string | null
+    otpExpiresAt: Date | null
+    otpLastSentAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -1934,6 +2063,8 @@ export namespace Prisma {
     avatar: string | null
     isEmailVerified: boolean | null
     otp: string | null
+    otpExpiresAt: Date | null
+    otpLastSentAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -1947,6 +2078,8 @@ export namespace Prisma {
     avatar: number
     isEmailVerified: number
     otp: number
+    otpExpiresAt: number
+    otpLastSentAt: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -1962,6 +2095,8 @@ export namespace Prisma {
     avatar?: true
     isEmailVerified?: true
     otp?: true
+    otpExpiresAt?: true
+    otpLastSentAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -1975,6 +2110,8 @@ export namespace Prisma {
     avatar?: true
     isEmailVerified?: true
     otp?: true
+    otpExpiresAt?: true
+    otpLastSentAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -1988,6 +2125,8 @@ export namespace Prisma {
     avatar?: true
     isEmailVerified?: true
     otp?: true
+    otpExpiresAt?: true
+    otpLastSentAt?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -2074,6 +2213,8 @@ export namespace Prisma {
     avatar: string | null
     isEmailVerified: boolean
     otp: string | null
+    otpExpiresAt: Date | null
+    otpLastSentAt: Date | null
     createdAt: Date
     updatedAt: Date
     _count: UserCountAggregateOutputType | null
@@ -2104,8 +2245,11 @@ export namespace Prisma {
     avatar?: boolean
     isEmailVerified?: boolean
     otp?: boolean
+    otpExpiresAt?: boolean
+    otpLastSentAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    refreshTokens?: boolean | User$refreshTokensArgs<ExtArgs>
     agencyProfile?: boolean | User$agencyProfileArgs<ExtArgs>
     bookings?: boolean | User$bookingsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -2120,6 +2264,8 @@ export namespace Prisma {
     avatar?: boolean
     isEmailVerified?: boolean
     otp?: boolean
+    otpExpiresAt?: boolean
+    otpLastSentAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["user"]>
@@ -2133,11 +2279,14 @@ export namespace Prisma {
     avatar?: boolean
     isEmailVerified?: boolean
     otp?: boolean
+    otpExpiresAt?: boolean
+    otpLastSentAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    refreshTokens?: boolean | User$refreshTokensArgs<ExtArgs>
     agencyProfile?: boolean | User$agencyProfileArgs<ExtArgs>
     bookings?: boolean | User$bookingsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -2147,6 +2296,7 @@ export namespace Prisma {
   export type $UserPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "User"
     objects: {
+      refreshTokens: Prisma.$RefreshTokenPayload<ExtArgs>[]
       agencyProfile: Prisma.$AgencyProfilePayload<ExtArgs> | null
       bookings: Prisma.$BookingPayload<ExtArgs>[]
     }
@@ -2159,6 +2309,8 @@ export namespace Prisma {
       avatar: string | null
       isEmailVerified: boolean
       otp: string | null
+      otpExpiresAt: Date | null
+      otpLastSentAt: Date | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["user"]>
@@ -2525,6 +2677,7 @@ export namespace Prisma {
    */
   export interface Prisma__UserClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    refreshTokens<T extends User$refreshTokensArgs<ExtArgs> = {}>(args?: Subset<T, User$refreshTokensArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "findMany"> | Null>
     agencyProfile<T extends User$agencyProfileArgs<ExtArgs> = {}>(args?: Subset<T, User$agencyProfileArgs<ExtArgs>>): Prisma__AgencyProfileClient<$Result.GetResult<Prisma.$AgencyProfilePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     bookings<T extends User$bookingsArgs<ExtArgs> = {}>(args?: Subset<T, User$bookingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany"> | Null>
     /**
@@ -2564,6 +2717,8 @@ export namespace Prisma {
     readonly avatar: FieldRef<"User", 'String'>
     readonly isEmailVerified: FieldRef<"User", 'Boolean'>
     readonly otp: FieldRef<"User", 'String'>
+    readonly otpExpiresAt: FieldRef<"User", 'DateTime'>
+    readonly otpLastSentAt: FieldRef<"User", 'DateTime'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
     readonly updatedAt: FieldRef<"User", 'DateTime'>
   }
@@ -2880,6 +3035,26 @@ export namespace Prisma {
   }
 
   /**
+   * User.refreshTokens
+   */
+  export type User$refreshTokensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefreshToken
+     */
+    select?: RefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefreshTokenInclude<ExtArgs> | null
+    where?: RefreshTokenWhereInput
+    orderBy?: RefreshTokenOrderByWithRelationInput | RefreshTokenOrderByWithRelationInput[]
+    cursor?: RefreshTokenWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RefreshTokenScalarFieldEnum | RefreshTokenScalarFieldEnum[]
+  }
+
+  /**
    * User.agencyProfile
    */
   export type User$agencyProfileArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -2926,6 +3101,1010 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: UserInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model RefreshToken
+   */
+
+  export type AggregateRefreshToken = {
+    _count: RefreshTokenCountAggregateOutputType | null
+    _min: RefreshTokenMinAggregateOutputType | null
+    _max: RefreshTokenMaxAggregateOutputType | null
+  }
+
+  export type RefreshTokenMinAggregateOutputType = {
+    id: string | null
+    tokenHash: string | null
+    userId: string | null
+    createdAt: Date | null
+    expiresAt: Date | null
+    revokedAt: Date | null
+    replacedByTokenId: string | null
+  }
+
+  export type RefreshTokenMaxAggregateOutputType = {
+    id: string | null
+    tokenHash: string | null
+    userId: string | null
+    createdAt: Date | null
+    expiresAt: Date | null
+    revokedAt: Date | null
+    replacedByTokenId: string | null
+  }
+
+  export type RefreshTokenCountAggregateOutputType = {
+    id: number
+    tokenHash: number
+    userId: number
+    createdAt: number
+    expiresAt: number
+    revokedAt: number
+    replacedByTokenId: number
+    _all: number
+  }
+
+
+  export type RefreshTokenMinAggregateInputType = {
+    id?: true
+    tokenHash?: true
+    userId?: true
+    createdAt?: true
+    expiresAt?: true
+    revokedAt?: true
+    replacedByTokenId?: true
+  }
+
+  export type RefreshTokenMaxAggregateInputType = {
+    id?: true
+    tokenHash?: true
+    userId?: true
+    createdAt?: true
+    expiresAt?: true
+    revokedAt?: true
+    replacedByTokenId?: true
+  }
+
+  export type RefreshTokenCountAggregateInputType = {
+    id?: true
+    tokenHash?: true
+    userId?: true
+    createdAt?: true
+    expiresAt?: true
+    revokedAt?: true
+    replacedByTokenId?: true
+    _all?: true
+  }
+
+  export type RefreshTokenAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RefreshToken to aggregate.
+     */
+    where?: RefreshTokenWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RefreshTokens to fetch.
+     */
+    orderBy?: RefreshTokenOrderByWithRelationInput | RefreshTokenOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: RefreshTokenWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RefreshTokens from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RefreshTokens.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned RefreshTokens
+    **/
+    _count?: true | RefreshTokenCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: RefreshTokenMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: RefreshTokenMaxAggregateInputType
+  }
+
+  export type GetRefreshTokenAggregateType<T extends RefreshTokenAggregateArgs> = {
+        [P in keyof T & keyof AggregateRefreshToken]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateRefreshToken[P]>
+      : GetScalarType<T[P], AggregateRefreshToken[P]>
+  }
+
+
+
+
+  export type RefreshTokenGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RefreshTokenWhereInput
+    orderBy?: RefreshTokenOrderByWithAggregationInput | RefreshTokenOrderByWithAggregationInput[]
+    by: RefreshTokenScalarFieldEnum[] | RefreshTokenScalarFieldEnum
+    having?: RefreshTokenScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: RefreshTokenCountAggregateInputType | true
+    _min?: RefreshTokenMinAggregateInputType
+    _max?: RefreshTokenMaxAggregateInputType
+  }
+
+  export type RefreshTokenGroupByOutputType = {
+    id: string
+    tokenHash: string
+    userId: string
+    createdAt: Date
+    expiresAt: Date
+    revokedAt: Date | null
+    replacedByTokenId: string | null
+    _count: RefreshTokenCountAggregateOutputType | null
+    _min: RefreshTokenMinAggregateOutputType | null
+    _max: RefreshTokenMaxAggregateOutputType | null
+  }
+
+  type GetRefreshTokenGroupByPayload<T extends RefreshTokenGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<RefreshTokenGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof RefreshTokenGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], RefreshTokenGroupByOutputType[P]>
+            : GetScalarType<T[P], RefreshTokenGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type RefreshTokenSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tokenHash?: boolean
+    userId?: boolean
+    createdAt?: boolean
+    expiresAt?: boolean
+    revokedAt?: boolean
+    replacedByTokenId?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    replacedByToken?: boolean | RefreshToken$replacedByTokenArgs<ExtArgs>
+    replacedTokens?: boolean | RefreshToken$replacedTokensArgs<ExtArgs>
+    _count?: boolean | RefreshTokenCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["refreshToken"]>
+
+  export type RefreshTokenSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tokenHash?: boolean
+    userId?: boolean
+    createdAt?: boolean
+    expiresAt?: boolean
+    revokedAt?: boolean
+    replacedByTokenId?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    replacedByToken?: boolean | RefreshToken$replacedByTokenArgs<ExtArgs>
+  }, ExtArgs["result"]["refreshToken"]>
+
+  export type RefreshTokenSelectScalar = {
+    id?: boolean
+    tokenHash?: boolean
+    userId?: boolean
+    createdAt?: boolean
+    expiresAt?: boolean
+    revokedAt?: boolean
+    replacedByTokenId?: boolean
+  }
+
+  export type RefreshTokenInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    replacedByToken?: boolean | RefreshToken$replacedByTokenArgs<ExtArgs>
+    replacedTokens?: boolean | RefreshToken$replacedTokensArgs<ExtArgs>
+    _count?: boolean | RefreshTokenCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type RefreshTokenIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    replacedByToken?: boolean | RefreshToken$replacedByTokenArgs<ExtArgs>
+  }
+
+  export type $RefreshTokenPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "RefreshToken"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+      replacedByToken: Prisma.$RefreshTokenPayload<ExtArgs> | null
+      replacedTokens: Prisma.$RefreshTokenPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      tokenHash: string
+      userId: string
+      createdAt: Date
+      expiresAt: Date
+      revokedAt: Date | null
+      replacedByTokenId: string | null
+    }, ExtArgs["result"]["refreshToken"]>
+    composites: {}
+  }
+
+  type RefreshTokenGetPayload<S extends boolean | null | undefined | RefreshTokenDefaultArgs> = $Result.GetResult<Prisma.$RefreshTokenPayload, S>
+
+  type RefreshTokenCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<RefreshTokenFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: RefreshTokenCountAggregateInputType | true
+    }
+
+  export interface RefreshTokenDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RefreshToken'], meta: { name: 'RefreshToken' } }
+    /**
+     * Find zero or one RefreshToken that matches the filter.
+     * @param {RefreshTokenFindUniqueArgs} args - Arguments to find a RefreshToken
+     * @example
+     * // Get one RefreshToken
+     * const refreshToken = await prisma.refreshToken.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends RefreshTokenFindUniqueArgs>(args: SelectSubset<T, RefreshTokenFindUniqueArgs<ExtArgs>>): Prisma__RefreshTokenClient<$Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one RefreshToken that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {RefreshTokenFindUniqueOrThrowArgs} args - Arguments to find a RefreshToken
+     * @example
+     * // Get one RefreshToken
+     * const refreshToken = await prisma.refreshToken.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends RefreshTokenFindUniqueOrThrowArgs>(args: SelectSubset<T, RefreshTokenFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RefreshTokenClient<$Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first RefreshToken that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RefreshTokenFindFirstArgs} args - Arguments to find a RefreshToken
+     * @example
+     * // Get one RefreshToken
+     * const refreshToken = await prisma.refreshToken.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends RefreshTokenFindFirstArgs>(args?: SelectSubset<T, RefreshTokenFindFirstArgs<ExtArgs>>): Prisma__RefreshTokenClient<$Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first RefreshToken that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RefreshTokenFindFirstOrThrowArgs} args - Arguments to find a RefreshToken
+     * @example
+     * // Get one RefreshToken
+     * const refreshToken = await prisma.refreshToken.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends RefreshTokenFindFirstOrThrowArgs>(args?: SelectSubset<T, RefreshTokenFindFirstOrThrowArgs<ExtArgs>>): Prisma__RefreshTokenClient<$Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more RefreshTokens that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RefreshTokenFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all RefreshTokens
+     * const refreshTokens = await prisma.refreshToken.findMany()
+     * 
+     * // Get first 10 RefreshTokens
+     * const refreshTokens = await prisma.refreshToken.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const refreshTokenWithIdOnly = await prisma.refreshToken.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends RefreshTokenFindManyArgs>(args?: SelectSubset<T, RefreshTokenFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a RefreshToken.
+     * @param {RefreshTokenCreateArgs} args - Arguments to create a RefreshToken.
+     * @example
+     * // Create one RefreshToken
+     * const RefreshToken = await prisma.refreshToken.create({
+     *   data: {
+     *     // ... data to create a RefreshToken
+     *   }
+     * })
+     * 
+     */
+    create<T extends RefreshTokenCreateArgs>(args: SelectSubset<T, RefreshTokenCreateArgs<ExtArgs>>): Prisma__RefreshTokenClient<$Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many RefreshTokens.
+     * @param {RefreshTokenCreateManyArgs} args - Arguments to create many RefreshTokens.
+     * @example
+     * // Create many RefreshTokens
+     * const refreshToken = await prisma.refreshToken.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends RefreshTokenCreateManyArgs>(args?: SelectSubset<T, RefreshTokenCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many RefreshTokens and returns the data saved in the database.
+     * @param {RefreshTokenCreateManyAndReturnArgs} args - Arguments to create many RefreshTokens.
+     * @example
+     * // Create many RefreshTokens
+     * const refreshToken = await prisma.refreshToken.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many RefreshTokens and only return the `id`
+     * const refreshTokenWithIdOnly = await prisma.refreshToken.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends RefreshTokenCreateManyAndReturnArgs>(args?: SelectSubset<T, RefreshTokenCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a RefreshToken.
+     * @param {RefreshTokenDeleteArgs} args - Arguments to delete one RefreshToken.
+     * @example
+     * // Delete one RefreshToken
+     * const RefreshToken = await prisma.refreshToken.delete({
+     *   where: {
+     *     // ... filter to delete one RefreshToken
+     *   }
+     * })
+     * 
+     */
+    delete<T extends RefreshTokenDeleteArgs>(args: SelectSubset<T, RefreshTokenDeleteArgs<ExtArgs>>): Prisma__RefreshTokenClient<$Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one RefreshToken.
+     * @param {RefreshTokenUpdateArgs} args - Arguments to update one RefreshToken.
+     * @example
+     * // Update one RefreshToken
+     * const refreshToken = await prisma.refreshToken.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends RefreshTokenUpdateArgs>(args: SelectSubset<T, RefreshTokenUpdateArgs<ExtArgs>>): Prisma__RefreshTokenClient<$Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more RefreshTokens.
+     * @param {RefreshTokenDeleteManyArgs} args - Arguments to filter RefreshTokens to delete.
+     * @example
+     * // Delete a few RefreshTokens
+     * const { count } = await prisma.refreshToken.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends RefreshTokenDeleteManyArgs>(args?: SelectSubset<T, RefreshTokenDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RefreshTokens.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RefreshTokenUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many RefreshTokens
+     * const refreshToken = await prisma.refreshToken.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends RefreshTokenUpdateManyArgs>(args: SelectSubset<T, RefreshTokenUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one RefreshToken.
+     * @param {RefreshTokenUpsertArgs} args - Arguments to update or create a RefreshToken.
+     * @example
+     * // Update or create a RefreshToken
+     * const refreshToken = await prisma.refreshToken.upsert({
+     *   create: {
+     *     // ... data to create a RefreshToken
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the RefreshToken we want to update
+     *   }
+     * })
+     */
+    upsert<T extends RefreshTokenUpsertArgs>(args: SelectSubset<T, RefreshTokenUpsertArgs<ExtArgs>>): Prisma__RefreshTokenClient<$Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of RefreshTokens.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RefreshTokenCountArgs} args - Arguments to filter RefreshTokens to count.
+     * @example
+     * // Count the number of RefreshTokens
+     * const count = await prisma.refreshToken.count({
+     *   where: {
+     *     // ... the filter for the RefreshTokens we want to count
+     *   }
+     * })
+    **/
+    count<T extends RefreshTokenCountArgs>(
+      args?: Subset<T, RefreshTokenCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], RefreshTokenCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a RefreshToken.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RefreshTokenAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends RefreshTokenAggregateArgs>(args: Subset<T, RefreshTokenAggregateArgs>): Prisma.PrismaPromise<GetRefreshTokenAggregateType<T>>
+
+    /**
+     * Group by RefreshToken.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RefreshTokenGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends RefreshTokenGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: RefreshTokenGroupByArgs['orderBy'] }
+        : { orderBy?: RefreshTokenGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, RefreshTokenGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRefreshTokenGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the RefreshToken model
+   */
+  readonly fields: RefreshTokenFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for RefreshToken.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__RefreshTokenClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    replacedByToken<T extends RefreshToken$replacedByTokenArgs<ExtArgs> = {}>(args?: Subset<T, RefreshToken$replacedByTokenArgs<ExtArgs>>): Prisma__RefreshTokenClient<$Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    replacedTokens<T extends RefreshToken$replacedTokensArgs<ExtArgs> = {}>(args?: Subset<T, RefreshToken$replacedTokensArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RefreshTokenPayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the RefreshToken model
+   */ 
+  interface RefreshTokenFieldRefs {
+    readonly id: FieldRef<"RefreshToken", 'String'>
+    readonly tokenHash: FieldRef<"RefreshToken", 'String'>
+    readonly userId: FieldRef<"RefreshToken", 'String'>
+    readonly createdAt: FieldRef<"RefreshToken", 'DateTime'>
+    readonly expiresAt: FieldRef<"RefreshToken", 'DateTime'>
+    readonly revokedAt: FieldRef<"RefreshToken", 'DateTime'>
+    readonly replacedByTokenId: FieldRef<"RefreshToken", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * RefreshToken findUnique
+   */
+  export type RefreshTokenFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefreshToken
+     */
+    select?: RefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefreshTokenInclude<ExtArgs> | null
+    /**
+     * Filter, which RefreshToken to fetch.
+     */
+    where: RefreshTokenWhereUniqueInput
+  }
+
+  /**
+   * RefreshToken findUniqueOrThrow
+   */
+  export type RefreshTokenFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefreshToken
+     */
+    select?: RefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefreshTokenInclude<ExtArgs> | null
+    /**
+     * Filter, which RefreshToken to fetch.
+     */
+    where: RefreshTokenWhereUniqueInput
+  }
+
+  /**
+   * RefreshToken findFirst
+   */
+  export type RefreshTokenFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefreshToken
+     */
+    select?: RefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefreshTokenInclude<ExtArgs> | null
+    /**
+     * Filter, which RefreshToken to fetch.
+     */
+    where?: RefreshTokenWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RefreshTokens to fetch.
+     */
+    orderBy?: RefreshTokenOrderByWithRelationInput | RefreshTokenOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RefreshTokens.
+     */
+    cursor?: RefreshTokenWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RefreshTokens from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RefreshTokens.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RefreshTokens.
+     */
+    distinct?: RefreshTokenScalarFieldEnum | RefreshTokenScalarFieldEnum[]
+  }
+
+  /**
+   * RefreshToken findFirstOrThrow
+   */
+  export type RefreshTokenFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefreshToken
+     */
+    select?: RefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefreshTokenInclude<ExtArgs> | null
+    /**
+     * Filter, which RefreshToken to fetch.
+     */
+    where?: RefreshTokenWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RefreshTokens to fetch.
+     */
+    orderBy?: RefreshTokenOrderByWithRelationInput | RefreshTokenOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RefreshTokens.
+     */
+    cursor?: RefreshTokenWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RefreshTokens from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RefreshTokens.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RefreshTokens.
+     */
+    distinct?: RefreshTokenScalarFieldEnum | RefreshTokenScalarFieldEnum[]
+  }
+
+  /**
+   * RefreshToken findMany
+   */
+  export type RefreshTokenFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefreshToken
+     */
+    select?: RefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefreshTokenInclude<ExtArgs> | null
+    /**
+     * Filter, which RefreshTokens to fetch.
+     */
+    where?: RefreshTokenWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RefreshTokens to fetch.
+     */
+    orderBy?: RefreshTokenOrderByWithRelationInput | RefreshTokenOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing RefreshTokens.
+     */
+    cursor?: RefreshTokenWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RefreshTokens from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RefreshTokens.
+     */
+    skip?: number
+    distinct?: RefreshTokenScalarFieldEnum | RefreshTokenScalarFieldEnum[]
+  }
+
+  /**
+   * RefreshToken create
+   */
+  export type RefreshTokenCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefreshToken
+     */
+    select?: RefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefreshTokenInclude<ExtArgs> | null
+    /**
+     * The data needed to create a RefreshToken.
+     */
+    data: XOR<RefreshTokenCreateInput, RefreshTokenUncheckedCreateInput>
+  }
+
+  /**
+   * RefreshToken createMany
+   */
+  export type RefreshTokenCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many RefreshTokens.
+     */
+    data: RefreshTokenCreateManyInput | RefreshTokenCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RefreshToken createManyAndReturn
+   */
+  export type RefreshTokenCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefreshToken
+     */
+    select?: RefreshTokenSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many RefreshTokens.
+     */
+    data: RefreshTokenCreateManyInput | RefreshTokenCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefreshTokenIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * RefreshToken update
+   */
+  export type RefreshTokenUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefreshToken
+     */
+    select?: RefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefreshTokenInclude<ExtArgs> | null
+    /**
+     * The data needed to update a RefreshToken.
+     */
+    data: XOR<RefreshTokenUpdateInput, RefreshTokenUncheckedUpdateInput>
+    /**
+     * Choose, which RefreshToken to update.
+     */
+    where: RefreshTokenWhereUniqueInput
+  }
+
+  /**
+   * RefreshToken updateMany
+   */
+  export type RefreshTokenUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update RefreshTokens.
+     */
+    data: XOR<RefreshTokenUpdateManyMutationInput, RefreshTokenUncheckedUpdateManyInput>
+    /**
+     * Filter which RefreshTokens to update
+     */
+    where?: RefreshTokenWhereInput
+  }
+
+  /**
+   * RefreshToken upsert
+   */
+  export type RefreshTokenUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefreshToken
+     */
+    select?: RefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefreshTokenInclude<ExtArgs> | null
+    /**
+     * The filter to search for the RefreshToken to update in case it exists.
+     */
+    where: RefreshTokenWhereUniqueInput
+    /**
+     * In case the RefreshToken found by the `where` argument doesn't exist, create a new RefreshToken with this data.
+     */
+    create: XOR<RefreshTokenCreateInput, RefreshTokenUncheckedCreateInput>
+    /**
+     * In case the RefreshToken was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<RefreshTokenUpdateInput, RefreshTokenUncheckedUpdateInput>
+  }
+
+  /**
+   * RefreshToken delete
+   */
+  export type RefreshTokenDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefreshToken
+     */
+    select?: RefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefreshTokenInclude<ExtArgs> | null
+    /**
+     * Filter which RefreshToken to delete.
+     */
+    where: RefreshTokenWhereUniqueInput
+  }
+
+  /**
+   * RefreshToken deleteMany
+   */
+  export type RefreshTokenDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RefreshTokens to delete
+     */
+    where?: RefreshTokenWhereInput
+  }
+
+  /**
+   * RefreshToken.replacedByToken
+   */
+  export type RefreshToken$replacedByTokenArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefreshToken
+     */
+    select?: RefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefreshTokenInclude<ExtArgs> | null
+    where?: RefreshTokenWhereInput
+  }
+
+  /**
+   * RefreshToken.replacedTokens
+   */
+  export type RefreshToken$replacedTokensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefreshToken
+     */
+    select?: RefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefreshTokenInclude<ExtArgs> | null
+    where?: RefreshTokenWhereInput
+    orderBy?: RefreshTokenOrderByWithRelationInput | RefreshTokenOrderByWithRelationInput[]
+    cursor?: RefreshTokenWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RefreshTokenScalarFieldEnum | RefreshTokenScalarFieldEnum[]
+  }
+
+  /**
+   * RefreshToken without action
+   */
+  export type RefreshTokenDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RefreshToken
+     */
+    select?: RefreshTokenSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RefreshTokenInclude<ExtArgs> | null
   }
 
 
@@ -7222,6 +8401,10 @@ export namespace Prisma {
     status: $Enums.BookingStatus | null
     totalAmount: number | null
     guestsCount: number | null
+    fullName: string | null
+    phoneNumber: string | null
+    documentNumber: string | null
+    paymentProofUrl: string | null
     paymentProofId: string | null
   }
 
@@ -7233,6 +8416,10 @@ export namespace Prisma {
     status: $Enums.BookingStatus | null
     totalAmount: number | null
     guestsCount: number | null
+    fullName: string | null
+    phoneNumber: string | null
+    documentNumber: string | null
+    paymentProofUrl: string | null
     paymentProofId: string | null
   }
 
@@ -7244,6 +8431,10 @@ export namespace Prisma {
     status: number
     totalAmount: number
     guestsCount: number
+    fullName: number
+    phoneNumber: number
+    documentNumber: number
+    paymentProofUrl: number
     paymentProofId: number
     _all: number
   }
@@ -7267,6 +8458,10 @@ export namespace Prisma {
     status?: true
     totalAmount?: true
     guestsCount?: true
+    fullName?: true
+    phoneNumber?: true
+    documentNumber?: true
+    paymentProofUrl?: true
     paymentProofId?: true
   }
 
@@ -7278,6 +8473,10 @@ export namespace Prisma {
     status?: true
     totalAmount?: true
     guestsCount?: true
+    fullName?: true
+    phoneNumber?: true
+    documentNumber?: true
+    paymentProofUrl?: true
     paymentProofId?: true
   }
 
@@ -7289,6 +8488,10 @@ export namespace Prisma {
     status?: true
     totalAmount?: true
     guestsCount?: true
+    fullName?: true
+    phoneNumber?: true
+    documentNumber?: true
+    paymentProofUrl?: true
     paymentProofId?: true
     _all?: true
   }
@@ -7387,6 +8590,10 @@ export namespace Prisma {
     status: $Enums.BookingStatus
     totalAmount: number
     guestsCount: number
+    fullName: string | null
+    phoneNumber: string | null
+    documentNumber: string | null
+    paymentProofUrl: string | null
     paymentProofId: string | null
     _count: BookingCountAggregateOutputType | null
     _avg: BookingAvgAggregateOutputType | null
@@ -7417,6 +8624,10 @@ export namespace Prisma {
     status?: boolean
     totalAmount?: boolean
     guestsCount?: boolean
+    fullName?: boolean
+    phoneNumber?: boolean
+    documentNumber?: boolean
+    paymentProofUrl?: boolean
     paymentProofId?: boolean
     session?: boolean | TripSessionDefaultArgs<ExtArgs>
     traveler?: boolean | UserDefaultArgs<ExtArgs>
@@ -7431,6 +8642,10 @@ export namespace Prisma {
     status?: boolean
     totalAmount?: boolean
     guestsCount?: boolean
+    fullName?: boolean
+    phoneNumber?: boolean
+    documentNumber?: boolean
+    paymentProofUrl?: boolean
     paymentProofId?: boolean
     session?: boolean | TripSessionDefaultArgs<ExtArgs>
     traveler?: boolean | UserDefaultArgs<ExtArgs>
@@ -7444,6 +8659,10 @@ export namespace Prisma {
     status?: boolean
     totalAmount?: boolean
     guestsCount?: boolean
+    fullName?: boolean
+    phoneNumber?: boolean
+    documentNumber?: boolean
+    paymentProofUrl?: boolean
     paymentProofId?: boolean
   }
 
@@ -7472,6 +8691,10 @@ export namespace Prisma {
       status: $Enums.BookingStatus
       totalAmount: number
       guestsCount: number
+      fullName: string | null
+      phoneNumber: string | null
+      documentNumber: string | null
+      paymentProofUrl: string | null
       paymentProofId: string | null
     }, ExtArgs["result"]["booking"]>
     composites: {}
@@ -7876,6 +9099,10 @@ export namespace Prisma {
     readonly status: FieldRef<"Booking", 'BookingStatus'>
     readonly totalAmount: FieldRef<"Booking", 'Float'>
     readonly guestsCount: FieldRef<"Booking", 'Int'>
+    readonly fullName: FieldRef<"Booking", 'String'>
+    readonly phoneNumber: FieldRef<"Booking", 'String'>
+    readonly documentNumber: FieldRef<"Booking", 'String'>
+    readonly paymentProofUrl: FieldRef<"Booking", 'String'>
     readonly paymentProofId: FieldRef<"Booking", 'String'>
   }
     
@@ -8239,6 +9466,7 @@ export namespace Prisma {
     bookingId: string | null
     imageUrl: string | null
     uploadedAt: Date | null
+    rejectionReason: string | null
     status: $Enums.VerificationStatus | null
   }
 
@@ -8247,6 +9475,7 @@ export namespace Prisma {
     bookingId: string | null
     imageUrl: string | null
     uploadedAt: Date | null
+    rejectionReason: string | null
     status: $Enums.VerificationStatus | null
   }
 
@@ -8255,6 +9484,7 @@ export namespace Prisma {
     bookingId: number
     imageUrl: number
     uploadedAt: number
+    rejectionReason: number
     status: number
     _all: number
   }
@@ -8265,6 +9495,7 @@ export namespace Prisma {
     bookingId?: true
     imageUrl?: true
     uploadedAt?: true
+    rejectionReason?: true
     status?: true
   }
 
@@ -8273,6 +9504,7 @@ export namespace Prisma {
     bookingId?: true
     imageUrl?: true
     uploadedAt?: true
+    rejectionReason?: true
     status?: true
   }
 
@@ -8281,6 +9513,7 @@ export namespace Prisma {
     bookingId?: true
     imageUrl?: true
     uploadedAt?: true
+    rejectionReason?: true
     status?: true
     _all?: true
   }
@@ -8362,6 +9595,7 @@ export namespace Prisma {
     bookingId: string
     imageUrl: string
     uploadedAt: Date
+    rejectionReason: string | null
     status: $Enums.VerificationStatus
     _count: PaymentProofCountAggregateOutputType | null
     _min: PaymentProofMinAggregateOutputType | null
@@ -8387,6 +9621,7 @@ export namespace Prisma {
     bookingId?: boolean
     imageUrl?: boolean
     uploadedAt?: boolean
+    rejectionReason?: boolean
     status?: boolean
     booking?: boolean | BookingDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["paymentProof"]>
@@ -8396,6 +9631,7 @@ export namespace Prisma {
     bookingId?: boolean
     imageUrl?: boolean
     uploadedAt?: boolean
+    rejectionReason?: boolean
     status?: boolean
     booking?: boolean | BookingDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["paymentProof"]>
@@ -8405,6 +9641,7 @@ export namespace Prisma {
     bookingId?: boolean
     imageUrl?: boolean
     uploadedAt?: boolean
+    rejectionReason?: boolean
     status?: boolean
   }
 
@@ -8425,6 +9662,7 @@ export namespace Prisma {
       bookingId: string
       imageUrl: string
       uploadedAt: Date
+      rejectionReason: string | null
       status: $Enums.VerificationStatus
     }, ExtArgs["result"]["paymentProof"]>
     composites: {}
@@ -8824,6 +10062,7 @@ export namespace Prisma {
     readonly bookingId: FieldRef<"PaymentProof", 'String'>
     readonly imageUrl: FieldRef<"PaymentProof", 'String'>
     readonly uploadedAt: FieldRef<"PaymentProof", 'DateTime'>
+    readonly rejectionReason: FieldRef<"PaymentProof", 'String'>
     readonly status: FieldRef<"PaymentProof", 'VerificationStatus'>
   }
     
@@ -12135,11 +13374,26 @@ export namespace Prisma {
     avatar: 'avatar',
     isEmailVerified: 'isEmailVerified',
     otp: 'otp',
+    otpExpiresAt: 'otpExpiresAt',
+    otpLastSentAt: 'otpLastSentAt',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
 
   export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+  export const RefreshTokenScalarFieldEnum: {
+    id: 'id',
+    tokenHash: 'tokenHash',
+    userId: 'userId',
+    createdAt: 'createdAt',
+    expiresAt: 'expiresAt',
+    revokedAt: 'revokedAt',
+    replacedByTokenId: 'replacedByTokenId'
+  };
+
+  export type RefreshTokenScalarFieldEnum = (typeof RefreshTokenScalarFieldEnum)[keyof typeof RefreshTokenScalarFieldEnum]
 
 
   export const AgencyProfileScalarFieldEnum: {
@@ -12218,6 +13472,10 @@ export namespace Prisma {
     status: 'status',
     totalAmount: 'totalAmount',
     guestsCount: 'guestsCount',
+    fullName: 'fullName',
+    phoneNumber: 'phoneNumber',
+    documentNumber: 'documentNumber',
+    paymentProofUrl: 'paymentProofUrl',
     paymentProofId: 'paymentProofId'
   };
 
@@ -12229,6 +13487,7 @@ export namespace Prisma {
     bookingId: 'bookingId',
     imageUrl: 'imageUrl',
     uploadedAt: 'uploadedAt',
+    rejectionReason: 'rejectionReason',
     status: 'status'
   };
 
@@ -12489,8 +13748,11 @@ export namespace Prisma {
     avatar?: StringNullableFilter<"User"> | string | null
     isEmailVerified?: BoolFilter<"User"> | boolean
     otp?: StringNullableFilter<"User"> | string | null
+    otpExpiresAt?: DateTimeNullableFilter<"User"> | Date | string | null
+    otpLastSentAt?: DateTimeNullableFilter<"User"> | Date | string | null
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
+    refreshTokens?: RefreshTokenListRelationFilter
     agencyProfile?: XOR<AgencyProfileNullableRelationFilter, AgencyProfileWhereInput> | null
     bookings?: BookingListRelationFilter
   }
@@ -12504,8 +13766,11 @@ export namespace Prisma {
     avatar?: SortOrderInput | SortOrder
     isEmailVerified?: SortOrder
     otp?: SortOrderInput | SortOrder
+    otpExpiresAt?: SortOrderInput | SortOrder
+    otpLastSentAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    refreshTokens?: RefreshTokenOrderByRelationAggregateInput
     agencyProfile?: AgencyProfileOrderByWithRelationInput
     bookings?: BookingOrderByRelationAggregateInput
   }
@@ -12522,8 +13787,11 @@ export namespace Prisma {
     avatar?: StringNullableFilter<"User"> | string | null
     isEmailVerified?: BoolFilter<"User"> | boolean
     otp?: StringNullableFilter<"User"> | string | null
+    otpExpiresAt?: DateTimeNullableFilter<"User"> | Date | string | null
+    otpLastSentAt?: DateTimeNullableFilter<"User"> | Date | string | null
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
+    refreshTokens?: RefreshTokenListRelationFilter
     agencyProfile?: XOR<AgencyProfileNullableRelationFilter, AgencyProfileWhereInput> | null
     bookings?: BookingListRelationFilter
   }, "id" | "email">
@@ -12537,6 +13805,8 @@ export namespace Prisma {
     avatar?: SortOrderInput | SortOrder
     isEmailVerified?: SortOrder
     otp?: SortOrderInput | SortOrder
+    otpExpiresAt?: SortOrderInput | SortOrder
+    otpLastSentAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: UserCountOrderByAggregateInput
@@ -12556,8 +13826,81 @@ export namespace Prisma {
     avatar?: StringNullableWithAggregatesFilter<"User"> | string | null
     isEmailVerified?: BoolWithAggregatesFilter<"User"> | boolean
     otp?: StringNullableWithAggregatesFilter<"User"> | string | null
+    otpExpiresAt?: DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
+    otpLastSentAt?: DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
+  }
+
+  export type RefreshTokenWhereInput = {
+    AND?: RefreshTokenWhereInput | RefreshTokenWhereInput[]
+    OR?: RefreshTokenWhereInput[]
+    NOT?: RefreshTokenWhereInput | RefreshTokenWhereInput[]
+    id?: StringFilter<"RefreshToken"> | string
+    tokenHash?: StringFilter<"RefreshToken"> | string
+    userId?: StringFilter<"RefreshToken"> | string
+    createdAt?: DateTimeFilter<"RefreshToken"> | Date | string
+    expiresAt?: DateTimeFilter<"RefreshToken"> | Date | string
+    revokedAt?: DateTimeNullableFilter<"RefreshToken"> | Date | string | null
+    replacedByTokenId?: StringNullableFilter<"RefreshToken"> | string | null
+    user?: XOR<UserRelationFilter, UserWhereInput>
+    replacedByToken?: XOR<RefreshTokenNullableRelationFilter, RefreshTokenWhereInput> | null
+    replacedTokens?: RefreshTokenListRelationFilter
+  }
+
+  export type RefreshTokenOrderByWithRelationInput = {
+    id?: SortOrder
+    tokenHash?: SortOrder
+    userId?: SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+    revokedAt?: SortOrderInput | SortOrder
+    replacedByTokenId?: SortOrderInput | SortOrder
+    user?: UserOrderByWithRelationInput
+    replacedByToken?: RefreshTokenOrderByWithRelationInput
+    replacedTokens?: RefreshTokenOrderByRelationAggregateInput
+  }
+
+  export type RefreshTokenWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    tokenHash?: string
+    AND?: RefreshTokenWhereInput | RefreshTokenWhereInput[]
+    OR?: RefreshTokenWhereInput[]
+    NOT?: RefreshTokenWhereInput | RefreshTokenWhereInput[]
+    userId?: StringFilter<"RefreshToken"> | string
+    createdAt?: DateTimeFilter<"RefreshToken"> | Date | string
+    expiresAt?: DateTimeFilter<"RefreshToken"> | Date | string
+    revokedAt?: DateTimeNullableFilter<"RefreshToken"> | Date | string | null
+    replacedByTokenId?: StringNullableFilter<"RefreshToken"> | string | null
+    user?: XOR<UserRelationFilter, UserWhereInput>
+    replacedByToken?: XOR<RefreshTokenNullableRelationFilter, RefreshTokenWhereInput> | null
+    replacedTokens?: RefreshTokenListRelationFilter
+  }, "id" | "tokenHash">
+
+  export type RefreshTokenOrderByWithAggregationInput = {
+    id?: SortOrder
+    tokenHash?: SortOrder
+    userId?: SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+    revokedAt?: SortOrderInput | SortOrder
+    replacedByTokenId?: SortOrderInput | SortOrder
+    _count?: RefreshTokenCountOrderByAggregateInput
+    _max?: RefreshTokenMaxOrderByAggregateInput
+    _min?: RefreshTokenMinOrderByAggregateInput
+  }
+
+  export type RefreshTokenScalarWhereWithAggregatesInput = {
+    AND?: RefreshTokenScalarWhereWithAggregatesInput | RefreshTokenScalarWhereWithAggregatesInput[]
+    OR?: RefreshTokenScalarWhereWithAggregatesInput[]
+    NOT?: RefreshTokenScalarWhereWithAggregatesInput | RefreshTokenScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"RefreshToken"> | string
+    tokenHash?: StringWithAggregatesFilter<"RefreshToken"> | string
+    userId?: StringWithAggregatesFilter<"RefreshToken"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"RefreshToken"> | Date | string
+    expiresAt?: DateTimeWithAggregatesFilter<"RefreshToken"> | Date | string
+    revokedAt?: DateTimeNullableWithAggregatesFilter<"RefreshToken"> | Date | string | null
+    replacedByTokenId?: StringNullableWithAggregatesFilter<"RefreshToken"> | string | null
   }
 
   export type AgencyProfileWhereInput = {
@@ -12935,6 +14278,10 @@ export namespace Prisma {
     status?: EnumBookingStatusFilter<"Booking"> | $Enums.BookingStatus
     totalAmount?: FloatFilter<"Booking"> | number
     guestsCount?: IntFilter<"Booking"> | number
+    fullName?: StringNullableFilter<"Booking"> | string | null
+    phoneNumber?: StringNullableFilter<"Booking"> | string | null
+    documentNumber?: StringNullableFilter<"Booking"> | string | null
+    paymentProofUrl?: StringNullableFilter<"Booking"> | string | null
     paymentProofId?: StringNullableFilter<"Booking"> | string | null
     session?: XOR<TripSessionRelationFilter, TripSessionWhereInput>
     traveler?: XOR<UserRelationFilter, UserWhereInput>
@@ -12949,6 +14296,10 @@ export namespace Prisma {
     status?: SortOrder
     totalAmount?: SortOrder
     guestsCount?: SortOrder
+    fullName?: SortOrderInput | SortOrder
+    phoneNumber?: SortOrderInput | SortOrder
+    documentNumber?: SortOrderInput | SortOrder
+    paymentProofUrl?: SortOrderInput | SortOrder
     paymentProofId?: SortOrderInput | SortOrder
     session?: TripSessionOrderByWithRelationInput
     traveler?: UserOrderByWithRelationInput
@@ -12967,6 +14318,10 @@ export namespace Prisma {
     status?: EnumBookingStatusFilter<"Booking"> | $Enums.BookingStatus
     totalAmount?: FloatFilter<"Booking"> | number
     guestsCount?: IntFilter<"Booking"> | number
+    fullName?: StringNullableFilter<"Booking"> | string | null
+    phoneNumber?: StringNullableFilter<"Booking"> | string | null
+    documentNumber?: StringNullableFilter<"Booking"> | string | null
+    paymentProofUrl?: StringNullableFilter<"Booking"> | string | null
     session?: XOR<TripSessionRelationFilter, TripSessionWhereInput>
     traveler?: XOR<UserRelationFilter, UserWhereInput>
     paymentProof?: XOR<PaymentProofNullableRelationFilter, PaymentProofWhereInput> | null
@@ -12980,6 +14335,10 @@ export namespace Prisma {
     status?: SortOrder
     totalAmount?: SortOrder
     guestsCount?: SortOrder
+    fullName?: SortOrderInput | SortOrder
+    phoneNumber?: SortOrderInput | SortOrder
+    documentNumber?: SortOrderInput | SortOrder
+    paymentProofUrl?: SortOrderInput | SortOrder
     paymentProofId?: SortOrderInput | SortOrder
     _count?: BookingCountOrderByAggregateInput
     _avg?: BookingAvgOrderByAggregateInput
@@ -12999,6 +14358,10 @@ export namespace Prisma {
     status?: EnumBookingStatusWithAggregatesFilter<"Booking"> | $Enums.BookingStatus
     totalAmount?: FloatWithAggregatesFilter<"Booking"> | number
     guestsCount?: IntWithAggregatesFilter<"Booking"> | number
+    fullName?: StringNullableWithAggregatesFilter<"Booking"> | string | null
+    phoneNumber?: StringNullableWithAggregatesFilter<"Booking"> | string | null
+    documentNumber?: StringNullableWithAggregatesFilter<"Booking"> | string | null
+    paymentProofUrl?: StringNullableWithAggregatesFilter<"Booking"> | string | null
     paymentProofId?: StringNullableWithAggregatesFilter<"Booking"> | string | null
   }
 
@@ -13010,6 +14373,7 @@ export namespace Prisma {
     bookingId?: StringFilter<"PaymentProof"> | string
     imageUrl?: StringFilter<"PaymentProof"> | string
     uploadedAt?: DateTimeFilter<"PaymentProof"> | Date | string
+    rejectionReason?: StringNullableFilter<"PaymentProof"> | string | null
     status?: EnumVerificationStatusFilter<"PaymentProof"> | $Enums.VerificationStatus
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
   }
@@ -13019,6 +14383,7 @@ export namespace Prisma {
     bookingId?: SortOrder
     imageUrl?: SortOrder
     uploadedAt?: SortOrder
+    rejectionReason?: SortOrderInput | SortOrder
     status?: SortOrder
     booking?: BookingOrderByWithRelationInput
   }
@@ -13031,6 +14396,7 @@ export namespace Prisma {
     NOT?: PaymentProofWhereInput | PaymentProofWhereInput[]
     imageUrl?: StringFilter<"PaymentProof"> | string
     uploadedAt?: DateTimeFilter<"PaymentProof"> | Date | string
+    rejectionReason?: StringNullableFilter<"PaymentProof"> | string | null
     status?: EnumVerificationStatusFilter<"PaymentProof"> | $Enums.VerificationStatus
     booking?: XOR<BookingRelationFilter, BookingWhereInput>
   }, "id" | "bookingId">
@@ -13040,6 +14406,7 @@ export namespace Prisma {
     bookingId?: SortOrder
     imageUrl?: SortOrder
     uploadedAt?: SortOrder
+    rejectionReason?: SortOrderInput | SortOrder
     status?: SortOrder
     _count?: PaymentProofCountOrderByAggregateInput
     _max?: PaymentProofMaxOrderByAggregateInput
@@ -13054,6 +14421,7 @@ export namespace Prisma {
     bookingId?: StringWithAggregatesFilter<"PaymentProof"> | string
     imageUrl?: StringWithAggregatesFilter<"PaymentProof"> | string
     uploadedAt?: DateTimeWithAggregatesFilter<"PaymentProof"> | Date | string
+    rejectionReason?: StringNullableWithAggregatesFilter<"PaymentProof"> | string | null
     status?: EnumVerificationStatusWithAggregatesFilter<"PaymentProof"> | $Enums.VerificationStatus
   }
 
@@ -13250,8 +14618,11 @@ export namespace Prisma {
     avatar?: string | null
     isEmailVerified?: boolean
     otp?: string | null
+    otpExpiresAt?: Date | string | null
+    otpLastSentAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
     agencyProfile?: AgencyProfileCreateNestedOneWithoutUserInput
     bookings?: BookingCreateNestedManyWithoutTravelerInput
   }
@@ -13265,8 +14636,11 @@ export namespace Prisma {
     avatar?: string | null
     isEmailVerified?: boolean
     otp?: string | null
+    otpExpiresAt?: Date | string | null
+    otpLastSentAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
     agencyProfile?: AgencyProfileUncheckedCreateNestedOneWithoutUserInput
     bookings?: BookingUncheckedCreateNestedManyWithoutTravelerInput
   }
@@ -13280,8 +14654,11 @@ export namespace Prisma {
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     isEmailVerified?: BoolFieldUpdateOperationsInput | boolean
     otp?: NullableStringFieldUpdateOperationsInput | string | null
+    otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otpLastSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
     agencyProfile?: AgencyProfileUpdateOneWithoutUserNestedInput
     bookings?: BookingUpdateManyWithoutTravelerNestedInput
   }
@@ -13295,8 +14672,11 @@ export namespace Prisma {
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     isEmailVerified?: BoolFieldUpdateOperationsInput | boolean
     otp?: NullableStringFieldUpdateOperationsInput | string | null
+    otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otpLastSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
     agencyProfile?: AgencyProfileUncheckedUpdateOneWithoutUserNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutTravelerNestedInput
   }
@@ -13310,6 +14690,8 @@ export namespace Prisma {
     avatar?: string | null
     isEmailVerified?: boolean
     otp?: string | null
+    otpExpiresAt?: Date | string | null
+    otpLastSentAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -13323,6 +14705,8 @@ export namespace Prisma {
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     isEmailVerified?: BoolFieldUpdateOperationsInput | boolean
     otp?: NullableStringFieldUpdateOperationsInput | string | null
+    otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otpLastSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -13336,8 +14720,82 @@ export namespace Prisma {
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     isEmailVerified?: BoolFieldUpdateOperationsInput | boolean
     otp?: NullableStringFieldUpdateOperationsInput | string | null
+    otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otpLastSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RefreshTokenCreateInput = {
+    id?: string
+    tokenHash: string
+    createdAt?: Date | string
+    expiresAt: Date | string
+    revokedAt?: Date | string | null
+    user: UserCreateNestedOneWithoutRefreshTokensInput
+    replacedByToken?: RefreshTokenCreateNestedOneWithoutReplacedTokensInput
+    replacedTokens?: RefreshTokenCreateNestedManyWithoutReplacedByTokenInput
+  }
+
+  export type RefreshTokenUncheckedCreateInput = {
+    id?: string
+    tokenHash: string
+    userId: string
+    createdAt?: Date | string
+    expiresAt: Date | string
+    revokedAt?: Date | string | null
+    replacedByTokenId?: string | null
+    replacedTokens?: RefreshTokenUncheckedCreateNestedManyWithoutReplacedByTokenInput
+  }
+
+  export type RefreshTokenUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    user?: UserUpdateOneRequiredWithoutRefreshTokensNestedInput
+    replacedByToken?: RefreshTokenUpdateOneWithoutReplacedTokensNestedInput
+    replacedTokens?: RefreshTokenUpdateManyWithoutReplacedByTokenNestedInput
+  }
+
+  export type RefreshTokenUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    replacedByTokenId?: NullableStringFieldUpdateOperationsInput | string | null
+    replacedTokens?: RefreshTokenUncheckedUpdateManyWithoutReplacedByTokenNestedInput
+  }
+
+  export type RefreshTokenCreateManyInput = {
+    id?: string
+    tokenHash: string
+    userId: string
+    createdAt?: Date | string
+    expiresAt: Date | string
+    revokedAt?: Date | string | null
+    replacedByTokenId?: string | null
+  }
+
+  export type RefreshTokenUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type RefreshTokenUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    replacedByTokenId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type AgencyProfileCreateInput = {
@@ -13758,6 +15216,10 @@ export namespace Prisma {
     status?: $Enums.BookingStatus
     totalAmount: number
     guestsCount: number
+    fullName?: string | null
+    phoneNumber?: string | null
+    documentNumber?: string | null
+    paymentProofUrl?: string | null
     paymentProofId?: string | null
     session: TripSessionCreateNestedOneWithoutBookingsInput
     traveler: UserCreateNestedOneWithoutBookingsInput
@@ -13772,6 +15234,10 @@ export namespace Prisma {
     status?: $Enums.BookingStatus
     totalAmount: number
     guestsCount: number
+    fullName?: string | null
+    phoneNumber?: string | null
+    documentNumber?: string | null
+    paymentProofUrl?: string | null
     paymentProofId?: string | null
     paymentProof?: PaymentProofUncheckedCreateNestedOneWithoutBookingInput
   }
@@ -13782,6 +15248,10 @@ export namespace Prisma {
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     totalAmount?: FloatFieldUpdateOperationsInput | number
     guestsCount?: IntFieldUpdateOperationsInput | number
+    fullName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    documentNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentProofUrl?: NullableStringFieldUpdateOperationsInput | string | null
     paymentProofId?: NullableStringFieldUpdateOperationsInput | string | null
     session?: TripSessionUpdateOneRequiredWithoutBookingsNestedInput
     traveler?: UserUpdateOneRequiredWithoutBookingsNestedInput
@@ -13796,6 +15266,10 @@ export namespace Prisma {
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     totalAmount?: FloatFieldUpdateOperationsInput | number
     guestsCount?: IntFieldUpdateOperationsInput | number
+    fullName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    documentNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentProofUrl?: NullableStringFieldUpdateOperationsInput | string | null
     paymentProofId?: NullableStringFieldUpdateOperationsInput | string | null
     paymentProof?: PaymentProofUncheckedUpdateOneWithoutBookingNestedInput
   }
@@ -13808,6 +15282,10 @@ export namespace Prisma {
     status?: $Enums.BookingStatus
     totalAmount: number
     guestsCount: number
+    fullName?: string | null
+    phoneNumber?: string | null
+    documentNumber?: string | null
+    paymentProofUrl?: string | null
     paymentProofId?: string | null
   }
 
@@ -13817,6 +15295,10 @@ export namespace Prisma {
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     totalAmount?: FloatFieldUpdateOperationsInput | number
     guestsCount?: IntFieldUpdateOperationsInput | number
+    fullName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    documentNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentProofUrl?: NullableStringFieldUpdateOperationsInput | string | null
     paymentProofId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -13828,6 +15310,10 @@ export namespace Prisma {
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     totalAmount?: FloatFieldUpdateOperationsInput | number
     guestsCount?: IntFieldUpdateOperationsInput | number
+    fullName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    documentNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentProofUrl?: NullableStringFieldUpdateOperationsInput | string | null
     paymentProofId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -13835,6 +15321,7 @@ export namespace Prisma {
     id?: string
     imageUrl: string
     uploadedAt?: Date | string
+    rejectionReason?: string | null
     status?: $Enums.VerificationStatus
     booking: BookingCreateNestedOneWithoutPaymentProofInput
   }
@@ -13844,6 +15331,7 @@ export namespace Prisma {
     bookingId: string
     imageUrl: string
     uploadedAt?: Date | string
+    rejectionReason?: string | null
     status?: $Enums.VerificationStatus
   }
 
@@ -13851,6 +15339,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     imageUrl?: StringFieldUpdateOperationsInput | string
     uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
     booking?: BookingUpdateOneRequiredWithoutPaymentProofNestedInput
   }
@@ -13860,6 +15349,7 @@ export namespace Prisma {
     bookingId?: StringFieldUpdateOperationsInput | string
     imageUrl?: StringFieldUpdateOperationsInput | string
     uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
   }
 
@@ -13868,6 +15358,7 @@ export namespace Prisma {
     bookingId: string
     imageUrl: string
     uploadedAt?: Date | string
+    rejectionReason?: string | null
     status?: $Enums.VerificationStatus
   }
 
@@ -13875,6 +15366,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     imageUrl?: StringFieldUpdateOperationsInput | string
     uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
   }
 
@@ -13883,6 +15375,7 @@ export namespace Prisma {
     bookingId?: StringFieldUpdateOperationsInput | string
     imageUrl?: StringFieldUpdateOperationsInput | string
     uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
   }
 
@@ -14111,6 +15604,17 @@ export namespace Prisma {
     not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
+  export type DateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
   export type DateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -14120,6 +15624,12 @@ export namespace Prisma {
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
+  }
+
+  export type RefreshTokenListRelationFilter = {
+    every?: RefreshTokenWhereInput
+    some?: RefreshTokenWhereInput
+    none?: RefreshTokenWhereInput
   }
 
   export type AgencyProfileNullableRelationFilter = {
@@ -14138,6 +15648,10 @@ export namespace Prisma {
     nulls?: NullsOrder
   }
 
+  export type RefreshTokenOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type BookingOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -14151,6 +15665,8 @@ export namespace Prisma {
     avatar?: SortOrder
     isEmailVerified?: SortOrder
     otp?: SortOrder
+    otpExpiresAt?: SortOrder
+    otpLastSentAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -14164,6 +15680,8 @@ export namespace Prisma {
     avatar?: SortOrder
     isEmailVerified?: SortOrder
     otp?: SortOrder
+    otpExpiresAt?: SortOrder
+    otpLastSentAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -14177,6 +15695,8 @@ export namespace Prisma {
     avatar?: SortOrder
     isEmailVerified?: SortOrder
     otp?: SortOrder
+    otpExpiresAt?: SortOrder
+    otpLastSentAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -14235,6 +15755,20 @@ export namespace Prisma {
     _max?: NestedBoolFilter<$PrismaModel>
   }
 
+  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -14249,6 +15783,46 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
+  export type UserRelationFilter = {
+    is?: UserWhereInput
+    isNot?: UserWhereInput
+  }
+
+  export type RefreshTokenNullableRelationFilter = {
+    is?: RefreshTokenWhereInput | null
+    isNot?: RefreshTokenWhereInput | null
+  }
+
+  export type RefreshTokenCountOrderByAggregateInput = {
+    id?: SortOrder
+    tokenHash?: SortOrder
+    userId?: SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+    revokedAt?: SortOrder
+    replacedByTokenId?: SortOrder
+  }
+
+  export type RefreshTokenMaxOrderByAggregateInput = {
+    id?: SortOrder
+    tokenHash?: SortOrder
+    userId?: SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+    revokedAt?: SortOrder
+    replacedByTokenId?: SortOrder
+  }
+
+  export type RefreshTokenMinOrderByAggregateInput = {
+    id?: SortOrder
+    tokenHash?: SortOrder
+    userId?: SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+    revokedAt?: SortOrder
+    replacedByTokenId?: SortOrder
+  }
+
   export type EnumVerificationStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.VerificationStatus | EnumVerificationStatusFieldRefInput<$PrismaModel>
     in?: $Enums.VerificationStatus[] | ListEnumVerificationStatusFieldRefInput<$PrismaModel>
@@ -14261,22 +15835,6 @@ export namespace Prisma {
     in?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
     notIn?: $Enums.SubscriptionStatus[] | ListEnumSubscriptionStatusFieldRefInput<$PrismaModel>
     not?: NestedEnumSubscriptionStatusFilter<$PrismaModel> | $Enums.SubscriptionStatus
-  }
-
-  export type DateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
-  }
-
-  export type UserRelationFilter = {
-    is?: UserWhereInput
-    isNot?: UserWhereInput
   }
 
   export type TripTemplateListRelationFilter = {
@@ -14370,20 +15928,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumSubscriptionStatusFilter<$PrismaModel>
     _max?: NestedEnumSubscriptionStatusFilter<$PrismaModel>
-  }
-
-  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type EnumTripCategoryFilter<$PrismaModel = never> = {
@@ -14679,6 +16223,10 @@ export namespace Prisma {
     status?: SortOrder
     totalAmount?: SortOrder
     guestsCount?: SortOrder
+    fullName?: SortOrder
+    phoneNumber?: SortOrder
+    documentNumber?: SortOrder
+    paymentProofUrl?: SortOrder
     paymentProofId?: SortOrder
   }
 
@@ -14695,6 +16243,10 @@ export namespace Prisma {
     status?: SortOrder
     totalAmount?: SortOrder
     guestsCount?: SortOrder
+    fullName?: SortOrder
+    phoneNumber?: SortOrder
+    documentNumber?: SortOrder
+    paymentProofUrl?: SortOrder
     paymentProofId?: SortOrder
   }
 
@@ -14706,6 +16258,10 @@ export namespace Prisma {
     status?: SortOrder
     totalAmount?: SortOrder
     guestsCount?: SortOrder
+    fullName?: SortOrder
+    phoneNumber?: SortOrder
+    documentNumber?: SortOrder
+    paymentProofUrl?: SortOrder
     paymentProofId?: SortOrder
   }
 
@@ -14734,6 +16290,7 @@ export namespace Prisma {
     bookingId?: SortOrder
     imageUrl?: SortOrder
     uploadedAt?: SortOrder
+    rejectionReason?: SortOrder
     status?: SortOrder
   }
 
@@ -14742,6 +16299,7 @@ export namespace Prisma {
     bookingId?: SortOrder
     imageUrl?: SortOrder
     uploadedAt?: SortOrder
+    rejectionReason?: SortOrder
     status?: SortOrder
   }
 
@@ -14750,6 +16308,7 @@ export namespace Prisma {
     bookingId?: SortOrder
     imageUrl?: SortOrder
     uploadedAt?: SortOrder
+    rejectionReason?: SortOrder
     status?: SortOrder
   }
 
@@ -14906,6 +16465,13 @@ export namespace Prisma {
     _max?: NestedEnumPayoutStatusFilter<$PrismaModel>
   }
 
+  export type RefreshTokenCreateNestedManyWithoutUserInput = {
+    create?: XOR<RefreshTokenCreateWithoutUserInput, RefreshTokenUncheckedCreateWithoutUserInput> | RefreshTokenCreateWithoutUserInput[] | RefreshTokenUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: RefreshTokenCreateOrConnectWithoutUserInput | RefreshTokenCreateOrConnectWithoutUserInput[]
+    createMany?: RefreshTokenCreateManyUserInputEnvelope
+    connect?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+  }
+
   export type AgencyProfileCreateNestedOneWithoutUserInput = {
     create?: XOR<AgencyProfileCreateWithoutUserInput, AgencyProfileUncheckedCreateWithoutUserInput>
     connectOrCreate?: AgencyProfileCreateOrConnectWithoutUserInput
@@ -14917,6 +16483,13 @@ export namespace Prisma {
     connectOrCreate?: BookingCreateOrConnectWithoutTravelerInput | BookingCreateOrConnectWithoutTravelerInput[]
     createMany?: BookingCreateManyTravelerInputEnvelope
     connect?: BookingWhereUniqueInput | BookingWhereUniqueInput[]
+  }
+
+  export type RefreshTokenUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<RefreshTokenCreateWithoutUserInput, RefreshTokenUncheckedCreateWithoutUserInput> | RefreshTokenCreateWithoutUserInput[] | RefreshTokenUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: RefreshTokenCreateOrConnectWithoutUserInput | RefreshTokenCreateOrConnectWithoutUserInput[]
+    createMany?: RefreshTokenCreateManyUserInputEnvelope
+    connect?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
   }
 
   export type AgencyProfileUncheckedCreateNestedOneWithoutUserInput = {
@@ -14948,8 +16521,26 @@ export namespace Prisma {
     set?: boolean
   }
 
+  export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null
+  }
+
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string
+  }
+
+  export type RefreshTokenUpdateManyWithoutUserNestedInput = {
+    create?: XOR<RefreshTokenCreateWithoutUserInput, RefreshTokenUncheckedCreateWithoutUserInput> | RefreshTokenCreateWithoutUserInput[] | RefreshTokenUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: RefreshTokenCreateOrConnectWithoutUserInput | RefreshTokenCreateOrConnectWithoutUserInput[]
+    upsert?: RefreshTokenUpsertWithWhereUniqueWithoutUserInput | RefreshTokenUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: RefreshTokenCreateManyUserInputEnvelope
+    set?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+    disconnect?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+    delete?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+    connect?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+    update?: RefreshTokenUpdateWithWhereUniqueWithoutUserInput | RefreshTokenUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: RefreshTokenUpdateManyWithWhereWithoutUserInput | RefreshTokenUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: RefreshTokenScalarWhereInput | RefreshTokenScalarWhereInput[]
   }
 
   export type AgencyProfileUpdateOneWithoutUserNestedInput = {
@@ -14976,6 +16567,20 @@ export namespace Prisma {
     deleteMany?: BookingScalarWhereInput | BookingScalarWhereInput[]
   }
 
+  export type RefreshTokenUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<RefreshTokenCreateWithoutUserInput, RefreshTokenUncheckedCreateWithoutUserInput> | RefreshTokenCreateWithoutUserInput[] | RefreshTokenUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: RefreshTokenCreateOrConnectWithoutUserInput | RefreshTokenCreateOrConnectWithoutUserInput[]
+    upsert?: RefreshTokenUpsertWithWhereUniqueWithoutUserInput | RefreshTokenUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: RefreshTokenCreateManyUserInputEnvelope
+    set?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+    disconnect?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+    delete?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+    connect?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+    update?: RefreshTokenUpdateWithWhereUniqueWithoutUserInput | RefreshTokenUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: RefreshTokenUpdateManyWithWhereWithoutUserInput | RefreshTokenUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: RefreshTokenScalarWhereInput | RefreshTokenScalarWhereInput[]
+  }
+
   export type AgencyProfileUncheckedUpdateOneWithoutUserNestedInput = {
     create?: XOR<AgencyProfileCreateWithoutUserInput, AgencyProfileUncheckedCreateWithoutUserInput>
     connectOrCreate?: AgencyProfileCreateOrConnectWithoutUserInput
@@ -14998,6 +16603,78 @@ export namespace Prisma {
     update?: BookingUpdateWithWhereUniqueWithoutTravelerInput | BookingUpdateWithWhereUniqueWithoutTravelerInput[]
     updateMany?: BookingUpdateManyWithWhereWithoutTravelerInput | BookingUpdateManyWithWhereWithoutTravelerInput[]
     deleteMany?: BookingScalarWhereInput | BookingScalarWhereInput[]
+  }
+
+  export type UserCreateNestedOneWithoutRefreshTokensInput = {
+    create?: XOR<UserCreateWithoutRefreshTokensInput, UserUncheckedCreateWithoutRefreshTokensInput>
+    connectOrCreate?: UserCreateOrConnectWithoutRefreshTokensInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type RefreshTokenCreateNestedOneWithoutReplacedTokensInput = {
+    create?: XOR<RefreshTokenCreateWithoutReplacedTokensInput, RefreshTokenUncheckedCreateWithoutReplacedTokensInput>
+    connectOrCreate?: RefreshTokenCreateOrConnectWithoutReplacedTokensInput
+    connect?: RefreshTokenWhereUniqueInput
+  }
+
+  export type RefreshTokenCreateNestedManyWithoutReplacedByTokenInput = {
+    create?: XOR<RefreshTokenCreateWithoutReplacedByTokenInput, RefreshTokenUncheckedCreateWithoutReplacedByTokenInput> | RefreshTokenCreateWithoutReplacedByTokenInput[] | RefreshTokenUncheckedCreateWithoutReplacedByTokenInput[]
+    connectOrCreate?: RefreshTokenCreateOrConnectWithoutReplacedByTokenInput | RefreshTokenCreateOrConnectWithoutReplacedByTokenInput[]
+    createMany?: RefreshTokenCreateManyReplacedByTokenInputEnvelope
+    connect?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+  }
+
+  export type RefreshTokenUncheckedCreateNestedManyWithoutReplacedByTokenInput = {
+    create?: XOR<RefreshTokenCreateWithoutReplacedByTokenInput, RefreshTokenUncheckedCreateWithoutReplacedByTokenInput> | RefreshTokenCreateWithoutReplacedByTokenInput[] | RefreshTokenUncheckedCreateWithoutReplacedByTokenInput[]
+    connectOrCreate?: RefreshTokenCreateOrConnectWithoutReplacedByTokenInput | RefreshTokenCreateOrConnectWithoutReplacedByTokenInput[]
+    createMany?: RefreshTokenCreateManyReplacedByTokenInputEnvelope
+    connect?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+  }
+
+  export type UserUpdateOneRequiredWithoutRefreshTokensNestedInput = {
+    create?: XOR<UserCreateWithoutRefreshTokensInput, UserUncheckedCreateWithoutRefreshTokensInput>
+    connectOrCreate?: UserCreateOrConnectWithoutRefreshTokensInput
+    upsert?: UserUpsertWithoutRefreshTokensInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutRefreshTokensInput, UserUpdateWithoutRefreshTokensInput>, UserUncheckedUpdateWithoutRefreshTokensInput>
+  }
+
+  export type RefreshTokenUpdateOneWithoutReplacedTokensNestedInput = {
+    create?: XOR<RefreshTokenCreateWithoutReplacedTokensInput, RefreshTokenUncheckedCreateWithoutReplacedTokensInput>
+    connectOrCreate?: RefreshTokenCreateOrConnectWithoutReplacedTokensInput
+    upsert?: RefreshTokenUpsertWithoutReplacedTokensInput
+    disconnect?: RefreshTokenWhereInput | boolean
+    delete?: RefreshTokenWhereInput | boolean
+    connect?: RefreshTokenWhereUniqueInput
+    update?: XOR<XOR<RefreshTokenUpdateToOneWithWhereWithoutReplacedTokensInput, RefreshTokenUpdateWithoutReplacedTokensInput>, RefreshTokenUncheckedUpdateWithoutReplacedTokensInput>
+  }
+
+  export type RefreshTokenUpdateManyWithoutReplacedByTokenNestedInput = {
+    create?: XOR<RefreshTokenCreateWithoutReplacedByTokenInput, RefreshTokenUncheckedCreateWithoutReplacedByTokenInput> | RefreshTokenCreateWithoutReplacedByTokenInput[] | RefreshTokenUncheckedCreateWithoutReplacedByTokenInput[]
+    connectOrCreate?: RefreshTokenCreateOrConnectWithoutReplacedByTokenInput | RefreshTokenCreateOrConnectWithoutReplacedByTokenInput[]
+    upsert?: RefreshTokenUpsertWithWhereUniqueWithoutReplacedByTokenInput | RefreshTokenUpsertWithWhereUniqueWithoutReplacedByTokenInput[]
+    createMany?: RefreshTokenCreateManyReplacedByTokenInputEnvelope
+    set?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+    disconnect?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+    delete?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+    connect?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+    update?: RefreshTokenUpdateWithWhereUniqueWithoutReplacedByTokenInput | RefreshTokenUpdateWithWhereUniqueWithoutReplacedByTokenInput[]
+    updateMany?: RefreshTokenUpdateManyWithWhereWithoutReplacedByTokenInput | RefreshTokenUpdateManyWithWhereWithoutReplacedByTokenInput[]
+    deleteMany?: RefreshTokenScalarWhereInput | RefreshTokenScalarWhereInput[]
+  }
+
+  export type RefreshTokenUncheckedUpdateManyWithoutReplacedByTokenNestedInput = {
+    create?: XOR<RefreshTokenCreateWithoutReplacedByTokenInput, RefreshTokenUncheckedCreateWithoutReplacedByTokenInput> | RefreshTokenCreateWithoutReplacedByTokenInput[] | RefreshTokenUncheckedCreateWithoutReplacedByTokenInput[]
+    connectOrCreate?: RefreshTokenCreateOrConnectWithoutReplacedByTokenInput | RefreshTokenCreateOrConnectWithoutReplacedByTokenInput[]
+    upsert?: RefreshTokenUpsertWithWhereUniqueWithoutReplacedByTokenInput | RefreshTokenUpsertWithWhereUniqueWithoutReplacedByTokenInput[]
+    createMany?: RefreshTokenCreateManyReplacedByTokenInputEnvelope
+    set?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+    disconnect?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+    delete?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+    connect?: RefreshTokenWhereUniqueInput | RefreshTokenWhereUniqueInput[]
+    update?: RefreshTokenUpdateWithWhereUniqueWithoutReplacedByTokenInput | RefreshTokenUpdateWithWhereUniqueWithoutReplacedByTokenInput[]
+    updateMany?: RefreshTokenUpdateManyWithWhereWithoutReplacedByTokenInput | RefreshTokenUpdateManyWithWhereWithoutReplacedByTokenInput[]
+    deleteMany?: RefreshTokenScalarWhereInput | RefreshTokenScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutAgencyProfileInput = {
@@ -15052,10 +16729,6 @@ export namespace Prisma {
 
   export type EnumSubscriptionStatusFieldUpdateOperationsInput = {
     set?: $Enums.SubscriptionStatus
-  }
-
-  export type NullableDateTimeFieldUpdateOperationsInput = {
-    set?: Date | string | null
   }
 
   export type UserUpdateOneRequiredWithoutAgencyProfileNestedInput = {
@@ -15589,6 +17262,17 @@ export namespace Prisma {
     not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
+  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
   export type NestedDateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -15674,6 +17358,20 @@ export namespace Prisma {
     _max?: NestedBoolFilter<$PrismaModel>
   }
 
+  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -15702,17 +17400,6 @@ export namespace Prisma {
     not?: NestedEnumSubscriptionStatusFilter<$PrismaModel> | $Enums.SubscriptionStatus
   }
 
-  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
-  }
-
   export type NestedEnumVerificationStatusWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.VerificationStatus | EnumVerificationStatusFieldRefInput<$PrismaModel>
     in?: $Enums.VerificationStatus[] | ListEnumVerificationStatusFieldRefInput<$PrismaModel>
@@ -15731,20 +17418,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumSubscriptionStatusFilter<$PrismaModel>
     _max?: NestedEnumSubscriptionStatusFilter<$PrismaModel>
-  }
-
-  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type NestedEnumTripCategoryFilter<$PrismaModel = never> = {
@@ -15875,6 +17548,36 @@ export namespace Prisma {
     _max?: NestedEnumPayoutStatusFilter<$PrismaModel>
   }
 
+  export type RefreshTokenCreateWithoutUserInput = {
+    id?: string
+    tokenHash: string
+    createdAt?: Date | string
+    expiresAt: Date | string
+    revokedAt?: Date | string | null
+    replacedByToken?: RefreshTokenCreateNestedOneWithoutReplacedTokensInput
+    replacedTokens?: RefreshTokenCreateNestedManyWithoutReplacedByTokenInput
+  }
+
+  export type RefreshTokenUncheckedCreateWithoutUserInput = {
+    id?: string
+    tokenHash: string
+    createdAt?: Date | string
+    expiresAt: Date | string
+    revokedAt?: Date | string | null
+    replacedByTokenId?: string | null
+    replacedTokens?: RefreshTokenUncheckedCreateNestedManyWithoutReplacedByTokenInput
+  }
+
+  export type RefreshTokenCreateOrConnectWithoutUserInput = {
+    where: RefreshTokenWhereUniqueInput
+    create: XOR<RefreshTokenCreateWithoutUserInput, RefreshTokenUncheckedCreateWithoutUserInput>
+  }
+
+  export type RefreshTokenCreateManyUserInputEnvelope = {
+    data: RefreshTokenCreateManyUserInput | RefreshTokenCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
   export type AgencyProfileCreateWithoutUserInput = {
     id?: string
     companyName: string
@@ -15922,6 +17625,10 @@ export namespace Prisma {
     status?: $Enums.BookingStatus
     totalAmount: number
     guestsCount: number
+    fullName?: string | null
+    phoneNumber?: string | null
+    documentNumber?: string | null
+    paymentProofUrl?: string | null
     paymentProofId?: string | null
     session: TripSessionCreateNestedOneWithoutBookingsInput
     paymentProof?: PaymentProofCreateNestedOneWithoutBookingInput
@@ -15934,6 +17641,10 @@ export namespace Prisma {
     status?: $Enums.BookingStatus
     totalAmount: number
     guestsCount: number
+    fullName?: string | null
+    phoneNumber?: string | null
+    documentNumber?: string | null
+    paymentProofUrl?: string | null
     paymentProofId?: string | null
     paymentProof?: PaymentProofUncheckedCreateNestedOneWithoutBookingInput
   }
@@ -15946,6 +17657,35 @@ export namespace Prisma {
   export type BookingCreateManyTravelerInputEnvelope = {
     data: BookingCreateManyTravelerInput | BookingCreateManyTravelerInput[]
     skipDuplicates?: boolean
+  }
+
+  export type RefreshTokenUpsertWithWhereUniqueWithoutUserInput = {
+    where: RefreshTokenWhereUniqueInput
+    update: XOR<RefreshTokenUpdateWithoutUserInput, RefreshTokenUncheckedUpdateWithoutUserInput>
+    create: XOR<RefreshTokenCreateWithoutUserInput, RefreshTokenUncheckedCreateWithoutUserInput>
+  }
+
+  export type RefreshTokenUpdateWithWhereUniqueWithoutUserInput = {
+    where: RefreshTokenWhereUniqueInput
+    data: XOR<RefreshTokenUpdateWithoutUserInput, RefreshTokenUncheckedUpdateWithoutUserInput>
+  }
+
+  export type RefreshTokenUpdateManyWithWhereWithoutUserInput = {
+    where: RefreshTokenScalarWhereInput
+    data: XOR<RefreshTokenUpdateManyMutationInput, RefreshTokenUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type RefreshTokenScalarWhereInput = {
+    AND?: RefreshTokenScalarWhereInput | RefreshTokenScalarWhereInput[]
+    OR?: RefreshTokenScalarWhereInput[]
+    NOT?: RefreshTokenScalarWhereInput | RefreshTokenScalarWhereInput[]
+    id?: StringFilter<"RefreshToken"> | string
+    tokenHash?: StringFilter<"RefreshToken"> | string
+    userId?: StringFilter<"RefreshToken"> | string
+    createdAt?: DateTimeFilter<"RefreshToken"> | Date | string
+    expiresAt?: DateTimeFilter<"RefreshToken"> | Date | string
+    revokedAt?: DateTimeNullableFilter<"RefreshToken"> | Date | string | null
+    replacedByTokenId?: StringNullableFilter<"RefreshToken"> | string | null
   }
 
   export type AgencyProfileUpsertWithoutUserInput = {
@@ -16022,7 +17762,197 @@ export namespace Prisma {
     status?: EnumBookingStatusFilter<"Booking"> | $Enums.BookingStatus
     totalAmount?: FloatFilter<"Booking"> | number
     guestsCount?: IntFilter<"Booking"> | number
+    fullName?: StringNullableFilter<"Booking"> | string | null
+    phoneNumber?: StringNullableFilter<"Booking"> | string | null
+    documentNumber?: StringNullableFilter<"Booking"> | string | null
+    paymentProofUrl?: StringNullableFilter<"Booking"> | string | null
     paymentProofId?: StringNullableFilter<"Booking"> | string | null
+  }
+
+  export type UserCreateWithoutRefreshTokensInput = {
+    id?: string
+    name?: string | null
+    email: string
+    password: string
+    role?: $Enums.UserRole
+    avatar?: string | null
+    isEmailVerified?: boolean
+    otp?: string | null
+    otpExpiresAt?: Date | string | null
+    otpLastSentAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    agencyProfile?: AgencyProfileCreateNestedOneWithoutUserInput
+    bookings?: BookingCreateNestedManyWithoutTravelerInput
+  }
+
+  export type UserUncheckedCreateWithoutRefreshTokensInput = {
+    id?: string
+    name?: string | null
+    email: string
+    password: string
+    role?: $Enums.UserRole
+    avatar?: string | null
+    isEmailVerified?: boolean
+    otp?: string | null
+    otpExpiresAt?: Date | string | null
+    otpLastSentAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    agencyProfile?: AgencyProfileUncheckedCreateNestedOneWithoutUserInput
+    bookings?: BookingUncheckedCreateNestedManyWithoutTravelerInput
+  }
+
+  export type UserCreateOrConnectWithoutRefreshTokensInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutRefreshTokensInput, UserUncheckedCreateWithoutRefreshTokensInput>
+  }
+
+  export type RefreshTokenCreateWithoutReplacedTokensInput = {
+    id?: string
+    tokenHash: string
+    createdAt?: Date | string
+    expiresAt: Date | string
+    revokedAt?: Date | string | null
+    user: UserCreateNestedOneWithoutRefreshTokensInput
+    replacedByToken?: RefreshTokenCreateNestedOneWithoutReplacedTokensInput
+  }
+
+  export type RefreshTokenUncheckedCreateWithoutReplacedTokensInput = {
+    id?: string
+    tokenHash: string
+    userId: string
+    createdAt?: Date | string
+    expiresAt: Date | string
+    revokedAt?: Date | string | null
+    replacedByTokenId?: string | null
+  }
+
+  export type RefreshTokenCreateOrConnectWithoutReplacedTokensInput = {
+    where: RefreshTokenWhereUniqueInput
+    create: XOR<RefreshTokenCreateWithoutReplacedTokensInput, RefreshTokenUncheckedCreateWithoutReplacedTokensInput>
+  }
+
+  export type RefreshTokenCreateWithoutReplacedByTokenInput = {
+    id?: string
+    tokenHash: string
+    createdAt?: Date | string
+    expiresAt: Date | string
+    revokedAt?: Date | string | null
+    user: UserCreateNestedOneWithoutRefreshTokensInput
+    replacedTokens?: RefreshTokenCreateNestedManyWithoutReplacedByTokenInput
+  }
+
+  export type RefreshTokenUncheckedCreateWithoutReplacedByTokenInput = {
+    id?: string
+    tokenHash: string
+    userId: string
+    createdAt?: Date | string
+    expiresAt: Date | string
+    revokedAt?: Date | string | null
+    replacedTokens?: RefreshTokenUncheckedCreateNestedManyWithoutReplacedByTokenInput
+  }
+
+  export type RefreshTokenCreateOrConnectWithoutReplacedByTokenInput = {
+    where: RefreshTokenWhereUniqueInput
+    create: XOR<RefreshTokenCreateWithoutReplacedByTokenInput, RefreshTokenUncheckedCreateWithoutReplacedByTokenInput>
+  }
+
+  export type RefreshTokenCreateManyReplacedByTokenInputEnvelope = {
+    data: RefreshTokenCreateManyReplacedByTokenInput | RefreshTokenCreateManyReplacedByTokenInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type UserUpsertWithoutRefreshTokensInput = {
+    update: XOR<UserUpdateWithoutRefreshTokensInput, UserUncheckedUpdateWithoutRefreshTokensInput>
+    create: XOR<UserCreateWithoutRefreshTokensInput, UserUncheckedCreateWithoutRefreshTokensInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutRefreshTokensInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutRefreshTokensInput, UserUncheckedUpdateWithoutRefreshTokensInput>
+  }
+
+  export type UserUpdateWithoutRefreshTokensInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    avatar?: NullableStringFieldUpdateOperationsInput | string | null
+    isEmailVerified?: BoolFieldUpdateOperationsInput | boolean
+    otp?: NullableStringFieldUpdateOperationsInput | string | null
+    otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otpLastSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    agencyProfile?: AgencyProfileUpdateOneWithoutUserNestedInput
+    bookings?: BookingUpdateManyWithoutTravelerNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutRefreshTokensInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    avatar?: NullableStringFieldUpdateOperationsInput | string | null
+    isEmailVerified?: BoolFieldUpdateOperationsInput | boolean
+    otp?: NullableStringFieldUpdateOperationsInput | string | null
+    otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otpLastSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    agencyProfile?: AgencyProfileUncheckedUpdateOneWithoutUserNestedInput
+    bookings?: BookingUncheckedUpdateManyWithoutTravelerNestedInput
+  }
+
+  export type RefreshTokenUpsertWithoutReplacedTokensInput = {
+    update: XOR<RefreshTokenUpdateWithoutReplacedTokensInput, RefreshTokenUncheckedUpdateWithoutReplacedTokensInput>
+    create: XOR<RefreshTokenCreateWithoutReplacedTokensInput, RefreshTokenUncheckedCreateWithoutReplacedTokensInput>
+    where?: RefreshTokenWhereInput
+  }
+
+  export type RefreshTokenUpdateToOneWithWhereWithoutReplacedTokensInput = {
+    where?: RefreshTokenWhereInput
+    data: XOR<RefreshTokenUpdateWithoutReplacedTokensInput, RefreshTokenUncheckedUpdateWithoutReplacedTokensInput>
+  }
+
+  export type RefreshTokenUpdateWithoutReplacedTokensInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    user?: UserUpdateOneRequiredWithoutRefreshTokensNestedInput
+    replacedByToken?: RefreshTokenUpdateOneWithoutReplacedTokensNestedInput
+  }
+
+  export type RefreshTokenUncheckedUpdateWithoutReplacedTokensInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    replacedByTokenId?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type RefreshTokenUpsertWithWhereUniqueWithoutReplacedByTokenInput = {
+    where: RefreshTokenWhereUniqueInput
+    update: XOR<RefreshTokenUpdateWithoutReplacedByTokenInput, RefreshTokenUncheckedUpdateWithoutReplacedByTokenInput>
+    create: XOR<RefreshTokenCreateWithoutReplacedByTokenInput, RefreshTokenUncheckedCreateWithoutReplacedByTokenInput>
+  }
+
+  export type RefreshTokenUpdateWithWhereUniqueWithoutReplacedByTokenInput = {
+    where: RefreshTokenWhereUniqueInput
+    data: XOR<RefreshTokenUpdateWithoutReplacedByTokenInput, RefreshTokenUncheckedUpdateWithoutReplacedByTokenInput>
+  }
+
+  export type RefreshTokenUpdateManyWithWhereWithoutReplacedByTokenInput = {
+    where: RefreshTokenScalarWhereInput
+    data: XOR<RefreshTokenUpdateManyMutationInput, RefreshTokenUncheckedUpdateManyWithoutReplacedByTokenInput>
   }
 
   export type UserCreateWithoutAgencyProfileInput = {
@@ -16034,8 +17964,11 @@ export namespace Prisma {
     avatar?: string | null
     isEmailVerified?: boolean
     otp?: string | null
+    otpExpiresAt?: Date | string | null
+    otpLastSentAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
     bookings?: BookingCreateNestedManyWithoutTravelerInput
   }
 
@@ -16048,8 +17981,11 @@ export namespace Prisma {
     avatar?: string | null
     isEmailVerified?: boolean
     otp?: string | null
+    otpExpiresAt?: Date | string | null
+    otpLastSentAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
     bookings?: BookingUncheckedCreateNestedManyWithoutTravelerInput
   }
 
@@ -16175,8 +18111,11 @@ export namespace Prisma {
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     isEmailVerified?: BoolFieldUpdateOperationsInput | boolean
     otp?: NullableStringFieldUpdateOperationsInput | string | null
+    otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otpLastSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
     bookings?: BookingUpdateManyWithoutTravelerNestedInput
   }
 
@@ -16189,8 +18128,11 @@ export namespace Prisma {
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     isEmailVerified?: BoolFieldUpdateOperationsInput | boolean
     otp?: NullableStringFieldUpdateOperationsInput | string | null
+    otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otpLastSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
     bookings?: BookingUncheckedUpdateManyWithoutTravelerNestedInput
   }
 
@@ -16640,6 +18582,10 @@ export namespace Prisma {
     status?: $Enums.BookingStatus
     totalAmount: number
     guestsCount: number
+    fullName?: string | null
+    phoneNumber?: string | null
+    documentNumber?: string | null
+    paymentProofUrl?: string | null
     paymentProofId?: string | null
     traveler: UserCreateNestedOneWithoutBookingsInput
     paymentProof?: PaymentProofCreateNestedOneWithoutBookingInput
@@ -16652,6 +18598,10 @@ export namespace Prisma {
     status?: $Enums.BookingStatus
     totalAmount: number
     guestsCount: number
+    fullName?: string | null
+    phoneNumber?: string | null
+    documentNumber?: string | null
+    paymentProofUrl?: string | null
     paymentProofId?: string | null
     paymentProof?: PaymentProofUncheckedCreateNestedOneWithoutBookingInput
   }
@@ -16771,8 +18721,11 @@ export namespace Prisma {
     avatar?: string | null
     isEmailVerified?: boolean
     otp?: string | null
+    otpExpiresAt?: Date | string | null
+    otpLastSentAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    refreshTokens?: RefreshTokenCreateNestedManyWithoutUserInput
     agencyProfile?: AgencyProfileCreateNestedOneWithoutUserInput
   }
 
@@ -16785,8 +18738,11 @@ export namespace Prisma {
     avatar?: string | null
     isEmailVerified?: boolean
     otp?: string | null
+    otpExpiresAt?: Date | string | null
+    otpLastSentAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    refreshTokens?: RefreshTokenUncheckedCreateNestedManyWithoutUserInput
     agencyProfile?: AgencyProfileUncheckedCreateNestedOneWithoutUserInput
   }
 
@@ -16799,6 +18755,7 @@ export namespace Prisma {
     id?: string
     imageUrl: string
     uploadedAt?: Date | string
+    rejectionReason?: string | null
     status?: $Enums.VerificationStatus
   }
 
@@ -16806,6 +18763,7 @@ export namespace Prisma {
     id?: string
     imageUrl: string
     uploadedAt?: Date | string
+    rejectionReason?: string | null
     status?: $Enums.VerificationStatus
   }
 
@@ -16869,8 +18827,11 @@ export namespace Prisma {
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     isEmailVerified?: BoolFieldUpdateOperationsInput | boolean
     otp?: NullableStringFieldUpdateOperationsInput | string | null
+    otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otpLastSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    refreshTokens?: RefreshTokenUpdateManyWithoutUserNestedInput
     agencyProfile?: AgencyProfileUpdateOneWithoutUserNestedInput
   }
 
@@ -16883,8 +18844,11 @@ export namespace Prisma {
     avatar?: NullableStringFieldUpdateOperationsInput | string | null
     isEmailVerified?: BoolFieldUpdateOperationsInput | boolean
     otp?: NullableStringFieldUpdateOperationsInput | string | null
+    otpExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    otpLastSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    refreshTokens?: RefreshTokenUncheckedUpdateManyWithoutUserNestedInput
     agencyProfile?: AgencyProfileUncheckedUpdateOneWithoutUserNestedInput
   }
 
@@ -16903,6 +18867,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     imageUrl?: StringFieldUpdateOperationsInput | string
     uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
   }
 
@@ -16910,6 +18875,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     imageUrl?: StringFieldUpdateOperationsInput | string
     uploadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumVerificationStatusFieldUpdateOperationsInput | $Enums.VerificationStatus
   }
 
@@ -16919,6 +18885,10 @@ export namespace Prisma {
     status?: $Enums.BookingStatus
     totalAmount: number
     guestsCount: number
+    fullName?: string | null
+    phoneNumber?: string | null
+    documentNumber?: string | null
+    paymentProofUrl?: string | null
     paymentProofId?: string | null
     session: TripSessionCreateNestedOneWithoutBookingsInput
     traveler: UserCreateNestedOneWithoutBookingsInput
@@ -16932,6 +18902,10 @@ export namespace Prisma {
     status?: $Enums.BookingStatus
     totalAmount: number
     guestsCount: number
+    fullName?: string | null
+    phoneNumber?: string | null
+    documentNumber?: string | null
+    paymentProofUrl?: string | null
     paymentProofId?: string | null
   }
 
@@ -16957,6 +18931,10 @@ export namespace Prisma {
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     totalAmount?: FloatFieldUpdateOperationsInput | number
     guestsCount?: IntFieldUpdateOperationsInput | number
+    fullName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    documentNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentProofUrl?: NullableStringFieldUpdateOperationsInput | string | null
     paymentProofId?: NullableStringFieldUpdateOperationsInput | string | null
     session?: TripSessionUpdateOneRequiredWithoutBookingsNestedInput
     traveler?: UserUpdateOneRequiredWithoutBookingsNestedInput
@@ -16970,6 +18948,10 @@ export namespace Prisma {
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     totalAmount?: FloatFieldUpdateOperationsInput | number
     guestsCount?: IntFieldUpdateOperationsInput | number
+    fullName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    documentNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentProofUrl?: NullableStringFieldUpdateOperationsInput | string | null
     paymentProofId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -17247,6 +19229,15 @@ export namespace Prisma {
     wallet?: WalletUncheckedUpdateOneWithoutAgencyNestedInput
   }
 
+  export type RefreshTokenCreateManyUserInput = {
+    id?: string
+    tokenHash: string
+    createdAt?: Date | string
+    expiresAt: Date | string
+    revokedAt?: Date | string | null
+    replacedByTokenId?: string | null
+  }
+
   export type BookingCreateManyTravelerInput = {
     id?: string
     sessionId: string
@@ -17254,7 +19245,40 @@ export namespace Prisma {
     status?: $Enums.BookingStatus
     totalAmount: number
     guestsCount: number
+    fullName?: string | null
+    phoneNumber?: string | null
+    documentNumber?: string | null
+    paymentProofUrl?: string | null
     paymentProofId?: string | null
+  }
+
+  export type RefreshTokenUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    replacedByToken?: RefreshTokenUpdateOneWithoutReplacedTokensNestedInput
+    replacedTokens?: RefreshTokenUpdateManyWithoutReplacedByTokenNestedInput
+  }
+
+  export type RefreshTokenUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    replacedByTokenId?: NullableStringFieldUpdateOperationsInput | string | null
+    replacedTokens?: RefreshTokenUncheckedUpdateManyWithoutReplacedByTokenNestedInput
+  }
+
+  export type RefreshTokenUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    replacedByTokenId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type BookingUpdateWithoutTravelerInput = {
@@ -17263,6 +19287,10 @@ export namespace Prisma {
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     totalAmount?: FloatFieldUpdateOperationsInput | number
     guestsCount?: IntFieldUpdateOperationsInput | number
+    fullName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    documentNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentProofUrl?: NullableStringFieldUpdateOperationsInput | string | null
     paymentProofId?: NullableStringFieldUpdateOperationsInput | string | null
     session?: TripSessionUpdateOneRequiredWithoutBookingsNestedInput
     paymentProof?: PaymentProofUpdateOneWithoutBookingNestedInput
@@ -17275,6 +19303,10 @@ export namespace Prisma {
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     totalAmount?: FloatFieldUpdateOperationsInput | number
     guestsCount?: IntFieldUpdateOperationsInput | number
+    fullName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    documentNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentProofUrl?: NullableStringFieldUpdateOperationsInput | string | null
     paymentProofId?: NullableStringFieldUpdateOperationsInput | string | null
     paymentProof?: PaymentProofUncheckedUpdateOneWithoutBookingNestedInput
   }
@@ -17286,7 +19318,49 @@ export namespace Prisma {
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     totalAmount?: FloatFieldUpdateOperationsInput | number
     guestsCount?: IntFieldUpdateOperationsInput | number
+    fullName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    documentNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentProofUrl?: NullableStringFieldUpdateOperationsInput | string | null
     paymentProofId?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type RefreshTokenCreateManyReplacedByTokenInput = {
+    id?: string
+    tokenHash: string
+    userId: string
+    createdAt?: Date | string
+    expiresAt: Date | string
+    revokedAt?: Date | string | null
+  }
+
+  export type RefreshTokenUpdateWithoutReplacedByTokenInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    user?: UserUpdateOneRequiredWithoutRefreshTokensNestedInput
+    replacedTokens?: RefreshTokenUpdateManyWithoutReplacedByTokenNestedInput
+  }
+
+  export type RefreshTokenUncheckedUpdateWithoutReplacedByTokenInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    replacedTokens?: RefreshTokenUncheckedUpdateManyWithoutReplacedByTokenNestedInput
+  }
+
+  export type RefreshTokenUncheckedUpdateManyWithoutReplacedByTokenInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type TripTemplateCreateManyAgencyInput = {
@@ -17486,6 +19560,10 @@ export namespace Prisma {
     status?: $Enums.BookingStatus
     totalAmount: number
     guestsCount: number
+    fullName?: string | null
+    phoneNumber?: string | null
+    documentNumber?: string | null
+    paymentProofUrl?: string | null
     paymentProofId?: string | null
   }
 
@@ -17495,6 +19573,10 @@ export namespace Prisma {
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     totalAmount?: FloatFieldUpdateOperationsInput | number
     guestsCount?: IntFieldUpdateOperationsInput | number
+    fullName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    documentNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentProofUrl?: NullableStringFieldUpdateOperationsInput | string | null
     paymentProofId?: NullableStringFieldUpdateOperationsInput | string | null
     traveler?: UserUpdateOneRequiredWithoutBookingsNestedInput
     paymentProof?: PaymentProofUpdateOneWithoutBookingNestedInput
@@ -17507,6 +19589,10 @@ export namespace Prisma {
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     totalAmount?: FloatFieldUpdateOperationsInput | number
     guestsCount?: IntFieldUpdateOperationsInput | number
+    fullName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    documentNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentProofUrl?: NullableStringFieldUpdateOperationsInput | string | null
     paymentProofId?: NullableStringFieldUpdateOperationsInput | string | null
     paymentProof?: PaymentProofUncheckedUpdateOneWithoutBookingNestedInput
   }
@@ -17518,6 +19604,10 @@ export namespace Prisma {
     status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
     totalAmount?: FloatFieldUpdateOperationsInput | number
     guestsCount?: IntFieldUpdateOperationsInput | number
+    fullName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    documentNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentProofUrl?: NullableStringFieldUpdateOperationsInput | string | null
     paymentProofId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
@@ -17563,6 +19653,10 @@ export namespace Prisma {
      */
     export type UserCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = UserCountOutputTypeDefaultArgs<ExtArgs>
     /**
+     * @deprecated Use RefreshTokenCountOutputTypeDefaultArgs instead
+     */
+    export type RefreshTokenCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RefreshTokenCountOutputTypeDefaultArgs<ExtArgs>
+    /**
      * @deprecated Use AgencyProfileCountOutputTypeDefaultArgs instead
      */
     export type AgencyProfileCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = AgencyProfileCountOutputTypeDefaultArgs<ExtArgs>
@@ -17582,6 +19676,10 @@ export namespace Prisma {
      * @deprecated Use UserDefaultArgs instead
      */
     export type UserArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = UserDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use RefreshTokenDefaultArgs instead
+     */
+    export type RefreshTokenArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RefreshTokenDefaultArgs<ExtArgs>
     /**
      * @deprecated Use AgencyProfileDefaultArgs instead
      */

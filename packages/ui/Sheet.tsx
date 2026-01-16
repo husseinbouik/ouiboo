@@ -4,23 +4,34 @@ import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { X } from 'lucide-react'
 import { cn } from './utils'
+import { Slot } from './Slot'
 
-const Sheet = ({ children }: { children: React.ReactNode }) => <>{children}</>
+const Sheet = ({ children, open, onOpenChange }: { 
+  children: React.ReactNode,
+  open?: boolean,
+  onOpenChange?: (open: boolean) => void
+}) => (
+  <div data-state={open ? 'open' : 'closed'} className={cn(open ? 'block' : 'hidden')}>
+    {children}
+  </div>
+)
 
 const SheetTrigger = React.forwardRef<
   HTMLButtonElement,
-  React.ButtonHTMLAttributes<HTMLButtonElement>
->(({ className, ...props }, ref) => (
-  <button ref={ref} className={cn(className)} {...props} />
-))
+  React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }
+>(({ className, asChild = false, ...props }, ref) => {
+  const Comp = asChild ? Slot : 'button'
+  return <Comp ref={ref} className={cn(className)} {...props} />
+})
 SheetTrigger.displayName = 'SheetTrigger'
 
 const SheetClose = React.forwardRef<
   HTMLButtonElement,
-  React.ButtonHTMLAttributes<HTMLButtonElement>
->(({ className, ...props }, ref) => (
-  <button ref={ref} className={cn(className)} {...props} />
-))
+  React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }
+>(({ className, asChild = false, ...props }, ref) => {
+  const Comp = asChild ? Slot : 'button'
+  return <Comp ref={ref} className={cn(className)} {...props} />
+})
 SheetClose.displayName = 'SheetClose'
 
 const SheetPortal = ({ children }: { children: React.ReactNode }) => <>{children}</>

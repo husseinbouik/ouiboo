@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Sheet, SheetContent, SheetTrigger, Button } from '@ouiboo/ui';
+import { Sheet, SheetContent, SheetTrigger, Button, buttonVariants } from '@ouiboo/ui';
 import { Menu, LayoutDashboard, Map, BookOpen, Wallet, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -21,10 +21,8 @@ export function AgencyMobileNav() {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden">
-          <Menu className="h-6 w-6" />
-        </Button>
+      <SheetTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "md:hidden")}>
+        <Menu className="h-6 w-6" />
       </SheetTrigger>
       <SheetContent side="left" className="w-[300px] p-0 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800">
         <div className="flex flex-col h-full">

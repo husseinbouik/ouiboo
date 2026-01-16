@@ -8,4 +8,4 @@ export const ALLOWED_MIME_TYPES = [
     'application/pdf',
 ];
 
-export const ALLOWED_MIME_TYPES_REGEX = /^(image\/(jpeg|png|webp|gif)|application\/pdf)$/;
+export const ALLOWED_MIME_TYPES_REGEX = /(image\/(jpeg|png|webp|gif|jpg))|(application\/pdf)/;

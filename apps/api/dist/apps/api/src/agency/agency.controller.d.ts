@@ -7,12 +7,6 @@ export declare class AgencyController {
         activeTrips: number;
         totalBookings: number;
         totalCustomers: number;
-        wallet?: undefined;
-    } | {
-        revenue: number;
-        activeTrips: number;
-        totalBookings: number;
-        totalCustomers: number;
         wallet: {
             id: string;
             availableBalance: number;
@@ -34,9 +28,10 @@ export declare class AgencyController {
             startDate: Date;
             endDate: Date;
             price: number;
+            deposit: number;
             totalSeats: number;
-            availableSeats: number;
             templateId: string;
+            availableSeats: number;
         })[];
     } & {
         description: string;
@@ -50,11 +45,21 @@ export declare class AgencyController {
         durationDays: number;
         durationNights: number;
         inclusions: string[];
+        exclusions: string[];
+        checklist: string[];
         images: string[];
         status: import("@ouiboo/database").$Enums.TripStatus;
         featured: boolean;
     })[]>;
     getBookings(req: any): Promise<({
+        paymentProof: {
+            id: string;
+            status: import("@ouiboo/database").$Enums.VerificationStatus;
+            bookingId: string;
+            imageUrl: string;
+            uploadedAt: Date;
+            rejectionReason: string | null;
+        };
         session: {
             template: {
                 description: string;
@@ -68,6 +73,8 @@ export declare class AgencyController {
                 durationDays: number;
                 durationNights: number;
                 inclusions: string[];
+                exclusions: string[];
+                checklist: string[];
                 images: string[];
                 status: import("@ouiboo/database").$Enums.TripStatus;
                 featured: boolean;
@@ -78,9 +85,10 @@ export declare class AgencyController {
             startDate: Date;
             endDate: Date;
             price: number;
+            deposit: number;
             totalSeats: number;
-            availableSeats: number;
             templateId: string;
+            availableSeats: number;
         };
         traveler: {
             email: string;
@@ -91,18 +99,42 @@ export declare class AgencyController {
         status: import("@ouiboo/database").$Enums.BookingStatus;
         sessionId: string;
         guestsCount: number;
+        fullName: string | null;
+        phoneNumber: string | null;
+        documentNumber: string | null;
         bookingDate: Date;
         totalAmount: number;
+        paymentProofUrl: string | null;
         paymentProofId: string | null;
         travelerId: string;
     })[]>;
     getPayouts(req: any): Promise<{
         id: string;
+        bankDetails: string;
         agencyId: string;
         status: import("@ouiboo/database").$Enums.PayoutStatus;
         amount: number;
         requestedAt: Date;
         processedAt: Date | null;
-        bankDetails: string;
     }[]>;
+    updateProfile(req: any, data: {
+        companyName?: string;
+        bio?: string;
+        logo?: string;
+        bankDetails?: string;
+    }): Promise<{
+        id: string;
+        userId: string;
+        companyName: string;
+        ice: string;
+        patente: string;
+        rib: string;
+        verificationStatus: import("@ouiboo/database").$Enums.VerificationStatus;
+        bio: string | null;
+        logo: string | null;
+        subscriptionStatus: import("@ouiboo/database").$Enums.SubscriptionStatus;
+        trialEndsAt: Date | null;
+        subscriptionEndsAt: Date | null;
+        bankDetails: string | null;
+    }>;
 }

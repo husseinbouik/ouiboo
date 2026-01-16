@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, TooManyRequestsException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, HttpException, HttpStatus } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { DatabaseService } from '../database/database.service';
 import { RegisterDto } from './dto/auth.dto';
@@ -143,7 +143,7 @@ export class AuthService {
             const cooldownMs = 60 * 1000;
             const nextAllowed = new Date(user.otpLastSentAt.getTime() + cooldownMs);
             if (nextAllowed > new Date()) {
-                throw new TooManyRequestsException('OTP_RESEND_COOLDOWN');
+                throw new HttpException('OTP_RESEND_COOLDOWN', HttpStatus.TOO_MANY_REQUESTS);
             }
         }
 
@@ -259,6 +259,7 @@ export class AuthService {
                 expiresIn: '7d',
             },
         );
+        console.log('DB keys:', Object.keys(this.db).filter(k => !k.startsWith('$')));
         const tokenRecord = await this.db.refreshToken.create({
             data: {
                 tokenHash: this.hashToken(refreshToken),

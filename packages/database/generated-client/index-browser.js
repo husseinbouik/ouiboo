@@ -131,8 +131,20 @@ exports.Prisma.UserScalarFieldEnum = {
   avatar: 'avatar',
   isEmailVerified: 'isEmailVerified',
   otp: 'otp',
+  otpExpiresAt: 'otpExpiresAt',
+  otpLastSentAt: 'otpLastSentAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.RefreshTokenScalarFieldEnum = {
+  id: 'id',
+  tokenHash: 'tokenHash',
+  userId: 'userId',
+  createdAt: 'createdAt',
+  expiresAt: 'expiresAt',
+  revokedAt: 'revokedAt',
+  replacedByTokenId: 'replacedByTokenId'
 };
 
 exports.Prisma.AgencyProfileScalarFieldEnum = {
@@ -199,6 +211,10 @@ exports.Prisma.BookingScalarFieldEnum = {
   status: 'status',
   totalAmount: 'totalAmount',
   guestsCount: 'guestsCount',
+  fullName: 'fullName',
+  phoneNumber: 'phoneNumber',
+  documentNumber: 'documentNumber',
+  paymentProofUrl: 'paymentProofUrl',
   paymentProofId: 'paymentProofId'
 };
 
@@ -207,6 +223,7 @@ exports.Prisma.PaymentProofScalarFieldEnum = {
   bookingId: 'bookingId',
   imageUrl: 'imageUrl',
   uploadedAt: 'uploadedAt',
+  rejectionReason: 'rejectionReason',
   status: 'status'
 };
 
@@ -284,10 +301,11 @@ exports.TripStatus = exports.$Enums.TripStatus = {
 
 exports.BookingStatus = exports.$Enums.BookingStatus = {
   PENDING: 'PENDING',
+  AWAITING_VALIDATION: 'AWAITING_VALIDATION',
   CONFIRMED: 'CONFIRMED',
+  REJECTED: 'REJECTED',
   CANCELLED: 'CANCELLED',
-  COMPLETED: 'COMPLETED',
-  PENDING_PAYMENT: 'PENDING_PAYMENT'
+  COMPLETED: 'COMPLETED'
 };
 
 exports.TransactionType = exports.$Enums.TransactionType = {
@@ -304,6 +322,7 @@ exports.PayoutStatus = exports.$Enums.PayoutStatus = {
 
 exports.Prisma.ModelName = {
   User: 'User',
+  RefreshToken: 'RefreshToken',
   AgencyProfile: 'AgencyProfile',
   TripTemplate: 'TripTemplate',
   ItineraryDay: 'ItineraryDay',

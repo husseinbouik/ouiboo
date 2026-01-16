@@ -35,10 +35,11 @@ enum TripCategory {
 
 enum BookingStatus {
   PENDING
+  AWAITING_VALIDATION
   CONFIRMED
+  REJECTED
   CANCELLED
   COMPLETED
-  PENDING_PAYMENT
 }
 
 enum PayoutStatus {
@@ -69,6 +70,8 @@ model User {
   avatar          String?
   isEmailVerified Boolean        @default(false)
   otp             String?
+  otpExpiresAt    DateTime?
+  otpLastSentAt   DateTime?
   refreshTokens   RefreshToken[]
   agencyProfile   AgencyProfile?
   bookings        Booking[]
@@ -77,15 +80,15 @@ model User {
 }
 
 model RefreshToken {
-  id                String        @id @default(cuid())
-  tokenHash         String        @unique
+  id                String         @id @default(cuid())
+  tokenHash         String         @unique
   userId            String
-  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt         DateTime      @default(now())
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime       @default(now())
   expiresAt         DateTime
   revokedAt         DateTime?
   replacedByTokenId String?
-  replacedByToken   RefreshToken? @relation("RefreshTokenRotation", fields: [replacedByTokenId], references: [id])
+  replacedByToken   RefreshToken?  @relation("RefreshTokenRotation", fields: [replacedByTokenId], references: [id])
   replacedTokens    RefreshToken[] @relation("RefreshTokenRotation")
 
   @@index([userId])
@@ -108,6 +111,7 @@ model AgencyProfile {
   subscriptionStatus SubscriptionStatus @default(TRIAL)
   trialEndsAt        DateTime?
   subscriptionEndsAt DateTime?
+  bankDetails        String?            @db.Text
 }
 
 model TripTemplate {
@@ -157,29 +161,31 @@ model TripSession {
 }
 
 model Booking {
-  id             String        @id @default(cuid())
-  sessionId      String
-  session        TripSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  travelerId     String
-  traveler       User          @relation(fields: [travelerId], references: [id])
-  bookingDate    DateTime      @default(now())
-  status         BookingStatus @default(PENDING)
-  totalAmount    Float
-  guestsCount    Int
-  fullName       String?
-  phoneNumber    String?
-  documentNumber String?
-  paymentProofId String?       @unique
-  paymentProof   PaymentProof?
+  id              String        @id @default(cuid())
+  sessionId       String
+  session         TripSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  travelerId      String
+  traveler        User          @relation(fields: [travelerId], references: [id])
+  bookingDate     DateTime      @default(now())
+  status          BookingStatus @default(PENDING)
+  totalAmount     Float
+  guestsCount     Int
+  fullName        String?
+  phoneNumber     String?
+  documentNumber  String?
+  paymentProofUrl String?
+  paymentProofId  String?       @unique
+  paymentProof    PaymentProof?
 }
 
 model PaymentProof {
-  id         String             @id @default(cuid())
-  bookingId  String             @unique
-  booking    Booking            @relation(fields: [bookingId], references: [id])
-  imageUrl   String
-  uploadedAt DateTime           @default(now())
-  status     VerificationStatus @default(PENDING)
+  id              String             @id @default(cuid())
+  bookingId       String             @unique
+  booking         Booking            @relation(fields: [bookingId], references: [id])
+  imageUrl        String
+  uploadedAt      DateTime           @default(now())
+  rejectionReason String?
+  status          VerificationStatus @default(PENDING)
 }
 
 model Wallet {

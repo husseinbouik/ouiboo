@@ -38,10 +38,15 @@ export declare class AuthService {
         accessToken: string;
         refreshToken: string;
         user: {
-            id: any;
-            email: any;
-            name: any;
-            role: any;
+            id: string;
+            email: string;
+            name: string;
+            role: import("@ouiboo/database").$Enums.UserRole;
         };
     }>;
+    logout(token?: string): Promise<{
+        message: string;
+    }>;
+    private hashToken;
+    private issueRefreshToken;
 }

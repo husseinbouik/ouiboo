@@ -5,12 +5,36 @@ const core_1 = require("@nestjs/core");
 const swagger_1 = require("@nestjs/swagger");
 const app_module_1 = require("./app.module");
 const common_1 = require("@nestjs/common");
+const REQUIRED_ENV_VARS = [
+    'JWT_SECRET',
+    'JWT_REFRESH_SECRET',
+    'CORS_ORIGINS',
+    'DATABASE_URL',
+    'SMTP_HOST',
+    'SMTP_PORT',
+    'SMTP_USER',
+    'SMTP_PASS',
+];
+const validateRequiredEnv = () => {
+    if (process.env.NODE_ENV !== 'production') {
+        return;
+    }
+    const missing = REQUIRED_ENV_VARS.filter((name) => !process.env[name]);
+    if (missing.length > 0) {
+        throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    }
+};
 async function bootstrap() {
     try {
+        validateRequiredEnv();
         console.log('DATABASE_URL:', process.env.DATABASE_URL);
         const app = await core_1.NestFactory.create(app_module_1.AppModule);
+        const corsOrigins = process.env.CORS_ORIGINS
+            ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+            : undefined;
+        const allowAllOrigins = process.env.NODE_ENV !== 'production' && !corsOrigins;
         app.enableCors({
-            origin: true,
+            origin: corsOrigins ?? allowAllOrigins,
             methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
             credentials: true,
             allowedHeaders: 'Content-Type, Accept, Authorization',

@@ -12,6 +12,7 @@ const database_1 = require("@ouiboo/database");
 let DatabaseService = class DatabaseService extends database_1.PrismaClient {
     async onModuleInit() {
         await this.$connect();
+        console.log('Database models available:', Object.keys(this).filter(k => !k.startsWith('$')));
     }
     async onModuleDestroy() {
         await this.$disconnect();

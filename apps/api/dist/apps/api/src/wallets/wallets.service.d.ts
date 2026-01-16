@@ -2,7 +2,7 @@ import { DatabaseService } from '../database/database.service';
 export declare class WalletsService {
     private db;
     constructor(db: DatabaseService);
-    getWallet(agencyId: string): Promise<{
+    getWallet(tenantId: string): Promise<{
         transactions: {
             type: import("@ouiboo/database").$Enums.TransactionType;
             id: string;
@@ -17,19 +17,19 @@ export declare class WalletsService {
         pendingBalance: number;
         agencyId: string;
     }>;
-    creditWallet(agencyId: string, amount: number, reason: string): Promise<{
+    creditWallet(tenantId: string, amount: number, reason: string): Promise<{
         id: string;
         availableBalance: number;
         pendingBalance: number;
         agencyId: string;
     }>;
-    requestPayout(agencyId: string, amount: number, bankDetails: string): Promise<{
+    requestPayout(tenantId: string, amount: number, bankDetails: string): Promise<{
         id: string;
+        bankDetails: string;
         agencyId: string;
         status: import("@ouiboo/database").$Enums.PayoutStatus;
         amount: number;
         requestedAt: Date;
         processedAt: Date | null;
-        bankDetails: string;
     }>;
 }

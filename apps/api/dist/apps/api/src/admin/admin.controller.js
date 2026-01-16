@@ -32,21 +32,40 @@ let AdminController = class AdminController {
             include: { booking: { include: { traveler: true, session: { include: { template: true } } } } }
         });
     }
-    async verifyPayment(id, status) {
+    async verifyPayment(id, status, rejectionReason) {
+        if (status === 'REJECTED' && !rejectionReason) {
+            throw new common_1.BadRequestException('Rejection reason is required when rejecting a payment');
+        }
         return this.db.$transaction(async (tx) => {
-            const proof = await tx.paymentProof.update({
+            const proof = await tx.paymentProof.findUnique({
                 where: { id },
-                data: { status }
+                include: { booking: { include: { session: { include: { template: true } } } } }
             });
-            const booking = await tx.booking.update({
+            if (!proof) {
+                throw new common_1.BadRequestException('Payment proof not found');
+            }
+            if (proof.status !== 'PENDING') {
+                throw new common_1.BadRequestException('Payment proof has already been reviewed');
+            }
+            if (proof.booking.status !== 'AWAITING_VALIDATION') {
+                throw new common_1.BadRequestException('Booking is not awaiting payment validation');
+            }
+            const updatedProof = await tx.paymentProof.update({
+                where: { id },
+                data: {
+                    status,
+                    rejectionReason: status === 'REJECTED' ? rejectionReason : null,
+                }
+            });
+            const updatedBooking = await tx.booking.update({
                 where: { id: proof.bookingId },
-                data: { status: status === 'VERIFIED' ? 'CONFIRMED' : 'CANCELLED' },
+                data: { status: status === 'VERIFIED' ? 'CONFIRMED' : 'REJECTED' },
                 include: { session: { include: { template: true } } }
             });
             if (status === 'VERIFIED') {
-                await this.walletsService.creditWallet(booking.session.template.agencyId, booking.totalAmount, `Booking #${booking.id} confirmed`);
+                await this.walletsService.creditWallet(updatedBooking.session.template.agencyId, updatedBooking.totalAmount, `Booking #${updatedBooking.id} confirmed`);
             }
-            return proof;
+            return updatedProof;
         });
     }
     getPendingAgencies() {
@@ -71,6 +90,30 @@ let AdminController = class AdminController {
         return this.db.tripTemplate.update({
             where: { id },
             data: { status: status }
+        });
+    }
+    getAgencies() {
+        return this.db.agencyProfile.findMany({
+            include: { user: true }
+        });
+    }
+    async updateAgencyStatus(id, data) {
+        return this.db.agencyProfile.update({
+            where: { id },
+            data: {
+                verificationStatus: data.verificationStatus,
+                subscriptionStatus: data.subscriptionStatus
+            }
+        });
+    }
+    getBookings() {
+        return this.db.booking.findMany({
+            include: {
+                traveler: true,
+                session: { include: { template: true } },
+                paymentProof: true
+            },
+            orderBy: { bookingDate: 'desc' }
         });
     }
     getPayoutRequests() {
@@ -101,8 +144,9 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Approve or reject payment proof' }),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)('status')),
+    __param(2, (0, common_1.Body)('rejectionReason')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "verifyPayment", null);
 __decorate([
@@ -137,6 +181,29 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "verifyTrip", null);
+__decorate([
+    (0, common_1.Get)('agencies'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get all agencies' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getAgencies", null);
+__decorate([
+    (0, common_1.Patch)('agencies/:id/status'),
+    (0, swagger_1.ApiOperation)({ summary: 'Update agency verification or subscription status' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "updateAgencyStatus", null);
+__decorate([
+    (0, common_1.Get)('bookings'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get all bookings in the system' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getBookings", null);
 __decorate([
     (0, common_1.Get)('payout-requests'),
     (0, swagger_1.ApiOperation)({ summary: 'Get all payout requests' }),

@@ -16,73 +16,85 @@ const nodemailer = require("nodemailer");
 let EmailService = EmailService_1 = class EmailService {
     constructor() {
         this.logger = new common_1.Logger(EmailService_1.name);
-        this.transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.GMAIL_EMAIL,
-                pass: process.env.GMAIL_APP_PASSWORD,
-            },
-        });
+        const host = process.env.SMTP_HOST;
+        const port = parseInt(process.env.SMTP_PORT || '587');
+        const user = process.env.SMTP_USER;
+        const pass = process.env.SMTP_PASS;
+        if (host && user && pass) {
+            this.transporter = nodemailer.createTransport({
+                host,
+                port,
+                secure: port === 465,
+                auth: { user, pass },
+            });
+            this.logger.log('EmailService initialized with SMTP');
+        }
+        else {
+            this.logger.warn('EmailService: No SMTP credentials found. Emails will be logged to console.');
+        }
+    }
+    async sendEmail(to, subject, html) {
+        if (this.transporter) {
+            try {
+                await this.transporter.sendMail({
+                    from: `"OUIBOO" <${process.env.SMTP_USER}>`,
+                    to,
+                    subject,
+                    html,
+                });
+                this.logger.log(`Email sent to ${to}`);
+            }
+            catch (error) {
+                this.logger.error(`Failed to send email to ${to}`, error);
+            }
+        }
+        else {
+            this.logger.debug(`[MOCK EMAIL] To: ${to} | Subject: ${subject}`);
+        }
     }
     async sendMail(to, subject, html) {
-        try {
-            const info = await this.transporter.sendMail({
-                from: `"Ouiboo" <${process.env.GMAIL_EMAIL}>`,
-                to,
-                subject,
-                html,
-            });
-            this.logger.log(`Email sent: ${info.messageId}`);
-            return info;
-        }
-        catch (error) {
-            this.logger.error('Error sending email:', error);
-            return null;
-        }
-    }
-    getWelcomeTemplate(name) {
-        return `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-                <h2 style="color: #002B5B;">Welcome to Ouiboo, ${name}!</h2>
-                <p>We're thrilled to have you join our marketplace. You're now part of a community dedicated to unique travel experiences.</p>
-                <div style="background-color: #F9F9F9; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                    <p style="margin: 0; font-weight: bold;">What's next?</p>
-                    <ul style="margin: 10px 0 0 0; padding-left: 20px;">
-                        <li>Complete your profile</li>
-                        <li>Explore available trips</li>
-                        <li>Start booking your next adventure!</li>
-                    </ul>
-                </div>
-                <p>If you have any questions, just reply to this email.</p>
-                <p>Happy travels,<br>The Ouiboo Team</p>
-            </div>
-        `;
+        return this.sendEmail(to, subject, html);
     }
     getOTPTemplate(otp) {
         return `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid #f0f0f0; border-radius: 16px; text-align: center;">
-                <h1 style="color: #002B5B; margin-bottom: 24px;">Verify your email</h1>
-                <p style="color: #666; font-size: 16px; line-height: 24px;">Use the following 6-digit code to complete your registration:</p>
-                <div style="background-color: #F8FAFC; border: 2px solid #E2E8F0; padding: 20px; border-radius: 12px; margin: 32px 0; display: inline-block;">
-                    <span style="font-family: monospace; font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #FF5A1F;">${otp}</span>
-                </div>
-                <p style="color: #999; font-size: 14px;">This code will expire in 10 minutes.</p>
-                <p style="color: #999; font-size: 14px; margin-top: 32px;">If you didn't request this code, you can safely ignore this email.</p>
-            </div>
+            <h1>Verify your email</h1>
+            <p>Use the verification code below to complete your signup:</p>
+            <p style="font-size: 24px; font-weight: bold; letter-spacing: 2px;">${otp}</p>
+            <p>This code expires in 10 minutes.</p>
         `;
     }
-    getBookingConfirmationTemplate(userName, tripTitle, date) {
+    getWelcomeTemplate(name) {
+        const safeName = name ? ` ${name}` : '';
         return `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h1 style="color: #333;">Booking Confirmed!</h1>
-                <p>Hello ${userName},</p>
-                <p>Your booking for <strong>${tripTitle}</strong> on ${date} has been confirmed.</p>
-                <p>We wish you a pleasant journey!</p>
-                <br/>
-                <p>Best regards,</p>
-                <p>The Ouiboo Team</p>
-            </div>
+            <h1>Welcome to Ouiboo${safeName}!</h1>
+            <p>Your email is verified and your account is ready to go.</p>
+            <p>Start exploring trips and managing bookings from your dashboard.</p>
         `;
+    }
+    async sendBookingNotification(travelerEmail, agencyEmail, bookingId, tripTitle) {
+        const travelerHtml = `
+            <h1>Booking Received!</h1>
+            <p>Your booking for <b>${tripTitle}</b> (ID: ${bookingId}) has been received successfully.</p>
+            <p>Please upload your payment proof in the dashboard to confirm your seats.</p>
+        `;
+        const agencyHtml = `
+            <h1>New Booking Alert</h1>
+            <p>A new booking has been made for <b>${tripTitle}</b>.</p>
+            <p>Traveler: ${travelerEmail}</p>
+            <p>Go to your dashboard to review and verify payment.</p>
+        `;
+        await Promise.all([
+            this.sendEmail(travelerEmail, `OUIBOO: Booking Received - ${tripTitle}`, travelerHtml),
+            this.sendEmail(agencyEmail, `OUIBOO: New Booking Received!`, agencyHtml)
+        ]);
+    }
+    async sendPaymentConfirmation(travelerEmail, tripTitle) {
+        const html = `
+            <h1>Payment Verified!</h1>
+            <p>Great news! Your payment for <b>${tripTitle}</b> has been verified by the agency.</p>
+            <p>Your seats are now officially confirmed. Get ready for your adventure!</p>
+        `;
+        await this.sendEmail(travelerEmail, `OUIBOO: Booking Confirmed - ${tripTitle}`, html);
     }
 };
 exports.EmailService = EmailService;
