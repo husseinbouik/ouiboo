@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
+import type { VerificationStatusType } from '@ouiboo/types';
 
 interface User {
     id: string;
@@ -15,7 +16,7 @@ interface User {
         ice?: string;
         patente?: string;
         rib?: string;
-        verificationStatus: string;
+        verificationStatus: VerificationStatusType;
         bio?: string;
         logo?: string;
         subscriptionStatus?: string;
