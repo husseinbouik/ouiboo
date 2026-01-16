@@ -18,6 +18,8 @@ export enum VerificationStatus {
     Rejected = "REJECTED",
 }
 
+export type VerificationStatusType = (typeof VerificationStatus)[keyof typeof VerificationStatus];
+
 export enum SubscriptionStatus {
     Trial = "TRIAL",
     Active = "ACTIVE",
@@ -123,7 +125,7 @@ export interface PaymentProof {
     bookingId: string;
     imageUrl: string;
     uploadedAt: string;
-    status: "Pending" | "Verified" | "Rejected";
+    status: VerificationStatus;
 }
 
 export interface Wallet {
