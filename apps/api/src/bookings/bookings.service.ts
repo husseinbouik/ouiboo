@@ -216,4 +216,40 @@ export class BookingsService {
             });
         });
     }
+
+    async cancelBooking(bookingId: string, travelerId: string) {
+        const booking = await this.db.booking.findUnique({
+            where: { id: bookingId },
+            include: { session: true }
+        });
+
+        if (!booking) {
+            throw new BadRequestException('Booking not found');
+        }
+
+        if (booking.travelerId !== travelerId) {
+            throw new BadRequestException('Unauthorized: You can only cancel your own bookings');
+        }
+
+        const cancellableStatuses = new Set(['PENDING', 'PENDING_PAYMENT', 'CONFIRMED']);
+        if (!cancellableStatuses.has(booking.status)) {
+            throw new BadRequestException('Booking cannot be cancelled');
+        }
+
+        return this.db.$transaction(async (tx) => {
+            await tx.tripSession.update({
+                where: { id: booking.sessionId },
+                data: {
+                    availableSeats: {
+                        increment: booking.guestsCount
+                    }
+                }
+            });
+
+            return tx.booking.update({
+                where: { id: bookingId },
+                data: { status: 'CANCELLED' }
+            });
+        });
+    }
 }
