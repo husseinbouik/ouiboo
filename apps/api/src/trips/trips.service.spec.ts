@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TripsService } from './trips.service';
 import { DatabaseService } from '../database/database.service';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
 const mockTripTemplate = {
     id: 'trip-123',
@@ -74,12 +75,12 @@ describe('TripsService', () => {
 
             const dto = { title: 'Updated' };
 
-            await expect(service.updateTemplate('trip-123', 'user-123', dto)).rejects.toThrow('Trip template not found or unauthorized');
+            await expect(service.updateTemplate('trip-123', 'user-123', dto)).rejects.toThrow(NotFoundException);
         });
 
         it('should throw error if agency profile not found', async () => {
             db.agencyProfile.findUnique.mockResolvedValue(null);
-            await expect(service.updateTemplate('trip-123', 'user-999', {})).rejects.toThrow('Agency profile not found');
+            await expect(service.updateTemplate('trip-123', 'user-999', {})).rejects.toThrow(ForbiddenException);
         });
     });
 
@@ -101,7 +102,7 @@ describe('TripsService', () => {
             db.agencyProfile.findUnique.mockResolvedValue(mockAgency);
             db.tripTemplate.findFirst.mockResolvedValue(null); // Not found for this agency
 
-            await expect(service.deleteTemplate('trip-123', 'user-123')).rejects.toThrow('Trip template not found or unauthorized');
+            await expect(service.deleteTemplate('trip-123', 'user-123')).rejects.toThrow(NotFoundException);
         });
     });
 });

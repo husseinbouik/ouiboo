@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BookingsService } from './bookings.service';
 import { DatabaseService } from '../database/database.service';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 
 const mockBooking = {
     id: 'booking-123',
@@ -69,7 +69,7 @@ describe('BookingsService', () => {
         it('should throw error if user is not the traveler', async () => {
             db.booking.findUnique.mockResolvedValue(mockBooking);
 
-            await expect(service.uploadPaymentProof('booking-123', 'user-999', 'url')).rejects.toThrow('Unauthorized');
+            await expect(service.uploadPaymentProof('booking-123', 'user-999', 'url')).rejects.toThrow(ForbiddenException);
         });
     });
 });
