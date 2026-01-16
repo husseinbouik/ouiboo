@@ -2,12 +2,14 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { EmailService } from '../email/email.service';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class BookingsService {
     constructor(
         private db: DatabaseService,
         private emailService: EmailService,
+        private uploadService: UploadService,
     ) { }
 
     async create(travelerId: string, dto: CreateBookingDto) {
@@ -131,23 +133,32 @@ export class BookingsService {
         });
     }
 
-    async uploadPaymentProof(bookingId: string, travelerId: string, imageUrl: string) {
+    async uploadPaymentProof(bookingId: string, userId: string, file: Express.Multer.File) {
         const booking = await this.db.booking.findUnique({
             where: { id: bookingId },
+            include: {
+                session: { include: { template: true } },
+            },
         });
 
         if (!booking) {
             throw new BadRequestException('Booking not found');
         }
 
-        if (booking.travelerId !== travelerId) {
-            throw new BadRequestException('Unauthorized: You can only upload proof for your own bookings');
+        const agency = await this.db.agencyProfile.findUnique({ where: { userId } });
+        const isTraveler = booking.travelerId === userId;
+        const isAgencyOwner = agency && booking.session.template.agencyId === agency.id;
+
+        if (!isTraveler && !isAgencyOwner) {
+            throw new BadRequestException('Unauthorized: Booking does not belong to you');
         }
 
-        const allowedStatuses = new Set(['PENDING', 'REJECTED']);
-        if (!allowedStatuses.has(booking.status)) {
-            throw new BadRequestException('Payment proof can only be uploaded for pending or rejected bookings');
+        if (booking.paymentProofId) {
+            throw new BadRequestException('Payment proof already uploaded');
         }
+
+        const uploadResult = await this.uploadService.uploadFile(file, `payment-proofs/${bookingId}`);
+        const downloadUrl = this.buildPaymentProofDownloadUrl(bookingId);
 
         return this.db.$transaction(async (tx) => {
             const proof = await tx.paymentProof.upsert({
@@ -160,7 +171,7 @@ export class BookingsService {
                 },
                 create: {
                     bookingId,
-                    imageUrl,
+                    imageUrl: uploadResult.filename,
                     status: 'PENDING',
                 },
             });
@@ -168,14 +179,52 @@ export class BookingsService {
             await tx.booking.update({
                 where: { id: bookingId },
                 data: {
-                    status: 'AWAITING_VALIDATION',
-                    paymentProofUrl: imageUrl,
+                    status: 'PENDING_PAYMENT',
+                    paymentProofUrl: downloadUrl,
                     paymentProofId: proof.id,
                 },
             });
 
-            return proof;
+            return {
+                ...proof,
+                downloadUrl,
+            };
         });
+    }
+
+    async getPaymentProofFile(bookingId: string, userId: string) {
+        const booking = await this.db.booking.findUnique({
+            where: { id: bookingId },
+            include: {
+                paymentProof: true,
+                session: { include: { template: true } },
+            },
+        });
+
+        if (!booking) {
+            throw new BadRequestException('Booking not found');
+        }
+
+        const agency = await this.db.agencyProfile.findUnique({ where: { userId } });
+        const isTraveler = booking.travelerId === userId;
+        const isAgencyOwner = agency && booking.session.template.agencyId === agency.id;
+
+        if (!isTraveler && !isAgencyOwner) {
+            throw new BadRequestException('Unauthorized: Booking does not belong to you');
+        }
+
+        if (!booking.paymentProof) {
+            throw new BadRequestException('No payment proof uploaded');
+        }
+
+        const filePath = this.uploadService.getFilePath(booking.paymentProof.imageUrl);
+
+        return { filePath };
+    }
+
+    private buildPaymentProofDownloadUrl(bookingId: string) {
+        const apiUrl = process.env.API_URL || 'http://localhost:3000/api';
+        return `${apiUrl}/bookings/${bookingId}/payment-proof/download`;
     }
 
     async verifyPayment(bookingId: string, tenantId: string, approved: boolean) {
