@@ -28,7 +28,7 @@ const mockDatabaseService = {
         update: jest.fn(),
     },
     paymentProof: {
-        create: jest.fn(),
+        upsert: jest.fn(),
     },
     agencyProfile: {
         findUnique: jest.fn(),
