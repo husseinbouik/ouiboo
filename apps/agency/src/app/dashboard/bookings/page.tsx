@@ -35,6 +35,18 @@ export default function BookingsManager() {
     }
   });
 
+  const getProofStatusLabel = (status?: string | null) => {
+    if (!status) return { label: 'Not uploaded', className: 'bg-slate-100 text-slate-600 ring-slate-200/70 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700/70' };
+    const normalized = status.toUpperCase();
+    if (normalized === 'VERIFIED') {
+      return { label: 'Verified', className: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-900/20 dark:text-emerald-400 dark:ring-emerald-400/20' };
+    }
+    if (normalized === 'REJECTED') {
+      return { label: 'Rejected', className: 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-900/20 dark:text-rose-400 dark:ring-rose-400/20' };
+    }
+    return { label: 'Pending', className: 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-400/20' };
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -132,6 +144,9 @@ export default function BookingsManager() {
                         {booking.status === BookingStatus.Pending && <AlertCircle className="h-3 w-3" />}
                         {booking.status}
                       </span>
+                      <div className={`mt-2 inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ring-1 ring-inset ${getProofStatusLabel(booking.paymentProof?.status).className}`}>
+                        Proof: {getProofStatusLabel(booking.paymentProof?.status).label}
+                      </div>
                     </td>
                     <td className="px-6 py-5 text-right">
                       <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-slate-800">
