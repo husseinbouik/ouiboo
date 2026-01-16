@@ -6,6 +6,7 @@ import { Card, CardContent, Badge, Button } from '@ouiboo/ui';
 import { MapPin, Star, Heart, ChevronLeft, ChevronRight, Zap, ShieldCheck, Ticket } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@ouiboo/ui/utils';
+import { VerificationStatus } from '@ouiboo/types';
 
 interface TripCardProps {
   trip: any;
@@ -26,7 +27,7 @@ export function TripCard({ trip }: TripCardProps) {
   const minPrice = sessions.length
     ? Math.min(...sessions.map((session: any) => Number(session.price || 0)))
     : null;
-  const isAgencyVerified = trip.agency?.verificationStatus === 'VERIFIED';
+  const isAgencyVerified = trip.agency?.verificationStatus === VerificationStatus.Verified;
 
   const nextImage = (e: React.MouseEvent) => {
     e.preventDefault();

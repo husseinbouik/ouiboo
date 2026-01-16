@@ -17,6 +17,7 @@ import {
   CalendarClock
 } from 'lucide-react';
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge } from '@ouiboo/ui';
+import { VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'PAYMENT_PROOFS' | 'PAYOUTS'>('PENDING');
@@ -76,7 +77,7 @@ export default function AdminDashboard() {
   });
 
   const verifyAgencyMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string, status: string }) => {
+    mutationFn: async ({ id, status }: { id: string, status: VerificationStatusType }) => {
       return apiClient.post(`/admin/agencies/${id}/verify`, { status });
     },
     onSuccess: (_data, variables) => {
@@ -84,7 +85,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
       setAgencyFeedback({
         type: 'success',
-        message: `Agency ${variables.status === 'VERIFIED' ? 'approved' : 'rejected'} successfully.`
+        message: `Agency ${variables.status === VerificationStatus.Verified ? 'approved' : 'rejected'} successfully.`
       });
     },
     onError: (error: any) => {
@@ -96,21 +97,21 @@ export default function AdminDashboard() {
   });
 
   const verifyTripMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string, status: string }) => {
+    mutationFn: async ({ id, status }: { id: string, status: VerificationStatusType }) => {
       return apiClient.post(`/admin/trips/${id}/verify`, { status });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pending-trips'] })
   });
 
   const verifyPaymentMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string, status: string }) => {
+    mutationFn: async ({ id, status }: { id: string, status: VerificationStatusType }) => {
       return apiClient.post(`/admin/payments/${id}/verify`, { status });
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
       setPaymentProofFeedback({
         type: 'success',
-        message: `Payment proof ${variables.status === 'APPROVED' ? 'approved' : 'rejected'} successfully.`
+        message: `Payment proof ${variables.status === VerificationStatus.Verified ? 'approved' : 'rejected'} successfully.`
       });
     },
     onError: (error: any) => {
@@ -141,7 +142,7 @@ export default function AdminDashboard() {
   });
 
   const updateAgencyStatusMutation = useMutation({
-    mutationFn: async ({ id, verificationStatus, subscriptionStatus }: { id: string, verificationStatus?: string, subscriptionStatus?: string }) => {
+    mutationFn: async ({ id, verificationStatus, subscriptionStatus }: { id: string, verificationStatus?: VerificationStatusType, subscriptionStatus?: string }) => {
       return apiClient.patch(`/admin/agencies/${id}/status`, { verificationStatus, subscriptionStatus });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['all-agencies'] })
@@ -318,8 +319,8 @@ export default function AdminDashboard() {
                                      <Eye className="h-4 w-4 mr-2" />
                                      Review
                                    </Button>
-                                   <Button className="bg-red-50 text-red-600 hover:bg-red-100 border-none px-6 font-bold" onClick={() => verifyAgencyMutation.mutate({ id: agency.id, status: 'REJECTED' })}>Reject</Button>
-                                   <Button className="bg-green-600 hover:bg-green-700 text-white border-none px-6 font-bold" onClick={() => verifyAgencyMutation.mutate({ id: agency.id, status: 'VERIFIED' })}>Approve</Button>
+                                   <Button className="bg-red-50 text-red-600 hover:bg-red-100 border-none px-6 font-bold" onClick={() => verifyAgencyMutation.mutate({ id: agency.id, status: VerificationStatus.Rejected })}>Reject</Button>
+                                   <Button className="bg-green-600 hover:bg-green-700 text-white border-none px-6 font-bold" onClick={() => verifyAgencyMutation.mutate({ id: agency.id, status: VerificationStatus.Verified })}>Approve</Button>
                                 </div>
                              </div>
                           </Card>
@@ -369,7 +370,7 @@ export default function AdminDashboard() {
                                <div>
                                   <h3 className="font-bold text-deep-blue">{agency.companyName}</h3>
                                   <div className="flex gap-2">
-                                     <Badge className={agency.verificationStatus === 'VERIFIED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>{agency.verificationStatus}</Badge>
+                                     <Badge className={agency.verificationStatus === VerificationStatus.Verified ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>{agency.verificationStatus}</Badge>
                                      <Badge variant="outline">{agency.subscriptionStatus || 'TRIAL'}</Badge>
                                   </div>
                                </div>
@@ -386,8 +387,8 @@ export default function AdminDashboard() {
                                  <Eye className="h-4 w-4 mr-2" />
                                  View
                                </Button>
-                               <Button variant="outline" size="sm" onClick={() => updateAgencyStatusMutation.mutate({ id: agency.id, verificationStatus: agency.verificationStatus === 'VERIFIED' ? 'REJECTED' : 'VERIFIED' })}>
-                                  {agency.verificationStatus === 'VERIFIED' ? 'Deactivate' : 'Activate'}
+                               <Button variant="outline" size="sm" onClick={() => updateAgencyStatusMutation.mutate({ id: agency.id, verificationStatus: agency.verificationStatus === VerificationStatus.Verified ? VerificationStatus.Rejected : VerificationStatus.Verified })}>
+                                  {agency.verificationStatus === VerificationStatus.Verified ? 'Deactivate' : 'Activate'}
                                </Button>
                             </div>
                          </div>
@@ -472,14 +473,14 @@ export default function AdminDashboard() {
                                     <Button
                                       size="sm"
                                       className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
-                                      onClick={() => verifyPaymentMutation.mutate({ id: payment.id, status: 'REJECTED' })}
+                                      onClick={() => verifyPaymentMutation.mutate({ id: payment.id, status: VerificationStatus.Rejected })}
                                     >
                                       Reject
                                     </Button>
                                     <Button
                                       size="sm"
                                       className="bg-green-600 hover:bg-green-700 text-white border-none"
-                                      onClick={() => verifyPaymentMutation.mutate({ id: payment.id, status: 'APPROVED' })}
+                                      onClick={() => verifyPaymentMutation.mutate({ id: payment.id, status: VerificationStatus.Verified })}
                                     >
                                       Approve
                                     </Button>
@@ -645,8 +646,8 @@ export default function AdminDashboard() {
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Status</p>
                   <div className="flex gap-2">
-                    <Badge className={selectedAgency.verificationStatus === 'VERIFIED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
-                      {selectedAgency.verificationStatus || 'PENDING'}
+                    <Badge className={selectedAgency.verificationStatus === VerificationStatus.Verified ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                      {selectedAgency.verificationStatus || VerificationStatus.Pending}
                     </Badge>
                     <Badge variant="outline">{selectedAgency.subscriptionStatus || 'TRIAL'}</Badge>
                   </div>
@@ -665,14 +666,14 @@ export default function AdminDashboard() {
               <div className="flex flex-wrap gap-3">
                 <Button
                   className="bg-green-600 hover:bg-green-700 text-white border-none"
-                  onClick={() => verifyAgencyMutation.mutate({ id: selectedAgency.id, status: 'VERIFIED' })}
+                  onClick={() => verifyAgencyMutation.mutate({ id: selectedAgency.id, status: VerificationStatus.Verified })}
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   Approve agency
                 </Button>
                 <Button
                   className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
-                  onClick={() => verifyAgencyMutation.mutate({ id: selectedAgency.id, status: 'REJECTED' })}
+                  onClick={() => verifyAgencyMutation.mutate({ id: selectedAgency.id, status: VerificationStatus.Rejected })}
                 >
                   <XCircle className="h-4 w-4 mr-2" />
                   Reject agency
