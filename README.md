@@ -1,4 +1,28 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`ouiboo`](https://nextjs.org/docs/app/api-reference/cli/ouiboo).
+This is the Ouiboo monorepo. It contains multiple Next.js apps, a Nest API, and
+shared packages managed via npm workspaces and Turborepo.
+
+## Monorepo Layout
+
+```
+apps/
+  admin/      # Next.js admin app
+  agency/     # Next.js agency portal
+  landing/    # Next.js marketing site
+  traveler/   # Next.js traveler app
+  api/        # NestJS API
+packages/     # Shared packages (UI, types, schemas, etc.)
+```
+
+### Entry Points
+
+**Next.js apps (App Router)**
+- Admin: `apps/admin/src/app/page.tsx`
+- Agency: `apps/agency/src/app` (main dashboard at `apps/agency/src/app/dashboard/page.tsx`)
+- Landing: `apps/landing/src/app/page.tsx`
+- Traveler: `apps/traveler/src/app/page.tsx`
+
+**Nest API**
+- Source root: `apps/api/src`
 
 ## Getting Started
 
@@ -14,7 +38,34 @@ to point at your allowed registry (this repo includes a `.npmrc` that uses the d
 registry with the proxy configured for this environment and retry settings to
 avoid partial/empty installs).
 
-First, run the development server:
+## Running Apps
+
+You can run an app from the repo root using Turborepo filters:
+
+```bash
+# Examples
+npm run dev --filter=@ouiboo/admin
+npm run dev --filter=@ouiboo/agency
+npm run dev --filter=@ouiboo/landing
+npm run dev --filter=@ouiboo/traveler
+npm run dev --filter=@ouiboo/api
+```
+
+Or run an app from its workspace directory:
+
+```bash
+cd apps/admin
+npm run dev
+```
+
+```bash
+cd apps/api
+npm run dev
+```
+
+## Next.js Development
+
+First, run a Next.js development server:
 
 ```bash
 npm run dev
@@ -26,9 +77,9 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open the app's local URL (see the app's `package.json` for the assigned port) to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+You can start editing the page by modifying the relevant entry point listed above. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
