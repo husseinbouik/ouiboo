@@ -93,7 +93,25 @@ export class TripsService {
         return result;
     }
 
-    async createSession(templateId: string, dto: CreateTripSessionDto) {
+    async createSession(userId: string, templateId: string, dto: CreateTripSessionDto) {
+        const agency = await this.db.agencyProfile.findUnique({
+            where: { userId }
+        });
+        if (!agency) {
+            throw new Error('Agency profile not found');
+        }
+
+        const template = await this.db.tripTemplate.findFirst({
+            where: {
+                id: templateId,
+                agencyId: agency.id,
+            },
+        });
+
+        if (!template) {
+            throw new Error('Trip template not found or unauthorized');
+        }
+
         return this.db.tripSession.create({
             data: {
                 ...dto,

@@ -116,6 +116,18 @@ export default function OuibooLanding() {
       { quote: t('testimonials.quote3'), author: "Chen W.", role: "Co-Founder, Nomad Trails" },
   ];
 
+  const highlights = [
+    { name: t('highlights.curated.title'), description: t('highlights.curated.description') },
+    { name: t('highlights.payments.title'), description: t('highlights.payments.description') },
+    { name: t('highlights.growth.title'), description: t('highlights.growth.description') },
+  ];
+
+  const stats = [
+    { value: 120, suffix: '+', label: t('stats.items.agencies') },
+    { value: 1800, suffix: '+', label: t('stats.items.travelers') },
+    { value: 35, suffix: '%', label: t('stats.items.repeat') },
+  ];
+
 
   useEffect(() => {
     document.documentElement.lang = currentLang;
@@ -351,7 +363,10 @@ export default function OuibooLanding() {
                           variants={fadeInUp} 
                           className="text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl text-deep-blue leading-tight"
                         >
-                          {t('hero.title')}
+                          <span className="mx-auto mb-4 inline-flex w-fit items-center justify-center rounded-full bg-sunset-orange/10 px-4 py-1 text-sm font-semibold uppercase tracking-widest text-sunset-orange">
+                            {t('hero.badge')}
+                          </span>
+                          <span className="block">{t('hero.title')}</span>
                         </motion.h1>
                         <motion.p 
                           variants={fadeInUp} 
@@ -372,11 +387,19 @@ export default function OuibooLanding() {
                                 {t('hero.ctaPrimary')}
                             </motion.a>
                             <motion.a 
+                              href={`${travelerUrl}/search?lang=${currentLang}`} 
+                              whileHover={{ scale: 1.03 }}
+                              whileTap={{ scale: 0.97 }}
+                              className="rounded-md border border-deep-blue/20 px-6 py-3 text-base font-semibold text-deep-blue shadow-sm hover:border-sunset-orange hover:text-sunset-orange transition-all duration-300"
+                            >
+                                {t('hero.ctaSecondary')}
+                            </motion.a>
+                            <motion.a 
                               href="#how-it-works" 
                               whileHover={{ x: 5 }}
                               className="text-sm font-semibold leading-6 group text-deep-blue hover:text-sunset-orange transition-colors duration-300"
                             >
-                                {t('hero.ctaSecondary')} <span aria-hidden="true" className="transition-transform group-hover:translate-x-1 inline-block">→</span>
+                                {t('hero.ctaTertiary')} <span aria-hidden="true" className="transition-transform group-hover:translate-x-1 inline-block">→</span>
                             </motion.a>
                         </motion.div>
                     </motion.div>
@@ -388,6 +411,49 @@ export default function OuibooLanding() {
                 </div>
             </div>
         </div>
+
+      <section className="py-16 sm:py-20 bg-white">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="mx-auto max-w-3xl text-center">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-sunset-orange">{t('trusted.title')}</h2>
+            <p className="mt-3 text-2xl font-bold text-deep-blue sm:text-3xl">{t('trusted.subtitle')}</p>
+          </motion.div>
+          <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} className="mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-4 text-center sm:grid-cols-4">
+            {['Atlas Adventures', 'Rif Escapes', 'Sahara Trails', 'City Nomads'].map((brand) => (
+              <motion.div key={brand} variants={scaleIn} className="rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-500 shadow-sm">
+                {brand}
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      <section className="bg-off-white py-20 sm:py-24">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('highlights.title')}</h2>
+            <p className="mt-4 text-lg text-gray-600">{t('highlights.subtitle')}</p>
+          </motion.div>
+          <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-3">
+            {highlights.map((highlight) => (
+              <motion.div key={highlight.name} variants={scaleIn} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200 hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+                <h3 className="text-lg font-semibold text-deep-blue">{highlight.name}</h3>
+                <p className="mt-3 text-sm leading-6 text-gray-600">{highlight.description}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+          <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} className="mx-auto mt-14 grid max-w-4xl grid-cols-1 gap-6 text-center sm:grid-cols-3">
+            {stats.map((stat) => (
+              <motion.div key={stat.label} variants={scaleIn} className="rounded-2xl bg-white px-6 py-8 shadow-sm ring-1 ring-gray-200">
+                <div className="text-3xl font-bold text-deep-blue sm:text-4xl">
+                  <Counter from={0} to={stat.value} />{stat.suffix}
+                </div>
+                <p className="mt-2 text-sm font-semibold uppercase tracking-wide text-gray-500">{stat.label}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
 
       <section id="how-it-works" className="py-24 sm:py-32">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
