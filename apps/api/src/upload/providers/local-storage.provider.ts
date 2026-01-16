@@ -1,16 +1,15 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { IStorageProvider } from '../interfaces/storage-provider.interface';
 import * as fs from 'fs';
 import * as path from 'path';
+import { randomUUID } from 'crypto';
+import { ALLOWED_MIME_TYPES, MAX_UPLOAD_SIZE_BYTES } from '../upload.constants';
 
 @Injectable()
 export class LocalStorageProvider implements IStorageProvider {
     private readonly uploadDir = path.join(process.cwd(), 'uploads');
-    private readonly allowedMimeTypes = [
-        'image/jpeg', 'image/png', 'image/webp', 'image/gif',
-        'application/pdf'
-    ];
-    private readonly maxFileSize = 5 * 1024 * 1024; // 5MB
+    private readonly allowedMimeTypes = ALLOWED_MIME_TYPES;
+    private readonly maxFileSize = MAX_UPLOAD_SIZE_BYTES;
 
     constructor() {
         if (!fs.existsSync(this.uploadDir)) {
@@ -21,16 +20,16 @@ export class LocalStorageProvider implements IStorageProvider {
     async upload(file: Express.Multer.File, folder: string): Promise<{ url: string; key: string }> {
         // Validation
         if (!this.allowedMimeTypes.includes(file.mimetype)) {
-            throw new BadRequestException('Invalid file type. Allowed: JPG, PNG, WEBP, PDF');
+            throw new BadRequestException('Invalid file type. Allowed: JPG, PNG, WEBP, GIF, PDF');
         }
 
         if (file.size > this.maxFileSize) {
             throw new BadRequestException('File too large. Max size: 5MB');
         }
 
-        // Sanitize filename
         const sanitizedOriginal = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const filename = sanitizedOriginal;
+        const extension = path.extname(sanitizedOriginal) || this.getExtensionForMimeType(file.mimetype);
+        const filename = `${randomUUID()}${extension}`;
 
         // Create folder structure: uploads/{folder}
         // folder usually passed as: agencyId/YYYY-MM-DD
@@ -60,9 +59,40 @@ export class LocalStorageProvider implements IStorageProvider {
     }
 
     async delete(key: string): Promise<void> {
-        const filePath = path.join(this.uploadDir, key);
+        const filePath = this.getFilePath(key);
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
+        }
+    }
+
+    getFilePath(key: string): string {
+        const filePath = path.join(this.uploadDir, key);
+
+        if (!filePath.startsWith(this.uploadDir)) {
+            throw new BadRequestException('Invalid file path');
+        }
+
+        if (!fs.existsSync(filePath)) {
+            throw new NotFoundException('File not found');
+        }
+
+        return filePath;
+    }
+
+    private getExtensionForMimeType(mimeType: string): string {
+        switch (mimeType) {
+            case 'image/jpeg':
+                return '.jpg';
+            case 'image/png':
+                return '.png';
+            case 'image/webp':
+                return '.webp';
+            case 'image/gif':
+                return '.gif';
+            case 'application/pdf':
+                return '.pdf';
+            default:
+                return '';
         }
     }
 }
