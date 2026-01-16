@@ -3,6 +3,7 @@
 ## API (apps/api)
 
 These variables are required in production. The API will fail fast if any are missing.
+Use `apps/api/.env.example` as a starting point for local setup.
 
 - `JWT_SECRET`: Secret used to sign access tokens.
 - `JWT_REFRESH_SECRET`: Secret used to sign refresh tokens.
