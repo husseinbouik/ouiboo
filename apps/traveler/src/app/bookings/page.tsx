@@ -15,6 +15,7 @@ export default function MyBookingsPage() {
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const [uploadingId, setUploadingId] = useState<string | null>(null);
+    const [cancellingId, setCancellingId] = useState<string | null>(null);
     
     const { data: bookings, isLoading } = useQuery({
         queryKey: ['my-bookings'],
@@ -32,6 +33,19 @@ export default function MyBookingsPage() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
             setUploadingId(null);
+        }
+    });
+
+    const cancelBookingMutation = useMutation({
+        mutationFn: async (bookingId: string) => {
+            await apiClient.patch(`/bookings/${bookingId}/cancel`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+            setCancellingId(null);
+        },
+        onError: () => {
+            setCancellingId(null);
         }
     });
 
@@ -63,6 +77,11 @@ export default function MyBookingsPage() {
             console.error('Upload failed:', error);
             setUploadingId(null);
         }
+    };
+
+    const handleCancel = (bookingId: string) => {
+        setCancellingId(bookingId);
+        cancelBookingMutation.mutate(bookingId);
     };
 
     if (isLoading) {
@@ -169,8 +188,14 @@ export default function MyBookingsPage() {
                                                 <div className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border ${getProofStatus(booking.paymentProof?.status).className}`}>
                                                     <Check className="h-4 w-4" /> Proof {getProofStatus(booking.paymentProof?.status).label}
                                                 </div>
-                                                <Button variant="ghost" className="h-12 w-12 rounded-xl hover:bg-muted text-muted-foreground border border-border/50">
-                                                    <Trash2 className="h-4 w-4" />
+                                                <Button
+                                                    variant="ghost"
+                                                    className="h-12 w-12 rounded-xl hover:bg-muted text-muted-foreground border border-border/50"
+                                                    onClick={() => handleCancel(booking.id)}
+                                                    disabled={booking.status === 'CANCELLED' || booking.status === 'COMPLETED' || cancellingId === booking.id}
+                                                    aria-label="Cancel booking"
+                                                >
+                                                    {cancellingId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                                                 </Button>
                                             </div>
                                         </div>

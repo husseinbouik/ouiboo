@@ -47,4 +47,12 @@ export class BookingsController {
     ) {
         return this.bookingsService.verifyPayment(id, req.user.userId, approved);
     }
+
+    @Patch(':id/cancel')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Cancel a booking' })
+    cancelBooking(@Request() req, @Param('id') id: string) {
+        return this.bookingsService.cancelBooking(id, req.user.userId);
+    }
 }
