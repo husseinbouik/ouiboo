@@ -43,9 +43,10 @@ export class BookingsController {
     verifyPayment(
         @Request() req,
         @Param('id') id: string,
-        @Body('approved') approved: boolean
+        @Body('approved') approved: boolean,
+        @Body('rejectionReason') rejectionReason?: string
     ) {
-        return this.bookingsService.verifyPayment(id, req.user.userId, approved);
+        return this.bookingsService.verifyPayment(id, req.user.userId, approved, rejectionReason);
     }
 
     @Patch(':id/cancel')
