@@ -1,0 +1,45 @@
+'use client';
+
+import { useEffect } from 'react';
+import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
+import '../../lib/i18n';
+
+export default function AgencyTermsPage() {
+  const { t, i18n } = useTranslation();
+
+  useEffect(() => {
+    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+  }, [i18n.language]);
+
+  const sections = [
+    { title: t('terms.sectionOneTitle'), body: t('terms.sectionOneBody') },
+    { title: t('terms.sectionTwoTitle'), body: t('terms.sectionTwoBody') },
+    { title: t('terms.sectionThreeTitle'), body: t('terms.sectionThreeBody') },
+    { title: t('terms.sectionFourTitle'), body: t('terms.sectionFourBody') },
+  ];
+
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="mx-auto max-w-4xl px-6 py-16">
+        <div className="space-y-4">
+          <Link href={`/signup?lang=${i18n.language}`} className="text-sm font-semibold text-deep-blue hover:text-blue-700">
+            {t('terms.backToSignup')}
+          </Link>
+          <h1 className="text-4xl font-bold text-gray-900">{t('terms.title')}</h1>
+          <p className="text-sm text-gray-500">{t('terms.updated')}</p>
+          <p className="text-lg text-gray-600">{t('terms.intro')}</p>
+        </div>
+
+        <div className="mt-10 grid gap-6">
+          {sections.map((section) => (
+            <div key={section.title} className="rounded-2xl border border-gray-100 bg-gray-50 p-6">
+              <h2 className="text-xl font-semibold text-gray-900">{section.title}</h2>
+              <p className="mt-2 text-gray-600">{section.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

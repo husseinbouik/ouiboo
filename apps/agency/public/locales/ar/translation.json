@@ -1,65 +1,84 @@
 {
     "login": {
         "title": "بوابة الوكالة",
-        "subtitle": "مرحباً بعودتك. أدر حجوزاتك وطور عملك.",
+        "subtitle": "مرحبًا بعودتك. أدِر الحجوزات ونمِّ أعمالك.",
         "email": "البريد الإلكتروني للعمل",
-        "emailPlaceholder": "الاسم@الوكالة.com",
+        "emailPlaceholder": "name@agency.com",
         "password": "كلمة المرور",
         "passwordPlaceholder": "••••••••",
-        "forgotPassword": "نسيت كلمة المرور؟",
-        "signIn": "تسجيل الدخول إلى لوحة التحكم",
-        "orContinue": "أو تابع مع",
-        "google": "جوجل",
-        "linkedin": "لينكد إن",
+        "forgotPassword": "هل نسيت كلمة المرور؟",
+        "rememberMe": "إبقائي مسجّل الدخول",
+        "securityNote": "تسجيل دخول آمن",
+        "showPassword": "إظهار كلمة المرور",
+        "hidePassword": "إخفاء كلمة المرور",
+        "signIn": "الدخول إلى لوحة التحكم",
+        "orContinue": "أو المتابعة باستخدام",
+        "google": "Google",
+        "linkedin": "LinkedIn",
         "noAccount": "وكالة جديدة؟",
-        "signUpLink": "سجل عملك"
+        "signUpLink": "تسجيل شركتك"
     },
     "signup": {
-        "title": "شارك مع Ouiboo",
-        "subtitle": "أنشئ حساب وكالتك وابدأ النمو.",
+        "title": "الشراكة مع أويبّو",
+        "subtitle": "أنشئ حساب وكالتك وابدأ بالنمو.",
         "agencyName": "اسم الوكالة",
-        "agencyPlaceholder": "شركة السفر العالمية",
+        "agencyPlaceholder": "Global Travels Ltd.",
         "email": "البريد الإلكتروني للعمل",
-        "emailPlaceholder": "الاسم@الوكالة.com",
+        "emailPlaceholder": "name@agency.com",
         "password": "كلمة المرور",
         "passwordPlaceholder": "أنشئ كلمة مرور",
+        "passwordHint": "استخدم 6 أحرف على الأقل مع مزيج من الحروف والأرقام.",
+        "acceptTerms": "أوافق على",
+        "termsLink": "شروط الخدمة",
+        "privacyLink": "سياسة الخصوصية",
+        "and": "و",
+        "showPassword": "إظهار كلمة المرور",
+        "hidePassword": "إخفاء كلمة المرور",
         "createAccount": "إنشاء حساب وكالة",
-        "orSignUp": "أو سجل مع",
-        "google": "جوجل",
-        "linkedin": "لينكد إن",
+        "orSignUp": "أو التسجيل باستخدام",
+        "google": "Google",
+        "linkedin": "LinkedIn",
         "hasAccount": "شريك بالفعل؟",
         "logInLink": "تسجيل الدخول إلى لوحة التحكم"
     },
-    "sidebar": {
-        "dashboard": "لوحة التحكم",
-        "myTrips": "رحلاتي",
-        "bookings": "الحجوزات",
-        "customers": "العملاء",
-        "settings": "الإعدادات",
-        "createNew": "إنشاء رحلة جديدة",
-        "signOut": "تسجيل الخروج"
+    "forgotPassword": {
+        "title": "إعادة تعيين كلمة المرور",
+        "subtitle": "أدخل بريد العمل وسنرسل لك رابط إعادة التعيين لاستعادة الوصول.",
+        "emailLabel": "البريد الإلكتروني للعمل",
+        "emailPlaceholder": "name@agency.com",
+        "sendReset": "إرسال رابط إعادة التعيين",
+        "backToLogin": "العودة لتسجيل الدخول",
+        "successTitle": "تحقق من بريدك الوارد",
+        "successMessage": "إذا كان هناك حساب بهذا البريد الإلكتروني فستصلك رسالة لإعادة التعيين قريبًا.",
+        "tryAnotherEmail": "جرّب بريدًا إلكترونيًا آخر",
+        "sideTitle": "أمِّن وصول وكالتك.",
+        "sideSubtitle": "سنساعدك على العودة لإدارة المسافرين والحجوزات."
     },
-    "dashboard": {
-        "greeting": "صباح الخير، {{name}}",
-        "stats": {
-            "revenue": "إجمالي الإيرادات",
-            "activeTrips": "الرحلات النشطة",
-            "totalBookings": "إجمالي الحجوزات",
-            "newCustomers": "العملاء الجدد"
-        },
-        "tripsSubtitle": "إدارة باقات السفر الحالية الخاصة بك",
-        "viewAll": "عرض الكل"
+    "terms": {
+        "backToSignup": "العودة للتسجيل",
+        "title": "شروط الخدمة",
+        "updated": "آخر تحديث: مارس 2024",
+        "intro": "توضح هذه الشروط كيفية استخدام الوكالات لأويبّو لإدارة الحجوزات والعملاء.",
+        "sectionOneTitle": "استخدام المنصة",
+        "sectionOneBody": "أنشئ عروضًا، استجب لطلبات المسافرين، وقدّم برامج دقيقة.",
+        "sectionTwoTitle": "مسؤوليات الحساب",
+        "sectionTwoBody": "أمّن وصول المسؤولين وحافظ على معلومات العمل محدثة.",
+        "sectionThreeTitle": "المدفوعات والسياسات",
+        "sectionThreeBody": "راجع سياسات الحجز والرسوم والإلغاءات قبل التأكيد.",
+        "sectionFourTitle": "دعم الشركاء",
+        "sectionFourBody": "تواصل مع فريق نجاح الشركاء عبر الدردشة أو البريد الإلكتروني."
     },
-    "trips": {
-        "create": {
-            "title": "إنشاء مغامرة جديدة",
-            "subtitle": "املأ التفاصيل أدناه لنشر رحلتك في السوق.",
-            "steps": {
-                "basic": "المعلومات الأساسية",
-                "location": "الموقع والمدة",
-                "media": "الوسائط والصور",
-                "pricing": "التسعير والمخزون"
-            }
-        }
+    "privacy": {
+        "backToSignup": "العودة للتسجيل",
+        "title": "سياسة الخصوصية",
+        "updated": "آخر تحديث: مارس 2024",
+        "intro": "نستخدم بيانات الوكالة لتقديم الأدوات وإدارة التواصل مع المسافرين وتحسين أويبّو.",
+        "highlightsTitle": "أهم النقاط",
+        "highlightOne": "نجمع فقط البيانات اللازمة لتشغيل حساب الوكالة.",
+        "highlightTwo": "يمكنك التحكم في وصول وصلاحيات الفريق في أي وقت.",
+        "highlightThree": "نحمي البيانات الحساسة بالتشفير والوصول الآمن.",
+        "highlightFour": "يمكنك طلب حذف البيانات أو تصديرها عند الحاجة.",
+        "contactTitle": "هل لديك أسئلة؟",
+        "contactBody": "راسلنا على privacy@ouiboo.com وسنرد بسرعة."
     }
 }

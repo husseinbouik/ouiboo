@@ -87,16 +87,33 @@ export default function CreateTripPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Check file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File is too large. Max size is 5MB.');
+      return;
+    }
+
     setUploading(true);
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-      const response = await apiClient.post('/upload', formData);
+      console.log('[CreateTrip] Uploading file:', file.name, file.type);
+      const response = await apiClient.post('/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      const imageUrl = response.data.url;
+      console.log('[CreateTrip] Upload successful:', imageUrl);
+      
       const currentImages = watch('images') || [];
-      setValue('images', [...currentImages, response.data.url], { shouldValidate: true });
-    } catch (error) {
+      setValue('images', [...currentImages, imageUrl], { shouldValidate: true });
+    } catch (error: any) {
       console.error('Upload failed:', error);
+      const message = error.response?.data?.message || error.message || 'Upload failed';
+      alert(`Upload failed: ${Array.isArray(message) ? message.join(', ') : message}`);
     } finally {
       setUploading(false);
     }

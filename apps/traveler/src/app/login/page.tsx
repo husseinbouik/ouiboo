@@ -1,9 +1,8 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { Mail, Lock, ArrowRight, User } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
@@ -20,6 +19,7 @@ export default function TravelerLoginPage() {
   const [mounted, setMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { register, handleSubmit, formState: { errors } } = useForm();
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -99,41 +99,53 @@ export default function TravelerLoginPage() {
                     {errors.email && <span className="text-red-500 text-xs font-semibold pl-1">{errors.email.message as string}</span>}
                 </div>
 
-                <div className="space-y-1.5">
-                    <div className="flex items-center justify-between ml-1">
-                        <label className="text-sm font-semibold text-foreground">{t('login.password', 'Password')}</label>
-                        <a href="#" className="text-xs font-semibold text-sunset-orange hover:text-orange-600 transition-colors">{t('login.forgotPassword', 'Forgot password?')}</a>
-                    </div>
-                    <div className="relative group">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground group-focus-within:text-sunset-orange transition-colors">
-                            <Lock className="h-5 w-5" />
-                        </div>
-                        <Input 
-                            id="password" 
-                            type="password" 
-                            placeholder="••••••••"
-                            className="pl-12 h-14 bg-muted border-border rounded-2xl focus:bg-background focus:ring-2 focus:ring-sunset-orange/10 focus:border-sunset-orange transition-all font-medium text-foreground placeholder:text-muted-foreground"
-                            {...register('password', { required: 'Password is required' })} 
-                        />
-                    </div>
-                    {errors.password && <span className="text-red-500 text-xs font-semibold pl-1">{errors.password.message as string}</span>}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="password" className="text-sm font-medium text-gray-700">{t('login.password')}</label>
+                  <Link href={`/forgot-password?lang=${i18n.language}`} className="text-sm font-medium text-sunset-orange hover:text-orange-600">
+                    {t('login.forgotPassword')}
+                  </Link>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Input 
+                    id="password" 
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder={t('login.passwordPlaceholder')}
+                    className="pl-10 pr-12 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
+                    {...register('password', { required: 'Password is required' })} 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
                 </div>
             </div>
 
+<<<<<<< ours
             {error && (
                 <div className="p-4 bg-red-50 text-red-500 text-sm font-semibold rounded-2xl flex items-center gap-2 border border-red-100">
                     <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
                     {error}
                 </div>
             )}
-
-            <Button 
-                type="submit" 
-                disabled={loginMutation.isPending}
-                className="w-full h-14 bg-deep-blue hover:bg-blue-900 text-white font-bold rounded-2xl shadow-lg shadow-blue-900/20 transition-all hover:scale-[1.02] active:scale-95 text-lg"
-            >
-                {loginMutation.isPending ? 'Verified...' : t('login.signIn', 'Sign In')}
-            </Button>
+=======
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-sm text-gray-600">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-gray-300 text-sunset-orange focus:ring-sunset-orange"
+                  {...register('rememberMe')}
+                />
+                {t('login.rememberMe')}
+              </label>
+              <span className="text-xs text-gray-500">{t('login.securityNote')}</span>
+            </div>
+>>>>>>> theirs
 
              <p className="text-center text-sm text-muted-foreground font-medium">
                 {t('login.noAccount', "Don't have an account?")}{' '}

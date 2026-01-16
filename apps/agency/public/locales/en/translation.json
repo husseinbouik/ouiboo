@@ -15,6 +15,10 @@
         "password": "Password",
         "passwordPlaceholder": "••••••••",
         "forgotPassword": "Forgot password?",
+        "rememberMe": "Keep me signed in",
+        "securityNote": "Secure sign-in",
+        "showPassword": "Show password",
+        "hidePassword": "Hide password",
         "signIn": "Sign In to Dashboard",
         "orContinue": "Or continue with",
         "google": "Google",
@@ -31,6 +35,13 @@
         "emailPlaceholder": "name@agency.com",
         "password": "Password",
         "passwordPlaceholder": "Create a password",
+        "passwordHint": "Use at least 6 characters with a mix of letters and numbers.",
+        "acceptTerms": "I agree to the",
+        "termsLink": "Terms of Service",
+        "privacyLink": "Privacy Policy",
+        "and": "and",
+        "showPassword": "Show password",
+        "hidePassword": "Hide password",
         "createAccount": "Create Agency Account",
         "orSignUp": "Or sign up with",
         "google": "Google",
@@ -38,54 +49,44 @@
         "hasAccount": "Already a partner?",
         "logInLink": "Log in to dashboard"
     },
-    "sidebar": {
-        "dashboard": "Dashboard",
-        "myTrips": "My Trips",
-        "bookings": "Bookings",
-        "customers": "Customers",
-        "settings": "Settings",
-        "createNew": "Create New Trip",
-        "signOut": "Sign Out"
+    "forgotPassword": {
+        "title": "Reset your password",
+        "subtitle": "Enter your work email and we'll send a reset link to regain access.",
+        "emailLabel": "Work Email",
+        "emailPlaceholder": "name@agency.com",
+        "sendReset": "Send reset link",
+        "backToLogin": "Back to sign in",
+        "successTitle": "Check your inbox",
+        "successMessage": "If an account exists for that email, you'll receive a password reset link shortly.",
+        "tryAnotherEmail": "Try a different email address",
+        "sideTitle": "Secure your agency access.",
+        "sideSubtitle": "We'll help you get back to managing travelers and bookings."
     },
-    "dashboard": {
-        "greeting": "Good Morning, {{name}}",
-        "stats": {
-            "revenue": "Total Revenue",
-            "activeTrips": "Active Trips",
-            "totalBookings": "Total Bookings",
-            "newCustomers": "New Customers"
-        },
-        "tripsSubtitle": "Manage your current travel packages",
-        "viewAll": "View All"
+    "terms": {
+        "backToSignup": "Back to sign up",
+        "title": "Terms of Service",
+        "updated": "Last updated: March 2024",
+        "intro": "These terms outline how agencies use Ouiboo to manage bookings and customer relationships.",
+        "sectionOneTitle": "Using the platform",
+        "sectionOneBody": "Create listings, respond to traveler requests, and provide accurate itineraries.",
+        "sectionTwoTitle": "Account responsibilities",
+        "sectionTwoBody": "Keep admin access secure and maintain up-to-date business information.",
+        "sectionThreeTitle": "Payments and policies",
+        "sectionThreeBody": "Review booking policies, fees, and cancellations before confirming trips.",
+        "sectionFourTitle": "Partner support",
+        "sectionFourBody": "Reach our partner success team via chat or email anytime."
     },
-    "trips": {
-        "create": {
-            "title": "Create a New Adventure",
-            "subtitle": "Fill in the details below to publish your trip to the marketplace.",
-            "steps": {
-                "basic": "Basic Information",
-                "location": "Location & Duration",
-                "media": "Media & Photos",
-                "pricing": "Pricing & Inventory"
-            }
-        }
-    },
-    "onboarding": {
-        "title": "Onboarding & Compliance",
-        "subtitle": "Complete your profile to start publishing trips.",
-        "status": {
-            "verified": "Account Verified",
-            "pending": "Verification Pending"
-        },
-        "sections": {
-            "agency": "Agency Details",
-            "legal": "Legal Documents",
-            "payment": "Payment Details"
-        },
-        "submit": "Submit for Verification"
-    },
-    "wallet": {
-        "title": "Wallet & Payouts",
-        "subtitle": "Manage your earnings and request payouts."
+    "privacy": {
+        "backToSignup": "Back to sign up",
+        "title": "Privacy Policy",
+        "updated": "Last updated: March 2024",
+        "intro": "We use agency data to deliver tools, manage traveler communications, and improve Ouiboo.",
+        "highlightsTitle": "Key highlights",
+        "highlightOne": "We collect only the data needed to operate your agency account.",
+        "highlightTwo": "You control team access and permissions at any time.",
+        "highlightThree": "Sensitive data is protected with encryption and secure access.",
+        "highlightFour": "You can request data deletion or export when needed.",
+        "contactTitle": "Questions?",
+        "contactBody": "Reach out to privacy@ouiboo.com and we'll respond quickly."
     }
 }

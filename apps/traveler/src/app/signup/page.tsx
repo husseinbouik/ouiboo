@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { Button, Input } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Mail, Lock, User } from 'lucide-react';
+import { ArrowRight, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
 
@@ -17,15 +17,12 @@ import { apiClient } from '@/lib/api-client';
 
 export default function TravelerSignupPage() {
   const { t, i18n } = useTranslation();
-  const router = useRouter();
-  const [mounted, setMounted] = useState(false);
-  
-  const { register, handleSubmit, formState: { errors } } = useForm<RegisterInput>({
-    resolver: zodResolver(RegisterSchema),
+  const { register, handleSubmit, formState: { errors } } = useForm({
     defaultValues: {
-      role: 'TRAVELER'
-    }
+      acceptTerms: true,
+    },
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -114,25 +111,52 @@ export default function TravelerSignupPage() {
                     {errors.email && <span className="text-red-500 text-xs font-semibold pl-1">{errors.email.message as string}</span>}
                 </div>
 
-                <div className="space-y-1.5">
-                     <label className="text-sm font-semibold text-foreground ml-1">{t('signup.password', 'Password')}</label>
-                    <div className="relative group">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground group-focus-within:text-sunset-orange transition-colors">
-                            <Lock className="h-5 w-5" />
-                        </div>
-                        <Input
-                            id="password"
-                            type="password"
-                            placeholder="••••••••"
-                            className="pl-12 h-14 bg-muted border-border rounded-2xl focus:bg-background focus:ring-2 focus:ring-sunset-orange/10 focus:border-sunset-orange transition-all font-medium text-foreground placeholder:text-muted-foreground"
-                            {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Password must be at least 6 characters' } })}
-                        />
-                    </div>
-                    {errors.password && <span className="text-red-500 text-xs font-semibold pl-1">{errors.password.message as string}</span>}
+              {/* Password Input */}
+              <div className="space-y-2">
+                <label htmlFor="password" className="text-sm font-medium text-gray-700">{t('signup.password')}</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder={t('signup.passwordPlaceholder')}
+                    className="pl-10 pr-12 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
+                    {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Password must be at least 6 characters' } })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    aria-label={showPassword ? t('signup.hidePassword') : t('signup.showPassword')}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
                 </div>
-            </div>
+                <p className="text-xs text-gray-500">{t('signup.passwordHint')}</p>
+                {errors.password && <span className="text-red-500 text-sm">{errors.password.message as string}</span>}
+              </div>
 
-            <Button
+              <label className="flex items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-600">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-sunset-orange focus:ring-sunset-orange"
+                  {...register('acceptTerms', { required: true })}
+                />
+                <span>
+                  {t('signup.acceptTerms')}{' '}
+                  <Link href={`/terms?lang=${i18n.language}`} className="font-semibold text-sunset-orange hover:text-orange-600 hover:underline">
+                    {t('signup.termsLink')}
+                  </Link>{' '}
+                  {t('signup.and')}{' '}
+                  <Link href={`/privacy?lang=${i18n.language}`} className="font-semibold text-sunset-orange hover:text-orange-600 hover:underline">
+                    {t('signup.privacyLink')}
+                  </Link>
+                  .
+                </span>
+              </label>
+
+              {/* Submit Button */}
+              <Button
                 type="submit"
                 disabled={signupMutation.isPending}
                  className="w-full h-14 bg-sunset-orange hover:bg-orange-600 text-white font-bold rounded-2xl shadow-lg shadow-orange-900/20 transition-all hover:scale-[1.02] active:scale-95 text-lg"

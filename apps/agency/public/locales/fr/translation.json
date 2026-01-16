@@ -8,84 +8,85 @@
         "submitting": "Envoi en cours..."
     },
     "login": {
-        "title": "Portail Agence",
-        "subtitle": "Bon retour. Gérez vos réservations et développez votre entreprise.",
-        "email": "Email professionnel",
+        "title": "Portail agence",
+        "subtitle": "Bon retour. Gérez vos réservations et développez votre activité.",
+        "email": "E-mail professionnel",
         "emailPlaceholder": "nom@agence.com",
         "password": "Mot de passe",
         "passwordPlaceholder": "••••••••",
-        "forgotPassword": "Mot de passe oublié?",
-        "signIn": "Se connecter au tableau de bord",
+        "forgotPassword": "Mot de passe oublié ?",
+        "rememberMe": "Rester connecté",
+        "securityNote": "Connexion sécurisée",
+        "showPassword": "Afficher le mot de passe",
+        "hidePassword": "Masquer le mot de passe",
+        "signIn": "Accéder au tableau de bord",
         "orContinue": "Ou continuer avec",
         "google": "Google",
         "linkedin": "LinkedIn",
-        "noAccount": "Nouvelle agence?",
-        "signUpLink": "Enregistrez votre entreprise"
+        "noAccount": "Nouvelle agence ?",
+        "signUpLink": "Enregistrer votre entreprise"
     },
     "signup": {
-        "title": "Partenaire avec Ouiboo",
-        "subtitle": "Créez votre compte d'agence et commencez à grandir.",
+        "title": "Devenir partenaire Ouiboo",
+        "subtitle": "Créez votre compte agence et commencez à grandir.",
         "agencyName": "Nom de l'agence",
-        "agencyPlaceholder": "Voyages Globaux Ltée",
-        "email": "Email professionnel",
+        "agencyPlaceholder": "Global Travels SARL",
+        "email": "E-mail professionnel",
         "emailPlaceholder": "nom@agence.com",
         "password": "Mot de passe",
-        "passwordPlaceholder": "Créer un mot de passe",
-        "createAccount": "Créer un compte d'agence",
+        "passwordPlaceholder": "Créez un mot de passe",
+        "passwordHint": "Utilisez au moins 6 caractères avec un mélange de lettres et de chiffres.",
+        "acceptTerms": "J'accepte les",
+        "termsLink": "Conditions d'utilisation",
+        "privacyLink": "Politique de confidentialité",
+        "and": "et",
+        "showPassword": "Afficher le mot de passe",
+        "hidePassword": "Masquer le mot de passe",
+        "createAccount": "Créer un compte agence",
         "orSignUp": "Ou s'inscrire avec",
         "google": "Google",
         "linkedin": "LinkedIn",
-        "hasAccount": "Déjà partenaire?",
+        "hasAccount": "Déjà partenaire ?",
         "logInLink": "Se connecter au tableau de bord"
     },
-    "sidebar": {
-        "dashboard": "Tableau de Bord",
-        "myTrips": "Mes Voyages",
-        "bookings": "Réservations",
-        "customers": "Clients",
-        "settings": "Paramètres",
-        "createNew": "Créer un Voyage",
-        "signOut": "Déconnexion"
+    "forgotPassword": {
+        "title": "Réinitialiser votre mot de passe",
+        "subtitle": "Saisissez votre e-mail professionnel et nous vous enverrons un lien de réinitialisation.",
+        "emailLabel": "E-mail professionnel",
+        "emailPlaceholder": "nom@agence.com",
+        "sendReset": "Envoyer le lien de réinitialisation",
+        "backToLogin": "Retour à la connexion",
+        "successTitle": "Vérifiez votre boîte de réception",
+        "successMessage": "Si un compte existe pour cet e-mail, vous recevrez un lien de réinitialisation.",
+        "tryAnotherEmail": "Essayer une autre adresse e-mail",
+        "sideTitle": "Sécurisez l'accès de votre agence.",
+        "sideSubtitle": "Nous vous aidons à reprendre la gestion des voyageurs et des réservations."
     },
-    "dashboard": {
-        "greeting": "Bonjour, {{name}}",
-        "stats": {
-            "revenue": "Revenu Total",
-            "activeTrips": "Voyages Actifs",
-            "totalBookings": "Total Réservations",
-            "newCustomers": "Nouveaux Clients"
-        },
-        "tripsSubtitle": "Gérez vos forfaits de voyage actuels",
-        "viewAll": "Voir Tout"
+    "terms": {
+        "backToSignup": "Retour à l'inscription",
+        "title": "Conditions d'utilisation",
+        "updated": "Dernière mise à jour : mars 2024",
+        "intro": "Ces conditions expliquent comment les agences utilisent Ouiboo pour gérer les réservations et les clients.",
+        "sectionOneTitle": "Utiliser la plateforme",
+        "sectionOneBody": "Créez des offres, répondez aux demandes des voyageurs et fournissez des itinéraires précis.",
+        "sectionTwoTitle": "Responsabilités du compte",
+        "sectionTwoBody": "Sécurisez l'accès administrateur et maintenez les informations à jour.",
+        "sectionThreeTitle": "Paiements et politiques",
+        "sectionThreeBody": "Consultez les politiques de réservation, frais et annulations avant confirmation.",
+        "sectionFourTitle": "Support partenaires",
+        "sectionFourBody": "Contactez notre équipe partenaire via chat ou e-mail."
     },
-    "trips": {
-        "create": {
-            "title": "Créer une Nouvelle Aventure",
-            "subtitle": "Remplissez les détails ci-dessous pour publier votre voyage sur la place de marché.",
-            "steps": {
-                "basic": "Informations de Base",
-                "location": "Lieu & Durée",
-                "media": "Médias & Photos",
-                "pricing": "Prix & Inventaire"
-            }
-        }
-    },
-    "onboarding": {
-        "title": "Onboarding & Conformité",
-        "subtitle": "Complétez votre profil pour commencer à publier des voyages.",
-        "status": {
-            "verified": "Compte Vérifié",
-            "pending": "Vérification en Cours"
-        },
-        "sections": {
-            "agency": "Détails de l'Agence",
-            "legal": "Documents Légaux",
-            "payment": "Détails de Paiement"
-        },
-        "submit": "Soumettre pour Vérification"
-    },
-    "wallet": {
-        "title": "Portefeuille & Virements",
-        "subtitle": "Gérez vos revenus et demandez des virements."
+    "privacy": {
+        "backToSignup": "Retour à l'inscription",
+        "title": "Politique de confidentialité",
+        "updated": "Dernière mise à jour : mars 2024",
+        "intro": "Nous utilisons les données de l'agence pour fournir des outils, gérer les communications et améliorer Ouiboo.",
+        "highlightsTitle": "Points clés",
+        "highlightOne": "Nous collectons uniquement les données nécessaires au compte agence.",
+        "highlightTwo": "Vous contrôlez les accès et permissions de votre équipe.",
+        "highlightThree": "Les données sensibles sont protégées par chiffrement et accès sécurisé.",
+        "highlightFour": "Vous pouvez demander une suppression ou un export de données.",
+        "contactTitle": "Des questions ?",
+        "contactBody": "Écrivez à privacy@ouiboo.com et nous répondrons rapidement."
     }
 }

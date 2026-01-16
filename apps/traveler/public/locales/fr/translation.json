@@ -32,33 +32,100 @@
     },
     "login": {
         "title": "Bon retour",
+<<<<<<< ours
         "subtitle": "Veuillez entrer vos coordonnées pour vous connecter.",
         "email": "Email",
         "emailPlaceholder": "Entrez votre email",
         "password": "Mot de passe",
         "passwordPlaceholder": "••••••••",
         "forgotPassword": "Mot de passe oublié ?",
+=======
+        "subtitle": "Veuillez saisir vos informations pour vous connecter.",
+        "email": "E-mail",
+        "emailPlaceholder": "Saisissez votre e-mail",
+        "password": "Mot de passe",
+        "passwordPlaceholder": "••••••••",
+        "forgotPassword": "Mot de passe oublié ?",
+        "rememberMe": "Se souvenir de moi",
+        "securityNote": "Connexion sécurisée",
+        "showPassword": "Afficher le mot de passe",
+        "hidePassword": "Masquer le mot de passe",
+>>>>>>> theirs
         "signIn": "Se connecter",
         "orContinue": "Ou continuer avec",
         "google": "Google",
         "facebook": "Facebook",
         "noAccount": "Vous n'avez pas de compte ?",
+<<<<<<< ours
         "signUpLink": "Inscrivez-vous gratuitement"
+=======
+        "signUpLink": "S'inscrire gratuitement"
+>>>>>>> theirs
     },
     "signup": {
         "title": "Créer un compte",
         "subtitle": "Rejoignez Ouiboo et commencez votre voyage.",
         "name": "Nom complet",
         "namePlaceholder": "Jean Dupont",
-        "email": "Email",
-        "emailPlaceholder": "Entrez votre email",
+        "email": "E-mail",
+        "emailPlaceholder": "Saisissez votre e-mail",
         "password": "Mot de passe",
         "passwordPlaceholder": "Créez un mot de passe",
+<<<<<<< ours
+=======
+        "passwordHint": "Utilisez au moins 6 caractères avec un mélange de lettres et de chiffres.",
+        "acceptTerms": "J'accepte les",
+        "termsLink": "Conditions d'utilisation",
+        "privacyLink": "Politique de confidentialité",
+        "and": "et",
+        "showPassword": "Afficher le mot de passe",
+        "hidePassword": "Masquer le mot de passe",
+>>>>>>> theirs
         "createAccount": "Créer un compte",
         "orSignUp": "Ou inscrivez-vous avec",
         "google": "Google",
         "facebook": "Facebook",
         "hasAccount": "Vous avez déjà un compte ?",
         "logInLink": "Se connecter"
+    },
+    "forgotPassword": {
+        "title": "Réinitialiser votre mot de passe",
+        "subtitle": "Saisissez l'e-mail associé à votre compte et nous vous enverrons un lien de réinitialisation.",
+        "emailLabel": "E-mail",
+        "emailPlaceholder": "vous@exemple.com",
+        "sendReset": "Envoyer le lien de réinitialisation",
+        "backToLogin": "Retour à la connexion",
+        "successTitle": "Vérifiez votre boîte de réception",
+        "successMessage": "Si un compte existe pour cet e-mail, vous recevrez un lien de réinitialisation.",
+        "tryAnotherEmail": "Essayer une autre adresse e-mail",
+        "sideTitle": "Revenez à vos préparatifs.",
+        "sideSubtitle": "Nous vous aidons à récupérer l'accès pour continuer à explorer."
+    },
+    "terms": {
+        "backToSignup": "Retour à l'inscription",
+        "title": "Conditions d'utilisation",
+        "updated": "Dernière mise à jour : mars 2024",
+        "intro": "Ces conditions expliquent comment utiliser Ouiboo pour planifier et réserver vos aventures.",
+        "sectionOneTitle": "Utiliser Ouiboo",
+        "sectionOneBody": "Créez un profil, découvrez des voyages et réservez des expériences en toute confiance.",
+        "sectionTwoTitle": "Responsabilités du compte",
+        "sectionTwoBody": "Gardez vos identifiants en sécurité et signalez toute activité inhabituelle.",
+        "sectionThreeTitle": "Réservations et annulations",
+        "sectionThreeBody": "Consultez les politiques avant de réserver et contactez l'assistance en cas de changement.",
+        "sectionFourTitle": "Assistance",
+        "sectionFourBody": "Nous sommes là pour vous aider via le chat et l'e-mail."
+    },
+    "privacy": {
+        "backToSignup": "Retour à l'inscription",
+        "title": "Politique de confidentialité",
+        "updated": "Dernière mise à jour : mars 2024",
+        "intro": "Nous utilisons vos données pour personnaliser les voyages, gérer les réservations et améliorer Ouiboo.",
+        "highlightsTitle": "Points clés",
+        "highlightOne": "Nous ne collectons que les données nécessaires à votre expérience.",
+        "highlightTwo": "Vous contrôlez les préférences marketing dans votre profil.",
+        "highlightThree": "Nous protégeons les données sensibles par chiffrement et accès sécurisé.",
+        "highlightFour": "Vous pouvez demander la suppression de vos données à tout moment.",
+        "contactTitle": "Des questions ?",
+        "contactBody": "Écrivez à privacy@ouiboo.com et nous répondrons rapidement."
     }
 }

@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Mail, Lock } from 'lucide-react';
+import { ArrowRight, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
 import { apiClient } from '@/lib/api-client';
@@ -16,13 +16,8 @@ import { LoginSchema, type LoginInput } from '@ouiboo/schemas';
 
 export default function AgencyLoginPage() {
   const { t, i18n } = useTranslation();
-  const router = useRouter();
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginInput>({
-    resolver: zodResolver(LoginSchema)
-  });
-
-  const [mounted, setMounted] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { register, handleSubmit, formState: { errors } } = useForm();
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -95,27 +90,43 @@ export default function AgencyLoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label htmlFor="password" className="text-sm font-medium text-gray-700">{t('login.password')}</label>
-                  <a href="#" className="text-sm font-medium text-deep-blue hover:text-blue-700">{t('login.forgotPassword')}</a>
+                  <Link href={`/forgot-password?lang=${i18n.language}`} className="text-sm font-medium text-deep-blue hover:text-blue-700">
+                    {t('login.forgotPassword')}
+                  </Link>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <Input 
                     id="password" 
-                    type="password" 
+                    type={showPassword ? 'text' : 'password'}
                     placeholder={t('login.passwordPlaceholder')}
-                    className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-deep-blue focus:ring-deep-blue transition-all duration-200"
+                    className="pl-10 pr-12 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-deep-blue focus:ring-deep-blue transition-all duration-200"
                     {...register('password', { required: 'Password is required' })} 
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
                 </div>
                  {errors.password && <span className="text-red-500 text-sm">{errors.password.message as string}</span>}
               </div>
             </div>
 
-            {error && (
-              <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-100 rounded-lg">
-                {error}
-              </div>
-            )}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-sm text-gray-600">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-gray-300 text-deep-blue focus:ring-deep-blue"
+                  {...register('rememberMe')}
+                />
+                {t('login.rememberMe')}
+              </label>
+              <span className="text-xs text-gray-500">{t('login.securityNote')}</span>
+            </div>
 
             <Button 
               type="submit" 
