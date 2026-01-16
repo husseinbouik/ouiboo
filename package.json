@@ -9,7 +9,9 @@
         "dev": "turbo dev",
         "build": "turbo build",
         "lint": "turbo lint",
-        "install:ci": "rm -rf node_modules && npm cache clean --force && npm ci --no-audit --no-fund --prefer-online"
+        "test": "turbo test",
+        "ci": "npm run lint && npm run test",
+        "install:ci": "npm install --no-audit --no-fund"
     },
     "devDependencies": {
         "turbo": "latest"
