@@ -18,6 +18,8 @@ export enum VerificationStatus {
     Rejected = "REJECTED",
 }
 
+export type VerificationStatusType = (typeof VerificationStatus)[keyof typeof VerificationStatus];
+
 export enum SubscriptionStatus {
     Trial = "TRIAL",
     Active = "ACTIVE",
@@ -100,10 +102,11 @@ export interface TripSession {
 
 export enum BookingStatus {
     Pending = "PENDING",
+    AwaitingValidation = "AWAITING_VALIDATION",
     Confirmed = "CONFIRMED",
+    Rejected = "REJECTED",
     Cancelled = "CANCELLED",
     Completed = "COMPLETED",
-    PendingPayment = "PENDING_PAYMENT",
 }
 
 export interface Booking {
@@ -123,7 +126,7 @@ export interface PaymentProof {
     bookingId: string;
     imageUrl: string;
     uploadedAt: string;
-    status: "Pending" | "Verified" | "Rejected";
+    status: VerificationStatus;
 }
 
 export interface Wallet {

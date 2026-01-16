@@ -4,6 +4,7 @@ import { TripsService } from './trips.service';
 import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripTemplateDto } from './dto/create-trip.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { TenantGuard } from '../auth/guards/tenant.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@ouiboo/types';
 
@@ -15,17 +16,17 @@ export class TripsController {
     @Post()
     @ApiOperation({ summary: 'Create a new trip template' })
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard, RolesGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
     @Roles(UserRole.Agency)
     create(@Request() req, @Body() createTripDto: CreateTripTemplateDto) {
         console.log('Creating trip template with data:', JSON.stringify(createTripDto, null, 2));
-        return this.tripsService.createTemplate(req.user.userId, createTripDto);
+        return this.tripsService.createTemplate(req.tenantId, createTripDto);
     }
 
     @Get()
     @ApiOperation({ summary: 'Get all trip templates' })
-    findAll(@Query('featured') featured?: string, @Query('status') status?: string, @Query('agencyId') agencyId?: string) {
-        return this.tripsService.findAllTemplates(featured === 'true', status, agencyId);
+    findAll(@Query('featured') featured?: string, @Query('status') status?: string) {
+        return this.tripsService.findAllTemplates(featured === 'true', status);
     }
 
     @Get(':id')
@@ -38,14 +39,14 @@ export class TripsController {
     @Post(':id/sessions')
     @ApiOperation({ summary: 'Add a session to a trip template' })
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard, RolesGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
     @Roles(UserRole.Agency)
     createSession(
         @Request() req,
         @Param('id') id: string,
         @Body() createSessionDto: CreateTripSessionDto,
     ) {
-        return this.tripsService.createSession(req.user.userId, id, createSessionDto);
+        return this.tripsService.createSession(req.tenantId, id, createSessionDto);
     }
 
     @Get(':id/sessions')
@@ -57,19 +58,19 @@ export class TripsController {
     @Patch(':id')
     @ApiOperation({ summary: 'Update a trip template' })
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard, RolesGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
     @Roles(UserRole.Agency)
     update(@Request() req, @Param('id') id: string, @Body() updateTripDto: UpdateTripTemplateDto) {
         console.log('Updating trip template', id, 'with data:', JSON.stringify(updateTripDto, null, 2));
-        return this.tripsService.updateTemplate(id, req.user.userId, updateTripDto);
+        return this.tripsService.updateTemplate(id, req.tenantId, updateTripDto);
     }
 
     @Delete(':id')
     @ApiOperation({ summary: 'Delete a trip template' })
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard, RolesGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
     @Roles(UserRole.Agency)
     remove(@Request() req, @Param('id') id: string) {
-        return this.tripsService.deleteTemplate(id, req.user.userId);
+        return this.tripsService.deleteTemplate(id, req.tenantId);
     }
 }

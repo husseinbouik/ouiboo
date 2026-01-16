@@ -9,15 +9,7 @@ const mockTripTemplate = {
     title: 'Test Trip',
 };
 
-const mockAgency = {
-    id: 'agency-123',
-    userId: 'user-123',
-};
-
 const mockDatabaseService = {
-    agencyProfile: {
-        findUnique: jest.fn(),
-    },
     tripTemplate: {
         findFirst: jest.fn(),
         findMany: jest.fn(),
@@ -55,14 +47,12 @@ describe('TripsService', () => {
 
     describe('updateTemplate', () => {
         it('should update a template if user owns the agency', async () => {
-            db.agencyProfile.findUnique.mockResolvedValue(mockAgency);
             db.tripTemplate.findFirst.mockResolvedValue(mockTripTemplate);
             db.tripTemplate.update.mockResolvedValue({ ...mockTripTemplate, title: 'Updated' });
 
             const dto = { title: 'Updated' };
-            await service.updateTemplate('trip-123', 'user-123', dto);
+            await service.updateTemplate('trip-123', 'agency-123', dto);
 
-            expect(db.agencyProfile.findUnique).toHaveBeenCalledWith({ where: { userId: 'user-123' } });
             expect(db.tripTemplate.findFirst).toHaveBeenCalledWith({
                 where: { id: 'trip-123', agencyId: 'agency-123' },
             });
@@ -70,7 +60,6 @@ describe('TripsService', () => {
         });
 
         it('should throw error if user does not own the agency', async () => {
-            db.agencyProfile.findUnique.mockResolvedValue({ ...mockAgency, id: 'agency-456' }); // Different agency
             db.tripTemplate.findFirst.mockResolvedValue(null); // No match for trip + new agency
 
             const dto = { title: 'Updated' };
@@ -86,11 +75,10 @@ describe('TripsService', () => {
 
     describe('deleteTemplate', () => {
         it('should delete a template if owned by user', async () => {
-            db.agencyProfile.findUnique.mockResolvedValue(mockAgency);
             db.tripTemplate.findFirst.mockResolvedValue(mockTripTemplate);
             db.tripTemplate.delete.mockResolvedValue(mockTripTemplate);
 
-            await service.deleteTemplate('trip-123', 'user-123');
+            await service.deleteTemplate('trip-123', 'agency-123');
 
             expect(db.tripTemplate.findFirst).toHaveBeenCalledWith({
                 where: { id: 'trip-123', agencyId: 'agency-123' },
@@ -99,7 +87,6 @@ describe('TripsService', () => {
         });
 
         it('should throw error if unauthorized', async () => {
-            db.agencyProfile.findUnique.mockResolvedValue(mockAgency);
             db.tripTemplate.findFirst.mockResolvedValue(null); // Not found for this agency
 
             await expect(service.deleteTemplate('trip-123', 'user-123')).rejects.toThrow(NotFoundException);
