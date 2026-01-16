@@ -4,6 +4,7 @@ import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { TenantGuard } from '../auth/guards/tenant.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@ouiboo/types';
 
@@ -37,7 +38,7 @@ export class BookingsController {
     }
     @Patch(':id/verify-payment')
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard, RolesGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
     @Roles(UserRole.Agency)
     @ApiOperation({ summary: 'Verify payment proof (Agency only)' })
     verifyPayment(
@@ -45,7 +46,7 @@ export class BookingsController {
         @Param('id') id: string,
         @Body('approved') approved: boolean
     ) {
-        return this.bookingsService.verifyPayment(id, req.user.userId, approved);
+        return this.bookingsService.verifyPayment(id, req.tenantId, approved);
     }
 
     @Patch(':id/cancel')
