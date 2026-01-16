@@ -2,6 +2,16 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`ouiboo`](htt
 
 ## Getting Started
 
+Install dependencies with the repeatable command:
+
+```bash
+npm run install:ci
+```
+
+If the default npm registry is blocked in your environment, configure a root-level `.npmrc`
+to point at your allowed registry (this repo includes a `.npmrc` that uses the default
+registry with the proxy configured for this environment).
+
 First, run the development server:
 
 ```bash
