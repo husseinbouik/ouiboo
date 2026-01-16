@@ -8,7 +8,8 @@
     "scripts": {
         "dev": "turbo dev",
         "build": "turbo build",
-        "lint": "turbo lint"
+        "lint": "turbo lint",
+        "install:ci": "npm install --no-audit --no-fund"
     },
     "devDependencies": {
         "turbo": "latest"
