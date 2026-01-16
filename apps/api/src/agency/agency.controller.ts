@@ -115,7 +115,8 @@ export class AgencyController {
                         name: true,
                         email: true,
                     }
-                }
+                },
+                paymentProof: true
             },
             orderBy: {
                 bookingDate: 'desc'
