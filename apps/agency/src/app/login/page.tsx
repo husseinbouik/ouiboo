@@ -47,7 +47,7 @@ export default function AgencyLoginPage() {
       const message = err?.response?.data?.message;
       if (message === 'EMAIL_NOT_VERIFIED') {
         const email = (document.getElementById('email') as HTMLInputElement)?.value;
-        router.push(`/verify?email=${email}`);
+        router.push(`/verify?email=${email}&reason=unverified`);
         return;
       }
       setError(message || 'Login failed. Please try again.');

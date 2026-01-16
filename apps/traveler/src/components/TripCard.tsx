@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, Badge, Button } from '@ouiboo/ui';
-import { MapPin, Star, Heart, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
+import { MapPin, Star, Heart, ChevronLeft, ChevronRight, Zap, ShieldCheck, Ticket } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@ouiboo/ui/utils';
 
@@ -16,6 +16,17 @@ export function TripCard({ trip }: TripCardProps) {
   const images = trip.images && trip.images.length > 0 
     ? trip.images 
     : ['https://images.unsplash.com/photo-1489749798305-4fea3ae63d43'];
+  const sessions = trip.sessions || [];
+  const openSessions = sessions.filter(
+    (session: any) => session.status === 'OPEN' && session.availableSeats > 0
+  );
+  const nextSession = [...openSessions].sort((a: any, b: any) => {
+    return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+  })[0];
+  const minPrice = sessions.length
+    ? Math.min(...sessions.map((session: any) => Number(session.price || 0)))
+    : null;
+  const isAgencyVerified = trip.agency?.verificationStatus === 'VERIFIED';
 
   const nextImage = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -82,6 +93,20 @@ export function TripCard({ trip }: TripCardProps) {
           </Badge>
         </div>
 
+        <div className="absolute top-3 right-14 flex flex-col items-end gap-2">
+          <Badge className="bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none flex items-center gap-1">
+            <Ticket className="h-3 w-3" />
+            {minPrice !== null ? `${minPrice} MAD` : 'Price TBA'}
+          </Badge>
+          <Badge className={cn(
+            "text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none flex items-center gap-1",
+            nextSession ? "bg-emerald-500/15 text-emerald-700" : "bg-amber-500/20 text-amber-700"
+          )}>
+            <Zap className="h-3 w-3" />
+            {nextSession ? `${nextSession.availableSeats} spots` : 'Sold out'}
+          </Badge>
+        </div>
+
         <button className="absolute top-3 right-3 w-9 h-9 rounded-full bg-card/50 backdrop-blur-sm flex items-center justify-center text-muted-foreground hover:text-red-500 transition-colors shadow-sm">
           <Heart className="h-5 w-5" />
         </button>
@@ -96,6 +121,16 @@ export function TripCard({ trip }: TripCardProps) {
               <span className="text-xs font-bold text-yellow-600 dark:text-yellow-400">5.0</span>
             </div>
           </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge className={cn(
+              "border-none text-[10px] font-bold uppercase tracking-wider flex items-center gap-1",
+              isAgencyVerified ? "bg-emerald-500/15 text-emerald-700" : "bg-muted text-muted-foreground"
+            )}>
+              <ShieldCheck className="h-3 w-3" />
+              {isAgencyVerified ? 'Verified Agency' : 'Agency Pending'}
+            </Badge>
+          </div>
           
           <div className="flex items-center gap-3 text-muted-foreground text-xs font-medium">
             <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {trip.startLocation}</span>
@@ -109,7 +144,7 @@ export function TripCard({ trip }: TripCardProps) {
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">From</span>
             <div className="flex items-baseline gap-1">
                 <span className="text-xl font-bold text-foreground">
-                   {trip.sessions?.[0]?.price || '---'}
+                   {minPrice ?? '---'}
                 </span>
                 <span className="text-[10px] font-medium text-muted-foreground">MAD</span>
             </div>

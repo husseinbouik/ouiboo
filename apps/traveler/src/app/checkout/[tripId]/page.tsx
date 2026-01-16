@@ -41,6 +41,7 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('virement');
   const [proof, setProof] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(15 * 60);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (timeLeft <= 0) return;
@@ -83,6 +84,24 @@ export default function CheckoutPage() {
       router.push(`/checkout/confirmation?bookingId=${data?.id ?? ''}&proof=1`);
     }
   });
+=======
+  const handleProofUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await apiClient.post('/upload', formData);
+      setProof(response.data.url);
+    } catch (error) {
+      console.error('Upload failed:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center font-black animate-pulse">Initializing Security...</div>;
 
@@ -218,10 +237,8 @@ export default function CheckoutPage() {
                                     <p className="text-xs font-black text-foreground uppercase tracking-widest">3. Upload Proof of Payment</p>
                                     <Badge variant="outline" className="text-[8px] font-black border-primary/20 text-primary">Required to Confirm</Badge>
                                 </div>
-                                <div 
-                                    className="h-44 border-4 border-dashed border-muted rounded-[2rem] flex flex-col items-center justify-center gap-4 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-pointer group"
-                                    onClick={() => setProof('https://images.unsplash.com/photo-1614028674026-a65e31bfd27c?q=80&w=2070&auto=format&fit=crop')}
-                                >
+                                <label className="h-44 border-4 border-dashed border-muted rounded-[2rem] flex flex-col items-center justify-center gap-4 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-pointer group">
+                                    <input type="file" className="hidden" onChange={handleProofUpload} disabled={uploading} accept="image/*,application/pdf" />
                                     <AnimatePresence mode="wait">
                                         {proof ? (
                                             <motion.div 
@@ -240,6 +257,11 @@ export default function CheckoutPage() {
                                                     <X className="h-4 w-4" />
                                                 </button>
                                             </motion.div>
+                                        ) : uploading ? (
+                                            <div className="flex flex-col items-center gap-2">
+                                                <div className="h-10 w-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Uploading...</span>
+                                            </div>
                                         ) : (
                                             <div className="flex flex-col items-center gap-2">
                                                 <UploadCloud className="h-10 w-10 text-muted-foreground group-hover:text-primary group-hover:scale-110 transition-all" />
@@ -247,7 +269,7 @@ export default function CheckoutPage() {
                                             </div>
                                         )}
                                     </AnimatePresence>
-                                </div>
+                                </label>
                                 <p className="text-[10px] text-muted-foreground text-center font-medium italic">Your booking is secured as soon as you upload this proof.</p>
                             </div>
 

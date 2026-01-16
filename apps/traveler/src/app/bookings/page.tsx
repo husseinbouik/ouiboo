@@ -35,6 +35,19 @@ export default function MyBookingsPage() {
         }
     });
 
+    const getProofStatus = (status?: string | null) => {
+        if (!status) return { label: 'Not uploaded', className: 'bg-slate-100 text-slate-600 border-slate-200' };
+
+        const normalized = status.toUpperCase();
+        if (normalized === 'VERIFIED') {
+            return { label: 'Verified', className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' };
+        }
+        if (normalized === 'REJECTED') {
+            return { label: 'Rejected', className: 'bg-rose-500/10 text-rose-600 border-rose-500/20' };
+        }
+        return { label: 'Pending', className: 'bg-amber-500/10 text-amber-600 border-amber-500/20' };
+    };
+
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, bookingId: string) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -153,11 +166,9 @@ export default function MyBookingsPage() {
                                                         </Button>
                                                     </label>
                                                 )}
-                                                {booking.paymentProof && (
-                                                    <div className="px-5 py-2.5 bg-emerald-500/10 text-emerald-500 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-emerald-500/20">
-                                                        <Check className="h-4 w-4" /> Proof Uploaded
-                                                    </div>
-                                                )}
+                                                <div className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border ${getProofStatus(booking.paymentProof?.status).className}`}>
+                                                    <Check className="h-4 w-4" /> Proof {getProofStatus(booking.paymentProof?.status).label}
+                                                </div>
                                                 <Button variant="ghost" className="h-12 w-12 rounded-xl hover:bg-muted text-muted-foreground border border-border/50">
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
