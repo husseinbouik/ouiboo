@@ -39,6 +39,8 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('virement');
   const [proof, setProof] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(15 * 60);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [guestCount, setGuestCount] = useState(1);
 
   useEffect(() => {
     if (timeLeft <= 0) return;
@@ -59,6 +61,19 @@ export default function CheckoutPage() {
       return response.data;
     }
   });
+
+  useEffect(() => {
+    if (trip?.sessions?.length && !selectedSessionId) {
+      setSelectedSessionId(trip.sessions[0].id);
+    }
+  }, [trip?.sessions, selectedSessionId]);
+
+  const selectedSession = trip?.sessions?.find((session: any) => session.id === selectedSessionId);
+  const sessionPrice = selectedSession?.price ?? 0;
+  const totalPrice = sessionPrice * guestCount;
+  const sessionDateLabel = selectedSession
+    ? `${new Date(selectedSession.startDate).toLocaleDateString()} - ${new Date(selectedSession.endDate).toLocaleDateString()}`
+    : 'Select a session';
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center font-black animate-pulse">Initializing Security...</div>;
 
@@ -82,10 +97,54 @@ export default function CheckoutPage() {
           <div className="lg:col-span-8 space-y-8">
             <Card className="border-none shadow-xl shadow-black/5 rounded-[2.5rem] overflow-hidden">
                 <CardContent className="p-10 space-y-10">
-                    <div className="space-y-6">
+                        <div className="space-y-6">
                         <div className="flex items-center gap-4">
                             <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center font-black">1</div>
                             <h2 className="text-2xl font-black font-display">Guest Details</h2>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            <div className="md:col-span-2">
+                                <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Select Session</Label>
+                                <RadioGroup 
+                                    value={selectedSessionId || ''} 
+                                    onValueChange={setSelectedSessionId}
+                                    className="mt-3 grid grid-cols-1 gap-3"
+                                >
+                                    {trip.sessions?.length ? trip.sessions.map((session: any) => (
+                                        <div 
+                                            key={session.id}
+                                            onClick={() => setSelectedSessionId(session.id)}
+                                            className={cn(
+                                                "flex items-center justify-between rounded-2xl border p-4 text-sm font-semibold transition-all",
+                                                selectedSessionId === session.id ? "border-primary bg-primary/5" : "border-border/50 hover:bg-muted/40"
+                                            )}
+                                        >
+                                            <div>
+                                                <p className="font-black">{new Date(session.startDate).toLocaleDateString()} → {new Date(session.endDate).toLocaleDateString()}</p>
+                                                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{session.availableSeats} seats left</p>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <Badge variant="outline" className="text-[10px] font-black">{session.price} MAD</Badge>
+                                                <RadioGroupItem value={session.id} />
+                                            </div>
+                                        </div>
+                                    )) : (
+                                        <div className="rounded-2xl border border-dashed border-border/60 p-4 text-sm text-muted-foreground">
+                                            No upcoming sessions are available yet.
+                                        </div>
+                                    )}
+                                </RadioGroup>
+                            </div>
+                            <div>
+                                <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Guest Count</Label>
+                                <Input 
+                                    type="number" 
+                                    min={1}
+                                    value={guestCount}
+                                    onChange={(e) => setGuestCount(Math.max(1, Number(e.target.value)))}
+                                    className="mt-3 h-14 rounded-2xl bg-muted/30 border-none font-bold text-lg text-center"
+                                />
+                            </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
@@ -258,18 +317,18 @@ export default function CheckoutPage() {
                   <div className="space-y-4 pt-6 border-t border-border/50">
                       <div className="flex justify-between items-center text-sm">
                           <span className="text-muted-foreground font-medium flex items-center gap-2"><Calendar className="h-4 w-4" /> Selected Date</span>
-                          <span className="font-black">May 12 - May 15</span>
+                          <span className="font-black">{sessionDateLabel}</span>
                       </div>
                       <div className="flex justify-between items-center text-sm">
                           <span className="text-muted-foreground font-medium flex items-center gap-2"><Users className="h-4 w-4" /> Guest Count</span>
-                          <span className="font-black">1 Traveler</span>
+                          <span className="font-black">{guestCount} Traveler{guestCount > 1 ? 's' : ''}</span>
                       </div>
                   </div>
 
                   <div className="space-y-4 pt-6 border-t border-border/50">
                       <div className="flex justify-between items-center">
                           <span className="text-muted-foreground font-medium">Subtotal</span>
-                          <span className="font-bold">1,200.00 MAD</span>
+                          <span className="font-bold">{totalPrice.toFixed(2)} MAD</span>
                       </div>
                       <div className="flex justify-between items-center">
                           <span className="text-muted-foreground font-medium">Service Fee</span>
@@ -278,7 +337,7 @@ export default function CheckoutPage() {
                       <div className="flex justify-between items-end pt-4 border-t border-border/50">
                           <span className="text-lg font-black font-display tracking-tight text-foreground">Total to pay</span>
                           <div className="text-right">
-                              <span className="text-4xl font-black font-display text-primary tracking-tighter leading-none block">1,200.00</span>
+                              <span className="text-4xl font-black font-display text-primary tracking-tighter leading-none block">{totalPrice.toFixed(2)}</span>
                               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Dirhams</span>
                           </div>
                       </div>
