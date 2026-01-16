@@ -21,7 +21,7 @@ const mockDatabaseService = {
         update: jest.fn(),
     },
     paymentProof: {
-        create: jest.fn(),
+        upsert: jest.fn(),
     },
     $transaction: jest.fn((cb) => cb(mockDatabaseService)),
 };
@@ -50,13 +50,13 @@ describe('BookingsService', () => {
     describe('uploadPaymentProof', () => {
         it('should upload proof if user is the traveler', async () => {
             db.booking.findUnique.mockResolvedValue(mockBooking);
-            db.paymentProof.create.mockResolvedValue({ id: 'proof-123' });
-            db.booking.update.mockResolvedValue({ ...mockBooking, status: 'PENDING_PAYMENT' });
+            db.paymentProof.upsert.mockResolvedValue({ id: 'proof-123' });
+            db.booking.update.mockResolvedValue({ ...mockBooking, status: 'AWAITING_VALIDATION' });
 
             await service.uploadPaymentProof('booking-123', 'user-123', 'http://image.url');
 
             expect(db.booking.findUnique).toHaveBeenCalledWith({ where: { id: 'booking-123' } });
-            expect(db.paymentProof.create).toHaveBeenCalled();
+            expect(db.paymentProof.upsert).toHaveBeenCalled();
             expect(db.booking.update).toHaveBeenCalled();
         });
 

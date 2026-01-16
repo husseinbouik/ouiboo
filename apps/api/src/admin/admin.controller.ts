@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Patch, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { DatabaseService } from '../database/database.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -29,28 +29,56 @@ export class AdminController {
 
     @Post('payments/:id/verify')
     @ApiOperation({ summary: 'Approve or reject payment proof' })
-    async verifyPayment(@Param('id') id: string, @Body('status') status: 'VERIFIED' | 'REJECTED') {
+    async verifyPayment(
+        @Param('id') id: string,
+        @Body('status') status: 'VERIFIED' | 'REJECTED',
+        @Body('rejectionReason') rejectionReason?: string
+    ) {
+        if (status === 'REJECTED' && !rejectionReason) {
+            throw new BadRequestException('Rejection reason is required when rejecting a payment');
+        }
+
         return this.db.$transaction(async (tx) => {
-            const proof = await tx.paymentProof.update({
+            const proof = await tx.paymentProof.findUnique({
                 where: { id },
-                data: { status }
+                include: { booking: { include: { session: { include: { template: true } } } } }
             });
 
-            const booking = await tx.booking.update({
+            if (!proof) {
+                throw new BadRequestException('Payment proof not found');
+            }
+
+            if (proof.status !== 'PENDING') {
+                throw new BadRequestException('Payment proof has already been reviewed');
+            }
+
+            if (proof.booking.status !== 'AWAITING_VALIDATION') {
+                throw new BadRequestException('Booking is not awaiting payment validation');
+            }
+
+            const updatedProof = await tx.paymentProof.update({
+                where: { id },
+                data: {
+                    status,
+                    rejectionReason: status === 'REJECTED' ? rejectionReason : null,
+                }
+            });
+
+            const updatedBooking = await tx.booking.update({
                 where: { id: proof.bookingId },
-                data: { status: status === 'VERIFIED' ? 'CONFIRMED' : 'CANCELLED' },
+                data: { status: status === 'VERIFIED' ? 'CONFIRMED' : 'REJECTED' },
                 include: { session: { include: { template: true } } }
             });
 
             if (status === 'VERIFIED') {
                 await this.walletsService.creditWallet(
-                    booking.session.template.agencyId,
-                    booking.totalAmount,
-                    `Booking #${booking.id} confirmed`
+                    updatedBooking.session.template.agencyId,
+                    updatedBooking.totalAmount,
+                    `Booking #${updatedBooking.id} confirmed`
                 );
             }
 
-            return proof;
+            return updatedProof;
         });
     }
 
