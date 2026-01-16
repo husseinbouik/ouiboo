@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { 
@@ -19,7 +19,11 @@ export default function SearchPage() {
     category: '',
     duration: '',
     priceMax: '',
-    searchQuery: ''
+    searchQuery: '',
+    dateFrom: '',
+    dateTo: '',
+    priceMin: '',
+    availabilityOnly: false
   });
 
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
@@ -35,14 +39,60 @@ export default function SearchPage() {
     }
   });
 
-  const updateFilter = (key: string, value: string) => {
+  const updateFilter = (key: string, value: string | boolean) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
     
     // Calculate active filters (excluding searchQuery)
-    const count = Object.entries(newFilters).filter(([k, v]) => k !== 'searchQuery' && v !== '').length;
+    const count = Object.entries(newFilters).filter(([k, v]) => {
+      if (k === 'searchQuery') return false;
+      if (typeof v === 'boolean') return v;
+      return v !== '';
+    }).length;
     setActiveFiltersCount(count);
   };
+
+  const filteredTrips = useMemo(() => {
+    if (!trips) return [];
+    return trips.filter((trip: any) => {
+      const sessions = trip.sessions || [];
+      const sessionDates = sessions.map((session: any) => new Date(session.startDate));
+      const minPrice = sessions.length
+        ? Math.min(...sessions.map((session: any) => Number(session.price || 0)))
+        : null;
+
+      if (filters.priceMin && minPrice !== null && minPrice < Number(filters.priceMin)) {
+        return false;
+      }
+      if (filters.priceMax && minPrice !== null && minPrice > Number(filters.priceMax)) {
+        return false;
+      }
+
+      if (filters.dateFrom) {
+        const fromDate = new Date(filters.dateFrom);
+        if (!sessionDates.some((date: Date) => date >= fromDate)) {
+          return false;
+        }
+      }
+
+      if (filters.dateTo) {
+        const toDate = new Date(filters.dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        if (!sessionDates.some((date: Date) => date <= toDate)) {
+          return false;
+        }
+      }
+
+      if (filters.availabilityOnly) {
+        const hasAvailability = sessions.some(
+          (session: any) => session.status === 'OPEN' && session.availableSeats > 0
+        );
+        if (!hasAvailability) return false;
+      }
+
+      return true;
+    });
+  }, [filters, trips]);
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground overflow-hidden">
@@ -113,7 +163,7 @@ export default function SearchPage() {
                     </h3>
                     {activeFiltersCount > 0 && (
                         <button 
-                            onClick={() => setFilters({ category: '', duration: '', priceMax: '', searchQuery: filters.searchQuery })}
+                            onClick={() => setFilters({ category: '', duration: '', priceMax: '', searchQuery: filters.searchQuery, dateFrom: '', dateTo: '', priceMin: '', availabilityOnly: false })}
                             className="text-xs font-semibold text-muted-foreground hover:text-red-500 transition-colors"
                         >
                             Reset
@@ -143,6 +193,65 @@ export default function SearchPage() {
                             ))}
                         </div>
                     </div>
+
+                    {/* Date Filter */}
+                    <div className="space-y-3">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Dates</p>
+                        <div className="grid grid-cols-1 gap-3">
+                            <Input
+                              type="date"
+                              value={filters.dateFrom}
+                              onChange={(e) => updateFilter('dateFrom', e.target.value)}
+                              className="rounded-xl border-border bg-muted text-sm font-medium"
+                            />
+                            <Input
+                              type="date"
+                              value={filters.dateTo}
+                              onChange={(e) => updateFilter('dateTo', e.target.value)}
+                              className="rounded-xl border-border bg-muted text-sm font-medium"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Price Filter */}
+                    <div className="space-y-3">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Price Range (MAD)</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="Min"
+                              value={filters.priceMin}
+                              onChange={(e) => updateFilter('priceMin', e.target.value)}
+                              className="rounded-xl border-border bg-muted text-sm font-medium"
+                            />
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="Max"
+                              value={filters.priceMax}
+                              onChange={(e) => updateFilter('priceMax', e.target.value)}
+                              className="rounded-xl border-border bg-muted text-sm font-medium"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Availability Filter */}
+                    <div className="space-y-3">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Availability</p>
+                        <button
+                          onClick={() => updateFilter('availabilityOnly', !filters.availabilityOnly)}
+                          className={cn(
+                            "flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all border w-full",
+                            filters.availabilityOnly
+                              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600"
+                              : "bg-muted border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                          )}
+                        >
+                          Only show available dates
+                          {filters.availabilityOnly && <Badge className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/30">On</Badge>}
+                        </button>
+                    </div>
                 </div>
             </div>
           </aside>
@@ -152,7 +261,7 @@ export default function SearchPage() {
             <div className="flex flex-col sm:flex-row justify-between items-center bg-muted/50 backdrop-blur-sm p-1 rounded-2xl border border-border">
                <div className="px-4 py-2">
                   <p className="text-sm font-medium text-muted-foreground">
-                    Showing <span className="font-bold text-foreground">{trips?.length || 0}</span> results
+                    Showing <span className="font-bold text-foreground">{filteredTrips.length}</span> results
                   </p>
                </div>
             </div>
@@ -160,11 +269,18 @@ export default function SearchPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                {isLoading ? (
                 [1,2,3,4].map(i => (
-                    <div key={i} className="h-[400px] bg-muted rounded-[2rem] animate-pulse" />
+                    <div key={i} className="rounded-[2rem] border border-border bg-card/80 overflow-hidden">
+                      <div className="h-52 bg-muted animate-pulse" />
+                      <div className="p-6 space-y-4">
+                        <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
+                        <div className="h-4 w-1/2 bg-muted rounded animate-pulse" />
+                        <div className="h-10 w-full bg-muted rounded animate-pulse" />
+                      </div>
+                    </div>
                 ))
               ) : (
                 <AnimatePresence mode="popLayout">
-                    {trips?.map((trip: any, idx: number) => (
+                    {filteredTrips.map((trip: any, idx: number) => (
                       <motion.div 
                           key={trip.id} 
                           initial={{ opacity: 0, scale: 0.95 }}
@@ -176,11 +292,11 @@ export default function SearchPage() {
                     ))}
                 </AnimatePresence>
               )}
-              {!isLoading && trips?.length === 0 && (
+              {!isLoading && filteredTrips.length === 0 && (
                  <div className="col-span-full py-20 text-center">
-                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🏜️</div>
-                    <h3 className="text-xl font-bold text-foreground">No trips found</h3>
-                    <p className="text-muted-foreground mt-2">Try adjusting your filters or search query.</p>
+                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🧭</div>
+                    <h3 className="text-xl font-bold text-foreground">No trips match your filters</h3>
+                    <p className="text-muted-foreground mt-2">Adjust dates, price, or availability to explore more options.</p>
                  </div>
               )}
             </div>
