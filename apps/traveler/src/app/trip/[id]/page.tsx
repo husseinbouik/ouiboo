@@ -30,6 +30,7 @@ import { useAuth } from '@/components/AuthContext';
 
 export default function TripDetailsPage() {
   const { id } = useParams();
+  const tripId = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { user, setShowLoginModal } = useAuth();
@@ -37,9 +38,10 @@ export default function TripDetailsPage() {
   const [activeImage, setActiveImage] = useState(0);
 
   const { data: trip, isLoading } = useQuery({
-    queryKey: ['trip', id],
+    queryKey: ['trip', tripId],
+    enabled: !!tripId,
     queryFn: async () => {
-      const response = await apiClient.get(`/trips/${id}`);
+      const response = await apiClient.get(`/trips/${tripId}`);
       return response.data;
     }
   });
@@ -137,7 +139,7 @@ export default function TripDetailsPage() {
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                     <div className="flex flex-wrap items-center gap-3 mb-6">
                         <Badge className="bg-sunset-orange/10 text-sunset-orange border-sunset-orange/20 px-3 py-1 rounded-full font-bold uppercase text-[10px] tracking-wider">
-                            {t(`categories.${trip.category.toLowerCase()}`)}
+                            {trip.category ? t(`categories.${trip.category.toLowerCase()}`) : t('categories.adventure')}
                         </Badge>
                         <span className="text-border mx-1">|</span>
                         <div className="flex items-center text-sm font-semibold text-muted-foreground">
@@ -387,7 +389,7 @@ export default function TripDetailsPage() {
                                 if (!user) {
                                     setShowLoginModal(true);
                                 } else {
-                                    router.push(`/booking/${id}?session=${selectedSession}`);
+                                    router.push(`/booking/${tripId}?session=${selectedSession}`);
                                 }
                             }}
                             className="w-full h-14 rounded-xl text-lg font-bold bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-orange-600 text-white shadow-lg shadow-blue-900/20 dark:shadow-orange-900/20 transition-all active:scale-95 disabled:opacity-50"

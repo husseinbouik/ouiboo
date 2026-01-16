@@ -30,14 +30,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         queryKey: ['me-traveler'],
         queryFn: async () => {
             try {
+                const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                if (!token) {
+                    return null;
+                }
                 const response = await apiClient.get('/users/me');
                 return response.data;
             } catch (error) {
                 return null;
             }
         },
-        // Only fetch if we have a token
-        enabled: typeof window !== 'undefined' && !!localStorage.getItem('token'),
         retry: false,
     });
 
