@@ -123,6 +123,7 @@ export class BookingsService {
                         email: true,
                     },
                 },
+                paymentProof: true,
             },
         });
     }
@@ -153,6 +154,7 @@ export class BookingsService {
                 where: { id: bookingId },
                 data: {
                     status: 'PENDING_PAYMENT',
+                    paymentProofUrl: imageUrl,
                     paymentProofId: proof.id,
                 },
             });
