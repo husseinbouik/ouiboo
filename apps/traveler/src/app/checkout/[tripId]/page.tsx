@@ -44,7 +44,9 @@ export default function CheckoutPage() {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [guestCount, setGuestCount] = useState(1);
   const [uploading, setUploading] = useState(false);
-  const hasInitializedFromQuery = useRef(false);
+  const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [documentNumber, setDocumentNumber] = useState('');
 
   useEffect(() => {
     if (timeLeft <= 0) return;
@@ -88,6 +90,18 @@ export default function CheckoutPage() {
     }
   }, [searchParams, trip?.sessions]);
 
+  useEffect(() => {
+    const sessionFromQuery = searchParams.get('session');
+    if (sessionFromQuery) {
+      setSelectedSessionId(sessionFromQuery);
+    }
+
+    const parsedGuestsCount = Number(searchParams.get('guests'));
+    if (Number.isFinite(parsedGuestsCount) && parsedGuestsCount > 0) {
+      setGuestCount(parsedGuestsCount);
+    }
+  }, [searchParams]);
+
   const selectedSession = trip?.sessions?.find((session: any) => session.id === selectedSessionId);
   const sessionPrice = selectedSession?.price ?? 0;
   const totalPrice = sessionPrice * guestCount;
@@ -100,10 +114,16 @@ export default function CheckoutPage() {
       if (!selectedSessionId) {
         throw new Error('Session is required');
       }
+      if (!fullName.trim() || !phoneNumber.trim() || !documentNumber.trim()) {
+        throw new Error('Guest contact details are required');
+      }
 
       const response = await apiClient.post('/bookings', {
         sessionId: selectedSessionId,
-        guestsCount: guestCount
+        guestsCount: guestCount,
+        fullName: fullName.trim(),
+        phoneNumber: phoneNumber.trim(),
+        documentNumber: documentNumber.trim()
       });
       return response.data;
     },
@@ -203,18 +223,33 @@ export default function CheckoutPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Full Name</Label>
-                                <Input placeholder="Abderrahmane..." className="h-14 rounded-2xl bg-muted/30 border-none font-bold text-lg" />
+                                <Input
+                                    placeholder="Abderrahmane..."
+                                    className="h-14 rounded-2xl bg-muted/30 border-none font-bold text-lg"
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Phone Number</Label>
                                 <div className="relative">
                                     <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                    <Input placeholder="+212 ..." className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold text-lg" />
+                                    <Input
+                                        placeholder="+212 ..."
+                                        className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold text-lg"
+                                        value={phoneNumber}
+                                        onChange={(e) => setPhoneNumber(e.target.value)}
+                                    />
                                 </div>
                             </div>
                             <div className="space-y-2 md:col-span-2">
                                 <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">CIN or Passport Number</Label>
-                                <Input placeholder="Enter document number for insurance" className="h-14 rounded-2xl bg-muted/30 border-none font-bold text-lg" />
+                                <Input
+                                    placeholder="Enter document number for insurance"
+                                    className="h-14 rounded-2xl bg-muted/30 border-none font-bold text-lg"
+                                    value={documentNumber}
+                                    onChange={(e) => setDocumentNumber(e.target.value)}
+                                />
                             </div>
                         </div>
                     </div>
@@ -412,15 +447,6 @@ export default function CheckoutPage() {
                       <div className="flex justify-between items-center text-sm">
                           <span className="text-muted-foreground font-medium flex items-center gap-2"><Users className="h-4 w-4" /> Guest Count</span>
                           <span className="font-black">{guestCount} Traveler{guestCount > 1 ? 's' : ''}</span>
-                          <span className="font-black">
-                            {selectedSession?.startDate
-                              ? `${new Date(selectedSession.startDate).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })} - ${new Date(selectedSession.endDate).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}`
-                              : 'Select a session'}
-                          </span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm">
-                          <span className="text-muted-foreground font-medium flex items-center gap-2"><Users className="h-4 w-4" /> Guest Count</span>
-                          <span className="font-black">{guestsCount} Traveler{guestsCount > 1 ? 's' : ''}</span>
                       </div>
                   </div>
 
@@ -428,7 +454,6 @@ export default function CheckoutPage() {
                       <div className="flex justify-between items-center">
                           <span className="text-muted-foreground font-medium">Subtotal</span>
                           <span className="font-bold">{totalPrice.toFixed(2)} MAD</span>
-                          <span className="font-bold">{(selectedSession?.price || 0) * guestsCount} MAD</span>
                       </div>
                       <div className="flex justify-between items-center">
                           <span className="text-muted-foreground font-medium">Service Fee</span>
@@ -438,7 +463,6 @@ export default function CheckoutPage() {
                           <span className="text-lg font-black font-display tracking-tight text-foreground">Total to pay</span>
                           <div className="text-right">
                               <span className="text-4xl font-black font-display text-primary tracking-tighter leading-none block">{totalPrice.toFixed(2)}</span>
-                              <span className="text-4xl font-black font-display text-primary tracking-tighter leading-none block">{(selectedSession?.price || 0) * guestsCount}</span>
                               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Dirhams</span>
                           </div>
                       </div>
@@ -446,7 +470,14 @@ export default function CheckoutPage() {
                </div>
 
                <Button 
-                disabled={!proof || !selectedSessionId || createBookingMutation.isPending}
+                disabled={
+                  !proof ||
+                  !selectedSessionId ||
+                  !fullName.trim() ||
+                  !phoneNumber.trim() ||
+                  !documentNumber.trim() ||
+                  createBookingMutation.isPending
+                }
                 onClick={() => createBookingMutation.mutate()}
                 className="w-full h-20 rounded-[2rem] text-xl font-black bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 border-none group px-10"
                >
