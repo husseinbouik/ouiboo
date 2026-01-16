@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -69,10 +69,26 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
-    if (trip?.sessions?.length && !selectedSessionId) {
+    if (hasInitializedFromQuery.current) return;
+
+    const sessionParam = searchParams.get('session');
+    const parsedGuestsCount = Number(searchParams.get('guests'));
+    const hasGuestsCount = Number.isFinite(parsedGuestsCount) && parsedGuestsCount > 0;
+
+    if (sessionParam) {
+      setSelectedSessionId(sessionParam);
+    } else if (trip?.sessions?.length) {
       setSelectedSessionId(trip.sessions[0].id);
     }
-  }, [trip?.sessions, selectedSessionId]);
+
+    if (hasGuestsCount) {
+      setGuestCount(parsedGuestsCount);
+    }
+
+    if (sessionParam || hasGuestsCount || trip?.sessions?.length) {
+      hasInitializedFromQuery.current = true;
+    }
+  }, [searchParams, trip?.sessions]);
 
   useEffect(() => {
     const sessionFromQuery = searchParams.get('session');
