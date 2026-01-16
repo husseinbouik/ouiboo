@@ -21,6 +21,7 @@ import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
+import { VerificationStatus } from '@ouiboo/types';
 
 export default function OnboardingPage() {
   const { user, refetch } = useAuth();
@@ -80,8 +81,8 @@ export default function OnboardingPage() {
 
   if (!mounted) return null;
 
-  const isVerified = user?.agencyProfile?.verificationStatus === 'VERIFIED';
-  const isPending = user?.agencyProfile?.verificationStatus === 'PENDING' || !user?.agencyProfile;
+  const isVerified = user?.agencyProfile?.verificationStatus === VerificationStatus.Verified;
+  const isPending = user?.agencyProfile?.verificationStatus === VerificationStatus.Pending || !user?.agencyProfile;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">

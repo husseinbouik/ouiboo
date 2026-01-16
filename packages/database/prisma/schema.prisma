@@ -35,10 +35,11 @@ enum TripCategory {
 
 enum BookingStatus {
   PENDING
+  AWAITING_VALIDATION
   CONFIRMED
+  REJECTED
   CANCELLED
   COMPLETED
-  PENDING_PAYMENT
 }
 
 enum PayoutStatus {
@@ -167,6 +168,7 @@ model PaymentProof {
   booking    Booking    @relation(fields: [bookingId], references: [id])
   imageUrl   String
   uploadedAt DateTime   @default(now())
+  rejectionReason String?
   status     VerificationStatus @default(PENDING)
 }
 

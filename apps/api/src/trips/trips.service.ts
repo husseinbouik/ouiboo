@@ -6,15 +6,7 @@ import { CreateTripTemplateDto, CreateTripSessionDto } from './dto/create-trip.d
 export class TripsService {
     constructor(private db: DatabaseService) { }
 
-    async createTemplate(userId: string, dto: CreateTripTemplateDto) {
-        const agency = await this.db.agencyProfile.findUnique({
-            where: { userId }
-        });
-
-        if (!agency) {
-            throw new Error('Agency profile not found');
-        }
-
+    async createTemplate(tenantId: string, dto: CreateTripTemplateDto) {
         const { itinerary, ...tripData } = dto;
         console.log(`[TripsService] Creating template. Itinerary count: ${itinerary?.length || 0}`);
         if (itinerary) {
@@ -23,7 +15,7 @@ export class TripsService {
 
         const data = {
             ...tripData,
-            agencyId: agency.id,
+            agencyId: tenantId,
             itinerary: itinerary && itinerary.length > 0 ? {
                 create: itinerary
             } : undefined
@@ -38,16 +30,15 @@ export class TripsService {
             }
         });
 
-        console.log(`[TripsService] Created template ${result.id} for agency ${agency.id}.Status: DRAFT`);
+        console.log(`[TripsService] Created template ${result.id} for agency ${tenantId}.Status: DRAFT`);
         return result;
     }
 
-    async findAllTemplates(featured?: boolean, status?: string, agencyId?: string) {
+    async findAllTemplates(featured?: boolean, status?: string) {
         try {
             const where: any = {};
             if (featured) where.featured = true;
             if (status) where.status = status;
-            if (agencyId) where.agencyId = agencyId;
 
             return await this.db.tripTemplate.findMany({
                 where,
@@ -93,18 +84,11 @@ export class TripsService {
         return result;
     }
 
-    async createSession(userId: string, templateId: string, dto: CreateTripSessionDto) {
-        const agency = await this.db.agencyProfile.findUnique({
-            where: { userId }
-        });
-        if (!agency) {
-            throw new Error('Agency profile not found');
-        }
-
+    async createSession(tenantId: string, templateId: string, dto: CreateTripSessionDto) {
         const template = await this.db.tripTemplate.findFirst({
             where: {
                 id: templateId,
-                agencyId: agency.id,
+                agencyId: tenantId,
             },
         });
 
@@ -129,16 +113,13 @@ export class TripsService {
         });
     }
 
-    async updateTemplate(id: string, userId: string, dto: Partial<CreateTripTemplateDto>) {
-        const agency = await this.db.agencyProfile.findUnique({ where: { userId } });
-        if (!agency) throw new Error('Agency profile not found');
-
+    async updateTemplate(id: string, tenantId: string, dto: Partial<CreateTripTemplateDto>) {
         const { itinerary, ...tripData } = dto;
-        console.log(`[TripsService] Updating template ${id} for agency ${agency.id}`);
+        console.log(`[TripsService] Updating template ${id} for agency ${tenantId}`);
 
         // Verify ownership
         const existing = await this.db.tripTemplate.findFirst({
-            where: { id, agencyId: agency.id }
+            where: { id, agencyId: tenantId }
         });
         if (!existing) throw new Error('Trip template not found or unauthorized');
 
@@ -157,15 +138,12 @@ export class TripsService {
         });
     }
 
-    async deleteTemplate(id: string, userId: string) {
-        const agency = await this.db.agencyProfile.findUnique({ where: { userId } });
-        if (!agency) throw new Error('Agency profile not found');
-
+    async deleteTemplate(id: string, tenantId: string) {
         // Verify ownership implicitly by deleting with agencyId in where (Prisma doesn't support easy delete with composite where unless ID is unique, but we can findFirst then delete)
         // Actually, deleteMany is safer here to avoid errors if not found, but we want to error if not found.
 
         const existing = await this.db.tripTemplate.findFirst({
-            where: { id, agencyId: agency.id }
+            where: { id, agencyId: tenantId }
         });
         if (!existing) throw new Error('Trip template not found or unauthorized');
 

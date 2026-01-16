@@ -1,13 +1,14 @@
 import { apiClient } from '@/lib/api-client';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
+import { VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 
 interface AgencyPublicProfile {
   id: string;
   companyName: string;
   bio: string | null;
   logo: string | null;
-  verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  verificationStatus: VerificationStatusType;
 }
 
 interface Trip {
@@ -68,7 +69,7 @@ export default async function AgencyPage({ params }: { params: { agencyId: strin
             
             <h1 className="text-4xl font-bold mb-2 flex items-center gap-2">
                 {agency.companyName}
-                {agency.verificationStatus === 'VERIFIED' && (
+                {agency.verificationStatus === VerificationStatus.Verified && (
                     <span className="text-blue-500" title="Verified Agency">
                         <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                     </span>
