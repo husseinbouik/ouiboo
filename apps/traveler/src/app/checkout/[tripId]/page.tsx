@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { 
   Card, 
@@ -27,7 +27,8 @@ import {
   X,
   Smartphone,
   MapPin,
-  Lock
+  Lock,
+  Clock
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,12 +36,14 @@ import { cn } from '@ouiboo/ui/utils';
 
 export default function CheckoutPage() {
   const { tripId } = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const [paymentMethod, setPaymentMethod] = useState('virement');
   const [proof, setProof] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(15 * 60);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [guestCount, setGuestCount] = useState(1);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (timeLeft <= 0) return;
@@ -74,6 +77,44 @@ export default function CheckoutPage() {
   const sessionDateLabel = selectedSession
     ? `${new Date(selectedSession.startDate).toLocaleDateString()} - ${new Date(selectedSession.endDate).toLocaleDateString()}`
     : 'Select a session';
+  const selectedSessionId = searchParams.get('session') || trip?.sessions?.[0]?.id;
+  const selectedSession = trip?.sessions?.find((session: any) => session.id === selectedSessionId);
+  const parsedGuestsCount = Number(searchParams.get('guests'));
+  const guestsCount = Number.isFinite(parsedGuestsCount) && parsedGuestsCount > 0 ? parsedGuestsCount : 1;
+
+  const createBookingMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedSessionId) {
+        throw new Error('Session is required');
+      }
+
+      const response = await apiClient.post('/bookings', {
+        sessionId: selectedSessionId,
+        guestsCount
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      router.push(`/checkout/confirmation?bookingId=${data?.id ?? ''}&proof=1`);
+    }
+  });
+  const handleProofUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await apiClient.post('/upload', formData);
+      setProof(response.data.url);
+    } catch (error) {
+      console.error('Upload failed:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center font-black animate-pulse">Initializing Security...</div>;
 
@@ -253,10 +294,8 @@ export default function CheckoutPage() {
                                     <p className="text-xs font-black text-foreground uppercase tracking-widest">3. Upload Proof of Payment</p>
                                     <Badge variant="outline" className="text-[8px] font-black border-primary/20 text-primary">Required to Confirm</Badge>
                                 </div>
-                                <div 
-                                    className="h-44 border-4 border-dashed border-muted rounded-[2rem] flex flex-col items-center justify-center gap-4 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-pointer group"
-                                    onClick={() => setProof('https://images.unsplash.com/photo-1614028674026-a65e31bfd27c?q=80&w=2070&auto=format&fit=crop')}
-                                >
+                                <label className="h-44 border-4 border-dashed border-muted rounded-[2rem] flex flex-col items-center justify-center gap-4 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-pointer group">
+                                    <input type="file" className="hidden" onChange={handleProofUpload} disabled={uploading} accept="image/*,application/pdf" />
                                     <AnimatePresence mode="wait">
                                         {proof ? (
                                             <motion.div 
@@ -275,6 +314,11 @@ export default function CheckoutPage() {
                                                     <X className="h-4 w-4" />
                                                 </button>
                                             </motion.div>
+                                        ) : uploading ? (
+                                            <div className="flex flex-col items-center gap-2">
+                                                <div className="h-10 w-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Uploading...</span>
+                                            </div>
                                         ) : (
                                             <div className="flex flex-col items-center gap-2">
                                                 <UploadCloud className="h-10 w-10 text-muted-foreground group-hover:text-primary group-hover:scale-110 transition-all" />
@@ -282,8 +326,41 @@ export default function CheckoutPage() {
                                             </div>
                                         )}
                                     </AnimatePresence>
-                                </div>
+                                </label>
                                 <p className="text-[10px] text-muted-foreground text-center font-medium italic">Your booking is secured as soon as you upload this proof.</p>
+                            </div>
+
+                            <div className="space-y-4 pt-6 border-t border-border/50">
+                                <p className="text-xs font-black text-foreground uppercase tracking-widest">Payment Status</p>
+                                <div className="space-y-3">
+                                    <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
+                                        <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center", proof ? "bg-emerald-500 text-white" : "bg-amber-500 text-white")}>
+                                            {proof ? <CheckCircle2 className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-foreground">Pending payment</p>
+                                            <p className="text-[10px] font-medium text-muted-foreground">We are waiting for your transfer to be initiated.</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
+                                        <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center", proof ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground")}>
+                                            <UploadCloud className="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-foreground">Payment proof uploaded</p>
+                                            <p className="text-[10px] font-medium text-muted-foreground">Upload your receipt to lock in your reservation.</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
+                                        <div className="h-8 w-8 rounded-xl flex items-center justify-center bg-muted text-muted-foreground">
+                                            <ShieldCheck className="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-foreground">Agency verification</p>
+                                            <p className="text-[10px] font-medium text-muted-foreground">Confirmation is sent once the agency verifies your payment.</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </CardContent>
@@ -322,6 +399,15 @@ export default function CheckoutPage() {
                       <div className="flex justify-between items-center text-sm">
                           <span className="text-muted-foreground font-medium flex items-center gap-2"><Users className="h-4 w-4" /> Guest Count</span>
                           <span className="font-black">{guestCount} Traveler{guestCount > 1 ? 's' : ''}</span>
+                          <span className="font-black">
+                            {selectedSession?.startDate
+                              ? `${new Date(selectedSession.startDate).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })} - ${new Date(selectedSession.endDate).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}`
+                              : 'Select a session'}
+                          </span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                          <span className="text-muted-foreground font-medium flex items-center gap-2"><Users className="h-4 w-4" /> Guest Count</span>
+                          <span className="font-black">{guestsCount} Traveler{guestsCount > 1 ? 's' : ''}</span>
                       </div>
                   </div>
 
@@ -329,6 +415,7 @@ export default function CheckoutPage() {
                       <div className="flex justify-between items-center">
                           <span className="text-muted-foreground font-medium">Subtotal</span>
                           <span className="font-bold">{totalPrice.toFixed(2)} MAD</span>
+                          <span className="font-bold">{(selectedSession?.price || 0) * guestsCount} MAD</span>
                       </div>
                       <div className="flex justify-between items-center">
                           <span className="text-muted-foreground font-medium">Service Fee</span>
@@ -338,6 +425,7 @@ export default function CheckoutPage() {
                           <span className="text-lg font-black font-display tracking-tight text-foreground">Total to pay</span>
                           <div className="text-right">
                               <span className="text-4xl font-black font-display text-primary tracking-tighter leading-none block">{totalPrice.toFixed(2)}</span>
+                              <span className="text-4xl font-black font-display text-primary tracking-tighter leading-none block">{(selectedSession?.price || 0) * guestsCount}</span>
                               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Dirhams</span>
                           </div>
                       </div>
@@ -345,10 +433,11 @@ export default function CheckoutPage() {
                </div>
 
                <Button 
-                disabled={!proof}
+                disabled={!proof || !selectedSessionId || createBookingMutation.isPending}
+                onClick={() => createBookingMutation.mutate()}
                 className="w-full h-20 rounded-[2rem] text-xl font-black bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 border-none group px-10"
                >
-                   Complete Booking <CheckCircle2 className="h-6 w-6 ml-4 group-hover:scale-110 transition-transform" />
+                   {createBookingMutation.isPending ? 'Submitting booking...' : 'Complete Booking'} <CheckCircle2 className="h-6 w-6 ml-4 group-hover:scale-110 transition-transform" />
                </Button>
 
                <div className="flex items-center justify-center gap-4 pt-4 opacity-50">
