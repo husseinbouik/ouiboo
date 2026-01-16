@@ -19,4 +19,8 @@ export class UploadService {
             size: file.size,
         };
     }
+
+    getFilePath(key: string) {
+        return this.storageProvider.getFilePath(key);
+    }
 }

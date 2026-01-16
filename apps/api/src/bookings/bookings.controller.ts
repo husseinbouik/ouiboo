@@ -1,11 +1,14 @@
-import { Controller, Post, Get, Body, UseGuards, Request, Param, Patch } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Post, Get, Body, UseGuards, Request, Param, Patch, UploadedFile, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Res } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@ouiboo/types';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
+import { ALLOWED_MIME_TYPES_REGEX, MAX_UPLOAD_SIZE_BYTES } from '../upload/upload.constants';
 
 @ApiTags('Bookings')
 @Controller('bookings')
@@ -32,8 +35,47 @@ export class BookingsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Upload payment proof for a booking' })
-    uploadPaymentProof(@Request() req, @Param('id') id: string, @Body('imageUrl') imageUrl: string) {
-        return this.bookingsService.uploadPaymentProof(id, req.user.userId, imageUrl);
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                file: {
+                    type: 'string',
+                    format: 'binary',
+                },
+            },
+        },
+    })
+    @UseInterceptors(FileInterceptor('file'))
+    uploadPaymentProof(
+        @Request() req,
+        @Param('id') id: string,
+        @UploadedFile(
+            new ParseFilePipe({
+                validators: [
+                    new MaxFileSizeValidator({ maxSize: MAX_UPLOAD_SIZE_BYTES }),
+                    new FileTypeValidator({ fileType: ALLOWED_MIME_TYPES_REGEX }),
+                ],
+                errorHttpStatusCode: 400,
+            }),
+        )
+        file: Express.Multer.File,
+    ) {
+        return this.bookingsService.uploadPaymentProof(id, req.user.userId, file);
+    }
+
+    @Get(':id/payment-proof/download')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Download payment proof (booking owner or agency)' })
+    async downloadPaymentProof(
+        @Request() req,
+        @Param('id') id: string,
+        @Res() res: Response,
+    ) {
+        const { filePath } = await this.bookingsService.getPaymentProofFile(id, req.user.userId);
+        return res.sendFile(filePath);
     }
     @Patch(':id/verify-payment')
     @ApiBearerAuth()
