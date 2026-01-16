@@ -9,10 +9,39 @@
     "agencyLogin": "Agency Login"
   },
   "hero": {
+    "badge": "New marketplace launch",
     "title": "Your Next Adventure, Effortlessly Connected.",
     "subtitle": "For travelers, a world of curated journeys. For agencies, a powerful growth platform. Ouiboo is the meeting point of travel.",
     "ctaPrimary": "Join the waitlist and get a free month",
-    "ctaSecondary": "Learn more"
+    "ctaSecondary": "Explore trips",
+    "ctaTertiary": "Learn more"
+  },
+  "trusted": {
+    "title": "Trusted by early partners",
+    "subtitle": "Independent agencies building unforgettable journeys."
+  },
+  "highlights": {
+    "title": "Built for real-world travel businesses",
+    "subtitle": "Everything you need to list, sell, and deliver standout trips without the chaos.",
+    "curated": {
+      "title": "Curated experiences",
+      "description": "Offer verified itineraries with clear inclusions, safety checks, and transparent reviews."
+    },
+    "payments": {
+      "title": "Frictionless bookings",
+      "description": "Streamlined checkout, flexible deposits, and automated traveler updates."
+    },
+    "growth": {
+      "title": "Growth-ready tools",
+      "description": "Analytics, promotions, and availability management built for scaling agencies."
+    }
+  },
+  "stats": {
+    "items": {
+      "agencies": "Agencies onboarding",
+      "travelers": "Travelers on waitlist",
+      "repeat": "Repeat booking intent"
+    }
   },
   "howItWorks": {
     "preTitle": "The Process",

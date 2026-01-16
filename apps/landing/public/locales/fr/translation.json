@@ -9,10 +9,39 @@
     "agencyLogin": "Espace Agences"
   },
   "hero": {
+    "badge": "Nouveau lancement marketplace",
     "title": "Votre Prochaine Aventure, Connectée en Toute Simplicité.",
     "subtitle": "Pour les voyageurs, un monde de séjours organisés. Pour les agences, une plateforme puissante pour se développer. Ouiboo est le point de rencontre du voyage.",
     "ctaPrimary": "Rejoignez la liste d'attente et obtenez un mois gratuit",
-    "ctaSecondary": "En savoir plus"
+    "ctaSecondary": "Explorer les voyages",
+    "ctaTertiary": "En savoir plus"
+  },
+  "trusted": {
+    "title": "Approuvé par nos premiers partenaires",
+    "subtitle": "Des agences indépendantes qui créent des expériences inoubliables."
+  },
+  "highlights": {
+    "title": "Pensé pour les agences de voyage",
+    "subtitle": "Tout ce qu'il faut pour publier, vendre et gérer vos voyages sans complexité.",
+    "curated": {
+      "title": "Expériences sélectionnées",
+      "description": "Proposez des itinéraires vérifiés avec inclusions claires, sécurité et avis transparents."
+    },
+    "payments": {
+      "title": "Réservations fluides",
+      "description": "Checkout simplifié, dépôts flexibles et notifications voyageurs automatisées."
+    },
+    "growth": {
+      "title": "Outils de croissance",
+      "description": "Analytique, promotions et gestion des disponibilités conçues pour évoluer."
+    }
+  },
+  "stats": {
+    "items": {
+      "agencies": "Agences en onboarding",
+      "travelers": "Voyageurs sur liste d'attente",
+      "repeat": "Intentions de re-réservation"
+    }
   },
   "howItWorks": {
     "preTitle": "Le Processus",
