@@ -44,7 +44,8 @@ export class BookingsController {
     verifyPayment(
         @Request() req,
         @Param('id') id: string,
-        @Body('approved') approved: boolean
+        @Body('approved') approved: boolean,
+        @Body('rejectionReason') rejectionReason?: string
     ) {
         return this.bookingsService.verifyPayment(id, req.tenantId, approved);
     }
