@@ -47,6 +47,28 @@ export class EmailService {
         }
     }
 
+    async sendMail(to: string, subject: string, html: string) {
+        return this.sendEmail(to, subject, html);
+    }
+
+    getOTPTemplate(otp: string) {
+        return `
+            <h1>Verify your email</h1>
+            <p>Use the verification code below to complete your signup:</p>
+            <p style="font-size: 24px; font-weight: bold; letter-spacing: 2px;">${otp}</p>
+            <p>This code expires in 10 minutes.</p>
+        `;
+    }
+
+    getWelcomeTemplate(name?: string | null) {
+        const safeName = name ? ` ${name}` : '';
+        return `
+            <h1>Welcome to Ouiboo${safeName}!</h1>
+            <p>Your email is verified and your account is ready to go.</p>
+            <p>Start exploring trips and managing bookings from your dashboard.</p>
+        `;
+    }
+
     async sendBookingNotification(travelerEmail: string, agencyEmail: string, bookingId: string, tripTitle: string) {
         const travelerHtml = `
             <h1>Booking Received!</h1>
