@@ -23,7 +23,11 @@ import {
   Eye,
   CheckCircle2,
   AlertCircle,
-  ChevronRight
+  ChevronRight,
+  BadgeCheck,
+  FileText,
+  CreditCard,
+  MessageSquareText
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
@@ -72,6 +76,41 @@ const mockBookings = [
   { id: '4', trip: 'Dakhla Surf Camp', customer: 'Elena R.', date: '2024-05-16', amount: '3,500.00', status: 'Confirmed' },
 ];
 
+const quickActions = [
+  {
+    title: 'Complete verification',
+    description: 'Upload your documents and unlock higher withdrawal limits.',
+    href: '/dashboard/onboarding',
+    cta: 'Finish onboarding',
+    icon: BadgeCheck,
+    tone: 'bg-amber-50 text-amber-700'
+  },
+  {
+    title: 'Publish your next trip',
+    description: 'Create a new experience and start accepting bookings.',
+    href: '/dashboard/trips/create',
+    cta: 'Create trip',
+    icon: FileText,
+    tone: 'bg-blue-50 text-blue-700'
+  },
+  {
+    title: 'Review pending payments',
+    description: 'Verify proof uploads and confirm traveler payments.',
+    href: '/dashboard/bookings',
+    cta: 'Open bookings',
+    icon: CreditCard,
+    tone: 'bg-emerald-50 text-emerald-700'
+  },
+  {
+    title: 'Reply to traveler messages',
+    description: 'Respond quickly to keep conversion rates high.',
+    href: '/dashboard/bookings',
+    cta: 'View inbox',
+    icon: MessageSquareText,
+    tone: 'bg-slate-100 text-slate-700'
+  }
+];
+
 export default function AgencyDashboard() {
   const [mounted, setMounted] = React.useState(false);
 
@@ -87,13 +126,13 @@ export default function AgencyDashboard() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
           <h1 className="text-4xl font-black font-display tracking-tight">Bonjour, Sunset Travels</h1>
-          <p className="text-muted-foreground font-medium mt-1">Here's what's happening with your agency today.</p>
+          <p className="text-muted-foreground font-medium mt-1">Here is your agency command center for bookings, payouts, and growth.</p>
         </div>
         <div className="flex gap-3">
             <Button variant="outline" className="rounded-xl font-bold h-12 px-6 gap-2">
                 <Calendar className="h-4 w-4" /> This Month
             </Button>
-            <Button className="rounded-xl font-black h-12 px-8 bg-primary">Withdraw Funds</Button>
+            <Button className="rounded-xl font-black h-12 px-8 bg-primary">Request Payout</Button>
         </div>
       </div>
 
@@ -140,12 +179,50 @@ export default function AgencyDashboard() {
         ))}
       </div>
 
+      {/* Action Center */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-black font-display tracking-tight">Action Center</h2>
+            <p className="text-muted-foreground font-medium">Focus on the tasks that move revenue this week.</p>
+          </div>
+          <Button variant="ghost" className="font-bold text-primary gap-2 rounded-xl group">
+            See all actions <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {quickActions.map((action) => (
+            <Card key={action.title} className="border-none shadow-lg shadow-black/5 rounded-[2rem] overflow-hidden">
+              <CardContent className="p-6 flex flex-col gap-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-black text-foreground">{action.title}</h3>
+                    <p className="text-sm text-muted-foreground">{action.description}</p>
+                  </div>
+                  <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center", action.tone)}>
+                    <action.icon className="h-6 w-6" />
+                  </div>
+                </div>
+                <Link href={action.href} className="self-start">
+                  <Button variant="outline" className="rounded-xl font-bold">
+                    {action.cta}
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
       {/* Recent Activity Table */}
       <div className="space-y-6">
         <div className="flex justify-between items-center bg-card p-6 rounded-[2rem] border border-border/50 shadow-sm">
            <div className="flex items-center gap-4">
               <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center"><AlertCircle className="h-5 w-5 text-primary" /></div>
-              <h2 className="text-2xl font-black font-display tracking-tight">Recent Bookings</h2>
+              <div>
+                <h2 className="text-2xl font-black font-display tracking-tight">Recent Bookings</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{mockBookings.length} new requests</p>
+              </div>
            </div>
            <Button variant="ghost" className="font-bold text-primary gap-2 rounded-xl group">
              View All <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
