@@ -102,10 +102,11 @@ export interface TripSession {
 
 export enum BookingStatus {
     Pending = "PENDING",
+    AwaitingValidation = "AWAITING_VALIDATION",
     Confirmed = "CONFIRMED",
+    Rejected = "REJECTED",
     Cancelled = "CANCELLED",
     Completed = "COMPLETED",
-    PendingPayment = "PENDING_PAYMENT",
 }
 
 export interface Booking {
