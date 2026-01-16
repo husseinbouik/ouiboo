@@ -20,6 +20,7 @@ import Link from 'next/link';
 
 export default function BookingPage() {
   const { id } = useParams();
+  const tripId = Array.isArray(id) ? id[0] : id;
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('session');
   const router = useRouter();
@@ -29,9 +30,10 @@ export default function BookingPage() {
   const [bookingId, setBookingId] = useState<string | null>(null);
 
   const { data: trip } = useQuery({
-    queryKey: ['trip', id],
+    queryKey: ['trip', tripId],
+    enabled: !!tripId,
     queryFn: async () => {
-      const response = await apiClient.get(`/trips/${id}`);
+      const response = await apiClient.get(`/trips/${tripId}`);
       return response.data;
     }
   });

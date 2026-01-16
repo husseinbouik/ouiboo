@@ -103,8 +103,14 @@ export function Navbar() {
                         onMouseEnter={() => setProfileOpen(true)}
                         className="flex items-center gap-2 p-1.5 rounded-full hover:bg-muted/50 transition-colors"
                     >
-                        <div className="w-8 h-8 rounded-full bg-deep-blue text-white flex items-center justify-center font-bold text-xs">
-                            {user.name?.[0]?.toUpperCase()}
+                        <div className="w-8 h-8 rounded-full bg-deep-blue text-white flex items-center justify-center font-bold text-xs overflow-hidden">
+                            {user.avatar ? (
+                                <img src={user.avatar} alt={user.name || 'Profile'} className="w-full h-full object-cover" />
+                            ) : user.name ? (
+                                user.name?.[0]?.toUpperCase()
+                            ) : (
+                                <User className="h-4 w-4" />
+                            )}
                         </div>
                     </button>
 
