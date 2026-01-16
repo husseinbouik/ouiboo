@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { EmailService } from '../email/email.service';
@@ -145,16 +145,8 @@ export class BookingsService {
             throw new BadRequestException('Booking not found');
         }
 
-        const agency = await this.db.agencyProfile.findUnique({ where: { userId } });
-        const isTraveler = booking.travelerId === userId;
-        const isAgencyOwner = agency && booking.session.template.agencyId === agency.id;
-
-        if (!isTraveler && !isAgencyOwner) {
-            throw new BadRequestException('Unauthorized: Booking does not belong to you');
-        }
-
-        if (booking.paymentProofId) {
-            throw new BadRequestException('Payment proof already uploaded');
+        if (booking.travelerId !== travelerId) {
+            throw new ForbiddenException('Forbidden');
         }
 
         const uploadResult = await this.uploadService.uploadFile(file, `payment-proofs/${bookingId}`);
@@ -239,8 +231,9 @@ export class BookingsService {
 
         if (!booking) throw new BadRequestException('Booking not found');
 
-        if (booking.session.template.agencyId !== tenantId) {
-            throw new BadRequestException('Unauthorized: Booking does not belong to your agency');
+        const agency = await this.db.agencyProfile.findUnique({ where: { userId: agencyUserId } });
+        if (!agency || booking.session.template.agencyId !== agency.id) {
+            throw new ForbiddenException('Forbidden');
         }
 
         if (!booking.paymentProof) {
@@ -303,7 +296,7 @@ export class BookingsService {
         }
 
         if (booking.travelerId !== travelerId) {
-            throw new BadRequestException('Unauthorized: You can only cancel your own bookings');
+            throw new ForbiddenException('Forbidden');
         }
 
         const cancellableStatuses = new Set(['PENDING', 'AWAITING_VALIDATION', 'CONFIRMED']);

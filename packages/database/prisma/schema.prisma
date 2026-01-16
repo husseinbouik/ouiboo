@@ -72,10 +72,26 @@ model User {
   otp           String?
   otpExpiresAt  DateTime?
   otpLastSentAt DateTime?
+  refreshTokens RefreshToken[]
   agencyProfile AgencyProfile?
   bookings      Booking[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+}
+
+model RefreshToken {
+  id                String        @id @default(cuid())
+  tokenHash         String        @unique
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime      @default(now())
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  replacedByTokenId String?
+  replacedByToken   RefreshToken? @relation("RefreshTokenRotation", fields: [replacedByTokenId], references: [id])
+  replacedTokens    RefreshToken[] @relation("RefreshTokenRotation")
+
+  @@index([userId])
 }
 
 model AgencyProfile {

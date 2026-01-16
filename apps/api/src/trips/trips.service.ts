@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateTripTemplateDto, CreateTripSessionDto } from './dto/create-trip.dto';
 
@@ -6,7 +6,15 @@ import { CreateTripTemplateDto, CreateTripSessionDto } from './dto/create-trip.d
 export class TripsService {
     constructor(private db: DatabaseService) { }
 
-    async createTemplate(tenantId: string, dto: CreateTripTemplateDto) {
+    async createTemplate(userId: string, dto: CreateTripTemplateDto) {
+        const agency = await this.db.agencyProfile.findUnique({
+            where: { userId }
+        });
+
+        if (!agency) {
+            throw new ForbiddenException('Forbidden');
+        }
+
         const { itinerary, ...tripData } = dto;
         console.log(`[TripsService] Creating template. Itinerary count: ${itinerary?.length || 0}`);
         if (itinerary) {
@@ -84,7 +92,14 @@ export class TripsService {
         return result;
     }
 
-    async createSession(tenantId: string, templateId: string, dto: CreateTripSessionDto) {
+    async createSession(userId: string, templateId: string, dto: CreateTripSessionDto) {
+        const agency = await this.db.agencyProfile.findUnique({
+            where: { userId }
+        });
+        if (!agency) {
+            throw new ForbiddenException('Forbidden');
+        }
+
         const template = await this.db.tripTemplate.findFirst({
             where: {
                 id: templateId,
@@ -93,7 +108,7 @@ export class TripsService {
         });
 
         if (!template) {
-            throw new Error('Trip template not found or unauthorized');
+            throw new ForbiddenException('Forbidden');
         }
 
         return this.db.tripSession.create({
@@ -113,7 +128,10 @@ export class TripsService {
         });
     }
 
-    async updateTemplate(id: string, tenantId: string, dto: Partial<CreateTripTemplateDto>) {
+    async updateTemplate(id: string, userId: string, dto: Partial<CreateTripTemplateDto>) {
+        const agency = await this.db.agencyProfile.findUnique({ where: { userId } });
+        if (!agency) throw new ForbiddenException('Forbidden');
+
         const { itinerary, ...tripData } = dto;
         console.log(`[TripsService] Updating template ${id} for agency ${tenantId}`);
 
@@ -121,7 +139,7 @@ export class TripsService {
         const existing = await this.db.tripTemplate.findFirst({
             where: { id, agencyId: tenantId }
         });
-        if (!existing) throw new Error('Trip template not found or unauthorized');
+        if (!existing) throw new NotFoundException('Trip template not found');
 
         return this.db.tripTemplate.update({
             where: { id },
@@ -138,14 +156,17 @@ export class TripsService {
         });
     }
 
-    async deleteTemplate(id: string, tenantId: string) {
+    async deleteTemplate(id: string, userId: string) {
+        const agency = await this.db.agencyProfile.findUnique({ where: { userId } });
+        if (!agency) throw new ForbiddenException('Forbidden');
+
         // Verify ownership implicitly by deleting with agencyId in where (Prisma doesn't support easy delete with composite where unless ID is unique, but we can findFirst then delete)
         // Actually, deleteMany is safer here to avoid errors if not found, but we want to error if not found.
 
         const existing = await this.db.tripTemplate.findFirst({
             where: { id, agencyId: tenantId }
         });
-        if (!existing) throw new Error('Trip template not found or unauthorized');
+        if (!existing) throw new NotFoundException('Trip template not found');
 
         return this.db.tripTemplate.delete({
             where: { id },
