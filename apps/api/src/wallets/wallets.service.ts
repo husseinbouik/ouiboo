@@ -5,19 +5,19 @@ import { DatabaseService } from '../database/database.service';
 export class WalletsService {
     constructor(private db: DatabaseService) { }
 
-    async getWallet(agencyId: string) {
+    async getWallet(tenantId: string) {
         return this.db.wallet.findUnique({
-            where: { agencyId },
+            where: { agencyId: tenantId },
             include: { transactions: { orderBy: { createdAt: 'desc' }, take: 20 } }
         });
     }
 
-    async creditWallet(agencyId: string, amount: number, reason: string) {
+    async creditWallet(tenantId: string, amount: number, reason: string) {
         return this.db.$transaction(async (tx) => {
             const wallet = await tx.wallet.upsert({
-                where: { agencyId },
+                where: { agencyId: tenantId },
                 update: { availableBalance: { increment: amount } },
-                create: { agencyId, availableBalance: amount, pendingBalance: 0 }
+                create: { agencyId: tenantId, availableBalance: amount, pendingBalance: 0 }
             });
 
             await tx.walletTransaction.create({
@@ -33,21 +33,21 @@ export class WalletsService {
         });
     }
 
-    async requestPayout(agencyId: string, amount: number, bankDetails: string) {
+    async requestPayout(tenantId: string, amount: number, bankDetails: string) {
         return this.db.$transaction(async (tx) => {
-            const wallet = await tx.wallet.findUnique({ where: { agencyId } });
+            const wallet = await tx.wallet.findUnique({ where: { agencyId: tenantId } });
             if (!wallet || wallet.availableBalance < amount) {
                 throw new Error('Insufficient balance');
             }
 
             await tx.wallet.update({
-                where: { agencyId },
+                where: { agencyId: tenantId },
                 data: { availableBalance: { decrement: amount } }
             });
 
             const request = await tx.payoutRequest.create({
                 data: {
-                    agencyId,
+                    agencyId: tenantId,
                     amount,
                     bankDetails,
                     status: 'PENDING'
