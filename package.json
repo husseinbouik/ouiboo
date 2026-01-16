@@ -9,6 +9,8 @@
         "dev": "turbo dev",
         "build": "turbo build",
         "lint": "turbo lint",
+        "test": "turbo test",
+        "ci": "npm run lint && npm run test",
         "install:ci": "npm install --no-audit --no-fund"
     },
     "devDependencies": {
