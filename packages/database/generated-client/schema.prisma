@@ -150,6 +150,9 @@ model Booking {
   status         BookingStatus @default(PENDING)
   totalAmount    Float
   guestsCount    Int
+  fullName       String?
+  phoneNumber    String?
+  documentNumber String?
   paymentProofId String?       @unique
   paymentProof   PaymentProof?
 }
