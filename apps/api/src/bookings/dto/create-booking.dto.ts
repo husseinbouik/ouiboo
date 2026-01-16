@@ -10,4 +10,16 @@ export class CreateBookingDto {
     @IsInt()
     @IsPositive()
     guestsCount: number;
+
+    @ApiProperty({ example: 'Abderrahmane El Amrani' })
+    @IsString()
+    fullName: string;
+
+    @ApiProperty({ example: '+212612345678' })
+    @IsString()
+    phoneNumber: string;
+
+    @ApiProperty({ example: 'CIN AE123456' })
+    @IsString()
+    documentNumber: string;
 }
