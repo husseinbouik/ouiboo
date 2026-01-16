@@ -18,6 +18,12 @@
                 "^lint"
             ],
             "outputs": []
+        },
+        "test": {
+            "dependsOn": [
+                "^test"
+            ],
+            "outputs": []
         }
     }
 }
