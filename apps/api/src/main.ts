@@ -4,8 +4,32 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 
+const REQUIRED_ENV_VARS = [
+    'JWT_SECRET',
+    'JWT_REFRESH_SECRET',
+    'CORS_ORIGINS',
+    'DATABASE_URL',
+    'SMTP_HOST',
+    'SMTP_PORT',
+    'SMTP_USER',
+    'SMTP_PASS',
+];
+
+const validateRequiredEnv = () => {
+    if (process.env.NODE_ENV !== 'production') {
+        return;
+    }
+
+    const missing = REQUIRED_ENV_VARS.filter((name) => !process.env[name]);
+    if (missing.length > 0) {
+        throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    }
+};
+
 async function bootstrap() {
     try {
+        validateRequiredEnv();
+        console.log('DATABASE_URL:', process.env.DATABASE_URL);
         const app = await NestFactory.create(AppModule);
 
         const corsOrigins = process.env.CORS_ORIGINS

@@ -20,6 +20,10 @@ import { Button, Card, CardContent, CardHeader, CardTitle, Badge } from '@ouiboo
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'PAYMENTS'>('PENDING');
+  const [selectedAgency, setSelectedAgency] = useState<any | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<any | null>(null);
+  const [agencyFeedback, setAgencyFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [paymentFeedback, setPaymentFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const queryClient = useQueryClient();
 
   const { data: pendingAgencies, isLoading: loadingAgencies } = useQuery({
@@ -66,7 +70,20 @@ export default function AdminDashboard() {
     mutationFn: async ({ id, status }: { id: string, status: string }) => {
       return apiClient.post(`/admin/agencies/${id}/verify`, { status });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pending-agencies'] })
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
+      queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
+      setAgencyFeedback({
+        type: 'success',
+        message: `Agency ${variables.status === 'VERIFIED' ? 'approved' : 'rejected'} successfully.`
+      });
+    },
+    onError: (error: any) => {
+      setAgencyFeedback({
+        type: 'error',
+        message: error?.response?.data?.message || 'Unable to update agency status. Please try again.'
+      });
+    }
   });
 
   const verifyTripMutation = useMutation({
@@ -80,7 +97,19 @@ export default function AdminDashboard() {
     mutationFn: async ({ id, status }: { id: string, status: string }) => {
       return apiClient.post(`/admin/payments/${id}/verify`, { status });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pending-payments'] })
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
+      setPaymentFeedback({
+        type: 'success',
+        message: `Payout ${variables.status === 'APPROVED' ? 'approved' : 'rejected'} successfully.`
+      });
+    },
+    onError: (error: any) => {
+      setPaymentFeedback({
+        type: 'error',
+        message: error?.response?.data?.message || 'Unable to update payout request. Please try again.'
+      });
+    }
   });
 
   const updateAgencyStatusMutation = useMutation({
@@ -203,7 +232,7 @@ export default function AdminDashboard() {
                     </h2>
                     <div className="grid grid-cols-1 gap-4">
                        {pendingAgencies?.map((agency: any) => (
-                          <Card key={agency.id} className="border-none shadow-sm rounded-2xl p-6 bg-white overflow-hidden">
+                      <Card key={agency.id} className="border-none shadow-sm rounded-2xl p-6 bg-white overflow-hidden">
                              <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-6">
                                    <div className="h-16 w-16 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
@@ -215,6 +244,17 @@ export default function AdminDashboard() {
                                    </div>
                                 </div>
                                 <div className="flex items-center gap-3">
+                                   <Button
+                                     variant="outline"
+                                     className="border-gray-200"
+                                     onClick={() => {
+                                       setSelectedAgency(agency);
+                                       setAgencyFeedback(null);
+                                     }}
+                                   >
+                                     <Eye className="h-4 w-4 mr-2" />
+                                     Review
+                                   </Button>
                                    <Button className="bg-red-50 text-red-600 hover:bg-red-100 border-none px-6 font-bold" onClick={() => verifyAgencyMutation.mutate({ id: agency.id, status: 'REJECTED' })}>Reject</Button>
                                    <Button className="bg-green-600 hover:bg-green-700 text-white border-none px-6 font-bold" onClick={() => verifyAgencyMutation.mutate({ id: agency.id, status: 'VERIFIED' })}>Approve</Button>
                                 </div>
@@ -272,6 +312,17 @@ export default function AdminDashboard() {
                                </div>
                             </div>
                             <div className="flex gap-2">
+                               <Button
+                                 variant="outline"
+                                 size="sm"
+                                 onClick={() => {
+                                   setSelectedAgency(agency);
+                                   setAgencyFeedback(null);
+                                 }}
+                               >
+                                 <Eye className="h-4 w-4 mr-2" />
+                                 View
+                               </Button>
                                <Button variant="outline" size="sm" onClick={() => updateAgencyStatusMutation.mutate({ id: agency.id, verificationStatus: agency.verificationStatus === 'VERIFIED' ? 'REJECTED' : 'VERIFIED' })}>
                                   {agency.verificationStatus === 'VERIFIED' ? 'Deactivate' : 'Activate'}
                                </Button>
@@ -357,11 +408,206 @@ export default function AdminDashboard() {
                         No payout requests are waiting for review.
                       </div>
                     )}
+                 <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6">
+                    <div className="space-y-4">
+                       {pendingPayments?.map((payment: any) => (
+                          <Card key={payment.id} className="border-none shadow-sm p-5 bg-white">
+                             <div className="flex items-center justify-between gap-4">
+                                <div className="space-y-1">
+                                   <p className="text-sm text-gray-500">Request #{payment.id?.slice(0, 8)}</p>
+                                   <h3 className="font-bold text-deep-blue">{payment.agency?.companyName || 'Agency payout'}</h3>
+                                   <p className="text-xs text-gray-400">
+                                     {new Date(payment.createdAt).toLocaleDateString()} • {payment.amount} MAD
+                                   </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                   <Button
+                                     variant="outline"
+                                     size="sm"
+                                     onClick={() => {
+                                       setSelectedPayment(payment);
+                                       setPaymentFeedback(null);
+                                     }}
+                                   >
+                                     <Eye className="h-4 w-4 mr-2" />
+                                     Details
+                                   </Button>
+                                   <Button
+                                     size="sm"
+                                     className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
+                                     onClick={() => verifyPaymentMutation.mutate({ id: payment.id, status: 'REJECTED' })}
+                                   >
+                                     Reject
+                                   </Button>
+                                   <Button
+                                     size="sm"
+                                     className="bg-green-600 hover:bg-green-700 text-white border-none"
+                                     onClick={() => verifyPaymentMutation.mutate({ id: payment.id, status: 'APPROVED' })}
+                                   >
+                                     Approve
+                                   </Button>
+                                </div>
+                             </div>
+                          </Card>
+                       ))}
+                    </div>
+                    <Card className="border-none shadow-sm p-6 bg-white h-fit">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-deep-blue">Payout Details</h3>
+                        {selectedPayment && (
+                          <Badge className="bg-sunset-orange/10 text-sunset-orange">Selected</Badge>
+                        )}
+                      </div>
+                      {!selectedPayment && (
+                        <p className="text-sm text-gray-500 mt-4">Select a payout request to review agency bank details and approve or reject.</p>
+                      )}
+                      {selectedPayment && (
+                        <div className="mt-4 space-y-5">
+                          <div>
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Agency</p>
+                            <p className="text-base font-bold text-deep-blue">{selectedPayment.agency?.companyName || 'Agency payout'}</p>
+                            <p className="text-sm text-gray-500">{selectedPayment.agency?.user?.email}</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Requested</p>
+                              <p className="font-medium text-deep-blue">{new Date(selectedPayment.createdAt).toLocaleDateString()}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Amount</p>
+                              <p className="font-medium text-deep-blue">{selectedPayment.amount} MAD</p>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Agency Bank Details</p>
+                            <div className="space-y-2 text-sm">
+                              {(() => {
+                                const bankDetails = selectedPayment.agency?.profile?.bankDetails;
+                                if (!bankDetails) {
+                                  return <p className="text-gray-500">No bank details on file.</p>;
+                                }
+                                if (Array.isArray(bankDetails)) {
+                                  return bankDetails.map((detail: any, index: number) => (
+                                    <div key={index} className="bg-gray-50 rounded-xl p-3 space-y-1">
+                                      {Object.entries(detail || {}).map(([key, value]) => (
+                                        <div key={key} className="flex justify-between gap-4">
+                                          <span className="text-gray-500 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                                          <span className="font-medium text-deep-blue">{String(value || '—')}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ));
+                                }
+                                return (
+                                  <div className="bg-gray-50 rounded-xl p-3 space-y-1">
+                                    {Object.entries(bankDetails || {}).map(([key, value]) => (
+                                      <div key={key} className="flex justify-between gap-4">
+                                        <span className="text-gray-500 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                                        <span className="font-medium text-deep-blue">{String(value || '—')}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                          {paymentFeedback && (
+                            <div className={`text-sm font-medium ${paymentFeedback.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                              {paymentFeedback.message}
+                            </div>
+                          )}
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              className="bg-green-600 hover:bg-green-700 text-white border-none"
+                              onClick={() => verifyPaymentMutation.mutate({ id: selectedPayment.id, status: 'APPROVED' })}
+                            >
+                              Approve payout
+                            </Button>
+                            <Button
+                              className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
+                              onClick={() => verifyPaymentMutation.mutate({ id: selectedPayment.id, status: 'REJECTED' })}
+                            >
+                              Reject payout
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </Card>
                  </div>
               </div>
             )}
          </div>
       </main>
+
+      {selectedAgency && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
+          <Card className="max-w-2xl w-full border-none shadow-2xl rounded-3xl overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-deep-blue">Agency Review</CardTitle>
+                <p className="text-sm text-gray-500">Review verification details and approve or reject.</p>
+              </div>
+              <Button variant="ghost" onClick={() => setSelectedAgency(null)}>
+                <XCircle className="h-5 w-5" />
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="h-14 w-14 bg-gray-100 rounded-2xl overflow-hidden">
+                  <img src={selectedAgency.logo || `https://ui-avatars.com/api/?name=${selectedAgency.companyName}`} alt="" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-deep-blue">{selectedAgency.companyName}</h3>
+                  <p className="text-sm text-gray-500">ICE: {selectedAgency.ice || 'N/A'}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Contact</p>
+                  <p className="font-medium text-deep-blue">{selectedAgency.user?.name || 'Not provided'}</p>
+                  <p className="text-gray-500">{selectedAgency.user?.email || 'No email on file'}</p>
+                  <p className="text-gray-500">{selectedAgency.user?.phone || 'No phone on file'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Status</p>
+                  <div className="flex gap-2">
+                    <Badge className={selectedAgency.verificationStatus === 'VERIFIED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                      {selectedAgency.verificationStatus || 'PENDING'}
+                    </Badge>
+                    <Badge variant="outline">{selectedAgency.subscriptionStatus || 'TRIAL'}</Badge>
+                  </div>
+                  <p className="text-gray-500 text-xs">Joined {selectedAgency.user?.createdAt ? new Date(selectedAgency.user.createdAt).toLocaleDateString() : 'Unknown'}</p>
+                </div>
+                <div className="md:col-span-2 space-y-1">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Agency Address</p>
+                  <p className="text-gray-500">{selectedAgency.address || selectedAgency.profile?.address || 'No address provided.'}</p>
+                </div>
+              </div>
+              {agencyFeedback && (
+                <div className={`text-sm font-medium ${agencyFeedback.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                  {agencyFeedback.message}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  className="bg-green-600 hover:bg-green-700 text-white border-none"
+                  onClick={() => verifyAgencyMutation.mutate({ id: selectedAgency.id, status: 'VERIFIED' })}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Approve agency
+                </Button>
+                <Button
+                  className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
+                  onClick={() => verifyAgencyMutation.mutate({ id: selectedAgency.id, status: 'REJECTED' })}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Reject agency
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
