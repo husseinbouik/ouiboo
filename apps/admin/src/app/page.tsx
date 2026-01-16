@@ -12,7 +12,9 @@ import {
   CheckCircle2, 
   Eye,
   LayoutDashboard,
-  Search
+  Search,
+  TrendingUp,
+  CalendarClock
 } from 'lucide-react';
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge } from '@ouiboo/ui';
 
@@ -88,6 +90,33 @@ export default function AdminDashboard() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['all-agencies'] })
   });
 
+  const summaryCards = [
+    {
+      label: 'Pending agencies',
+      value: pendingAgencies?.length || 0,
+      icon: ShieldCheck,
+      tone: 'bg-sunset-orange/10 text-sunset-orange'
+    },
+    {
+      label: 'Trips in review',
+      value: pendingTrips?.length || 0,
+      icon: MapPin,
+      tone: 'bg-blue-50 text-blue-700'
+    },
+    {
+      label: 'Bookings today',
+      value: allBookings?.length || 0,
+      icon: TrendingUp,
+      tone: 'bg-emerald-50 text-emerald-700'
+    },
+    {
+      label: 'Payout requests',
+      value: pendingPayments?.length || 0,
+      icon: CalendarClock,
+      tone: 'bg-slate-100 text-slate-700'
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
@@ -146,6 +175,22 @@ export default function AdminDashboard() {
                </div>
             </div>
          </header>
+
+         <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {summaryCards.map((card) => (
+              <Card key={card.label} className="border-none shadow-sm rounded-2xl">
+                <CardContent className="p-6 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">{card.label}</p>
+                    <p className="text-3xl font-black text-deep-blue mt-2">{card.value}</p>
+                  </div>
+                  <div className={`h-12 w-12 rounded-2xl flex items-center justify-center ${card.tone}`}>
+                    <card.icon className="h-6 w-6" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+         </section>
 
          {/* Content Area */}
          <div className="space-y-6">
@@ -278,7 +323,41 @@ export default function AdminDashboard() {
                     <CreditCard className="h-5 w-5 text-sunset-orange" />
                     Pending Payout Confirmations ({pendingPayments?.length || 0})
                  </h2>
-                 {/* Logic for payment proofs here */}
+                 <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100">
+                    {pendingPayments?.length ? (
+                      <table className="w-full text-left">
+                        <thead className="bg-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-400 border-b">
+                           <tr>
+                              <th className="px-6 py-4">Agency</th>
+                              <th className="px-6 py-4">Amount</th>
+                              <th className="px-6 py-4">Requested</th>
+                              <th className="px-6 py-4 text-right">Action</th>
+                           </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                           {pendingPayments?.map((payment: any) => (
+                              <tr key={payment.id} className="hover:bg-gray-50/50 transition-colors">
+                                 <td className="px-6 py-4">
+                                    <p className="font-bold text-sm">{payment.agency?.companyName || 'Unknown agency'}</p>
+                                    <p className="text-[10px] text-gray-400 font-mono italic">#{payment.id?.substring(0, 8)}</p>
+                                 </td>
+                                 <td className="px-6 py-4 text-sm font-semibold">{payment.amount} MAD</td>
+                                 <td className="px-6 py-4 text-sm text-gray-500">
+                                    {payment.requestedAt ? new Date(payment.requestedAt).toLocaleDateString() : '—'}
+                                 </td>
+                                 <td className="px-6 py-4 text-right">
+                                    <Button size="sm" className="bg-deep-blue text-white">Review</Button>
+                                 </td>
+                              </tr>
+                           ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="p-10 text-center text-sm text-gray-500">
+                        No payout requests are waiting for review.
+                      </div>
+                    )}
+                 </div>
               </div>
             )}
          </div>
