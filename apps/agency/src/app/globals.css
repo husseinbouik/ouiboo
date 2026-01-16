@@ -13,16 +13,46 @@
   /* Explicitly define background/foreground colors for Tailwind utilities */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
 }
 
 :root {
   --background: #F9FAFB;
   --foreground: #1E3A8A;
+  --primary: #1E3A8A;
+  --primary-foreground: #ffffff;
+  --card: #ffffff;
+  --card-foreground: #1E3A8A;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
+  --input: #ffffff;
+  --accent: #F97316;
+  --accent-foreground: #ffffff;
 }
 
 .dark {
   --background: #020617;
   --foreground: #f8fafc;
+  --primary: #F97316;
+  --primary-foreground: #ffffff;
+  --card: #0f172a;
+  --card-foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --border: #1e293b;
+  --input: #0f172a;
+  --accent: #F97316;
+  --accent-foreground: #ffffff;
 }
 
 body {
