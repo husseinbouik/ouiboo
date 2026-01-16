@@ -13,6 +13,7 @@ import { UploadService } from './upload.service';
 import { UploadResponseDto } from './dto/upload-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UseGuards, Request } from '@nestjs/common';
+import { ALLOWED_MIME_TYPES_REGEX, MAX_UPLOAD_SIZE_BYTES } from './upload.constants';
 
 @ApiTags('Upload')
 @Controller('upload')
@@ -22,7 +23,7 @@ export class UploadController {
     constructor(private readonly uploadService: UploadService) { }
 
     @Post()
-    @ApiOperation({ summary: 'Upload a file (Images only)' })
+    @ApiOperation({ summary: 'Upload a file (Images or PDF)' })
     @ApiConsumes('multipart/form-data')
     @ApiBody({
         schema: {
@@ -41,7 +42,8 @@ export class UploadController {
         @UploadedFile(
             new ParseFilePipe({
                 validators: [
-                    new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 10 }), // 10MB
+                    new MaxFileSizeValidator({ maxSize: MAX_UPLOAD_SIZE_BYTES }),
+                    new FileTypeValidator({ fileType: ALLOWED_MIME_TYPES_REGEX }),
                 ],
                 errorHttpStatusCode: 400,
             }),

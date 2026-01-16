@@ -23,7 +23,7 @@ export class TripsService {
 
         const data = {
             ...tripData,
-            agencyId: agency.id,
+            agencyId: tenantId,
             itinerary: itinerary && itinerary.length > 0 ? {
                 create: itinerary
             } : undefined
@@ -38,16 +38,15 @@ export class TripsService {
             }
         });
 
-        console.log(`[TripsService] Created template ${result.id} for agency ${agency.id}.Status: DRAFT`);
+        console.log(`[TripsService] Created template ${result.id} for agency ${tenantId}.Status: DRAFT`);
         return result;
     }
 
-    async findAllTemplates(featured?: boolean, status?: string, agencyId?: string) {
+    async findAllTemplates(featured?: boolean, status?: string) {
         try {
             const where: any = {};
             if (featured) where.featured = true;
             if (status) where.status = status;
-            if (agencyId) where.agencyId = agencyId;
 
             return await this.db.tripTemplate.findMany({
                 where,
@@ -104,7 +103,7 @@ export class TripsService {
         const template = await this.db.tripTemplate.findFirst({
             where: {
                 id: templateId,
-                agencyId: agency.id,
+                agencyId: tenantId,
             },
         });
 
@@ -134,11 +133,11 @@ export class TripsService {
         if (!agency) throw new ForbiddenException('Forbidden');
 
         const { itinerary, ...tripData } = dto;
-        console.log(`[TripsService] Updating template ${id} for agency ${agency.id}`);
+        console.log(`[TripsService] Updating template ${id} for agency ${tenantId}`);
 
         // Verify ownership
         const existing = await this.db.tripTemplate.findFirst({
-            where: { id, agencyId: agency.id }
+            where: { id, agencyId: tenantId }
         });
         if (!existing) throw new NotFoundException('Trip template not found');
 
@@ -165,7 +164,7 @@ export class TripsService {
         // Actually, deleteMany is safer here to avoid errors if not found, but we want to error if not found.
 
         const existing = await this.db.tripTemplate.findFirst({
-            where: { id, agencyId: agency.id }
+            where: { id, agencyId: tenantId }
         });
         if (!existing) throw new NotFoundException('Trip template not found');
 

@@ -63,6 +63,21 @@ cd apps/api
 npm run dev
 ```
 
+## API Upload Storage (Payment Proofs)
+
+The API stores uploads via a storage provider. By default it writes files to the
+local `uploads/` directory (served from `/uploads`) and generates randomized
+filenames to make URLs non-guessable.
+
+**Production recommendation**
+
+For production environments, use an object storage provider such as Amazon S3.
+To do that, add a new provider that implements
+`apps/api/src/upload/interfaces/storage-provider.interface.ts`, swap it into the
+`UploadService`, and use pre-signed URLs or an authenticated download endpoint
+for access control. This keeps payment proof downloads behind authentication
+while keeping storage scalable.
+
 ## Next.js Development
 
 First, run a Next.js development server:
