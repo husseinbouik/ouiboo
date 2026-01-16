@@ -3,27 +3,58 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Mail, ArrowRight, ShieldCheck, RefreshCw } from 'lucide-react';
+import { ShieldCheck, RefreshCw } from 'lucide-react';
 import { Button } from '@ouiboo/ui';
 import { apiClient } from '@/lib/api-client';
 import { useMutation } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
-import Link from 'next/link';
+
+const RESEND_COOLDOWN_SECONDS = 30;
+
+const getFriendlyError = (message?: string) => {
+  if (!message) {
+    return 'Verification failed. Please check the code.';
+  }
+
+  if (message === 'EMAIL_NOT_VERIFIED') {
+    return 'Your account is not verified yet. Enter the code or request a new one.';
+  }
+
+  if (message.toLowerCase().includes('expired')) {
+    return 'That code expired. Request a new one and try again.';
+  }
+
+  return message;
+};
 
 export default function VerifyEmailPage() {
-  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const router = useRouter();
   const email = searchParams.get('email');
+  const reason = searchParams.get('reason');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
     if (!email) {
       router.push('/signup');
     }
   }, [email, router]);
+
+  useEffect(() => {
+    if (reason === 'unverified') {
+      setError('Your account is not verified yet. Enter the code we emailed you to continue.');
+    }
+  }, [reason]);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = window.setInterval(() => {
+      setCooldown((current) => Math.max(0, current - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [cooldown]);
 
   const verifyMutation = useMutation({
     mutationFn: async (otpString: string) => {
@@ -40,7 +71,7 @@ export default function VerifyEmailPage() {
       }, 2000);
     },
     onError: (err: any) => {
-      setError(err?.response?.data?.message || 'Verification failed. Please check the code.');
+      setError(getFriendlyError(err?.response?.data?.message));
     },
   });
 
@@ -51,7 +82,10 @@ export default function VerifyEmailPage() {
     },
     onSuccess: () => {
       setError(null);
-      alert('A new code has been sent to your email.');
+      setCooldown(RESEND_COOLDOWN_SECONDS);
+    },
+    onError: (err: any) => {
+      setError(getFriendlyError(err?.response?.data?.message));
     },
   });
 
@@ -81,6 +115,7 @@ export default function VerifyEmailPage() {
     e.preventDefault();
     const otpString = otp.join('');
     if (otpString.length === 6) {
+      setError(null);
       verifyMutation.mutate(otpString);
     } else {
       setError('Please enter all 6 digits.');
@@ -141,6 +176,15 @@ export default function VerifyEmailPage() {
           <p className="text-muted-foreground font-medium text-sm">We've sent a 6-digit verification code to <br/> <span className="font-semibold text-foreground">{email}</span></p>
         </div>
 
+        <div className="bg-muted/60 border border-border rounded-2xl p-4 text-sm text-muted-foreground space-y-2">
+          <p className="font-semibold text-foreground">Verify in 3 easy steps</p>
+          <ol className="list-decimal list-inside space-y-1">
+            <li>Check your inbox for the 6-digit code.</li>
+            <li>Enter the code below.</li>
+            <li>We will finish setting up your account.</li>
+          </ol>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="flex justify-between gap-2">
             {otp.map((digit, idx) => (
@@ -180,12 +224,15 @@ export default function VerifyEmailPage() {
           <button 
             type="button" 
             onClick={() => resendMutation.mutate()}
-            disabled={resendMutation.isPending}
+            disabled={resendMutation.isPending || cooldown > 0}
             className="flex items-center gap-2 mx-auto text-sunset-orange font-bold text-sm uppercase tracking-wider hover:text-orange-600 disabled:opacity-50 transition-all active:scale-95"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${resendMutation.isPending ? 'animate-spin' : ''}`} />
-            Resend
+            {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend'}
           </button>
+          {cooldown > 0 && (
+            <p className="text-xs text-muted-foreground">We limit resends to once every {RESEND_COOLDOWN_SECONDS} seconds.</p>
+          )}
         </div>
       </motion.div>
     </div>
