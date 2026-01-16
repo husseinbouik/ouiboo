@@ -35,8 +35,9 @@ export class RegisterDto {
 
 export class RefreshTokenDto {
     @ApiProperty({ example: 'your-refresh-token-here' })
+    @IsOptional()
     @IsString()
-    refresh_token: string;
+    refresh_token?: string;
 }
 
 export class VerifyEmailDto {

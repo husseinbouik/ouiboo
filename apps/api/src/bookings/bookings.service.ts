@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { EmailService } from '../email/email.service';
@@ -141,7 +141,7 @@ export class BookingsService {
         }
 
         if (booking.travelerId !== travelerId) {
-            throw new BadRequestException('Unauthorized: You can only upload proof for your own bookings');
+            throw new ForbiddenException('Forbidden');
         }
 
         return this.db.$transaction(async (tx) => {
@@ -180,7 +180,7 @@ export class BookingsService {
 
         const agency = await this.db.agencyProfile.findUnique({ where: { userId: agencyUserId } });
         if (!agency || booking.session.template.agencyId !== agency.id) {
-            throw new BadRequestException('Unauthorized: Booking does not belong to your agency');
+            throw new ForbiddenException('Forbidden');
         }
 
         if (!booking.paymentProof) {
@@ -228,7 +228,7 @@ export class BookingsService {
         }
 
         if (booking.travelerId !== travelerId) {
-            throw new BadRequestException('Unauthorized: You can only cancel your own bookings');
+            throw new ForbiddenException('Forbidden');
         }
 
         const cancellableStatuses = new Set(['PENDING', 'PENDING_PAYMENT', 'CONFIRMED']);

@@ -1,9 +1,13 @@
 import { Injectable, UnauthorizedException, TooManyRequestsException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { DatabaseService } from '../database/database.service';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { RegisterDto } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
 import { EmailService } from '../email/email.service';
+import { createHash, randomUUID } from 'crypto';
+
+const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const UNAUTHORIZED_MESSAGE = 'Unauthorized';
 
 @Injectable()
 export class AuthService {
@@ -19,7 +23,7 @@ export class AuthService {
             if (!user.isEmailVerified) {
                 // We can either throw an error or handle it in the frontend
                 // Throwing an error for now
-                throw new UnauthorizedException('EMAIL_NOT_VERIFIED');
+                throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
             }
             const { password, ...result } = user;
             return result;
@@ -34,15 +38,14 @@ export class AuthService {
             throw new Error('JWT secrets are not configured');
         }
         const payload = { email: user.email, sub: user.id, role: user.role };
+        const accessToken = this.jwtService.sign(payload, {
+            secret: accessSecret,
+            expiresIn: '15m',
+        });
+        const { token: refreshToken } = await this.issueRefreshToken(payload, refreshSecret);
         return {
-            accessToken: this.jwtService.sign(payload, {
-                secret: accessSecret,
-                expiresIn: '15m',
-            }),
-            refreshToken: this.jwtService.sign(payload, {
-                secret: refreshSecret,
-                expiresIn: '7d',
-            }),
+            accessToken,
+            refreshToken: refreshToken,
             user: {
                 id: user.id,
                 email: user.email,
@@ -105,15 +108,15 @@ export class AuthService {
         const user = await this.db.user.findUnique({ where: { email } });
 
         if (!user) {
-            throw new UnauthorizedException('User not found');
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
         }
 
         if (user.otp !== otp) {
-            throw new UnauthorizedException('Invalid OTP');
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
         }
 
         if (!user.otpExpiresAt || user.otpExpiresAt < new Date()) {
-            throw new UnauthorizedException('OTP_EXPIRED');
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
         }
 
         await this.db.user.update({
@@ -134,7 +137,7 @@ export class AuthService {
 
     async resendOTP(email: string) {
         const user = await this.db.user.findUnique({ where: { email } });
-        if (!user) throw new UnauthorizedException('User not found');
+        if (!user) throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
 
         if (user.otpLastSentAt) {
             const cooldownMs = 60 * 1000;
@@ -161,17 +164,109 @@ export class AuthService {
         try {
             const refreshSecret = process.env.JWT_REFRESH_SECRET;
             if (!refreshSecret) {
-                throw new UnauthorizedException('JWT refresh secret not configured');
+                throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
             }
             const payload = this.jwtService.verify(token, {
                 secret: refreshSecret,
             });
-            const user = await this.db.user.findUnique({ where: { id: payload.sub } });
-            if (!user) throw new UnauthorizedException();
+            const tokenRecord = await this.db.refreshToken.findFirst({
+                where: {
+                    tokenHash: this.hashToken(token),
+                    userId: payload.sub,
+                    revokedAt: null,
+                    expiresAt: { gt: new Date() },
+                },
+            });
+            if (!tokenRecord) {
+                throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+            }
 
-            return this.login(user);
+            const user = await this.db.user.findUnique({ where: { id: payload.sub } });
+            if (!user) throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+
+            const accessSecret = process.env.JWT_SECRET;
+            if (!accessSecret) {
+                throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+            }
+            const { token: rotatedRefreshToken, id: newTokenId } = await this.issueRefreshToken(
+                { email: user.email, sub: user.id, role: user.role },
+                refreshSecret,
+            );
+            await this.db.refreshToken.update({
+                where: { id: tokenRecord.id },
+                data: { revokedAt: new Date(), replacedByTokenId: newTokenId },
+            });
+
+            const accessToken = this.jwtService.sign(
+                { email: user.email, sub: user.id, role: user.role },
+                {
+                    secret: accessSecret,
+                    expiresIn: '15m',
+                },
+            );
+            return {
+                accessToken,
+                refreshToken: rotatedRefreshToken,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    name: user.name,
+                    role: user.role,
+                },
+            };
         } catch (e) {
-            throw new UnauthorizedException('Invalid refresh token');
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
         }
+    }
+
+    async logout(token?: string) {
+        if (!token) {
+            return { message: 'Logged out' };
+        }
+        const tokenHash = this.hashToken(token);
+        const existing = await this.db.refreshToken.findFirst({
+            where: {
+                tokenHash,
+                revokedAt: null,
+            },
+        });
+
+        if (!existing) {
+            return { message: 'Logged out' };
+        }
+
+        await this.db.refreshToken.update({
+            where: { id: existing.id },
+            data: { revokedAt: new Date() },
+        });
+
+        return { message: 'Logged out' };
+    }
+
+    private hashToken(token: string) {
+        return createHash('sha256').update(token).digest('hex');
+    }
+
+    private async issueRefreshToken(
+        payload: { email: string; sub: string; role: string },
+        refreshSecret: string,
+    ) {
+        const tokenId = randomUUID();
+        const refreshToken = this.jwtService.sign(
+            { ...payload, jti: tokenId },
+            {
+                secret: refreshSecret,
+                expiresIn: '7d',
+            },
+        );
+        const tokenRecord = await this.db.refreshToken.create({
+            data: {
+                tokenHash: this.hashToken(refreshToken),
+                userId: payload.sub,
+                expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+            },
+        });
+
+        return { token: refreshToken, id: tokenRecord.id };
     }
 }
