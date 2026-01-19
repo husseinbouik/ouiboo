@@ -8,7 +8,8 @@ import { AgencyMobileNav } from "./AgencyMobileNav";
 
 export function AgencyShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/verify');
+  const authRoutes = ['/login', '/signup', '/verify', '/forgot-password', '/terms', '/privacy'];
+  const isAuthPage = authRoutes.some((route) => pathname.startsWith(route));
 
   if (isAuthPage) {
     return <main className="min-h-screen">{children}</main>;

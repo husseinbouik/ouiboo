@@ -13,7 +13,7 @@
         "email": "Work Email",
         "emailPlaceholder": "name@agency.com",
         "password": "Password",
-        "passwordPlaceholder": "••••••••",
+        "passwordPlaceholder": "********",
         "forgotPassword": "Forgot password?",
         "rememberMe": "Keep me signed in",
         "securityNote": "Secure sign-in",

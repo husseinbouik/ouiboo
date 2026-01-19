@@ -136,11 +136,11 @@ export default function BookingsManager() {
                     <td className="px-6 py-5">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ring-1 ring-inset ${
                         booking.status === BookingStatus.Confirmed ? "bg-green-50 text-green-700 ring-green-600/20 dark:bg-green-900/20 dark:text-green-400 dark:ring-green-400/20" :
-                        booking.status === BookingStatus.PendingPayment ? "bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-400/20" :
+                        booking.status === BookingStatus.AwaitingValidation ? "bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-400/20" :
                         "bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-900/20 dark:text-blue-400 dark:ring-blue-400/20"
                       }`}>
                         {booking.status === BookingStatus.Confirmed && <CheckCircle2 className="h-3 w-3" />}
-                        {booking.status === BookingStatus.PendingPayment && <Clock className="h-3 w-3" />}
+                        {booking.status === BookingStatus.AwaitingValidation && <Clock className="h-3 w-3" />}
                         {booking.status === BookingStatus.Pending && <AlertCircle className="h-3 w-3" />}
                         {booking.status}
                       </span>

@@ -7,7 +7,7 @@
         "profile": "Profil",
         "bookings": "Mes réservations",
         "wishlist": "Favoris",
-        "logout": "Déconnexion"
+        "logout": "Se déconnecter"
     },
     "hero": {
         "title": "Découvrez les",
@@ -32,35 +32,22 @@
     },
     "login": {
         "title": "Bon retour",
-<<<<<<< ours
-        "subtitle": "Veuillez entrer vos coordonnées pour vous connecter.",
-        "email": "Email",
-        "emailPlaceholder": "Entrez votre email",
-        "password": "Mot de passe",
-        "passwordPlaceholder": "••••••••",
-        "forgotPassword": "Mot de passe oublié ?",
-=======
         "subtitle": "Veuillez saisir vos informations pour vous connecter.",
         "email": "E-mail",
         "emailPlaceholder": "Saisissez votre e-mail",
         "password": "Mot de passe",
-        "passwordPlaceholder": "••••••••",
+        "passwordPlaceholder": "********",
         "forgotPassword": "Mot de passe oublié ?",
         "rememberMe": "Se souvenir de moi",
         "securityNote": "Connexion sécurisée",
         "showPassword": "Afficher le mot de passe",
         "hidePassword": "Masquer le mot de passe",
->>>>>>> theirs
         "signIn": "Se connecter",
         "orContinue": "Ou continuer avec",
         "google": "Google",
         "facebook": "Facebook",
         "noAccount": "Vous n'avez pas de compte ?",
-<<<<<<< ours
-        "signUpLink": "Inscrivez-vous gratuitement"
-=======
         "signUpLink": "S'inscrire gratuitement"
->>>>>>> theirs
     },
     "signup": {
         "title": "Créer un compte",
@@ -71,8 +58,6 @@
         "emailPlaceholder": "Saisissez votre e-mail",
         "password": "Mot de passe",
         "passwordPlaceholder": "Créez un mot de passe",
-<<<<<<< ours
-=======
         "passwordHint": "Utilisez au moins 6 caractères avec un mélange de lettres et de chiffres.",
         "acceptTerms": "J'accepte les",
         "termsLink": "Conditions d'utilisation",
@@ -80,7 +65,6 @@
         "and": "et",
         "showPassword": "Afficher le mot de passe",
         "hidePassword": "Masquer le mot de passe",
->>>>>>> theirs
         "createAccount": "Créer un compte",
         "orSignUp": "Ou inscrivez-vous avec",
         "google": "Google",

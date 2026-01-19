@@ -44,7 +44,7 @@ describe('TravelerLoginPage', () => {
         });
 
         const emailInput = container.querySelector('input[placeholder="hello@example.com"]') as HTMLInputElement;
-        const passwordInput = container.querySelector('input[placeholder="••••••••"]') as HTMLInputElement;
+        const passwordInput = container.querySelector('input[placeholder="********"]') as HTMLInputElement;
         const submitButton = Array.from(container.querySelectorAll('button')).find((button) =>
             button.textContent?.includes('Sign In')
         ) as HTMLButtonElement;

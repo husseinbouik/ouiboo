@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -12,11 +11,20 @@ import '../../lib/i18n';
 import { apiClient } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
-import { LoginSchema, type LoginInput } from '@ouiboo/schemas';
+import { type LoginInput } from '@ouiboo/schemas';
+import { useAuth } from '@/components/AuthContext';
+
+type AgencyLoginFormValues = LoginInput & {
+  rememberMe?: boolean;
+};
 
 export default function AgencyLoginPage() {
   const { t, i18n } = useTranslation();
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const router = useRouter();
+  const { refetch } = useAuth();
+  const { register, handleSubmit, formState: { errors } } = useForm<AgencyLoginFormValues>();
+  const [mounted, setMounted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
@@ -29,12 +37,13 @@ export default function AgencyLoginPage() {
       const response = await apiClient.post('/auth/login', data);
       return response.data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       const { accessToken, refreshToken } = data;
       if (typeof window !== 'undefined') {
         localStorage.setItem('token', accessToken);
         localStorage.setItem('refresh_token', refreshToken);
       }
+      await refetch();
       router.push('/dashboard');
     },
     onError: (err: any) => {
@@ -49,8 +58,10 @@ export default function AgencyLoginPage() {
     }
   });
 
-  const onSubmit = (data: LoginInput) => {
-    loginMutation.mutate(data);
+  const onSubmit = (data: AgencyLoginFormValues) => {
+    setError(null);
+    const { rememberMe, ...payload } = data;
+    loginMutation.mutate(payload);
   };
 
   if (!mounted) return <div className="min-h-screen bg-white" />;
@@ -99,7 +110,7 @@ export default function AgencyLoginPage() {
                   <Input 
                     id="password" 
                     type={showPassword ? 'text' : 'password'}
-                    placeholder={t('login.passwordPlaceholder')}
+                    placeholder={t('login.passwordPlaceholder', '********')}
                     className="pl-10 pr-12 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-deep-blue focus:ring-deep-blue transition-all duration-200"
                     {...register('password', { required: 'Password is required' })} 
                   />
@@ -127,6 +138,12 @@ export default function AgencyLoginPage() {
               </label>
               <span className="text-xs text-gray-500">{t('login.securityNote')}</span>
             </div>
+
+            {error && (
+              <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600">
+                {error}
+              </div>
+            )}
 
             <Button 
               type="submit" 

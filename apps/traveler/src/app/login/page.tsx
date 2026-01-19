@@ -53,7 +53,9 @@ export default function TravelerLoginPage() {
   });
 
   const onSubmit = (data: any) => {
-    loginMutation.mutate(data);
+    setError(null);
+    const { rememberMe, ...payload } = data;
+    loginMutation.mutate(payload);
   };
 
   if (!mounted) return <div className="min-h-screen bg-background" />;
@@ -111,7 +113,7 @@ export default function TravelerLoginPage() {
                   <Input 
                     id="password" 
                     type={showPassword ? 'text' : 'password'}
-                    placeholder={t('login.passwordPlaceholder')}
+                    placeholder={t('login.passwordPlaceholder', '********')}
                     className="pl-10 pr-12 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
                     {...register('password', { required: 'Password is required' })} 
                   />
@@ -124,16 +126,10 @@ export default function TravelerLoginPage() {
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
+                {errors.password && <span className="text-red-500 text-xs font-semibold pl-1">{errors.password.message as string}</span>}
+              </div>
             </div>
 
-<<<<<<< ours
-            {error && (
-                <div className="p-4 bg-red-50 text-red-500 text-sm font-semibold rounded-2xl flex items-center gap-2 border border-red-100">
-                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                    {error}
-                </div>
-            )}
-=======
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 text-sm text-gray-600">
                 <input
@@ -145,7 +141,42 @@ export default function TravelerLoginPage() {
               </label>
               <span className="text-xs text-gray-500">{t('login.securityNote')}</span>
             </div>
->>>>>>> theirs
+
+            {error && (
+                <div className="p-4 bg-red-50 text-red-500 text-sm font-semibold rounded-2xl flex items-center gap-2 border border-red-100">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    {error}
+                </div>
+            )}
+
+            <Button 
+              type="submit" 
+              disabled={loginMutation.isPending}
+              className="w-full h-12 bg-sunset-orange hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors duration-200"
+            >
+              {loginMutation.isPending ? 'Logging in...' : t('login.signIn')} 
+              {!loginMutation.isPending && <ArrowRight className="ml-2 h-5 w-5 inline" />}
+            </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-white px-2 text-gray-500">{t('login.orContinue')}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-5 w-5 mr-2" alt="Google" />
+                <span className="text-sm font-medium text-gray-700">{t('login.google')}</span>
+              </button>
+              <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" className="h-5 w-5 mr-2" alt="Facebook" />
+                <span className="text-sm font-medium text-gray-700">{t('login.facebook')}</span>
+              </button>
+            </div>
 
              <p className="text-center text-sm text-muted-foreground font-medium">
                 {t('login.noAccount', "Don't have an account?")}{' '}

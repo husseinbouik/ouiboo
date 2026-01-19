@@ -171,7 +171,7 @@ export class BookingsService {
             await tx.booking.update({
                 where: { id: bookingId },
                 data: {
-                    status: 'PENDING',
+                    status: 'AWAITING_VALIDATION',
                     paymentProofUrl: downloadUrl,
                     paymentProofId: proof.id,
                 },

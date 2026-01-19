@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -12,15 +11,24 @@ import '../../lib/i18n';
 import { apiClient } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
-import { RegisterSchema, type RegisterInput } from '@ouiboo/schemas';
+import { type RegisterInput } from '@ouiboo/schemas';
+import { useAuth } from '@/components/AuthContext';
+
+type AgencySignupFormValues = Omit<RegisterInput, 'role'> & {
+  acceptTerms: boolean;
+};
 
 export default function AgencySignupPage() {
   const { t, i18n } = useTranslation();
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const router = useRouter();
+  const { refetch } = useAuth();
+  const { register, handleSubmit, formState: { errors } } = useForm<AgencySignupFormValues>({
     defaultValues: {
       acceptTerms: true,
     },
   });
+  const [mounted, setMounted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
@@ -33,28 +41,25 @@ export default function AgencySignupPage() {
       const response = await apiClient.post('/auth/register', data);
       return response.data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       const { accessToken, refreshToken, user } = data;
       if (typeof window !== 'undefined') {
         localStorage.setItem('token', accessToken);
         localStorage.setItem('refresh_token', refreshToken);
       }
+      await refetch();
       router.push(`/verify?email=${user.email}`);
     },
     onError: (err: any) => {
-      console.error('Signup failed:', err);
       setError(err?.response?.data?.message || 'Signup failed. Please try again.');
     }
   });
 
-  const onSubmit = (data: RegisterInput) => {
-    console.log('Submitting signup data:', data);
-    signupMutation.mutate(data);
+  const onSubmit = (data: AgencySignupFormValues) => {
+    setError(null);
+    const { acceptTerms, ...formData } = data;
+    signupMutation.mutate({ ...formData, role: 'AGENCY' });
   };
-
-  if (Object.keys(errors).length > 0) {
-    console.log('Form validation errors:', errors);
-  }
 
   if (!mounted) return <div className="min-h-screen bg-white" />;
 
@@ -84,7 +89,7 @@ export default function AgencySignupPage() {
                     type="text" 
                     placeholder={t('signup.agencyPlaceholder')}
                     className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white transition-all duration-200"
-                    {...register('name')} 
+                    {...register('name', { required: 'Agency name is required' })} 
                   />
                 </div>
                 {errors.name && <span className="text-red-500 text-sm">{errors.name.message as string}</span>}
@@ -112,14 +117,9 @@ export default function AgencySignupPage() {
                   <Input 
                     id="password" 
                     type={showPassword ? 'text' : 'password'}
-                    placeholder={t('signup.passwordPlaceholder')}
-<<<<<<< ours
-                    className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white transition-all duration-200"
-                    {...register('password', { required: 'Password is required', minLength: { value: 8, message: 'Password must be at least 8 characters' } })} 
-=======
+                    placeholder={t('signup.passwordPlaceholder', '********')}
                     className="pl-10 pr-12 h-12 bg-gray-50 border-gray-200 focus:bg-white transition-all duration-200"
                     {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Password must be at least 6 characters' } })} 
->>>>>>> theirs
                   />
                   <button
                     type="button"
@@ -135,18 +135,16 @@ export default function AgencySignupPage() {
               </div>
             </div>
 
-<<<<<<< ours
             {error && (
               <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-100 rounded-lg">
                 {error}
               </div>
             )}
-=======
             <label className="flex items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-600">
               <input
                 type="checkbox"
                 className="mt-0.5 h-4 w-4 rounded border-gray-300 text-deep-blue focus:ring-deep-blue"
-                {...register('acceptTerms', { required: true })}
+                {...register('acceptTerms', { required: 'Please accept the terms to continue.' })}
               />
               <span>
                 {t('signup.acceptTerms')}{' '}
@@ -160,7 +158,9 @@ export default function AgencySignupPage() {
                 .
               </span>
             </label>
->>>>>>> theirs
+            {errors.acceptTerms && (
+              <p className="text-xs text-red-500">{errors.acceptTerms.message as string}</p>
+            )}
 
             <Button 
               type="submit" 

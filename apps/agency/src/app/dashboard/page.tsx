@@ -292,7 +292,7 @@ export default function AgencyDashboard() {
             <h3 className="text-3xl font-black font-display tracking-tight leading-none">Ready to expand your reach?</h3>
             <p className="text-white/80 font-medium text-lg leading-relaxed">Publish more trips and get verified to access higher withdrawal limits and premium placements.</p>
          </div>
-         <Link href="/trips/new" className="relative z-10 mt-8 md:mt-0">
+         <Link href="/dashboard/trips/create" className="relative z-10 mt-8 md:mt-0">
             <Button className="h-20 px-12 rounded-[2rem] bg-white text-primary hover:bg-slate-100 font-black text-xl border-none shadow-2xl transition-all hover:scale-105 active:scale-95">
                 Create New Trip
             </Button>

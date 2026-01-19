@@ -11,17 +11,23 @@ import '../../lib/i18n';
 
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { RegisterSchema, type RegisterInput } from '@ouiboo/schemas';
+import { type RegisterInput } from '@ouiboo/schemas';
 import { apiClient } from '@/lib/api-client';
+
+type TravelerSignupFormValues = Omit<RegisterInput, 'role'> & {
+  acceptTerms: boolean;
+};
 
 export default function TravelerSignupPage() {
   const { t, i18n } = useTranslation();
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const router = useRouter();
+  const { register, handleSubmit, formState: { errors } } = useForm<TravelerSignupFormValues>({
     defaultValues: {
       acceptTerms: true,
     },
   });
+  const [mounted, setMounted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
@@ -43,13 +49,14 @@ export default function TravelerSignupPage() {
       router.push(`/verify?email=${user.email}`);
     },
     onError: (err: any) => {
-      console.error('Signup failed:', err);
-      alert(err?.response?.data?.message || 'Signup failed. Please try again.');
+      setError(err?.response?.data?.message || 'Signup failed. Please try again.');
     }
   });
 
-  const onSubmit = (data: RegisterInput) => {
-    signupMutation.mutate(data);
+  const onSubmit = (data: TravelerSignupFormValues) => {
+    setError(null);
+    const { acceptTerms, ...formData } = data;
+    signupMutation.mutate({ ...formData, role: 'TRAVELER' });
   };
 
   if (!mounted) return <div className="min-h-screen bg-background" />;
@@ -119,7 +126,7 @@ export default function TravelerSignupPage() {
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder={t('signup.passwordPlaceholder')}
+                    placeholder={t('signup.passwordPlaceholder', '********')}
                     className="pl-10 pr-12 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
                     {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Password must be at least 6 characters' } })}
                   />
@@ -136,11 +143,17 @@ export default function TravelerSignupPage() {
                 {errors.password && <span className="text-red-500 text-sm">{errors.password.message as string}</span>}
               </div>
 
+              {error && (
+                <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+                  {error}
+                </div>
+              )}
+
               <label className="flex items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-600">
                 <input
                   type="checkbox"
                   className="mt-0.5 h-4 w-4 rounded border-gray-300 text-sunset-orange focus:ring-sunset-orange"
-                  {...register('acceptTerms', { required: true })}
+                  {...register('acceptTerms', { required: 'Please accept the terms to continue.' })}
                 />
                 <span>
                   {t('signup.acceptTerms')}{' '}
@@ -154,6 +167,7 @@ export default function TravelerSignupPage() {
                   .
                 </span>
               </label>
+              {errors.acceptTerms && <p className="text-xs text-red-500">{errors.acceptTerms.message as string}</p>}
 
               {/* Submit Button */}
               <Button

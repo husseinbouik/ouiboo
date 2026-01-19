@@ -175,6 +175,69 @@ export default function AdminDashboard() {
     }
   ];
 
+  const tabMeta = {
+    PENDING: {
+      title: 'Verification Queue',
+      description: 'Review agencies and trips waiting for approval.',
+      searchPlaceholder: 'Search agencies, trips, or IDs...'
+    },
+    AGENCIES: {
+      title: 'Agency Directory',
+      description: 'Manage verification status and subscriptions.',
+      searchPlaceholder: 'Search agencies by name or email...'
+    },
+    BOOKINGS: {
+      title: 'System Bookings',
+      description: 'Track bookings and traveler activity across the platform.',
+      searchPlaceholder: 'Search bookings or travelers...'
+    },
+    PAYMENT_PROOFS: {
+      title: 'Payment Proofs',
+      description: 'Approve or reject uploaded payment receipts.',
+      searchPlaceholder: 'Search payment proofs by traveler or booking...'
+    },
+    PAYOUTS: {
+      title: 'Payout Requests',
+      description: 'Review agency payout requests before releasing funds.',
+      searchPlaceholder: 'Search payout requests by agency...'
+    }
+  } as const;
+
+  const navItems = [
+    {
+      key: 'PENDING',
+      label: 'Verification Queue',
+      icon: ShieldCheck,
+      count: (pendingAgencies?.length || 0) + (pendingTrips?.length || 0),
+    },
+    {
+      key: 'AGENCIES',
+      label: 'Manage Agencies',
+      icon: Users,
+      count: allAgencies?.length || 0,
+    },
+    {
+      key: 'BOOKINGS',
+      label: 'System Bookings',
+      icon: LayoutDashboard,
+      count: allBookings?.length || 0,
+    },
+    {
+      key: 'PAYMENT_PROOFS',
+      label: 'Payment Proofs',
+      icon: CreditCard,
+      count: pendingPaymentProofs?.length || 0,
+    },
+    {
+      key: 'PAYOUTS',
+      label: 'Payout Requests',
+      icon: CalendarClock,
+      count: payoutRequests?.length || 0,
+    },
+  ] as const;
+
+  const currentTab = tabMeta[activeTab];
+
   const renderBankDetails = (bankDetails?: string) => {
     if (!bankDetails) {
       return <p className="text-gray-500">No bank details on file.</p>;
@@ -196,7 +259,7 @@ export default function AdminDashboard() {
         {Object.entries(details || {}).map(([key, value]) => (
           <div key={key} className="flex justify-between gap-4">
             <span className="text-gray-500 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-            <span className="font-medium text-deep-blue">{String(value || '—')}</span>
+            <span className="font-medium text-deep-blue">{String(value ?? 'N/A')}</span>
           </div>
         ))}
       </div>
@@ -213,41 +276,22 @@ export default function AdminDashboard() {
          </div>
          
          <nav className="space-y-2">
-            <button 
-              onClick={() => setActiveTab('PENDING')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'PENDING' ? "bg-white/10 text-white" : "text-white/60 hover:text-white"}`}
-            >
-               <ShieldCheck className="h-5 w-5" />
-               <span className="font-bold text-sm text-left">Verification Queue</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('AGENCIES')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'AGENCIES' ? "bg-white/10 text-white" : "text-white/60 hover:text-white"}`}
-            >
-               <Users className="h-5 w-5" />
-               <span className="font-bold text-sm text-left">Manage Agencies</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('BOOKINGS')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'BOOKINGS' ? "bg-white/10 text-white" : "text-white/60 hover:text-white"}`}
-            >
-               <LayoutDashboard className="h-5 w-5" />
-               <span className="font-bold text-sm text-left">System Bookings</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('PAYMENT_PROOFS')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'PAYMENT_PROOFS' ? "bg-white/10 text-white" : "text-white/60 hover:text-white"}`}
-            >
-               <CreditCard className="h-5 w-5" />
-               <span className="font-bold text-sm text-left">Payment Proofs</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('PAYOUTS')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'PAYOUTS' ? "bg-white/10 text-white" : "text-white/60 hover:text-white"}`}
-            >
-               <CalendarClock className="h-5 w-5" />
-               <span className="font-bold text-sm text-left">Payout Requests</span>
-            </button>
+            {navItems.map((item) => {
+              const isActive = activeTab === item.key;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => setActiveTab(item.key)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive ? "bg-white/10 text-white" : "text-white/60 hover:text-white"}`}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span className="font-bold text-sm text-left">{item.label}</span>
+                  <span className={`ml-auto text-[10px] font-black px-2 py-0.5 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-white/10 text-white/70"}`}>
+                    {item.count}
+                  </span>
+                </button>
+              );
+            })}
          </nav>
       </aside>
 
@@ -255,13 +299,13 @@ export default function AdminDashboard() {
       <main className="flex-1 p-10 space-y-10">
          <header className="flex justify-between items-center">
             <div>
-               <h1 className="text-3xl font-black text-deep-blue">Verification Queue</h1>
-               <p className="text-gray-500 font-medium">Manage pending requests and applications.</p>
+               <h1 className="text-3xl font-black text-deep-blue">{currentTab.title}</h1>
+               <p className="text-gray-500 font-medium">{currentTab.description}</p>
             </div>
             <div className="flex items-center gap-4">
                <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input type="text" placeholder="Search..." className="pl-10 pr-4 py-2 bg-white rounded-xl border-none shadow-sm text-sm focus:ring-2 focus:ring-sunset-orange/20" />
+                  <input type="text" placeholder={currentTab.searchPlaceholder} className="pl-10 pr-4 py-2 bg-white rounded-xl border-none shadow-sm text-sm focus:ring-2 focus:ring-sunset-orange/20" />
                </div>
                <div className="h-10 w-10 bg-gray-200 rounded-full border-2 border-white shadow-sm overflow-hidden">
                   <img src="https://ui-avatars.com/api/?name=Admin&background=1E3A8A&color=fff" alt="" />
@@ -304,7 +348,7 @@ export default function AdminDashboard() {
                                    </div>
                                    <div>
                                       <h3 className="text-lg font-bold text-deep-blue">{agency.companyName}</h3>
-                                      <p className="text-sm text-gray-500">ICE: {agency.ice} • Joined {new Date(agency.user.createdAt).toLocaleDateString()}</p>
+                                      <p className="text-sm text-gray-500">ICE: {agency.ice} - Joined {new Date(agency.user.createdAt).toLocaleDateString()}</p>
                                    </div>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -467,7 +511,7 @@ export default function AdminDashboard() {
                                  </td>
                                  <td className="px-6 py-4 text-sm font-semibold">{payment.booking?.totalAmount ?? payment.amount} MAD</td>
                                  <td className="px-6 py-4 text-sm text-gray-500">
-                                    {payment.uploadedAt ? new Date(payment.uploadedAt).toLocaleDateString() : '—'}
+                                    {payment.uploadedAt ? new Date(payment.uploadedAt).toLocaleDateString() : 'N/A'}
                                  </td>
                                  <td className="px-6 py-4 text-right space-x-2">
                                     <Button
@@ -514,7 +558,7 @@ export default function AdminDashboard() {
                                    <p className="text-sm text-gray-500">Request #{payout.id?.slice(0, 8)}</p>
                                    <h3 className="font-bold text-deep-blue">{payout.agency?.companyName || 'Agency payout'}</h3>
                                    <p className="text-xs text-gray-400">
-                                     {payout.requestedAt ? new Date(payout.requestedAt).toLocaleDateString() : '—'} • {payout.amount} MAD
+                                     {payout.requestedAt ? new Date(payout.requestedAt).toLocaleDateString() : 'N/A'} - {payout.amount} MAD
                                    </p>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -573,7 +617,7 @@ export default function AdminDashboard() {
                           <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
                               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Requested</p>
-                              <p className="font-medium text-deep-blue">{selectedPayout.requestedAt ? new Date(selectedPayout.requestedAt).toLocaleDateString() : '—'}</p>
+                              <p className="font-medium text-deep-blue">{selectedPayout.requestedAt ? new Date(selectedPayout.requestedAt).toLocaleDateString() : 'N/A'}</p>
                             </div>
                             <div>
                               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Amount</p>

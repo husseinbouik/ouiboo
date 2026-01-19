@@ -27,11 +27,18 @@ export default function MyBookingsPage() {
     });
 
     const uploadProofMutation = useMutation({
-        mutationFn: async ({ bookingId, imageUrl }: { bookingId: string, imageUrl: string }) => {
-            await apiClient.post(`/bookings/${bookingId}/payment-proof`, { imageUrl });
+        mutationFn: async ({ bookingId, file }: { bookingId: string, file: File }) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            await apiClient.post(`/bookings/${bookingId}/payment-proof`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+            setUploadingId(null);
+        },
+        onError: () => {
             setUploadingId(null);
         }
     });
@@ -67,16 +74,7 @@ export default function MyBookingsPage() {
         if (!file) return;
 
         setUploadingId(bookingId);
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            const response = await apiClient.post('/upload', formData);
-            uploadProofMutation.mutate({ bookingId, imageUrl: response.data.url });
-        } catch (error) {
-            console.error('Upload failed:', error);
-            setUploadingId(null);
-        }
+        uploadProofMutation.mutate({ bookingId, file });
     };
 
     const handleCancel = (bookingId: string) => {
@@ -124,7 +122,7 @@ export default function MyBookingsPage() {
                                             <Badge className={cn(
                                                 "px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl backdrop-blur-md border-none",
                                                 booking.status === 'CONFIRMED' ? 'bg-emerald-500 text-white' :
-                                                booking.status === 'PENDING_PAYMENT' ? 'bg-blue-500 text-white' :
+                                                booking.status === 'AWAITING_VALIDATION' ? 'bg-blue-500 text-white' :
                                                 booking.status === 'PENDING' ? 'bg-amber-500 text-white' :
                                                 'bg-gray-500 text-white'
                                             )}>

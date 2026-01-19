@@ -36,7 +36,7 @@
         "email": "Email",
         "emailPlaceholder": "Enter your email",
         "password": "Password",
-        "passwordPlaceholder": "••••••••",
+        "passwordPlaceholder": "********",
         "forgotPassword": "Forgot password?",
         "rememberMe": "Remember me",
         "securityNote": "Secure connection",

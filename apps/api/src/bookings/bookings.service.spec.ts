@@ -71,7 +71,7 @@ describe('BookingsService', () => {
         it('should upload proof if user is the traveler', async () => {
             db.booking.findUnique.mockResolvedValue(mockBooking);
             db.paymentProof.upsert.mockResolvedValue({ id: 'proof-123' });
-            db.booking.update.mockResolvedValue({ ...mockBooking, status: 'PENDING' });
+            db.booking.update.mockResolvedValue({ ...mockBooking, status: 'AWAITING_VALIDATION' });
             db.agencyProfile.findUnique.mockResolvedValue(null);
             uploadService.uploadFile.mockResolvedValue({
                 url: 'http://upload.url',

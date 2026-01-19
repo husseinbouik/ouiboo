@@ -19,7 +19,6 @@ import {
   Users, 
   Info, 
   ShieldCheck, 
-  CreditCard, 
   Banknote, 
   UploadCloud, 
   CheckCircle2,
@@ -30,7 +29,6 @@ import {
   Lock,
   Clock
 } from 'lucide-react';
-import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
 
@@ -39,14 +37,24 @@ export default function CheckoutPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [paymentMethod, setPaymentMethod] = useState('virement');
-  const [proof, setProof] = useState<string | null>(null);
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(15 * 60);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [guestCount, setGuestCount] = useState(1);
-  const [uploading, setUploading] = useState(false);
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [documentNumber, setDocumentNumber] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const hasInitializedFromQuery = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (proofPreview) {
+        URL.revokeObjectURL(proofPreview);
+      }
+    };
+  }, [proofPreview]);
 
   useEffect(() => {
     if (timeLeft <= 0) return;
@@ -111,6 +119,7 @@ export default function CheckoutPage() {
 
   const createBookingMutation = useMutation({
     mutationFn: async () => {
+      setErrorMessage(null);
       if (!selectedSessionId) {
         throw new Error('Session is required');
       }
@@ -125,28 +134,43 @@ export default function CheckoutPage() {
         phoneNumber: phoneNumber.trim(),
         documentNumber: documentNumber.trim()
       });
-      return response.data;
+      const booking = response.data;
+
+      if (proofFile) {
+        const formData = new FormData();
+        formData.append('file', proofFile);
+        await apiClient.post(`/bookings/${booking.id}/payment-proof`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
+
+      return booking;
     },
     onSuccess: (data) => {
-      router.push(`/checkout/confirmation?bookingId=${data?.id ?? ''}&proof=1`);
+      router.push(`/checkout/confirmation?bookingId=${data?.id ?? ''}&proof=${proofFile ? '1' : '0'}`);
+    },
+    onError: (error: any) => {
+      setErrorMessage(error?.response?.data?.message || error?.message || 'Unable to complete booking');
     }
   });
-  const handleProofUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+
+  const clearProof = () => {
+    if (proofPreview) {
+      URL.revokeObjectURL(proofPreview);
+    }
+    setProofPreview(null);
+    setProofFile(null);
+  };
+
+  const handleProofUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response = await apiClient.post('/upload', formData);
-      setProof(response.data.url);
-    } catch (error) {
-      console.error('Upload failed:', error);
-    } finally {
-      setUploading(false);
+    if (proofPreview) {
+      URL.revokeObjectURL(proofPreview);
     }
+    setProofPreview(URL.createObjectURL(file));
+    setProofFile(file);
   };
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center font-black animate-pulse">Initializing Security...</div>;
@@ -194,7 +218,7 @@ export default function CheckoutPage() {
                                             )}
                                         >
                                             <div>
-                                                <p className="font-black">{new Date(session.startDate).toLocaleDateString()} → {new Date(session.endDate).toLocaleDateString()}</p>
+                                                <p className="font-black">{new Date(session.startDate).toLocaleDateString()} - {new Date(session.endDate).toLocaleDateString()}</p>
                                                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{session.availableSeats} seats left</p>
                                             </div>
                                             <div className="flex items-center gap-3">
@@ -343,30 +367,25 @@ export default function CheckoutPage() {
                                     <Badge variant="outline" className="text-[8px] font-black border-primary/20 text-primary">Required to Confirm</Badge>
                                 </div>
                                 <label className="h-44 border-4 border-dashed border-muted rounded-[2rem] flex flex-col items-center justify-center gap-4 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-pointer group">
-                                    <input type="file" className="hidden" onChange={handleProofUpload} disabled={uploading} accept="image/*,application/pdf" />
+                                    <input type="file" className="hidden" onChange={handleProofUpload} disabled={createBookingMutation.isPending} accept="image/*,application/pdf" />
                                     <AnimatePresence mode="wait">
-                                        {proof ? (
+                                        {proofPreview ? (
                                             <motion.div 
                                                 initial={{ opacity: 0, scale: 0.9 }} 
                                                 animate={{ opacity: 1, scale: 1 }}
                                                 className="relative w-full h-full p-4"
                                             >
-                                                <img src={proof} className="w-full h-full object-cover rounded-xl" alt="Proof" />
+                                                <img src={proofPreview} className="w-full h-full object-cover rounded-xl" alt="Proof" />
                                                 <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
                                                     <p className="text-white font-black text-xs">Change Photo</p>
                                                 </div>
                                                 <button 
-                                                    onClick={(e) => { e.stopPropagation(); setProof(null); }}
+                                                    onClick={(e) => { e.stopPropagation(); clearProof(); }}
                                                     className="absolute top-6 right-6 h-8 w-8 bg-black/60 text-white rounded-full flex items-center justify-center hover:bg-black transition-all"
                                                 >
                                                     <X className="h-4 w-4" />
                                                 </button>
                                             </motion.div>
-                                        ) : uploading ? (
-                                            <div className="flex flex-col items-center gap-2">
-                                                <div className="h-10 w-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Uploading...</span>
-                                            </div>
                                         ) : (
                                             <div className="flex flex-col items-center gap-2">
                                                 <UploadCloud className="h-10 w-10 text-muted-foreground group-hover:text-primary group-hover:scale-110 transition-all" />
@@ -382,8 +401,8 @@ export default function CheckoutPage() {
                                 <p className="text-xs font-black text-foreground uppercase tracking-widest">Payment Status</p>
                                 <div className="space-y-3">
                                     <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
-                                        <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center", proof ? "bg-emerald-500 text-white" : "bg-amber-500 text-white")}>
-                                            {proof ? <CheckCircle2 className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                                        <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center", proofFile ? "bg-emerald-500 text-white" : "bg-amber-500 text-white")}>
+                                            {proofFile ? <CheckCircle2 className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
                                         </div>
                                         <div>
                                             <p className="text-sm font-black text-foreground">Pending payment</p>
@@ -391,7 +410,7 @@ export default function CheckoutPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
-                                        <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center", proof ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground")}>
+                                        <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center", proofFile ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground")}>
                                             <UploadCloud className="h-4 w-4" />
                                         </div>
                                         <div>
@@ -469,9 +488,15 @@ export default function CheckoutPage() {
                   </div>
                </div>
 
+               {errorMessage && (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-xs font-semibold text-rose-700">
+                  {errorMessage}
+                </div>
+               )}
+
                <Button 
                 disabled={
-                  !proof ||
+                  !proofFile ||
                   !selectedSessionId ||
                   !fullName.trim() ||
                   !phoneNumber.trim() ||
@@ -495,3 +520,4 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
