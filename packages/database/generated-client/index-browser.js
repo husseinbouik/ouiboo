@@ -133,6 +133,9 @@ exports.Prisma.UserScalarFieldEnum = {
   otp: 'otp',
   otpExpiresAt: 'otpExpiresAt',
   otpLastSentAt: 'otpLastSentAt',
+  passwordResetTokenHash: 'passwordResetTokenHash',
+  passwordResetExpiresAt: 'passwordResetExpiresAt',
+  passwordResetSentAt: 'passwordResetSentAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -253,9 +256,25 @@ exports.Prisma.PayoutRequestScalarFieldEnum = {
   bankDetails: 'bankDetails'
 };
 
+exports.Prisma.AuditLogScalarFieldEnum = {
+  id: 'id',
+  actorId: 'actorId',
+  actorEmail: 'actorEmail',
+  action: 'action',
+  targetType: 'targetType',
+  targetId: 'targetId',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
+};
+
+exports.Prisma.NullableJsonNullValueInput = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull
 };
 
 exports.Prisma.QueryMode = {
@@ -266,6 +285,12 @@ exports.Prisma.QueryMode = {
 exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
+};
+
+exports.Prisma.JsonNullValueFilter = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull,
+  AnyNull: Prisma.AnyNull
 };
 exports.UserRole = exports.$Enums.UserRole = {
   AGENCY: 'AGENCY',
@@ -331,7 +356,8 @@ exports.Prisma.ModelName = {
   PaymentProof: 'PaymentProof',
   Wallet: 'Wallet',
   WalletTransaction: 'WalletTransaction',
-  PayoutRequest: 'PayoutRequest'
+  PayoutRequest: 'PayoutRequest',
+  AuditLog: 'AuditLog'
 };
 
 /**

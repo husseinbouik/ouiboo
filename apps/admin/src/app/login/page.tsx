@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, Input } from '@ouiboo/ui';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +9,8 @@ import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Lock, ShieldCheck, User } from 'lucide-react';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 type AdminLoginForm = {
   username: string;
@@ -16,7 +18,7 @@ type AdminLoginForm = {
 };
 
 export default function AdminLoginPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const router = useRouter();
   const { register, handleSubmit, formState: { errors } } = useForm<AdminLoginForm>({
     defaultValues: {
@@ -25,10 +27,6 @@ export default function AdminLoginPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
-  }, [i18n.language]);
 
   const loginMutation = useMutation({
     mutationFn: async (payload: { email: string; password: string }) => {
@@ -62,16 +60,16 @@ export default function AdminLoginPage() {
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center font-black text-lg">O</div>
-            <span className="text-2xl font-black tracking-tight">Ouiboo Admin</span>
+            <span className="text-2xl font-black tracking-tight">{t('login.brand', 'Ouiboo Admin')}</span>
           </div>
           <div className="space-y-4 max-w-md">
-            <h1 className="text-4xl font-black leading-tight">Admin command center</h1>
+            <h1 className="text-4xl font-black leading-tight">{t('login.heroTitle', 'Admin command center')}</h1>
             <p className="text-white/80 text-lg">
-              Approve agencies, confirm payments, and keep the marketplace healthy.
+              {t('login.heroSubtitle', 'Approve agencies, confirm payments, and keep the marketplace healthy.')}
             </p>
             <div className="flex items-center gap-3 text-sm font-semibold text-white/90">
               <ShieldCheck className="h-5 w-5 text-sunset-orange" />
-              Audit logging and role-based access are enabled.
+              {t('login.heroNote', 'Audit logging and role-based access are enabled.')}
             </div>
           </div>
         </div>
@@ -79,6 +77,10 @@ export default function AdminLoginPage() {
 
       <div className="flex items-center justify-center p-6 lg:p-12">
         <div className="w-full max-w-md space-y-8">
+          <div className="flex items-center justify-end gap-2">
+            <LanguageSwitcher />
+            <ThemeToggle />
+          </div>
           <div className="text-center space-y-2">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-sunset-orange/10 text-sunset-orange font-black text-xl">
               A
@@ -141,7 +143,7 @@ export default function AdminLoginPage() {
               disabled={loginMutation.isPending}
               className="w-full h-12 bg-deep-blue hover:bg-blue-900 text-white font-semibold"
             >
-              {loginMutation.isPending ? 'Authenticating...' : t('login.authenticate')}
+              {loginMutation.isPending ? t('login.authenticating', 'Authenticating...') : t('login.authenticate')}
             </Button>
           </form>
         </div>

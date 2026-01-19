@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { UserRole } from '@ouiboo/types';
+import { WalletsService } from '../wallets/wallets.service';
 
 describe('Tenant isolation (agency scope)', () => {
     let app: INestApplication;
@@ -44,6 +45,9 @@ describe('Tenant isolation (agency scope)', () => {
             findMany: jest.fn(({ where }) => bookings.filter((booking) => booking.session.template.agencyId === where.session.template.agencyId)),
         },
     };
+    const walletsService = {
+        requestPayout: jest.fn(),
+    };
 
     beforeAll(async () => {
         const moduleRef = await Test.createTestingModule({
@@ -51,6 +55,7 @@ describe('Tenant isolation (agency scope)', () => {
             providers: [
                 TenantGuard,
                 { provide: DatabaseService, useValue: dbMock },
+                { provide: WalletsService, useValue: walletsService },
             ],
         })
             .overrideGuard(JwtAuthGuard)

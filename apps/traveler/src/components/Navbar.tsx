@@ -51,7 +51,7 @@ export function Navbar() {
     { name: t('nav.featured'), href: '/trips/featured', icon: <Zap className="w-4 h-4" /> },
   ];
 
-  const isAuthPage = ['/login', '/signup', '/verify', '/forgot-password', '/terms', '/privacy'].some(path => pathname.startsWith(path));
+  const isAuthPage = ['/login', '/signup', '/verify', '/forgot-password', '/reset-password', '/terms', '/privacy'].some(path => pathname.startsWith(path));
 
   if (isAuthPage) return null;
 

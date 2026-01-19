@@ -9,6 +9,7 @@ const mockBooking = {
     travelerId: 'user-123',
     status: 'PENDING',
     paymentProofId: null,
+    bookingDate: new Date(),
     session: {
         template: {
             agencyId: 'agency-123',

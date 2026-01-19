@@ -8,12 +8,17 @@ import { ALLOWED_MIME_TYPES, MAX_UPLOAD_SIZE_BYTES } from '../upload.constants';
 @Injectable()
 export class LocalStorageProvider implements IStorageProvider {
     private readonly uploadDir = path.join(process.cwd(), 'uploads');
+    private readonly privateUploadDir = path.join(process.cwd(), 'private-uploads');
     private readonly allowedMimeTypes = ALLOWED_MIME_TYPES;
     private readonly maxFileSize = MAX_UPLOAD_SIZE_BYTES;
+    private readonly privatePrefix = 'private';
 
     constructor() {
         if (!fs.existsSync(this.uploadDir)) {
             fs.mkdirSync(this.uploadDir, { recursive: true });
+        }
+        if (!fs.existsSync(this.privateUploadDir)) {
+            fs.mkdirSync(this.privateUploadDir, { recursive: true });
         }
     }
 
@@ -33,8 +38,9 @@ export class LocalStorageProvider implements IStorageProvider {
 
         // Create folder structure: uploads/{folder}
         // folder usually passed as: agencyId/YYYY-MM-DD
-        const relativePath = path.join(folder);
-        const fullPath = path.join(this.uploadDir, relativePath);
+        const { baseDir, isPrivate, relative } = this.resolveTarget(folder);
+        const relativePath = path.join(relative);
+        const fullPath = path.join(baseDir, relativePath);
 
         if (!fs.existsSync(fullPath)) {
             fs.mkdirSync(fullPath, { recursive: true });
@@ -43,19 +49,20 @@ export class LocalStorageProvider implements IStorageProvider {
         const filePath = path.join(fullPath, filename);
 
         // Prevent path traversal
-        if (!filePath.startsWith(this.uploadDir)) {
+        if (!filePath.startsWith(baseDir)) {
             throw new BadRequestException('Invalid filename');
         }
 
         fs.writeFileSync(filePath, file.buffer);
 
         const baseUrl = process.env.API_URL || 'http://localhost:3000/api';
-        // URL format: uploads/agencyId/date/filename
-        // Windows path separator handling for URL
-        const urlPath = path.join('uploads', relativePath, filename).split(path.sep).join('/');
-        const url = `${baseUrl.replace('/api', '')}/${urlPath}`;
+        const url = isPrivate
+            ? ''
+            : `${baseUrl.replace('/api', '')}/${path.join('uploads', relativePath, filename).split(path.sep).join('/')}`;
 
-        return { url, key: path.join(relativePath, filename) };
+        const keyPrefix = isPrivate ? this.privatePrefix : '';
+        const key = path.join(keyPrefix, relativePath, filename);
+        return { url, key };
     }
 
     async delete(key: string): Promise<void> {
@@ -66,9 +73,10 @@ export class LocalStorageProvider implements IStorageProvider {
     }
 
     getFilePath(key: string): string {
-        const filePath = path.join(this.uploadDir, key);
+        const { baseDir, relative } = this.resolveTarget(key);
+        const filePath = path.join(baseDir, relative);
 
-        if (!filePath.startsWith(this.uploadDir)) {
+        if (!filePath.startsWith(baseDir)) {
             throw new BadRequestException('Invalid file path');
         }
 
@@ -77,6 +85,18 @@ export class LocalStorageProvider implements IStorageProvider {
         }
 
         return filePath;
+    }
+
+    private resolveTarget(value: string) {
+        const normalized = value.replace(/^[\\/]+/, '');
+        const isPrivate = normalized === this.privatePrefix
+            || normalized.startsWith(`${this.privatePrefix}/`)
+            || normalized.startsWith(`${this.privatePrefix}${path.sep}`);
+        const relative = isPrivate
+            ? normalized.replace(new RegExp(`^${this.privatePrefix}[\\\\/]?`), '')
+            : normalized;
+        const baseDir = isPrivate ? this.privateUploadDir : this.uploadDir;
+        return { baseDir, relative, isPrivate };
     }
 
     private getExtensionForMimeType(mimeType: string): string {

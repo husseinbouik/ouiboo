@@ -39,7 +39,6 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('virement');
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
-  const [timeLeft, setTimeLeft] = useState(15 * 60);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [guestCount, setGuestCount] = useState(1);
   const [fullName, setFullName] = useState('');
@@ -55,18 +54,6 @@ export default function CheckoutPage() {
       }
     };
   }, [proofPreview]);
-
-  useEffect(() => {
-    if (timeLeft <= 0) return;
-    const timer = setInterval(() => setTimeLeft(t => t - 1), 1000);
-    return () => clearInterval(timer);
-  }, [timeLeft]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   const { data: trip, isLoading } = useQuery({
     queryKey: ['trip', tripId],
@@ -339,7 +326,7 @@ export default function CheckoutPage() {
                                                 <Calendar className="h-4 w-4" />
                                             </div>
                                             <p className="text-[10px] font-bold text-amber-800 uppercase tracking-tight">
-                                                Seats are reserved for <span className="text-sm font-black underline">{formatTime(timeLeft)} minutes</span>. Please upload proof before the timer expires.
+                                                Payment proof is required within 24 hours of booking. Reservations without proof are canceled automatically.
                                             </p>
                                         </div>
                                     </motion.div>
@@ -364,7 +351,7 @@ export default function CheckoutPage() {
                             <div className="space-y-4 pt-4">
                                 <div className="flex justify-between items-end">
                                     <p className="text-xs font-black text-foreground uppercase tracking-widest">3. Upload Proof of Payment</p>
-                                    <Badge variant="outline" className="text-[8px] font-black border-primary/20 text-primary">Required to Confirm</Badge>
+                                    <Badge variant="outline" className="text-[8px] font-black border-primary/20 text-primary">Upload within 24h</Badge>
                                 </div>
                                 <label className="h-44 border-4 border-dashed border-muted rounded-[2rem] flex flex-col items-center justify-center gap-4 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-pointer group">
                                     <input type="file" className="hidden" onChange={handleProofUpload} disabled={createBookingMutation.isPending} accept="image/*,application/pdf" />
@@ -394,7 +381,7 @@ export default function CheckoutPage() {
                                         )}
                                     </AnimatePresence>
                                 </label>
-                                <p className="text-[10px] text-muted-foreground text-center font-medium italic">Your booking is secured as soon as you upload this proof.</p>
+                                <p className="text-[10px] text-muted-foreground text-center font-medium italic">You can upload later from My Bookings. Reservations without proof are canceled after 24 hours.</p>
                             </div>
 
                             <div className="space-y-4 pt-6 border-t border-border/50">
@@ -496,7 +483,6 @@ export default function CheckoutPage() {
 
                <Button 
                 disabled={
-                  !proofFile ||
                   !selectedSessionId ||
                   !fullName.trim() ||
                   !phoneNumber.trim() ||

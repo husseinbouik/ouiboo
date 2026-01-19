@@ -1,7 +1,7 @@
 import { Controller, Post, Body, UnauthorizedException, Request, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto, RefreshTokenDto, VerifyEmailDto, ResendOtpDto } from './dto/auth.dto';
+import { LoginDto, RegisterDto, RefreshTokenDto, VerifyEmailDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 import { Request as ExpressRequest, Response } from 'express';
 
 const REFRESH_COOKIE_NAME = 'refresh_token';
@@ -79,6 +79,18 @@ export class AuthController {
     @ApiOperation({ summary: 'Resend verification OTP' })
     async resendOtp(@Body() dto: ResendOtpDto) {
         return this.authService.resendOTP(dto.email);
+    }
+
+    @Post('forgot-password')
+    @ApiOperation({ summary: 'Request password reset email' })
+    async forgotPassword(@Body() dto: ForgotPasswordDto) {
+        return this.authService.requestPasswordReset(dto.email);
+    }
+
+    @Post('reset-password')
+    @ApiOperation({ summary: 'Reset password using token' })
+    async resetPassword(@Body() dto: ResetPasswordDto) {
+        return this.authService.resetPassword(dto.email, dto.token, dto.newPassword);
     }
 
     private setRefreshCookie(res: Response, token: string) {

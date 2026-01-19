@@ -66,7 +66,7 @@
     "subtitle": "Trade endless scrolling for authentic adventures. We connect you with unique trips from trusted, independent agencies.",
     "feature1": {
       "title": "Discover Unique Trips",
-      "description": "Find experiences you won’t see anywhere else, from culinary tours to mountain treks."
+      "description": "Find experiences you won't see anywhere else, from culinary tours to mountain treks."
     },
     "feature2": {
       "title": "Book with Confidence",
@@ -187,7 +187,7 @@
     }
   },
   "modal": {
-    "title": "You're on the list! 🎉",
+    "title": "You're on the list!",
     "subtitle": "Thanks for joining! We'll notify you when early access launches.",
     "button": "Awesome!"
   },
@@ -195,3 +195,4 @@
     "rights": "All rights reserved."
   }
 }
+

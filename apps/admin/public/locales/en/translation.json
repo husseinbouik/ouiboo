@@ -4,6 +4,135 @@
         "subtitle": "Restricted area. Authorized personnel only.",
         "username": "Username",
         "password": "Password",
-        "authenticate": "Authenticate"
+        "authenticate": "Authenticate",
+        "authenticating": "Authenticating...",
+        "helper": "Default credentials: admin / admin",
+        "brand": "Ouiboo Admin",
+        "heroTitle": "Admin command center",
+        "heroSubtitle": "Approve agencies, confirm payments, and keep the marketplace healthy.",
+        "heroNote": "Audit logging and role-based access are enabled."
+    },
+    "dashboard": {
+        "brand": "OUIBOO ADMIN",
+        "summary": {
+            "pendingAgencies": "Pending agencies",
+            "tripsInReview": "Trips in review",
+            "bookingsToday": "Bookings today",
+            "paymentProofs": "Payment proofs"
+        },
+        "tabs": {
+            "pending": "Verification Queue",
+            "agencies": "Manage Agencies",
+            "bookings": "System Bookings",
+            "paymentProofs": "Payment Proofs",
+            "payouts": "Payout Requests"
+        },
+        "meta": {
+            "pending": {
+                "title": "Verification Queue",
+                "description": "Review agencies and trips waiting for approval.",
+                "searchPlaceholder": "Search agencies, trips, or IDs..."
+            },
+            "agencies": {
+                "title": "Agency Directory",
+                "description": "Manage verification status and subscriptions.",
+                "searchPlaceholder": "Search agencies by name or email..."
+            },
+            "bookings": {
+                "title": "System Bookings",
+                "description": "Track bookings and traveler activity across the platform.",
+                "searchPlaceholder": "Search bookings or travelers..."
+            },
+            "paymentProofs": {
+                "title": "Payment Proofs",
+                "description": "Approve or reject uploaded payment receipts.",
+                "searchPlaceholder": "Search payment proofs by traveler or booking..."
+            },
+            "payouts": {
+                "title": "Payout Requests",
+                "description": "Review agency payout requests before releasing funds.",
+                "searchPlaceholder": "Search payout requests by agency..."
+            }
+        },
+        "sections": {
+            "pendingAgencies": "Pending Agency Applications",
+            "tripQualityReview": "Trip Quality Review",
+            "allAgencies": "All Agencies Management",
+            "bookingMonitor": "System-wide Booking Monitor",
+            "pendingPaymentProofs": "Pending Payment Proofs",
+            "payoutRequests": "Payout Requests"
+        },
+        "table": {
+            "booking": "Booking",
+            "traveler": "Traveler",
+            "status": "Status",
+            "amount": "Amount",
+            "submitted": "Submitted",
+            "action": "Action"
+        },
+        "actions": {
+            "review": "Review",
+            "view": "View",
+            "details": "Details",
+            "reject": "Reject",
+            "approve": "Approve",
+            "activate": "Activate",
+            "deactivate": "Deactivate",
+            "approvePayout": "Approve payout",
+            "rejectPayout": "Reject payout",
+            "approveAgency": "Approve agency",
+            "rejectAgency": "Reject agency"
+        },
+        "labels": {
+            "ice": "ICE",
+            "joined": "Joined",
+            "request": "Request",
+            "requestId": "Request #{{id}}",
+            "agencyPayout": "Agency payout",
+            "agency": "Agency",
+            "requested": "Requested",
+            "amount": "Amount",
+            "bankDetails": "Agency Bank Details",
+            "payoutDetails": "Payout Details",
+            "selected": "Selected",
+            "contact": "Contact",
+            "status": "Status",
+            "agencyAddress": "Agency Address",
+            "booking": "Booking",
+            "traveler": "Traveler",
+            "na": "N/A"
+        },
+        "messages": {
+            "noBankDetails": "No bank details on file.",
+            "noPaymentProofs": "No payment proofs are waiting for review.",
+            "noPayoutRequests": "No payout requests are waiting for review.",
+            "selectPayoutPrompt": "Select a payout request to review agency bank details and approve or reject.",
+            "reviewVerification": "Review verification details and approve or reject.",
+            "notProvided": "Not provided",
+            "noEmail": "No email on file",
+            "noPhone": "No phone on file",
+            "noAddress": "No address provided.",
+            "unknown": "Unknown",
+            "loading": "Loading"
+        },
+        "prompts": {
+            "paymentProofRejection": "Add a rejection reason for this payment proof.",
+            "paymentProofReasonRequired": "Rejection reason is required to reject a payment proof."
+        },
+        "feedback": {
+            "agencyApproved": "Agency approved successfully.",
+            "agencyRejected": "Agency rejected successfully.",
+            "agencyUpdateError": "Unable to update agency status. Please try again.",
+            "paymentProofApproved": "Payment proof approved successfully.",
+            "paymentProofRejected": "Payment proof rejected successfully.",
+            "paymentProofUpdateError": "Unable to update payment proof. Please try again.",
+            "paymentProofLoadError": "Unable to load payment proof.",
+            "payoutPaid": "Payout marked as paid successfully.",
+            "payoutRejected": "Payout rejected successfully.",
+            "payoutUpdateError": "Unable to update payout request. Please try again."
+        },
+        "modal": {
+            "agencyReview": "Agency Review"
+        }
     }
 }

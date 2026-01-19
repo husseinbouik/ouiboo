@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request, Patch, Body } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request, Patch, Body, Post } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -6,6 +6,8 @@ import { TenantGuard } from '../auth/guards/tenant.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@ouiboo/types';
 import { DatabaseService } from '../database/database.service';
+import { WalletsService } from '../wallets/wallets.service';
+import { RequestPayoutDto } from './dto/payout-request.dto';
 
 @ApiTags('Agency')
 @Controller('agency')
@@ -13,7 +15,10 @@ import { DatabaseService } from '../database/database.service';
 @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
 @Roles(UserRole.Agency)
 export class AgencyController {
-    constructor(private readonly prisma: DatabaseService) { }
+    constructor(
+        private readonly prisma: DatabaseService,
+        private readonly walletsService: WalletsService,
+    ) { }
 
     @Get('stats')
     @ApiOperation({ summary: 'Get agency dashboard stats' })
@@ -117,6 +122,13 @@ export class AgencyController {
             take: 20
         });
     }
+
+    @Post('payouts')
+    @ApiOperation({ summary: 'Request a payout' })
+    async requestPayout(@Request() req, @Body() dto: RequestPayoutDto) {
+        return this.walletsService.requestPayout(req.tenantId, dto.amount, dto.bankDetails);
+    }
+
     @Patch('profile') // Use Patch/Put, no ID param needed as we use req.user
     @ApiOperation({ summary: 'Update agency profile' })
     async updateProfile(@Request() req, @Body() data: { companyName?: string; bio?: string; logo?: string; bankDetails?: string; }) {

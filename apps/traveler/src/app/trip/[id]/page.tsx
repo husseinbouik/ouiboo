@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -55,7 +55,9 @@ export default function TripDetailsPage() {
   
   if (!trip) return (
     <div className="min-h-screen flex flex-col items-center justify-center space-y-6 bg-background">
-        <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center text-4xl">🏜️</div>
+        <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center">
+          <MapPin className="h-10 w-10 text-muted-foreground" />
+        </div>
         <h1 className="text-3xl font-black text-foreground font-display">Adventure not found</h1>
         <Button onClick={() => router.push('/')} className="bg-sunset-orange hover:bg-orange-600 px-8 py-6 rounded-2xl font-bold">
             Explore other trips
@@ -233,7 +235,9 @@ export default function TripDetailsPage() {
                </div>
              ) : (
                 <div className="p-8 rounded-[2rem] bg-muted/30 border border-dashed border-border flex flex-col items-center justify-center gap-3 text-center">
-                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-xl">ℹ️</div>
+                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                        <ClipboardList className="h-6 w-6 text-muted-foreground" />
+                    </div>
                     <div>
                         <h3 className="font-bold text-foreground text-sm uppercase tracking-wider">Itinerary coming soon</h3>
                         <p className="text-xs text-muted-foreground mt-1 max-w-[250px]">The agency is finalizing the daily details for this experience.</p>
@@ -389,7 +393,7 @@ export default function TripDetailsPage() {
                                 if (!user) {
                                     setShowLoginModal(true);
                                 } else {
-                                    router.push(`/booking/${tripId}?session=${selectedSession}`);
+                                    router.push(`/checkout/${tripId}?session=${selectedSession}`);
                                 }
                             }}
                             className="w-full h-14 rounded-xl text-lg font-bold bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-orange-600 text-white shadow-lg shadow-blue-900/20 dark:shadow-orange-900/20 transition-all active:scale-95 disabled:opacity-50"
@@ -408,3 +412,5 @@ export default function TripDetailsPage() {
     </div>
   );
 }
+
+

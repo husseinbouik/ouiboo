@@ -2,10 +2,12 @@
 
 import React, { Fragment, useState, useEffect, useRef } from 'react'
 import { Bars3Icon, XMarkIcon, GlobeAltIcon, BuildingOffice2Icon, CheckCircleIcon, SparklesIcon, ChartBarIcon, UserGroupIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
+import { Moon, Sun } from 'lucide-react'
 import { motion, useScroll, useTransform, useInView, animate, Variants } from 'framer-motion'
 import axios from 'axios'
 import { Dialog, Transition, Menu } from '@headlessui/react'
 import { useTranslation } from 'react-i18next'
+import { useTheme } from 'next-themes'
 
 // --- Helper Components & Types ---
 
@@ -235,6 +237,33 @@ export default function OuibooLanding() {
     </Menu>
   );
 
+  const ThemeToggle = () => {
+    const { resolvedTheme, setTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+      setMounted(true);
+    }, []);
+
+    if (!mounted) {
+      return <div className="h-9 w-9 rounded-full bg-gray-200 animate-pulse" />;
+    }
+
+    const isDark = resolvedTheme === 'dark';
+
+    return (
+      <button
+        type="button"
+        onClick={() => setTheme(isDark ? 'light' : 'dark')}
+        className="h-9 w-9 rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm hover:text-gray-900 transition-colors flex items-center justify-center dark:border-gray-700 dark:bg-slate-900 dark:text-gray-200 dark:hover:text-white"
+        aria-label="Toggle theme"
+        title="Toggle theme"
+      >
+        {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      </button>
+    );
+  };
+
   return (
     <div className="bg-off-white text-deep-blue font-sans">
       {/* Header - Fixed with scroll effect */}
@@ -277,8 +306,11 @@ export default function OuibooLanding() {
               </a>
             ))}
           </div>
-          <div className="hidden lg:flex lg:flex-1 lg:justify-end items-center gap-x-6">
-            <LanguageSwitcher />
+          <div className="hidden lg:flex lg:flex-1 lg:justify-end items-center gap-x-4">
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+              <ThemeToggle />
+            </div>
             <div className="flex items-center gap-x-4">
               <a href={`${travelerUrl}/login?lang=${currentLang}`} className="text-sm font-semibold leading-6 text-deep-blue hover:text-sunset-orange transition-colors">
                 {t('nav.travelerLogin')}
@@ -323,8 +355,9 @@ export default function OuibooLanding() {
                   ))}
                 </div>
                 <div className="py-6 space-y-4">
-                  <div className="flex items-center">
+                  <div className="flex items-center gap-2">
                     <LanguageSwitcher />
+                    <ThemeToggle />
                   </div>
                   <a
                     href={`${travelerUrl}/login?lang=${currentLang}`}
@@ -1020,6 +1053,28 @@ export default function OuibooLanding() {
           --off-white: #F9FAFB;
           --golden-yellow: #FACC15;
         }
+        .dark .bg-off-white { background-color: #0b1120; }
+        .dark .bg-white { background-color: #0f172a; }
+        .dark .bg-white\\/80 { background-color: rgba(15, 23, 42, 0.8); }
+        .dark .bg-gray-50 { background-color: #111827; }
+        .dark .bg-gray-100 { background-color: #1f2937; }
+        .dark .bg-gray-200 { background-color: #1f2937; }
+        .dark .bg-gray-900\\/5 { background-color: rgba(15, 23, 42, 0.7); }
+        .dark .hover\\:bg-gray-50:hover { background-color: #1f2937; }
+        .dark .hover\\:bg-white:hover { background-color: #0f172a; }
+        .dark .text-deep-blue { color: #e2e8f0; }
+        .dark .text-gray-900 { color: #f8fafc; }
+        .dark .text-gray-700 { color: #e2e8f0; }
+        .dark .text-gray-600 { color: #cbd5e1; }
+        .dark .text-gray-500 { color: #94a3b8; }
+        .dark .text-gray-400 { color: #94a3b8; }
+        .dark .text-gray-300 { color: #cbd5e1; }
+        .dark .border-gray-200 { border-color: #1f2937; }
+        .dark .border-gray-300 { border-color: #334155; }
+        .dark .ring-gray-200 { --tw-ring-color: #1f2937; }
+        .dark .ring-gray-300 { --tw-ring-color: #334155; }
+        .dark .ring-gray-900\\/10 { --tw-ring-color: rgba(15, 23, 42, 0.7); }
+        .dark .divide-gray-500\\/10 > :not([hidden]) ~ :not([hidden]) { border-color: rgba(148, 163, 184, 0.2); }
         .text-deep-blue { color: var(--deep-blue); }
         .bg-deep-blue { background-color: var(--deep-blue); }
         .bg-off-white { background-color: var(--off-white); }
@@ -1029,11 +1084,11 @@ export default function OuibooLanding() {
         .bg-cyan-500 { background-color: var(--cyan-500); }
         .text-golden-yellow { color: var(--golden-yellow); }
         .bg-golden-yellow { background-color: var(--golden-yellow); }
-        .ring-golden-yellow\/20 { --tw-ring-color: rgba(250, 204, 21, 0.2); }
-        .ring-golden-yellow\/30 { --tw-ring-color: rgba(250, 204, 21, 0.3); }
-        .ring-golden-yellow\/50 { --tw-ring-color: rgba(250, 204, 21, 0.5); }
+        .ring-golden-yellow\\/20 { --tw-ring-color: rgba(250, 204, 21, 0.2); }
+        .ring-golden-yellow\\/30 { --tw-ring-color: rgba(250, 204, 21, 0.3); }
+        .ring-golden-yellow\\/50 { --tw-ring-color: rgba(250, 204, 21, 0.5); }
         .from-golden-yellow { --tw-gradient-from: var(--golden-yellow); }
-        .via-golden-yellow\/5 { --tw-gradient-stops: var(--tw-gradient-from), rgba(250, 204, 21, 0.05) var(--tw-gradient-to); }
+        .via-golden-yellow\\/5 { --tw-gradient-stops: var(--tw-gradient-from), rgba(250, 204, 21, 0.05) var(--tw-gradient-to); }
         .logo-placeholder {
           width: 32px;
           height: 32px;
@@ -1045,7 +1100,7 @@ export default function OuibooLanding() {
           font-size: 1.25rem;
         }
         /* Add styles for RTL */
-      [dir="rtl"] .group:hover .group-hover\:translate-x-1 {
+      [dir="rtl"] .group:hover .group-hover\\:translate-x-1 {
             --tw-translate-x: -0.25rem;
         }
       [dir="rtl"] .pl-9 {

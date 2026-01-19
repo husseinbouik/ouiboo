@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from './AuthContext';
+import '@/lib/i18n';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
     const { i18n } = useTranslation();

@@ -117,7 +117,7 @@ export default function BookingsManager() {
                         </div>
                         <div>
                           <p className="font-bold text-deep-blue dark:text-gray-200">{booking.traveler?.name}</p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500">{booking.id} • {booking.guestsCount} guests</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{booking.id} x {booking.guestsCount} guests</p>
                         </div>
                       </div>
                     </td>

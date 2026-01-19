@@ -1,4 +1,4 @@
-// pages/api/subscribe.ts
+﻿// pages/api/subscribe.ts
 
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
@@ -15,13 +15,6 @@ const generateEmailHtml = (name: string, userType: string, language: string = 'e
 
   // Normalize language code
   const lang = ['en', 'fr', 'ar'].includes(language) ? language : 'en';
-  const isRTL = lang === 'ar';
-  const dir = isRTL ? 'rtl' : 'ltr';
-  const textAlign = isRTL ? 'right' : 'left';
-  const fontFamily = isRTL
-    ? "'Segoe UI', Tahoma, Arial, sans-serif"
-    : "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
-
   // Email content based on language and user type
   const content: Record<string, Record<string, any>> = {
     en: {
@@ -31,78 +24,86 @@ const generateEmailHtml = (name: string, userType: string, language: string = 'e
         greeting: `Hi ${name}, welcome to Ouiboo. You've secured priority access to a platform designed to reduce operational friction and accelerate your agency's growth.`,
         featuresTitle: "What this means for your team:",
         features: [
-          "🚀 A unified dashboard for trips, bookings, and payments.",
-          "📊 Analytics that highlight trends and uncover revenue opportunities.",
-          "🌍 Instant visibility inside a curated marketplace of global travelers."
+          "A unified dashboard for trips, bookings, and payments.",
+          "Analytics that highlight trends and uncover revenue opportunities.",
+          "Instant visibility inside a curated marketplace of global travelers."
         ],
         cta: "Discover the Vision",
-        footer: "Have a question? Just reply — we read every message.",
+        footer: "Have a question? Just reply and we read every message.",
         footerBottom: "Your early access link is on its way."
       },
       traveler: {
-        subject: `${name}, your next adventure starts here. ✈️`,
+        subject: `${name}, your next adventure starts here.`,
         title: "Travel that finally feels personal.",
-        greeting: `Hey ${name}, thanks for joining the Ouiboo waitlist. You're getting closer to authentic travel experiences crafted by real local agencies — not mass-produced tours.`,
+        greeting: `Hey ${name}, thanks for joining the Ouiboo waitlist. You're getting closer to authentic travel experiences crafted by real local agencies, not mass-produced tours.`,
         highlight: "We curate the best independent agencies so you can skip the tourist traps and explore the world like a local.",
         closing: "Your next story is waiting. We'll help you write it.",
         cta: "See What's Coming",
-        footer: "Have questions or ideas? Reply anytime — we read everything.",
+        footer: "Have questions or ideas? Reply anytime and we read everything.",
         footerBottom: "Your early access pass is on its way."
       }
     },
     fr: {
       agency: {
-        subject: `Bienvenue à bord, ${name}. Votre agence vient de débloquer son prochain chapitre.`,
+        subject: `Bienvenue a bord, ${name}. Votre agence ouvre un nouveau chapitre.`,
         title: "Une agence plus intelligente et plus rapide commence ici.",
-        greeting: `Bonjour ${name}, bienvenue sur Ouiboo. Vous avez obtenu un accès prioritaire à une plateforme conçue pour réduire les frictions opérationnelles et accélérer la croissance de votre agence.`,
-        featuresTitle: "Ce que cela signifie pour votre équipe :",
+        greeting: `Bonjour ${name}, bienvenue sur Ouiboo. Vous avez obtenu un acces prioritaire a une plateforme concue pour reduire les frictions operationnelles et accelerer la croissance de votre agence.`,
+        featuresTitle: "Ce que cela signifie pour votre equipe :",
         features: [
-          "🚀 Un tableau de bord unifié pour les voyages, réservations et paiements.",
-          "📊 Des analyses qui mettent en évidence les tendances et révèlent des opportunités de revenus.",
-          "🌍 Une visibilité instantanée dans une place de marché sélectionnée de voyageurs internationaux."
+          "Un tableau de bord unifie pour les voyages, reservations et paiements.",
+          "Des analyses qui mettent en evidence les tendances et revelent des opportunites de revenus.",
+          "Une visibilite instantanee dans une place de marche selectionnee de voyageurs internationaux."
         ],
-        cta: "Découvrir la Vision",
-        footer: "Une question ? Répondez simplement — nous lisons chaque message.",
-        footerBottom: "Votre lien d'accès anticipé arrive bientôt."
+        cta: "Decouvrir la vision",
+        footer: "Une question ? Repondez simplement et nous lisons chaque message.",
+        footerBottom: "Votre lien d'acces anticipe arrive bientot."
       },
       traveler: {
-        subject: `${name}, votre prochaine aventure commence ici. ✈️`,
+        subject: `${name}, votre prochaine aventure commence ici.`,
         title: "Un voyage qui se sent enfin personnel.",
-        greeting: `Salut ${name}, merci d'avoir rejoint la liste d'attente Ouiboo. Vous vous rapprochez d'expériences de voyage authentiques créées par de vraies agences locales — pas de circuits produits en masse.`,
-        highlight: "Nous sélectionnons les meilleures agences indépendantes pour que vous puissiez éviter les pièges à touristes et explorer le monde comme un local.",
-        closing: "Votre prochaine histoire vous attend. Nous vous aiderons à l'écrire.",
+        greeting: `Salut ${name}, merci d'avoir rejoint la liste d'attente Ouiboo. Vous vous rapprochez d'experiences de voyage authentiques creees par de vraies agences locales, pas de circuits produits en masse.`,
+        highlight: "Nous selectionnons les meilleures agences independantes pour eviter les pieges a touristes et explorer le monde comme un local.",
+        closing: "Votre prochaine histoire vous attend. Nous vous aiderons a l'ecrire.",
         cta: "Voir ce qui arrive",
-        footer: "Des questions ou des idées ? Répondez à tout moment — nous lisons tout.",
-        footerBottom: "Votre passe d'accès anticipé arrive bientôt."
+        footer: "Des questions ou des idees ? Repondez a tout moment et nous lisons tout.",
+        footerBottom: "Votre passe d'acces anticipe arrive bientot."
       }
     },
     ar: {
+      rtl: false,
       agency: {
-        subject: `مرحباً بك، ${name}. وكالتك فتحت للتو فصلها التالي.`,
-        title: "وكالة أذكى وأسرع تبدأ من هنا.",
-        greeting: `مرحباً ${name}، أهلاً بك في Ouiboo. لقد حصلت على وصول ذو أولوية لمنصة مصممة لتقليل الاحتكاك التشغيلي وتسريع نمو وكالتك.`,
-        featuresTitle: "ما يعنيه هذا لفريقك:",
+        subject: `Welcome aboard, ${name}. Your agency just unlocked its next chapter.`,
+        title: "A smarter, faster agency starts here.",
+        greeting: `Hi ${name}, welcome to Ouiboo. You've secured priority access to a platform designed to reduce operational friction and accelerate your agency's growth.`,
+        featuresTitle: "What this means for your team:",
         features: [
-          "🚀 لوحة تحكم موحدة للرحلات والحجوزات والمدفوعات.",
-          "📊 تحليلات تسلط الضوء على الاتجاهات وتكشف فرص الإيرادات.",
-          "🌍 رؤية فورية داخل سوق منسق من المسافرين العالميين."
+          "A unified dashboard for trips, bookings, and payments.",
+          "Analytics that highlight trends and uncover revenue opportunities.",
+          "Instant visibility inside a curated marketplace of global travelers."
         ],
-        cta: "اكتشف الرؤية",
-        footer: "لديك سؤال؟ فقط رد — نقرأ كل رسالة.",
-        footerBottom: "رابط الوصول المبكر في طريقه إليك."
+        cta: "Discover the Vision",
+        footer: "Have a question? Just reply and we read every message.",
+        footerBottom: "Your early access link is on its way."
       },
       traveler: {
-        subject: `${name}، مغامرتك القادمة تبدأ من هنا. ✈️`,
-        title: "سفر يشعر أخيراً بأنه شخصي.",
-        greeting: `مرحباً ${name}، شكراً لانضمامك إلى قائمة انتظار Ouiboo. أنت تقترب من تجارب سفر أصيلة من صنع وكالات محلية حقيقية — وليست جولات منتجة بكميات كبيرة.`,
-        highlight: "نحن نختار أفضل الوكالات المستقلة حتى تتمكن من تخطي فخاخ السياح واستكشاف العالم مثل السكان المحليين.",
-        closing: "قصتك التالية في انتظارك. سنساعدك على كتابتها.",
-        cta: "شاهد ما قادم",
-        footer: "لديك أسئلة أو أفكار؟ رد في أي وقت — نقرأ كل شيء.",
-        footerBottom: "بطاقة الوصول المبكر في طريقها إليك."
+        subject: `${name}, your next adventure starts here.`,
+        title: "Travel that finally feels personal.",
+        greeting: `Hey ${name}, thanks for joining the Ouiboo waitlist. You're getting closer to authentic travel experiences crafted by real local agencies, not mass-produced tours.`,
+        highlight: "We curate the best independent agencies so you can skip the tourist traps and explore the world like a local.",
+        closing: "Your next story is waiting. We'll help you write it.",
+        cta: "See What's Coming",
+        footer: "Have questions or ideas? Reply anytime and we read everything.",
+        footerBottom: "Your early access pass is on its way."
       }
     }
   };
+
+  const isRTL = lang === 'ar' && content.ar?.rtl !== false;
+  const dir = isRTL ? 'rtl' : 'ltr';
+  const textAlign = isRTL ? 'right' : 'left';
+  const fontFamily = isRTL
+    ? "'Segoe UI', Tahoma, Arial, sans-serif"
+    : "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
   const emailContent = content[lang][userType === 'Agency' ? 'agency' : 'traveler'];
 
@@ -389,3 +390,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Internal server error', error: error.message }, { status: 500 });
   }
 }
+

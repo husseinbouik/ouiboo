@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -203,7 +203,9 @@ export default function MyBookingsPage() {
                         ))
                     ) : (
                         <div className="text-center py-20 bg-white/50 dark:bg-slate-900/50 rounded-[2rem] border border-dashed border-gray-200 dark:border-slate-800">
-                            <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">✈️</div>
+                            <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Calendar className="h-8 w-8 text-muted-foreground" />
+                            </div>
                             <h3 className="text-xl font-bold text-foreground">No bookings found</h3>
                             <p className="text-muted-foreground mt-2 max-w-sm mx-auto">Your upcoming adventures will appear here once you book them.</p>
                         </div>
@@ -213,3 +215,4 @@ export default function MyBookingsPage() {
         </div>
     );
 }
+

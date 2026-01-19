@@ -8,6 +8,7 @@ import { ArrowLeft, CheckCircle, Mail } from 'lucide-react';
 import { Button, Input } from '@ouiboo/ui';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
+import { apiClient } from '@/lib/api-client';
 
 type ForgotPasswordForm = {
   email: string;
@@ -17,14 +18,24 @@ export default function AgencyForgotPasswordPage() {
   const { t, i18n } = useTranslation();
   const { register, handleSubmit, formState: { errors } } = useForm<ForgotPasswordForm>();
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
-  const onSubmit = (data: ForgotPasswordForm) => {
-    console.log('Agency reset request:', data);
-    setSubmitted(true);
+  const onSubmit = async (data: ForgotPasswordForm) => {
+    setErrorMessage(null);
+    setIsSubmitting(true);
+    try {
+      await apiClient.post('/auth/forgot-password', { email: data.email });
+      setSubmitted(true);
+    } catch (error: any) {
+      setErrorMessage(error?.response?.data?.message || 'Unable to send reset email. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -66,9 +77,12 @@ export default function AgencyForgotPasswordPage() {
                   {errors.email && <span className="text-red-500 text-sm">{errors.email.message}</span>}
                 </div>
 
-                <Button type="submit" className="w-full h-12 bg-deep-blue hover:bg-blue-900 text-white font-semibold rounded-lg transition-colors duration-200">
-                  {t('forgotPassword.sendReset')}
+                <Button type="submit" disabled={isSubmitting} className="w-full h-12 bg-deep-blue hover:bg-blue-900 text-white font-semibold rounded-lg transition-colors duration-200">
+                  {isSubmitting ? 'Sending...' : t('forgotPassword.sendReset')}
                 </Button>
+                {errorMessage && (
+                  <p className="text-sm text-red-600 font-medium">{errorMessage}</p>
+                )}
               </form>
             </>
           ) : (

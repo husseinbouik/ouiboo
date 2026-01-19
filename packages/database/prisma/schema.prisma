@@ -72,6 +72,9 @@ model User {
   otp           String?
   otpExpiresAt  DateTime?
   otpLastSentAt DateTime?
+  passwordResetTokenHash String?
+  passwordResetExpiresAt DateTime?
+  passwordResetSentAt DateTime?
   refreshTokens RefreshToken[]
   agencyProfile AgencyProfile?
   bookings      Booking[]
@@ -216,4 +219,18 @@ model PayoutRequest {
   requestedAt DateTime     @default(now())
   processedAt DateTime?
   bankDetails String
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorEmail String?
+  action     String
+  targetType String
+  targetId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([targetType])
 }

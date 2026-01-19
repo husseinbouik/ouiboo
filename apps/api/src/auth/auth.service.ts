@@ -5,8 +5,10 @@ import { RegisterDto } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
 import { EmailService } from '../email/email.service';
 import { createHash, randomUUID } from 'crypto';
+import { UserRole } from '@ouiboo/types';
 
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 const UNAUTHORIZED_MESSAGE = 'Unauthorized';
 
 @Injectable()
@@ -160,6 +162,71 @@ export class AuthService {
         return { message: 'OTP resent successfully' };
     }
 
+    async requestPasswordReset(email: string) {
+        const user = await this.db.user.findUnique({ where: { email } });
+        if (!user) {
+            return { message: 'If an account exists, a reset link has been sent.' };
+        }
+
+        if (user.passwordResetSentAt) {
+            const cooldownMs = 60 * 1000;
+            const nextAllowed = new Date(user.passwordResetSentAt.getTime() + cooldownMs);
+            if (nextAllowed > new Date()) {
+                return { message: 'If an account exists, a reset link has been sent.' };
+            }
+        }
+
+        const token = randomUUID();
+        const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS);
+
+        await this.db.user.update({
+            where: { id: user.id },
+            data: {
+                passwordResetTokenHash: this.hashToken(token),
+                passwordResetExpiresAt: expiresAt,
+                passwordResetSentAt: new Date(),
+            },
+        });
+
+        const resetUrl = this.buildPasswordResetUrl(user.role, user.email, token);
+        await this.emailService.sendPasswordResetEmail(user.email, resetUrl);
+
+        return { message: 'If an account exists, a reset link has been sent.' };
+    }
+
+    async resetPassword(email: string, token: string, newPassword: string) {
+        const user = await this.db.user.findUnique({ where: { email } });
+        if (!user || !user.passwordResetTokenHash || !user.passwordResetExpiresAt) {
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+
+        const isExpired = user.passwordResetExpiresAt < new Date();
+        const tokenMatches = user.passwordResetTokenHash === this.hashToken(token);
+        if (isExpired || !tokenMatches) {
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await this.db.$transaction(async (tx) => {
+            await tx.user.update({
+                where: { id: user.id },
+                data: {
+                    password: hashedPassword,
+                    passwordResetTokenHash: null,
+                    passwordResetExpiresAt: null,
+                    passwordResetSentAt: null,
+                },
+            });
+            await tx.refreshToken.updateMany({
+                where: { userId: user.id, revokedAt: null },
+                data: { revokedAt: new Date() },
+            });
+        });
+
+        return { message: 'Password reset successfully' };
+    }
+
     async refreshToken(token: string) {
         try {
             const refreshSecret = process.env.JWT_REFRESH_SECRET;
@@ -259,7 +326,6 @@ export class AuthService {
                 expiresIn: '7d',
             },
         );
-        console.log('DB keys:', Object.keys(this.db).filter(k => !k.startsWith('$')));
         const tokenRecord = await this.db.refreshToken.create({
             data: {
                 tokenHash: this.hashToken(refreshToken),
@@ -269,5 +335,22 @@ export class AuthService {
         });
 
         return { token: refreshToken, id: tokenRecord.id };
+    }
+
+    private buildPasswordResetUrl(role: string, email: string, token: string) {
+        const fallbackUrl = process.env.APP_BASE_URL || 'http://localhost:3000';
+        const travelerUrl = process.env.TRAVELER_APP_URL || fallbackUrl;
+        const agencyUrl = process.env.AGENCY_APP_URL || fallbackUrl;
+        const adminUrl = process.env.ADMIN_APP_URL || fallbackUrl;
+
+        let baseUrl = travelerUrl;
+        if (role === UserRole.Agency) {
+            baseUrl = agencyUrl;
+        } else if (role === UserRole.Admin) {
+            baseUrl = adminUrl;
+        }
+
+        const normalizedBase = baseUrl.replace(/\/$/, '');
+        return `${normalizedBase}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
     }
 }

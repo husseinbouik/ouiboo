@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { RequestLoggingInterceptor } from './monitoring/request-logging.interceptor';
 
 const REQUIRED_ENV_VARS = [
     'JWT_SECRET',
@@ -29,7 +30,6 @@ const validateRequiredEnv = () => {
 async function bootstrap() {
     try {
         validateRequiredEnv();
-        console.log('DATABASE_URL:', process.env.DATABASE_URL);
         const app = await NestFactory.create(AppModule);
 
         const corsOrigins = process.env.CORS_ORIGINS
@@ -53,6 +53,8 @@ async function bootstrap() {
             whitelist: true,
             transform: true,
         }));
+
+        app.useGlobalInterceptors(new RequestLoggingInterceptor());
 
         // Swagger setup
         const config = new DocumentBuilder()

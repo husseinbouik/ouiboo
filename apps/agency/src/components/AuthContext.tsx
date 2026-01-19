@@ -16,6 +16,7 @@ interface User {
         ice?: string;
         patente?: string;
         rib?: string;
+        bankDetails?: string;
         verificationStatus: VerificationStatusType;
         bio?: string;
         logo?: string;

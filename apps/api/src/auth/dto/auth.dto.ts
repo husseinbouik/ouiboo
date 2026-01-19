@@ -56,3 +56,25 @@ export class ResendOtpDto {
     @IsEmail()
     email: string;
 }
+
+export class ForgotPasswordDto {
+    @ApiProperty({ example: 'agency@ouiboo.com' })
+    @IsEmail()
+    email: string;
+}
+
+export class ResetPasswordDto {
+    @ApiProperty({ example: 'agency@ouiboo.com' })
+    @IsEmail()
+    email: string;
+
+    @ApiProperty({ example: 'reset-token' })
+    @IsString()
+    @MinLength(10)
+    token: string;
+
+    @ApiProperty({ example: 'newPassword123' })
+    @IsString()
+    @MinLength(6)
+    newPassword: string;
+}

@@ -56,7 +56,10 @@ export class BookingsController {
             new ParseFilePipe({
                 validators: [
                     new MaxFileSizeValidator({ maxSize: MAX_UPLOAD_SIZE_BYTES }),
-                    new FileTypeValidator({ fileType: ALLOWED_MIME_TYPES_REGEX }),
+                    new FileTypeValidator({
+                        fileType: ALLOWED_MIME_TYPES_REGEX,
+                        fallbackToMimetype: true,
+                    }),
                 ],
                 errorHttpStatusCode: 400,
             }),
@@ -75,7 +78,7 @@ export class BookingsController {
         @Param('id') id: string,
         @Res() res: Response,
     ) {
-        const { filePath } = await this.bookingsService.getPaymentProofFile(id, req.user.userId);
+        const { filePath } = await this.bookingsService.getPaymentProofFile(id, req.user.userId, req.user?.role);
         return res.sendFile(filePath);
     }
     @Patch(':id/verify-payment')
@@ -89,7 +92,7 @@ export class BookingsController {
         @Body('approved') approved: boolean,
         @Body('rejectionReason') rejectionReason?: string
     ) {
-        return this.bookingsService.verifyPayment(id, req.tenantId, approved);
+        return this.bookingsService.verifyPayment(id, req.tenantId, approved, rejectionReason);
     }
 
     @Patch(':id/cancel')

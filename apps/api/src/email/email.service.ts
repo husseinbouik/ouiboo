@@ -69,6 +69,20 @@ export class EmailService {
         `;
     }
 
+    getPasswordResetTemplate(resetUrl: string) {
+        return `
+            <h1>Reset your password</h1>
+            <p>We received a request to reset your Ouiboo password.</p>
+            <p><a href="${resetUrl}" target="_blank" rel="noopener noreferrer">Click here to set a new password</a></p>
+            <p>This link expires in 60 minutes. If you did not request this, you can ignore this email.</p>
+        `;
+    }
+
+    async sendPasswordResetEmail(to: string, resetUrl: string) {
+        const html = this.getPasswordResetTemplate(resetUrl);
+        await this.sendEmail(to, 'OUIBOO: Reset your password', html);
+    }
+
     async sendBookingNotification(travelerEmail: string, agencyEmail: string, bookingId: string, tripTitle: string) {
         const travelerHtml = `
             <h1>Booking Received!</h1>

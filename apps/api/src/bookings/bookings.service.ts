@@ -1,8 +1,11 @@
 import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { UserRole } from '@ouiboo/types';
 import { DatabaseService } from '../database/database.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { EmailService } from '../email/email.service';
 import { UploadService } from '../upload/upload.service';
+
+const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
 
 @Injectable()
 export class BookingsService {
@@ -149,7 +152,30 @@ export class BookingsService {
             throw new ForbiddenException('Forbidden');
         }
 
-        const uploadResult = await this.uploadService.uploadFile(file, `payment-proofs/${bookingId}`);
+        const allowedStatuses = new Set(['PENDING', 'REJECTED', 'AWAITING_VALIDATION']);
+        if (!allowedStatuses.has(booking.status)) {
+            throw new BadRequestException('Booking cannot accept payment proof');
+        }
+
+        if (booking.status !== 'AWAITING_VALIDATION' && this.isPaymentProofExpired(booking.bookingDate)) {
+            await this.db.$transaction(async (tx) => {
+                await tx.tripSession.update({
+                    where: { id: booking.sessionId },
+                    data: {
+                        availableSeats: {
+                            increment: booking.guestsCount,
+                        },
+                    },
+                });
+                await tx.booking.update({
+                    where: { id: bookingId },
+                    data: { status: 'CANCELLED' },
+                });
+            });
+            throw new BadRequestException('Booking has expired. Please create a new booking.');
+        }
+
+        const uploadResult = await this.uploadService.uploadFile(file, `private/payment-proofs/${bookingId}`);
         const downloadUrl = this.buildPaymentProofDownloadUrl(bookingId);
 
         return this.db.$transaction(async (tx) => {
@@ -184,7 +210,7 @@ export class BookingsService {
         });
     }
 
-    async getPaymentProofFile(bookingId: string, userId: string) {
+    async getPaymentProofFile(bookingId: string, userId: string, role?: string) {
         const booking = await this.db.booking.findUnique({
             where: { id: bookingId },
             include: {
@@ -200,8 +226,9 @@ export class BookingsService {
         const agency = await this.db.agencyProfile.findUnique({ where: { userId } });
         const isTraveler = booking.travelerId === userId;
         const isAgencyOwner = agency && booking.session.template.agencyId === agency.id;
+        const isAdmin = role === UserRole.Admin;
 
-        if (!isTraveler && !isAgencyOwner) {
+        if (!isTraveler && !isAgencyOwner && !isAdmin) {
             throw new BadRequestException('Unauthorized: Booking does not belong to you');
         }
 
@@ -217,6 +244,15 @@ export class BookingsService {
     private buildPaymentProofDownloadUrl(bookingId: string) {
         const apiUrl = process.env.API_URL || 'http://localhost:3000/api';
         return `${apiUrl}/bookings/${bookingId}/payment-proof/download`;
+    }
+
+    private isPaymentProofExpired(bookingDate: Date) {
+        const hours = Number(process.env.PAYMENT_PROOF_EXPIRATION_HOURS);
+        const normalizedHours = Number.isFinite(hours) && hours > 0
+            ? hours
+            : DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS;
+        const expiresAt = new Date(bookingDate.getTime() + normalizedHours * 60 * 60 * 1000);
+        return new Date() > expiresAt;
     }
 
     async verifyPayment(bookingId: string, tenantId: string, approved: boolean, rejectionReason?: string) {

@@ -8,7 +8,10 @@ import {
   CardTitle, 
   CardDescription,
   Button,
-  Badge
+  Badge,
+  Input,
+  Label,
+  Textarea
 } from '@ouiboo/ui';
 import { 
   Wallet as WalletIcon, 
@@ -19,14 +22,22 @@ import {
   TrendingUp,
   History
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
+import { useAuth } from '@/components/AuthContext';
 
 export default function WalletPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [mounted, setMounted] = useState(false);
+  const [payoutAmount, setPayoutAmount] = useState('');
+  const [bankDetails, setBankDetails] = useState('');
+  const [payoutError, setPayoutError] = useState<string | null>(null);
+  const [payoutSuccess, setPayoutSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -48,9 +59,62 @@ export default function WalletPage() {
     }
   });
 
-  if (!mounted) return null;
-
   const wallet = statsData?.wallet || { availableBalance: 0, pendingBalance: 0 };
+  const availableBalance = Number(wallet.availableBalance || 0);
+  const hasBankDetails = bankDetails.trim().length > 0;
+
+  useEffect(() => {
+    if (!bankDetails && user?.agencyProfile?.bankDetails) {
+      setBankDetails(user.agencyProfile.bankDetails);
+    }
+  }, [bankDetails, user?.agencyProfile?.bankDetails]);
+
+  const payoutMutation = useMutation({
+    mutationFn: async (payload: { amount: number; bankDetails: string }) => {
+      await apiClient.post('/agency/payouts', payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agency-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['agency-payouts'] });
+      setPayoutAmount('');
+      setPayoutError(null);
+      setPayoutSuccess('Payout request submitted. Expect confirmation in 1-2 business days.');
+    },
+    onError: (error: any) => {
+      setPayoutSuccess(null);
+      setPayoutError(error?.response?.data?.message || 'Unable to request payout.');
+    }
+  });
+
+  const handleRequestPayout = () => {
+    setPayoutError(null);
+    setPayoutSuccess(null);
+
+    const amountValue = Number(payoutAmount);
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      setPayoutError('Enter a valid payout amount.');
+      return;
+    }
+    if (amountValue > availableBalance) {
+      setPayoutError('Amount exceeds available balance.');
+      return;
+    }
+    if (!hasBankDetails) {
+      setPayoutError('Add bank details before requesting a payout.');
+      return;
+    }
+
+    payoutMutation.mutate({ amount: amountValue, bankDetails: bankDetails.trim() });
+  };
+
+  const handleScrollToRequest = () => {
+    const section = document.getElementById('request-payout');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  if (!mounted) return null;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
@@ -79,7 +143,10 @@ export default function WalletPage() {
                 {wallet.availableBalance.toLocaleString()} <span className="text-lg font-normal opacity-60">MAD</span>
               </h2>
             </div>
-            <Button className="w-full bg-sunset-orange hover:bg-orange-600 text-white border-none shadow-lg shadow-orange-900/20 font-bold py-6 group transition-all">
+            <Button
+              onClick={handleScrollToRequest}
+              className="w-full bg-sunset-orange hover:bg-orange-600 text-white border-none shadow-lg shadow-orange-900/20 font-bold py-6 group transition-all"
+            >
               Withdraw Funds <ArrowUpRight className="ml-2 h-4 w-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
             </Button>
           </CardContent>
@@ -131,6 +198,92 @@ export default function WalletPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card id="request-payout" className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
+        <CardHeader className="border-b dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30">
+          <CardTitle className="text-xl">{t('wallet.requestTitle', 'Request a payout')}</CardTitle>
+          <CardDescription className="text-xs font-medium dark:text-gray-400">
+            {t('wallet.requestSubtitle', 'Submit a manual payout request to your registered bank account.')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 space-y-4">
+              <div className="rounded-2xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-900/10 p-4">
+                <p className="text-[10px] uppercase tracking-widest font-bold text-emerald-700 dark:text-emerald-300">Available to withdraw</p>
+                <p className="text-3xl font-black text-emerald-900 dark:text-emerald-200 mt-2">
+                  {availableBalance.toLocaleString()} <span className="text-sm font-semibold opacity-70">MAD</span>
+                </p>
+                <p className="text-[10px] text-emerald-700/80 dark:text-emerald-300/80 mt-2">
+                  Payouts are typically processed in 1-2 business days.
+                </p>
+              </div>
+              {!hasBankDetails && (
+                <div className="rounded-2xl border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/10 p-4 text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+                  Add your bank details before requesting a payout.
+                </div>
+              )}
+              <Link href="/dashboard/settings" className="inline-flex">
+                <Button variant="outline" size="sm" className="dark:border-slate-700 dark:text-gray-300">
+                  Update bank details
+                </Button>
+              </Link>
+            </div>
+
+            <div className="lg:col-span-2 space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Payout amount (MAD)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={availableBalance}
+                    value={payoutAmount}
+                    onChange={(event) => setPayoutAmount(event.target.value)}
+                    className="h-12 dark:bg-slate-800 dark:border-slate-700 font-semibold"
+                    placeholder="0"
+                  />
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500">Available balance: {availableBalance.toLocaleString()} MAD</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Bank details for this payout</Label>
+                  <Textarea
+                    value={bankDetails}
+                    onChange={(event) => setBankDetails(event.target.value)}
+                    placeholder="Add your RIB and bank name"
+                    className="min-h-[120px] dark:bg-slate-800 dark:border-slate-700 text-xs font-medium"
+                  />
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500">This will be used for the payout request.</p>
+                </div>
+              </div>
+
+              {payoutError && (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700">
+                  {payoutError}
+                </div>
+              )}
+              {payoutSuccess && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-700">
+                  {payoutSuccess}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <div className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-widest font-bold">
+                  Manual review required
+                </div>
+                <Button
+                  onClick={handleRequestPayout}
+                  disabled={payoutMutation.isPending || !payoutAmount || availableBalance <= 0}
+                  className="bg-deep-blue hover:bg-blue-800 text-white font-bold px-6 h-11"
+                >
+                  {payoutMutation.isPending ? 'Submitting...' : 'Request payout'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Payout History */}
       <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800 overflow-hidden">

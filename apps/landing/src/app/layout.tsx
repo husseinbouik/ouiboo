@@ -6,7 +6,7 @@ import { GeistMono } from 'geist/font/mono';
 import Script from 'next/script';
 import "./globals.css";
 
-import TranslationsProvider from "../components/TranslationsProvider";
+import Providers from "../components/Providers";
 import LoadingSpinner from "../components/LoadingSpinner"; // Import the spinner
 import { Suspense } from "react";
 
@@ -41,14 +41,14 @@ export default async function RootLayout({
   return (
     // The `lang` attribute is now dynamic
     <html lang={currentLocale} suppressHydrationWarning={true}>
-      <body className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}>
+      <body className={`${GeistSans.variable} ${GeistMono.variable} antialiased`} suppressHydrationWarning>
         {/* Pass the current locale to the provider */}
-        <TranslationsProvider locale={currentLocale}>
+        <Providers locale={currentLocale}>
           {/* Use the new LoadingSpinner as the Suspense fallback */}
           <Suspense fallback={<LoadingSpinner />}>
             {children}
           </Suspense>
-        </TranslationsProvider>
+        </Providers>
         
         <Script
           strategy="afterInteractive"

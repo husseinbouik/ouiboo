@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -294,7 +294,9 @@ export default function SearchPage() {
               )}
               {!isLoading && filteredTrips.length === 0 && (
                  <div className="col-span-full py-20 text-center">
-                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🧭</div>
+                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Compass className="h-8 w-8 text-muted-foreground" />
+                    </div>
                     <h3 className="text-xl font-bold text-foreground">No trips match your filters</h3>
                     <p className="text-muted-foreground mt-2">Adjust dates, price, or availability to explore more options.</p>
                  </div>
@@ -306,3 +308,4 @@ export default function SearchPage() {
     </div>
   );
 }
+
