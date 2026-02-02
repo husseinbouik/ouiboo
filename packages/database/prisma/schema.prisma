@@ -61,6 +61,7 @@ enum TransactionType {
   DEBIT
   REFUND
   PAYMENT_GATEWAY
+  BOOKING
 }
 
 enum PaymentMethod {
@@ -240,6 +241,7 @@ model Booking {
   cancelledAt               DateTime?
   cancelledBy               String?
   cancellationReason        String?
+  confirmedAt               DateTime?
   refundAmount              Float?
   refundStatus              RefundStatus?
   refundProcessedAt         DateTime?
@@ -278,6 +280,7 @@ model WalletTransaction {
   amount    Float
   type      TransactionType
   reason    String
+  referenceId String?
   createdAt DateTime        @default(now())
 }
 

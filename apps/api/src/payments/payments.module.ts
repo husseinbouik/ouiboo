@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@ouiboo/database';
+import { EmailModule } from '../email/email.module';
 import { PaymentsService } from './payments.service';
 import { PaymentsController } from './payments.controller';
 import { CMIPaymentProvider } from './providers/cmi-payment.provider';
@@ -7,7 +8,7 @@ import { StripePaymentProvider } from './providers/stripe-payment.provider';
 import { PaymentProviderFactory } from './providers/payment-provider.factory';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, EmailModule],
   providers: [
     PaymentsService,
     CMIPaymentProvider,
