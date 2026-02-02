@@ -1,4 +1,5 @@
 'use client';
+'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -10,6 +11,7 @@ interface User {
     name: string;
     email: string;
     role: string;
+    avatar?: string;
     agencyProfile?: {
         id: string;
         companyName: string;

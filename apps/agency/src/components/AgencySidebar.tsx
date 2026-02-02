@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Logo } from '@ouiboo/ui';
 import { 
   LayoutDashboard, 
   Map, 
@@ -28,9 +29,7 @@ export function AgencySidebar() {
     <div className="flex flex-col w-64 border-r bg-card h-screen sticky top-0">
       <div className="p-6">
         <Link href="/dashboard" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-black text-xl shadow-lg group-hover:rotate-12 transition-transform">
-            O
-          </div>
+          <Logo size={40} className="shadow-lg group-hover:rotate-12 transition-transform" />
           <span className="text-xl font-bold tracking-tight">Ouiboo Agency</span>
         </Link>
       </div>

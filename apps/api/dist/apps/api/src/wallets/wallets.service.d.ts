@@ -7,8 +7,8 @@ export declare class WalletsService {
             type: import("@ouiboo/database").$Enums.TransactionType;
             id: string;
             createdAt: Date;
-            amount: number;
             walletId: string;
+            amount: number;
             reason: string;
         }[];
     } & {

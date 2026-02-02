@@ -8,6 +8,7 @@ const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("../auth/guards/roles.guard");
 const tenant_guard_1 = require("../auth/guards/tenant.guard");
 const types_1 = require("@ouiboo/types");
+const wallets_service_1 = require("../wallets/wallets.service");
 describe('Tenant isolation (agency scope)', () => {
     let app;
     const trips = [
@@ -41,12 +42,16 @@ describe('Tenant isolation (agency scope)', () => {
             findMany: jest.fn(({ where }) => bookings.filter((booking) => booking.session.template.agencyId === where.session.template.agencyId)),
         },
     };
+    const walletsService = {
+        requestPayout: jest.fn(),
+    };
     beforeAll(async () => {
         const moduleRef = await testing_1.Test.createTestingModule({
             controllers: [agency_controller_1.AgencyController],
             providers: [
                 tenant_guard_1.TenantGuard,
                 { provide: database_service_1.DatabaseService, useValue: dbMock },
+                { provide: wallets_service_1.WalletsService, useValue: walletsService },
             ],
         })
             .overrideGuard(jwt_auth_guard_1.JwtAuthGuard)

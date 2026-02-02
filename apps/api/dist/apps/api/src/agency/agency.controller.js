@@ -21,9 +21,12 @@ const tenant_guard_1 = require("../auth/guards/tenant.guard");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
 const types_1 = require("@ouiboo/types");
 const database_service_1 = require("../database/database.service");
+const wallets_service_1 = require("../wallets/wallets.service");
+const payout_request_dto_1 = require("./dto/payout-request.dto");
 let AgencyController = class AgencyController {
-    constructor(prisma) {
+    constructor(prisma, walletsService) {
         this.prisma = prisma;
+        this.walletsService = walletsService;
     }
     async getStats(req) {
         const agencyId = req.tenantId;
@@ -109,6 +112,9 @@ let AgencyController = class AgencyController {
             take: 20
         });
     }
+    async requestPayout(req, dto) {
+        return this.walletsService.requestPayout(req.tenantId, dto.amount, dto.bankDetails);
+    }
     async updateProfile(req, data) {
         return this.prisma.agencyProfile.update({
             where: { id: req.tenantId },
@@ -155,6 +161,15 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AgencyController.prototype, "getPayouts", null);
 __decorate([
+    (0, common_1.Post)('payouts'),
+    (0, swagger_1.ApiOperation)({ summary: 'Request a payout' }),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, payout_request_dto_1.RequestPayoutDto]),
+    __metadata("design:returntype", Promise)
+], AgencyController.prototype, "requestPayout", null);
+__decorate([
     (0, common_1.Patch)('profile'),
     (0, swagger_1.ApiOperation)({ summary: 'Update agency profile' }),
     __param(0, (0, common_1.Request)()),
@@ -169,6 +184,7 @@ exports.AgencyController = AgencyController = __decorate([
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard, tenant_guard_1.TenantGuard),
     (0, roles_decorator_1.Roles)(types_1.UserRole.Agency),
-    __metadata("design:paramtypes", [database_service_1.DatabaseService])
+    __metadata("design:paramtypes", [database_service_1.DatabaseService,
+        wallets_service_1.WalletsService])
 ], AgencyController);
 //# sourceMappingURL=agency.controller.js.map

@@ -1,5 +1,5 @@
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto, RefreshTokenDto, VerifyEmailDto, ResendOtpDto } from './dto/auth.dto';
+import { LoginDto, RegisterDto, RefreshTokenDto, VerifyEmailDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 import { Request as ExpressRequest, Response } from 'express';
 export declare class AuthController {
     private authService;
@@ -41,6 +41,12 @@ export declare class AuthController {
         message: string;
     }>;
     resendOtp(dto: ResendOtpDto): Promise<{
+        message: string;
+    }>;
+    forgotPassword(dto: ForgotPasswordDto): Promise<{
+        message: string;
+    }>;
+    resetPassword(dto: ResetPasswordDto): Promise<{
         message: string;
     }>;
     private setRefreshCookie;

@@ -1,7 +1,10 @@
 import { DatabaseService } from '../database/database.service';
+import { WalletsService } from '../wallets/wallets.service';
+import { RequestPayoutDto } from './dto/payout-request.dto';
 export declare class AgencyController {
     private readonly prisma;
-    constructor(prisma: DatabaseService);
+    private readonly walletsService;
+    constructor(prisma: DatabaseService, walletsService: WalletsService);
     getStats(req: any): Promise<{
         revenue: number;
         activeTrips: number;
@@ -117,6 +120,15 @@ export declare class AgencyController {
         requestedAt: Date;
         processedAt: Date | null;
     }[]>;
+    requestPayout(req: any, dto: RequestPayoutDto): Promise<{
+        id: string;
+        bankDetails: string;
+        agencyId: string;
+        status: import("@ouiboo/database").$Enums.PayoutStatus;
+        amount: number;
+        requestedAt: Date;
+        processedAt: Date | null;
+    }>;
     updateProfile(req: any, data: {
         companyName?: string;
         bio?: string;

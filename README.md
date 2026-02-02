@@ -1,5 +1,29 @@
-This is the Ouiboo monorepo. It contains multiple Next.js apps, a Nest API, and
-shared packages managed via npm workspaces and Turborepo.
+This is the Ouiboo monorepo for a B2B & B2C Travel Marketplace.
+
+## 🚀 Production Readiness
+
+This project is configured for production-grade launches.
+
+### 🛡️ CI/CD
+- **GitHub Actions**: Automated pipeline in `.github/workflows/ci.yml`. Runs on every PR/Push to `main`.
+- **Tasks**: Lints, Builds, and Tests all packages.
+
+### ✅ Launch Checklist
+Run the following command to verify if the project is ready for launch:
+```bash
+npm run check:prod
+```
+This command verifies:
+1. All required environment variables are set correctly for the target environment.
+2. No local storage is being used if in production mode.
+3. No internal placeholders (John Doe, logo-placeholder, etc.) exist in the code.
+4. The project builds successfully.
+
+### 📦 Cloud-Native Storage
+The API supports both **Local** and **S3-compatible** (AWS, DigitalOcean, MinIO) storage.
+- **Development**: Defaults to local `uploads/` directory.
+- **Production**: Set `STORAGE_PROVIDER=s3` and provide S3 credentials.
+- **Security**: Payment proofs are stored securely.
 
 ## Monorepo Layout
 

@@ -16,7 +16,9 @@ const database_service_1 = require("../database/database.service");
 const bcrypt = require("bcrypt");
 const email_service_1 = require("../email/email.service");
 const crypto_1 = require("crypto");
+const types_1 = require("@ouiboo/types");
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 const UNAUTHORIZED_MESSAGE = 'Unauthorized';
 let AuthService = class AuthService {
     constructor(db, jwtService, emailService) {
@@ -143,6 +145,60 @@ let AuthService = class AuthService {
         await this.emailService.sendMail(user.email, 'Your new verification code', html);
         return { message: 'OTP resent successfully' };
     }
+    async requestPasswordReset(email) {
+        const user = await this.db.user.findUnique({ where: { email } });
+        if (!user) {
+            return { message: 'If an account exists, a reset link has been sent.' };
+        }
+        if (user.passwordResetSentAt) {
+            const cooldownMs = 60 * 1000;
+            const nextAllowed = new Date(user.passwordResetSentAt.getTime() + cooldownMs);
+            if (nextAllowed > new Date()) {
+                return { message: 'If an account exists, a reset link has been sent.' };
+            }
+        }
+        const token = (0, crypto_1.randomUUID)();
+        const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS);
+        await this.db.user.update({
+            where: { id: user.id },
+            data: {
+                passwordResetTokenHash: this.hashToken(token),
+                passwordResetExpiresAt: expiresAt,
+                passwordResetSentAt: new Date(),
+            },
+        });
+        const resetUrl = this.buildPasswordResetUrl(user.role, user.email, token);
+        await this.emailService.sendPasswordResetEmail(user.email, resetUrl);
+        return { message: 'If an account exists, a reset link has been sent.' };
+    }
+    async resetPassword(email, token, newPassword) {
+        const user = await this.db.user.findUnique({ where: { email } });
+        if (!user || !user.passwordResetTokenHash || !user.passwordResetExpiresAt) {
+            throw new common_1.UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        const isExpired = user.passwordResetExpiresAt < new Date();
+        const tokenMatches = user.passwordResetTokenHash === this.hashToken(token);
+        if (isExpired || !tokenMatches) {
+            throw new common_1.UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await this.db.$transaction(async (tx) => {
+            await tx.user.update({
+                where: { id: user.id },
+                data: {
+                    password: hashedPassword,
+                    passwordResetTokenHash: null,
+                    passwordResetExpiresAt: null,
+                    passwordResetSentAt: null,
+                },
+            });
+            await tx.refreshToken.updateMany({
+                where: { userId: user.id, revokedAt: null },
+                data: { revokedAt: new Date() },
+            });
+        });
+        return { message: 'Password reset successfully' };
+    }
     async refreshToken(token) {
         try {
             const refreshSecret = process.env.JWT_REFRESH_SECRET;
@@ -223,7 +279,6 @@ let AuthService = class AuthService {
             secret: refreshSecret,
             expiresIn: '7d',
         });
-        console.log('DB keys:', Object.keys(this.db).filter(k => !k.startsWith('$')));
         const tokenRecord = await this.db.refreshToken.create({
             data: {
                 tokenHash: this.hashToken(refreshToken),
@@ -232,6 +287,21 @@ let AuthService = class AuthService {
             },
         });
         return { token: refreshToken, id: tokenRecord.id };
+    }
+    buildPasswordResetUrl(role, email, token) {
+        const fallbackUrl = process.env.APP_BASE_URL || 'http://localhost:3000';
+        const travelerUrl = process.env.TRAVELER_APP_URL || fallbackUrl;
+        const agencyUrl = process.env.AGENCY_APP_URL || fallbackUrl;
+        const adminUrl = process.env.ADMIN_APP_URL || fallbackUrl;
+        let baseUrl = travelerUrl;
+        if (role === types_1.UserRole.Agency) {
+            baseUrl = agencyUrl;
+        }
+        else if (role === types_1.UserRole.Admin) {
+            baseUrl = adminUrl;
+        }
+        const normalizedBase = baseUrl.replace(/\/$/, '');
+        return `${normalizedBase}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
     }
 };
 exports.AuthService = AuthService;

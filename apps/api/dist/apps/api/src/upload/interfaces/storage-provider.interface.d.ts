@@ -5,4 +5,5 @@ export interface IStorageProvider {
     }>;
     delete(key: string): Promise<void>;
     getFilePath(key: string): string;
+    isLocal(): boolean;
 }

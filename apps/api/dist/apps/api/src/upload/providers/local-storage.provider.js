@@ -16,12 +16,18 @@ const path = require("path");
 const crypto_1 = require("crypto");
 const upload_constants_1 = require("../upload.constants");
 let LocalStorageProvider = class LocalStorageProvider {
+    isLocal() { return true; }
     constructor() {
         this.uploadDir = path.join(process.cwd(), 'uploads');
+        this.privateUploadDir = path.join(process.cwd(), 'private-uploads');
         this.allowedMimeTypes = upload_constants_1.ALLOWED_MIME_TYPES;
         this.maxFileSize = upload_constants_1.MAX_UPLOAD_SIZE_BYTES;
+        this.privatePrefix = 'private';
         if (!fs.existsSync(this.uploadDir)) {
             fs.mkdirSync(this.uploadDir, { recursive: true });
+        }
+        if (!fs.existsSync(this.privateUploadDir)) {
+            fs.mkdirSync(this.privateUploadDir, { recursive: true });
         }
     }
     async upload(file, folder) {
@@ -34,20 +40,24 @@ let LocalStorageProvider = class LocalStorageProvider {
         const sanitizedOriginal = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
         const extension = path.extname(sanitizedOriginal) || this.getExtensionForMimeType(file.mimetype);
         const filename = `${(0, crypto_1.randomUUID)()}${extension}`;
-        const relativePath = path.join(folder);
-        const fullPath = path.join(this.uploadDir, relativePath);
+        const { baseDir, isPrivate, relative } = this.resolveTarget(folder);
+        const relativePath = path.join(relative);
+        const fullPath = path.join(baseDir, relativePath);
         if (!fs.existsSync(fullPath)) {
             fs.mkdirSync(fullPath, { recursive: true });
         }
         const filePath = path.join(fullPath, filename);
-        if (!filePath.startsWith(this.uploadDir)) {
+        if (!filePath.startsWith(baseDir)) {
             throw new common_1.BadRequestException('Invalid filename');
         }
         fs.writeFileSync(filePath, file.buffer);
         const baseUrl = process.env.API_URL || 'http://localhost:3000/api';
-        const urlPath = path.join('uploads', relativePath, filename).split(path.sep).join('/');
-        const url = `${baseUrl.replace('/api', '')}/${urlPath}`;
-        return { url, key: path.join(relativePath, filename) };
+        const url = isPrivate
+            ? ''
+            : `${baseUrl.replace('/api', '')}/${path.join('uploads', relativePath, filename).split(path.sep).join('/')}`;
+        const keyPrefix = isPrivate ? this.privatePrefix : '';
+        const key = path.join(keyPrefix, relativePath, filename);
+        return { url, key };
     }
     async delete(key) {
         const filePath = this.getFilePath(key);
@@ -56,14 +66,26 @@ let LocalStorageProvider = class LocalStorageProvider {
         }
     }
     getFilePath(key) {
-        const filePath = path.join(this.uploadDir, key);
-        if (!filePath.startsWith(this.uploadDir)) {
+        const { baseDir, relative } = this.resolveTarget(key);
+        const filePath = path.join(baseDir, relative);
+        if (!filePath.startsWith(baseDir)) {
             throw new common_1.BadRequestException('Invalid file path');
         }
         if (!fs.existsSync(filePath)) {
             throw new common_1.NotFoundException('File not found');
         }
         return filePath;
+    }
+    resolveTarget(value) {
+        const normalized = value.replace(/^[\\/]+/, '');
+        const isPrivate = normalized === this.privatePrefix
+            || normalized.startsWith(`${this.privatePrefix}/`)
+            || normalized.startsWith(`${this.privatePrefix}${path.sep}`);
+        const relative = isPrivate
+            ? normalized.replace(new RegExp(`^${this.privatePrefix}[\\\\/]?`), '')
+            : normalized;
+        const baseDir = isPrivate ? this.privateUploadDir : this.uploadDir;
+        return { baseDir, relative, isPrivate };
     }
     getExtensionForMimeType(mimeType) {
         switch (mimeType) {

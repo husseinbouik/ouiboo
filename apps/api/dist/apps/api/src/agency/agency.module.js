@@ -10,13 +10,14 @@ exports.AgencyModule = void 0;
 const common_1 = require("@nestjs/common");
 const agency_controller_1 = require("./agency.controller");
 const database_module_1 = require("../database/database.module");
+const wallets_module_1 = require("../wallets/wallets.module");
 const agency_public_controller_1 = require("./agency-public.controller");
 let AgencyModule = class AgencyModule {
 };
 exports.AgencyModule = AgencyModule;
 exports.AgencyModule = AgencyModule = __decorate([
     (0, common_1.Module)({
-        imports: [database_module_1.DatabaseModule],
+        imports: [database_module_1.DatabaseModule, wallets_module_1.WalletsModule],
         controllers: [agency_controller_1.AgencyController, agency_public_controller_1.AgencyPublicController],
     })
 ], AgencyModule);

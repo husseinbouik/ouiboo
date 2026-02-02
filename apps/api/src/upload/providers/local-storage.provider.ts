@@ -12,6 +12,7 @@ export class LocalStorageProvider implements IStorageProvider {
     private readonly allowedMimeTypes = ALLOWED_MIME_TYPES;
     private readonly maxFileSize = MAX_UPLOAD_SIZE_BYTES;
     private readonly privatePrefix = 'private';
+    isLocal() { return true; }
 
     constructor() {
         if (!fs.existsSync(this.uploadDir)) {

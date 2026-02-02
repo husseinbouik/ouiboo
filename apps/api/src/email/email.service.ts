@@ -110,4 +110,132 @@ export class EmailService {
         `;
         await this.sendEmail(travelerEmail, `OUIBOO: Booking Confirmed - ${tripTitle}`, html);
     }
+
+    getPaymentReminderTemplate(tripTitle: string, daysUntilPaymentDue: number, bookingDashboardUrl: string) {
+        return `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #1E3A8A; margin-bottom: 20px;">Payment Reminder for ${tripTitle}</h2>
+                <p style="font-size: 16px; color: #374151;">
+                    Your payment is due in <strong>${daysUntilPaymentDue} hour${daysUntilPaymentDue === 1 ? '' : 's'}</strong>. 
+                    Please complete your payment to confirm your booking.
+                </p>
+                <div style="margin: 30px 0; padding: 20px; background: #F3F4F6; border-left: 4px solid #F97316; border-radius: 4px;">
+                    <p style="margin: 0; color: #374151;">
+                        <strong>Why upload payment proof?</strong> It helps us confirm your booking quickly and ensures your seats are reserved for the trip.
+                    </p>
+                </div>
+                <p style="text-align: center; margin-top: 30px;">
+                    <a href="${bookingDashboardUrl}" 
+                       style="background: #0EA5E9; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                        Upload Payment Proof
+                    </a>
+                </p>
+                <p style="font-size: 13px; color: #6B7280; text-align: center; margin-top: 20px;">
+                    If you have already uploaded your payment proof, ignore this email. Your booking will be confirmed shortly.
+                </p>
+            </div>
+        `;
+    }
+
+    async sendPaymentReminder(travelerEmail: string, tripTitle: string, daysUntilPaymentDue: number, bookingDashboardUrl: string) {
+        const html = this.getPaymentReminderTemplate(tripTitle, daysUntilPaymentDue, bookingDashboardUrl);
+        await this.sendEmail(travelerEmail, `⏰ OUIBOO: Payment Reminder - ${tripTitle}`, html);
+    }
+
+    getTripReminderTemplate(tripTitle: string, daysUntilTrip: number, agencyName: string, tripDetailsUrl: string) {
+        const reminderType = daysUntilTrip === 7 ? 'one week' : 'one day';
+        return `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #1E3A8A; margin-bottom: 20px;">🎉 Your Adventure Starts ${reminderType.charAt(0).toUpperCase() + reminderType.slice(1)}!</h2>
+                <p style="font-size: 16px; color: #374151;">
+                    Get ready! Your trip <strong>${tripTitle}</strong> with <strong>${agencyName}</strong> 
+                    starts in ${reminderType}. Pack your bags and prepare for an unforgettable experience!
+                </p>
+                <div style="margin: 30px 0;">
+                    <h3 style="color: #1E3A8A; margin-bottom: 15px;">Last-minute checklist:</h3>
+                    <ul style="color: #374151; line-height: 1.8;">
+                        <li>✅ Confirm your travel documents are valid</li>
+                        <li>✅ Check the weather forecast for your destination</li>
+                        <li>✅ Review the itinerary and meeting points</li>
+                        <li>✅ Pack essentials and comfortable clothing</li>
+                        <li>✅ Save the agency contact number</li>
+                    </ul>
+                </div>
+                <p style="text-align: center; margin-top: 30px;">
+                    <a href="${tripDetailsUrl}" 
+                       style="background: #F97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                        View Trip Details
+                    </a>
+                </p>
+                <p style="font-size: 13px; color: #6B7280; text-align: center; margin-top: 20px;">
+                    Have questions? Contact the agency directly through your Ouiboo dashboard.
+                </p>
+            </div>
+        `;
+    }
+
+    async sendTripReminder(travelerEmail: string, tripTitle: string, daysUntilTrip: number, agencyName: string, tripDetailsUrl: string) {
+        const html = this.getTripReminderTemplate(tripTitle, daysUntilTrip, agencyName, tripDetailsUrl);
+        const reminderLabel = daysUntilTrip === 7 ? 'Week Before' : 'Day Before';
+        await this.sendEmail(travelerEmail, `🎒 OUIBOO: ${reminderLabel} Your Trip - ${tripTitle}`, html);
+    }
+
+    getReviewRequestTemplate(tripTitle: string, agencyName: string, reviewUrl: string) {
+        return `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #1E3A8A; margin-bottom: 20px;">How was your trip with ${agencyName}?</h2>
+                <p style="font-size: 16px; color: #374151;">
+                    We hope you had an amazing time on <strong>${tripTitle}</strong>! 
+                    Your feedback helps other travelers find great agencies and helps agencies improve their services.
+                </p>
+                <div style="margin: 30px 0; padding: 20px; background: #FEF3C7; border-left: 4px solid #FBBF24; border-radius: 4px;">
+                    <p style="margin: 0; color: #92400E;">
+                        <strong>Share your experience:</strong> Tell us about the accommodations, guides, activities, and overall experience.
+                    </p>
+                </div>
+                <p style="text-align: center; margin-top: 30px;">
+                    <a href="${reviewUrl}" 
+                       style="background: #10B981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                        Write a Review
+                    </a>
+                </p>
+                <p style="font-size: 13px; color: #6B7280; text-align: center; margin-top: 20px;">
+                    Your review will be published on the trip page to help future travelers make informed decisions.
+                </p>
+            </div>
+        `;
+    }
+
+    async sendReviewRequest(travelerEmail: string, tripTitle: string, agencyName: string, reviewUrl: string) {
+        const html = this.getReviewRequestTemplate(tripTitle, agencyName, reviewUrl);
+        await this.sendEmail(travelerEmail, `⭐ OUIBOO: Share Your Review - ${tripTitle}`, html);
+    }
+
+    getAutoUnpaidCancellationTemplate(tripTitle: string, bookingId: string) {
+        return `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #DC2626; margin-bottom: 20px;">⚠️ Your booking has been cancelled</h2>
+                <p style="font-size: 16px; color: #374151;">
+                    Your booking for <strong>${tripTitle}</strong> (ID: ${bookingId}) has been automatically cancelled 
+                    because payment was not received within the required timeframe.
+                </p>
+                <div style="margin: 30px 0; padding: 20px; background: #FEE2E2; border-left: 4px solid #DC2626; border-radius: 4px;">
+                    <p style="margin: 0; color: #991B1B;">
+                        <strong>What happened?</strong> Payment reminders were sent, but no payment proof was uploaded.
+                    </p>
+                </div>
+                <p style="font-size: 16px; color: #374151; margin-top: 20px;">
+                    <strong>Want to rebook?</strong> This trip may still have available seats. Visit your dashboard to make a new booking.
+                </p>
+                <p style="font-size: 13px; color: #6B7280; text-align: center; margin-top: 30px;">
+                    If you believe this was a mistake or have questions, please contact our support team.
+                </p>
+            </div>
+        `;
+    }
+
+    async sendAutoUnpaidCancellationNotice(travelerEmail: string, tripTitle: string, bookingId: string) {
+        const html = this.getAutoUnpaidCancellationTemplate(tripTitle, bookingId);
+        await this.sendEmail(travelerEmail, `❌ OUIBOO: Booking Cancelled - ${tripTitle}`, html);
+    }
 }

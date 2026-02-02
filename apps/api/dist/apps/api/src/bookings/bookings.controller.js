@@ -38,11 +38,14 @@ let BookingsController = class BookingsController {
         return this.bookingsService.uploadPaymentProof(id, req.user.userId, file);
     }
     async downloadPaymentProof(req, id, res) {
-        const { filePath } = await this.bookingsService.getPaymentProofFile(id, req.user.userId);
+        const { filePath } = await this.bookingsService.getPaymentProofFile(id, req.user.userId, req.user?.role);
+        if (!this.bookingsService.isLocal()) {
+            return res.redirect(filePath);
+        }
         return res.sendFile(filePath);
     }
     verifyPayment(req, id, approved, rejectionReason) {
-        return this.bookingsService.verifyPayment(id, req.tenantId, approved);
+        return this.bookingsService.verifyPayment(id, req.tenantId, approved, rejectionReason);
     }
     cancelBooking(req, id) {
         return this.bookingsService.cancelBooking(id, req.user.userId);
@@ -93,7 +96,10 @@ __decorate([
     __param(2, (0, common_1.UploadedFile)(new common_1.ParseFilePipe({
         validators: [
             new common_1.MaxFileSizeValidator({ maxSize: upload_constants_1.MAX_UPLOAD_SIZE_BYTES }),
-            new common_1.FileTypeValidator({ fileType: upload_constants_1.ALLOWED_MIME_TYPES_REGEX }),
+            new common_1.FileTypeValidator({
+                fileType: upload_constants_1.ALLOWED_MIME_TYPES_REGEX,
+                fallbackToMimetype: true,
+            }),
         ],
         errorHttpStatusCode: 400,
     }))),

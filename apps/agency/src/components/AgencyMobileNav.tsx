@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Sheet, SheetContent, SheetTrigger, Button, buttonVariants } from '@ouiboo/ui';
+import { Sheet, SheetContent, SheetTrigger, Button, buttonVariants, Logo } from '@ouiboo/ui';
 import { Menu, LayoutDashboard, Map, BookOpen, Wallet, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -28,9 +28,7 @@ export function AgencyMobileNav() {
         <div className="flex flex-col h-full">
             <div className="p-6 border-b border-gray-100 dark:border-slate-800">
                 <Link href="/dashboard" className="flex items-center gap-3" onClick={() => setOpen(false)}>
-                    <div className="w-8 h-8 rounded-lg bg-deep-blue dark:bg-blue-600 text-white flex items-center justify-center font-black">
-                        O
-                    </div>
+                    <Logo size={32} />
                     <span className="text-xl font-bold tracking-tight text-deep-blue dark:text-gray-100">Ouiboo</span>
                 </Link>
             </div>

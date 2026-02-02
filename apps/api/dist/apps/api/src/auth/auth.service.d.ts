@@ -34,6 +34,12 @@ export declare class AuthService {
     resendOTP(email: string): Promise<{
         message: string;
     }>;
+    requestPasswordReset(email: string): Promise<{
+        message: string;
+    }>;
+    resetPassword(email: string, token: string, newPassword: string): Promise<{
+        message: string;
+    }>;
     refreshToken(token: string): Promise<{
         accessToken: string;
         refreshToken: string;
@@ -49,4 +55,5 @@ export declare class AuthService {
     }>;
     private hashToken;
     private issueRefreshToken;
+    private buildPasswordResetUrl;
 }

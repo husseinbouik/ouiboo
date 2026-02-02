@@ -71,6 +71,18 @@ let EmailService = EmailService_1 = class EmailService {
             <p>Start exploring trips and managing bookings from your dashboard.</p>
         `;
     }
+    getPasswordResetTemplate(resetUrl) {
+        return `
+            <h1>Reset your password</h1>
+            <p>We received a request to reset your Ouiboo password.</p>
+            <p><a href="${resetUrl}" target="_blank" rel="noopener noreferrer">Click here to set a new password</a></p>
+            <p>This link expires in 60 minutes. If you did not request this, you can ignore this email.</p>
+        `;
+    }
+    async sendPasswordResetEmail(to, resetUrl) {
+        const html = this.getPasswordResetTemplate(resetUrl);
+        await this.sendEmail(to, 'OUIBOO: Reset your password', html);
+    }
     async sendBookingNotification(travelerEmail, agencyEmail, bookingId, tripTitle) {
         const travelerHtml = `
             <h1>Booking Received!</h1>

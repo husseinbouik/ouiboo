@@ -241,6 +241,11 @@ export class BookingsService {
         return { filePath };
     }
 
+    isLocal() {
+        return this.uploadService.isLocal();
+    }
+
+
     private buildPaymentProofDownloadUrl(bookingId: string) {
         const apiUrl = process.env.API_URL || 'http://localhost:3000/api';
         return `${apiUrl}/bookings/${bookingId}/payment-proof/download`;

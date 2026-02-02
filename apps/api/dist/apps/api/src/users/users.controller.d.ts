@@ -30,6 +30,9 @@ export declare class UsersController {
         isEmailVerified: boolean;
         otpExpiresAt: Date | null;
         otpLastSentAt: Date | null;
+        passwordResetTokenHash: string | null;
+        passwordResetExpiresAt: Date | null;
+        passwordResetSentAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
     }>;

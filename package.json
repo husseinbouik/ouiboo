@@ -11,10 +11,15 @@
         "lint": "turbo lint",
         "test": "turbo test",
         "ci": "npm run lint && npm run test",
-        "install:ci": "npm install --no-audit --no-fund"
+        "install:ci": "npm install --no-audit --no-fund",
+        "check:env": "node scripts/validate-env.mjs",
+        "check:placeholders": "node scripts/check-placeholders.mjs",
+        "check:prod": "npm run check:env && npm run check:placeholders && npm run build"
     },
     "devDependencies": {
-        "turbo": "latest"
+        "dotenv": "^17.2.3",
+        "turbo": "latest",
+        "zod": "^4.3.5"
     },
     "packageManager": "npm@10.0.0"
 }

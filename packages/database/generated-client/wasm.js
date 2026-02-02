@@ -136,6 +136,7 @@ exports.Prisma.UserScalarFieldEnum = {
   passwordResetTokenHash: 'passwordResetTokenHash',
   passwordResetExpiresAt: 'passwordResetExpiresAt',
   passwordResetSentAt: 'passwordResetSentAt',
+  displayCurrency: 'displayCurrency',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -181,6 +182,11 @@ exports.Prisma.TripTemplateScalarFieldEnum = {
   images: 'images',
   status: 'status',
   featured: 'featured',
+  averageRating: 'averageRating',
+  reviewCount: 'reviewCount',
+  lastReviewDate: 'lastReviewDate',
+  cancellationPolicy: 'cancellationPolicy',
+  minBookings: 'minBookings',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -203,7 +209,12 @@ exports.Prisma.TripSessionScalarFieldEnum = {
   deposit: 'deposit',
   totalSeats: 'totalSeats',
   availableSeats: 'availableSeats',
-  status: 'status'
+  status: 'status',
+  currency: 'currency',
+  cancellationReason: 'cancellationReason',
+  minBookings: 'minBookings',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.BookingScalarFieldEnum = {
@@ -218,7 +229,21 @@ exports.Prisma.BookingScalarFieldEnum = {
   phoneNumber: 'phoneNumber',
   documentNumber: 'documentNumber',
   paymentProofUrl: 'paymentProofUrl',
-  paymentProofId: 'paymentProofId'
+  paymentProofId: 'paymentProofId',
+  paymentMethod: 'paymentMethod',
+  paymentGatewayTransactionId: 'paymentGatewayTransactionId',
+  paymentGatewayMetadata: 'paymentGatewayMetadata',
+  paymentStatus: 'paymentStatus',
+  lastReminderSentAt: 'lastReminderSentAt',
+  notificationsSent: 'notificationsSent',
+  cancelledAt: 'cancelledAt',
+  cancelledBy: 'cancelledBy',
+  cancellationReason: 'cancellationReason',
+  refundAmount: 'refundAmount',
+  refundStatus: 'refundStatus',
+  refundProcessedAt: 'refundProcessedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.PaymentProofScalarFieldEnum = {
@@ -265,6 +290,96 @@ exports.Prisma.AuditLogScalarFieldEnum = {
   targetId: 'targetId',
   metadata: 'metadata',
   createdAt: 'createdAt'
+};
+
+exports.Prisma.ReviewScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  travelerId: 'travelerId',
+  tripTemplateId: 'tripTemplateId',
+  rating: 'rating',
+  comment: 'comment',
+  response: 'response',
+  isVerifiedBooking: 'isVerifiedBooking',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.WishlistScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  tripTemplateId: 'tripTemplateId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.NotificationPreferenceScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  paymentReminder: 'paymentReminder',
+  tripReminder: 'tripReminder',
+  bookingConfirmation: 'bookingConfirmation',
+  cancellationAlert: 'cancellationAlert',
+  reviewRequest: 'reviewRequest',
+  smsNotifications: 'smsNotifications',
+  emailNotifications: 'emailNotifications',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.NotificationLogScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  notificationType: 'notificationType',
+  recipientEmail: 'recipientEmail',
+  subject: 'subject',
+  message: 'message',
+  status: 'status',
+  sentAt: 'sentAt',
+  failureReason: 'failureReason',
+  metadata: 'metadata'
+};
+
+exports.Prisma.PaymentTransactionScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  amount: 'amount',
+  method: 'method',
+  transactionId: 'transactionId',
+  status: 'status',
+  provider: 'provider',
+  providerData: 'providerData',
+  metadata: 'metadata',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ConversationScalarFieldEnum = {
+  id: 'id',
+  travelerId: 'travelerId',
+  agencyId: 'agencyId',
+  lastMessageAt: 'lastMessageAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.MessageScalarFieldEnum = {
+  id: 'id',
+  conversationId: 'conversationId',
+  senderId: 'senderId',
+  content: 'content',
+  attachmentUrl: 'attachmentUrl',
+  isRead: 'isRead',
+  readAt: 'readAt',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.ExchangeRateScalarFieldEnum = {
+  id: 'id',
+  baseCurrency: 'baseCurrency',
+  targetCurrency: 'targetCurrency',
+  rate: 'rate',
+  lastUpdated: 'lastUpdated',
+  expiresAt: 'expiresAt'
 };
 
 exports.Prisma.SortOrder = {
@@ -324,6 +439,12 @@ exports.TripStatus = exports.$Enums.TripStatus = {
   ARCHIVED: 'ARCHIVED'
 };
 
+exports.SessionStatus = exports.$Enums.SessionStatus = {
+  OPEN: 'OPEN',
+  FULL: 'FULL',
+  CANCELLED: 'CANCELLED'
+};
+
 exports.BookingStatus = exports.$Enums.BookingStatus = {
   PENDING: 'PENDING',
   AWAITING_VALIDATION: 'AWAITING_VALIDATION',
@@ -333,9 +454,28 @@ exports.BookingStatus = exports.$Enums.BookingStatus = {
   COMPLETED: 'COMPLETED'
 };
 
+exports.PaymentMethod = exports.$Enums.PaymentMethod = {
+  MANUAL: 'MANUAL',
+  GATEWAY: 'GATEWAY'
+};
+
+exports.BookingPaymentStatus = exports.$Enums.BookingPaymentStatus = {
+  UNPAID: 'UNPAID',
+  PAID: 'PAID',
+  REFUNDED: 'REFUNDED'
+};
+
+exports.RefundStatus = exports.$Enums.RefundStatus = {
+  PENDING: 'PENDING',
+  PROCESSED: 'PROCESSED',
+  FAILED: 'FAILED'
+};
+
 exports.TransactionType = exports.$Enums.TransactionType = {
   CREDIT: 'CREDIT',
-  DEBIT: 'DEBIT'
+  DEBIT: 'DEBIT',
+  REFUND: 'REFUND',
+  PAYMENT_GATEWAY: 'PAYMENT_GATEWAY'
 };
 
 exports.PayoutStatus = exports.$Enums.PayoutStatus = {
@@ -343,6 +483,14 @@ exports.PayoutStatus = exports.$Enums.PayoutStatus = {
   APPROVED: 'APPROVED',
   REJECTED: 'REJECTED',
   PAID: 'PAID'
+};
+
+exports.NotificationType = exports.$Enums.NotificationType = {
+  PAYMENT_REMINDER: 'PAYMENT_REMINDER',
+  TRIP_REMINDER: 'TRIP_REMINDER',
+  BOOKING_CONFIRMATION: 'BOOKING_CONFIRMATION',
+  CANCELLATION: 'CANCELLATION',
+  REVIEW_REQUEST: 'REVIEW_REQUEST'
 };
 
 exports.Prisma.ModelName = {
@@ -357,7 +505,15 @@ exports.Prisma.ModelName = {
   Wallet: 'Wallet',
   WalletTransaction: 'WalletTransaction',
   PayoutRequest: 'PayoutRequest',
-  AuditLog: 'AuditLog'
+  AuditLog: 'AuditLog',
+  Review: 'Review',
+  Wishlist: 'Wishlist',
+  NotificationPreference: 'NotificationPreference',
+  NotificationLog: 'NotificationLog',
+  PaymentTransaction: 'PaymentTransaction',
+  Conversation: 'Conversation',
+  Message: 'Message',
+  ExchangeRate: 'ExchangeRate'
 };
 
 /**

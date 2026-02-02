@@ -9,5 +9,5 @@ exports.ALLOWED_MIME_TYPES = [
     'image/gif',
     'application/pdf',
 ];
-exports.ALLOWED_MIME_TYPES_REGEX = /^(image\/(jpeg|png|webp|gif)|application\/pdf)$/;
+exports.ALLOWED_MIME_TYPES_REGEX = 'image/.*|application/pdf';
 //# sourceMappingURL=upload.constants.js.map

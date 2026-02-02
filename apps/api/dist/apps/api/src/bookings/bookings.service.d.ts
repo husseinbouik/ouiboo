@@ -140,10 +140,12 @@ export declare class BookingsService {
         uploadedAt: Date;
         rejectionReason: string | null;
     }>;
-    getPaymentProofFile(bookingId: string, userId: string): Promise<{
+    getPaymentProofFile(bookingId: string, userId: string, role?: string): Promise<{
         filePath: string;
     }>;
+    isLocal(): boolean;
     private buildPaymentProofDownloadUrl;
+    private isPaymentProofExpired;
     verifyPayment(bookingId: string, tenantId: string, approved: boolean, rejectionReason?: string): Promise<{
         id: string;
         status: import("@ouiboo/database").$Enums.BookingStatus;

@@ -66,6 +66,12 @@ let AuthController = class AuthController {
     async resendOtp(dto) {
         return this.authService.resendOTP(dto.email);
     }
+    async forgotPassword(dto) {
+        return this.authService.requestPasswordReset(dto.email);
+    }
+    async resetPassword(dto) {
+        return this.authService.resetPassword(dto.email, dto.token, dto.newPassword);
+    }
     setRefreshCookie(res, token) {
         res.cookie(REFRESH_COOKIE_NAME, token, {
             httpOnly: true,
@@ -147,6 +153,22 @@ __decorate([
     __metadata("design:paramtypes", [auth_dto_1.ResendOtpDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "resendOtp", null);
+__decorate([
+    (0, common_1.Post)('forgot-password'),
+    (0, swagger_1.ApiOperation)({ summary: 'Request password reset email' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [auth_dto_1.ForgotPasswordDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "forgotPassword", null);
+__decorate([
+    (0, common_1.Post)('reset-password'),
+    (0, swagger_1.ApiOperation)({ summary: 'Reset password using token' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [auth_dto_1.ResetPasswordDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "resetPassword", null);
 exports.AuthController = AuthController = __decorate([
     (0, swagger_1.ApiTags)('Authentication'),
     (0, common_1.Controller)('auth'),

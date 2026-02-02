@@ -1,0 +1,20 @@
+import { Module } from '@nestjs/common';
+import { DatabaseModule } from '@ouiboo/database';
+import { PaymentsService } from './payments.service';
+import { PaymentsController } from './payments.controller';
+import { CMIPaymentProvider } from './providers/cmi-payment.provider';
+import { StripePaymentProvider } from './providers/stripe-payment.provider';
+import { PaymentProviderFactory } from './providers/payment-provider.factory';
+
+@Module({
+  imports: [DatabaseModule],
+  providers: [
+    PaymentsService,
+    CMIPaymentProvider,
+    StripePaymentProvider,
+    PaymentProviderFactory,
+  ],
+  controllers: [PaymentsController],
+  exports: [PaymentsService],
+})
+export class PaymentsModule {}

@@ -9,6 +9,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminModule = void 0;
 const common_1 = require("@nestjs/common");
 const admin_controller_1 = require("./admin.controller");
+const admin_seed_service_1 = require("./admin-seed.service");
+const audit_log_service_1 = require("./audit-log.service");
 const database_module_1 = require("../database/database.module");
 const wallets_module_1 = require("../wallets/wallets.module");
 let AdminModule = class AdminModule {
@@ -18,6 +20,7 @@ exports.AdminModule = AdminModule = __decorate([
     (0, common_1.Module)({
         imports: [database_module_1.DatabaseModule, wallets_module_1.WalletsModule],
         controllers: [admin_controller_1.AdminController],
+        providers: [admin_seed_service_1.AdminSeedService, audit_log_service_1.AuditLogService],
     })
 ], AdminModule);
 //# sourceMappingURL=admin.module.js.map

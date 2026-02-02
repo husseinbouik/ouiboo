@@ -11,9 +11,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BookingsService = void 0;
 const common_1 = require("@nestjs/common");
+const types_1 = require("@ouiboo/types");
 const database_service_1 = require("../database/database.service");
 const email_service_1 = require("../email/email.service");
 const upload_service_1 = require("../upload/upload.service");
+const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
 let BookingsService = class BookingsService {
     constructor(db, emailService, uploadService) {
         this.db = db;
@@ -129,7 +131,28 @@ let BookingsService = class BookingsService {
         if (booking.travelerId !== userId) {
             throw new common_1.ForbiddenException('Forbidden');
         }
-        const uploadResult = await this.uploadService.uploadFile(file, `payment-proofs/${bookingId}`);
+        const allowedStatuses = new Set(['PENDING', 'REJECTED', 'AWAITING_VALIDATION']);
+        if (!allowedStatuses.has(booking.status)) {
+            throw new common_1.BadRequestException('Booking cannot accept payment proof');
+        }
+        if (booking.status !== 'AWAITING_VALIDATION' && this.isPaymentProofExpired(booking.bookingDate)) {
+            await this.db.$transaction(async (tx) => {
+                await tx.tripSession.update({
+                    where: { id: booking.sessionId },
+                    data: {
+                        availableSeats: {
+                            increment: booking.guestsCount,
+                        },
+                    },
+                });
+                await tx.booking.update({
+                    where: { id: bookingId },
+                    data: { status: 'CANCELLED' },
+                });
+            });
+            throw new common_1.BadRequestException('Booking has expired. Please create a new booking.');
+        }
+        const uploadResult = await this.uploadService.uploadFile(file, `private/payment-proofs/${bookingId}`);
         const downloadUrl = this.buildPaymentProofDownloadUrl(bookingId);
         return this.db.$transaction(async (tx) => {
             const proof = await tx.paymentProof.upsert({
@@ -149,7 +172,7 @@ let BookingsService = class BookingsService {
             await tx.booking.update({
                 where: { id: bookingId },
                 data: {
-                    status: 'PENDING',
+                    status: 'AWAITING_VALIDATION',
                     paymentProofUrl: downloadUrl,
                     paymentProofId: proof.id,
                 },
@@ -160,7 +183,7 @@ let BookingsService = class BookingsService {
             };
         });
     }
-    async getPaymentProofFile(bookingId, userId) {
+    async getPaymentProofFile(bookingId, userId, role) {
         const booking = await this.db.booking.findUnique({
             where: { id: bookingId },
             include: {
@@ -174,7 +197,8 @@ let BookingsService = class BookingsService {
         const agency = await this.db.agencyProfile.findUnique({ where: { userId } });
         const isTraveler = booking.travelerId === userId;
         const isAgencyOwner = agency && booking.session.template.agencyId === agency.id;
-        if (!isTraveler && !isAgencyOwner) {
+        const isAdmin = role === types_1.UserRole.Admin;
+        if (!isTraveler && !isAgencyOwner && !isAdmin) {
             throw new common_1.BadRequestException('Unauthorized: Booking does not belong to you');
         }
         if (!booking.paymentProof) {
@@ -183,9 +207,20 @@ let BookingsService = class BookingsService {
         const filePath = this.uploadService.getFilePath(booking.paymentProof.imageUrl);
         return { filePath };
     }
+    isLocal() {
+        return this.uploadService.isLocal();
+    }
     buildPaymentProofDownloadUrl(bookingId) {
         const apiUrl = process.env.API_URL || 'http://localhost:3000/api';
         return `${apiUrl}/bookings/${bookingId}/payment-proof/download`;
+    }
+    isPaymentProofExpired(bookingDate) {
+        const hours = Number(process.env.PAYMENT_PROOF_EXPIRATION_HOURS);
+        const normalizedHours = Number.isFinite(hours) && hours > 0
+            ? hours
+            : DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS;
+        const expiresAt = new Date(bookingDate.getTime() + normalizedHours * 60 * 60 * 1000);
+        return new Date() > expiresAt;
     }
     async verifyPayment(bookingId, tenantId, approved, rejectionReason) {
         const booking = await this.db.booking.findUnique({

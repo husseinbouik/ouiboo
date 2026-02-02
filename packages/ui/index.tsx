@@ -16,4 +16,5 @@ export * from './Table';
 export * from './Tabs';
 export * from './Textarea';
 export * from './Toast';
+export * from './Logo';
 export * from './utils';

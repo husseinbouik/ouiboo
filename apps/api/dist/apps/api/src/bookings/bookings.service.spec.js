@@ -10,6 +10,7 @@ const mockBooking = {
     travelerId: 'user-123',
     status: 'PENDING',
     paymentProofId: null,
+    bookingDate: new Date(),
     session: {
         template: {
             agencyId: 'agency-123',
@@ -65,7 +66,7 @@ describe('BookingsService', () => {
         it('should upload proof if user is the traveler', async () => {
             db.booking.findUnique.mockResolvedValue(mockBooking);
             db.paymentProof.upsert.mockResolvedValue({ id: 'proof-123' });
-            db.booking.update.mockResolvedValue({ ...mockBooking, status: 'PENDING' });
+            db.booking.update.mockResolvedValue({ ...mockBooking, status: 'AWAITING_VALIDATION' });
             db.agencyProfile.findUnique.mockResolvedValue(null);
             uploadService.uploadFile.mockResolvedValue({
                 url: 'http://upload.url',

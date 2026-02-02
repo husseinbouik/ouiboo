@@ -5,6 +5,7 @@ const core_1 = require("@nestjs/core");
 const swagger_1 = require("@nestjs/swagger");
 const app_module_1 = require("./app.module");
 const common_1 = require("@nestjs/common");
+const request_logging_interceptor_1 = require("./monitoring/request-logging.interceptor");
 const REQUIRED_ENV_VARS = [
     'JWT_SECRET',
     'JWT_REFRESH_SECRET',
@@ -27,7 +28,6 @@ const validateRequiredEnv = () => {
 async function bootstrap() {
     try {
         validateRequiredEnv();
-        console.log('DATABASE_URL:', process.env.DATABASE_URL);
         const app = await core_1.NestFactory.create(app_module_1.AppModule);
         const corsOrigins = process.env.CORS_ORIGINS
             ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
@@ -44,6 +44,7 @@ async function bootstrap() {
             whitelist: true,
             transform: true,
         }));
+        app.useGlobalInterceptors(new request_logging_interceptor_1.RequestLoggingInterceptor());
         const config = new swagger_1.DocumentBuilder()
             .setTitle('Ouiboo API')
             .setDescription('The Ouiboo B2B & B2C Travel Marketplace API')

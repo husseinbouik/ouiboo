@@ -8,6 +8,7 @@ import axios from 'axios'
 import { Dialog, Transition, Menu } from '@headlessui/react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from 'next-themes'
+import { Logo } from '@ouiboo/ui'
 
 // --- Helper Components & Types ---
 
@@ -267,6 +268,7 @@ export default function OuibooLanding() {
   return (
     <div className="bg-off-white text-deep-blue font-sans">
       {/* Header - Fixed with scroll effect */}
+      {/* Header - Fixed with scroll effect */}
       <motion.header 
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -280,7 +282,7 @@ export default function OuibooLanding() {
         <nav aria-label="Global" className="flex items-center justify-between p-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex lg:flex-1">
             <a href="#" className="-m-1.5 p-1.5 flex items-center gap-2">
-              <div className="logo-placeholder bg-deep-blue text-white" aria-hidden>O</div>
+              <Logo />
               <span className="font-bold text-xl tracking-tight">Ouiboo</span>
             </a>
           </div>
@@ -328,7 +330,7 @@ export default function OuibooLanding() {
           <Dialog.Panel className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10">
             <div className="flex items-center justify-between">
               <a href="#" className="-m-1.5 p-1.5 flex items-center gap-2">
-                <div className="logo-placeholder bg-deep-blue text-white" aria-hidden>O</div>
+                <Logo />
                 <span className="font-bold text-xl tracking-tight">Ouiboo</span>
               </a>
               <button
@@ -353,9 +355,9 @@ export default function OuibooLanding() {
                       {item.name}
                     </a>
                   ))}
-                </div>
                 <div className="py-6 space-y-4">
                   <div className="flex items-center gap-2">
+                    <Logo />
                     <LanguageSwitcher />
                     <ThemeToggle />
                   </div>
@@ -438,13 +440,12 @@ export default function OuibooLanding() {
                     </motion.div>
                     <motion.div style={{ scale: heroImageScale, rotate: heroImageRotate }} className="mt-16 flow-root sm:mt-24">
                         <div className="-m-2 rounded-xl bg-gray-900/5 p-2 ring-1 ring-inset ring-gray-900/10 lg:-m-4 lg:rounded-2xl lg:p-4">
-                            <img src="/Dashboard.png" alt="App screenshot" width={2432} height={1442} className="rounded-md shadow-2xl ring-1 ring-gray-900/10"/>
+                            <img src="/dashboard-hero.png" alt="Ouiboo Dashboard" width={2432} height={1442} className="rounded-md shadow-2xl ring-1 ring-gray-900/10"/>
                         </div>
                     </motion.div>
                 </div>
             </div>
         </div>
-
       <section className="py-16 sm:py-20 bg-white">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="mx-auto max-w-3xl text-center">

@@ -11,10 +11,21 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UploadService = void 0;
 const common_1 = require("@nestjs/common");
-const local_storage_provider_1 = require("./providers/local-storage.provider");
 let UploadService = class UploadService {
     constructor() {
-        this.storageProvider = new local_storage_provider_1.LocalStorageProvider();
+        this.initializeProvider();
+    }
+    async initializeProvider() {
+        const provider = process.env.STORAGE_PROVIDER || 'local';
+        if (provider === 's3') {
+            const { S3StorageProvider } = await Promise.resolve().then(() => require('./providers/s3-storage.provider'));
+            this.storageProvider = new S3StorageProvider();
+        }
+        else {
+            const { LocalStorageProvider } = await Promise.resolve().then(() => require('./providers/local-storage.provider'));
+            this.storageProvider = new LocalStorageProvider();
+        }
+        console.log(`[UploadService] Initialized with ${provider} storage provider`);
     }
     async uploadFile(file, folder) {
         const result = await this.storageProvider.upload(file, folder);
@@ -26,6 +37,9 @@ let UploadService = class UploadService {
     }
     getFilePath(key) {
         return this.storageProvider.getFilePath(key);
+    }
+    isLocal() {
+        return this.storageProvider.isLocal();
     }
 };
 exports.UploadService = UploadService;

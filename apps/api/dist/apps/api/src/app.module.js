@@ -20,6 +20,7 @@ const agency_module_1 = require("./agency/agency.module");
 const admin_module_1 = require("./admin/admin.module");
 const wallets_module_1 = require("./wallets/wallets.module");
 const email_module_1 = require("./email/email.module");
+const health_module_1 = require("./health/health.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -40,6 +41,7 @@ exports.AppModule = AppModule = __decorate([
             admin_module_1.AdminModule,
             wallets_module_1.WalletsModule,
             email_module_1.EmailModule,
+            health_module_1.HealthModule,
         ],
     })
 ], AppModule);

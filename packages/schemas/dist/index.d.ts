@@ -99,6 +99,8 @@ export declare const TripTemplateSchema: z.ZodObject<{
     durationDays: z.ZodNumber;
     durationNights: z.ZodNumber;
     inclusions: z.ZodArray<z.ZodString, "many">;
+    exclusions: z.ZodArray<z.ZodString, "many">;
+    checklist: z.ZodArray<z.ZodString, "many">;
     images: z.ZodArray<z.ZodString, "many">;
     itinerary: z.ZodOptional<z.ZodArray<z.ZodObject<{
         id: z.ZodString;
@@ -135,6 +137,8 @@ export declare const TripTemplateSchema: z.ZodObject<{
     durationDays: number;
     durationNights: number;
     inclusions: string[];
+    exclusions: string[];
+    checklist: string[];
     images: string[];
     createdAt: string;
     itinerary?: {
@@ -156,6 +160,8 @@ export declare const TripTemplateSchema: z.ZodObject<{
     durationDays: number;
     durationNights: number;
     inclusions: string[];
+    exclusions: string[];
+    checklist: string[];
     images: string[];
     createdAt: string;
     itinerary?: {
@@ -177,6 +183,8 @@ export declare const CreateTripTemplateSchema: z.ZodObject<Omit<{
     durationDays: z.ZodNumber;
     durationNights: z.ZodNumber;
     inclusions: z.ZodArray<z.ZodString, "many">;
+    exclusions: z.ZodArray<z.ZodString, "many">;
+    checklist: z.ZodArray<z.ZodString, "many">;
     images: z.ZodArray<z.ZodString, "many">;
     itinerary: z.ZodOptional<z.ZodArray<z.ZodObject<{
         id: z.ZodString;
@@ -230,6 +238,8 @@ export declare const CreateTripTemplateSchema: z.ZodObject<Omit<{
     durationDays: number;
     durationNights: number;
     inclusions: string[];
+    exclusions: string[];
+    checklist: string[];
     images: string[];
     itinerary?: {
         description: string;
@@ -246,6 +256,8 @@ export declare const CreateTripTemplateSchema: z.ZodObject<Omit<{
     durationDays: number;
     durationNights: number;
     inclusions: string[];
+    exclusions: string[];
+    checklist: string[];
     images: string[];
     itinerary?: {
         description: string;
@@ -260,6 +272,7 @@ export declare const TripSessionSchema: z.ZodObject<{
     startDate: z.ZodString;
     endDate: z.ZodString;
     price: z.ZodNumber;
+    deposit: z.ZodNumber;
     totalSeats: z.ZodNumber;
     availableSeats: z.ZodNumber;
     status: z.ZodEnum<["OPEN", "CLOSED", "CANCELLED"]>;
@@ -270,6 +283,7 @@ export declare const TripSessionSchema: z.ZodObject<{
     startDate: string;
     endDate: string;
     price: number;
+    deposit: number;
     totalSeats: number;
     availableSeats: number;
 }, {
@@ -279,6 +293,7 @@ export declare const TripSessionSchema: z.ZodObject<{
     startDate: string;
     endDate: string;
     price: number;
+    deposit: number;
     totalSeats: number;
     availableSeats: number;
 }>;
@@ -288,6 +303,7 @@ export declare const CreateTripSessionSchema: z.ZodObject<Omit<{
     startDate: z.ZodString;
     endDate: z.ZodString;
     price: z.ZodNumber;
+    deposit: z.ZodNumber;
     totalSeats: z.ZodNumber;
     availableSeats: z.ZodNumber;
     status: z.ZodEnum<["OPEN", "CLOSED", "CANCELLED"]>;
@@ -297,6 +313,7 @@ export declare const CreateTripSessionSchema: z.ZodObject<Omit<{
     startDate: string;
     endDate: string;
     price: number;
+    deposit: number;
     totalSeats: number;
 }, {
     status: "OPEN" | "CLOSED" | "CANCELLED";
@@ -304,6 +321,7 @@ export declare const CreateTripSessionSchema: z.ZodObject<Omit<{
     startDate: string;
     endDate: string;
     price: number;
+    deposit: number;
     totalSeats: number;
 }>;
 export declare const BookingSchema: z.ZodObject<{

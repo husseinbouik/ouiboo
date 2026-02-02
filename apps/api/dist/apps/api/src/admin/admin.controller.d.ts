@@ -1,10 +1,16 @@
 import { DatabaseService } from '../database/database.service';
 import { WalletsService } from '../wallets/wallets.service';
+import { EmailService } from '../email/email.service';
+import { AuditLogService } from './audit-log.service';
+import { Response } from 'express';
 export declare class AdminController {
     private db;
     private walletsService;
-    constructor(db: DatabaseService, walletsService: WalletsService);
-    getPendingPayments(): import("@ouiboo/database").Prisma.PrismaPromise<({
+    private emailService;
+    private auditLogService;
+    constructor(db: DatabaseService, walletsService: WalletsService, emailService: EmailService, auditLogService: AuditLogService);
+    getPendingPayments(q?: string): Promise<{
+        downloadUrl: string;
         booking: {
             session: {
                 template: {
@@ -47,6 +53,9 @@ export declare class AdminController {
                 isEmailVerified: boolean;
                 otpExpiresAt: Date | null;
                 otpLastSentAt: Date | null;
+                passwordResetTokenHash: string | null;
+                passwordResetExpiresAt: Date | null;
+                passwordResetSentAt: Date | null;
                 createdAt: Date;
                 updatedAt: Date;
             };
@@ -64,15 +73,14 @@ export declare class AdminController {
             paymentProofId: string | null;
             travelerId: string;
         };
-    } & {
         id: string;
         status: import("@ouiboo/database").$Enums.VerificationStatus;
         bookingId: string;
         imageUrl: string;
         uploadedAt: Date;
         rejectionReason: string | null;
-    })[]>;
-    verifyPayment(id: string, status: 'VERIFIED' | 'REJECTED', rejectionReason?: string): Promise<{
+    }[]>;
+    verifyPayment(req: any, id: string, status: 'VERIFIED' | 'REJECTED', rejectionReason?: string): Promise<{
         id: string;
         status: import("@ouiboo/database").$Enums.VerificationStatus;
         bookingId: string;
@@ -80,7 +88,7 @@ export declare class AdminController {
         uploadedAt: Date;
         rejectionReason: string | null;
     }>;
-    getPendingAgencies(): import("@ouiboo/database").Prisma.PrismaPromise<({
+    getPendingAgencies(q?: string): import("@ouiboo/database").Prisma.PrismaPromise<({
         user: {
             email: string;
             password: string;
@@ -92,6 +100,9 @@ export declare class AdminController {
             isEmailVerified: boolean;
             otpExpiresAt: Date | null;
             otpLastSentAt: Date | null;
+            passwordResetTokenHash: string | null;
+            passwordResetExpiresAt: Date | null;
+            passwordResetSentAt: Date | null;
             createdAt: Date;
             updatedAt: Date;
         };
@@ -110,7 +121,7 @@ export declare class AdminController {
         subscriptionEndsAt: Date | null;
         bankDetails: string | null;
     })[]>;
-    verifyAgency(id: string, status: 'VERIFIED' | 'REJECTED'): Promise<{
+    verifyAgency(req: any, id: string, status: 'VERIFIED' | 'REJECTED'): Promise<{
         id: string;
         userId: string;
         companyName: string;
@@ -125,7 +136,7 @@ export declare class AdminController {
         subscriptionEndsAt: Date | null;
         bankDetails: string | null;
     }>;
-    getPendingTrips(): import("@ouiboo/database").Prisma.PrismaPromise<({
+    getPendingTrips(q?: string): import("@ouiboo/database").Prisma.PrismaPromise<({
         agency: {
             id: string;
             userId: string;
@@ -159,7 +170,7 @@ export declare class AdminController {
         status: import("@ouiboo/database").$Enums.TripStatus;
         featured: boolean;
     })[]>;
-    verifyTrip(id: string, status: 'ACTIVE' | 'ARCHIVED'): Promise<{
+    verifyTrip(req: any, id: string, status: 'ACTIVE' | 'ARCHIVED'): Promise<{
         description: string;
         title: string;
         id: string;
@@ -177,7 +188,7 @@ export declare class AdminController {
         status: import("@ouiboo/database").$Enums.TripStatus;
         featured: boolean;
     }>;
-    getAgencies(): import("@ouiboo/database").Prisma.PrismaPromise<({
+    getAgencies(q?: string, verificationStatus?: string, subscriptionStatus?: string): import("@ouiboo/database").Prisma.PrismaPromise<({
         user: {
             email: string;
             password: string;
@@ -189,6 +200,9 @@ export declare class AdminController {
             isEmailVerified: boolean;
             otpExpiresAt: Date | null;
             otpLastSentAt: Date | null;
+            passwordResetTokenHash: string | null;
+            passwordResetExpiresAt: Date | null;
+            passwordResetSentAt: Date | null;
             createdAt: Date;
             updatedAt: Date;
         };
@@ -207,7 +221,7 @@ export declare class AdminController {
         subscriptionEndsAt: Date | null;
         bankDetails: string | null;
     })[]>;
-    updateAgencyStatus(id: string, data: {
+    updateAgencyStatus(req: any, id: string, data: {
         verificationStatus?: any;
         subscriptionStatus?: any;
     }): Promise<{
@@ -225,7 +239,7 @@ export declare class AdminController {
         subscriptionEndsAt: Date | null;
         bankDetails: string | null;
     }>;
-    getBookings(): import("@ouiboo/database").Prisma.PrismaPromise<({
+    getBookings(q?: string, status?: string): import("@ouiboo/database").Prisma.PrismaPromise<({
         paymentProof: {
             id: string;
             status: import("@ouiboo/database").$Enums.VerificationStatus;
@@ -275,6 +289,9 @@ export declare class AdminController {
             isEmailVerified: boolean;
             otpExpiresAt: Date | null;
             otpLastSentAt: Date | null;
+            passwordResetTokenHash: string | null;
+            passwordResetExpiresAt: Date | null;
+            passwordResetSentAt: Date | null;
             createdAt: Date;
             updatedAt: Date;
         };
@@ -292,8 +309,26 @@ export declare class AdminController {
         paymentProofId: string | null;
         travelerId: string;
     })[]>;
-    getPayoutRequests(): import("@ouiboo/database").Prisma.PrismaPromise<({
+    getPayoutRequests(q?: string, status?: string): import("@ouiboo/database").Prisma.PrismaPromise<({
         agency: {
+            user: {
+                email: string;
+                password: string;
+                name: string | null;
+                role: import("@ouiboo/database").$Enums.UserRole;
+                otp: string | null;
+                id: string;
+                avatar: string | null;
+                isEmailVerified: boolean;
+                otpExpiresAt: Date | null;
+                otpLastSentAt: Date | null;
+                passwordResetTokenHash: string | null;
+                passwordResetExpiresAt: Date | null;
+                passwordResetSentAt: Date | null;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+        } & {
             id: string;
             userId: string;
             companyName: string;
@@ -317,7 +352,7 @@ export declare class AdminController {
         requestedAt: Date;
         processedAt: Date | null;
     })[]>;
-    processPayout(id: string, status: 'PAID' | 'REJECTED'): Promise<{
+    processPayout(req: any, id: string, status: 'PAID' | 'REJECTED'): Promise<{
         id: string;
         bankDetails: string;
         agencyId: string;
@@ -325,5 +360,20 @@ export declare class AdminController {
         amount: number;
         requestedAt: Date;
         processedAt: Date | null;
+    }>;
+    getAuditLogs(from?: string, to?: string, action?: string, actorEmail?: string, targetType?: string, limit?: string): Promise<{
+        id: string;
+        createdAt: Date;
+        actorId: string | null;
+        actorEmail: string | null;
+        action: string;
+        targetType: string;
+        targetId: string | null;
+        metadata: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
+    }[]>;
+    exportAuditLogs(req: any, res: Response, from?: string, to?: string, action?: string, actorEmail?: string, targetType?: string, limit?: string): Promise<Response<any, Record<string, any>>>;
+    pruneAuditLogs(req: any, days?: number): Promise<{
+        deleted: number;
+        cutoff: Date;
     }>;
 }

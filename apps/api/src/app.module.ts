@@ -12,6 +12,14 @@ import { AdminModule } from './admin/admin.module';
 import { WalletsModule } from './wallets/wallets.module';
 import { EmailModule } from './email/email.module';
 import { HealthModule } from './health/health.module';
+import { PaymentsModule } from './payments/payments.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { WishlistModule } from './wishlist/wishlist.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { CurrencyModule } from './currency/currency.module';
+import { WebSocketModule } from './websocket/websocket.module';
+import { MessagesModule } from './messages/messages.module';
 
 @Module({
     imports: [
@@ -30,6 +38,15 @@ import { HealthModule } from './health/health.module';
         WalletsModule,
         EmailModule,
         HealthModule,
+        // Phase 1 & 2 Features
+        PaymentsModule,
+        NotificationsModule,
+        ReviewsModule,
+        WishlistModule,
+        AnalyticsModule,
+        CurrencyModule,
+        WebSocketModule,
+        MessagesModule,
     ],
 })
 export class AppModule { }
