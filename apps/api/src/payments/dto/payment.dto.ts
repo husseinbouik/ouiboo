@@ -31,6 +31,9 @@ export class VerifyPaymentDto {
 
 export class ProcessRefundDto {
   @IsString()
+  bookingId: string;
+
+  @IsString()
   transactionId: string;
 
   @IsNumber()
