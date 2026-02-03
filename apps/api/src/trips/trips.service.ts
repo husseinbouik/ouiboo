@@ -39,34 +39,153 @@ export class TripsService {
         return result;
     }
 
-    async findAllTemplates(featured?: boolean, status?: string) {
+    async findAllTemplates(filters?: {
+        featured?: boolean;
+        status?: string;
+        priceMin?: number;
+        priceMax?: number;
+        durationMin?: number;
+        durationMax?: number;
+        startDateFrom?: Date;
+        startDateTo?: Date;
+        ratingMin?: number;
+        available?: boolean;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+        page?: number;
+        limit?: number;
+    }) {
         try {
-            const where: any = {};
-            if (featured) where.featured = true;
-            if (status) where.status = status;
+            const {
+                featured,
+                status,
+                priceMin,
+                priceMax,
+                durationMin,
+                durationMax,
+                startDateFrom,
+                startDateTo,
+                ratingMin,
+                available,
+                sortBy = 'createdAt',
+                sortOrder = 'desc',
+                page = 1,
+                limit = 20,
+            } = filters || {};
 
-            return await this.db.tripTemplate.findMany({
-                where,
-                include: {
-                    sessions: {
-                        where: {
-                            status: 'OPEN',
-                            startDate: { gte: new Date() }
+            // Build WHERE clause for trip templates
+            const where: any = {
+                status: status || 'APPROVED',
+            };
+
+            if (featured) where.featured = true;
+
+            // Price filter: applied to sessions, so we'll filter after query
+            // Duration filter
+            if (durationMin !== undefined || durationMax !== undefined) {
+                where.durationDays = {};
+                if (durationMin !== undefined) where.durationDays.gte = durationMin;
+                if (durationMax !== undefined) where.durationDays.lte = durationMax;
+            }
+
+            // Rating filter
+            if (ratingMin !== undefined) {
+                where.averageRating = { gte: ratingMin };
+            }
+
+            // Build session filters for nested query
+            const sessionWhere: any = {
+                status: 'OPEN',
+                startDate: { gte: new Date() },
+            };
+
+            if (startDateFrom) {
+                sessionWhere.startDate.gte = startDateFrom;
+            }
+            if (startDateTo) {
+                sessionWhere.startDate.lte = startDateTo;
+            }
+
+            if (available) {
+                sessionWhere.availableSeats = { gt: 0 };
+            }
+
+            // Price filter on sessions
+            if (priceMin !== undefined || priceMax !== undefined) {
+                sessionWhere.price = {};
+                if (priceMin !== undefined) sessionWhere.price.gte = priceMin;
+                if (priceMax !== undefined) sessionWhere.price.lte = priceMax;
+            }
+
+            // Build sort order
+            const orderBy: any = {};
+            if (sortBy === 'price') {
+                // For price sorting, we'd need to sort by session price, default to sessions[0]
+                orderBy.sessions = { _count: sortOrder };
+            } else if (sortBy === 'rating') {
+                orderBy.averageRating = sortOrder;
+            } else if (sortBy === 'popularity') {
+                // Sort by booking count or review count
+                orderBy._count = { sessions: sortOrder };
+            } else {
+                // Default sort by createdAt
+                orderBy[sortBy] = sortOrder;
+            }
+
+            // Query with pagination
+            const skip = (page - 1) * limit;
+
+            const [templates, total] = await Promise.all([
+                this.db.tripTemplate.findMany({
+                    where,
+                    include: {
+                        sessions: {
+                            where: sessionWhere,
+                            orderBy: { startDate: 'asc' },
+                            take: 5, // Limit sessions shown per template
                         },
-                        orderBy: { startDate: 'asc' }
+                        agency: {
+                            select: {
+                                companyName: true,
+                                logo: true,
+                                id: true,
+                            },
+                        },
+                        review: {
+                            select: { rating: true },
+                        },
+                        _count: {
+                            select: { sessions: true, review: true, wishlist: true },
+                        },
                     },
-                    agency: {
-                        select: {
-                            companyName: true,
-                            logo: true,
-                            id: true // useful for linking back
-                        }
-                    },
-                    _count: {
-                        select: { sessions: true },
-                    },
+                    orderBy,
+                    skip,
+                    take: limit,
+                }),
+                this.db.tripTemplate.count({ where }),
+            ]);
+
+            // Post-process: filter by price if needed (in case DB index doesn't support it)
+            let filtered = templates;
+            if (priceMin !== undefined || priceMax !== undefined) {
+                filtered = templates.filter(template => {
+                    if (template.sessions.length === 0) return false;
+                    const minPrice = Math.min(...template.sessions.map(s => s.price));
+                    if (priceMin !== undefined && minPrice < priceMin) return false;
+                    if (priceMax !== undefined && minPrice > priceMax) return false;
+                    return true;
+                });
+            }
+
+            return {
+                data: filtered,
+                pagination: {
+                    total,
+                    page,
+                    limit,
+                    totalPages: Math.ceil(total / limit),
                 },
-            });
+            };
         } catch (error) {
             console.error('Error in findAllTemplates:', error);
             throw error;

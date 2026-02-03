@@ -1,16 +1,16 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
-import { PrismaService } from '@ouiboo/database';
+import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
 import { PaymentProviderFactory } from './providers/payment-provider.factory';
 import { InitiatePaymentDto, VerifyPaymentDto, ProcessRefundDto } from './dto/payment.dto';
-import { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
+import type { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
 
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
 
   constructor(
-    private prisma: PrismaService,
+    private prisma: DatabaseService,
     private paymentProviderFactory: PaymentProviderFactory,
     private emailService: EmailService,
   ) {}
@@ -110,21 +110,87 @@ export class PaymentsService {
       dto.bookingId,
     );
 
-    // Update payment transaction
-    await this.prisma.paymentTransaction.updateMany({
-      where: {
-        bookingId: dto.bookingId,
-        transactionId: dto.transactionId,
-      },
-      data: {
-        status: result.status === 'success' ? 'SUCCESS' : 'FAILED',
-        providerData: result.metadata,
+    // Fetch booking with session details for potential failure handling
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: dto.bookingId },
+      include: {
+        session: { include: { template: true } },
       },
     });
 
+    if (!booking) {
+      throw new BadRequestException('Booking not found');
+    }
+
     if (result.status === 'success') {
+      // Update payment transaction
+      await this.prisma.paymentTransaction.updateMany({
+        where: {
+          bookingId: dto.bookingId,
+          transactionId: dto.transactionId,
+        },
+        data: {
+          status: 'SUCCESS',
+          providerData: result.metadata,
+        },
+      });
+
       // Transition booking to CONFIRMED state and update payment status
       await this.transitionBookingToConfirmed(dto.bookingId, result.metadata);
+    } else {
+      // Handle payment verification failure: CANCELLED booking, FAILED payment, release seats
+      // Guard: Check current booking status to prevent double-adjustment
+      if (booking.status !== 'CANCELLED' && booking.paymentStatus !== 'FAILED') {
+        // Wrap in transaction
+        await this.prisma.$transaction(async (tx) => {
+          // Update payment transaction
+          await tx.paymentTransaction.updateMany({
+            where: {
+              bookingId: dto.bookingId,
+              transactionId: dto.transactionId,
+            },
+            data: {
+              status: 'FAILED',
+              providerData: result.metadata,
+            },
+          });
+
+          // Update booking status to CANCELLED and payment status to FAILED
+          await tx.booking.update({
+            where: { id: dto.bookingId },
+            data: {
+              status: 'CANCELLED',
+              paymentStatus: BookingPaymentStatus.FAILED,
+            },
+          });
+
+          // Increment available seats back to trip session
+          await tx.tripSession.update({
+            where: { id: booking.sessionId },
+            data: {
+              availableSeats: {
+                increment: booking.guestsCount,
+              },
+            },
+          });
+
+          // Add audit log entry
+          await tx.auditLog.create({
+            data: {
+              userId: booking.travelerId,
+              action: 'PAYMENT_FAILED',
+              resourceType: 'BOOKING',
+              resourceId: dto.bookingId,
+              details: {
+                provider: dto.provider,
+                transactionId: dto.transactionId,
+                reason: result.error || 'Payment verification failed',
+                seatsReleased: booking.guestsCount,
+              },
+            },
+          });
+        });
+      }
     }
 
     this.logger.log(`Payment verified for booking ${dto.bookingId}: ${result.status}`);
@@ -168,21 +234,26 @@ export class PaymentsService {
       if (booking.sessionId) {
         const session = await this.prisma.tripSession.findUnique({
           where: { id: booking.sessionId },
-          include: { template: { include: { agency: true } } },
+          include: { template: { include: { agency: { include: { wallet: true } } } } },
         });
 
-        if (session?.template?.agency?.walletId) {
-          // Add refund back to agency wallet
-          await this.prisma.walletTransaction.create({
-            data: {
-              walletId: session.template.agency.walletId,
-              amount: dto.amount,
-              type: 'REFUND',
-              reason: `Refund for booking ${dto.bookingId}`,
-              referenceId: refundResult.refundId,
-            },
-          });
+        // Ensure agency wallet is loaded
+        const agencyWallet = session?.template?.agency?.wallet;
+        if (!agencyWallet) {
+          throw new BadRequestException('Agency missing wallet');
         }
+
+        // Create refund transaction (debit agency wallet)
+        await this.prisma.walletTransaction.create({
+          data: {
+            walletId: agencyWallet.id,
+            amount: -Math.abs(dto.amount),
+            type: 'REFUND',
+            reason: `Refund for booking ${dto.bookingId}`,
+            referenceId: refundResult.refundId || null,
+          },
+        });
+
       }
 
       this.logger.log(`Refund processed for booking ${dto.bookingId}: ${refundResult.refundId}`);
@@ -226,6 +297,8 @@ export class PaymentsService {
         await this.handleStripeWebhook(data);
       } else if (provider.toLowerCase() === 'cmi') {
         await this.handleCMIWebhook(data);
+      } else if (provider.toLowerCase() === 'cashplus') {
+        await this.handleCashPlusWebhook(data);
       } else {
         this.logger.warn(`Unknown payment provider for webhook: ${provider}`);
       }
@@ -320,7 +393,13 @@ export class PaymentsService {
       where: {
         transactionId: paymentIntent.id,
       },
-      include: { booking: true },
+      include: {
+        booking: {
+          include: {
+            session: { include: { template: true } },
+          },
+        },
+      },
     });
 
     if (!transaction) {
@@ -330,24 +409,60 @@ export class PaymentsService {
 
     const booking = transaction.booking;
 
-    // Update payment transaction
-    await this.prisma.paymentTransaction.update({
-      where: { id: transaction.id },
-      data: {
-        status: 'FAILED',
-        providerData: paymentIntent,
-      },
+    // Guard: Check current booking status to prevent double-adjustment
+    if (booking.status === 'CANCELLED' || booking.paymentStatus === 'FAILED') {
+      this.logger.warn(`Booking ${booking.id} already cancelled or failed, skipping adjustment`);
+      return;
+    }
+
+    // Wrap in transaction: Update booking status to CANCELLED, increment available seats, mark payment as FAILED
+    await this.prisma.$transaction(async (tx) => {
+      // Mark payment transaction as FAILED
+      await tx.paymentTransaction.update({
+        where: { id: transaction.id },
+        data: {
+          status: 'FAILED',
+          providerData: paymentIntent,
+        },
+      });
+
+      // Update booking status to CANCELLED and payment status to FAILED
+      await tx.booking.update({
+        where: { id: booking.id },
+        data: {
+          status: 'CANCELLED',
+          paymentStatus: BookingPaymentStatus.FAILED,
+        },
+      });
+
+      // Increment available seats back to trip session
+      await tx.tripSession.update({
+        where: { id: booking.sessionId },
+        data: {
+          availableSeats: {
+            increment: booking.guestsCount,
+          },
+        },
+      });
+
+      // Add audit log entry
+      await tx.auditLog.create({
+        data: {
+          userId: booking.travelerId,
+          action: 'PAYMENT_FAILED',
+          resourceType: 'BOOKING',
+          resourceId: booking.id,
+          details: {
+            provider: 'Stripe',
+            paymentIntentId: paymentIntent.id,
+            reason: paymentIntent.last_payment_error?.message || 'Payment declined',
+            seatsReleased: booking.guestsCount,
+          },
+        },
+      });
     });
 
-    // Update booking payment status
-    await this.prisma.booking.update({
-      where: { id: booking.id },
-      data: {
-        paymentStatus: BookingPaymentStatus.FAILED,
-      },
-    });
-
-    this.logger.log(`Payment failed for booking ${booking.id} (Stripe: ${paymentIntent.id})`);
+    this.logger.log(`Payment failed for booking ${booking.id} (Stripe: ${paymentIntent.id}), seats released: ${booking.guestsCount}`);
   }
 
   /**
@@ -493,26 +608,75 @@ export class PaymentsService {
       return;
     }
 
-    // Update payment transaction
-    await this.prisma.paymentTransaction.updateMany({
-      where: {
-        bookingId,
-      },
-      data: {
-        status: 'FAILED',
-        providerData: event,
-      },
-    });
-
-    // Update booking payment status
-    await this.prisma.booking.update({
+    // Fetch booking with session details
+    const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
-      data: {
-        paymentStatus: BookingPaymentStatus.FAILED,
+      include: {
+        session: { include: { template: true } },
       },
     });
 
-    this.logger.log(`Payment failed for booking ${bookingId} (CMI: ${event.transactionId})`);
+    if (!booking) {
+      this.logger.warn(`Booking not found: ${bookingId}`);
+      return;
+    }
+
+    // Guard: Check current booking status to prevent double-adjustment
+    if (booking.status === 'CANCELLED' || booking.paymentStatus === 'FAILED') {
+      this.logger.warn(`Booking ${bookingId} already cancelled or failed, skipping adjustment`);
+      return;
+    }
+
+    // Wrap in transaction: Update booking status to CANCELLED, increment available seats, mark payment as FAILED
+    await this.prisma.$transaction(async (tx) => {
+      // Mark payment transactions as FAILED
+      await tx.paymentTransaction.updateMany({
+        where: {
+          bookingId,
+        },
+        data: {
+          status: 'FAILED',
+          providerData: event,
+        },
+      });
+
+      // Update booking status to CANCELLED and payment status to FAILED
+      await tx.booking.update({
+        where: { id: bookingId },
+        data: {
+          status: 'CANCELLED',
+          paymentStatus: BookingPaymentStatus.FAILED,
+        },
+      });
+
+      // Increment available seats back to trip session
+      await tx.tripSession.update({
+        where: { id: booking.sessionId },
+        data: {
+          availableSeats: {
+            increment: booking.guestsCount,
+          },
+        },
+      });
+
+      // Add audit log entry
+      await tx.auditLog.create({
+        data: {
+          userId: booking.travelerId,
+          action: 'PAYMENT_FAILED',
+          resourceType: 'BOOKING',
+          resourceId: bookingId,
+          details: {
+            provider: 'CMI',
+            cmiTransactionId: event.transactionId,
+            reason: event.failureReason || 'CMI payment failed',
+            seatsReleased: booking.guestsCount,
+          },
+        },
+      });
+    });
+
+    this.logger.log(`Payment failed for booking ${bookingId} (CMI: ${event.transactionId}), seats released: ${booking.guestsCount}`);
   }
 
   /**
@@ -548,6 +712,152 @@ export class PaymentsService {
   }
 
   /**
+   * Handle CashPlus-specific webhook events
+   */
+  private async handleCashPlusWebhook(event: any) {
+    this.logger.log(`Processing CashPlus webhook event: ${event.status || 'unknown'}`);
+
+    const bookingId = event.orderId || event.metadata?.bookingId;
+    if (!bookingId) {
+      this.logger.warn('CashPlus webhook missing bookingId');
+      return;
+    }
+
+    // CashPlus event status mapping: SUCCESS, PENDING, FAILED
+    const status = event.status || event.eventStatus;
+
+    if (status === 'SUCCESS' || status === 'PAID') {
+      await this.handleCashPlusPaymentSuccess(event);
+    } else if (status === 'FAILED' || status === 'REJECTED') {
+      await this.handleCashPlusPaymentFailed(event);
+    } else {
+      this.logger.debug(`Unhandled CashPlus event status: ${status}`);
+    }
+  }
+
+  /**
+   * Handle CashPlus payment success
+   */
+  private async handleCashPlusPaymentSuccess(event: any) {
+    const bookingId = event.orderId || event.metadata?.bookingId;
+    if (!bookingId) {
+      this.logger.warn('CashPlus webhook missing bookingId for success');
+      return;
+    }
+
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { traveler: true, session: { include: { template: { include: { agency: { include: { wallet: true } } } } } } },
+    });
+
+    if (!booking) {
+      this.logger.warn(`Booking not found for CashPlus webhook: ${bookingId}`);
+      return;
+    }
+
+    // Update payment transaction
+    await this.prisma.paymentTransaction.updateMany({
+      where: {
+        bookingId,
+        transactionId: event.transactionId,
+      },
+      data: {
+        status: 'SUCCESS',
+        providerData: event,
+      },
+    });
+
+    // Transition booking to confirmed
+    await this.transitionBookingToConfirmed(bookingId, {
+      provider: 'CASHPLUS',
+      transactionId: event.transactionId,
+      amountReceived: event.amount,
+      orderId: event.orderId,
+    });
+  }
+
+  /**
+   * Handle CashPlus payment failed
+   */
+  private async handleCashPlusPaymentFailed(event: any) {
+    const bookingId = event.orderId || event.metadata?.bookingId;
+    if (!bookingId) {
+      this.logger.warn('CashPlus webhook missing bookingId for failure');
+      return;
+    }
+
+    // Fetch booking with session details
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        session: { include: { template: true } },
+      },
+    });
+
+    if (!booking) {
+      this.logger.warn(`Booking not found: ${bookingId}`);
+      return;
+    }
+
+    // Guard: Check current booking status to prevent double-adjustment
+    if (booking.status === 'CANCELLED' || booking.paymentStatus === 'FAILED') {
+      this.logger.warn(`Booking ${bookingId} already cancelled or failed, skipping adjustment`);
+      return;
+    }
+
+    // Wrap in transaction: Update booking status to CANCELLED, increment available seats, mark payment as FAILED
+    await this.prisma.$transaction(async (tx) => {
+      // Mark payment transactions as FAILED
+      await tx.paymentTransaction.updateMany({
+        where: {
+          bookingId,
+        },
+        data: {
+          status: 'FAILED',
+          providerData: event,
+        },
+      });
+
+      // Update booking status to CANCELLED and payment status to FAILED
+      await tx.booking.update({
+        where: { id: bookingId },
+        data: {
+          status: 'CANCELLED',
+          paymentStatus: BookingPaymentStatus.FAILED,
+        },
+      });
+
+      // Increment available seats back to trip session
+      await tx.tripSession.update({
+        where: { id: booking.sessionId },
+        data: {
+          availableSeats: {
+            increment: booking.guestsCount,
+          },
+        },
+      });
+
+      // Add audit log entry
+      await tx.auditLog.create({
+        data: {
+          userId: booking.travelerId,
+          action: 'PAYMENT_FAILED',
+          resourceType: 'BOOKING',
+          resourceId: bookingId,
+          details: {
+            provider: 'CashPlus',
+            cashplusTransactionId: event.transactionId,
+            reason: event.failureReason || 'CashPlus payment failed',
+            seatsReleased: booking.guestsCount,
+          },
+        },
+      });
+    });
+
+    this.logger.log(`Payment failed for booking ${bookingId} (CashPlus: ${event.transactionId}), seats released: ${booking.guestsCount}`);
+  }
+
+  /**
    * Transition booking to CONFIRMED state after successful payment
    * Updates booking status, payment status, and triggers confirmation notifications
    */
@@ -558,8 +868,7 @@ export class PaymentsService {
         traveler: true,
         session: {
           include: {
-            template: true,
-            agency: true,
+            template: { include: { agency: { include: { wallet: true } } } },
           },
         },
       },
@@ -582,17 +891,20 @@ export class PaymentsService {
     });
 
     // Create wallet transaction for agency commission/payment
-    if (booking.session?.agency?.walletId) {
-      await this.prisma.walletTransaction.create({
-        data: {
-          walletId: booking.session.agency.walletId,
-          amount: booking.totalPrice,
-          type: 'BOOKING',
-          reason: `Payment received for booking ${bookingId}`,
-          referenceId: bookingId,
-        },
-      });
+    const agencyWallet = booking.session?.template?.agency?.wallet;
+    if (!agencyWallet) {
+      throw new BadRequestException('Agency missing wallet');
     }
+
+    await this.prisma.walletTransaction.create({
+      data: {
+        walletId: agencyWallet.id,
+        amount: booking.totalAmount,
+        type: 'BOOKING',
+        reason: `Payment received for booking ${bookingId}`,
+        referenceId: bookingId,
+      },
+    });
 
     // Send payment confirmation email to traveler
     try {

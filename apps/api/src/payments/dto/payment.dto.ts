@@ -14,7 +14,7 @@ export class InitiatePaymentDto {
   @IsString()
   travelerName: string;
 
-  @IsEnum(['CMI', 'STRIPE', 'PAYPAL'])
+  @IsEnum(['CMI', 'STRIPE', 'CASHPLUS'])
   provider: string;
 }
 
@@ -25,7 +25,7 @@ export class VerifyPaymentDto {
   @IsString()
   bookingId: string;
 
-  @IsEnum(['CMI', 'STRIPE', 'PAYPAL'])
+  @IsEnum(['CMI', 'STRIPE', 'CASHPLUS'])
   provider: string;
 }
 
@@ -39,6 +39,6 @@ export class ProcessRefundDto {
   @IsNumber()
   amount: number;
 
-  @IsEnum(['CMI', 'STRIPE', 'PAYPAL'])
+  @IsEnum(['CMI', 'STRIPE', 'CASHPLUS'])
   provider: string;
 }

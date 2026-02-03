@@ -18,7 +18,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { CurrencyModule } from './currency/currency.module';
-import { WebSocketModule } from './websocket/websocket.module';
+// import { WebSocketModule } from './websocket/websocket.module';
 import { MessagesModule } from './messages/messages.module';
 
 @Module({
@@ -45,7 +45,7 @@ import { MessagesModule } from './messages/messages.module';
         WishlistModule,
         AnalyticsModule,
         CurrencyModule,
-        WebSocketModule,
+        // WebSocketModule,
         MessagesModule,
     ],
 })

@@ -33,6 +33,7 @@ export declare class UsersController {
         passwordResetTokenHash: string | null;
         passwordResetExpiresAt: Date | null;
         passwordResetSentAt: Date | null;
+        displayCurrency: string;
         createdAt: Date;
         updatedAt: Date;
     }>;

@@ -1,9 +1,10 @@
 import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { UserRole } from '@ouiboo/types';
 import { DatabaseService } from '../database/database.service';
-import { CreateBookingDto } from './dto/create-booking.dto';
+import { CreateBookingDto, PaymentMethodEnum } from './dto/create-booking.dto';
 import { EmailService } from '../email/email.service';
 import { UploadService } from '../upload/upload.service';
+import type { PaymentMethod } from '@ouiboo/database';
 
 const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
 
@@ -57,12 +58,22 @@ export class BookingsService {
                 throw new BadRequestException('Not enough seats available');
             }
 
-            // 3. Create booking
             // Re-fetch session with template/agency info for email notifications
             const sessionWithInfo = await tx.tripSession.findUnique({
                 where: { id: dto.sessionId },
                 include: { template: { include: { agency: true } } }
             });
+
+            // Map PaymentMethodEnum to PaymentMethod enum
+            const paymentMethodMap: Record<PaymentMethodEnum, PaymentMethod> = {
+              [PaymentMethodEnum.BANK_TRANSFER]: PaymentMethod.MANUAL,
+              [PaymentMethodEnum.CARD]: PaymentMethod.GATEWAY,
+              [PaymentMethodEnum.WALLET]: PaymentMethod.MANUAL,
+              [PaymentMethodEnum.MOBILE_MONEY]: PaymentMethod.GATEWAY,
+            };
+            const persistedPaymentMethod = dto.paymentMethod
+              ? paymentMethodMap[dto.paymentMethod]
+              : PaymentMethod.MANUAL;
 
             const booking = await tx.booking.create({
                 data: {
@@ -74,6 +85,7 @@ export class BookingsService {
                     fullName: dto.fullName,
                     phoneNumber: dto.phoneNumber,
                     documentNumber: dto.documentNumber,
+                    paymentMethod: persistedPaymentMethod,
                 },
             });
 

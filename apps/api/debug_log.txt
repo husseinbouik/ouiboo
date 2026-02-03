@@ -1,0 +1,33 @@
+
+> @ouiboo/api@0.0.1 start:dev
+> ts-node -T -r tsconfig-paths/register src/main.ts
+
+Error: Cannot find module '@nestjs/schedule'
+Require stack:
+- C:\Users\MVpro\Documents\GitHub\ouiboo\apps\api\src\notifications\notifications.module.ts
+- C:\Users\MVpro\Documents\GitHub\ouiboo\apps\api\src\app.module.ts
+- C:\Users\MVpro\Documents\GitHub\ouiboo\apps\api\src\main.ts
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1421:15)
+    at Module._resolveFilename.sharedData.moduleResolveFilenameHook.installedValue (C:\Users\MVpro\Documents\GitHub\ouiboo\node_modules\@cspotcode\source-map-support\source-map-support.js:811:30)
+    at Module._resolveFilename (C:\Users\MVpro\Documents\GitHub\ouiboo\apps\api\node_modules\tsconfig-paths\src\register.ts:115:36)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1059:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1064:22)
+    at Module._load (node:internal/modules/cjs/loader:1227:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+    at Module.require (node:internal/modules/cjs/loader:1504:12)
+    at require (node:internal/modules/helpers:152:16) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\MVpro\\Documents\\GitHub\\ouiboo\\apps\\api\\src\\notifications\\notifications.module.ts',
+    'C:\\Users\\MVpro\\Documents\\GitHub\\ouiboo\\apps\\api\\src\\app.module.ts',
+    'C:\\Users\\MVpro\\Documents\\GitHub\\ouiboo\\apps\\api\\src\\main.ts'
+  ]
+}
+npm error Lifecycle script `start:dev` failed with error:
+npm error code 1
+npm error path C:\Users\MVpro\Documents\GitHub\ouiboo\apps\api
+npm error workspace @ouiboo/api@0.0.1
+npm error location C:\Users\MVpro\Documents\GitHub\ouiboo\apps\api
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c ts-node -T -r tsconfig-paths/register src/main.ts

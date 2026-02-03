@@ -1,0 +1,100 @@
+
+> dev
+> turbo dev
+
+turbo 2.6.1
+
+• Packages in scope: @ouiboo/admin, @ouiboo/agency, @ouiboo/api, @ouiboo/api-client, @ouiboo/database, @ouiboo/landing, @ouiboo/schemas, @ouiboo/traveler, @ouiboo/types, @ouiboo/ui, @ouiboo/utils
+• Running dev in 11 packages
+• Remote caching disabled
+@ouiboo/admin:dev: cache bypass, force executing eee7afe277f501a6
+@ouiboo/agency:dev: cache bypass, force executing 78cf082ab8808c21
+@ouiboo/traveler:dev: cache bypass, force executing 9b8d37a495818d0a
+@ouiboo/landing:dev: cache bypass, force executing cb088fef156acba0
+@ouiboo/api:dev: cache bypass, force executing 721197eaf099a985
+@ouiboo/admin:dev: 
+@ouiboo/admin:dev: > @ouiboo/admin@0.1.0 dev
+@ouiboo/admin:dev: > next dev -p 3003
+@ouiboo/admin:dev: 
+@ouiboo/agency:dev: 
+@ouiboo/agency:dev: > @ouiboo/agency@0.1.0 dev
+@ouiboo/agency:dev: > next dev -p 3002
+@ouiboo/agency:dev: 
+@ouiboo/traveler:dev: 
+@ouiboo/traveler:dev: > @ouiboo/traveler@0.1.0 dev
+@ouiboo/traveler:dev: > next dev -p 3001
+@ouiboo/traveler:dev: 
+@ouiboo/api:dev: 
+@ouiboo/api:dev: > @ouiboo/api@0.0.1 dev
+@ouiboo/api:dev: > npm run start:dev
+@ouiboo/api:dev: 
+@ouiboo/landing:dev: 
+@ouiboo/landing:dev: > @ouiboo/landing@0.1.0 dev
+@ouiboo/landing:dev: > next dev -p 3004
+@ouiboo/landing:dev: 
+@ouiboo/api:dev: 
+@ouiboo/api:dev: > @ouiboo/api@0.0.1 start:dev
+@ouiboo/api:dev: > ts-node -T -r tsconfig-paths/register src/main.ts
+@ouiboo/api:dev: 
+@ouiboo/traveler:dev:  ⨯ Failed to start server
+@ouiboo/traveler:dev: Error: listen EADDRINUSE: address already in use :::3001
+@ouiboo/traveler:dev:     at <unknown> (Error: listen EADDRINUSE: address already in use :::3001)
+@ouiboo/traveler:dev:     at new Promise (<anonymous>) {
+@ouiboo/traveler:dev:   code: 'EADDRINUSE',
+@ouiboo/traveler:dev:   errno: -4091,
+@ouiboo/traveler:dev:   syscall: 'listen',
+@ouiboo/traveler:dev:   address: '::',
+@ouiboo/traveler:dev:   port: 3001
+@ouiboo/traveler:dev: }
+@ouiboo/agency:dev:  ⨯ Failed to start server
+@ouiboo/agency:dev: Error: listen EADDRINUSE: address already in use :::3002
+@ouiboo/agency:dev:     at <unknown> (Error: listen EADDRINUSE: address already in use :::3002)
+@ouiboo/agency:dev:     at new Promise (<anonymous>) {
+@ouiboo/agency:dev:   code: 'EADDRINUSE',
+@ouiboo/agency:dev:   errno: -4091,
+@ouiboo/agency:dev:   syscall: 'listen',
+@ouiboo/agency:dev:   address: '::',
+@ouiboo/agency:dev:   port: 3002
+@ouiboo/agency:dev: }
+@ouiboo/landing:dev:  ⨯ Failed to start server
+@ouiboo/admin:dev:  ⨯ Failed to start server
+@ouiboo/landing:dev: Error: listen EADDRINUSE: address already in use :::3004
+@ouiboo/landing:dev:     at <unknown> (Error: listen EADDRINUSE: address already in use :::3004)
+@ouiboo/landing:dev:     at new Promise (<anonymous>) {
+@ouiboo/landing:dev:   code: 'EADDRINUSE',
+@ouiboo/landing:dev:   errno: -4091,
+@ouiboo/landing:dev:   syscall: 'listen',
+@ouiboo/landing:dev:   address: '::',
+@ouiboo/landing:dev:   port: 3004
+@ouiboo/landing:dev: }
+@ouiboo/admin:dev: Error: listen EADDRINUSE: address already in use :::3003
+@ouiboo/admin:dev:     at <unknown> (Error: listen EADDRINUSE: address already in use :::3003)
+@ouiboo/admin:dev:     at new Promise (<anonymous>) {
+@ouiboo/admin:dev:   code: 'EADDRINUSE',
+@ouiboo/admin:dev:   errno: -4091,
+@ouiboo/admin:dev:   syscall: 'listen',
+@ouiboo/admin:dev:   address: '::',
+@ouiboo/admin:dev:   port: 3003
+@ouiboo/admin:dev: }
+@ouiboo/traveler:dev: [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+@ouiboo/agency:dev: [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+@ouiboo/landing:dev: [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+@ouiboo/admin:dev: [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+@ouiboo/traveler:dev: [?25h
+@ouiboo/agency:dev: [?25h
+@ouiboo/traveler:dev: npm error Lifecycle script `dev` failed with error:
+@ouiboo/traveler:dev: npm error code 1
+@ouiboo/traveler:dev: npm error path C:\Users\MVpro\Documents\GitHub\ouiboo\apps\traveler
+@ouiboo/traveler:dev: npm error workspace @ouiboo/traveler@0.1.0
+@ouiboo/traveler:dev: npm error location C:\Users\MVpro\Documents\GitHub\ouiboo\apps\traveler
+@ouiboo/traveler:dev: npm error command failed
+@ouiboo/traveler:dev: npm error command C:\WINDOWS\system32\cmd.exe /d /s /c next dev -p 3001
+@ouiboo/traveler:dev: ERROR: command finished with error: command (C:\Users\MVpro\Documents\GitHub\ouiboo\apps\traveler) C:\Program Files\nodejs\npm.cmd run dev exited (1)
+@ouiboo/traveler#dev: command (C:\Users\MVpro\Documents\GitHub\ouiboo\apps\traveler) C:\Program Files\nodejs\npm.cmd run dev exited (1)
+
+ Tasks:    0 successful, 5 total
+Cached:    0 cached, 5 total
+  Time:    6.406s 
+Failed:    @ouiboo/traveler#dev
+
+ ERROR  run failed: command  exited (1)

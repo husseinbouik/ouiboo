@@ -68,6 +68,8 @@ export class PaymentsController {
       signature = headers['stripe-signature'];
     } else if (provider.toLowerCase() === 'cmi') {
       signature = headers['x-signature'] || headers['x-cmi-signature'];
+    } else if (provider.toLowerCase() === 'cashplus') {
+      signature = headers['x-signature'] || headers['x-cashplus-signature'];
     } else {
       signature = headers['x-signature'];
     }

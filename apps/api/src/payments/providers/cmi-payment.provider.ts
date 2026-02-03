@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   PaymentSession,
   PaymentVerificationResult,
   PaymentProvider,
 } from '../interfaces/payment-provider.interface';
+import axios, { AxiosInstance } from 'axios';
+import * as crypto from 'crypto';
 
 /**
  * CMI Payment Gateway Provider
@@ -15,12 +17,15 @@ export class CMIPaymentProvider implements PaymentProvider {
   private apiKey: string;
   private baseUrl: string;
   private callbackUrl: string;
+  private http: AxiosInstance;
+  private readonly logger = new Logger(CMIPaymentProvider.name);
 
   constructor() {
     this.merchantId = process.env.CMI_MERCHANT_ID || '';
     this.apiKey = process.env.CMI_API_KEY || '';
     this.baseUrl = process.env.CMI_BASE_URL || 'https://api.cmipay.com';
     this.callbackUrl = process.env.CMI_CALLBACK_URL || '';
+    this.http = axios.create({ baseURL: this.baseUrl, timeout: 10000 });
   }
 
   async initiatePayment(
@@ -135,9 +140,37 @@ export class CMIPaymentProvider implements PaymentProvider {
   }
 
   private async callCMIAPI(endpoint: string, data: any): Promise<any> {
-    // TODO: Implement actual HTTP calls to CMI API
-    // This is a placeholder for the actual implementation
-    console.log(`CMI API Call: ${this.baseUrl}${endpoint}`, data);
-    throw new Error('CMI API implementation not complete');
+    try {
+      const url = `${this.baseUrl}${endpoint}`;
+
+      // Build payload and signature (HMAC-SHA256 of payload using apiKey)
+      const payload = typeof data === 'string' ? data : JSON.stringify(data || {});
+      const signature = this.apiKey
+        ? crypto.createHmac('sha256', this.apiKey).update(payload).digest('hex')
+        : '';
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (this.merchantId) headers['X-Merchant-Id'] = this.merchantId;
+      if (this.apiKey) headers['X-Api-Key'] = this.apiKey;
+      if (signature) headers['X-Signature'] = signature;
+
+      this.logger.debug(`Calling CMI ${url}`);
+
+      const res = await this.http.post(endpoint, data, { headers });
+
+      if (!res || !res.data) {
+        throw new Error('Empty response from CMI');
+      }
+
+      const body = res.data;
+
+      return body;
+    } catch (err: any) {
+      this.logger.error('CMI API error', err?.message || err);
+      throw err;
+    }
   }
 }

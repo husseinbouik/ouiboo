@@ -30,8 +30,23 @@ let TripsController = class TripsController {
         console.log('Creating trip template with data:', JSON.stringify(createTripDto, null, 2));
         return this.tripsService.createTemplate(req.tenantId, createTripDto);
     }
-    findAll(featured, status) {
-        return this.tripsService.findAllTemplates(featured === 'true', status);
+    findAll(featured, status, priceMin, priceMax, durationMin, durationMax, startDateFrom, startDateTo, ratingMin, available, sortBy, sortOrder, page, limit) {
+        return this.tripsService.findAllTemplates({
+            featured: featured === 'true',
+            status,
+            priceMin: priceMin ? parseFloat(priceMin) : undefined,
+            priceMax: priceMax ? parseFloat(priceMax) : undefined,
+            durationMin: durationMin ? parseInt(durationMin) : undefined,
+            durationMax: durationMax ? parseInt(durationMax) : undefined,
+            startDateFrom: startDateFrom ? new Date(startDateFrom) : undefined,
+            startDateTo: startDateTo ? new Date(startDateTo) : undefined,
+            ratingMin: ratingMin ? parseFloat(ratingMin) : undefined,
+            available: available === 'true',
+            sortBy: sortBy || 'createdAt',
+            sortOrder: (sortOrder || 'desc').toLowerCase(),
+            page: page ? parseInt(page) : 1,
+            limit: limit ? parseInt(limit) : 20,
+        });
     }
     findOne(id) {
         console.log('[TripsController] Finding trip with ID:', id);
@@ -66,11 +81,23 @@ __decorate([
 ], TripsController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
-    (0, swagger_1.ApiOperation)({ summary: 'Get all trip templates' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Get all trip templates with advanced filters' }),
     __param(0, (0, common_1.Query)('featured')),
     __param(1, (0, common_1.Query)('status')),
+    __param(2, (0, common_1.Query)('priceMin')),
+    __param(3, (0, common_1.Query)('priceMax')),
+    __param(4, (0, common_1.Query)('durationMin')),
+    __param(5, (0, common_1.Query)('durationMax')),
+    __param(6, (0, common_1.Query)('startDateFrom')),
+    __param(7, (0, common_1.Query)('startDateTo')),
+    __param(8, (0, common_1.Query)('ratingMin')),
+    __param(9, (0, common_1.Query)('available')),
+    __param(10, (0, common_1.Query)('sortBy')),
+    __param(11, (0, common_1.Query)('sortOrder')),
+    __param(12, (0, common_1.Query)('page')),
+    __param(13, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, String, String, String, String, String, String, String, String, String, String, String, String]),
     __metadata("design:returntype", void 0)
 ], TripsController.prototype, "findAll", null);
 __decorate([

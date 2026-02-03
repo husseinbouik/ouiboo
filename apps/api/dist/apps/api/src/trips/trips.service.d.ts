@@ -29,45 +29,58 @@ export declare class TripsService {
         images: string[];
         status: import("@ouiboo/database").$Enums.TripStatus;
         featured: boolean;
+        averageRating: number | null;
+        reviewCount: number;
+        lastReviewDate: Date | null;
+        cancellationPolicy: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
+        minBookings: number;
     }>;
-    findAllTemplates(featured?: boolean, status?: string): Promise<({
-        _count: {
-            sessions: number;
-        };
-        agency: {
+    findAllTemplates(filters?: {
+        featured?: boolean;
+        status?: string;
+        priceMin?: number;
+        priceMax?: number;
+        durationMin?: number;
+        durationMax?: number;
+        startDateFrom?: Date;
+        startDateTo?: Date;
+        ratingMin?: number;
+        available?: boolean;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+        page?: number;
+        limit?: number;
+    }): Promise<{
+        data: {
+            description: string;
+            title: string;
             id: string;
-            companyName: string;
-            logo: string;
-        };
-        sessions: {
-            id: string;
-            status: string;
-            startDate: Date;
-            endDate: Date;
-            price: number;
-            deposit: number;
-            totalSeats: number;
-            templateId: string;
-            availableSeats: number;
+            createdAt: Date;
+            updatedAt: Date;
+            agencyId: string;
+            category: import("@ouiboo/database").$Enums.TripCategory;
+            startLocation: string;
+            durationDays: number;
+            durationNights: number;
+            inclusions: string[];
+            exclusions: string[];
+            checklist: string[];
+            images: string[];
+            status: import("@ouiboo/database").$Enums.TripStatus;
+            featured: boolean;
+            averageRating: number | null;
+            reviewCount: number;
+            lastReviewDate: Date | null;
+            cancellationPolicy: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
+            minBookings: number;
         }[];
-    } & {
-        description: string;
-        title: string;
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        agencyId: string;
-        category: import("@ouiboo/database").$Enums.TripCategory;
-        startLocation: string;
-        durationDays: number;
-        durationNights: number;
-        inclusions: string[];
-        exclusions: string[];
-        checklist: string[];
-        images: string[];
-        status: import("@ouiboo/database").$Enums.TripStatus;
-        featured: boolean;
-    })[]>;
+        pagination: {
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
+        };
+    }>;
     findOneTemplate(id: string): Promise<{
         agency: {
             id: string;
@@ -94,14 +107,19 @@ export declare class TripsService {
         }[];
         sessions: {
             id: string;
-            status: string;
+            createdAt: Date;
+            updatedAt: Date;
+            status: import("@ouiboo/database").$Enums.SessionStatus;
             startDate: Date;
             endDate: Date;
             price: number;
             deposit: number;
             totalSeats: number;
+            minBookings: number;
             templateId: string;
             availableSeats: number;
+            currency: string;
+            cancellationReason: string | null;
         }[];
     } & {
         description: string;
@@ -120,28 +138,43 @@ export declare class TripsService {
         images: string[];
         status: import("@ouiboo/database").$Enums.TripStatus;
         featured: boolean;
+        averageRating: number | null;
+        reviewCount: number;
+        lastReviewDate: Date | null;
+        cancellationPolicy: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
+        minBookings: number;
     }>;
     createSession(agencyId: string, templateId: string, dto: CreateTripSessionDto): Promise<{
         id: string;
-        status: string;
+        createdAt: Date;
+        updatedAt: Date;
+        status: import("@ouiboo/database").$Enums.SessionStatus;
         startDate: Date;
         endDate: Date;
         price: number;
         deposit: number;
         totalSeats: number;
+        minBookings: number;
         templateId: string;
         availableSeats: number;
+        currency: string;
+        cancellationReason: string | null;
     }>;
     findSessionsByTemplate(templateId: string): Promise<{
         id: string;
-        status: string;
+        createdAt: Date;
+        updatedAt: Date;
+        status: import("@ouiboo/database").$Enums.SessionStatus;
         startDate: Date;
         endDate: Date;
         price: number;
         deposit: number;
         totalSeats: number;
+        minBookings: number;
         templateId: string;
         availableSeats: number;
+        currency: string;
+        cancellationReason: string | null;
     }[]>;
     updateTemplate(id: string, agencyId: string, dto: Partial<CreateTripTemplateDto>): Promise<{
         itinerary: {
@@ -169,6 +202,11 @@ export declare class TripsService {
         images: string[];
         status: import("@ouiboo/database").$Enums.TripStatus;
         featured: boolean;
+        averageRating: number | null;
+        reviewCount: number;
+        lastReviewDate: Date | null;
+        cancellationPolicy: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
+        minBookings: number;
     }>;
     deleteTemplate(id: string, agencyId: string): Promise<{
         description: string;
@@ -187,5 +225,10 @@ export declare class TripsService {
         images: string[];
         status: import("@ouiboo/database").$Enums.TripStatus;
         featured: boolean;
+        averageRating: number | null;
+        reviewCount: number;
+        lastReviewDate: Date | null;
+        cancellationPolicy: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
+        minBookings: number;
     }>;
 }

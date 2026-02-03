@@ -1,10 +1,10 @@
 import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '@ouiboo/database';
+import { DatabaseService } from '../database/database.service';
 import { SendMessageDto } from './dto/send-message.dto';
 
 @Injectable()
 export class MessagesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: DatabaseService) {}
 
   /**
    * Send a message

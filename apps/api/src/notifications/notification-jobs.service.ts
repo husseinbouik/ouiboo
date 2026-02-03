@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { PrismaService } from '@ouiboo/database';
+import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
 import { NotificationType } from '@prisma/client';
 
@@ -9,7 +9,7 @@ export class NotificationJobsService {
   private readonly logger = new Logger(NotificationJobsService.name);
 
   constructor(
-    private prisma: PrismaService,
+    private prisma: DatabaseService,
     private emailService: EmailService,
   ) {}
 

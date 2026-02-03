@@ -1,10 +1,10 @@
 import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '@ouiboo/database';
+import { DatabaseService } from '../database/database.service';
 import { CreateReviewDto, UpdateReviewDto, ReviewResponseDto } from './dto/create-review.dto';
 
 @Injectable()
 export class ReviewsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: DatabaseService) {}
 
   /**
    * Create a review for a completed booking

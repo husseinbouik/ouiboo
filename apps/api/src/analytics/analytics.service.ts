@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@ouiboo/database';
+import { DatabaseService } from '../database/database.service';
 
 @Injectable()
 export class AnalyticsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: DatabaseService) {}
 
   /**
    * Get revenue trends for agency

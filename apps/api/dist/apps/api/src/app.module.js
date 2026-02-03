@@ -21,6 +21,13 @@ const admin_module_1 = require("./admin/admin.module");
 const wallets_module_1 = require("./wallets/wallets.module");
 const email_module_1 = require("./email/email.module");
 const health_module_1 = require("./health/health.module");
+const payments_module_1 = require("./payments/payments.module");
+const notifications_module_1 = require("./notifications/notifications.module");
+const reviews_module_1 = require("./reviews/reviews.module");
+const wishlist_module_1 = require("./wishlist/wishlist.module");
+const analytics_module_1 = require("./analytics/analytics.module");
+const currency_module_1 = require("./currency/currency.module");
+const messages_module_1 = require("./messages/messages.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -42,6 +49,13 @@ exports.AppModule = AppModule = __decorate([
             wallets_module_1.WalletsModule,
             email_module_1.EmailModule,
             health_module_1.HealthModule,
+            payments_module_1.PaymentsModule,
+            notifications_module_1.NotificationsModule,
+            reviews_module_1.ReviewsModule,
+            wishlist_module_1.WishlistModule,
+            analytics_module_1.AnalyticsModule,
+            currency_module_1.CurrencyModule,
+            messages_module_1.MessagesModule,
         ],
     })
 ], AppModule);

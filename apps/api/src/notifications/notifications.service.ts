@@ -1,10 +1,10 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '@ouiboo/database';
+import { DatabaseService } from '../database/database.service';
 import { NotificationPreferenceDto } from './dto/notification-preference.dto';
 
 @Injectable()
 export class NotificationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: DatabaseService) {}
 
   /**
    * Get notification preferences for a user

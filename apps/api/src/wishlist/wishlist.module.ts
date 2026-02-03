@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { DatabaseModule } from '@ouiboo/database';
+import { DatabaseModule } from '../database/database.module';
 import { WishlistService } from './wishlist.service';
 import { WishlistController } from './wishlist.controller';
 

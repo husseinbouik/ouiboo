@@ -30,17 +30,27 @@ export declare class AdminController {
                     images: string[];
                     status: import("@ouiboo/database").$Enums.TripStatus;
                     featured: boolean;
+                    averageRating: number | null;
+                    reviewCount: number;
+                    lastReviewDate: Date | null;
+                    cancellationPolicy: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
+                    minBookings: number;
                 };
             } & {
                 id: string;
-                status: string;
+                createdAt: Date;
+                updatedAt: Date;
+                status: import("@ouiboo/database").$Enums.SessionStatus;
                 startDate: Date;
                 endDate: Date;
                 price: number;
                 deposit: number;
                 totalSeats: number;
+                minBookings: number;
                 templateId: string;
                 availableSeats: number;
+                currency: string;
+                cancellationReason: string | null;
             };
             traveler: {
                 email: string;
@@ -56,21 +66,36 @@ export declare class AdminController {
                 passwordResetTokenHash: string | null;
                 passwordResetExpiresAt: Date | null;
                 passwordResetSentAt: Date | null;
+                displayCurrency: string;
                 createdAt: Date;
                 updatedAt: Date;
             };
         } & {
             id: string;
+            createdAt: Date;
+            updatedAt: Date;
             status: import("@ouiboo/database").$Enums.BookingStatus;
+            cancellationReason: string | null;
             sessionId: string;
             guestsCount: number;
             fullName: string | null;
             phoneNumber: string | null;
             documentNumber: string | null;
+            paymentMethod: import("@ouiboo/database").$Enums.PaymentMethod;
             bookingDate: Date;
             totalAmount: number;
             paymentProofUrl: string | null;
             paymentProofId: string | null;
+            paymentGatewayTransactionId: string | null;
+            paymentGatewayMetadata: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
+            paymentStatus: import("@ouiboo/database").$Enums.BookingPaymentStatus;
+            lastReminderSentAt: Date | null;
+            notificationsSent: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
+            cancelledAt: Date | null;
+            cancelledBy: string | null;
+            refundAmount: number | null;
+            refundStatus: import("@ouiboo/database").$Enums.RefundStatus | null;
+            refundProcessedAt: Date | null;
             travelerId: string;
         };
         id: string;
@@ -103,6 +128,7 @@ export declare class AdminController {
             passwordResetTokenHash: string | null;
             passwordResetExpiresAt: Date | null;
             passwordResetSentAt: Date | null;
+            displayCurrency: string;
             createdAt: Date;
             updatedAt: Date;
         };
@@ -169,6 +195,11 @@ export declare class AdminController {
         images: string[];
         status: import("@ouiboo/database").$Enums.TripStatus;
         featured: boolean;
+        averageRating: number | null;
+        reviewCount: number;
+        lastReviewDate: Date | null;
+        cancellationPolicy: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
+        minBookings: number;
     })[]>;
     verifyTrip(req: any, id: string, status: 'ACTIVE' | 'ARCHIVED'): Promise<{
         description: string;
@@ -187,6 +218,11 @@ export declare class AdminController {
         images: string[];
         status: import("@ouiboo/database").$Enums.TripStatus;
         featured: boolean;
+        averageRating: number | null;
+        reviewCount: number;
+        lastReviewDate: Date | null;
+        cancellationPolicy: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
+        minBookings: number;
     }>;
     getAgencies(q?: string, verificationStatus?: string, subscriptionStatus?: string): import("@ouiboo/database").Prisma.PrismaPromise<({
         user: {
@@ -203,6 +239,7 @@ export declare class AdminController {
             passwordResetTokenHash: string | null;
             passwordResetExpiresAt: Date | null;
             passwordResetSentAt: Date | null;
+            displayCurrency: string;
             createdAt: Date;
             updatedAt: Date;
         };
@@ -266,17 +303,27 @@ export declare class AdminController {
                 images: string[];
                 status: import("@ouiboo/database").$Enums.TripStatus;
                 featured: boolean;
+                averageRating: number | null;
+                reviewCount: number;
+                lastReviewDate: Date | null;
+                cancellationPolicy: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
+                minBookings: number;
             };
         } & {
             id: string;
-            status: string;
+            createdAt: Date;
+            updatedAt: Date;
+            status: import("@ouiboo/database").$Enums.SessionStatus;
             startDate: Date;
             endDate: Date;
             price: number;
             deposit: number;
             totalSeats: number;
+            minBookings: number;
             templateId: string;
             availableSeats: number;
+            currency: string;
+            cancellationReason: string | null;
         };
         traveler: {
             email: string;
@@ -292,21 +339,36 @@ export declare class AdminController {
             passwordResetTokenHash: string | null;
             passwordResetExpiresAt: Date | null;
             passwordResetSentAt: Date | null;
+            displayCurrency: string;
             createdAt: Date;
             updatedAt: Date;
         };
     } & {
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         status: import("@ouiboo/database").$Enums.BookingStatus;
+        cancellationReason: string | null;
         sessionId: string;
         guestsCount: number;
         fullName: string | null;
         phoneNumber: string | null;
         documentNumber: string | null;
+        paymentMethod: import("@ouiboo/database").$Enums.PaymentMethod;
         bookingDate: Date;
         totalAmount: number;
         paymentProofUrl: string | null;
         paymentProofId: string | null;
+        paymentGatewayTransactionId: string | null;
+        paymentGatewayMetadata: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
+        paymentStatus: import("@ouiboo/database").$Enums.BookingPaymentStatus;
+        lastReminderSentAt: Date | null;
+        notificationsSent: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
+        cancelledAt: Date | null;
+        cancelledBy: string | null;
+        refundAmount: number | null;
+        refundStatus: import("@ouiboo/database").$Enums.RefundStatus | null;
+        refundProcessedAt: Date | null;
         travelerId: string;
     })[]>;
     getPayoutRequests(q?: string, status?: string): import("@ouiboo/database").Prisma.PrismaPromise<({
@@ -325,6 +387,7 @@ export declare class AdminController {
                 passwordResetTokenHash: string | null;
                 passwordResetExpiresAt: Date | null;
                 passwordResetSentAt: Date | null;
+                displayCurrency: string;
                 createdAt: Date;
                 updatedAt: Date;
             };

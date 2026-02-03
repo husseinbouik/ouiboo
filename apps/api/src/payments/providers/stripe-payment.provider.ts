@@ -1,10 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   PaymentSession,
   PaymentVerificationResult,
   PaymentProvider,
 } from '../interfaces/payment-provider.interface';
-import Stripe from 'stripe';
+
+let Stripe: any;
+try {
+  Stripe = require('stripe').default;
+} catch (err) {
+  // Stripe not installed; will fail at runtime if used
+}
 
 /**
  * Stripe Payment Provider
@@ -12,16 +18,25 @@ import Stripe from 'stripe';
  */
 @Injectable()
 export class StripePaymentProvider implements PaymentProvider {
-  private stripe: Stripe;
+  private stripe: any;
   private publishableKey: string;
   private callbackUrl: string;
+  private readonly logger = new Logger(StripePaymentProvider.name);
 
   constructor() {
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-      apiVersion: '2023-10-16',
-    });
-    this.publishableKey = process.env.STRIPE_PUBLISHABLE_KEY || '';
-    this.callbackUrl = process.env.STRIPE_CALLBACK_URL || '';
+    if (!Stripe) {
+      this.logger.warn('Stripe module not available. Install stripe: npm install stripe');
+    } else {
+      try {
+        this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+          apiVersion: '2023-10-16',
+        });
+        this.publishableKey = process.env.STRIPE_PUBLISHABLE_KEY || '';
+        this.callbackUrl = process.env.STRIPE_CALLBACK_URL || '';
+      } catch (err) {
+        this.logger.error('Failed to initialize Stripe', err);
+      }
+    }
   }
 
   async initiatePayment(

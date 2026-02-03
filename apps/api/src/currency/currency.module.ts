@@ -1,7 +1,7 @@
 // Currency module export
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
-import { DatabaseModule } from '@ouiboo/database';
+import { DatabaseModule } from '../database/database.module';
 import { CurrencyService } from './currency.service';
 import { CurrencyController } from './currency.controller';
 

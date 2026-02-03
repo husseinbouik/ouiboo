@@ -32,6 +32,7 @@ export declare class UsersService {
         passwordResetTokenHash: string | null;
         passwordResetExpiresAt: Date | null;
         passwordResetSentAt: Date | null;
+        displayCurrency: string;
         createdAt: Date;
         updatedAt: Date;
     }>;
@@ -80,6 +81,7 @@ export declare class UsersService {
         passwordResetTokenHash: string | null;
         passwordResetExpiresAt: Date | null;
         passwordResetSentAt: Date | null;
+        displayCurrency: string;
         createdAt: Date;
         updatedAt: Date;
     }>;

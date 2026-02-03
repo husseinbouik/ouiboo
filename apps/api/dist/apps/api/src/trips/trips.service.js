@@ -42,35 +42,109 @@ let TripsService = class TripsService {
         console.log(`[TripsService] Created template ${result.id} for agency ${agencyId}. Status: ${result.status}`);
         return result;
     }
-    async findAllTemplates(featured, status) {
+    async findAllTemplates(filters) {
         try {
-            const where = {};
+            const { featured, status, priceMin, priceMax, durationMin, durationMax, startDateFrom, startDateTo, ratingMin, available, sortBy = 'createdAt', sortOrder = 'desc', page = 1, limit = 20, } = filters || {};
+            const where = {
+                status: status || 'APPROVED',
+            };
             if (featured)
                 where.featured = true;
-            if (status)
-                where.status = status;
-            return await this.db.tripTemplate.findMany({
-                where,
-                include: {
-                    sessions: {
-                        where: {
-                            status: 'OPEN',
-                            startDate: { gte: new Date() }
+            if (durationMin !== undefined || durationMax !== undefined) {
+                where.durationDays = {};
+                if (durationMin !== undefined)
+                    where.durationDays.gte = durationMin;
+                if (durationMax !== undefined)
+                    where.durationDays.lte = durationMax;
+            }
+            if (ratingMin !== undefined) {
+                where.averageRating = { gte: ratingMin };
+            }
+            const sessionWhere = {
+                status: 'OPEN',
+                startDate: { gte: new Date() },
+            };
+            if (startDateFrom) {
+                sessionWhere.startDate.gte = startDateFrom;
+            }
+            if (startDateTo) {
+                sessionWhere.startDate.lte = startDateTo;
+            }
+            if (available) {
+                sessionWhere.availableSeats = { gt: 0 };
+            }
+            if (priceMin !== undefined || priceMax !== undefined) {
+                sessionWhere.price = {};
+                if (priceMin !== undefined)
+                    sessionWhere.price.gte = priceMin;
+                if (priceMax !== undefined)
+                    sessionWhere.price.lte = priceMax;
+            }
+            const orderBy = {};
+            if (sortBy === 'price') {
+                orderBy.sessions = { _count: sortOrder };
+            }
+            else if (sortBy === 'rating') {
+                orderBy.averageRating = sortOrder;
+            }
+            else if (sortBy === 'popularity') {
+                orderBy._count = { sessions: sortOrder };
+            }
+            else {
+                orderBy[sortBy] = sortOrder;
+            }
+            const skip = (page - 1) * limit;
+            const [templates, total] = await Promise.all([
+                this.db.tripTemplate.findMany({
+                    where,
+                    include: {
+                        sessions: {
+                            where: sessionWhere,
+                            orderBy: { startDate: 'asc' },
+                            take: 5,
                         },
-                        orderBy: { startDate: 'asc' }
+                        agency: {
+                            select: {
+                                companyName: true,
+                                logo: true,
+                                id: true,
+                            },
+                        },
+                        review: {
+                            select: { rating: true },
+                        },
+                        _count: {
+                            select: { sessions: true, review: true, wishlist: true },
+                        },
                     },
-                    agency: {
-                        select: {
-                            companyName: true,
-                            logo: true,
-                            id: true
-                        }
-                    },
-                    _count: {
-                        select: { sessions: true },
-                    },
+                    orderBy,
+                    skip,
+                    take: limit,
+                }),
+                this.db.tripTemplate.count({ where }),
+            ]);
+            let filtered = templates;
+            if (priceMin !== undefined || priceMax !== undefined) {
+                filtered = templates.filter(template => {
+                    if (template.sessions.length === 0)
+                        return false;
+                    const minPrice = Math.min(...template.sessions.map(s => s.price));
+                    if (priceMin !== undefined && minPrice < priceMin)
+                        return false;
+                    if (priceMax !== undefined && minPrice > priceMax)
+                        return false;
+                    return true;
+                });
+            }
+            return {
+                data: filtered,
+                pagination: {
+                    total,
+                    page,
+                    limit,
+                    totalPages: Math.ceil(total / limit),
                 },
-            });
+            };
         }
         catch (error) {
             console.error('Error in findAllTemplates:', error);

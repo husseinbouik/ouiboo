@@ -39,6 +39,8 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('virement');
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
+    const [onlineProvider, setOnlineProvider] = useState<'CMI' | 'CASHPLUS' | null>(null);
+    const [isInitiatingPayment, setIsInitiatingPayment] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [guestCount, setGuestCount] = useState(1);
   const [fullName, setFullName] = useState('');
@@ -140,6 +142,51 @@ export default function CheckoutPage() {
       setErrorMessage(error?.response?.data?.message || error?.message || 'Unable to complete booking');
     }
   });
+
+    const initiateGatewayPayment = async (provider: 'CMI' | 'CASHPLUS') => {
+        try {
+            setErrorMessage(null);
+            setIsInitiatingPayment(true);
+
+            if (!selectedSessionId) throw new Error('Session is required');
+            if (!fullName.trim() || !phoneNumber.trim() || !documentNumber.trim()) {
+                throw new Error('Guest contact details are required');
+            }
+
+            // Create booking first (same as manual flow) without uploading proof
+            const bookingRes = await apiClient.post('/bookings', {
+                sessionId: selectedSessionId,
+                guestsCount: guestCount,
+                fullName: fullName.trim(),
+                phoneNumber: phoneNumber.trim(),
+                documentNumber: documentNumber.trim(),
+            });
+            const booking = bookingRes.data;
+
+            // Initiate payment session for the booking
+            const initiateRes = await apiClient.post('/payments/initiate', {
+                bookingId: booking.id,
+                amount: totalPrice,
+                travelerEmail: phoneNumber.includes('@') ? phoneNumber : `${fullName.replace(/\s+/g, '').toLowerCase()}@example.com`,
+                travelerName: fullName,
+                provider,
+            });
+
+            const payload = initiateRes.data;
+            const redirectUrl = payload?.redirectUrl || payload?.paymentUrl || payload?.url;
+            if (!redirectUrl) {
+                // If no redirect provided, fallback to booking confirmation
+                router.push(`/checkout/confirmation?bookingId=${booking.id}&proof=0`);
+                return;
+            }
+
+            // Redirect browser to payment gateway
+            window.location.href = redirectUrl;
+        } catch (err: any) {
+            setErrorMessage(err?.response?.data?.message || err?.message || 'Unable to initiate payment');
+            setIsInitiatingPayment(false);
+        }
+    };
 
   const clearProof = () => {
     if (proofPreview) {
@@ -267,10 +314,51 @@ export default function CheckoutPage() {
 
                     <div className="space-y-8 pt-10 border-t">
                         <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black">2</div>
+                            <div className="h-10 w-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black">2</div>
+                            <h2 className="text-2xl font-black font-display">Online Payment</h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className={cn(
+                                "p-6 rounded-[2rem] border-2 cursor-pointer transition-all flex flex-col gap-4",
+                                onlineProvider === 'CMI' ? "border-primary bg-primary/5" : "border-border/50 hover:bg-muted/50"
+                            )} onClick={() => setOnlineProvider('CMI')}>
+                                <div className="flex justify-between items-center">
+                                    <Lock className="h-8 w-8 text-primary" />
+                                </div>
+                                <div>
+                                    <h4 className="font-black text-lg">Pay by Card (CMI)</h4>
+                                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Secure card payments via CMI</p>
+                                </div>
+                                <div className="pt-4">
+                                    <Button onClick={() => initiateGatewayPayment('CMI')} disabled={isInitiatingPayment} className="w-full">{isInitiatingPayment && onlineProvider === 'CMI' ? 'Redirecting...' : 'Pay with CMI'}</Button>
+                                </div>
+                            </div>
+
+                            <div className={cn(
+                                "p-6 rounded-[2rem] border-2 cursor-pointer transition-all flex flex-col gap-4",
+                                onlineProvider === 'CASHPLUS' ? "border-amber-500 bg-amber-50" : "border-border/50 hover:bg-muted/50"
+                            )} onClick={() => setOnlineProvider('CASHPLUS')}>
+                                <div className="flex justify-between items-center">
+                                    <Smartphone className="h-8 w-8 text-amber-500" />
+                                </div>
+                                <div>
+                                    <h4 className="font-black text-lg">CashPlus / Mobile (Online)</h4>
+                                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Initiate CashPlus payment flow</p>
+                                </div>
+                                <div className="pt-4">
+                                    <Button onClick={() => initiateGatewayPayment('CASHPLUS')} disabled={isInitiatingPayment} className="w-full">{isInitiatingPayment && onlineProvider === 'CASHPLUS' ? 'Redirecting...' : 'Pay with CashPlus'}</Button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-6 border-t" />
+
+                        <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black">3</div>
                             <h2 className="text-2xl font-black font-display">Manual Payment</h2>
                         </div>
-                        
+
                         <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div 
                                 onClick={() => setPaymentMethod('virement')}

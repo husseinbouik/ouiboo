@@ -1,9 +1,9 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '@ouiboo/database';
+import { DatabaseService } from '../database/database.service';
 
 @Injectable()
 export class WishlistService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: DatabaseService) {}
 
   /**
    * Add trip to wishlist

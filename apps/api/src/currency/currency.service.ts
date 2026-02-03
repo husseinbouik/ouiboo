@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@ouiboo/database';
+import { DatabaseService } from '../database/database.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
@@ -9,7 +9,7 @@ export class CurrencyService {
   private readonly supportedCurrencies = ['USD', 'EUR', 'GBP', 'AED', 'TND'];
   private readonly apiUrl = 'https://api.exchangerate-api.io/v4/latest';
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: DatabaseService) {}
 
   /**
    * Get current exchange rates

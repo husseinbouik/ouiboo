@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { DatabaseModule } from '@ouiboo/database';
+import { DatabaseModule } from '../database/database.module';
 import { ReviewsService } from './reviews.service';
 import { ReviewsController, TripsReviewsController, ReviewDetailController } from './reviews.controller';
 

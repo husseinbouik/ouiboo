@@ -24,9 +24,39 @@ export class TripsController {
     }
 
     @Get()
-    @ApiOperation({ summary: 'Get all trip templates' })
-    findAll(@Query('featured') featured?: string, @Query('status') status?: string) {
-        return this.tripsService.findAllTemplates(featured === 'true', status);
+    @ApiOperation({ summary: 'Get all trip templates with advanced filters' })
+    findAll(
+        @Query('featured') featured?: string,
+        @Query('status') status?: string,
+        @Query('priceMin') priceMin?: string,
+        @Query('priceMax') priceMax?: string,
+        @Query('durationMin') durationMin?: string,
+        @Query('durationMax') durationMax?: string,
+        @Query('startDateFrom') startDateFrom?: string,
+        @Query('startDateTo') startDateTo?: string,
+        @Query('ratingMin') ratingMin?: string,
+        @Query('available') available?: string,
+        @Query('sortBy') sortBy?: string,
+        @Query('sortOrder') sortOrder?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
+        return this.tripsService.findAllTemplates({
+            featured: featured === 'true',
+            status,
+            priceMin: priceMin ? parseFloat(priceMin) : undefined,
+            priceMax: priceMax ? parseFloat(priceMax) : undefined,
+            durationMin: durationMin ? parseInt(durationMin) : undefined,
+            durationMax: durationMax ? parseInt(durationMax) : undefined,
+            startDateFrom: startDateFrom ? new Date(startDateFrom) : undefined,
+            startDateTo: startDateTo ? new Date(startDateTo) : undefined,
+            ratingMin: ratingMin ? parseFloat(ratingMin) : undefined,
+            available: available === 'true',
+            sortBy: sortBy || 'createdAt',
+            sortOrder: (sortOrder || 'desc').toLowerCase() as 'asc' | 'desc',
+            page: page ? parseInt(page) : 1,
+            limit: limit ? parseInt(limit) : 20,
+        });
     }
 
     @Get(':id')
