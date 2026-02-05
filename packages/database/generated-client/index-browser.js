@@ -239,6 +239,7 @@ exports.Prisma.BookingScalarFieldEnum = {
   cancelledAt: 'cancelledAt',
   cancelledBy: 'cancelledBy',
   cancellationReason: 'cancellationReason',
+  confirmedAt: 'confirmedAt',
   refundAmount: 'refundAmount',
   refundStatus: 'refundStatus',
   refundProcessedAt: 'refundProcessedAt',
@@ -268,6 +269,7 @@ exports.Prisma.WalletTransactionScalarFieldEnum = {
   amount: 'amount',
   type: 'type',
   reason: 'reason',
+  referenceId: 'referenceId',
   createdAt: 'createdAt'
 };
 
@@ -475,7 +477,8 @@ exports.TransactionType = exports.$Enums.TransactionType = {
   CREDIT: 'CREDIT',
   DEBIT: 'DEBIT',
   REFUND: 'REFUND',
-  PAYMENT_GATEWAY: 'PAYMENT_GATEWAY'
+  PAYMENT_GATEWAY: 'PAYMENT_GATEWAY',
+  BOOKING: 'BOOKING'
 };
 
 exports.PayoutStatus = exports.$Enums.PayoutStatus = {

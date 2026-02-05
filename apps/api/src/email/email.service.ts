@@ -42,6 +42,7 @@ export class EmailService {
             }
         } else {
             this.logger.debug(`[MOCK EMAIL] To: ${to} | Subject: ${subject}`);
+            this.logger.debug(`[MOCK EMAIL BODY] ${html}`);
             // In a real zero-cost PROD env, we'd use a free tier like Resend or SendGrid.
             // For now, console logging suffices for "Proof of Logic".
         }

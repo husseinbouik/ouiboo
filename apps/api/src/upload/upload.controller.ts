@@ -43,7 +43,10 @@ export class UploadController {
             new ParseFilePipe({
                 validators: [
                     new MaxFileSizeValidator({ maxSize: MAX_UPLOAD_SIZE_BYTES }),
-                    new FileTypeValidator({ fileType: ALLOWED_MIME_TYPES_REGEX }),
+                    new FileTypeValidator({ 
+                        fileType: ALLOWED_MIME_TYPES_REGEX,
+                        fallbackToMimetype: true,
+                    }),
                 ],
                 errorHttpStatusCode: 400,
             }),

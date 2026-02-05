@@ -216,7 +216,8 @@ export const TransactionType: {
   CREDIT: 'CREDIT',
   DEBIT: 'DEBIT',
   REFUND: 'REFUND',
-  PAYMENT_GATEWAY: 'PAYMENT_GATEWAY'
+  PAYMENT_GATEWAY: 'PAYMENT_GATEWAY',
+  BOOKING: 'BOOKING'
 };
 
 export type TransactionType = (typeof TransactionType)[keyof typeof TransactionType]
@@ -9619,6 +9620,7 @@ export namespace Prisma {
     cancelledAt: Date | null
     cancelledBy: string | null
     cancellationReason: string | null
+    confirmedAt: Date | null
     refundAmount: number | null
     refundStatus: $Enums.RefundStatus | null
     refundProcessedAt: Date | null
@@ -9646,6 +9648,7 @@ export namespace Prisma {
     cancelledAt: Date | null
     cancelledBy: string | null
     cancellationReason: string | null
+    confirmedAt: Date | null
     refundAmount: number | null
     refundStatus: $Enums.RefundStatus | null
     refundProcessedAt: Date | null
@@ -9675,6 +9678,7 @@ export namespace Prisma {
     cancelledAt: number
     cancelledBy: number
     cancellationReason: number
+    confirmedAt: number
     refundAmount: number
     refundStatus: number
     refundProcessedAt: number
@@ -9716,6 +9720,7 @@ export namespace Prisma {
     cancelledAt?: true
     cancelledBy?: true
     cancellationReason?: true
+    confirmedAt?: true
     refundAmount?: true
     refundStatus?: true
     refundProcessedAt?: true
@@ -9743,6 +9748,7 @@ export namespace Prisma {
     cancelledAt?: true
     cancelledBy?: true
     cancellationReason?: true
+    confirmedAt?: true
     refundAmount?: true
     refundStatus?: true
     refundProcessedAt?: true
@@ -9772,6 +9778,7 @@ export namespace Prisma {
     cancelledAt?: true
     cancelledBy?: true
     cancellationReason?: true
+    confirmedAt?: true
     refundAmount?: true
     refundStatus?: true
     refundProcessedAt?: true
@@ -9888,6 +9895,7 @@ export namespace Prisma {
     cancelledAt: Date | null
     cancelledBy: string | null
     cancellationReason: string | null
+    confirmedAt: Date | null
     refundAmount: number | null
     refundStatus: $Enums.RefundStatus | null
     refundProcessedAt: Date | null
@@ -9936,6 +9944,7 @@ export namespace Prisma {
     cancelledAt?: boolean
     cancelledBy?: boolean
     cancellationReason?: boolean
+    confirmedAt?: boolean
     refundAmount?: boolean
     refundStatus?: boolean
     refundProcessedAt?: boolean
@@ -9969,6 +9978,7 @@ export namespace Prisma {
     cancelledAt?: boolean
     cancelledBy?: boolean
     cancellationReason?: boolean
+    confirmedAt?: boolean
     refundAmount?: boolean
     refundStatus?: boolean
     refundProcessedAt?: boolean
@@ -10000,6 +10010,7 @@ export namespace Prisma {
     cancelledAt?: boolean
     cancelledBy?: boolean
     cancellationReason?: boolean
+    confirmedAt?: boolean
     refundAmount?: boolean
     refundStatus?: boolean
     refundProcessedAt?: boolean
@@ -10048,6 +10059,7 @@ export namespace Prisma {
       cancelledAt: Date | null
       cancelledBy: string | null
       cancellationReason: string | null
+      confirmedAt: Date | null
       refundAmount: number | null
       refundStatus: $Enums.RefundStatus | null
       refundProcessedAt: Date | null
@@ -10471,6 +10483,7 @@ export namespace Prisma {
     readonly cancelledAt: FieldRef<"Booking", 'DateTime'>
     readonly cancelledBy: FieldRef<"Booking", 'String'>
     readonly cancellationReason: FieldRef<"Booking", 'String'>
+    readonly confirmedAt: FieldRef<"Booking", 'DateTime'>
     readonly refundAmount: FieldRef<"Booking", 'Float'>
     readonly refundStatus: FieldRef<"Booking", 'RefundStatus'>
     readonly refundProcessedAt: FieldRef<"Booking", 'DateTime'>
@@ -12794,6 +12807,7 @@ export namespace Prisma {
     amount: number | null
     type: $Enums.TransactionType | null
     reason: string | null
+    referenceId: string | null
     createdAt: Date | null
   }
 
@@ -12803,6 +12817,7 @@ export namespace Prisma {
     amount: number | null
     type: $Enums.TransactionType | null
     reason: string | null
+    referenceId: string | null
     createdAt: Date | null
   }
 
@@ -12812,6 +12827,7 @@ export namespace Prisma {
     amount: number
     type: number
     reason: number
+    referenceId: number
     createdAt: number
     _all: number
   }
@@ -12831,6 +12847,7 @@ export namespace Prisma {
     amount?: true
     type?: true
     reason?: true
+    referenceId?: true
     createdAt?: true
   }
 
@@ -12840,6 +12857,7 @@ export namespace Prisma {
     amount?: true
     type?: true
     reason?: true
+    referenceId?: true
     createdAt?: true
   }
 
@@ -12849,6 +12867,7 @@ export namespace Prisma {
     amount?: true
     type?: true
     reason?: true
+    referenceId?: true
     createdAt?: true
     _all?: true
   }
@@ -12945,6 +12964,7 @@ export namespace Prisma {
     amount: number
     type: $Enums.TransactionType
     reason: string
+    referenceId: string | null
     createdAt: Date
     _count: WalletTransactionCountAggregateOutputType | null
     _avg: WalletTransactionAvgAggregateOutputType | null
@@ -12973,6 +12993,7 @@ export namespace Prisma {
     amount?: boolean
     type?: boolean
     reason?: boolean
+    referenceId?: boolean
     createdAt?: boolean
     wallet?: boolean | WalletDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["walletTransaction"]>
@@ -12983,6 +13004,7 @@ export namespace Prisma {
     amount?: boolean
     type?: boolean
     reason?: boolean
+    referenceId?: boolean
     createdAt?: boolean
     wallet?: boolean | WalletDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["walletTransaction"]>
@@ -12993,6 +13015,7 @@ export namespace Prisma {
     amount?: boolean
     type?: boolean
     reason?: boolean
+    referenceId?: boolean
     createdAt?: boolean
   }
 
@@ -13014,6 +13037,7 @@ export namespace Prisma {
       amount: number
       type: $Enums.TransactionType
       reason: string
+      referenceId: string | null
       createdAt: Date
     }, ExtArgs["result"]["walletTransaction"]>
     composites: {}
@@ -13414,6 +13438,7 @@ export namespace Prisma {
     readonly amount: FieldRef<"WalletTransaction", 'Float'>
     readonly type: FieldRef<"WalletTransaction", 'TransactionType'>
     readonly reason: FieldRef<"WalletTransaction", 'String'>
+    readonly referenceId: FieldRef<"WalletTransaction", 'String'>
     readonly createdAt: FieldRef<"WalletTransaction", 'DateTime'>
   }
     
@@ -23531,6 +23556,7 @@ export namespace Prisma {
     cancelledAt: 'cancelledAt',
     cancelledBy: 'cancelledBy',
     cancellationReason: 'cancellationReason',
+    confirmedAt: 'confirmedAt',
     refundAmount: 'refundAmount',
     refundStatus: 'refundStatus',
     refundProcessedAt: 'refundProcessedAt',
@@ -23569,6 +23595,7 @@ export namespace Prisma {
     amount: 'amount',
     type: 'type',
     reason: 'reason',
+    referenceId: 'referenceId',
     createdAt: 'createdAt'
   };
 
@@ -24658,6 +24685,7 @@ export namespace Prisma {
     cancelledAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     cancelledBy?: StringNullableFilter<"Booking"> | string | null
     cancellationReason?: StringNullableFilter<"Booking"> | string | null
+    confirmedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     refundAmount?: FloatNullableFilter<"Booking"> | number | null
     refundStatus?: EnumRefundStatusNullableFilter<"Booking"> | $Enums.RefundStatus | null
     refundProcessedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -24691,6 +24719,7 @@ export namespace Prisma {
     cancelledAt?: SortOrderInput | SortOrder
     cancelledBy?: SortOrderInput | SortOrder
     cancellationReason?: SortOrderInput | SortOrder
+    confirmedAt?: SortOrderInput | SortOrder
     refundAmount?: SortOrderInput | SortOrder
     refundStatus?: SortOrderInput | SortOrder
     refundProcessedAt?: SortOrderInput | SortOrder
@@ -24727,6 +24756,7 @@ export namespace Prisma {
     cancelledAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     cancelledBy?: StringNullableFilter<"Booking"> | string | null
     cancellationReason?: StringNullableFilter<"Booking"> | string | null
+    confirmedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     refundAmount?: FloatNullableFilter<"Booking"> | number | null
     refundStatus?: EnumRefundStatusNullableFilter<"Booking"> | $Enums.RefundStatus | null
     refundProcessedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -24760,6 +24790,7 @@ export namespace Prisma {
     cancelledAt?: SortOrderInput | SortOrder
     cancelledBy?: SortOrderInput | SortOrder
     cancellationReason?: SortOrderInput | SortOrder
+    confirmedAt?: SortOrderInput | SortOrder
     refundAmount?: SortOrderInput | SortOrder
     refundStatus?: SortOrderInput | SortOrder
     refundProcessedAt?: SortOrderInput | SortOrder
@@ -24797,6 +24828,7 @@ export namespace Prisma {
     cancelledAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
     cancelledBy?: StringNullableWithAggregatesFilter<"Booking"> | string | null
     cancellationReason?: StringNullableWithAggregatesFilter<"Booking"> | string | null
+    confirmedAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
     refundAmount?: FloatNullableWithAggregatesFilter<"Booking"> | number | null
     refundStatus?: EnumRefundStatusNullableWithAggregatesFilter<"Booking"> | $Enums.RefundStatus | null
     refundProcessedAt?: DateTimeNullableWithAggregatesFilter<"Booking"> | Date | string | null
@@ -24928,6 +24960,7 @@ export namespace Prisma {
     amount?: FloatFilter<"WalletTransaction"> | number
     type?: EnumTransactionTypeFilter<"WalletTransaction"> | $Enums.TransactionType
     reason?: StringFilter<"WalletTransaction"> | string
+    referenceId?: StringNullableFilter<"WalletTransaction"> | string | null
     createdAt?: DateTimeFilter<"WalletTransaction"> | Date | string
     wallet?: XOR<WalletRelationFilter, WalletWhereInput>
   }
@@ -24938,6 +24971,7 @@ export namespace Prisma {
     amount?: SortOrder
     type?: SortOrder
     reason?: SortOrder
+    referenceId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     wallet?: WalletOrderByWithRelationInput
   }
@@ -24951,6 +24985,7 @@ export namespace Prisma {
     amount?: FloatFilter<"WalletTransaction"> | number
     type?: EnumTransactionTypeFilter<"WalletTransaction"> | $Enums.TransactionType
     reason?: StringFilter<"WalletTransaction"> | string
+    referenceId?: StringNullableFilter<"WalletTransaction"> | string | null
     createdAt?: DateTimeFilter<"WalletTransaction"> | Date | string
     wallet?: XOR<WalletRelationFilter, WalletWhereInput>
   }, "id">
@@ -24961,6 +24996,7 @@ export namespace Prisma {
     amount?: SortOrder
     type?: SortOrder
     reason?: SortOrder
+    referenceId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: WalletTransactionCountOrderByAggregateInput
     _avg?: WalletTransactionAvgOrderByAggregateInput
@@ -24978,6 +25014,7 @@ export namespace Prisma {
     amount?: FloatWithAggregatesFilter<"WalletTransaction"> | number
     type?: EnumTransactionTypeWithAggregatesFilter<"WalletTransaction"> | $Enums.TransactionType
     reason?: StringWithAggregatesFilter<"WalletTransaction"> | string
+    referenceId?: StringNullableWithAggregatesFilter<"WalletTransaction"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"WalletTransaction"> | Date | string
   }
 
@@ -26433,6 +26470,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancelledBy?: string | null
     cancellationReason?: string | null
+    confirmedAt?: Date | string | null
     refundAmount?: number | null
     refundStatus?: $Enums.RefundStatus | null
     refundProcessedAt?: Date | string | null
@@ -26466,6 +26504,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancelledBy?: string | null
     cancellationReason?: string | null
+    confirmedAt?: Date | string | null
     refundAmount?: number | null
     refundStatus?: $Enums.RefundStatus | null
     refundProcessedAt?: Date | string | null
@@ -26495,6 +26534,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancelledBy?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
     refundProcessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -26528,6 +26568,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancelledBy?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
     refundProcessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -26559,6 +26600,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancelledBy?: string | null
     cancellationReason?: string | null
+    confirmedAt?: Date | string | null
     refundAmount?: number | null
     refundStatus?: $Enums.RefundStatus | null
     refundProcessedAt?: Date | string | null
@@ -26586,6 +26628,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancelledBy?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
     refundProcessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -26615,6 +26658,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancelledBy?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
     refundProcessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -26741,6 +26785,7 @@ export namespace Prisma {
     amount: number
     type: $Enums.TransactionType
     reason: string
+    referenceId?: string | null
     createdAt?: Date | string
     wallet: WalletCreateNestedOneWithoutTransactionsInput
   }
@@ -26751,6 +26796,7 @@ export namespace Prisma {
     amount: number
     type: $Enums.TransactionType
     reason: string
+    referenceId?: string | null
     createdAt?: Date | string
   }
 
@@ -26759,6 +26805,7 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     reason?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     wallet?: WalletUpdateOneRequiredWithoutTransactionsNestedInput
   }
@@ -26769,6 +26816,7 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     reason?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -26778,6 +26826,7 @@ export namespace Prisma {
     amount: number
     type: $Enums.TransactionType
     reason: string
+    referenceId?: string | null
     createdAt?: Date | string
   }
 
@@ -26786,6 +26835,7 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     reason?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -26795,6 +26845,7 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     reason?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -28436,6 +28487,7 @@ export namespace Prisma {
     cancelledAt?: SortOrder
     cancelledBy?: SortOrder
     cancellationReason?: SortOrder
+    confirmedAt?: SortOrder
     refundAmount?: SortOrder
     refundStatus?: SortOrder
     refundProcessedAt?: SortOrder
@@ -28469,6 +28521,7 @@ export namespace Prisma {
     cancelledAt?: SortOrder
     cancelledBy?: SortOrder
     cancellationReason?: SortOrder
+    confirmedAt?: SortOrder
     refundAmount?: SortOrder
     refundStatus?: SortOrder
     refundProcessedAt?: SortOrder
@@ -28496,6 +28549,7 @@ export namespace Prisma {
     cancelledAt?: SortOrder
     cancelledBy?: SortOrder
     cancellationReason?: SortOrder
+    confirmedAt?: SortOrder
     refundAmount?: SortOrder
     refundStatus?: SortOrder
     refundProcessedAt?: SortOrder
@@ -28640,6 +28694,7 @@ export namespace Prisma {
     amount?: SortOrder
     type?: SortOrder
     reason?: SortOrder
+    referenceId?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -28653,6 +28708,7 @@ export namespace Prisma {
     amount?: SortOrder
     type?: SortOrder
     reason?: SortOrder
+    referenceId?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -28662,6 +28718,7 @@ export namespace Prisma {
     amount?: SortOrder
     type?: SortOrder
     reason?: SortOrder
+    referenceId?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -30808,6 +30865,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancelledBy?: string | null
     cancellationReason?: string | null
+    confirmedAt?: Date | string | null
     refundAmount?: number | null
     refundStatus?: $Enums.RefundStatus | null
     refundProcessedAt?: Date | string | null
@@ -30839,6 +30897,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancelledBy?: string | null
     cancellationReason?: string | null
+    confirmedAt?: Date | string | null
     refundAmount?: number | null
     refundStatus?: $Enums.RefundStatus | null
     refundProcessedAt?: Date | string | null
@@ -31062,6 +31121,7 @@ export namespace Prisma {
     cancelledAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     cancelledBy?: StringNullableFilter<"Booking"> | string | null
     cancellationReason?: StringNullableFilter<"Booking"> | string | null
+    confirmedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
     refundAmount?: FloatNullableFilter<"Booking"> | number | null
     refundStatus?: EnumRefundStatusNullableFilter<"Booking"> | $Enums.RefundStatus | null
     refundProcessedAt?: DateTimeNullableFilter<"Booking"> | Date | string | null
@@ -32211,6 +32271,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancelledBy?: string | null
     cancellationReason?: string | null
+    confirmedAt?: Date | string | null
     refundAmount?: number | null
     refundStatus?: $Enums.RefundStatus | null
     refundProcessedAt?: Date | string | null
@@ -32242,6 +32303,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancelledBy?: string | null
     cancellationReason?: string | null
+    confirmedAt?: Date | string | null
     refundAmount?: number | null
     refundStatus?: $Enums.RefundStatus | null
     refundProcessedAt?: Date | string | null
@@ -32670,6 +32732,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancelledBy?: string | null
     cancellationReason?: string | null
+    confirmedAt?: Date | string | null
     refundAmount?: number | null
     refundStatus?: $Enums.RefundStatus | null
     refundProcessedAt?: Date | string | null
@@ -32702,6 +32765,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancelledBy?: string | null
     cancellationReason?: string | null
+    confirmedAt?: Date | string | null
     refundAmount?: number | null
     refundStatus?: $Enums.RefundStatus | null
     refundProcessedAt?: Date | string | null
@@ -32746,6 +32810,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancelledBy?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
     refundProcessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -32778,6 +32843,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancelledBy?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
     refundProcessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -32832,6 +32898,7 @@ export namespace Prisma {
     amount: number
     type: $Enums.TransactionType
     reason: string
+    referenceId?: string | null
     createdAt?: Date | string
   }
 
@@ -32840,6 +32907,7 @@ export namespace Prisma {
     amount: number
     type: $Enums.TransactionType
     reason: string
+    referenceId?: string | null
     createdAt?: Date | string
   }
 
@@ -32925,6 +32993,7 @@ export namespace Prisma {
     amount?: FloatFilter<"WalletTransaction"> | number
     type?: EnumTransactionTypeFilter<"WalletTransaction"> | $Enums.TransactionType
     reason?: StringFilter<"WalletTransaction"> | string
+    referenceId?: StringNullableFilter<"WalletTransaction"> | string | null
     createdAt?: DateTimeFilter<"WalletTransaction"> | Date | string
   }
 
@@ -33080,6 +33149,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancelledBy?: string | null
     cancellationReason?: string | null
+    confirmedAt?: Date | string | null
     refundAmount?: number | null
     refundStatus?: $Enums.RefundStatus | null
     refundProcessedAt?: Date | string | null
@@ -33112,6 +33182,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancelledBy?: string | null
     cancellationReason?: string | null
+    confirmedAt?: Date | string | null
     refundAmount?: number | null
     refundStatus?: $Enums.RefundStatus | null
     refundProcessedAt?: Date | string | null
@@ -33268,6 +33339,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancelledBy?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
     refundProcessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -33300,6 +33372,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancelledBy?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
     refundProcessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -33922,6 +33995,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancelledBy?: string | null
     cancellationReason?: string | null
+    confirmedAt?: Date | string | null
     refundAmount?: number | null
     refundStatus?: $Enums.RefundStatus | null
     refundProcessedAt?: Date | string | null
@@ -33996,6 +34070,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancelledBy?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
     refundProcessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -34027,6 +34102,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancelledBy?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
     refundProcessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -34057,6 +34133,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancelledBy?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
     refundProcessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -34483,6 +34560,7 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
     cancelledBy?: string | null
     cancellationReason?: string | null
+    confirmedAt?: Date | string | null
     refundAmount?: number | null
     refundStatus?: $Enums.RefundStatus | null
     refundProcessedAt?: Date | string | null
@@ -34510,6 +34588,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancelledBy?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
     refundProcessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -34541,6 +34620,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancelledBy?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
     refundProcessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -34571,6 +34651,7 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancelledBy?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
     refundProcessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -34583,6 +34664,7 @@ export namespace Prisma {
     amount: number
     type: $Enums.TransactionType
     reason: string
+    referenceId?: string | null
     createdAt?: Date | string
   }
 
@@ -34591,6 +34673,7 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     reason?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -34599,6 +34682,7 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     reason?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -34607,6 +34691,7 @@ export namespace Prisma {
     amount?: FloatFieldUpdateOperationsInput | number
     type?: EnumTransactionTypeFieldUpdateOperationsInput | $Enums.TransactionType
     reason?: StringFieldUpdateOperationsInput | string
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

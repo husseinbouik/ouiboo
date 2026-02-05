@@ -117,6 +117,8 @@ export default function TravelerSignupPage() {
                     </div>
                     {errors.email && <span className="text-red-500 text-xs font-semibold pl-1">{errors.email.message as string}</span>}
                 </div>
+            </div>
+
 
               {/* Password Input */}
               <div className="space-y-2">
