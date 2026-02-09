@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
+  BarChart3,
   Map, 
   Calendar, 
   CreditCard,
@@ -13,7 +14,8 @@ import {
   LogOut,
   ChevronRight,
   PlusCircle,
-  ChevronLeft
+  ChevronLeft,
+  Star
 } from 'lucide-react';
 import { cn } from '@ouiboo/ui/utils';
 import { motion } from 'framer-motion';
@@ -29,8 +31,10 @@ export function AgencySidebar() {
 
   const navigation = [
     { name: t('sidebar.dashboard'), href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { name: t('sidebar.myTrips'), href: '/dashboard/trips', icon: Map },
     { name: t('sidebar.bookings'), href: '/dashboard/bookings', icon: Calendar },
+    { name: 'Reviews', href: '/dashboard/reviews', icon: Star },
     { name: 'Wallet & Payouts', href: '/dashboard/wallet', icon: CreditCard },
     { name: 'Compliance', href: '/dashboard/onboarding', icon: ShieldCheck },
     { name: t('sidebar.settings'), href: '/dashboard/settings', icon: Settings },

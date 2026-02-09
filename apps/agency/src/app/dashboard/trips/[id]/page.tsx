@@ -13,7 +13,9 @@ import {
   Trash,
   CheckCircle2,
   AlertCircle,
-  X
+  X,
+  Grid3x3,
+  List
 } from 'lucide-react';
 import { 
   Button, 
@@ -32,6 +34,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { BulkSessionCreationModal } from '@/components/BulkSessionCreationModal';
+import { SessionCalendarView } from '@/components/SessionCalendarView';
+import { EditSessionModal } from '@/components/EditSessionModal';
+import { DeleteConfirmation } from '@/components/DeleteConfirmation';
 
 function TripDetailSkeleton() {
   return (
@@ -45,23 +51,15 @@ function TripDetailSkeleton() {
   );
 }
 
-import { DeleteConfirmation } from '@/components/DeleteConfirmation';
-
 export default function TripDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = React.use(paramsPromise);
-  const [showAddSession, setShowAddSession] = useState(false);
+  const [showBulkSessionModal, setShowBulkSessionModal] = useState(false);
+  const [editingSession, setEditingSession] = useState<any>(null);
+  const [deletingSession, setDeletingSession] = useState<any>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const router = useRouter();
   const queryClient = useQueryClient();
-
-  const { register: registerSession, handleSubmit: handleSessionSubmit, reset: resetSession, formState: { errors: sessionErrors } } = useForm({
-    defaultValues: {
-        startDate: '',
-        endDate: '',
-        price: 0,
-        totalSeats: 20
-    }
-  });
 
   const { data: trip, isLoading, error } = useQuery({
     queryKey: ['trip', params.id],
@@ -91,22 +89,51 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
     }
   });
 
-  const createSessionMutation = useMutation({
-    mutationFn: async (data: any) => {
-        const response = await apiClient.post(`/trips/${params.id}/sessions`, data);
-        return response.data;
+  // Bulk session creation
+  const bulkCreateSessionMutation = useMutation({
+    mutationFn: async (sessions: any[]) => {
+      const results = await Promise.all(
+        sessions.map(session =>
+          apiClient.post(`/trips/${params.id}/sessions`, {
+            startDate: session.startDate,
+            endDate: session.endDate,
+            price: session.price,
+            deposit: session.deposit || 0,
+            totalSeats: session.totalSeats,
+            currency: session.currency
+          })
+        )
+      );
+      return results;
     },
     onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['trip', params.id] });
-        queryClient.invalidateQueries({ queryKey: ['agency-trips'] });
-        setShowAddSession(false);
-        resetSession();
+      queryClient.invalidateQueries({ queryKey: ['trip', params.id] });
+      setShowBulkSessionModal(false);
     }
   });
 
-  const onSessionSubmit = (data: any) => {
-    createSessionMutation.mutate(data);
-  };
+  // Edit session
+  const editSessionMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiClient.patch(`/trips/${params.id}/sessions/${editingSession.id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trip', params.id] });
+      setEditingSession(null);
+    }
+  });
+
+  // Delete session
+  const deleteSessionMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.delete(`/trips/${params.id}/sessions/${deletingSession.id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trip', params.id] });
+      setDeletingSession(null);
+      setDeleteConfirmOpen(false);
+    }
+  });
 
   const handleDelete = () => {
     setDeleteConfirmOpen(true);
@@ -116,6 +143,19 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
     if (!trip) return;
     const newStatus = trip.status === 'ACTIVE' ? 'DRAFT' : 'ACTIVE';
     updateStatusMutation.mutate(newStatus);
+  };
+
+  const handleEditSession = (session: any) => {
+    setEditingSession(session);
+  };
+
+  const handleDeleteSession = (session: any) => {
+    setDeletingSession(session);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleEditSessionSubmit = (data: any) => {
+    editSessionMutation.mutate(data);
   };
 
   if (isLoading) return <TripDetailSkeleton />;
@@ -205,138 +245,109 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
 
         {/* Scheduler / Sessions */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-2">
             <div>
               <h2 className="text-xl font-bold text-deep-blue dark:text-gray-100 flex items-center gap-2">
                  <CalendarIcon className="h-5 w-5 text-sunset-orange" />
-                 Trip Scheduler
+                 Trip Sessions
               </h2>
-              <p className="text-sm text-gray-500 mt-1">Add dates and prices to your trip template.</p>
+              <p className="text-sm text-gray-500 mt-1">Manage dates, prices, and capacity for your trip.</p>
             </div>
+          </div>
+
+          {/* Session Management Toolbar */}
+          <div className="flex items-center gap-3">
             <Button 
-              onClick={() => setShowAddSession(!showAddSession)} 
-              className="bg-deep-blue hover:bg-blue-900 dark:bg-blue-600 dark:hover:bg-blue-700 gap-2 shadow-lg shadow-blue-900/10"
+              onClick={() => setShowBulkSessionModal(true)} 
+              className="bg-deep-blue hover:bg-blue-900 dark:bg-blue-600 dark:hover:bg-blue-700 gap-2 shadow-lg shadow-blue-900/10 flex-1"
+              disabled={bulkCreateSessionMutation.isPending}
             >
-              <Plus className="h-4 w-4" /> {showAddSession ? 'Cancel' : 'Add Session'}
+              <Plus className="h-4 w-4" /> Bulk Create Sessions
             </Button>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-lg">
+              <button
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  'p-2 rounded transition-colors',
+                  viewMode === 'list'
+                    ? 'bg-white dark:bg-slate-900 text-deep-blue dark:text-blue-400 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                )}
+              >
+                <List className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('calendar')}
+                className={cn(
+                  'p-2 rounded transition-colors',
+                  viewMode === 'calendar'
+                    ? 'bg-white dark:bg-slate-900 text-deep-blue dark:text-blue-400 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                )}
+              >
+                <Grid3x3 className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
-          {showAddSession && (
-             <Card className="border-2 border-sunset-orange/20 shadow-xl animate-in slide-in-from-top-4 duration-300 dark:bg-slate-900 dark:border-slate-800">
-                <form onSubmit={handleSessionSubmit(onSessionSubmit)}>
-                    <CardHeader>
-                       <CardTitle>Schedule New Session</CardTitle>
-                       <CardDescription>Input dates, price, and available seats for this specific trip occurrence.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                             <Label htmlFor="startDate">Start Date</Label>
-                             <Input 
-                                id="startDate" 
-                                type="date" 
-                                {...registerSession('startDate', { required: true })}
-                                className="h-11 dark:bg-slate-800 dark:border-slate-700" 
-                             />
-                          </div>
-                          <div className="space-y-2">
-                             <Label htmlFor="endDate">End Date</Label>
-                             <Input 
-                                id="endDate" 
-                                type="date" 
-                                {...registerSession('endDate', { required: true })}
-                                className="h-11 dark:bg-slate-800 dark:border-slate-700" 
-                             />
-                          </div>
-                          <div className="space-y-2">
-                             <Label htmlFor="price">Price (per person)</Label>
-                             <div className="relative">
-                                <Input 
-                                    id="price" 
-                                    type="number" 
-                                    {...registerSession('price', { valueAsNumber: true, required: true, min: 1 })}
-                                    className="h-11 pr-12 dark:bg-slate-800 dark:border-slate-700" 
-                                    placeholder="0.00" 
-                                />
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 tracking-tighter">MAD</span>
-                             </div>
-                          </div>
-                          <div className="space-y-2">
-                             <Label htmlFor="seats">Total Seats</Label>
-                             <Input 
-                                id="seats" 
-                                type="number" 
-                                {...registerSession('totalSeats', { valueAsNumber: true, required: true, min: 1 })}
-                                className="h-11 dark:bg-slate-800 dark:border-slate-700" 
-                                placeholder="20" 
-                             />
-                          </div>
-                       </div>
-                       <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-slate-800">
-                          <Button type="button" variant="outline" onClick={() => setShowAddSession(false)}>Cancel</Button>
-                          <Button 
-                            type="submit" 
-                            disabled={createSessionMutation.isPending}
-                            className="bg-sunset-orange hover:bg-orange-600 px-8"
-                          >
-                            {createSessionMutation.isPending ? 'Creating...' : 'Create Session'}
-                          </Button>
-                       </div>
-                    </CardContent>
-                </form>
-             </Card>
-          )}
-
-          <div className="space-y-4">
-             {sessions.map((session: any) => (
-                <Card key={session.id} className="border-none shadow-sm hover:shadow-md transition-all duration-300 group dark:bg-slate-900 border dark:border-slate-800">
-                   <CardContent className="p-0">
-                      <div className="flex flex-col md:flex-row md:items-center p-6 gap-6">
-                         <div className="flex-1 space-y-1">
-                            <div className="flex items-center gap-3">
-                               <h3 className="font-bold text-lg text-deep-blue dark:text-gray-100">
-                                  {new Date(session.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - 
-                                  {new Date(session.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                               </h3>
-                               <Badge variant={session.status === 'OPEN' ? 'success' : 'destructive'} className="uppercase text-[10px]">
-                                  {session.status}
-                               </Badge>
-                            </div>
-                            <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                               <span className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-500">
-                                  <Users className="h-4 w-4" /> {session.availableSeats} seats left
-                               </span>
-                               <span className="w-1 h-1 bg-gray-300 dark:bg-slate-700 rounded-full"></span>
-                               <span>Total: {session.totalSeats} seats</span>
-                            </div>
-                         </div>
-                         <div className="flex items-center gap-8 px-6 border-x border-gray-50 dark:border-slate-800">
-                            <div className="text-center">
-                               <p className="text-xs text-gray-400 font-medium uppercase tracking-tighter">Price</p>
-                               <p className="font-bold text-xl text-deep-blue dark:text-blue-400">{session.price} <span className="text-xs font-normal">MAD</span></p>
-                            </div>
-                         </div>
-                         <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">Manage Guests</Button>
-                            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-deep-blue dark:hover:text-blue-400">
-                               <MoreVertical className="h-5 w-5" />
-                            </Button>
-                         </div>
-                      </div>
-                   </CardContent>
-                </Card>
-             ))}
-             {sessions.length === 0 && (
-               <div className="py-12 text-center text-gray-500">No sessions scheduled yet.</div>
-             )}
-          </div>
+          {/* Sessions View */}
+          <SessionCalendarView
+            sessions={sessions}
+            onEdit={handleEditSession}
+            onDelete={handleDeleteSession}
+            isLoading={editSessionMutation.isPending || deleteSessionMutation.isPending}
+            viewMode={viewMode}
+          />
         </div>
       </div>
 
+      {/* Bulk Session Creation Modal */}
+      <BulkSessionCreationModal
+        isOpen={showBulkSessionModal}
+        onClose={() => setShowBulkSessionModal(false)}
+        onSubmit={(sessions) => bulkCreateSessionMutation.mutate(sessions)}
+        isLoading={bulkCreateSessionMutation.isPending}
+        currency="MAD"
+      />
+
+      {/* Edit Session Modal */}
+      <EditSessionModal
+        isOpen={!!editingSession}
+        session={editingSession}
+        onClose={() => setEditingSession(null)}
+        onSubmit={handleEditSessionSubmit}
+        isLoading={editSessionMutation.isPending}
+        isDelete={false}
+      />
+
+      {/* Delete Confirmation */}
       <DeleteConfirmation 
-        isOpen={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
-        onConfirm={() => deleteTripMutation.mutate()}
+        isOpen={deleteConfirmOpen && deletingSession}
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+          setDeletingSession(null);
+        }}
+        onConfirm={() => {
+          if (deletingSession) {
+            deleteSessionMutation.mutate();
+          }
+        }}
+        isLoading={deleteSessionMutation.isPending}
+        title="Delete Session"
+        description="Are you sure you want to delete this session? This action cannot be undone."
+      />
+
+      {/* Delete Trip Confirmation */}
+      <DeleteConfirmation 
+        isOpen={deleteConfirmOpen && !deletingSession}
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+        }}
+        onConfirm={() => {
+          deleteTripMutation.mutate();
+        }}
         isLoading={deleteTripMutation.isPending}
         title="Delete Trip Template"
         description="Are you sure you want to delete this trip template? All associated sessions and bookings will be permanently removed. This action cannot be undone."

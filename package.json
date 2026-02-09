@@ -10,6 +10,7 @@
         "build": "turbo build",
         "lint": "turbo lint",
         "test": "turbo test",
+        "prepare": "husky install",
         "ci": "npm run lint && npm run test",
         "install:ci": "npm install --no-audit --no-fund",
         "check:env": "node scripts/validate-env.mjs",
@@ -19,7 +20,8 @@
     "devDependencies": {
         "dotenv": "^17.2.3",
         "turbo": "latest",
-        "zod": "^4.3.5"
+        "zod": "^4.3.5",
+        "husky": "^8.0.0"
     },
     "packageManager": "npm@10.0.0"
 }

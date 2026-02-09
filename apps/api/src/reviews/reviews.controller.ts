@@ -47,11 +47,13 @@ export class TripsReviewsController {
     @Param('tripId') tripId: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Query('sortBy') sortBy: string = 'recent',
   ) {
     return this.reviewsService.getReviewsByTrip(
       tripId,
       parseInt(page),
       parseInt(limit),
+      sortBy,
     );
   }
 

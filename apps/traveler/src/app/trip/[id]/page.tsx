@@ -27,6 +27,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
 import { useAuth } from '@/components/AuthContext';
+import { ReviewList } from '@/components/ReviewList';
 
 export default function TripDetailsPage() {
   const { id } = useParams();
@@ -42,6 +43,15 @@ export default function TripDetailsPage() {
     enabled: !!tripId,
     queryFn: async () => {
       const response = await apiClient.get(`/trips/${tripId}`);
+      return response.data;
+    }
+  });
+
+  const { data: reviewStats } = useQuery({
+    queryKey: ['trip-reviews-stats', tripId],
+    enabled: !!tripId,
+    queryFn: async () => {
+      const response = await apiClient.get(`/trips/${tripId}/reviews/stats`);
       return response.data;
     }
   });
@@ -156,8 +166,8 @@ export default function TripDetailsPage() {
                     <div className="flex items-center gap-6">
                         <div className="flex items-center gap-1.5 bg-yellow-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span className="font-bold text-sm text-yellow-600 dark:text-yellow-400">5.0</span>
-                            <span className="text-xs text-yellow-600/70 dark:text-yellow-400/70 font-medium">(128 reviews)</span>
+                            <span className="font-bold text-sm text-yellow-600 dark:text-yellow-400">{reviewStats?.averageRating?.toFixed(1) || '5.0'}</span>
+                            <span className="text-xs text-yellow-600/70 dark:text-yellow-400/70 font-medium">({reviewStats?.totalReviews || 128} reviews)</span>
                         </div>
                     </div>
                 </motion.div>
@@ -311,6 +321,69 @@ export default function TripDetailsPage() {
                   </div>
                </div>
              )}
+
+             {/* Reviews Section */}
+             <div className="space-y-6 pt-6">
+               <div className="flex items-center justify-between">
+                 <h2 className="text-2xl font-bold text-foreground font-display">Reviews & Ratings</h2>
+                 <Badge variant="outline" className="text-[10px] font-bold px-3 py-1 bg-muted/30">
+                   {reviewStats?.totalReviews || 0} Reviews
+                 </Badge>
+               </div>
+               
+               {/* Rating Summary */}
+               {reviewStats && reviewStats.totalReviews > 0 && (
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   {/* Average Rating Display */}
+                   <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6 space-y-4">
+                     <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Average Rating</p>
+                     <div className="flex items-center gap-4">
+                       <div className="flex flex-col">
+                         <span className="text-5xl font-black text-foreground font-display">{reviewStats.averageRating?.toFixed(1) || '5.0'}</span>
+                         <div className="flex gap-1 mt-2">
+                           {[1, 2, 3, 4, 5].map((star) => (
+                             <Star
+                               key={star}
+                               className={`h-5 w-5 ${
+                                 star <= Math.round(reviewStats.averageRating || 5)
+                                   ? 'fill-sunset-orange text-sunset-orange'
+                                   : 'text-gray-300 dark:text-gray-600'
+                               }`}
+                             />
+                           ))}
+                         </div>
+                       </div>
+                     </div>
+                   </div>
+
+                   {/* Rating Distribution */}
+                   <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6 space-y-4">
+                     <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Distribution</p>
+                     <div className="space-y-2">
+                       {[5, 4, 3, 2, 1].map((rating) => {
+                         const count = reviewStats.distribution?.[rating] || 0;
+                         const percentage = reviewStats.totalReviews > 0 ? (count / reviewStats.totalReviews * 100) : 0;
+                         return (
+                           <div key={rating} className="flex items-center gap-2">
+                             <span className="text-xs font-bold text-muted-foreground w-6">{rating}★</span>
+                             <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                               <div
+                                 className="h-full bg-gradient-to-r from-sunset-orange to-orange-600"
+                                 style={{ width: `${percentage}%` }}
+                               />
+                             </div>
+                             <span className="text-xs font-medium text-muted-foreground w-8 text-right">{count}</span>
+                           </div>
+                         );
+                       })}
+                     </div>
+                   </div>
+                 </div>
+               )}
+               
+               {/* Reviews List */}
+               <ReviewList tripId={tripId} />
+             </div>
           </div>
 
           {/* Right Side: Booking Card */}

@@ -7,6 +7,7 @@ import { MapPin, Star, Heart, ChevronLeft, ChevronRight, Zap, ShieldCheck, Ticke
 import Link from 'next/link';
 import { cn } from '@ouiboo/ui/utils';
 import { VerificationStatus } from '@ouiboo/types';
+import { WishlistButton } from './WishlistButton';
 
 interface TripCardProps {
   trip: any;
@@ -108,9 +109,7 @@ export function TripCard({ trip }: TripCardProps) {
           </Badge>
         </div>
 
-        <button className="absolute top-3 right-3 w-9 h-9 rounded-full bg-card/50 backdrop-blur-sm flex items-center justify-center text-muted-foreground hover:text-red-500 transition-colors shadow-sm">
-          <Heart className="h-5 w-5" />
-        </button>
+          <WishlistButton tripId={trip.id} className="absolute top-3 right-3" />
       </div>
 
       <Link href={`/trip/${trip.id}`} className="flex-1 flex flex-col p-6">

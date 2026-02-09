@@ -110,7 +110,6 @@ export class AgencyController {
             }
         });
     }
-
     @Get('payouts')
     @ApiOperation({ summary: 'Get agency payout history' })
     async getPayouts(@Request() req) {
@@ -122,7 +121,109 @@ export class AgencyController {
             take: 20
         });
     }
+    @Get('reviews')
+    @ApiOperation({ summary: 'Get agency reviews' })
+    async getReviews(@Request() req) {
+        const agencyId = req.tenantId;
 
+        const reviews = await this.prisma.review.findMany({
+            where: {
+                booking: {
+                    session: {
+                        template: { agencyId }
+                    }
+                }
+            },
+            include: {
+                traveler: {
+                    select: {
+                        id: true,
+                        name: true,
+                        avatar: true
+                    }
+                },
+                booking: {
+                    include: {
+                        session: {
+                            include: {
+                                template: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        // Transform to match frontend expectations
+        const transformedReviews = reviews.map(r => ({
+            id: r.id,
+            rating: r.rating,
+            comment: r.comment,
+            response: r.response,
+            isVerifiedBooking: r.isVerifiedBooking,
+            createdAt: r.createdAt,
+            traveler: r.traveler,
+            trip: {
+                id: r.booking.session.template.id,
+                title: r.booking.session.template.title
+            }
+        }));
+
+        // Calculate stats
+        const totalReviews = transformedReviews.length;
+        const averageRating = totalReviews > 0
+            ? transformedReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+            : 0;
+        const pendingResponses = transformedReviews.filter(r => !r.response).length;
+        const respondedCount = totalReviews - pendingResponses;
+        const responseRate = totalReviews > 0 ? Math.round((respondedCount / totalReviews) * 100) : 0;
+
+        return {
+            reviews: transformedReviews,
+            stats: {
+                totalReviews,
+                averageRating: Number(averageRating.toFixed(1)),
+                pendingResponses,
+                responseRate
+            }
+        };
+    }
+
+    @Get('reviews/stats')
+    @ApiOperation({ summary: 'Get agency review statistics' })
+    async getReviewStats(@Request() req) {
+        const agencyId = req.tenantId;
+
+        const reviews = await this.prisma.review.findMany({
+            where: {
+                booking: {
+                    session: {
+                        template: { agencyId }
+                    }
+                }
+            },
+            select: {
+                rating: true,
+                response: true
+            }
+        });
+
+        const totalReviews = reviews.length;
+        const averageRating = totalReviews > 0
+            ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+            : 0;
+        const pendingResponses = reviews.filter(r => !r.response).length;
+        const respondedCount = totalReviews - pendingResponses;
+        const responseRate = totalReviews > 0 ? Math.round((respondedCount / totalReviews) * 100) : 0;
+
+        return {
+            totalReviews,
+            averageRating: Number(averageRating.toFixed(1)),
+            pendingResponses,
+            responseRate
+        };
+    }
     @Post('payouts')
     @ApiOperation({ summary: 'Request a payout' })
     async requestPayout(@Request() req, @Body() dto: RequestPayoutDto) {

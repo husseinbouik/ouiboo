@@ -19,6 +19,8 @@ import {
   Zap
 } from 'lucide-react';
 import { useAuth } from './AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
 import { ThemeToggle } from './ThemeToggle';
@@ -43,13 +45,24 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const isHome = pathname === '/';
-  const isTransparent = isHome && !scrolled;
+    const isHome = pathname === '/';
+    const isTransparent = isHome && !scrolled;
 
-  const navLinks = [
-    { name: t('nav.explore'), href: '/search', icon: <Compass className="w-4 h-4" /> },
-    { name: t('nav.featured'), href: '/trips/featured', icon: <Zap className="w-4 h-4" /> },
-  ];
+    const { data: wishlistCountData } = useQuery({
+        queryKey: ['wishlist-count'],
+        queryFn: async () => {
+            const res = await apiClient.get('/users/wishlist/count');
+            return res.data;
+        },
+        enabled: !!user,
+        staleTime: 1000 * 60, // 1 minute
+    });
+
+    const navLinks = [
+        { name: t('nav.explore'), href: '/search', icon: <Compass className="w-4 h-4" /> },
+        { name: t('nav.featured'), href: '/trips/featured', icon: <Zap className="w-4 h-4" /> },
+        { name: t('nav.wishlist'), href: '/wishlist', icon: <Heart className="w-4 h-4" /> },
+    ];
 
   const isAuthPage = ['/login', '/signup', '/verify', '/forgot-password', '/reset-password', '/terms', '/privacy'].some(path => pathname.startsWith(path));
 
@@ -79,15 +92,23 @@ export function Navbar() {
         </Link>
 
         <div className="hidden md:flex items-center gap-8 mx-6">
-            {mounted && navLinks.map((link) => (
-                <Link 
-                    key={link.href}
-                    href={link.href}
-                    className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-sunset-orange transition-colors"
-                >
-                    {link.name}
-                </Link>
-            ))}
+                        {mounted && navLinks.map((link) => (
+                                <Link 
+                                        key={link.href}
+                                        href={link.href}
+                                        className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-sunset-orange transition-colors relative"
+                                >
+                                        <span className="relative flex items-center gap-2">
+                                            {link.icon}
+                                            <span>{link.name}</span>
+                                            {link.href === '/wishlist' && wishlistCountData?.count > 0 && (
+                                                <span className="absolute -top-2 -right-3 inline-flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-[10px] font-bold">
+                                                    {wishlistCountData.count}
+                                                </span>
+                                            )}
+                                        </span>
+                                </Link>
+                        ))}
         </div>
 
         {/* Action Buttons */}
@@ -130,6 +151,9 @@ export function Navbar() {
                                 <div className="p-1">
                                     <Link href="/profile" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
                                         <User className="w-4 h-4" /> {t('nav.profile')}
+                                    </Link>
+                                    <Link href="/wishlist" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
+                                        <Heart className="w-4 h-4" /> {t('nav.wishlist')}
                                     </Link>
                                     <Link href="/bookings" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
                                         <CalendarIcon className="w-4 h-4" /> {t('nav.bookings')}
@@ -206,12 +230,18 @@ export function Navbar() {
                </div>
 
                <div className="space-y-6">
-                  <Link onClick={() => setIsOpen(false)} href="/search" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
-                     Explore <Zap className="text-sunset-orange" />
-                  </Link>
-                  <Link onClick={() => setIsOpen(false)} href="/trips/featured" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
-                     Featured <Heart className="text-pink-500" />
-                  </Link>
+                        <Link onClick={() => setIsOpen(false)} href="/search" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
+                            Explore <Zap className="text-sunset-orange" />
+                        </Link>
+                        <Link onClick={() => setIsOpen(false)} href="/trips/featured" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
+                            Featured <Heart className="text-pink-500" />
+                        </Link>
+                        <Link onClick={() => setIsOpen(false)} href="/wishlist" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
+                            Wishlist <Heart className="text-red-500" />
+                            {wishlistCountData?.count > 0 && (
+                              <span className="ml-2 inline-flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-[12px] font-bold">{wishlistCountData.count}</span>
+                            )}
+                        </Link>
                </div>
 
                {!user && (

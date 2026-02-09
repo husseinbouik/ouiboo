@@ -65,14 +65,22 @@ export class ReviewsService {
   /**
    * Get reviews for a trip
    */
-  async getReviewsByTrip(tripId: string, page: number = 1, limit: number = 10) {
+  async getReviewsByTrip(tripId: string, page: number = 1, limit: number = 10, sortBy: string = 'recent') {
     const skip = (page - 1) * limit;
+
+    // Determine sort order based on sortBy parameter
+    let orderBy: any = { createdAt: 'desc' };
+    if (sortBy === 'highest') {
+      orderBy = { rating: 'desc' };
+    } else if (sortBy === 'lowest') {
+      orderBy = { rating: 'asc' };
+    }
 
     const [reviews, total] = await Promise.all([
       this.prisma.review.findMany({
         where: { tripTemplateId: tripId },
         include: { traveler: { select: { id: true, name: true, avatar: true } } },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip,
         take: limit,
       }),

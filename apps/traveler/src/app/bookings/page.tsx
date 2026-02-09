@@ -4,18 +4,20 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@ouiboo/ui';
 import { useAuth } from '@/components/AuthContext';
-import { Calendar, MapPin, Loader2, Upload, Check, AlertCircle, Trash2, Clock, Users } from 'lucide-react';
+import { Calendar, MapPin, Loader2, Upload, Check, AlertCircle, Trash2, Clock, Users, Star } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button, Badge } from '@ouiboo/ui';
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@ouiboo/ui/utils';
+import { ReviewForm } from '@/components/ReviewForm';
 
 export default function MyBookingsPage() {
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const [uploadingId, setUploadingId] = useState<string | null>(null);
     const [cancellingId, setCancellingId] = useState<string | null>(null);
+    const [reviewModalOpen, setReviewModalOpen] = useState<string | null>(null);
     
     const { data: bookings, isLoading } = useQuery({
         queryKey: ['my-bookings'],
@@ -183,6 +185,19 @@ export default function MyBookingsPage() {
                                                         </Button>
                                                     </label>
                                                 )}
+                                                {booking.status === 'COMPLETED' && !booking.review && (
+                                                    <Button
+                                                        onClick={() => setReviewModalOpen(booking.id)}
+                                                        className="h-12 px-8 bg-deep-blue hover:bg-blue-900 rounded-xl text-xs font-black uppercase tracking-widest border-none"
+                                                    >
+                                                        <Star className="h-4 w-4 mr-2" /> Write Review
+                                                    </Button>
+                                                )}
+                                                {booking.review && (
+                                                    <Badge className="px-5 py-2.5 rounded-xl text-[10px] font-black bg-emerald-500/10 text-emerald-600 border-0">
+                                                        Review Submitted
+                                                    </Badge>
+                                                )}
                                                 <div className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border ${getProofStatus(booking.paymentProof?.status).className}`}>
                                                     <Check className="h-4 w-4" /> Proof {getProofStatus(booking.paymentProof?.status).label}
                                                 </div>
@@ -212,6 +227,30 @@ export default function MyBookingsPage() {
                     )}
                 </div>
             </div>
+
+            {/* Review Modal */}
+            {reviewModalOpen && (
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-background rounded-t-3xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300">
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <h2 className="text-2xl font-bold text-foreground font-display">Share Your Experience</h2>
+                                <p className="text-muted-foreground">Help other travelers by sharing your thoughts about this trip</p>
+                            </div>
+                            
+                            <ReviewForm 
+                                bookingId={reviewModalOpen}
+                                onSuccess={() => setReviewModalOpen(null)}
+                            />
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setReviewModalOpen(null)}
+                        className="fixed inset-0 -z-10"
+                        aria-label="Close dialog"
+                    />
+                </div>
+            )}
         </div>
     );
 }
