@@ -136,5 +136,81 @@ describe('E2E: booking + payment approval flow', () => {
             .send({ status: 'REJECTED' })
             .expect(400);
     });
+    it('Payment proof can be re-uploaded after rejection', async () => {
+        dbMock.booking.findUnique.mockResolvedValue({
+            id: 'booking-123',
+            travelerId: 'traveler-123',
+            status: 'REJECTED',
+            paymentProofId: 'proof-123',
+            bookingDate: new Date(),
+            sessionId: 'session-abc',
+            session: { templateId: 'template-123' },
+        });
+        dbMock.paymentProof.upsert.mockResolvedValue({
+            id: 'proof-456',
+            status: 'PENDING',
+        });
+        dbMock.booking.update.mockResolvedValue({
+            id: 'booking-123',
+            status: 'AWAITING_VALIDATION',
+        });
+        const fixturePath = path.join(__dirname, 'fixtures', 'proof.png');
+        await request(app.getHttpServer())
+            .post('/bookings/booking-123/payment-proof')
+            .attach('file', fixturePath)
+            .expect(201)
+            .expect(({ body }) => {
+            expect(body).toMatchObject({ status: 'PENDING' });
+        });
+        expect(dbMock.paymentProof.upsert).toHaveBeenCalled();
+    });
+    it('Cannot approve payment proof twice', async () => {
+        dbMock.paymentProof.findUnique.mockResolvedValue({
+            id: 'proof-123',
+            status: 'VERIFIED',
+            bookingId: 'booking-123',
+            booking: {
+                id: 'booking-123',
+                status: 'CONFIRMED',
+                paymentProofId: 'proof-123',
+            },
+        });
+        await request(app.getHttpServer())
+            .post('/admin/payments/proof-123/verify')
+            .send({ status: 'VERIFIED' })
+            .expect(400);
+    });
+    it('Audit log records all payment verifications', async () => {
+        dbMock.paymentProof.findUnique.mockResolvedValue({
+            id: 'proof-123',
+            status: 'PENDING',
+            bookingId: 'booking-123',
+            booking: {
+                id: 'booking-123',
+                status: 'AWAITING_VALIDATION',
+                totalAmount: 780,
+                traveler: { email: 'traveler@example.com' },
+                session: { template: { agencyId: 'agency-123', title: 'Atlas Escape' } },
+            },
+        });
+        dbMock.paymentProof.update.mockResolvedValue({
+            id: 'proof-123',
+            status: 'VERIFIED',
+        });
+        dbMock.booking.update.mockResolvedValue({
+            id: 'booking-123',
+            status: 'CONFIRMED',
+            totalAmount: 780,
+            session: { template: { agencyId: 'agency-123', title: 'Atlas Escape' } },
+        });
+        await request(app.getHttpServer())
+            .post('/admin/payments/proof-123/verify')
+            .send({ status: 'VERIFIED' })
+            .expect(201);
+        expect(auditLogService.log).toHaveBeenCalledWith(expect.objectContaining({
+            targetType: 'PaymentProof',
+            targetId: 'proof-123',
+        }));
+    });
 });
 //# sourceMappingURL=booking-approval.e2e-spec.js.map

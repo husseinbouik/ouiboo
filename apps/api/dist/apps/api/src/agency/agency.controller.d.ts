@@ -140,6 +140,7 @@ export declare class AgencyController {
         notificationsSent: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
         cancelledAt: Date | null;
         cancelledBy: string | null;
+        confirmedAt: Date | null;
         refundAmount: number | null;
         refundStatus: import("@ouiboo/database").$Enums.RefundStatus | null;
         refundProcessedAt: Date | null;
@@ -154,6 +155,37 @@ export declare class AgencyController {
         requestedAt: Date;
         processedAt: Date | null;
     }[]>;
+    getReviews(req: any): Promise<{
+        reviews: {
+            id: string;
+            rating: number;
+            comment: string;
+            response: string;
+            isVerifiedBooking: boolean;
+            createdAt: Date;
+            traveler: {
+                name: string;
+                id: string;
+                avatar: string;
+            };
+            trip: {
+                id: string;
+                title: string;
+            };
+        }[];
+        stats: {
+            totalReviews: number;
+            averageRating: number;
+            pendingResponses: number;
+            responseRate: number;
+        };
+    }>;
+    getReviewStats(req: any): Promise<{
+        totalReviews: number;
+        averageRating: number;
+        pendingResponses: number;
+        responseRate: number;
+    }>;
     requestPayout(req: any, dto: RequestPayoutDto): Promise<{
         id: string;
         bankDetails: string;

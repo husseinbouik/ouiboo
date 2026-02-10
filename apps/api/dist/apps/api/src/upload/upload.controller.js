@@ -52,7 +52,10 @@ __decorate([
     __param(0, (0, common_1.UploadedFile)(new common_1.ParseFilePipe({
         validators: [
             new common_1.MaxFileSizeValidator({ maxSize: upload_constants_1.MAX_UPLOAD_SIZE_BYTES }),
-            new common_1.FileTypeValidator({ fileType: upload_constants_1.ALLOWED_MIME_TYPES_REGEX }),
+            new common_1.FileTypeValidator({
+                fileType: upload_constants_1.ALLOWED_MIME_TYPES_REGEX,
+                fallbackToMimetype: true,
+            }),
         ],
         errorHttpStatusCode: 400,
     }))),

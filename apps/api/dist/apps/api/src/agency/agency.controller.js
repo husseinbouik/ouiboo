@@ -112,6 +112,95 @@ let AgencyController = class AgencyController {
             take: 20
         });
     }
+    async getReviews(req) {
+        const agencyId = req.tenantId;
+        const reviews = await this.prisma.review.findMany({
+            where: {
+                booking: {
+                    session: {
+                        template: { agencyId }
+                    }
+                }
+            },
+            include: {
+                traveler: {
+                    select: {
+                        id: true,
+                        name: true,
+                        avatar: true
+                    }
+                },
+                booking: {
+                    include: {
+                        session: {
+                            include: {
+                                template: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        const transformedReviews = reviews.map(r => ({
+            id: r.id,
+            rating: r.rating,
+            comment: r.comment,
+            response: r.response,
+            isVerifiedBooking: r.isVerifiedBooking,
+            createdAt: r.createdAt,
+            traveler: r.traveler,
+            trip: {
+                id: r.booking.session.template.id,
+                title: r.booking.session.template.title
+            }
+        }));
+        const totalReviews = transformedReviews.length;
+        const averageRating = totalReviews > 0
+            ? transformedReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+            : 0;
+        const pendingResponses = transformedReviews.filter(r => !r.response).length;
+        const respondedCount = totalReviews - pendingResponses;
+        const responseRate = totalReviews > 0 ? Math.round((respondedCount / totalReviews) * 100) : 0;
+        return {
+            reviews: transformedReviews,
+            stats: {
+                totalReviews,
+                averageRating: Number(averageRating.toFixed(1)),
+                pendingResponses,
+                responseRate
+            }
+        };
+    }
+    async getReviewStats(req) {
+        const agencyId = req.tenantId;
+        const reviews = await this.prisma.review.findMany({
+            where: {
+                booking: {
+                    session: {
+                        template: { agencyId }
+                    }
+                }
+            },
+            select: {
+                rating: true,
+                response: true
+            }
+        });
+        const totalReviews = reviews.length;
+        const averageRating = totalReviews > 0
+            ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+            : 0;
+        const pendingResponses = reviews.filter(r => !r.response).length;
+        const respondedCount = totalReviews - pendingResponses;
+        const responseRate = totalReviews > 0 ? Math.round((respondedCount / totalReviews) * 100) : 0;
+        return {
+            totalReviews,
+            averageRating: Number(averageRating.toFixed(1)),
+            pendingResponses,
+            responseRate
+        };
+    }
     async requestPayout(req, dto) {
         return this.walletsService.requestPayout(req.tenantId, dto.amount, dto.bankDetails);
     }
@@ -160,6 +249,22 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AgencyController.prototype, "getPayouts", null);
+__decorate([
+    (0, common_1.Get)('reviews'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get agency reviews' }),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AgencyController.prototype, "getReviews", null);
+__decorate([
+    (0, common_1.Get)('reviews/stats'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get agency review statistics' }),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AgencyController.prototype, "getReviewStats", null);
 __decorate([
     (0, common_1.Post)('payouts'),
     (0, swagger_1.ApiOperation)({ summary: 'Request a payout' }),

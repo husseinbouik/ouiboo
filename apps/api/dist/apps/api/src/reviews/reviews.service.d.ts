@@ -15,7 +15,7 @@ export declare class ReviewsService {
         response: string | null;
         isVerifiedBooking: boolean;
     }>;
-    getReviewsByTrip(tripId: string, page?: number, limit?: number): Promise<{
+    getReviewsByTrip(tripId: string, page?: number, limit?: number, sortBy?: string): Promise<{
         reviews: ({
             traveler: {
                 name: string;

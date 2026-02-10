@@ -49,13 +49,20 @@ let ReviewsService = class ReviewsService {
         await this.updateTripRating(booking.session.template.id);
         return review;
     }
-    async getReviewsByTrip(tripId, page = 1, limit = 10) {
+    async getReviewsByTrip(tripId, page = 1, limit = 10, sortBy = 'recent') {
         const skip = (page - 1) * limit;
+        let orderBy = { createdAt: 'desc' };
+        if (sortBy === 'highest') {
+            orderBy = { rating: 'desc' };
+        }
+        else if (sortBy === 'lowest') {
+            orderBy = { rating: 'asc' };
+        }
         const [reviews, total] = await Promise.all([
             this.prisma.review.findMany({
                 where: { tripTemplateId: tripId },
                 include: { traveler: { select: { id: true, name: true, avatar: true } } },
-                orderBy: { createdAt: 'desc' },
+                orderBy,
                 skip,
                 take: limit,
             }),

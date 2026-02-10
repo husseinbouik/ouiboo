@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -19,14 +19,19 @@ import {
   CheckCircle2, 
   AlertCircle,
   Filter,
-  Users
+  Users,
+  Eye
 } from 'lucide-react';
 import { BookingStatus } from '@ouiboo/types';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import Link from 'next/link';
+import { PaymentProofReviewModal } from '@/components/PaymentProofReviewModal';
 
 export default function BookingsManager() {
+  const [reviewingBooking, setReviewingBooking] = useState<any>(null);
+  const queryClient = useQueryClient();
+
   const { data: bookings, isLoading } = useQuery({
     queryKey: ['agency-bookings'],
     queryFn: async () => {
@@ -35,16 +40,63 @@ export default function BookingsManager() {
     }
   });
 
+  const verifyPaymentMutation = useMutation({
+    mutationFn: async ({ bookingId, approved, rejectionReason }: { bookingId: string; approved: boolean; rejectionReason?: string }) => {
+      await apiClient.patch(`/bookings/${bookingId}/verify-payment`, {
+        approved,
+        rejectionReason: rejectionReason || undefined
+      });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['agency-bookings'] });
+      setReviewingBooking(null);
+      
+      // Show success message
+      if (variables.approved) {
+        alert('Payment verified successfully. Booking status updated to Confirmed.');
+      } else {
+        alert('Payment rejected. Traveler will be notified.');
+      }
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to verify payment';
+      alert(`Error: ${errorMessage}`);
+      console.error('Payment verification failed:', error);
+    }
+  });
+
   const getProofStatusLabel = (status?: string | null) => {
-    if (!status) return { label: 'Not uploaded', className: 'bg-slate-100 text-slate-600 ring-slate-200/70 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700/70' };
+    if (!status) {
+      return { 
+        label: 'Not uploaded', 
+        className: 'bg-slate-100 text-slate-600 ring-slate-200/70 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700/70',
+        icon: AlertCircle,
+        displayLabel: 'Not Uploaded'
+      };
+    }
     const normalized = status.toUpperCase();
     if (normalized === 'VERIFIED') {
-      return { label: 'Verified', className: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-900/20 dark:text-emerald-400 dark:ring-emerald-400/20' };
+      return { 
+        label: 'Verified', 
+        className: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-900/20 dark:text-emerald-400 dark:ring-emerald-400/20',
+        icon: CheckCircle2,
+        displayLabel: 'Verified'
+      };
     }
     if (normalized === 'REJECTED') {
-      return { label: 'Rejected', className: 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-900/20 dark:text-rose-400 dark:ring-rose-400/20' };
+      return { 
+        label: 'Rejected', 
+        className: 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-900/20 dark:text-rose-400 dark:ring-rose-400/20',
+        icon: AlertCircle,
+        displayLabel: 'Rejected'
+      };
     }
-    return { label: 'Pending', className: 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-400/20' };
+    return { 
+      label: 'Pending', 
+      className: 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-400/20',
+      icon: Clock,
+      displayLabel: 'Awaiting Review'
+    };
   };
 
   return (
@@ -144,14 +196,36 @@ export default function BookingsManager() {
                         {booking.status === BookingStatus.Pending && <AlertCircle className="h-3 w-3" />}
                         {booking.status}
                       </span>
-                      <div className={`mt-2 inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ring-1 ring-inset ${getProofStatusLabel(booking.paymentProof?.status).className}`}>
-                        Proof: {getProofStatusLabel(booking.paymentProof?.status).label}
+                      <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ring-1 ring-inset ${getProofStatusLabel(booking.paymentProof?.status).className}`}>
+                        {React.createElement(getProofStatusLabel(booking.paymentProof?.status).icon, { className: 'h-3 w-3' })}
+                        {getProofStatusLabel(booking.paymentProof?.status).displayLabel}
                       </div>
                     </td>
                     <td className="px-6 py-5 text-right">
-                      <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-slate-800">
-                        View Details
-                      </Button>
+                      {booking.paymentProof?.imageUrl ? (
+                        <Button 
+                          variant={booking.paymentProof?.status === 'PENDING' ? 'default' : 'outline'} 
+                          size="sm" 
+                          className={`opacity-0 group-hover:opacity-100 transition-opacity gap-2 ${
+                            booking.paymentProof?.status === 'PENDING' 
+                              ? 'bg-deep-blue hover:bg-blue-900 dark:bg-blue-600 dark:hover:bg-blue-700' 
+                              : 'dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-slate-800'
+                          }`}
+                          onClick={() => setReviewingBooking(booking)}
+                          disabled={verifyPaymentMutation.isPending}
+                        >
+                          <Eye className="h-4 w-4" /> View Proof
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="opacity-0 group-hover:opacity-100 transition-opacity dark:text-gray-500 dark:border-slate-700 cursor-not-allowed"
+                          disabled
+                        >
+                          No Proof
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -173,6 +247,29 @@ export default function BookingsManager() {
           </p>
         </div>
       </div>
-    </div>
+      {/* Payment Proof Review Modal */}
+      <PaymentProofReviewModal
+        isOpen={!!reviewingBooking}
+        onClose={() => setReviewingBooking(null)}
+        booking={reviewingBooking}
+        onApprove={() => {
+          if (reviewingBooking) {
+            verifyPaymentMutation.mutate({
+              bookingId: reviewingBooking.id,
+              approved: true
+            });
+          }
+        }}
+        onReject={(reason) => {
+          if (reviewingBooking) {
+            verifyPaymentMutation.mutate({
+              bookingId: reviewingBooking.id,
+              approved: false,
+              rejectionReason: reason
+            });
+          }
+        }}
+        isLoading={verifyPaymentMutation.isPending}
+      />    </div>
   );
 }

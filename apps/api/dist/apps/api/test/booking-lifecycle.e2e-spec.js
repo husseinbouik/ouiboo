@@ -1,88 +1,82 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
-import * as path from 'path';
-import { BookingsModule } from '../src/bookings/bookings.module';
-import { DatabaseModule } from '../src/database/database.module';
-import { EmailModule } from '../src/email/email.module';
-import { UploadModule } from '../src/upload/upload.module';
-import { AuthModule } from '../src/auth/auth.module';
-import { DatabaseService } from '../src/database/database.service';
-import { EmailService } from '../src/email/email.service';
-import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../src/auth/guards/roles.guard';
-import { TenantGuard } from '../src/auth/guards/tenant.guard';
-import { UserRole } from '@ouiboo/types';
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const testing_1 = require("@nestjs/testing");
+const request = require("supertest");
+const path = require("path");
+const bookings_module_1 = require("../src/bookings/bookings.module");
+const database_module_1 = require("../src/database/database.module");
+const email_module_1 = require("../src/email/email.module");
+const upload_module_1 = require("../src/upload/upload.module");
+const auth_module_1 = require("../src/auth/auth.module");
+const database_service_1 = require("../src/database/database.service");
+const email_service_1 = require("../src/email/email.service");
+const jwt_auth_guard_1 = require("../src/auth/guards/jwt-auth.guard");
+const roles_guard_1 = require("../src/auth/guards/roles.guard");
+const tenant_guard_1 = require("../src/auth/guards/tenant.guard");
+const types_1 = require("@ouiboo/types");
 jest.setTimeout(60_000);
-
 describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
-    let app: INestApplication;
-    let db: DatabaseService;
-
+    let app;
+    let db;
     const mockEmailService = {
         sendBookingNotification: jest.fn(async () => true),
         sendPaymentConfirmation: jest.fn(async () => true),
         sendPasswordResetEmail: jest.fn(async () => true),
         sendMail: jest.fn(async () => true),
-        getOTPTemplate: jest.fn((otp: string) => `OTP:${otp}`),
-        getWelcomeTemplate: jest.fn((name?: string) => `WELCOME:${name}`),
-        getPasswordResetTemplate: jest.fn((url: string) => `RESET:${url}`),
-    } as unknown as EmailService;
-
+        getOTPTemplate: jest.fn((otp) => `OTP:${otp}`),
+        getWelcomeTemplate: jest.fn((name) => `WELCOME:${name}`),
+        getPasswordResetTemplate: jest.fn((url) => `RESET:${url}`),
+    };
     beforeAll(async () => {
-        const moduleFixture: TestingModule = await Test.createTestingModule({
-            imports: [BookingsModule, DatabaseModule, EmailModule, UploadModule, AuthModule],
+        const moduleFixture = await testing_1.Test.createTestingModule({
+            imports: [bookings_module_1.BookingsModule, database_module_1.DatabaseModule, email_module_1.EmailModule, upload_module_1.UploadModule, auth_module_1.AuthModule],
         })
-            .overrideProvider(EmailService)
+            .overrideProvider(email_service_1.EmailService)
             .useValue(mockEmailService)
-            .overrideGuard(JwtAuthGuard)
+            .overrideGuard(jwt_auth_guard_1.JwtAuthGuard)
             .useValue({
-                canActivate: (context: any) => {
-                    const req = context.switchToHttp().getRequest();
-                    const url = req.url || '';
-                    const isAgency = url.includes('/agency/');
-
-                    if (req.headers.authorization?.includes('admin')) {
-                        req.user = { userId: 'admin-123', email: 'admin@ouiboo.local', role: UserRole.Admin };
-                    } else if (isAgency || req.query.role === 'agency') {
-                        req.user = { userId: 'agency-user-456', email: 'agency@ouiboo.local', role: UserRole.Agency };
-                    } else {
-                        req.user = { userId: 'traveler-user-123', email: 'traveler@example.com', role: UserRole.Traveler };
-                    }
-                    return true;
-                },
-            })
-            .overrideGuard(RolesGuard)
+            canActivate: (context) => {
+                const req = context.switchToHttp().getRequest();
+                const url = req.url || '';
+                const isAgency = url.includes('/agency/');
+                if (req.headers.authorization?.includes('admin')) {
+                    req.user = { userId: 'admin-123', email: 'admin@ouiboo.local', role: types_1.UserRole.Admin };
+                }
+                else if (isAgency || req.query.role === 'agency') {
+                    req.user = { userId: 'agency-user-456', email: 'agency@ouiboo.local', role: types_1.UserRole.Agency };
+                }
+                else {
+                    req.user = { userId: 'traveler-user-123', email: 'traveler@example.com', role: types_1.UserRole.Traveler };
+                }
+                return true;
+            },
+        })
+            .overrideGuard(roles_guard_1.RolesGuard)
             .useValue({ canActivate: () => true })
-            .overrideGuard(TenantGuard)
+            .overrideGuard(tenant_guard_1.TenantGuard)
             .useValue({
-                canActivate: (context: any) => {
-                    const req = context.switchToHttp().getRequest();
-                    req.tenantId = 'agency-profile-456';
-                    return true;
-                },
-            })
+            canActivate: (context) => {
+                const req = context.switchToHttp().getRequest();
+                req.tenantId = 'agency-profile-456';
+                return true;
+            },
+        })
             .compile();
-
         app = moduleFixture.createNestApplication();
         await app.init();
-
-        db = app.get(DatabaseService);
+        db = app.get(database_service_1.DatabaseService);
     });
-
     afterAll(async () => {
         await clearDatabase();
         await app.close();
     });
-
     beforeEach(async () => {
         jest.clearAllMocks();
         await clearDatabase();
     });
-
     async function clearDatabase() {
-        if (!db) return;
+        if (!db)
+            return;
         await db.walletTransaction.deleteMany();
         await db.wallet.deleteMany();
         await db.payoutRequest.deleteMany();
@@ -94,21 +88,17 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         await db.booking.deleteMany();
         await db.user.deleteMany();
     }
-
     async function seedTestData() {
-        // Create agency user
         const agencyUser = await db.user.create({
             data: {
                 id: 'agency-user-456',
                 email: 'agency@ouiboo.local',
                 name: 'Test Agency',
                 password: 'hashed-password',
-                role: UserRole.Agency,
+                role: types_1.UserRole.Agency,
                 isEmailVerified: true,
             },
         });
-
-        // Create agency profile
         const agency = await db.agencyProfile.create({
             data: {
                 id: 'agency-profile-456',
@@ -116,8 +106,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 companyName: 'Test Agency Ltd',
             },
         });
-
-        // Create trip template
         const template = await db.tripTemplate.create({
             data: {
                 id: 'template-123',
@@ -129,170 +117,114 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 difficulty: 'MEDIUM',
             },
         });
-
-        // Create trip session
         const session = await db.tripSession.create({
             data: {
                 id: 'session-123',
                 templateId: template.id,
-                startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-                endDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 days from now
+                startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                endDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
                 price: 390,
                 availableSeats: 10,
             },
         });
-
-        // Create traveler user
         const traveler = await db.user.create({
             data: {
                 id: 'traveler-user-123',
                 email: 'traveler@example.com',
                 name: 'Test Traveler',
                 password: 'hashed-password',
-                role: UserRole.Traveler,
+                role: types_1.UserRole.Traveler,
                 isEmailVerified: true,
             },
         });
-
         return { agencyUser, agency, template, session, traveler };
     }
-
-    // ===== Section 2: Complete Booking Flow (Happy Path) =====
     it('Complete booking flow: create → upload payment proof → agency verification → confirmation', async () => {
         const { session, traveler, agencyUser } = await seedTestData();
-
-        // Step 1: Create booking
         const createRes = await request(app.getHttpServer())
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
-                sessionId: session.id,
-                guestsCount: 2,
-                fullName: 'John Doe',
-                phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
-                paymentMethod: 'BANK_TRANSFER',
-            })
+            sessionId: session.id,
+            guestsCount: 2,
+            fullName: 'John Doe',
+            phoneNumber: '+1234567890',
+            documentNumber: 'ID123456',
+            paymentMethod: 'BANK_TRANSFER',
+        })
             .expect(201);
-
         expect(createRes.body).toHaveProperty('id');
         expect(createRes.body.status).toBe('PENDING');
-        expect(createRes.body.totalAmount).toBe(780); // 390 * 2
-
+        expect(createRes.body.totalAmount).toBe(780);
         const bookingId = createRes.body.id;
-
-        // Verify email notification
-        expect(mockEmailService.sendBookingNotification).toHaveBeenCalledWith(
-            traveler.email,
-            agencyUser.email,
-            bookingId,
-            'Mountain Adventure'
-        );
-
-        // Verify database state
+        expect(mockEmailService.sendBookingNotification).toHaveBeenCalledWith(traveler.email, agencyUser.email, bookingId, 'Mountain Adventure');
         let booking = await db.booking.findUnique({ where: { id: bookingId } });
         expect(booking).toBeTruthy();
         expect(booking?.status).toBe('PENDING');
-
         const tripSession = await db.tripSession.findUnique({ where: { id: session.id } });
-        expect(tripSession?.availableSeats).toBe(8); // 10 - 2
-
-        // Step 2: Upload payment proof
+        expect(tripSession?.availableSeats).toBe(8);
         const fixturePath = path.join(__dirname, 'fixtures', 'proof.png');
         const uploadRes = await request(app.getHttpServer())
             .post(`/bookings/${bookingId}/payment-proof`)
             .set('Authorization', `Bearer traveler-token`)
             .attach('file', fixturePath)
             .expect(201);
-
         expect(uploadRes.body).toHaveProperty('id');
         expect(uploadRes.body.status).toBe('PENDING');
         expect(uploadRes.body).toHaveProperty('downloadUrl');
-
-        // Verify booking status changed
         booking = await db.booking.findUnique({ where: { id: bookingId } });
         expect(booking?.status).toBe('AWAITING_VALIDATION');
-
-        // Verify payment proof created
         const proof = await db.paymentProof.findUnique({ where: { bookingId } });
         expect(proof).toBeTruthy();
         expect(proof?.status).toBe('PENDING');
-
-        // Step 3: Agency verifies payment
         const verifyRes = await request(app.getHttpServer())
             .patch(`/bookings/${bookingId}/verify-payment`)
             .set('Authorization', `Bearer agency-token`)
             .send({ approved: true })
             .expect(200);
-
         expect(verifyRes.body.status).toBe('CONFIRMED');
-
-        // Verify email confirmation sent
-        expect(mockEmailService.sendPaymentConfirmation).toHaveBeenCalledWith(
-            traveler.email,
-            'Mountain Adventure'
-        );
-
-        // Verify database state
+        expect(mockEmailService.sendPaymentConfirmation).toHaveBeenCalledWith(traveler.email, 'Mountain Adventure');
         booking = await db.booking.findUnique({ where: { id: bookingId } });
         expect(booking?.status).toBe('CONFIRMED');
-
         const updatedProof = await db.paymentProof.findUnique({ where: { bookingId } });
         expect(updatedProof?.status).toBe('VERIFIED');
     });
-
-    // ===== Section 3: Booking Cancellation and Seat Restoration =====
     it('Booking cancellation by traveler restores seats', async () => {
         const { session } = await seedTestData();
-
-        // Create and confirm a booking with 3 guests
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
                 travelerId: 'traveler-user-123',
                 guestsCount: 3,
-                totalAmount: 1170, // 390 * 3
+                totalAmount: 1170,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
                 documentNumber: 'ID123456',
                 status: 'CONFIRMED',
             },
         });
-
-        // Reduce available seats
         await db.tripSession.update({
             where: { id: session.id },
-            data: { availableSeats: 7 }, // 10 - 3
+            data: { availableSeats: 7 },
         });
-
         const initialSeats = (await db.tripSession.findUnique({ where: { id: session.id } }))?.availableSeats;
         expect(initialSeats).toBe(7);
-
-        // Cancel booking
         const cancelRes = await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/cancel`)
             .set('Authorization', `Bearer traveler-token`)
             .expect(200);
-
         expect(cancelRes.body.status).toBe('CANCELLED');
-
-        // Verify database state
         const updatedBooking = await db.booking.findUnique({ where: { id: booking.id } });
         expect(updatedBooking?.status).toBe('CANCELLED');
-
         const tripSession = await db.tripSession.findUnique({ where: { id: session.id } });
-        expect(tripSession?.availableSeats).toBe(10); // Seats restored
-
-        // Attempt to cancel again
+        expect(tripSession?.availableSeats).toBe(10);
         await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/cancel`)
             .set('Authorization', `Bearer traveler-token`)
             .expect(400);
     });
-
     it('Cannot cancel booking in COMPLETED status', async () => {
         const { session } = await seedTestData();
-
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
@@ -305,131 +237,104 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 status: 'COMPLETED',
             },
         });
-
         await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/cancel`)
             .set('Authorization', `Bearer traveler-token`)
             .expect(400);
     });
-
-    // ===== Section 4: Concurrent Booking Scenarios =====
     it('Concurrent bookings handle seat availability correctly', async () => {
         const { session } = await seedTestData();
-
-        // Update session to have exactly 5 seats
         await db.tripSession.update({
             where: { id: session.id },
             data: { availableSeats: 5 },
         });
-
-        // Make 3 concurrent booking requests, each requesting 2 seats
         const results = await Promise.allSettled([
             request(app.getHttpServer())
                 .post('/bookings')
                 .set('Authorization', `Bearer traveler-1`)
                 .send({
-                    sessionId: session.id,
-                    guestsCount: 2,
-                    fullName: 'Traveler 1',
-                    phoneNumber: '+1111111111',
-                    documentNumber: 'ID1',
-                    paymentMethod: 'BANK_TRANSFER',
-                }),
+                sessionId: session.id,
+                guestsCount: 2,
+                fullName: 'Traveler 1',
+                phoneNumber: '+1111111111',
+                documentNumber: 'ID1',
+                paymentMethod: 'BANK_TRANSFER',
+            }),
             request(app.getHttpServer())
                 .post('/bookings')
                 .set('Authorization', `Bearer traveler-2`)
                 .send({
-                    sessionId: session.id,
-                    guestsCount: 2,
-                    fullName: 'Traveler 2',
-                    phoneNumber: '+2222222222',
-                    documentNumber: 'ID2',
-                    paymentMethod: 'BANK_TRANSFER',
-                }),
+                sessionId: session.id,
+                guestsCount: 2,
+                fullName: 'Traveler 2',
+                phoneNumber: '+2222222222',
+                documentNumber: 'ID2',
+                paymentMethod: 'BANK_TRANSFER',
+            }),
             request(app.getHttpServer())
                 .post('/bookings')
                 .set('Authorization', `Bearer traveler-3`)
                 .send({
-                    sessionId: session.id,
-                    guestsCount: 2,
-                    fullName: 'Traveler 3',
-                    phoneNumber: '+3333333333',
-                    documentNumber: 'ID3',
-                    paymentMethod: 'BANK_TRANSFER',
-                }),
+                sessionId: session.id,
+                guestsCount: 2,
+                fullName: 'Traveler 3',
+                phoneNumber: '+3333333333',
+                documentNumber: 'ID3',
+                paymentMethod: 'BANK_TRANSFER',
+            }),
         ]);
-
-        // Count successes and failures
-        const successes = results.filter((r) => r.status === 'fulfilled' && (r.value as any).status === 201);
-        const failures = results.filter(
-            (r) => r.status === 'fulfilled' && (r.value as any).status === 400
-        );
-
+        const successes = results.filter((r) => r.status === 'fulfilled' && r.value.status === 201);
+        const failures = results.filter((r) => r.status === 'fulfilled' && r.value.status === 400);
         expect(successes.length).toBe(2);
         expect(failures.length).toBe(1);
-
-        // Verify no overselling
         const tripSession = await db.tripSession.findUnique({ where: { id: session.id } });
-        expect(tripSession?.availableSeats).toBe(1); // 5 - 4
+        expect(tripSession?.availableSeats).toBe(1);
     });
-
     it('Duplicate booking prevention', async () => {
         const { session } = await seedTestData();
-
-        // Create first booking
         const createRes1 = await request(app.getHttpServer())
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
-                sessionId: session.id,
-                guestsCount: 2,
-                fullName: 'John Doe',
-                phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
-                paymentMethod: 'BANK_TRANSFER',
-            })
+            sessionId: session.id,
+            guestsCount: 2,
+            fullName: 'John Doe',
+            phoneNumber: '+1234567890',
+            documentNumber: 'ID123456',
+            paymentMethod: 'BANK_TRANSFER',
+        })
             .expect(201);
-
-        // Attempt duplicate booking
         await request(app.getHttpServer())
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
-                sessionId: session.id,
-                guestsCount: 2,
-                fullName: 'John Doe',
-                phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
-                paymentMethod: 'BANK_TRANSFER',
-            })
+            sessionId: session.id,
+            guestsCount: 2,
+            fullName: 'John Doe',
+            phoneNumber: '+1234567890',
+            documentNumber: 'ID123456',
+            paymentMethod: 'BANK_TRANSFER',
+        })
             .expect(400);
-
-        // Cancel first booking
         await request(app.getHttpServer())
             .post(`/bookings/${createRes1.body.id}/cancel`)
             .set('Authorization', `Bearer traveler-token`)
             .expect(200);
-
-        // Attempt new booking after cancellation
         await request(app.getHttpServer())
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
-                sessionId: session.id,
-                guestsCount: 2,
-                fullName: 'John Doe',
-                phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
-                paymentMethod: 'BANK_TRANSFER',
-            })
+            sessionId: session.id,
+            guestsCount: 2,
+            fullName: 'John Doe',
+            phoneNumber: '+1234567890',
+            documentNumber: 'ID123456',
+            paymentMethod: 'BANK_TRANSFER',
+        })
             .expect(201);
     });
-
-    // ===== Section 5: Booking Expiration =====
     it('Booking expires if payment proof not uploaded within timeframe', async () => {
         const { session } = await seedTestData();
-
-        // Create booking
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
@@ -440,29 +345,22 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 phoneNumber: '+1234567890',
                 documentNumber: 'ID123456',
                 status: 'PENDING',
-                bookingDate: new Date(Date.now() - 25 * 60 * 60 * 1000), // 25 hours ago
+                bookingDate: new Date(Date.now() - 25 * 60 * 60 * 1000),
             },
         });
-
         const fixturePath = path.join(__dirname, 'fixtures', 'proof.png');
         await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/payment-proof`)
             .set('Authorization', `Bearer traveler-token`)
             .attach('file', fixturePath)
             .expect(400);
-
-        // Verify cancellation occurred
         const updatedBooking = await db.booking.findUnique({ where: { id: booking.id } });
         expect(updatedBooking?.status).toBe('CANCELLED');
-
-        // Verify seats restored
         const tripSession = await db.tripSession.findUnique({ where: { id: session.id } });
-        expect(tripSession?.availableSeats).toBe(10); // Restored
+        expect(tripSession?.availableSeats).toBe(10);
     });
-
     it('Payment proof upload succeeds within expiration window', async () => {
         const { session } = await seedTestData();
-
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
@@ -473,26 +371,20 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 phoneNumber: '+1234567890',
                 documentNumber: 'ID123456',
                 status: 'PENDING',
-                bookingDate: new Date(), // Just created
+                bookingDate: new Date(),
             },
         });
-
         const fixturePath = path.join(__dirname, 'fixtures', 'proof.png');
         await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/payment-proof`)
             .set('Authorization', `Bearer traveler-token`)
             .attach('file', fixturePath)
             .expect(201);
-
         const updatedBooking = await db.booking.findUnique({ where: { id: booking.id } });
         expect(updatedBooking?.status).toBe('AWAITING_VALIDATION');
     });
-
-    // ===== Section 6: Payment Proof Rejection =====
     it('Agency rejects payment proof with reason', async () => {
         const { session, traveler } = await seedTestData();
-
-        // Create booking and upload proof
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
@@ -505,7 +397,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 status: 'PENDING',
             },
         });
-
         const proof = await db.paymentProof.create({
             data: {
                 bookingId: booking.id,
@@ -513,44 +404,30 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 status: 'PENDING',
             },
         });
-
         await db.booking.update({
             where: { id: booking.id },
             data: { status: 'AWAITING_VALIDATION', paymentProofId: proof.id },
         });
-
-        // Reject with reason
         const rejectRes = await request(app.getHttpServer())
             .patch(`/bookings/${booking.id}/verify-payment`)
             .set('Authorization', `Bearer agency-token`)
             .send({ approved: false, rejectionReason: 'Bank details do not match' })
             .expect(200);
-
         expect(rejectRes.body.status).toBe('REJECTED');
-
-        // Verify database state
         const updatedProof = await db.paymentProof.findUnique({ where: { id: proof.id } });
         expect(updatedProof?.status).toBe('REJECTED');
         expect(updatedProof?.rejectionReason).toBe('Bank details do not match');
-
-        // Upload new proof after rejection
         const fixturePath = path.join(__dirname, 'fixtures', 'proof.png');
         await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/payment-proof`)
             .set('Authorization', `Bearer traveler-token`)
             .attach('file', fixturePath)
             .expect(201);
-
-        // Verify status returns to AWAITING_VALIDATION
         const finalBooking = await db.booking.findUnique({ where: { id: booking.id } });
         expect(finalBooking?.status).toBe('AWAITING_VALIDATION');
     });
-
-    // ===== Section 7: Booking Status Transitions =====
     it('Booking status transitions follow valid flow', async () => {
         const { session } = await seedTestData();
-
-        // Create booking (PENDING)
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
@@ -563,40 +440,30 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 status: 'PENDING',
             },
         });
-
-        // Upload payment proof (AWAITING_VALIDATION)
         const fixturePath = path.join(__dirname, 'fixtures', 'proof.png');
         const uploadRes = await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/payment-proof`)
             .set('Authorization', `Bearer traveler-token`)
             .attach('file', fixturePath)
             .expect(201);
-
-        // Verify can upload again (upsert)
         const uploadRes2 = await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/payment-proof`)
             .set('Authorization', `Bearer traveler-token`)
             .attach('file', fixturePath)
             .expect(201);
-
-        // Approve payment (CONFIRMED)
         await request(app.getHttpServer())
             .patch(`/bookings/${booking.id}/verify-payment`)
             .set('Authorization', `Bearer agency-token`)
             .send({ approved: true })
             .expect(200);
-
-        // Attempt to upload new proof when CONFIRMED (should fail)
         await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/payment-proof`)
             .set('Authorization', `Bearer traveler-token`)
             .attach('file', fixturePath)
             .expect(400);
     });
-
     it('Invalid status transitions are rejected', async () => {
         const { session } = await seedTestData();
-
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
@@ -606,11 +473,9 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
                 documentNumber: 'ID123456',
-                status: 'CONFIRMED', // Manually set to CONFIRMED (bypass logic)
+                status: 'CONFIRMED',
             },
         });
-
-        // Attempt to upload proof on CONFIRMED booking
         const fixturePath = path.join(__dirname, 'fixtures', 'proof.png');
         await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/payment-proof`)
@@ -618,97 +483,64 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .attach('file', fixturePath)
             .expect(400);
     });
-
-    // ===== Section 8: Email Notifications =====
     it('Email notifications sent at all booking stages', async () => {
         const { session, traveler, agencyUser } = await seedTestData();
-
-        // Create booking
         const createRes = await request(app.getHttpServer())
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
-                sessionId: session.id,
-                guestsCount: 2,
-                fullName: 'John Doe',
-                phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
-                paymentMethod: 'BANK_TRANSFER',
-            })
+            sessionId: session.id,
+            guestsCount: 2,
+            fullName: 'John Doe',
+            phoneNumber: '+1234567890',
+            documentNumber: 'ID123456',
+            paymentMethod: 'BANK_TRANSFER',
+        })
             .expect(201);
-
-        expect(mockEmailService.sendBookingNotification).toHaveBeenCalledWith(
-            traveler.email,
-            agencyUser.email,
-            createRes.body.id,
-            'Mountain Adventure'
-        );
-
-        // Upload proof
+        expect(mockEmailService.sendBookingNotification).toHaveBeenCalledWith(traveler.email, agencyUser.email, createRes.body.id, 'Mountain Adventure');
         const fixturePath = path.join(__dirname, 'fixtures', 'proof.png');
         await request(app.getHttpServer())
             .post(`/bookings/${createRes.body.id}/payment-proof`)
             .set('Authorization', `Bearer traveler-token`)
             .attach('file', fixturePath)
             .expect(201);
-
-        // Approve payment
         await request(app.getHttpServer())
             .patch(`/bookings/${createRes.body.id}/verify-payment`)
             .set('Authorization', `Bearer agency-token`)
             .send({ approved: true })
             .expect(200);
-
-        expect(mockEmailService.sendPaymentConfirmation).toHaveBeenCalledWith(
-            traveler.email,
-            'Mountain Adventure'
-        );
+        expect(mockEmailService.sendPaymentConfirmation).toHaveBeenCalledWith(traveler.email, 'Mountain Adventure');
     });
-
     it('Email failures do not block booking flow', async () => {
         const { session } = await seedTestData();
-
-        // Mock email service to throw
-        (mockEmailService.sendBookingNotification as jest.Mock).mockRejectedValueOnce(
-            new Error('Email service error')
-        );
-
-        // Create booking should still succeed
+        mockEmailService.sendBookingNotification.mockRejectedValueOnce(new Error('Email service error'));
         const createRes = await request(app.getHttpServer())
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
-                sessionId: session.id,
-                guestsCount: 2,
-                fullName: 'John Doe',
-                phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
-                paymentMethod: 'BANK_TRANSFER',
-            })
+            sessionId: session.id,
+            guestsCount: 2,
+            fullName: 'John Doe',
+            phoneNumber: '+1234567890',
+            documentNumber: 'ID123456',
+            paymentMethod: 'BANK_TRANSFER',
+        })
             .expect(201);
-
-        // Verify booking exists
         const booking = await db.booking.findUnique({ where: { id: createRes.body.id } });
         expect(booking).toBeTruthy();
     });
-
-    // ===== Section 9: Booking Queries with Tenant Isolation =====
     it('Traveler can only see their own bookings', async () => {
         const { session } = await seedTestData();
-
-        // Create second traveler
         const traveler2 = await db.user.create({
             data: {
                 id: 'traveler-user-456',
                 email: 'traveler2@example.com',
                 name: 'Test Traveler 2',
                 password: 'hashed-password',
-                role: UserRole.Traveler,
+                role: types_1.UserRole.Traveler,
                 isEmailVerified: true,
             },
         });
-
-        // Create bookings for both travelers
         const booking1 = await db.booking.create({
             data: {
                 sessionId: session.id,
@@ -721,7 +553,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 status: 'PENDING',
             },
         });
-
         const booking2 = await db.booking.create({
             data: {
                 sessionId: session.id,
@@ -734,30 +565,24 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 status: 'PENDING',
             },
         });
-
-        // Get bookings as traveler 1
         const res = await request(app.getHttpServer())
             .get('/bookings/my-bookings')
             .set('Authorization', `Bearer traveler-1-token`)
             .expect(200);
-
         expect(res.body).toHaveLength(1);
         expect(res.body[0].id).toBe(booking1.id);
     });
-
     it('Agency can only see bookings for their trips', async () => {
-        // Create second agency
         const agency2User = await db.user.create({
             data: {
                 id: 'agency-user-789',
                 email: 'agency2@ouiboo.local',
                 name: 'Agency 2',
                 password: 'hashed-password',
-                role: UserRole.Agency,
+                role: types_1.UserRole.Agency,
                 isEmailVerified: true,
             },
         });
-
         const agency2 = await db.agencyProfile.create({
             data: {
                 id: 'agency-profile-789',
@@ -765,10 +590,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 companyName: 'Agency 2 Ltd',
             },
         });
-
         const { template, session, agency } = await seedTestData();
-
-        // Create template for agency 2
         const template2 = await db.tripTemplate.create({
             data: {
                 id: 'template-789',
@@ -780,8 +602,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 difficulty: 'EASY',
             },
         });
-
-        // Create session for agency 2
         const session2 = await db.tripSession.create({
             data: {
                 id: 'session-789',
@@ -792,8 +612,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 availableSeats: 10,
             },
         });
-
-        // Create bookings on both agencies' trips
         await db.booking.create({
             data: {
                 sessionId: session.id,
@@ -806,7 +624,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 status: 'PENDING',
             },
         });
-
         await db.booking.create({
             data: {
                 sessionId: session2.id,
@@ -819,30 +636,24 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 status: 'PENDING',
             },
         });
-
-        // Get bookings as agency 1 (should only see first booking)
         const res = await request(app.getHttpServer())
             .get('/agency/bookings')
             .set('Authorization', `Bearer agency-1-token`)
             .expect(200);
-
-        expect(res.body.some((b: any) => b.session.templateId === template.id)).toBe(true);
-        expect(res.body.some((b: any) => b.session.templateId === template2.id)).toBe(false);
+        expect(res.body.some((b) => b.session.templateId === template.id)).toBe(true);
+        expect(res.body.some((b) => b.session.templateId === template2.id)).toBe(false);
     });
-
     it('Agency cannot verify payment for other agency bookings', async () => {
-        // Create second agency
         const agency2User = await db.user.create({
             data: {
                 id: 'agency-user-999',
                 email: 'agency3@ouiboo.local',
                 name: 'Agency 3',
                 password: 'hashed-password',
-                role: UserRole.Agency,
+                role: types_1.UserRole.Agency,
                 isEmailVerified: true,
             },
         });
-
         const agency2 = await db.agencyProfile.create({
             data: {
                 id: 'agency-profile-999',
@@ -850,10 +661,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 companyName: 'Agency 3 Ltd',
             },
         });
-
         const { template, session } = await seedTestData();
-
-        // Create booking on agency 1's trip
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
@@ -866,8 +674,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 status: 'PENDING',
             },
         });
-
-        // Upload proof
         const proof = await db.paymentProof.create({
             data: {
                 bookingId: booking.id,
@@ -875,38 +681,28 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 status: 'PENDING',
             },
         });
-
         await db.booking.update({
             where: { id: booking.id },
             data: { status: 'AWAITING_VALIDATION', paymentProofId: proof.id },
         });
-
-        // Agency 2 attempts to verify (should fail)
-        // Mock the TenantGuard to return agency 2's tenant ID
         await request(app.getHttpServer())
             .patch(`/bookings/${booking.id}/verify-payment`)
             .set('Authorization', `Bearer agency-2-token`)
             .send({ approved: true })
             .expect(403);
     });
-
-    // ===== Section 10: Payment Proof Download Access Control =====
     it('Only authorized users can download payment proof', async () => {
         const { session, traveler } = await seedTestData();
-
-        // Create second traveler
         const traveler2 = await db.user.create({
             data: {
                 id: 'traveler-user-999',
                 email: 'traveler-other@example.com',
                 name: 'Other Traveler',
                 password: 'hashed-password',
-                role: UserRole.Traveler,
+                role: types_1.UserRole.Traveler,
                 isEmailVerified: true,
             },
         });
-
-        // Create booking and upload proof
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
@@ -919,7 +715,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 status: 'PENDING',
             },
         });
-
         const proof = await db.paymentProof.create({
             data: {
                 bookingId: booking.id,
@@ -927,96 +722,75 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 status: 'PENDING',
             },
         });
-
         await db.booking.update({
             where: { id: booking.id },
             data: { status: 'AWAITING_VALIDATION', paymentProofId: proof.id },
         });
-
-        // Download as traveler (owner) - should succeed
         await request(app.getHttpServer())
             .get(`/bookings/${booking.id}/payment-proof/download`)
             .set('Authorization', `Bearer traveler-token`)
             .expect(200);
-
-        // Download as other traveler - should fail
         await request(app.getHttpServer())
             .get(`/bookings/${booking.id}/payment-proof/download`)
             .set('Authorization', `Bearer traveler-2-token`)
             .expect(400);
-
-        // Download as agency owner - should succeed
         await request(app.getHttpServer())
             .get(`/bookings/${booking.id}/payment-proof/download`)
             .set('Authorization', `Bearer agency-token`)
             .expect(200);
-
-        // Download as admin - should succeed
         await request(app.getHttpServer())
             .get(`/bookings/${booking.id}/payment-proof/download`)
             .set('Authorization', `Bearer admin-token`)
             .expect(200);
     });
-
-    // ===== Section 12: Data Validation and Error Handling =====
     it('Booking creation validates required fields', async () => {
         const { session } = await seedTestData();
-
-        // Missing sessionId
         await request(app.getHttpServer())
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
-                guestsCount: 2,
-                fullName: 'John Doe',
-                phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
-            })
+            guestsCount: 2,
+            fullName: 'John Doe',
+            phoneNumber: '+1234567890',
+            documentNumber: 'ID123456',
+        })
             .expect(400);
-
-        // Invalid guestsCount (0)
         await request(app.getHttpServer())
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
-                sessionId: session.id,
-                guestsCount: 0,
-                fullName: 'John Doe',
-                phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
-            })
+            sessionId: session.id,
+            guestsCount: 0,
+            fullName: 'John Doe',
+            phoneNumber: '+1234567890',
+            documentNumber: 'ID123456',
+        })
             .expect(400);
-
-        // Invalid guestsCount (negative)
         await request(app.getHttpServer())
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
-                sessionId: session.id,
-                guestsCount: -1,
-                fullName: 'John Doe',
-                phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
-            })
+            sessionId: session.id,
+            guestsCount: -1,
+            fullName: 'John Doe',
+            phoneNumber: '+1234567890',
+            documentNumber: 'ID123456',
+        })
             .expect(400);
-
-        // Non-existent sessionId
         await request(app.getHttpServer())
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
-                sessionId: 'non-existent',
-                guestsCount: 2,
-                fullName: 'John Doe',
-                phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
-            })
+            sessionId: 'non-existent',
+            guestsCount: 2,
+            fullName: 'John Doe',
+            phoneNumber: '+1234567890',
+            documentNumber: 'ID123456',
+        })
             .expect(400);
     });
-
     it('Payment proof upload validates file type and size', async () => {
         const { session } = await seedTestData();
-
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
@@ -1029,17 +803,13 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 status: 'PENDING',
             },
         });
-
-        // Attempt to upload invalid file type
-        // Note: FileValidator at controller level will reject this
-        // This test verifies the validators are in place
         const fixturePath = path.join(__dirname, 'fixtures', 'proof.png');
         const validRes = await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/payment-proof`)
             .set('Authorization', `Bearer traveler-token`)
             .attach('file', fixturePath)
-            .expect(201); // Should succeed with valid file
-
+            .expect(201);
         expect(validRes.body).toHaveProperty('id');
     });
 });
+//# sourceMappingURL=booking-lifecycle.e2e-spec.js.map

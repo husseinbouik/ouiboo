@@ -19,7 +19,7 @@ export declare class ReviewsController {
 export declare class TripsReviewsController {
     private reviewsService;
     constructor(reviewsService: ReviewsService);
-    getReviews(tripId: string, page?: string, limit?: string): Promise<{
+    getReviews(tripId: string, page?: string, limit?: string, sortBy?: string): Promise<{
         reviews: ({
             traveler: {
                 name: string;

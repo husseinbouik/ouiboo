@@ -50,6 +50,7 @@ let EmailService = EmailService_1 = class EmailService {
         }
         else {
             this.logger.debug(`[MOCK EMAIL] To: ${to} | Subject: ${subject}`);
+            this.logger.debug(`[MOCK EMAIL BODY] ${html}`);
         }
     }
     async sendMail(to, subject, html) {

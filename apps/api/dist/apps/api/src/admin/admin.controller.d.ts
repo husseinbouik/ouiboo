@@ -93,6 +93,7 @@ export declare class AdminController {
             notificationsSent: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
             cancelledAt: Date | null;
             cancelledBy: string | null;
+            confirmedAt: Date | null;
             refundAmount: number | null;
             refundStatus: import("@ouiboo/database").$Enums.RefundStatus | null;
             refundProcessedAt: Date | null;
@@ -366,6 +367,7 @@ export declare class AdminController {
         notificationsSent: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
         cancelledAt: Date | null;
         cancelledBy: string | null;
+        confirmedAt: Date | null;
         refundAmount: number | null;
         refundStatus: import("@ouiboo/database").$Enums.RefundStatus | null;
         refundProcessedAt: Date | null;

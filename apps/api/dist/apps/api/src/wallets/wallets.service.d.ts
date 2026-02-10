@@ -10,6 +10,7 @@ export declare class WalletsService {
             walletId: string;
             amount: number;
             reason: string;
+            referenceId: string | null;
         }[];
     } & {
         id: string;

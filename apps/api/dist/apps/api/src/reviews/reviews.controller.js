@@ -45,8 +45,8 @@ let TripsReviewsController = class TripsReviewsController {
     constructor(reviewsService) {
         this.reviewsService = reviewsService;
     }
-    async getReviews(tripId, page = '1', limit = '10') {
-        return this.reviewsService.getReviewsByTrip(tripId, parseInt(page), parseInt(limit));
+    async getReviews(tripId, page = '1', limit = '10', sortBy = 'recent') {
+        return this.reviewsService.getReviewsByTrip(tripId, parseInt(page), parseInt(limit), sortBy);
     }
     async getReviewStats(tripId) {
         return this.reviewsService.getReviewStats(tripId);
@@ -58,8 +58,9 @@ __decorate([
     __param(0, (0, common_1.Param)('tripId')),
     __param(1, (0, common_1.Query)('page')),
     __param(2, (0, common_1.Query)('limit')),
+    __param(3, (0, common_1.Query)('sortBy')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], TripsReviewsController.prototype, "getReviews", null);
 __decorate([
