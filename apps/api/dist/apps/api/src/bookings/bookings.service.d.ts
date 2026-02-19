@@ -13,6 +13,7 @@ export declare class BookingsService {
         updatedAt: Date;
         status: import("@ouiboo/database").$Enums.BookingStatus;
         cancellationReason: string | null;
+        travelerId: string;
         sessionId: string;
         guestsCount: number;
         fullName: string | null;
@@ -34,7 +35,6 @@ export declare class BookingsService {
         refundAmount: number | null;
         refundStatus: import("@ouiboo/database").$Enums.RefundStatus | null;
         refundProcessedAt: Date | null;
-        travelerId: string;
     }>;
     findAllByTraveler(travelerId: string): Promise<({
         paymentProof: {
@@ -91,6 +91,7 @@ export declare class BookingsService {
         updatedAt: Date;
         status: import("@ouiboo/database").$Enums.BookingStatus;
         cancellationReason: string | null;
+        travelerId: string;
         sessionId: string;
         guestsCount: number;
         fullName: string | null;
@@ -112,7 +113,6 @@ export declare class BookingsService {
         refundAmount: number | null;
         refundStatus: import("@ouiboo/database").$Enums.RefundStatus | null;
         refundProcessedAt: Date | null;
-        travelerId: string;
     })[]>;
     findAllByAgency(tenantId: string): Promise<({
         paymentProof: {
@@ -122,6 +122,10 @@ export declare class BookingsService {
             imageUrl: string;
             uploadedAt: Date;
             rejectionReason: string | null;
+        };
+        traveler: {
+            email: string;
+            name: string;
         };
         session: {
             template: {
@@ -163,16 +167,13 @@ export declare class BookingsService {
             currency: string;
             cancellationReason: string | null;
         };
-        traveler: {
-            email: string;
-            name: string;
-        };
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
         status: import("@ouiboo/database").$Enums.BookingStatus;
         cancellationReason: string | null;
+        travelerId: string;
         sessionId: string;
         guestsCount: number;
         fullName: string | null;
@@ -194,7 +195,6 @@ export declare class BookingsService {
         refundAmount: number | null;
         refundStatus: import("@ouiboo/database").$Enums.RefundStatus | null;
         refundProcessedAt: Date | null;
-        travelerId: string;
     })[]>;
     uploadPaymentProof(bookingId: string, userId: string, file: Express.Multer.File): Promise<{
         downloadUrl: string;
@@ -217,6 +217,7 @@ export declare class BookingsService {
         updatedAt: Date;
         status: import("@ouiboo/database").$Enums.BookingStatus;
         cancellationReason: string | null;
+        travelerId: string;
         sessionId: string;
         guestsCount: number;
         fullName: string | null;
@@ -238,7 +239,6 @@ export declare class BookingsService {
         refundAmount: number | null;
         refundStatus: import("@ouiboo/database").$Enums.RefundStatus | null;
         refundProcessedAt: Date | null;
-        travelerId: string;
     }>;
     cancelBooking(bookingId: string, travelerId: string): Promise<{
         id: string;
@@ -246,6 +246,7 @@ export declare class BookingsService {
         updatedAt: Date;
         status: import("@ouiboo/database").$Enums.BookingStatus;
         cancellationReason: string | null;
+        travelerId: string;
         sessionId: string;
         guestsCount: number;
         fullName: string | null;
@@ -267,6 +268,5 @@ export declare class BookingsService {
         refundAmount: number | null;
         refundStatus: import("@ouiboo/database").$Enums.RefundStatus | null;
         refundProcessedAt: Date | null;
-        travelerId: string;
     }>;
 }

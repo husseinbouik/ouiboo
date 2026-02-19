@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
+import * as request from 'supertest';
 import { AgencyController } from '../agency/agency.controller';
 import { DatabaseService } from '../database/database.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';

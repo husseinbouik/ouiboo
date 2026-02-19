@@ -11,19 +11,16 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var WebSocketGateway_1;
-var _a, _b, _c, _d, _e, _f;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WebSocketGateway = void 0;
+exports.NotificationGateway = void 0;
 const websockets_1 = require("@nestjs/websockets");
-Object.defineProperty(exports, "WebSocketGateway", { enumerable: true, get: function () { return websockets_1.WebSocketGateway; } });
 const socket_io_1 = require("socket.io");
 const common_1 = require("@nestjs/common");
 const websocket_service_1 = require("./websocket.service");
-let WebSocketGateway = WebSocketGateway_1 = class WebSocketGateway {
+let NotificationGateway = class NotificationGateway {
     constructor(webSocketService) {
         this.webSocketService = webSocketService;
-        this.logger = new common_1.Logger(WebSocketGateway_1.name);
+        this.logger = new common_1.Logger(websockets_1.WebSocketGateway.name);
     }
     handleConnection(socket) {
         try {
@@ -92,52 +89,52 @@ let WebSocketGateway = WebSocketGateway_1 = class WebSocketGateway {
         this.logger.log(`Socket ${socket.id} left room ${room}`);
     }
 };
-exports.WebSocketGateway = WebSocketGateway;
+exports.NotificationGateway = NotificationGateway;
 __decorate([
     (0, websockets_1.WebSocketServer)(),
-    __metadata("design:type", typeof (_a = typeof socket_io_1.Server !== "undefined" && socket_io_1.Server) === "function" ? _a : Object)
-], websockets_1.WebSocketGateway.prototype, "server", void 0);
+    __metadata("design:type", socket_io_1.Server)
+], NotificationGateway.prototype, "server", void 0);
 __decorate([
     (0, websockets_1.SubscribeMessage)('booking:created'),
     __param(0, (0, websockets_1.ConnectedSocket)()),
     __param(1, (0, websockets_1.MessageBody)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_b = typeof socket_io_1.Socket !== "undefined" && socket_io_1.Socket) === "function" ? _b : Object, Object]),
+    __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
     __metadata("design:returntype", void 0)
-], websockets_1.WebSocketGateway.prototype, "handleNewBooking", null);
+], NotificationGateway.prototype, "handleNewBooking", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('payment:verified'),
     __param(0, (0, websockets_1.ConnectedSocket)()),
     __param(1, (0, websockets_1.MessageBody)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_c = typeof socket_io_1.Socket !== "undefined" && socket_io_1.Socket) === "function" ? _c : Object, Object]),
+    __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
     __metadata("design:returntype", void 0)
-], websockets_1.WebSocketGateway.prototype, "handlePaymentVerified", null);
+], NotificationGateway.prototype, "handlePaymentVerified", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('admin:approval'),
     __param(0, (0, websockets_1.ConnectedSocket)()),
     __param(1, (0, websockets_1.MessageBody)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_d = typeof socket_io_1.Socket !== "undefined" && socket_io_1.Socket) === "function" ? _d : Object, Object]),
+    __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
     __metadata("design:returntype", void 0)
-], websockets_1.WebSocketGateway.prototype, "handleAdminApproval", null);
+], NotificationGateway.prototype, "handleAdminApproval", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('room:join'),
     __param(0, (0, websockets_1.ConnectedSocket)()),
     __param(1, (0, websockets_1.MessageBody)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_e = typeof socket_io_1.Socket !== "undefined" && socket_io_1.Socket) === "function" ? _e : Object, String]),
+    __metadata("design:paramtypes", [socket_io_1.Socket, String]),
     __metadata("design:returntype", void 0)
-], websockets_1.WebSocketGateway.prototype, "joinRoom", null);
+], NotificationGateway.prototype, "joinRoom", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('room:leave'),
     __param(0, (0, websockets_1.ConnectedSocket)()),
     __param(1, (0, websockets_1.MessageBody)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [typeof (_f = typeof socket_io_1.Socket !== "undefined" && socket_io_1.Socket) === "function" ? _f : Object, String]),
+    __metadata("design:paramtypes", [socket_io_1.Socket, String]),
     __metadata("design:returntype", void 0)
-], websockets_1.WebSocketGateway.prototype, "leaveRoom", null);
-exports.WebSocketGateway = websockets_1.WebSocketGateway = WebSocketGateway_1 = __decorate([
+], NotificationGateway.prototype, "leaveRoom", null);
+exports.NotificationGateway = NotificationGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {
             origin: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -145,5 +142,5 @@ exports.WebSocketGateway = websockets_1.WebSocketGateway = WebSocketGateway_1 = 
         },
     }),
     __metadata("design:paramtypes", [websocket_service_1.WebSocketService])
-], websockets_1.WebSocketGateway);
+], NotificationGateway);
 //# sourceMappingURL=websocket.gateway.js.map

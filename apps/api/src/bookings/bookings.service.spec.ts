@@ -3,6 +3,7 @@ import { BookingsService } from './bookings.service';
 import { DatabaseService } from '../database/database.service';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { UploadService } from '../upload/upload.service';
+import { EmailService } from '../email/email.service';
 
 const mockBooking = {
     id: 'booking-123',
@@ -41,6 +42,11 @@ const mockUploadService = {
     uploadFile: jest.fn(),
 };
 
+const mockEmailService = {
+    sendBookingNotification: jest.fn(),
+    sendPaymentConfirmation: jest.fn(),
+};
+
 describe('BookingsService', () => {
     let service: BookingsService;
     let db: typeof mockDatabaseService;
@@ -53,6 +59,10 @@ describe('BookingsService', () => {
                 {
                     provide: DatabaseService,
                     useValue: mockDatabaseService,
+                },
+                {
+                    provide: EmailService,
+                    useValue: mockEmailService,
                 },
                 {
                     provide: UploadService,

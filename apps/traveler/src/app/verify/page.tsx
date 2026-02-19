@@ -15,15 +15,25 @@ const getFriendlyError = (message?: string) => {
     return 'Verification failed. Please check the code.';
   }
 
-  if (message === 'EMAIL_NOT_VERIFIED') {
-    return 'Your account is not verified yet. Enter the code or request a new one.';
+  switch (message) {
+    case 'EMAIL_NOT_VERIFIED':
+      return 'Your account is not verified yet. Enter the code or request a new one.';
+    case 'EMAIL_NOT_FOUND':
+      return 'We could not find an account for this email. Please sign up again.';
+    case 'OTP_NOT_FOUND':
+      return 'We could not find an active verification code. Request a new code and try again.';
+    case 'OTP_EXPIRED':
+      return 'That code expired. Request a new one and try again.';
+    case 'INVALID_OTP':
+      return 'That code is incorrect. Double-check and try again.';
+    case 'OTP_RESEND_COOLDOWN':
+      return 'You requested a new code recently. Please wait a moment before trying again.';
+    default:
+      if (message.toLowerCase().includes('expired')) {
+        return 'That code expired. Request a new one and try again.';
+      }
+      return message;
   }
-
-  if (message.toLowerCase().includes('expired')) {
-    return 'That code expired. Request a new one and try again.';
-  }
-
-  return message;
 };
 
 export default function VerifyEmailPage() {

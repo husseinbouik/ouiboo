@@ -744,10 +744,10 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         const template = await createTripTemplate(agency1.id, { status: 'ACTIVE' });
         await db.review.createMany({
             data: [
-                { tripTemplateId: template.id, userId: traveler.id, rating: 4, content: 'Good trip' },
-                { tripTemplateId: template.id, userId: traveler.id, rating: 5, content: 'Excellent' },
-                { tripTemplateId: template.id, userId: traveler.id, rating: 5, content: 'Amazing' },
-                { tripTemplateId: template.id, userId: traveler.id, rating: 3, content: 'OK' },
+                { tripTemplateId: template.id, travelerId: traveler.id, rating: 4, comment: 'Good trip' },
+                { tripTemplateId: template.id, travelerId: traveler.id, rating: 5, comment: 'Excellent' },
+                { tripTemplateId: template.id, travelerId: traveler.id, rating: 5, comment: 'Amazing' },
+                { tripTemplateId: template.id, travelerId: traveler.id, rating: 3, comment: 'OK' },
             ],
         });
         const res = await request(app.getHttpServer())

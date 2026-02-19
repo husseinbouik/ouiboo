@@ -1,0 +1,1259 @@
+
+> @ouiboo/api@0.0.1 build
+> nest build
+
+[96msrc/bookings/bookings.service.ts[0m:[93m69[0m:[93m52[0m - [91merror[0m[90m TS1361: [0m'PaymentMethod' cannot be used as a value because it was imported using 'import type'.
+
+[7m69[0m                 [PaymentMethodEnum.BANK_TRANSFER]: PaymentMethod.MANUAL,
+[7m  [0m [91m                                                   ~~~~~~~~~~~~~[0m
+
+  [96msrc/bookings/bookings.service.ts[0m:[93m7[0m:[93m15[0m
+    [7m7[0m import type { PaymentMethod } from '@ouiboo/database';
+    [7m [0m [96m              ~~~~~~~~~~~~~[0m
+    'PaymentMethod' was imported here.
+[96msrc/bookings/bookings.service.ts[0m:[93m70[0m:[93m43[0m - [91merror[0m[90m TS1361: [0m'PaymentMethod' cannot be used as a value because it was imported using 'import type'.
+
+[7m70[0m                 [PaymentMethodEnum.CARD]: PaymentMethod.GATEWAY,
+[7m  [0m [91m                                          ~~~~~~~~~~~~~[0m
+
+  [96msrc/bookings/bookings.service.ts[0m:[93m7[0m:[93m15[0m
+    [7m7[0m import type { PaymentMethod } from '@ouiboo/database';
+    [7m [0m [96m              ~~~~~~~~~~~~~[0m
+    'PaymentMethod' was imported here.
+[96msrc/bookings/bookings.service.ts[0m:[93m71[0m:[93m45[0m - [91merror[0m[90m TS1361: [0m'PaymentMethod' cannot be used as a value because it was imported using 'import type'.
+
+[7m71[0m                 [PaymentMethodEnum.WALLET]: PaymentMethod.MANUAL,
+[7m  [0m [91m                                            ~~~~~~~~~~~~~[0m
+
+  [96msrc/bookings/bookings.service.ts[0m:[93m7[0m:[93m15[0m
+    [7m7[0m import type { PaymentMethod } from '@ouiboo/database';
+    [7m [0m [96m              ~~~~~~~~~~~~~[0m
+    'PaymentMethod' was imported here.
+[96msrc/bookings/bookings.service.ts[0m:[93m72[0m:[93m51[0m - [91merror[0m[90m TS1361: [0m'PaymentMethod' cannot be used as a value because it was imported using 'import type'.
+
+[7m72[0m                 [PaymentMethodEnum.MOBILE_MONEY]: PaymentMethod.GATEWAY,
+[7m  [0m [91m                                                  ~~~~~~~~~~~~~[0m
+
+  [96msrc/bookings/bookings.service.ts[0m:[93m7[0m:[93m15[0m
+    [7m7[0m import type { PaymentMethod } from '@ouiboo/database';
+    [7m [0m [96m              ~~~~~~~~~~~~~[0m
+    'PaymentMethod' was imported here.
+[96msrc/bookings/bookings.service.ts[0m:[93m76[0m:[93m19[0m - [91merror[0m[90m TS1361: [0m'PaymentMethod' cannot be used as a value because it was imported using 'import type'.
+
+[7m76[0m                 : PaymentMethod.MANUAL;
+[7m  [0m [91m                  ~~~~~~~~~~~~~[0m
+
+  [96msrc/bookings/bookings.service.ts[0m:[93m7[0m:[93m15[0m
+    [7m7[0m import type { PaymentMethod } from '@ouiboo/database';
+    [7m [0m [96m              ~~~~~~~~~~~~~[0m
+    'PaymentMethod' was imported here.
+[96msrc/notifications/notification-jobs.service.ts[0m:[93m5[0m:[93m34[0m - [91merror[0m[90m TS2307: [0mCannot find module '@prisma/client' or its corresponding type declarations.
+
+[7m5[0m import { NotificationType } from '@prisma/client';
+[7m [0m [91m                                 ~~~~~~~~~~~~~~~~[0m
+[96msrc/notifications/notification-jobs.service.ts[0m:[93m104[0m:[93m49[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'agency' does not exist in type 'TripSessionInclude<DefaultArgs>'.
+
+[7m104[0m           session: { include: { template: true, agency: true } },
+[7m   [0m [91m                                                ~~~~~~[0m
+[96msrc/notifications/notification-jobs.service.ts[0m:[93m112[0m:[93m85[0m - [91merror[0m[90m TS2551: [0mProperty 'session' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; status: BookingStatus; cancellationReason: string; sessionId: string; guestsCount: number; fullName: string; phoneNumber: string; ... 17 more ...; travelerId: string; }'. Did you mean 'sessionId'?
+
+[7m112[0m             const tripDetailsUrl = `${process.env.TRAVELER_APP_URL}/trips/${booking.session.template.id}`;
+[7m   [0m [91m                                                                                    ~~~~~~~[0m
+[96msrc/notifications/notification-jobs.service.ts[0m:[93m115[0m:[93m23[0m - [91merror[0m[90m TS2551: [0mProperty 'traveler' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; status: BookingStatus; cancellationReason: string; sessionId: string; guestsCount: number; fullName: string; phoneNumber: string; ... 17 more ...; travelerId: string; }'. Did you mean 'travelerId'?
+
+[7m115[0m               booking.traveler.email,
+[7m   [0m [91m                      ~~~~~~~~[0m
+[96msrc/notifications/notification-jobs.service.ts[0m:[93m116[0m:[93m23[0m - [91merror[0m[90m TS2551: [0mProperty 'session' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; status: BookingStatus; cancellationReason: string; sessionId: string; guestsCount: number; fullName: string; phoneNumber: string; ... 17 more ...; travelerId: string; }'. Did you mean 'sessionId'?
+
+[7m116[0m               booking.session.template.title,
+[7m   [0m [91m                      ~~~~~~~[0m
+[96msrc/notifications/notification-jobs.service.ts[0m:[93m118[0m:[93m23[0m - [91merror[0m[90m TS2551: [0mProperty 'session' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; status: BookingStatus; cancellationReason: string; sessionId: string; guestsCount: number; fullName: string; phoneNumber: string; ... 17 more ...; travelerId: string; }'. Did you mean 'sessionId'?
+
+[7m118[0m               booking.session.agency.name,
+[7m   [0m [91m                      ~~~~~~~[0m
+[96msrc/notifications/notification-jobs.service.ts[0m:[93m135[0m:[93m23[0m - [91merror[0m[90m TS2551: [0mProperty 'traveler' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; status: BookingStatus; cancellationReason: string; sessionId: string; guestsCount: number; fullName: string; phoneNumber: string; ... 17 more ...; travelerId: string; }'. Did you mean 'travelerId'?
+
+[7m135[0m               booking.traveler.email,
+[7m   [0m [91m                      ~~~~~~~~[0m
+[96msrc/notifications/notification-jobs.service.ts[0m:[93m172[0m:[93m49[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'agency' does not exist in type 'TripSessionInclude<DefaultArgs>'.
+
+[7m172[0m           session: { include: { template: true, agency: true } },
+[7m   [0m [91m                                                ~~~~~~[0m
+[96msrc/notifications/notification-jobs.service.ts[0m:[93m180[0m:[93m85[0m - [91merror[0m[90m TS2551: [0mProperty 'session' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; status: BookingStatus; cancellationReason: string; sessionId: string; guestsCount: number; fullName: string; phoneNumber: string; ... 17 more ...; travelerId: string; }'. Did you mean 'sessionId'?
+
+[7m180[0m             const tripDetailsUrl = `${process.env.TRAVELER_APP_URL}/trips/${booking.session.template.id}`;
+[7m   [0m [91m                                                                                    ~~~~~~~[0m
+[96msrc/notifications/notification-jobs.service.ts[0m:[93m183[0m:[93m23[0m - [91merror[0m[90m TS2551: [0mProperty 'traveler' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; status: BookingStatus; cancellationReason: string; sessionId: string; guestsCount: number; fullName: string; phoneNumber: string; ... 17 more ...; travelerId: string; }'. Did you mean 'travelerId'?
+
+[7m183[0m               booking.traveler.email,
+[7m   [0m [91m                      ~~~~~~~~[0m
+[96msrc/notifications/notification-jobs.service.ts[0m:[93m184[0m:[93m23[0m - [91merror[0m[90m TS2551: [0mProperty 'session' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; status: BookingStatus; cancellationReason: string; sessionId: string; guestsCount: number; fullName: string; phoneNumber: string; ... 17 more ...; travelerId: string; }'. Did you mean 'sessionId'?
+
+[7m184[0m               booking.session.template.title,
+[7m   [0m [91m                      ~~~~~~~[0m
+[96msrc/notifications/notification-jobs.service.ts[0m:[93m186[0m:[93m23[0m - [91merror[0m[90m TS2551: [0mProperty 'session' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; status: BookingStatus; cancellationReason: string; sessionId: string; guestsCount: number; fullName: string; phoneNumber: string; ... 17 more ...; travelerId: string; }'. Did you mean 'sessionId'?
+
+[7m186[0m               booking.session.agency.name,
+[7m   [0m [91m                      ~~~~~~~[0m
+[96msrc/notifications/notification-jobs.service.ts[0m:[93m203[0m:[93m23[0m - [91merror[0m[90m TS2551: [0mProperty 'traveler' does not exist on type '{ id: string; createdAt: Date; updatedAt: Date; status: BookingStatus; cancellationReason: string; sessionId: string; guestsCount: number; fullName: string; phoneNumber: string; ... 17 more ...; travelerId: string; }'. Did you mean 'travelerId'?
+
+[7m203[0m               booking.traveler.email,
+[7m   [0m [91m                      ~~~~~~~~[0m
+[96msrc/notifications/notification-jobs.service.ts[0m:[93m291[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType '{ userId: string; notificationType: NotificationType; recipientEmail: string; status: string; sentAt: Date; }' is not assignable to type '(Without<NotificationLogCreateInput, NotificationLogUncheckedCreateInput> & NotificationLogUncheckedCreateInput) | (Without<...> & NotificationLogCreateInput)'.
+  Type '{ userId: string; notificationType: NotificationType; recipientEmail: string; status: string; sentAt: Date; }' is not assignable to type 'Without<NotificationLogUncheckedCreateInput, NotificationLogCreateInput> & NotificationLogCreateInput'.
+    Property 'message' is missing in type '{ userId: string; notificationType: NotificationType; recipientEmail: string; status: string; sentAt: Date; }' but required in type 'NotificationLogCreateInput'.
+
+[7m291[0m       data: {
+[7m   [0m [91m      ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m27236[0m:[93m5[0m
+    [7m27236[0m     message: string
+    [7m     [0m [96m    ~~~~~~~[0m
+    'message' is declared here.
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m19463[0m:[93m5[0m
+    [7m19463[0m     data: XOR<NotificationLogCreateInput, NotificationLogUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: NotificationLogSelect<DefaultArgs>; data: (Without<NotificationLogCreateInput, NotificationLogUncheckedCreateInput> & NotificationLogUncheckedCreateInput) | (Without<...> & NotificationLogCreateInput); }'
+[96msrc/payments/__tests__/payments.security.spec.ts[0m:[93m4[0m:[93m10[0m - [91merror[0m[90m TS2305: [0mModule '"@ouiboo/database"' has no exported member 'PrismaService'.
+
+[7m4[0m import { PrismaService } from '@ouiboo/database';
+[7m [0m [91m         ~~~~~~~~~~~~~[0m
+[96msrc/payments/__tests__/payments.security.spec.ts[0m:[93m8[0m:[93m68[0m - [91merror[0m[90m TS2307: [0mCannot find module '@prisma/client' or its corresponding type declarations.
+
+[7m8[0m import { BookingStatus, BookingPaymentStatus, PaymentMethod } from '@prisma/client';
+[7m [0m [91m                                                                   ~~~~~~~~~~~~~~~~[0m
+[96msrc/payments/dto/payment.dto.ts[0m:[93m2[0m:[93m31[0m - [91merror[0m[90m TS2307: [0mCannot find module '@prisma/client' or its corresponding type declarations.
+
+[7m2[0m import { PaymentMethod } from '@prisma/client';
+[7m [0m [91m                              ~~~~~~~~~~~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m6[0m:[93m73[0m - [91merror[0m[90m TS2307: [0mCannot find module '@prisma/client' or its corresponding type declarations.
+
+[7m6[0m import type { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
+[7m [0m [91m                                                                        ~~~~~~~~~~~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m33[0m:[93m28[0m - [91merror[0m[90m TS1361: [0m'BookingStatus' cannot be used as a value because it was imported using 'import type'.
+
+[7m33[0m     if (booking.status !== BookingStatus.PENDING) {
+[7m  [0m [91m                           ~~~~~~~~~~~~~[0m
+
+  [96msrc/payments/payments.service.ts[0m:[93m6[0m:[93m30[0m
+    [7m6[0m import type { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
+    [7m [0m [96m                             ~~~~~~~~~~~~~[0m
+    'BookingStatus' was imported here.
+[96msrc/payments/payments.service.ts[0m:[93m69[0m:[93m17[0m - [91merror[0m[90m TS1361: [0m'PaymentMethod' cannot be used as a value because it was imported using 'import type'.
+
+[7m69[0m         method: PaymentMethod.GATEWAY,
+[7m  [0m [91m                ~~~~~~~~~~~~~[0m
+
+  [96msrc/payments/payments.service.ts[0m:[93m6[0m:[93m15[0m
+    [7m6[0m import type { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
+    [7m [0m [96m              ~~~~~~~~~~~~~[0m
+    'PaymentMethod' was imported here.
+[96msrc/payments/payments.service.ts[0m:[93m82[0m:[93m24[0m - [91merror[0m[90m TS1361: [0m'PaymentMethod' cannot be used as a value because it was imported using 'import type'.
+
+[7m82[0m         paymentMethod: PaymentMethod.GATEWAY,
+[7m  [0m [91m                       ~~~~~~~~~~~~~[0m
+
+  [96msrc/payments/payments.service.ts[0m:[93m6[0m:[93m15[0m
+    [7m6[0m import type { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
+    [7m [0m [96m              ~~~~~~~~~~~~~[0m
+    'PaymentMethod' was imported here.
+[96msrc/payments/payments.service.ts[0m:[93m84[0m:[93m24[0m - [91merror[0m[90m TS1361: [0m'BookingPaymentStatus' cannot be used as a value because it was imported using 'import type'.
+
+[7m84[0m         paymentStatus: BookingPaymentStatus.UNPAID,
+[7m  [0m [91m                       ~~~~~~~~~~~~~~~~~~~~[0m
+
+  [96msrc/payments/payments.service.ts[0m:[93m6[0m:[93m45[0m
+    [7m6[0m import type { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
+    [7m [0m [96m                                            ~~~~~~~~~~~~~~~~~~~~[0m
+    'BookingPaymentStatus' was imported here.
+[96msrc/payments/payments.service.ts[0m:[93m143[0m:[93m45[0m - [91merror[0m[90m TS2367: [0mThis comparison appears to be unintentional because the types 'BookingPaymentStatus' and '"FAILED"' have no overlap.
+
+[7m143[0m       if (booking.status !== 'CANCELLED' && booking.paymentStatus !== 'FAILED') {
+[7m   [0m [91m                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m163[0m:[93m30[0m - [91merror[0m[90m TS1361: [0m'BookingPaymentStatus' cannot be used as a value because it was imported using 'import type'.
+
+[7m163[0m               paymentStatus: BookingPaymentStatus.FAILED,
+[7m   [0m [91m                             ~~~~~~~~~~~~~~~~~~~~[0m
+
+  [96msrc/payments/payments.service.ts[0m:[93m6[0m:[93m45[0m
+    [7m6[0m import type { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
+    [7m [0m [96m                                            ~~~~~~~~~~~~~~~~~~~~[0m
+    'BookingPaymentStatus' was imported here.
+[96msrc/payments/payments.service.ts[0m:[93m180[0m:[93m15[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'userId' does not exist in type '(Without<AuditLogCreateInput, AuditLogUncheckedCreateInput> & AuditLogUncheckedCreateInput) | (Without<...> & AuditLogCreateInput)'.
+
+[7m180[0m               userId: booking.travelerId,
+[7m   [0m [91m              ~~~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m15558[0m:[93m5[0m
+    [7m15558[0m     data: XOR<AuditLogCreateInput, AuditLogUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: AuditLogSelect<DefaultArgs>; data: (Without<AuditLogCreateInput, AuditLogUncheckedCreateInput> & AuditLogUncheckedCreateInput) | (Without<...> & AuditLogCreateInput); }'
+[96msrc/payments/payments.service.ts[0m:[93m187[0m:[93m32[0m - [91merror[0m[90m TS2339: [0mProperty 'error' does not exist on type 'PaymentVerificationResult'.
+
+[7m187[0m                 reason: result.error || 'Payment verification failed',
+[7m   [0m [91m                               ~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m227[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType '"COMPLETED"' is not assignable to type 'RefundStatus | NullableEnumRefundStatusFieldUpdateOperationsInput'.
+
+[7m227[0m           refundStatus: 'COMPLETED',
+[7m   [0m [91m          ~~~~~~~~~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m26573[0m:[93m5[0m
+    [7m26573[0m     refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
+    [7m     [0m [96m    ~~~~~~~~~~~~[0m
+    The expected type comes from property 'refundStatus' which is declared here on type '(Without<BookingUpdateInput, BookingUncheckedUpdateInput> & BookingUncheckedUpdateInput) | (Without<...> & BookingUpdateInput)'
+[96msrc/payments/payments.service.ts[0m:[93m229[0m:[93m26[0m - [91merror[0m[90m TS1361: [0m'BookingPaymentStatus' cannot be used as a value because it was imported using 'import type'.
+
+[7m229[0m           paymentStatus: BookingPaymentStatus.REFUNDED,
+[7m   [0m [91m                         ~~~~~~~~~~~~~~~~~~~~[0m
+
+  [96msrc/payments/payments.service.ts[0m:[93m6[0m:[93m45[0m
+    [7m6[0m import type { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
+    [7m [0m [96m                                            ~~~~~~~~~~~~~~~~~~~~[0m
+    'BookingPaymentStatus' was imported here.
+[96msrc/payments/payments.service.ts[0m:[93m358[0m:[93m72[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'agency' does not exist in type 'TripSessionInclude<DefaultArgs>'.
+
+[7m358[0m       include: { traveler: true, session: { include: { template: true, agency: true } } },
+[7m   [0m [91m                                                                       ~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m396[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType '{ booking: { include: { session: { include: { template: true; }; }; }; }; }' is not assignable to type 'never'.
+
+[7m396[0m       include: {
+[7m   [0m [91m      ~~~~~~~[0m
+
+  [96msrc/payments/payments.service.ts[0m:[93m396[0m:[93m7[0m
+    [7m396[0m       include: {
+    [7m   [0m [96m      ~~~~~~~~~~[0m
+    [7m397[0m         booking: {
+    [7m   [0m [96m~~~~~~~~~~~~~~~~~~[0m
+    [7m...[0m 
+    [7m401[0m         },
+    [7m   [0m [96m~~~~~~~~~~[0m
+    [7m402[0m       },
+    [7m   [0m [96m~~~~~~~[0m
+    The expected type comes from property 'include' which is declared here on type '{ where: { transactionId: any; }; include: never; }'
+[96msrc/payments/payments.service.ts[0m:[93m413[0m:[93m17[0m - [91merror[0m[90m TS2339: [0mProperty 'status' does not exist on type 'never'.
+
+[7m413[0m     if (booking.status === 'CANCELLED' || booking.paymentStatus === 'FAILED') {
+[7m   [0m [91m                ~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m413[0m:[93m51[0m - [91merror[0m[90m TS2339: [0mProperty 'paymentStatus' does not exist on type 'never'.
+
+[7m413[0m     if (booking.status === 'CANCELLED' || booking.paymentStatus === 'FAILED') {
+[7m   [0m [91m                                                  ~~~~~~~~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m414[0m:[93m43[0m - [91merror[0m[90m TS2339: [0mProperty 'id' does not exist on type 'never'.
+
+[7m414[0m       this.logger.warn(`Booking ${booking.id} already cancelled or failed, skipping adjustment`);
+[7m   [0m [91m                                          ~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m431[0m:[93m30[0m - [91merror[0m[90m TS2339: [0mProperty 'id' does not exist on type 'never'.
+
+[7m431[0m         where: { id: booking.id },
+[7m   [0m [91m                             ~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m434[0m:[93m26[0m - [91merror[0m[90m TS1361: [0m'BookingPaymentStatus' cannot be used as a value because it was imported using 'import type'.
+
+[7m434[0m           paymentStatus: BookingPaymentStatus.FAILED,
+[7m   [0m [91m                         ~~~~~~~~~~~~~~~~~~~~[0m
+
+  [96msrc/payments/payments.service.ts[0m:[93m6[0m:[93m45[0m
+    [7m6[0m import type { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
+    [7m [0m [96m                                            ~~~~~~~~~~~~~~~~~~~~[0m
+    'BookingPaymentStatus' was imported here.
+[96msrc/payments/payments.service.ts[0m:[93m440[0m:[93m30[0m - [91merror[0m[90m TS2339: [0mProperty 'sessionId' does not exist on type 'never'.
+
+[7m440[0m         where: { id: booking.sessionId },
+[7m   [0m [91m                             ~~~~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m443[0m:[93m32[0m - [91merror[0m[90m TS2339: [0mProperty 'guestsCount' does not exist on type 'never'.
+
+[7m443[0m             increment: booking.guestsCount,
+[7m   [0m [91m                               ~~~~~~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m451[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'userId' does not exist in type '(Without<AuditLogCreateInput, AuditLogUncheckedCreateInput> & AuditLogUncheckedCreateInput) | (Without<...> & AuditLogCreateInput)'.
+
+[7m451[0m           userId: booking.travelerId,
+[7m   [0m [91m          ~~~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m15558[0m:[93m5[0m
+    [7m15558[0m     data: XOR<AuditLogCreateInput, AuditLogUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: AuditLogSelect<DefaultArgs>; data: (Without<AuditLogCreateInput, AuditLogUncheckedCreateInput> & AuditLogUncheckedCreateInput) | (Without<...> & AuditLogCreateInput); }'
+[96msrc/payments/payments.service.ts[0m:[93m451[0m:[93m27[0m - [91merror[0m[90m TS2339: [0mProperty 'travelerId' does not exist on type 'never'.
+
+[7m451[0m           userId: booking.travelerId,
+[7m   [0m [91m                          ~~~~~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m454[0m:[93m31[0m - [91merror[0m[90m TS2339: [0mProperty 'id' does not exist on type 'never'.
+
+[7m454[0m           resourceId: booking.id,
+[7m   [0m [91m                              ~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m459[0m:[93m36[0m - [91merror[0m[90m TS2339: [0mProperty 'guestsCount' does not exist on type 'never'.
+
+[7m459[0m             seatsReleased: booking.guestsCount,
+[7m   [0m [91m                                   ~~~~~~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m465[0m:[93m59[0m - [91merror[0m[90m TS2339: [0mProperty 'id' does not exist on type 'never'.
+
+[7m465[0m     this.logger.log(`Payment failed for booking ${booking.id} (Stripe: ${paymentIntent.id}), seats released: ${booking.guestsCount}`);
+[7m   [0m [91m                                                          ~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m465[0m:[93m120[0m - [91merror[0m[90m TS2339: [0mProperty 'guestsCount' does not exist on type 'never'.
+
+[7m465[0m     this.logger.log(`Payment failed for booking ${booking.id} (Stripe: ${paymentIntent.id}), seats released: ${booking.guestsCount}`);
+[7m   [0m [91m                                                                                                                       ~~~~~~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m480[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType '{ booking: true; }' is not assignable to type 'never'.
+
+[7m480[0m       include: { booking: true },
+[7m   [0m [91m      ~~~~~~~[0m
+
+  [96msrc/payments/payments.service.ts[0m:[93m480[0m:[93m7[0m
+    [7m480[0m       include: { booking: true },
+    [7m   [0m [96m      ~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'include' which is declared here on type '{ where: { providerData: { path: string[]; equals: any; }; }; include: never; }'
+[96msrc/payments/payments.service.ts[0m:[93m492[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty 'id' does not exist on type 'never'.
+
+[7m492[0m       where: { id: booking.id },
+[7m   [0m [91m                           ~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m494[0m:[93m24[0m - [91merror[0m[90m TS1361: [0m'BookingPaymentStatus' cannot be used as a value because it was imported using 'import type'.
+
+[7m494[0m         paymentStatus: BookingPaymentStatus.REFUNDED,
+[7m   [0m [91m                       ~~~~~~~~~~~~~~~~~~~~[0m
+
+  [96msrc/payments/payments.service.ts[0m:[93m6[0m:[93m45[0m
+    [7m6[0m import type { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
+    [7m [0m [96m                                            ~~~~~~~~~~~~~~~~~~~~[0m
+    'BookingPaymentStatus' was imported here.
+[96msrc/payments/payments.service.ts[0m:[93m500[0m:[93m61[0m - [91merror[0m[90m TS2339: [0mProperty 'id' does not exist on type 'never'.
+
+[7m500[0m     this.logger.log(`Refund processed for booking ${booking.id}: ${charge.refund.id}`);
+[7m   [0m [91m                                                            ~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m515[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType '{ booking: true; }' is not assignable to type 'never'.
+
+[7m515[0m       include: { booking: true },
+[7m   [0m [91m      ~~~~~~~[0m
+
+  [96msrc/payments/payments.service.ts[0m:[93m515[0m:[93m7[0m
+    [7m515[0m       include: { booking: true },
+    [7m   [0m [96m      ~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'include' which is declared here on type '{ where: { providerData: { path: string[]; equals: any; }; }; include: never; }'
+[96msrc/payments/payments.service.ts[0m:[93m524[0m:[93m29[0m - [91merror[0m[90m TS2339: [0mProperty 'paymentStatus' does not exist on type 'never'.
+
+[7m524[0m     if (transaction.booking.paymentStatus !== BookingPaymentStatus.PAID) {
+[7m   [0m [91m                            ~~~~~~~~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m524[0m:[93m47[0m - [91merror[0m[90m TS1361: [0m'BookingPaymentStatus' cannot be used as a value because it was imported using 'import type'.
+
+[7m524[0m     if (transaction.booking.paymentStatus !== BookingPaymentStatus.PAID) {
+[7m   [0m [91m                                              ~~~~~~~~~~~~~~~~~~~~[0m
+
+  [96msrc/payments/payments.service.ts[0m:[93m6[0m:[93m45[0m
+    [7m6[0m import type { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
+    [7m [0m [96m                                            ~~~~~~~~~~~~~~~~~~~~[0m
+    'BookingPaymentStatus' was imported here.
+[96msrc/payments/payments.service.ts[0m:[93m525[0m:[93m67[0m - [91merror[0m[90m TS2339: [0mProperty 'id' does not exist on type 'never'.
+
+[7m525[0m       await this.transitionBookingToConfirmed(transaction.booking.id, {
+[7m   [0m [91m                                                                  ~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m572[0m:[93m72[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'agency' does not exist in type 'TripSessionInclude<DefaultArgs>'.
+
+[7m572[0m       include: { traveler: true, session: { include: { template: true, agency: true } } },
+[7m   [0m [91m                                                                       ~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m625[0m:[93m43[0m - [91merror[0m[90m TS2367: [0mThis comparison appears to be unintentional because the types 'BookingPaymentStatus' and '"FAILED"' have no overlap.
+
+[7m625[0m     if (booking.status === 'CANCELLED' || booking.paymentStatus === 'FAILED') {
+[7m   [0m [91m                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m648[0m:[93m26[0m - [91merror[0m[90m TS1361: [0m'BookingPaymentStatus' cannot be used as a value because it was imported using 'import type'.
+
+[7m648[0m           paymentStatus: BookingPaymentStatus.FAILED,
+[7m   [0m [91m                         ~~~~~~~~~~~~~~~~~~~~[0m
+
+  [96msrc/payments/payments.service.ts[0m:[93m6[0m:[93m45[0m
+    [7m6[0m import type { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
+    [7m [0m [96m                                            ~~~~~~~~~~~~~~~~~~~~[0m
+    'BookingPaymentStatus' was imported here.
+[96msrc/payments/payments.service.ts[0m:[93m665[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'userId' does not exist in type '(Without<AuditLogCreateInput, AuditLogUncheckedCreateInput> & AuditLogUncheckedCreateInput) | (Without<...> & AuditLogCreateInput)'.
+
+[7m665[0m           userId: booking.travelerId,
+[7m   [0m [91m          ~~~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m15558[0m:[93m5[0m
+    [7m15558[0m     data: XOR<AuditLogCreateInput, AuditLogUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: AuditLogSelect<DefaultArgs>; data: (Without<AuditLogCreateInput, AuditLogUncheckedCreateInput> & AuditLogUncheckedCreateInput) | (Without<...> & AuditLogCreateInput); }'
+[96msrc/payments/payments.service.ts[0m:[93m705[0m:[93m24[0m - [91merror[0m[90m TS1361: [0m'BookingPaymentStatus' cannot be used as a value because it was imported using 'import type'.
+
+[7m705[0m         paymentStatus: BookingPaymentStatus.REFUNDED,
+[7m   [0m [91m                       ~~~~~~~~~~~~~~~~~~~~[0m
+
+  [96msrc/payments/payments.service.ts[0m:[93m6[0m:[93m45[0m
+    [7m6[0m import type { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
+    [7m [0m [96m                                            ~~~~~~~~~~~~~~~~~~~~[0m
+    'BookingPaymentStatus' was imported here.
+[96msrc/payments/payments.service.ts[0m:[93m803[0m:[93m43[0m - [91merror[0m[90m TS2367: [0mThis comparison appears to be unintentional because the types 'BookingPaymentStatus' and '"FAILED"' have no overlap.
+
+[7m803[0m     if (booking.status === 'CANCELLED' || booking.paymentStatus === 'FAILED') {
+[7m   [0m [91m                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/payments/payments.service.ts[0m:[93m826[0m:[93m26[0m - [91merror[0m[90m TS1361: [0m'BookingPaymentStatus' cannot be used as a value because it was imported using 'import type'.
+
+[7m826[0m           paymentStatus: BookingPaymentStatus.FAILED,
+[7m   [0m [91m                         ~~~~~~~~~~~~~~~~~~~~[0m
+
+  [96msrc/payments/payments.service.ts[0m:[93m6[0m:[93m45[0m
+    [7m6[0m import type { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
+    [7m [0m [96m                                            ~~~~~~~~~~~~~~~~~~~~[0m
+    'BookingPaymentStatus' was imported here.
+[96msrc/payments/payments.service.ts[0m:[93m843[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'userId' does not exist in type '(Without<AuditLogCreateInput, AuditLogUncheckedCreateInput> & AuditLogUncheckedCreateInput) | (Without<...> & AuditLogCreateInput)'.
+
+[7m843[0m           userId: booking.travelerId,
+[7m   [0m [91m          ~~~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m15558[0m:[93m5[0m
+    [7m15558[0m     data: XOR<AuditLogCreateInput, AuditLogUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: AuditLogSelect<DefaultArgs>; data: (Without<AuditLogCreateInput, AuditLogUncheckedCreateInput> & AuditLogUncheckedCreateInput) | (Without<...> & AuditLogCreateInput); }'
+[96msrc/payments/payments.service.ts[0m:[93m886[0m:[93m17[0m - [91merror[0m[90m TS1361: [0m'BookingStatus' cannot be used as a value because it was imported using 'import type'.
+
+[7m886[0m         status: BookingStatus.CONFIRMED,
+[7m   [0m [91m                ~~~~~~~~~~~~~[0m
+
+  [96msrc/payments/payments.service.ts[0m:[93m6[0m:[93m30[0m
+    [7m6[0m import type { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
+    [7m [0m [96m                             ~~~~~~~~~~~~~[0m
+    'BookingStatus' was imported here.
+[96msrc/payments/payments.service.ts[0m:[93m887[0m:[93m24[0m - [91merror[0m[90m TS1361: [0m'BookingPaymentStatus' cannot be used as a value because it was imported using 'import type'.
+
+[7m887[0m         paymentStatus: BookingPaymentStatus.PAID,
+[7m   [0m [91m                       ~~~~~~~~~~~~~~~~~~~~[0m
+
+  [96msrc/payments/payments.service.ts[0m:[93m6[0m:[93m45[0m
+    [7m6[0m import type { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
+    [7m [0m [96m                                            ~~~~~~~~~~~~~~~~~~~~[0m
+    'BookingPaymentStatus' was imported here.
+[96msrc/payments/payments.service.ts[0m:[93m922[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType '{ userId: string; notificationType: "BOOKING_CONFIRMATION"; recipientEmail: string; status: string; sentAt: Date; }' is not assignable to type '(Without<NotificationLogCreateInput, NotificationLogUncheckedCreateInput> & NotificationLogUncheckedCreateInput) | (Without<...> & NotificationLogCreateInput)'.
+  Type '{ userId: string; notificationType: "BOOKING_CONFIRMATION"; recipientEmail: string; status: string; sentAt: Date; }' is not assignable to type 'Without<NotificationLogUncheckedCreateInput, NotificationLogCreateInput> & NotificationLogCreateInput'.
+    Property 'message' is missing in type '{ userId: string; notificationType: "BOOKING_CONFIRMATION"; recipientEmail: string; status: string; sentAt: Date; }' but required in type 'NotificationLogCreateInput'.
+
+[7m922[0m       data: {
+[7m   [0m [91m      ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m27236[0m:[93m5[0m
+    [7m27236[0m     message: string
+    [7m     [0m [96m    ~~~~~~~[0m
+    'message' is declared here.
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m19463[0m:[93m5[0m
+    [7m19463[0m     data: XOR<NotificationLogCreateInput, NotificationLogUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: NotificationLogSelect<DefaultArgs>; data: (Without<NotificationLogCreateInput, NotificationLogUncheckedCreateInput> & NotificationLogUncheckedCreateInput) | (Without<...> & NotificationLogCreateInput); }'
+[96msrc/trips/trips.service.ts[0m:[93m158[0m:[93m55[0m - [91merror[0m[90m TS2561: [0mObject literal may only specify known properties, but 'review' does not exist in type 'TripTemplateCountOutputTypeSelect<DefaultArgs>'. Did you mean to write 'reviews'?
+
+[7m158[0m                             select: { sessions: true, review: true, wishlist: true },
+[7m   [0m [91m                                                      ~~~~~~[0m
+[96msrc/trips/trips.service.ts[0m:[93m172[0m:[93m34[0m - [91merror[0m[90m TS2339: [0mProperty 'sessions' does not exist on type '{ description: string; title: string; id: string; createdAt: Date; updatedAt: Date; agencyId: string; category: TripCategory; startLocation: string; durationDays: number; ... 11 more ...; minBookings: number; }'.
+
+[7m172[0m                     if (template.sessions.length === 0) return false;
+[7m   [0m [91m                                 ~~~~~~~~[0m
+[96msrc/trips/trips.service.ts[0m:[93m173[0m:[93m59[0m - [91merror[0m[90m TS2339: [0mProperty 'sessions' does not exist on type '{ description: string; title: string; id: string; createdAt: Date; updatedAt: Date; agencyId: string; category: TripCategory; startLocation: string; durationDays: number; ... 11 more ...; minBookings: number; }'.
+
+[7m173[0m                     const minPrice = Math.min(...template.sessions.map(s => s.price));
+[7m   [0m [91m                                                          ~~~~~~~~[0m
+[96msrc/upload/providers/s3-storage.provider.ts[0m:[93m3[0m:[93m65[0m - [91merror[0m[90m TS2307: [0mCannot find module '@aws-sdk/client-s3' or its corresponding type declarations.
+
+[7m3[0m import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+[7m [0m [91m                                                                ~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/websocket/websocket.gateway.ts[0m:[93m2[0m:[93m3[0m - [91merror[0m[90m TS2395: [0mIndividual declarations in merged declaration 'WebSocketGateway' must be all exported or all local.
+
+[7m2[0m   WebSocketGateway,
+[7m [0m [91m  ~~~~~~~~~~~~~~~~[0m
+[96msrc/websocket/websocket.gateway.ts[0m:[93m2[0m:[93m3[0m - [91merror[0m[90m TS2440: [0mImport declaration conflicts with local declaration of 'WebSocketGateway'.
+
+[7m2[0m   WebSocketGateway,
+[7m [0m [91m  ~~~~~~~~~~~~~~~~[0m
+[96msrc/websocket/websocket.gateway.ts[0m:[93m10[0m:[93m32[0m - [91merror[0m[90m TS2307: [0mCannot find module 'socket.io' or its corresponding type declarations.
+
+[7m10[0m import { Server, Socket } from 'socket.io';
+[7m  [0m [91m                               ~~~~~~~~~~~[0m
+[96msrc/websocket/websocket.gateway.ts[0m:[93m14[0m:[93m2[0m - [91merror[0m[90m TS2348: [0mValue of type 'typeof WebSocketGateway' is not callable. Did you mean to include 'new'?
+
+[7m 14[0m @WebSocketGateway({
+[7m   [0m [91m ~~~~~~~~~~~~~~~~~~[0m
+[7m 15[0m   cors: {
+[7m   [0m [91m~~~~~~~~~[0m
+[7m...[0m 
+[7m 18[0m   },
+[7m   [0m [91m~~~~[0m
+[7m 19[0m })
+[7m   [0m [91m~~[0m
+[96msrc/websocket/websocket.gateway.ts[0m:[93m20[0m:[93m14[0m - [91merror[0m[90m TS2395: [0mIndividual declarations in merged declaration 'WebSocketGateway' must be all exported or all local.
+
+[7m20[0m export class WebSocketGateway
+[7m  [0m [91m             ~~~~~~~~~~~~~~~~[0m
+[96mtest/booking-lifecycle.e2e-spec.ts[0m:[93m113[0m:[93m13[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; userId: string; companyName: string; }' is not assignable to type '(Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput)'.
+  Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput> & AgencyProfileCreateInput'.
+    Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput>'.
+      Types of property 'userId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m113[0m             data: {
+[7m   [0m [91m            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m6041[0m:[93m5[0m
+    [7m6041[0m     data: XOR<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: AgencyProfileSelect<DefaultArgs>; include?: AgencyProfileInclude<DefaultArgs>; data: (Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput); }'
+[96mtest/booking-lifecycle.e2e-spec.ts[0m:[93m127[0m:[93m17[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'ItineraryDayUncheckedCreateNestedManyWithoutTemplateInput | ItineraryDayCreateNestedManyWithoutTemplateInput'.
+
+[7m127[0m                 itinerary: 'Day 1: Trek start',
+[7m   [0m [91m                ~~~~~~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m26137[0m:[93m5[0m
+    [7m26137[0m     itinerary?: ItineraryDayUncheckedCreateNestedManyWithoutTemplateInput
+    [7m     [0m [96m    ~~~~~~~~~[0m
+    The expected type comes from property 'itinerary' which is declared here on type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'
+[96mtest/booking-lifecycle.e2e-spec.ts[0m:[93m135[0m:[93m13[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; templateId: string; startDate: Date; endDate: Date; price: number; availableSeats: number; }' is not assignable to type '(Without<TripSessionCreateInput, TripSessionUncheckedCreateInput> & TripSessionUncheckedCreateInput) | (Without<...> & TripSessionCreateInput)'.
+  Type '{ id: string; templateId: string; startDate: Date; endDate: Date; price: number; availableSeats: number; }' is not assignable to type 'Without<TripSessionUncheckedCreateInput, TripSessionCreateInput> & TripSessionCreateInput'.
+    Type '{ id: string; templateId: string; startDate: Date; endDate: Date; price: number; availableSeats: number; }' is not assignable to type 'Without<TripSessionUncheckedCreateInput, TripSessionCreateInput>'.
+      Types of property 'templateId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m135[0m             data: {
+[7m   [0m [91m            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m9421[0m:[93m5[0m
+    [7m9421[0m     data: XOR<TripSessionCreateInput, TripSessionUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripSessionSelect<DefaultArgs>; include?: TripSessionInclude<DefaultArgs>; data: (Without<TripSessionCreateInput, TripSessionUncheckedCreateInput> & TripSessionUncheckedCreateInput) | (Without<...> & TripSessionCreateInput); }'
+[96mtest/booking-lifecycle.e2e-spec.ts[0m:[93m762[0m:[93m13[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; userId: string; companyName: string; }' is not assignable to type '(Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput)'.
+  Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput> & AgencyProfileCreateInput'.
+    Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput>'.
+      Types of property 'userId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m762[0m             data: {
+[7m   [0m [91m            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m6041[0m:[93m5[0m
+    [7m6041[0m     data: XOR<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: AgencyProfileSelect<DefaultArgs>; include?: AgencyProfileInclude<DefaultArgs>; data: (Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput); }'
+[96mtest/booking-lifecycle.e2e-spec.ts[0m:[93m778[0m:[93m17[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'ItineraryDayUncheckedCreateNestedManyWithoutTemplateInput | ItineraryDayCreateNestedManyWithoutTemplateInput'.
+
+[7m778[0m                 itinerary: 'Day 1: Beach',
+[7m   [0m [91m                ~~~~~~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m26137[0m:[93m5[0m
+    [7m26137[0m     itinerary?: ItineraryDayUncheckedCreateNestedManyWithoutTemplateInput
+    [7m     [0m [96m    ~~~~~~~~~[0m
+    The expected type comes from property 'itinerary' which is declared here on type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'
+[96mtest/booking-lifecycle.e2e-spec.ts[0m:[93m786[0m:[93m13[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; templateId: string; startDate: Date; endDate: Date; price: number; availableSeats: number; }' is not assignable to type '(Without<TripSessionCreateInput, TripSessionUncheckedCreateInput> & TripSessionUncheckedCreateInput) | (Without<...> & TripSessionCreateInput)'.
+  Type '{ id: string; templateId: string; startDate: Date; endDate: Date; price: number; availableSeats: number; }' is not assignable to type 'Without<TripSessionUncheckedCreateInput, TripSessionCreateInput> & TripSessionCreateInput'.
+    Type '{ id: string; templateId: string; startDate: Date; endDate: Date; price: number; availableSeats: number; }' is not assignable to type 'Without<TripSessionUncheckedCreateInput, TripSessionCreateInput>'.
+      Types of property 'templateId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m786[0m             data: {
+[7m   [0m [91m            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m9421[0m:[93m5[0m
+    [7m9421[0m     data: XOR<TripSessionCreateInput, TripSessionUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripSessionSelect<DefaultArgs>; include?: TripSessionInclude<DefaultArgs>; data: (Without<TripSessionCreateInput, TripSessionUncheckedCreateInput> & TripSessionUncheckedCreateInput) | (Without<...> & TripSessionCreateInput); }'
+[96mtest/booking-lifecycle.e2e-spec.ts[0m:[93m847[0m:[93m13[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; userId: string; companyName: string; }' is not assignable to type '(Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput)'.
+  Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput> & AgencyProfileCreateInput'.
+    Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput>'.
+      Types of property 'userId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m847[0m             data: {
+[7m   [0m [91m            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m6041[0m:[93m5[0m
+    [7m6041[0m     data: XOR<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: AgencyProfileSelect<DefaultArgs>; include?: AgencyProfileInclude<DefaultArgs>; data: (Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m187[0m:[93m55[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; email: string; name: string; role: UserRole.Agency; }' is not assignable to type '(Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput)'.
+  Type '{ id: string; email: string; name: string; role: UserRole.Agency; }' is not assignable to type 'Without<UserUncheckedCreateInput, UserCreateInput> & UserCreateInput'.
+    Property 'password' is missing in type '{ id: string; email: string; name: string; role: UserRole.Agency; }' but required in type 'UserCreateInput'.
+
+[7m187[0m             const agencyUser = await db.user.create({ data: { id: 'a1', email: 'agency@test.com', name: 'Agency', role: UserRole.Agency } });
+[7m   [0m [91m                                                      ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m25738[0m:[93m5[0m
+    [7m25738[0m     password: string
+    [7m     [0m [96m    ~~~~~~~~[0m
+    'password' is declared here.
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m3888[0m:[93m5[0m
+    [7m3888[0m     data: XOR<UserCreateInput, UserUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: UserSelect<DefaultArgs>; include?: UserInclude<DefaultArgs>; data: (Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m188[0m:[93m67[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; userId: string; companyName: string; }' is not assignable to type '(Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput)'.
+  Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput> & AgencyProfileCreateInput'.
+    Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput>'.
+      Types of property 'userId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m188[0m             const agencyProfile = await db.agencyProfile.create({ data: { id: 'ap1', userId: agencyUser.id, companyName: 'Agency' } });
+[7m   [0m [91m                                                                  ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m6041[0m:[93m5[0m
+    [7m6041[0m     data: XOR<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: AgencyProfileSelect<DefaultArgs>; include?: AgencyProfileInclude<DefaultArgs>; data: (Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m189[0m:[93m61[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m189[0m             const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Title', status: 'ACTIVE' } });
+[7m   [0m [91m                                                            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m191[0m:[93m53[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; email: string; name: string; role: UserRole.Traveler; }' is not assignable to type '(Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput)'.
+  Type '{ id: string; email: string; name: string; role: UserRole.Traveler; }' is not assignable to type 'Without<UserUncheckedCreateInput, UserCreateInput> & UserCreateInput'.
+    Property 'password' is missing in type '{ id: string; email: string; name: string; role: UserRole.Traveler; }' but required in type 'UserCreateInput'.
+
+[7m191[0m             const traveler = await db.user.create({ data: { id: 't1', email: 'traveler@test.com', name: 'T', role: UserRole.Traveler } });
+[7m   [0m [91m                                                    ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m25738[0m:[93m5[0m
+    [7m25738[0m     password: string
+    [7m     [0m [96m    ~~~~~~~~[0m
+    'password' is declared here.
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m3888[0m:[93m5[0m
+    [7m3888[0m     data: XOR<UserCreateInput, UserUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: UserSelect<DefaultArgs>; include?: UserInclude<DefaultArgs>; data: (Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m212[0m:[93m55[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; email: string; name: string; role: UserRole.Agency; }' is not assignable to type '(Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput)'.
+  Type '{ id: string; email: string; name: string; role: UserRole.Agency; }' is not assignable to type 'Without<UserUncheckedCreateInput, UserCreateInput> & UserCreateInput'.
+    Property 'password' is missing in type '{ id: string; email: string; name: string; role: UserRole.Agency; }' but required in type 'UserCreateInput'.
+
+[7m212[0m             const agencyUser = await db.user.create({ data: { id: 'a2', email: 'ag2@test.com', name: 'A2', role: UserRole.Agency } });
+[7m   [0m [91m                                                      ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m25738[0m:[93m5[0m
+    [7m25738[0m     password: string
+    [7m     [0m [96m    ~~~~~~~~[0m
+    'password' is declared here.
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m3888[0m:[93m5[0m
+    [7m3888[0m     data: XOR<UserCreateInput, UserUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: UserSelect<DefaultArgs>; include?: UserInclude<DefaultArgs>; data: (Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m213[0m:[93m67[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; userId: string; companyName: string; }' is not assignable to type '(Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput)'.
+  Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput> & AgencyProfileCreateInput'.
+    Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput>'.
+      Types of property 'userId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m213[0m             const agencyProfile = await db.agencyProfile.create({ data: { id: 'ap2', userId: agencyUser.id, companyName: 'A2' } });
+[7m   [0m [91m                                                                  ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m6041[0m:[93m5[0m
+    [7m6041[0m     data: XOR<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: AgencyProfileSelect<DefaultArgs>; include?: AgencyProfileInclude<DefaultArgs>; data: (Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m214[0m:[93m61[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m214[0m             const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'PayTrip', status: 'ACTIVE' } });
+[7m   [0m [91m                                                            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m216[0m:[93m53[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; email: string; name: string; }' is not assignable to type '(Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput)'.
+  Type '{ id: string; email: string; name: string; }' is not assignable to type 'Without<UserUncheckedCreateInput, UserCreateInput> & UserCreateInput'.
+    Property 'password' is missing in type '{ id: string; email: string; name: string; }' but required in type 'UserCreateInput'.
+
+[7m216[0m             const traveler = await db.user.create({ data: { id: 't2', email: 'trav2@test.com', name: 'T2' } });
+[7m   [0m [91m                                                    ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m25738[0m:[93m5[0m
+    [7m25738[0m     password: string
+    [7m     [0m [96m    ~~~~~~~~[0m
+    'password' is declared here.
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m3888[0m:[93m5[0m
+    [7m3888[0m     data: XOR<UserCreateInput, UserUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: UserSelect<DefaultArgs>; include?: UserInclude<DefaultArgs>; data: (Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m229[0m:[93m71[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'bookingId' does not exist in type 'NotificationLogWhereInput'.
+
+[7m229[0m             const logs = await db.notificationLog.findMany({ where: { bookingId: booking.id } });
+[7m   [0m [91m                                                                      ~~~~~~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m19424[0m:[93m5[0m
+    [7m19424[0m     where?: NotificationLogWhereInput
+    [7m     [0m [96m    ~~~~~[0m
+    The expected type comes from property 'where' which is declared here on type '{ select?: NotificationLogSelect<DefaultArgs>; where?: NotificationLogWhereInput; orderBy?: NotificationLogOrderByWithRelationInput | NotificationLogOrderByWithRelationInput[]; cursor?: NotificationLogWhereUniqueInput; take?: number; skip?: number; distinct?: NotificationLogScalarFieldEnum | NotificationLogScalarFie...'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m234[0m:[93m61[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m234[0m             const template = await db.tripTemplate.create({ data: { agencyId: 'ap-skip', title: 'SkipTrip', status: 'ACTIVE' } });
+[7m   [0m [91m                                                            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m236[0m:[93m53[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; email: string; name: string; }' is not assignable to type '(Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput)'.
+  Type '{ id: string; email: string; name: string; }' is not assignable to type 'Without<UserUncheckedCreateInput, UserCreateInput> & UserCreateInput'.
+    Property 'password' is missing in type '{ id: string; email: string; name: string; }' but required in type 'UserCreateInput'.
+
+[7m236[0m             const traveler = await db.user.create({ data: { id: 't-skip', email: 'tskip@test.com', name: 'TS' } });
+[7m   [0m [91m                                                    ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m25738[0m:[93m5[0m
+    [7m25738[0m     password: string
+    [7m     [0m [96m    ~~~~~~~~[0m
+    'password' is declared here.
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m3888[0m:[93m5[0m
+    [7m3888[0m     data: XOR<UserCreateInput, UserUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: UserSelect<DefaultArgs>; include?: UserInclude<DefaultArgs>; data: (Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m251[0m:[93m61[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m251[0m             const template = await db.tripTemplate.create({ data: { agencyId: 'ap-rem', title: 'Trip7', status: 'ACTIVE' } });
+[7m   [0m [91m                                                            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m259[0m:[93m48[0m - [91merror[0m[90m TS2339: [0mProperty 'tripReminder7Days' does not exist on type 'JsonValue'.
+  Property 'tripReminder7Days' does not exist on type 'string'.
+
+[7m259[0m             expect(updated?.notificationsSent?.tripReminder7Days).toBeTruthy();
+[7m   [0m [91m                                               ~~~~~~~~~~~~~~~~~[0m
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m264[0m:[93m61[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m264[0m             const template = await db.tripTemplate.create({ data: { agencyId: 'ap-rem1', title: 'Trip1', status: 'ACTIVE' } });
+[7m   [0m [91m                                                            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m272[0m:[93m48[0m - [91merror[0m[90m TS2339: [0mProperty 'tripReminder1Day' does not exist on type 'JsonValue'.
+  Property 'tripReminder1Day' does not exist on type 'string'.
+
+[7m272[0m             expect(updated?.notificationsSent?.tripReminder1Day).toBeTruthy();
+[7m   [0m [91m                                               ~~~~~~~~~~~~~~~~[0m
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m280[0m:[93m61[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m280[0m             const template = await db.tripTemplate.create({ data: { agencyId: 'ap-r', title: 'ReviewTrip', status: 'ACTIVE' } });
+[7m   [0m [91m                                                            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m296[0m:[93m61[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m296[0m             const template = await db.tripTemplate.create({ data: { agencyId: 'ap-c', title: 'CancelTrip', status: 'ACTIVE' } });
+[7m   [0m [91m                                                            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m311[0m:[93m61[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m311[0m             const template = await db.tripTemplate.create({ data: { agencyId: 'ap-c2', title: 'PaidTrip', status: 'ACTIVE' } });
+[7m   [0m [91m                                                            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m328[0m:[93m61[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m328[0m             const template = await db.tripTemplate.create({ data: { agencyId: 'ap-f', title: 'FTrip', status: 'ACTIVE' } });
+[7m   [0m [91m                                                            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m330[0m:[93m53[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; email: string; name: string; }' is not assignable to type '(Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput)'.
+  Type '{ id: string; email: string; name: string; }' is not assignable to type 'Without<UserUncheckedCreateInput, UserCreateInput> & UserCreateInput'.
+    Property 'password' is missing in type '{ id: string; email: string; name: string; }' but required in type 'UserCreateInput'.
+
+[7m330[0m             const traveler = await db.user.create({ data: { id: 't-f', email: 'tf@test.com', name: 'TF' } });
+[7m   [0m [91m                                                    ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m25738[0m:[93m5[0m
+    [7m25738[0m     password: string
+    [7m     [0m [96m    ~~~~~~~~[0m
+    'password' is declared here.
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m3888[0m:[93m5[0m
+    [7m3888[0m     data: XOR<UserCreateInput, UserUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: UserSelect<DefaultArgs>; include?: UserInclude<DefaultArgs>; data: (Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m340[0m:[93m61[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m340[0m             const template = await db.tripTemplate.create({ data: { agencyId: 'ap-j', title: 'JobTrip', status: 'ACTIVE' } });
+[7m   [0m [91m                                                            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m348[0m:[93m57[0m - [91merror[0m[90m TS2345: [0mArgument of type '() => { messageId: string; }' is not assignable to parameter of type '(opts: any) => Promise<{ messageId: string; accepted: any[]; }>'.
+  Type '{ messageId: string; }' is missing the following properties from type 'Promise<{ messageId: string; accepted: any[]; }>': then, catch, finally, [Symbol.toStringTag]
+
+[7m348[0m             mockTransporter.sendMail.mockImplementation(() => {
+[7m   [0m [91m                                                        ~~~~~~~[0m
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m363[0m:[93m49[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; email: string; name: string; role: UserRole.Traveler; }' is not assignable to type '(Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput)'.
+  Type '{ id: string; email: string; name: string; role: UserRole.Traveler; }' is not assignable to type 'Without<UserUncheckedCreateInput, UserCreateInput> & UserCreateInput'.
+    Property 'password' is missing in type '{ id: string; email: string; name: string; role: UserRole.Traveler; }' but required in type 'UserCreateInput'.
+
+[7m363[0m             const user = await db.user.create({ data: { id: 'u-per', email: 'u@p.com', name: 'Alice Smith', role: UserRole.Traveler } });
+[7m   [0m [91m                                                ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m25738[0m:[93m5[0m
+    [7m25738[0m     password: string
+    [7m     [0m [96m    ~~~~~~~~[0m
+    'password' is declared here.
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m3888[0m:[93m5[0m
+    [7m3888[0m     data: XOR<UserCreateInput, UserUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: UserSelect<DefaultArgs>; include?: UserInclude<DefaultArgs>; data: (Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m364[0m:[93m32[0m - [91merror[0m[90m TS2339: [0mProperty 'sendWelcomeEmail' does not exist on type 'EmailService'.
+
+[7m364[0m             await emailService.sendWelcomeEmail(user.email, user.name);
+[7m   [0m [91m                               ~~~~~~~~~~~~~~~~[0m
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m373[0m:[93m61[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m373[0m             const template = await db.tripTemplate.create({ data: { agencyId: 'ap-url', title: 'UrlTrip', status: 'ACTIVE' } });
+[7m   [0m [91m                                                            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m399[0m:[93m42[0m - [91merror[0m[90m TS2339: [0mProperty 'generateOTPSubject' does not exist on type 'EmailService'.
+
+[7m399[0m             const subject = emailService.generateOTPSubject();
+[7m   [0m [91m                                         ~~~~~~~~~~~~~~~~~~[0m
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m407[0m:[93m49[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; email: string; name: string; role: UserRole.Traveler; }' is not assignable to type '(Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput)'.
+  Type '{ id: string; email: string; name: string; role: UserRole.Traveler; }' is not assignable to type 'Without<UserUncheckedCreateInput, UserCreateInput> & UserCreateInput'.
+    Property 'password' is missing in type '{ id: string; email: string; name: string; role: UserRole.Traveler; }' but required in type 'UserCreateInput'.
+
+[7m407[0m             const trav = await db.user.create({ data: { id: 'trav-int', email: 'travint@test.com', name: 'TI', role: UserRole.Traveler } });
+[7m   [0m [91m                                                ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m25738[0m:[93m5[0m
+    [7m25738[0m     password: string
+    [7m     [0m [96m    ~~~~~~~~[0m
+    'password' is declared here.
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m3888[0m:[93m5[0m
+    [7m3888[0m     data: XOR<UserCreateInput, UserUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: UserSelect<DefaultArgs>; include?: UserInclude<DefaultArgs>; data: (Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m409[0m:[93m32[0m - [91merror[0m[90m TS2339: [0mProperty 'sendOTP' does not exist on type 'EmailService'.
+
+[7m409[0m             await emailService.sendOTP(trav.email, '0000');
+[7m   [0m [91m                               ~~~~~~~[0m
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m410[0m:[93m32[0m - [91merror[0m[90m TS2339: [0mProperty 'sendWelcomeEmail' does not exist on type 'EmailService'.
+
+[7m410[0m             await emailService.sendWelcomeEmail(trav.email, trav.name);
+[7m   [0m [91m                               ~~~~~~~~~~~~~~~~[0m
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m412[0m:[93m55[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; email: string; name: string; role: UserRole.Agency; }' is not assignable to type '(Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput)'.
+  Type '{ id: string; email: string; name: string; role: UserRole.Agency; }' is not assignable to type 'Without<UserUncheckedCreateInput, UserCreateInput> & UserCreateInput'.
+    Property 'password' is missing in type '{ id: string; email: string; name: string; role: UserRole.Agency; }' but required in type 'UserCreateInput'.
+
+[7m412[0m             const agencyUser = await db.user.create({ data: { id: 'ag-int', email: 'agint@test.com', name: 'AG', role: UserRole.Agency } });
+[7m   [0m [91m                                                      ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m25738[0m:[93m5[0m
+    [7m25738[0m     password: string
+    [7m     [0m [96m    ~~~~~~~~[0m
+    'password' is declared here.
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m3888[0m:[93m5[0m
+    [7m3888[0m     data: XOR<UserCreateInput, UserUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: UserSelect<DefaultArgs>; include?: UserInclude<DefaultArgs>; data: (Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m413[0m:[93m56[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; userId: string; companyName: string; }' is not assignable to type '(Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput)'.
+  Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput> & AgencyProfileCreateInput'.
+    Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput>'.
+      Types of property 'userId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m413[0m             const ap = await db.agencyProfile.create({ data: { id: 'ap-int', userId: agencyUser.id, companyName: 'AG' } });
+[7m   [0m [91m                                                       ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m6041[0m:[93m5[0m
+    [7m6041[0m     data: XOR<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: AgencyProfileSelect<DefaultArgs>; include?: AgencyProfileInclude<DefaultArgs>; data: (Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m414[0m:[93m56[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m414[0m             const tpl = await db.tripTemplate.create({ data: { agencyId: ap.id, title: 'FlowTrip', status: 'ACTIVE' } });
+[7m   [0m [91m                                                       ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m426[0m:[93m46[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; email: string; name: string; role: UserRole.Traveler; }' is not assignable to type '(Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput)'.
+  Type '{ id: string; email: string; name: string; role: UserRole.Traveler; }' is not assignable to type 'Without<UserUncheckedCreateInput, UserCreateInput> & UserCreateInput'.
+    Property 'password' is missing in type '{ id: string; email: string; name: string; role: UserRole.Traveler; }' but required in type 'UserCreateInput'.
+
+[7m426[0m             const u = await db.user.create({ data: { id: 'u-pr', email: 'upr@test.com', name: 'UP', role: UserRole.Traveler } });
+[7m   [0m [91m                                             ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m25738[0m:[93m5[0m
+    [7m25738[0m     password: string
+    [7m     [0m [96m    ~~~~~~~~[0m
+    'password' is declared here.
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m3888[0m:[93m5[0m
+    [7m3888[0m     data: XOR<UserCreateInput, UserUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: UserSelect<DefaultArgs>; include?: UserInclude<DefaultArgs>; data: (Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput); }'
+[96mtest/email-notifications.e2e-spec.ts[0m:[93m460[0m:[93m49[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; email: string; name: string; role: UserRole.Traveler; }' is not assignable to type '(Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput)'.
+  Type '{ id: string; email: string; name: string; role: UserRole.Traveler; }' is not assignable to type 'Without<UserUncheckedCreateInput, UserCreateInput> & UserCreateInput'.
+    Property 'password' is missing in type '{ id: string; email: string; name: string; role: UserRole.Traveler; }' but required in type 'UserCreateInput'.
+
+[7m460[0m         const traveler = await db.user.create({ data: { id: `trav-rem-${Date.now()}`, email: `trav${Date.now()}@test.com`, name: 'RemTraveler', role: UserRole.Traveler } });
+[7m   [0m [91m                                                ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m25738[0m:[93m5[0m
+    [7m25738[0m     password: string
+    [7m     [0m [96m    ~~~~~~~~[0m
+    'password' is declared here.
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m3888[0m:[93m5[0m
+    [7m3888[0m     data: XOR<UserCreateInput, UserUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: UserSelect<DefaultArgs>; include?: UserInclude<DefaultArgs>; data: (Without<UserCreateInput, UserUncheckedCreateInput> & UserUncheckedCreateInput) | (Without<...> & UserCreateInput); }'
+[96mtest/trips-crud.e2e-spec.ts[0m:[93m119[0m:[93m13[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; userId: string; companyName: string; }' is not assignable to type '(Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput)'.
+  Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput> & AgencyProfileCreateInput'.
+    Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput>'.
+      Types of property 'userId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m119[0m             data: {
+[7m   [0m [91m            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m6041[0m:[93m5[0m
+    [7m6041[0m     data: XOR<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: AgencyProfileSelect<DefaultArgs>; include?: AgencyProfileInclude<DefaultArgs>; data: (Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput); }'
+[96mtest/trips-crud.e2e-spec.ts[0m:[93m140[0m:[93m13[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; userId: string; companyName: string; }' is not assignable to type '(Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput)'.
+  Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput> & AgencyProfileCreateInput'.
+    Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput>'.
+      Types of property 'userId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m140[0m             data: {
+[7m   [0m [91m            ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m6041[0m:[93m5[0m
+    [7m6041[0m     data: XOR<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: AgencyProfileSelect<DefaultArgs>; include?: AgencyProfileInclude<DefaultArgs>; data: (Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput); }'
+[96mtest/trips-crud.e2e-spec.ts[0m:[93m915[0m:[93m48[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'userId' does not exist in type 'ReviewCreateManyInput'.
+
+[7m915[0m                 { tripTemplateId: template.id, userId: traveler.id, rating: 4, content: 'Good trip' },
+[7m   [0m [91m                                               ~~~~~~[0m
+[96mtest/trips-crud.e2e-spec.ts[0m:[93m916[0m:[93m48[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'userId' does not exist in type 'ReviewCreateManyInput'.
+
+[7m916[0m                 { tripTemplateId: template.id, userId: traveler.id, rating: 5, content: 'Excellent' },
+[7m   [0m [91m                                               ~~~~~~[0m
+[96mtest/trips-crud.e2e-spec.ts[0m:[93m917[0m:[93m48[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'userId' does not exist in type 'ReviewCreateManyInput'.
+
+[7m917[0m                 { tripTemplateId: template.id, userId: traveler.id, rating: 5, content: 'Amazing' },
+[7m   [0m [91m                                               ~~~~~~[0m
+[96mtest/trips-crud.e2e-spec.ts[0m:[93m918[0m:[93m48[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'userId' does not exist in type 'ReviewCreateManyInput'.
+
+[7m918[0m                 { tripTemplateId: template.id, userId: traveler.id, rating: 3, content: 'OK' },
+[7m   [0m [91m                                               ~~~~~~[0m
+[96mtest/user-features.e2e-spec.ts[0m:[93m112[0m:[93m63[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; userId: string; companyName: string; }' is not assignable to type '(Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput)'.
+  Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput> & AgencyProfileCreateInput'.
+    Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput>'.
+      Types of property 'userId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m112[0m         const agencyProfile = await db.agencyProfile.create({ data: { id: 'agency-profile-1', userId: agencyUser.id, companyName: 'Agency Ltd' } });
+[7m   [0m [91m                                                              ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m6041[0m:[93m5[0m
+    [7m6041[0m     data: XOR<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: AgencyProfileSelect<DefaultArgs>; include?: AgencyProfileInclude<DefaultArgs>; data: (Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m183[0m:[93m57[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m183[0m         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Test Trip', status: 'ACTIVE' } });
+[7m   [0m [91m                                                        ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m201[0m:[93m57[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m201[0m         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Test Trip 2', status: 'ACTIVE' } });
+[7m   [0m [91m                                                        ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m217[0m:[93m57[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m217[0m         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip X', status: 'ACTIVE' } });
+[7m   [0m [91m                                                        ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m221[0m:[93m94[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'userId' does not exist in type '(Without<ReviewCreateInput, ReviewUncheckedCreateInput> & ReviewUncheckedCreateInput) | (Without<...> & ReviewCreateInput)'.
+
+[7m221[0m         await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, userId: traveler.id, rating: 5, comment: 'Nice' } });
+[7m   [0m [91m                                                                                             ~~~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m16577[0m:[93m5[0m
+    [7m16577[0m     data: XOR<ReviewCreateInput, ReviewUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: ReviewSelect<DefaultArgs>; include?: ReviewInclude<DefaultArgs>; data: (Without<ReviewCreateInput, ReviewUncheckedCreateInput> & ReviewUncheckedCreateInput) | (Without<...> & ReviewCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m232[0m:[93m57[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m232[0m         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Update', status: 'ACTIVE' } });
+[7m   [0m [91m                                                        ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m235[0m:[93m109[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'userId' does not exist in type '(Without<ReviewCreateInput, ReviewUncheckedCreateInput> & ReviewUncheckedCreateInput) | (Without<...> & ReviewCreateInput)'.
+
+[7m235[0m         const review = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, userId: traveler.id, rating: 4, comment: 'Good' } });
+[7m   [0m [91m                                                                                                            ~~~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m16577[0m:[93m5[0m
+    [7m16577[0m     data: XOR<ReviewCreateInput, ReviewUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: ReviewSelect<DefaultArgs>; include?: ReviewInclude<DefaultArgs>; data: (Without<ReviewCreateInput, ReviewUncheckedCreateInput> & ReviewUncheckedCreateInput) | (Without<...> & ReviewCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m249[0m:[93m57[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m249[0m         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Delete', status: 'ACTIVE' } });
+[7m   [0m [91m                                                        ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m252[0m:[93m109[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'userId' does not exist in type '(Without<ReviewCreateInput, ReviewUncheckedCreateInput> & ReviewUncheckedCreateInput) | (Without<...> & ReviewCreateInput)'.
+
+[7m252[0m         const review = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, userId: traveler.id, rating: 4, comment: 'ToDelete' } });
+[7m   [0m [91m                                                                                                            ~~~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m16577[0m:[93m5[0m
+    [7m16577[0m     data: XOR<ReviewCreateInput, ReviewUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: ReviewSelect<DefaultArgs>; include?: ReviewInclude<DefaultArgs>; data: (Without<ReviewCreateInput, ReviewUncheckedCreateInput> & ReviewUncheckedCreateInput) | (Without<...> & ReviewCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m259[0m:[93m107[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'userId' does not exist in type '(Without<ReviewCreateInput, ReviewUncheckedCreateInput> & ReviewUncheckedCreateInput) | (Without<...> & ReviewCreateInput)'.
+
+[7m259[0m         const rev2 = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, userId: traveler.id, rating: 3, comment: 'Another' } });
+[7m   [0m [91m                                                                                                          ~~~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m16577[0m:[93m5[0m
+    [7m16577[0m     data: XOR<ReviewCreateInput, ReviewUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: ReviewSelect<DefaultArgs>; include?: ReviewInclude<DefaultArgs>; data: (Without<ReviewCreateInput, ReviewUncheckedCreateInput> & ReviewUncheckedCreateInput) | (Without<...> & ReviewCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m265[0m:[93m57[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m265[0m         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Resp', status: 'ACTIVE' } });
+[7m   [0m [91m                                                        ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m268[0m:[93m109[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'userId' does not exist in type '(Without<ReviewCreateInput, ReviewUncheckedCreateInput> & ReviewUncheckedCreateInput) | (Without<...> & ReviewCreateInput)'.
+
+[7m268[0m         const review = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, userId: traveler.id, rating: 4, comment: 'Nice' } });
+[7m   [0m [91m                                                                                                            ~~~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m16577[0m:[93m5[0m
+    [7m16577[0m     data: XOR<ReviewCreateInput, ReviewUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: ReviewSelect<DefaultArgs>; include?: ReviewInclude<DefaultArgs>; data: (Without<ReviewCreateInput, ReviewUncheckedCreateInput> & ReviewUncheckedCreateInput) | (Without<...> & ReviewCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m281[0m:[93m57[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m281[0m         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Pag', status: 'ACTIVE' } });
+[7m   [0m [91m                                                        ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m284[0m:[93m75[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'userId' does not exist in type '(Without<ReviewCreateInput, ReviewUncheckedCreateInput> & ReviewUncheckedCreateInput) | (Without<...> & ReviewCreateInput)'.
+
+[7m284[0m             await db.review.create({ data: { tripTemplateId: template.id, userId: traveler.id, rating: 5, comment: `c${i}` } });
+[7m   [0m [91m                                                                          ~~~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m16577[0m:[93m5[0m
+    [7m16577[0m     data: XOR<ReviewCreateInput, ReviewUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: ReviewSelect<DefaultArgs>; include?: ReviewInclude<DefaultArgs>; data: (Without<ReviewCreateInput, ReviewUncheckedCreateInput> & ReviewUncheckedCreateInput) | (Without<...> & ReviewCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m297[0m:[93m57[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m297[0m         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Stats Trip', status: 'ACTIVE' } });
+[7m   [0m [91m                                                        ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m301[0m:[93m75[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'userId' does not exist in type '(Without<ReviewCreateInput, ReviewUncheckedCreateInput> & ReviewUncheckedCreateInput) | (Without<...> & ReviewCreateInput)'.
+
+[7m301[0m             await db.review.create({ data: { tripTemplateId: template.id, userId: traveler.id, rating: r, comment: 'x' } });
+[7m   [0m [91m                                                                          ~~~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m16577[0m:[93m5[0m
+    [7m16577[0m     data: XOR<ReviewCreateInput, ReviewUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: ReviewSelect<DefaultArgs>; include?: ReviewInclude<DefaultArgs>; data: (Without<ReviewCreateInput, ReviewUncheckedCreateInput> & ReviewUncheckedCreateInput) | (Without<...> & ReviewCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m313[0m:[93m57[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m313[0m         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Wish Trip', status: 'ACTIVE' } });
+[7m   [0m [91m                                                        ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m321[0m:[93m57[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m321[0m         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Wish Trip 2', status: 'ACTIVE' } });
+[7m   [0m [91m                                                        ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m331[0m:[93m54[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m331[0m             const t = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: `T${i}`, status: 'ACTIVE' } });
+[7m   [0m [91m                                                     ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m381[0m:[93m62[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; userId: string; companyName: string; }' is not assignable to type '(Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput)'.
+  Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput> & AgencyProfileCreateInput'.
+    Type '{ id: string; userId: string; companyName: string; }' is not assignable to type 'Without<AgencyProfileUncheckedCreateInput, AgencyProfileCreateInput>'.
+      Types of property 'userId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m381[0m         const otherProfile = await db.agencyProfile.create({ data: { id: 'agency-profile-2', userId: other.id, companyName: 'Other' } });
+[7m   [0m [91m                                                             ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m6041[0m:[93m5[0m
+    [7m6041[0m     data: XOR<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: AgencyProfileSelect<DefaultArgs>; include?: AgencyProfileInclude<DefaultArgs>; data: (Without<AgencyProfileCreateInput, AgencyProfileUncheckedCreateInput> & AgencyProfileUncheckedCreateInput) | (Without<...> & AgencyProfileCreateInput); }'
+[96mtest/user-features.e2e-spec.ts[0m:[93m407[0m:[93m57[0m - [91merror[0m[90m TS2322: [0mType '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type '(Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput)'.
+  Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput> & TripTemplateCreateInput'.
+    Type '{ agencyId: string; title: string; status: "ACTIVE"; }' is not assignable to type 'Without<TripTemplateUncheckedCreateInput, TripTemplateCreateInput>'.
+      Types of property 'agencyId' are incompatible.
+        Type 'string' is not assignable to type 'never'.
+
+[7m407[0m         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Journey Trip', status: 'ACTIVE' } });
+[7m   [0m [91m                                                        ~~~~[0m
+
+  [96m../../packages/database/generated-client/index.d.ts[0m:[93m7269[0m:[93m5[0m
+    [7m7269[0m     data: XOR<TripTemplateCreateInput, TripTemplateUncheckedCreateInput>
+    [7m    [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: TripTemplateSelect<DefaultArgs>; include?: TripTemplateInclude<DefaultArgs>; data: (Without<TripTemplateCreateInput, TripTemplateUncheckedCreateInput> & TripTemplateUncheckedCreateInput) | (Without<...> & TripTemplateCreateInput); }'
+
+Found 144 error(s).
+
+npm error Lifecycle script `build` failed with error:
+npm error code 1
+npm error path C:\Users\MVpro\Documents\GitHub\ouiboo\apps\api
+npm error workspace @ouiboo/api@0.0.1
+npm error location C:\Users\MVpro\Documents\GitHub\ouiboo\apps\api
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c nest build

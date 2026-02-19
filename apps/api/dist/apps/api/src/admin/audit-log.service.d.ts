@@ -13,12 +13,12 @@ export declare class AuditLogService {
     log(payload: AuditLogPayload): Promise<{
         id: string;
         createdAt: Date;
+        metadata: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
         actorId: string | null;
         actorEmail: string | null;
         action: string;
         targetType: string;
         targetId: string | null;
-        metadata: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
     }>;
 }
 export {};

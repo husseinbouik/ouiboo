@@ -17,15 +17,14 @@ import { WebSocketService } from './websocket.service';
     credentials: true,
   },
 })
-export class WebSocketGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class NotificationGateway
+  implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
   private readonly logger = new Logger(WebSocketGateway.name);
 
-  constructor(private webSocketService: WebSocketService) {}
+  constructor(private webSocketService: WebSocketService) { }
 
   handleConnection(socket: Socket) {
     try {

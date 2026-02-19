@@ -45,19 +45,21 @@ export default function SettingsPage() {
   });
 
   const [isSaving, setIsSaving] = React.useState(false);
+  const [feedback, setFeedback] = React.useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const onSubmit = async (data: any) => {
     try {
       setIsSaving(true);
+      setFeedback(null);
       await apiClient.patch('/agency/profile', {
         companyName: data.companyName,
         bio: data.bio,
         bankDetails: data.bankDetails
       });
-      alert('Settings updated successfully!');
+      setFeedback({ type: 'success', text: 'Settings updated successfully.' });
     } catch (error) {
       console.error('Failed to update settings:', error);
-      alert('Failed to update settings');
+      setFeedback({ type: 'error', text: 'Failed to update settings. Please try again.' });
     } finally {
       setIsSaving(false);
     }
@@ -68,6 +70,17 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-3xl font-bold text-deep-blue dark:text-gray-100">Account Settings</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your professional profile and application preferences.</p>
+        {feedback && (
+          <div
+            className={`mt-4 rounded-lg border px-3 py-2 text-sm ${
+              feedback.type === 'success'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200'
+                : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200'
+            }`}
+          >
+            {feedback.text}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -183,7 +196,7 @@ export default function SettingsPage() {
             </Card>
 
             <div className="flex justify-end gap-3">
-              <Button variant="outline" type="button" onClick={() => reset()}>Discard Changes</Button>
+              <Button variant="outline" type="button" onClick={() => { reset(); setFeedback(null); }}>Discard Changes</Button>
               <Button type="submit" disabled={isSaving} className="bg-deep-blue hover:bg-blue-800 text-white flex items-center gap-2">
                 {isSaving ? 'Saving...' : <><Save className="h-4 w-4" /> Save Changes</>}
               </Button>

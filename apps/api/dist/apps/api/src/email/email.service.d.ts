@@ -6,6 +6,9 @@ export declare class EmailService {
     sendMail(to: string, subject: string, html: string): Promise<void>;
     getOTPTemplate(otp: string): string;
     getWelcomeTemplate(name?: string | null): string;
+    sendOTP(to: string, otp: string): Promise<void>;
+    generateOTPSubject(): string;
+    sendWelcomeEmail(to: string, name?: string | null): Promise<void>;
     getPasswordResetTemplate(resetUrl: string): string;
     sendPasswordResetEmail(to: string, resetUrl: string): Promise<void>;
     sendBookingNotification(travelerEmail: string, agencyEmail: string, bookingId: string, tripTitle: string): Promise<void>;

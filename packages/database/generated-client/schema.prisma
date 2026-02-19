@@ -87,6 +87,7 @@ enum BookingPaymentStatus {
   UNPAID
   PAID
   REFUNDED
+  FAILED
 }
 
 enum SessionStatus {
@@ -248,6 +249,7 @@ model Booking {
   review                      Review?
   createdAt                   DateTime             @default(now())
   updatedAt                   DateTime             @updatedAt
+  paymentTransactions         PaymentTransaction[]
 
   @@index([travelerId])
   @@index([sessionId])
@@ -379,6 +381,7 @@ model NotificationLog {
 model PaymentTransaction {
   id            String        @id @default(cuid())
   bookingId     String
+  booking       Booking       @relation(fields: [bookingId], references: [id])
   amount        Float
   method        PaymentMethod
   transactionId String?

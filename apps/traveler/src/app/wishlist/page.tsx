@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { TripCard } from '@/components/TripCard';
 import { Button, Badge } from '@ouiboo/ui';
@@ -17,7 +17,7 @@ export default function WishlistPage() {
       const res = await apiClient.get('/users/wishlist', { params: { page, limit: 20 } });
       return res.data;
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 
   const wishlist = data?.items || [];

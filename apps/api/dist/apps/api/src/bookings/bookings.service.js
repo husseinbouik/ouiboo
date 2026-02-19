@@ -16,6 +16,7 @@ const database_service_1 = require("../database/database.service");
 const create_booking_dto_1 = require("./dto/create-booking.dto");
 const email_service_1 = require("../email/email.service");
 const upload_service_1 = require("../upload/upload.service");
+const database_1 = require("@ouiboo/database");
 const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
 let BookingsService = class BookingsService {
     constructor(db, emailService, uploadService) {
@@ -61,14 +62,14 @@ let BookingsService = class BookingsService {
                 include: { template: { include: { agency: true } } }
             });
             const paymentMethodMap = {
-                [create_booking_dto_1.PaymentMethodEnum.BANK_TRANSFER]: PaymentMethod.MANUAL,
-                [create_booking_dto_1.PaymentMethodEnum.CARD]: PaymentMethod.GATEWAY,
-                [create_booking_dto_1.PaymentMethodEnum.WALLET]: PaymentMethod.MANUAL,
-                [create_booking_dto_1.PaymentMethodEnum.MOBILE_MONEY]: PaymentMethod.GATEWAY,
+                [create_booking_dto_1.PaymentMethodEnum.BANK_TRANSFER]: database_1.PaymentMethod.MANUAL,
+                [create_booking_dto_1.PaymentMethodEnum.CARD]: database_1.PaymentMethod.GATEWAY,
+                [create_booking_dto_1.PaymentMethodEnum.WALLET]: database_1.PaymentMethod.MANUAL,
+                [create_booking_dto_1.PaymentMethodEnum.MOBILE_MONEY]: database_1.PaymentMethod.GATEWAY,
             };
             const persistedPaymentMethod = dto.paymentMethod
                 ? paymentMethodMap[dto.paymentMethod]
-                : PaymentMethod.MANUAL;
+                : database_1.PaymentMethod.MANUAL;
             const booking = await tx.booking.create({
                 data: {
                     sessionId: dto.sessionId,

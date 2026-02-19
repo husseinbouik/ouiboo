@@ -8,8 +8,8 @@ export declare class ReviewsController {
         createdAt: Date;
         updatedAt: Date;
         rating: number;
-        travelerId: string;
         bookingId: string;
+        travelerId: string;
         tripTemplateId: string;
         comment: string | null;
         response: string | null;
@@ -31,8 +31,8 @@ export declare class TripsReviewsController {
             createdAt: Date;
             updatedAt: Date;
             rating: number;
-            travelerId: string;
             bookingId: string;
+            travelerId: string;
             tripTemplateId: string;
             comment: string | null;
             response: string | null;
@@ -62,8 +62,8 @@ export declare class ReviewDetailController {
         createdAt: Date;
         updatedAt: Date;
         rating: number;
-        travelerId: string;
         bookingId: string;
+        travelerId: string;
         tripTemplateId: string;
         comment: string | null;
         response: string | null;
@@ -74,8 +74,8 @@ export declare class ReviewDetailController {
         createdAt: Date;
         updatedAt: Date;
         rating: number;
-        travelerId: string;
         bookingId: string;
+        travelerId: string;
         tripTemplateId: string;
         comment: string | null;
         response: string | null;

@@ -82,7 +82,13 @@ let NotificationJobsService = NotificationJobsService_1 = class NotificationJobs
                 },
                 include: {
                     traveler: true,
-                    session: { include: { template: true, agency: true } },
+                    session: {
+                        include: {
+                            template: {
+                                include: { agency: true }
+                            }
+                        }
+                    },
                 },
             });
             for (const booking of bookings) {
@@ -90,7 +96,7 @@ let NotificationJobsService = NotificationJobsService_1 = class NotificationJobs
                     const notificationsSent = booking.notificationsSent || {};
                     if (!notificationsSent.tripReminder7Days) {
                         const tripDetailsUrl = `${process.env.TRAVELER_APP_URL}/trips/${booking.session.template.id}`;
-                        await this.emailService.sendTripReminder(booking.traveler.email, booking.session.template.title, 7, booking.session.agency.name, tripDetailsUrl);
+                        await this.emailService.sendTripReminder(booking.traveler.email, booking.session.template.title, 7, booking.session.template.agency.companyName, tripDetailsUrl);
                         await this.prisma.booking.update({
                             where: { id: booking.id },
                             data: {
@@ -129,7 +135,13 @@ let NotificationJobsService = NotificationJobsService_1 = class NotificationJobs
                 },
                 include: {
                     traveler: true,
-                    session: { include: { template: true, agency: true } },
+                    session: {
+                        include: {
+                            template: {
+                                include: { agency: true }
+                            }
+                        }
+                    },
                 },
             });
             for (const booking of bookings) {
@@ -137,7 +149,7 @@ let NotificationJobsService = NotificationJobsService_1 = class NotificationJobs
                     const notificationsSent = booking.notificationsSent || {};
                     if (!notificationsSent.tripReminder1Day) {
                         const tripDetailsUrl = `${process.env.TRAVELER_APP_URL}/trips/${booking.session.template.id}`;
-                        await this.emailService.sendTripReminder(booking.traveler.email, booking.session.template.title, 1, booking.session.agency.name, tripDetailsUrl);
+                        await this.emailService.sendTripReminder(booking.traveler.email, booking.session.template.title, 1, booking.session.template.agency.companyName, tripDetailsUrl);
                         await this.prisma.booking.update({
                             where: { id: booking.id },
                             data: {
@@ -212,6 +224,7 @@ let NotificationJobsService = NotificationJobsService_1 = class NotificationJobs
                 userId,
                 notificationType: type,
                 recipientEmail: email,
+                message: `Notification sent: ${type} to ${email}`,
                 status: 'SENT',
                 sentAt: new Date(),
             },

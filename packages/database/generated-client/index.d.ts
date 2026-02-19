@@ -197,7 +197,8 @@ export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod]
 export const BookingPaymentStatus: {
   UNPAID: 'UNPAID',
   PAID: 'PAID',
-  REFUNDED: 'REFUNDED'
+  REFUNDED: 'REFUNDED',
+  FAILED: 'FAILED'
 };
 
 export type BookingPaymentStatus = (typeof BookingPaymentStatus)[keyof typeof BookingPaymentStatus]
@@ -2870,6 +2871,37 @@ export namespace Prisma {
    */
   export type TripSessionCountOutputTypeCountBookingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: BookingWhereInput
+  }
+
+
+  /**
+   * Count Type BookingCountOutputType
+   */
+
+  export type BookingCountOutputType = {
+    paymentTransactions: number
+  }
+
+  export type BookingCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    paymentTransactions?: boolean | BookingCountOutputTypeCountPaymentTransactionsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * BookingCountOutputType without action
+   */
+  export type BookingCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the BookingCountOutputType
+     */
+    select?: BookingCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * BookingCountOutputType without action
+   */
+  export type BookingCountOutputTypeCountPaymentTransactionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PaymentTransactionWhereInput
   }
 
 
@@ -9954,6 +9986,8 @@ export namespace Prisma {
     traveler?: boolean | UserDefaultArgs<ExtArgs>
     paymentProof?: boolean | Booking$paymentProofArgs<ExtArgs>
     review?: boolean | Booking$reviewArgs<ExtArgs>
+    paymentTransactions?: boolean | Booking$paymentTransactionsArgs<ExtArgs>
+    _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["booking"]>
 
   export type BookingSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -10023,6 +10057,8 @@ export namespace Prisma {
     traveler?: boolean | UserDefaultArgs<ExtArgs>
     paymentProof?: boolean | Booking$paymentProofArgs<ExtArgs>
     review?: boolean | Booking$reviewArgs<ExtArgs>
+    paymentTransactions?: boolean | Booking$paymentTransactionsArgs<ExtArgs>
+    _count?: boolean | BookingCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type BookingIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     session?: boolean | TripSessionDefaultArgs<ExtArgs>
@@ -10036,6 +10072,7 @@ export namespace Prisma {
       traveler: Prisma.$UserPayload<ExtArgs>
       paymentProof: Prisma.$PaymentProofPayload<ExtArgs> | null
       review: Prisma.$ReviewPayload<ExtArgs> | null
+      paymentTransactions: Prisma.$PaymentTransactionPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -10433,6 +10470,7 @@ export namespace Prisma {
     traveler<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     paymentProof<T extends Booking$paymentProofArgs<ExtArgs> = {}>(args?: Subset<T, Booking$paymentProofArgs<ExtArgs>>): Prisma__PaymentProofClient<$Result.GetResult<Prisma.$PaymentProofPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     review<T extends Booking$reviewArgs<ExtArgs> = {}>(args?: Subset<T, Booking$reviewArgs<ExtArgs>>): Prisma__ReviewClient<$Result.GetResult<Prisma.$ReviewPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    paymentTransactions<T extends Booking$paymentTransactionsArgs<ExtArgs> = {}>(args?: Subset<T, Booking$paymentTransactionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentTransactionPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -10834,6 +10872,26 @@ export namespace Prisma {
      */
     include?: ReviewInclude<ExtArgs> | null
     where?: ReviewWhereInput
+  }
+
+  /**
+   * Booking.paymentTransactions
+   */
+  export type Booking$paymentTransactionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PaymentTransaction
+     */
+    select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    where?: PaymentTransactionWhereInput
+    orderBy?: PaymentTransactionOrderByWithRelationInput | PaymentTransactionOrderByWithRelationInput[]
+    cursor?: PaymentTransactionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PaymentTransactionScalarFieldEnum | PaymentTransactionScalarFieldEnum[]
   }
 
   /**
@@ -19816,6 +19874,7 @@ export namespace Prisma {
     metadata?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["paymentTransaction"]>
 
   export type PaymentTransactionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -19830,6 +19889,7 @@ export namespace Prisma {
     metadata?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["paymentTransaction"]>
 
   export type PaymentTransactionSelectScalar = {
@@ -19846,10 +19906,18 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
+  export type PaymentTransactionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+  }
+  export type PaymentTransactionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    booking?: boolean | BookingDefaultArgs<ExtArgs>
+  }
 
   export type $PaymentTransactionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "PaymentTransaction"
-    objects: {}
+    objects: {
+      booking: Prisma.$BookingPayload<ExtArgs>
+    }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       bookingId: string
@@ -20226,6 +20294,7 @@ export namespace Prisma {
    */
   export interface Prisma__PaymentTransactionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    booking<T extends BookingDefaultArgs<ExtArgs> = {}>(args?: Subset<T, BookingDefaultArgs<ExtArgs>>): Prisma__BookingClient<$Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -20279,6 +20348,10 @@ export namespace Prisma {
      */
     select?: PaymentTransactionSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    /**
      * Filter, which PaymentTransaction to fetch.
      */
     where: PaymentTransactionWhereUniqueInput
@@ -20293,6 +20366,10 @@ export namespace Prisma {
      */
     select?: PaymentTransactionSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    /**
      * Filter, which PaymentTransaction to fetch.
      */
     where: PaymentTransactionWhereUniqueInput
@@ -20306,6 +20383,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the PaymentTransaction
      */
     select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
     /**
      * Filter, which PaymentTransaction to fetch.
      */
@@ -20351,6 +20432,10 @@ export namespace Prisma {
      */
     select?: PaymentTransactionSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    /**
      * Filter, which PaymentTransaction to fetch.
      */
     where?: PaymentTransactionWhereInput
@@ -20395,6 +20480,10 @@ export namespace Prisma {
      */
     select?: PaymentTransactionSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    /**
      * Filter, which PaymentTransactions to fetch.
      */
     where?: PaymentTransactionWhereInput
@@ -20434,6 +20523,10 @@ export namespace Prisma {
      */
     select?: PaymentTransactionSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    /**
      * The data needed to create a PaymentTransaction.
      */
     data: XOR<PaymentTransactionCreateInput, PaymentTransactionUncheckedCreateInput>
@@ -20463,6 +20556,10 @@ export namespace Prisma {
      */
     data: PaymentTransactionCreateManyInput | PaymentTransactionCreateManyInput[]
     skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -20473,6 +20570,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the PaymentTransaction
      */
     select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
     /**
      * The data needed to update a PaymentTransaction.
      */
@@ -20506,6 +20607,10 @@ export namespace Prisma {
      */
     select?: PaymentTransactionSelect<ExtArgs> | null
     /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
+    /**
      * The filter to search for the PaymentTransaction to update in case it exists.
      */
     where: PaymentTransactionWhereUniqueInput
@@ -20527,6 +20632,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the PaymentTransaction
      */
     select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
     /**
      * Filter which PaymentTransaction to delete.
      */
@@ -20551,6 +20660,10 @@ export namespace Prisma {
      * Select specific fields to fetch from the PaymentTransaction
      */
     select?: PaymentTransactionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PaymentTransactionInclude<ExtArgs> | null
   }
 
 
@@ -24695,6 +24808,7 @@ export namespace Prisma {
     traveler?: XOR<UserRelationFilter, UserWhereInput>
     paymentProof?: XOR<PaymentProofNullableRelationFilter, PaymentProofWhereInput> | null
     review?: XOR<ReviewNullableRelationFilter, ReviewWhereInput> | null
+    paymentTransactions?: PaymentTransactionListRelationFilter
   }
 
   export type BookingOrderByWithRelationInput = {
@@ -24729,6 +24843,7 @@ export namespace Prisma {
     traveler?: UserOrderByWithRelationInput
     paymentProof?: PaymentProofOrderByWithRelationInput
     review?: ReviewOrderByWithRelationInput
+    paymentTransactions?: PaymentTransactionOrderByRelationAggregateInput
   }
 
   export type BookingWhereUniqueInput = Prisma.AtLeast<{
@@ -24766,6 +24881,7 @@ export namespace Prisma {
     traveler?: XOR<UserRelationFilter, UserWhereInput>
     paymentProof?: XOR<PaymentProofNullableRelationFilter, PaymentProofWhereInput> | null
     review?: XOR<ReviewNullableRelationFilter, ReviewWhereInput> | null
+    paymentTransactions?: PaymentTransactionListRelationFilter
   }, "id" | "paymentProofId">
 
   export type BookingOrderByWithAggregationInput = {
@@ -25471,6 +25587,7 @@ export namespace Prisma {
     metadata?: JsonNullableFilter<"PaymentTransaction">
     createdAt?: DateTimeFilter<"PaymentTransaction"> | Date | string
     updatedAt?: DateTimeFilter<"PaymentTransaction"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
   }
 
   export type PaymentTransactionOrderByWithRelationInput = {
@@ -25485,6 +25602,7 @@ export namespace Prisma {
     metadata?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    booking?: BookingOrderByWithRelationInput
   }
 
   export type PaymentTransactionWhereUniqueInput = Prisma.AtLeast<{
@@ -25502,6 +25620,7 @@ export namespace Prisma {
     metadata?: JsonNullableFilter<"PaymentTransaction">
     createdAt?: DateTimeFilter<"PaymentTransaction"> | Date | string
     updatedAt?: DateTimeFilter<"PaymentTransaction"> | Date | string
+    booking?: XOR<BookingRelationFilter, BookingWhereInput>
   }, "id">
 
   export type PaymentTransactionOrderByWithAggregationInput = {
@@ -26480,6 +26599,7 @@ export namespace Prisma {
     traveler: UserCreateNestedOneWithoutBookingsInput
     paymentProof?: PaymentProofCreateNestedOneWithoutBookingInput
     review?: ReviewCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateInput = {
@@ -26512,6 +26632,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     paymentProof?: PaymentProofUncheckedCreateNestedOneWithoutBookingInput
     review?: ReviewUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUpdateInput = {
@@ -26544,6 +26665,7 @@ export namespace Prisma {
     traveler?: UserUpdateOneRequiredWithoutBookingsNestedInput
     paymentProof?: PaymentProofUpdateOneWithoutBookingNestedInput
     review?: ReviewUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateInput = {
@@ -26576,6 +26698,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     paymentProof?: PaymentProofUncheckedUpdateOneWithoutBookingNestedInput
     review?: ReviewUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingCreateManyInput = {
@@ -27320,7 +27443,6 @@ export namespace Prisma {
 
   export type PaymentTransactionCreateInput = {
     id?: string
-    bookingId: string
     amount: number
     method: $Enums.PaymentMethod
     transactionId?: string | null
@@ -27330,6 +27452,7 @@ export namespace Prisma {
     metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
+    booking: BookingCreateNestedOneWithoutPaymentTransactionsInput
   }
 
   export type PaymentTransactionUncheckedCreateInput = {
@@ -27348,7 +27471,6 @@ export namespace Prisma {
 
   export type PaymentTransactionUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    bookingId?: StringFieldUpdateOperationsInput | string
     amount?: FloatFieldUpdateOperationsInput | number
     method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -27358,6 +27480,7 @@ export namespace Prisma {
     metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    booking?: BookingUpdateOneRequiredWithoutPaymentTransactionsNestedInput
   }
 
   export type PaymentTransactionUncheckedUpdateInput = {
@@ -27390,7 +27513,6 @@ export namespace Prisma {
 
   export type PaymentTransactionUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    bookingId?: StringFieldUpdateOperationsInput | string
     amount?: FloatFieldUpdateOperationsInput | number
     method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -28463,6 +28585,16 @@ export namespace Prisma {
   export type ReviewNullableRelationFilter = {
     is?: ReviewWhereInput | null
     isNot?: ReviewWhereInput | null
+  }
+
+  export type PaymentTransactionListRelationFilter = {
+    every?: PaymentTransactionWhereInput
+    some?: PaymentTransactionWhereInput
+    none?: PaymentTransactionWhereInput
+  }
+
+  export type PaymentTransactionOrderByRelationAggregateInput = {
+    _count?: SortOrder
   }
 
   export type BookingCountOrderByAggregateInput = {
@@ -29980,6 +30112,13 @@ export namespace Prisma {
     connect?: ReviewWhereUniqueInput
   }
 
+  export type PaymentTransactionCreateNestedManyWithoutBookingInput = {
+    create?: XOR<PaymentTransactionCreateWithoutBookingInput, PaymentTransactionUncheckedCreateWithoutBookingInput> | PaymentTransactionCreateWithoutBookingInput[] | PaymentTransactionUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutBookingInput | PaymentTransactionCreateOrConnectWithoutBookingInput[]
+    createMany?: PaymentTransactionCreateManyBookingInputEnvelope
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+  }
+
   export type PaymentProofUncheckedCreateNestedOneWithoutBookingInput = {
     create?: XOR<PaymentProofCreateWithoutBookingInput, PaymentProofUncheckedCreateWithoutBookingInput>
     connectOrCreate?: PaymentProofCreateOrConnectWithoutBookingInput
@@ -29990,6 +30129,13 @@ export namespace Prisma {
     create?: XOR<ReviewCreateWithoutBookingInput, ReviewUncheckedCreateWithoutBookingInput>
     connectOrCreate?: ReviewCreateOrConnectWithoutBookingInput
     connect?: ReviewWhereUniqueInput
+  }
+
+  export type PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput = {
+    create?: XOR<PaymentTransactionCreateWithoutBookingInput, PaymentTransactionUncheckedCreateWithoutBookingInput> | PaymentTransactionCreateWithoutBookingInput[] | PaymentTransactionUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutBookingInput | PaymentTransactionCreateOrConnectWithoutBookingInput[]
+    createMany?: PaymentTransactionCreateManyBookingInputEnvelope
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
   }
 
   export type EnumBookingStatusFieldUpdateOperationsInput = {
@@ -30044,6 +30190,20 @@ export namespace Prisma {
     update?: XOR<XOR<ReviewUpdateToOneWithWhereWithoutBookingInput, ReviewUpdateWithoutBookingInput>, ReviewUncheckedUpdateWithoutBookingInput>
   }
 
+  export type PaymentTransactionUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<PaymentTransactionCreateWithoutBookingInput, PaymentTransactionUncheckedCreateWithoutBookingInput> | PaymentTransactionCreateWithoutBookingInput[] | PaymentTransactionUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutBookingInput | PaymentTransactionCreateOrConnectWithoutBookingInput[]
+    upsert?: PaymentTransactionUpsertWithWhereUniqueWithoutBookingInput | PaymentTransactionUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: PaymentTransactionCreateManyBookingInputEnvelope
+    set?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    disconnect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    delete?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    update?: PaymentTransactionUpdateWithWhereUniqueWithoutBookingInput | PaymentTransactionUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: PaymentTransactionUpdateManyWithWhereWithoutBookingInput | PaymentTransactionUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+  }
+
   export type PaymentProofUncheckedUpdateOneWithoutBookingNestedInput = {
     create?: XOR<PaymentProofCreateWithoutBookingInput, PaymentProofUncheckedCreateWithoutBookingInput>
     connectOrCreate?: PaymentProofCreateOrConnectWithoutBookingInput
@@ -30062,6 +30222,20 @@ export namespace Prisma {
     delete?: ReviewWhereInput | boolean
     connect?: ReviewWhereUniqueInput
     update?: XOR<XOR<ReviewUpdateToOneWithWhereWithoutBookingInput, ReviewUpdateWithoutBookingInput>, ReviewUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput = {
+    create?: XOR<PaymentTransactionCreateWithoutBookingInput, PaymentTransactionUncheckedCreateWithoutBookingInput> | PaymentTransactionCreateWithoutBookingInput[] | PaymentTransactionUncheckedCreateWithoutBookingInput[]
+    connectOrCreate?: PaymentTransactionCreateOrConnectWithoutBookingInput | PaymentTransactionCreateOrConnectWithoutBookingInput[]
+    upsert?: PaymentTransactionUpsertWithWhereUniqueWithoutBookingInput | PaymentTransactionUpsertWithWhereUniqueWithoutBookingInput[]
+    createMany?: PaymentTransactionCreateManyBookingInputEnvelope
+    set?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    disconnect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    delete?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    connect?: PaymentTransactionWhereUniqueInput | PaymentTransactionWhereUniqueInput[]
+    update?: PaymentTransactionUpdateWithWhereUniqueWithoutBookingInput | PaymentTransactionUpdateWithWhereUniqueWithoutBookingInput[]
+    updateMany?: PaymentTransactionUpdateManyWithWhereWithoutBookingInput | PaymentTransactionUpdateManyWithWhereWithoutBookingInput[]
+    deleteMany?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
   }
 
   export type BookingCreateNestedOneWithoutPaymentProofInput = {
@@ -30256,6 +30430,20 @@ export namespace Prisma {
 
   export type EnumNotificationTypeFieldUpdateOperationsInput = {
     set?: $Enums.NotificationType
+  }
+
+  export type BookingCreateNestedOneWithoutPaymentTransactionsInput = {
+    create?: XOR<BookingCreateWithoutPaymentTransactionsInput, BookingUncheckedCreateWithoutPaymentTransactionsInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutPaymentTransactionsInput
+    connect?: BookingWhereUniqueInput
+  }
+
+  export type BookingUpdateOneRequiredWithoutPaymentTransactionsNestedInput = {
+    create?: XOR<BookingCreateWithoutPaymentTransactionsInput, BookingUncheckedCreateWithoutPaymentTransactionsInput>
+    connectOrCreate?: BookingCreateOrConnectWithoutPaymentTransactionsInput
+    upsert?: BookingUpsertWithoutPaymentTransactionsInput
+    connect?: BookingWhereUniqueInput
+    update?: XOR<XOR<BookingUpdateToOneWithWhereWithoutPaymentTransactionsInput, BookingUpdateWithoutPaymentTransactionsInput>, BookingUncheckedUpdateWithoutPaymentTransactionsInput>
   }
 
   export type MessageCreateNestedManyWithoutConversationInput = {
@@ -30874,6 +31062,7 @@ export namespace Prisma {
     session: TripSessionCreateNestedOneWithoutBookingsInput
     paymentProof?: PaymentProofCreateNestedOneWithoutBookingInput
     review?: ReviewCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutTravelerInput = {
@@ -30905,6 +31094,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     paymentProof?: PaymentProofUncheckedCreateNestedOneWithoutBookingInput
     review?: ReviewUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutTravelerInput = {
@@ -32280,6 +32470,7 @@ export namespace Prisma {
     traveler: UserCreateNestedOneWithoutBookingsInput
     paymentProof?: PaymentProofCreateNestedOneWithoutBookingInput
     review?: ReviewCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutSessionInput = {
@@ -32311,6 +32502,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     paymentProof?: PaymentProofUncheckedCreateNestedOneWithoutBookingInput
     review?: ReviewUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutSessionInput = {
@@ -32546,6 +32738,42 @@ export namespace Prisma {
     create: XOR<ReviewCreateWithoutBookingInput, ReviewUncheckedCreateWithoutBookingInput>
   }
 
+  export type PaymentTransactionCreateWithoutBookingInput = {
+    id?: string
+    amount: number
+    method: $Enums.PaymentMethod
+    transactionId?: string | null
+    status: string
+    provider?: string | null
+    providerData?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PaymentTransactionUncheckedCreateWithoutBookingInput = {
+    id?: string
+    amount: number
+    method: $Enums.PaymentMethod
+    transactionId?: string | null
+    status: string
+    provider?: string | null
+    providerData?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PaymentTransactionCreateOrConnectWithoutBookingInput = {
+    where: PaymentTransactionWhereUniqueInput
+    create: XOR<PaymentTransactionCreateWithoutBookingInput, PaymentTransactionUncheckedCreateWithoutBookingInput>
+  }
+
+  export type PaymentTransactionCreateManyBookingInputEnvelope = {
+    data: PaymentTransactionCreateManyBookingInput | PaymentTransactionCreateManyBookingInput[]
+    skipDuplicates?: boolean
+  }
+
   export type TripSessionUpsertWithoutBookingsInput = {
     update: XOR<TripSessionUpdateWithoutBookingsInput, TripSessionUncheckedUpdateWithoutBookingsInput>
     create: XOR<TripSessionCreateWithoutBookingsInput, TripSessionUncheckedCreateWithoutBookingsInput>
@@ -32712,6 +32940,39 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type PaymentTransactionUpsertWithWhereUniqueWithoutBookingInput = {
+    where: PaymentTransactionWhereUniqueInput
+    update: XOR<PaymentTransactionUpdateWithoutBookingInput, PaymentTransactionUncheckedUpdateWithoutBookingInput>
+    create: XOR<PaymentTransactionCreateWithoutBookingInput, PaymentTransactionUncheckedCreateWithoutBookingInput>
+  }
+
+  export type PaymentTransactionUpdateWithWhereUniqueWithoutBookingInput = {
+    where: PaymentTransactionWhereUniqueInput
+    data: XOR<PaymentTransactionUpdateWithoutBookingInput, PaymentTransactionUncheckedUpdateWithoutBookingInput>
+  }
+
+  export type PaymentTransactionUpdateManyWithWhereWithoutBookingInput = {
+    where: PaymentTransactionScalarWhereInput
+    data: XOR<PaymentTransactionUpdateManyMutationInput, PaymentTransactionUncheckedUpdateManyWithoutBookingInput>
+  }
+
+  export type PaymentTransactionScalarWhereInput = {
+    AND?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+    OR?: PaymentTransactionScalarWhereInput[]
+    NOT?: PaymentTransactionScalarWhereInput | PaymentTransactionScalarWhereInput[]
+    id?: StringFilter<"PaymentTransaction"> | string
+    bookingId?: StringFilter<"PaymentTransaction"> | string
+    amount?: FloatFilter<"PaymentTransaction"> | number
+    method?: EnumPaymentMethodFilter<"PaymentTransaction"> | $Enums.PaymentMethod
+    transactionId?: StringNullableFilter<"PaymentTransaction"> | string | null
+    status?: StringFilter<"PaymentTransaction"> | string
+    provider?: StringNullableFilter<"PaymentTransaction"> | string | null
+    providerData?: JsonNullableFilter<"PaymentTransaction">
+    metadata?: JsonNullableFilter<"PaymentTransaction">
+    createdAt?: DateTimeFilter<"PaymentTransaction"> | Date | string
+    updatedAt?: DateTimeFilter<"PaymentTransaction"> | Date | string
+  }
+
   export type BookingCreateWithoutPaymentProofInput = {
     id?: string
     bookingDate?: Date | string
@@ -32741,6 +33002,7 @@ export namespace Prisma {
     session: TripSessionCreateNestedOneWithoutBookingsInput
     traveler: UserCreateNestedOneWithoutBookingsInput
     review?: ReviewCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutPaymentProofInput = {
@@ -32772,6 +33034,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     review?: ReviewUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutPaymentProofInput = {
@@ -32819,6 +33082,7 @@ export namespace Prisma {
     session?: TripSessionUpdateOneRequiredWithoutBookingsNestedInput
     traveler?: UserUpdateOneRequiredWithoutBookingsNestedInput
     review?: ReviewUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutPaymentProofInput = {
@@ -32850,6 +33114,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     review?: ReviewUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type AgencyProfileCreateWithoutWalletInput = {
@@ -33158,6 +33423,7 @@ export namespace Prisma {
     session: TripSessionCreateNestedOneWithoutBookingsInput
     traveler: UserCreateNestedOneWithoutBookingsInput
     paymentProof?: PaymentProofCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionCreateNestedManyWithoutBookingInput
   }
 
   export type BookingUncheckedCreateWithoutReviewInput = {
@@ -33189,6 +33455,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     paymentProof?: PaymentProofUncheckedCreateNestedOneWithoutBookingInput
+    paymentTransactions?: PaymentTransactionUncheckedCreateNestedManyWithoutBookingInput
   }
 
   export type BookingCreateOrConnectWithoutReviewInput = {
@@ -33348,6 +33615,7 @@ export namespace Prisma {
     session?: TripSessionUpdateOneRequiredWithoutBookingsNestedInput
     traveler?: UserUpdateOneRequiredWithoutBookingsNestedInput
     paymentProof?: PaymentProofUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutReviewInput = {
@@ -33379,6 +33647,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     paymentProof?: PaymentProofUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type UserUpsertWithoutReviewsInput = {
@@ -33853,6 +34122,150 @@ export namespace Prisma {
     wishlist?: WishlistUncheckedUpdateManyWithoutUserNestedInput
   }
 
+  export type BookingCreateWithoutPaymentTransactionsInput = {
+    id?: string
+    bookingDate?: Date | string
+    status?: $Enums.BookingStatus
+    totalAmount: number
+    guestsCount: number
+    fullName?: string | null
+    phoneNumber?: string | null
+    documentNumber?: string | null
+    paymentProofUrl?: string | null
+    paymentProofId?: string | null
+    paymentMethod?: $Enums.PaymentMethod
+    paymentGatewayTransactionId?: string | null
+    paymentGatewayMetadata?: NullableJsonNullValueInput | InputJsonValue
+    paymentStatus?: $Enums.BookingPaymentStatus
+    lastReminderSentAt?: Date | string | null
+    notificationsSent?: NullableJsonNullValueInput | InputJsonValue
+    cancelledAt?: Date | string | null
+    cancelledBy?: string | null
+    cancellationReason?: string | null
+    confirmedAt?: Date | string | null
+    refundAmount?: number | null
+    refundStatus?: $Enums.RefundStatus | null
+    refundProcessedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    session: TripSessionCreateNestedOneWithoutBookingsInput
+    traveler: UserCreateNestedOneWithoutBookingsInput
+    paymentProof?: PaymentProofCreateNestedOneWithoutBookingInput
+    review?: ReviewCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingUncheckedCreateWithoutPaymentTransactionsInput = {
+    id?: string
+    sessionId: string
+    travelerId: string
+    bookingDate?: Date | string
+    status?: $Enums.BookingStatus
+    totalAmount: number
+    guestsCount: number
+    fullName?: string | null
+    phoneNumber?: string | null
+    documentNumber?: string | null
+    paymentProofUrl?: string | null
+    paymentProofId?: string | null
+    paymentMethod?: $Enums.PaymentMethod
+    paymentGatewayTransactionId?: string | null
+    paymentGatewayMetadata?: NullableJsonNullValueInput | InputJsonValue
+    paymentStatus?: $Enums.BookingPaymentStatus
+    lastReminderSentAt?: Date | string | null
+    notificationsSent?: NullableJsonNullValueInput | InputJsonValue
+    cancelledAt?: Date | string | null
+    cancelledBy?: string | null
+    cancellationReason?: string | null
+    confirmedAt?: Date | string | null
+    refundAmount?: number | null
+    refundStatus?: $Enums.RefundStatus | null
+    refundProcessedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    paymentProof?: PaymentProofUncheckedCreateNestedOneWithoutBookingInput
+    review?: ReviewUncheckedCreateNestedOneWithoutBookingInput
+  }
+
+  export type BookingCreateOrConnectWithoutPaymentTransactionsInput = {
+    where: BookingWhereUniqueInput
+    create: XOR<BookingCreateWithoutPaymentTransactionsInput, BookingUncheckedCreateWithoutPaymentTransactionsInput>
+  }
+
+  export type BookingUpsertWithoutPaymentTransactionsInput = {
+    update: XOR<BookingUpdateWithoutPaymentTransactionsInput, BookingUncheckedUpdateWithoutPaymentTransactionsInput>
+    create: XOR<BookingCreateWithoutPaymentTransactionsInput, BookingUncheckedCreateWithoutPaymentTransactionsInput>
+    where?: BookingWhereInput
+  }
+
+  export type BookingUpdateToOneWithWhereWithoutPaymentTransactionsInput = {
+    where?: BookingWhereInput
+    data: XOR<BookingUpdateWithoutPaymentTransactionsInput, BookingUncheckedUpdateWithoutPaymentTransactionsInput>
+  }
+
+  export type BookingUpdateWithoutPaymentTransactionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    bookingDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    totalAmount?: FloatFieldUpdateOperationsInput | number
+    guestsCount?: IntFieldUpdateOperationsInput | number
+    fullName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    documentNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentProofUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentProofId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMethod?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    paymentGatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentGatewayMetadata?: NullableJsonNullValueInput | InputJsonValue
+    paymentStatus?: EnumBookingPaymentStatusFieldUpdateOperationsInput | $Enums.BookingPaymentStatus
+    lastReminderSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    notificationsSent?: NullableJsonNullValueInput | InputJsonValue
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancelledBy?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    refundAmount?: NullableFloatFieldUpdateOperationsInput | number | null
+    refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
+    refundProcessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    session?: TripSessionUpdateOneRequiredWithoutBookingsNestedInput
+    traveler?: UserUpdateOneRequiredWithoutBookingsNestedInput
+    paymentProof?: PaymentProofUpdateOneWithoutBookingNestedInput
+    review?: ReviewUpdateOneWithoutBookingNestedInput
+  }
+
+  export type BookingUncheckedUpdateWithoutPaymentTransactionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    sessionId?: StringFieldUpdateOperationsInput | string
+    travelerId?: StringFieldUpdateOperationsInput | string
+    bookingDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    status?: EnumBookingStatusFieldUpdateOperationsInput | $Enums.BookingStatus
+    totalAmount?: FloatFieldUpdateOperationsInput | number
+    guestsCount?: IntFieldUpdateOperationsInput | number
+    fullName?: NullableStringFieldUpdateOperationsInput | string | null
+    phoneNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    documentNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentProofUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentProofId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMethod?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    paymentGatewayTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentGatewayMetadata?: NullableJsonNullValueInput | InputJsonValue
+    paymentStatus?: EnumBookingPaymentStatusFieldUpdateOperationsInput | $Enums.BookingPaymentStatus
+    lastReminderSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    notificationsSent?: NullableJsonNullValueInput | InputJsonValue
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancelledBy?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    refundAmount?: NullableFloatFieldUpdateOperationsInput | number | null
+    refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
+    refundProcessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    paymentProof?: PaymentProofUncheckedUpdateOneWithoutBookingNestedInput
+    review?: ReviewUncheckedUpdateOneWithoutBookingNestedInput
+  }
+
   export type MessageCreateWithoutConversationInput = {
     id?: string
     senderId: string
@@ -34079,6 +34492,7 @@ export namespace Prisma {
     session?: TripSessionUpdateOneRequiredWithoutBookingsNestedInput
     paymentProof?: PaymentProofUpdateOneWithoutBookingNestedInput
     review?: ReviewUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutTravelerInput = {
@@ -34110,6 +34524,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     paymentProof?: PaymentProofUncheckedUpdateOneWithoutBookingNestedInput
     review?: ReviewUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutTravelerInput = {
@@ -34597,6 +35012,7 @@ export namespace Prisma {
     traveler?: UserUpdateOneRequiredWithoutBookingsNestedInput
     paymentProof?: PaymentProofUpdateOneWithoutBookingNestedInput
     review?: ReviewUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateWithoutSessionInput = {
@@ -34628,6 +35044,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     paymentProof?: PaymentProofUncheckedUpdateOneWithoutBookingNestedInput
     review?: ReviewUncheckedUpdateOneWithoutBookingNestedInput
+    paymentTransactions?: PaymentTransactionUncheckedUpdateManyWithoutBookingNestedInput
   }
 
   export type BookingUncheckedUpdateManyWithoutSessionInput = {
@@ -34655,6 +35072,58 @@ export namespace Prisma {
     refundAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     refundStatus?: NullableEnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus | null
     refundProcessedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentTransactionCreateManyBookingInput = {
+    id?: string
+    amount: number
+    method: $Enums.PaymentMethod
+    transactionId?: string | null
+    status: string
+    provider?: string | null
+    providerData?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PaymentTransactionUpdateWithoutBookingInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    amount?: FloatFieldUpdateOperationsInput | number
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    provider?: NullableStringFieldUpdateOperationsInput | string | null
+    providerData?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentTransactionUncheckedUpdateWithoutBookingInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    amount?: FloatFieldUpdateOperationsInput | number
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    provider?: NullableStringFieldUpdateOperationsInput | string | null
+    providerData?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PaymentTransactionUncheckedUpdateManyWithoutBookingInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    amount?: FloatFieldUpdateOperationsInput | number
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
+    transactionId?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: StringFieldUpdateOperationsInput | string
+    provider?: NullableStringFieldUpdateOperationsInput | string | null
+    providerData?: NullableJsonNullValueInput | InputJsonValue
+    metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -34760,6 +35229,10 @@ export namespace Prisma {
      * @deprecated Use TripSessionCountOutputTypeDefaultArgs instead
      */
     export type TripSessionCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = TripSessionCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use BookingCountOutputTypeDefaultArgs instead
+     */
+    export type BookingCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = BookingCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use WalletCountOutputTypeDefaultArgs instead
      */

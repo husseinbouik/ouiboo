@@ -3,7 +3,7 @@ import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
 import { PaymentProviderFactory } from './providers/payment-provider.factory';
 import { InitiatePaymentDto, VerifyPaymentDto, ProcessRefundDto } from './dto/payment.dto';
-import type { PaymentMethod, BookingStatus, BookingPaymentStatus } from '@prisma/client';
+import { PaymentMethod, BookingStatus, BookingPaymentStatus, RefundStatus } from '@ouiboo/database';
 
 @Injectable()
 export class PaymentsService {
@@ -13,7 +13,7 @@ export class PaymentsService {
     private prisma: DatabaseService,
     private paymentProviderFactory: PaymentProviderFactory,
     private emailService: EmailService,
-  ) {}
+  ) { }
 
   /**
    * Initiate a payment session
@@ -37,7 +37,7 @@ export class PaymentsService {
     // SECURITY: Validate payment amount against booking total price
     // Calculate expected amount from authoritative sources (not client input)
     const expectedAmount = booking.session.price * booking.guestsCount;
-    
+
     // Allow small tolerance for floating point precision (0.01 currency units)
     if (Math.abs(dto.amount - expectedAmount) > 0.01) {
       this.logger.warn(
@@ -177,11 +177,11 @@ export class PaymentsService {
           // Add audit log entry
           await tx.auditLog.create({
             data: {
-              userId: booking.travelerId,
+              actorId: booking.travelerId,
               action: 'PAYMENT_FAILED',
-              resourceType: 'BOOKING',
-              resourceId: dto.bookingId,
-              details: {
+              targetType: 'BOOKING',
+              targetId: dto.bookingId,
+              metadata: {
                 provider: dto.provider,
                 transactionId: dto.transactionId,
                 reason: result.error || 'Payment verification failed',
@@ -224,7 +224,7 @@ export class PaymentsService {
         where: { id: dto.bookingId },
         data: {
           refundAmount: dto.amount,
-          refundStatus: 'COMPLETED',
+          refundStatus: RefundStatus.PROCESSED,
           refundProcessedAt: new Date(),
           paymentStatus: BookingPaymentStatus.REFUNDED,
         },
@@ -355,7 +355,7 @@ export class PaymentsService {
 
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
-      include: { traveler: true, session: { include: { template: true, agency: true } } },
+      include: { traveler: true, session: { include: { template: { include: { agency: true } } } } },
     });
 
     if (!booking) {
@@ -448,11 +448,11 @@ export class PaymentsService {
       // Add audit log entry
       await tx.auditLog.create({
         data: {
-          userId: booking.travelerId,
+          actorId: booking.travelerId,
           action: 'PAYMENT_FAILED',
-          resourceType: 'BOOKING',
-          resourceId: booking.id,
-          details: {
+          targetType: 'BOOKING',
+          targetId: booking.id,
+          metadata: {
             provider: 'Stripe',
             paymentIntentId: paymentIntent.id,
             reason: paymentIntent.last_payment_error?.message || 'Payment declined',
@@ -569,7 +569,7 @@ export class PaymentsService {
 
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
-      include: { traveler: true, session: { include: { template: true, agency: true } } },
+      include: { traveler: true, session: { include: { template: { include: { agency: true } } } } },
     });
 
     if (!booking) {
@@ -662,11 +662,11 @@ export class PaymentsService {
       // Add audit log entry
       await tx.auditLog.create({
         data: {
-          userId: booking.travelerId,
+          actorId: booking.travelerId,
           action: 'PAYMENT_FAILED',
-          resourceType: 'BOOKING',
-          resourceId: bookingId,
-          details: {
+          targetType: 'BOOKING',
+          targetId: bookingId,
+          metadata: {
             provider: 'CMI',
             cmiTransactionId: event.transactionId,
             reason: event.failureReason || 'CMI payment failed',
@@ -840,11 +840,11 @@ export class PaymentsService {
       // Add audit log entry
       await tx.auditLog.create({
         data: {
-          userId: booking.travelerId,
+          actorId: booking.travelerId,
           action: 'PAYMENT_FAILED',
-          resourceType: 'BOOKING',
-          resourceId: bookingId,
-          details: {
+          targetType: 'BOOKING',
+          targetId: bookingId,
+          metadata: {
             provider: 'CashPlus',
             cashplusTransactionId: event.transactionId,
             reason: event.failureReason || 'CashPlus payment failed',
@@ -923,6 +923,8 @@ export class PaymentsService {
         userId: booking.travelerId,
         notificationType: 'BOOKING_CONFIRMATION',
         recipientEmail: booking.traveler.email,
+        subject: `Booking Confirmed - ${booking.session.template.title}`,
+        message: `Your booking for ${booking.session.template.title} has been confirmed.`,
         status: 'SENT',
         sentAt: new Date(),
       },

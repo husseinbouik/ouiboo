@@ -4,7 +4,7 @@ import { DatabaseService } from '../database/database.service';
 import { CreateBookingDto, PaymentMethodEnum } from './dto/create-booking.dto';
 import { EmailService } from '../email/email.service';
 import { UploadService } from '../upload/upload.service';
-import type { PaymentMethod } from '@ouiboo/database';
+import { PaymentMethod } from '@ouiboo/database';
 
 const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
 

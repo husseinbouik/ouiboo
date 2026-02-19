@@ -355,6 +355,7 @@ export default function OuibooLanding() {
                       {item.name}
                     </a>
                   ))}
+                </div>
                 <div className="py-6 space-y-4">
                   <div className="flex items-center gap-2">
                     <Logo />

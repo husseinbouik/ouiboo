@@ -110,11 +110,11 @@ let TripsService = class TripsService {
                                 id: true,
                             },
                         },
-                        review: {
+                        reviews: {
                             select: { rating: true },
                         },
                         _count: {
-                            select: { sessions: true, review: true, wishlist: true },
+                            select: { sessions: true, reviews: true, wishlists: true },
                         },
                     },
                     orderBy,

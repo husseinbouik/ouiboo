@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   description: "Admin portal for Ouiboo",
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({
   children,
 }: Readonly<{

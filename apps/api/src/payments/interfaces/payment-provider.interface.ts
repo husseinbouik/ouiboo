@@ -8,6 +8,7 @@ export interface PaymentSession {
 export interface PaymentVerificationResult {
   status: 'success' | 'failure' | 'pending';
   transactionId?: string;
+  error?: string;
   errorMessage?: string;
   metadata?: Record<string, any>;
 }

@@ -464,7 +464,8 @@ exports.PaymentMethod = exports.$Enums.PaymentMethod = {
 exports.BookingPaymentStatus = exports.$Enums.BookingPaymentStatus = {
   UNPAID: 'UNPAID',
   PAID: 'PAID',
-  REFUNDED: 'REFUNDED'
+  REFUNDED: 'REFUNDED',
+  FAILED: 'FAILED'
 };
 
 exports.RefundStatus = exports.$Enums.RefundStatus = {

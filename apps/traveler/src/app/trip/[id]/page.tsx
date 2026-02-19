@@ -381,10 +381,10 @@ export default function TripDetailsPage() {
                  </div>
                )}
                
-               {/* Reviews List */}
-               <ReviewList tripId={tripId} />
-             </div>
-          </div>
+                {/* Reviews List */}
+               {tripId ? <ReviewList tripId={tripId} /> : null}
+              </div>
+           </div>
 
           {/* Right Side: Booking Card */}
           <div className="relative h-full">

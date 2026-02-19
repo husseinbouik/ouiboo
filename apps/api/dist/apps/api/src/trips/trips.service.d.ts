@@ -51,7 +51,37 @@ export declare class TripsService {
         page?: number;
         limit?: number;
     }): Promise<{
-        data: {
+        data: ({
+            reviews: {
+                rating: number;
+            }[];
+            _count: {
+                reviews: number;
+                sessions: number;
+                wishlists: number;
+            };
+            agency: {
+                id: string;
+                companyName: string;
+                logo: string;
+            };
+            sessions: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                status: import("@ouiboo/database").$Enums.SessionStatus;
+                startDate: Date;
+                endDate: Date;
+                price: number;
+                deposit: number;
+                totalSeats: number;
+                minBookings: number;
+                templateId: string;
+                availableSeats: number;
+                currency: string;
+                cancellationReason: string | null;
+            }[];
+        } & {
             description: string;
             title: string;
             id: string;
@@ -73,7 +103,7 @@ export declare class TripsService {
             lastReviewDate: Date | null;
             cancellationPolicy: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
             minBookings: number;
-        }[];
+        })[];
         pagination: {
             total: number;
             page: number;

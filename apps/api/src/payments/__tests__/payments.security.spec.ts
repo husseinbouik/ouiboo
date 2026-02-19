@@ -1,15 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { PaymentsService } from '../payments.service';
-import { PrismaService } from '@ouiboo/database';
+import { DatabaseService } from '../../database/database.service';
 import { EmailService } from '../../email/email.service';
 import { PaymentProviderFactory } from '../providers/payment-provider.factory';
 import { InitiatePaymentDto } from '../dto/payment.dto';
-import { BookingStatus, BookingPaymentStatus, PaymentMethod } from '@prisma/client';
+import { BookingStatus, BookingPaymentStatus, PaymentMethod } from '@ouiboo/database';
 
 describe('PaymentsService - Security Tests', () => {
   let service: PaymentsService;
-  let prismaService: PrismaService;
+  let prismaService: DatabaseService;
   let emailService: EmailService;
   let providerFactory: PaymentProviderFactory;
 
@@ -57,7 +57,7 @@ describe('PaymentsService - Security Tests', () => {
       providers: [
         PaymentsService,
         {
-          provide: PrismaService,
+          provide: DatabaseService,
           useValue: {
             booking: {
               findUnique: jest.fn(),
@@ -96,7 +96,7 @@ describe('PaymentsService - Security Tests', () => {
     }).compile();
 
     service = module.get<PaymentsService>(PaymentsService);
-    prismaService = module.get<PrismaService>(PrismaService);
+    prismaService = module.get<DatabaseService>(DatabaseService);
     emailService = module.get<EmailService>(EmailService);
     providerFactory = module.get<PaymentProviderFactory>(PaymentProviderFactory);
   });
@@ -223,7 +223,7 @@ describe('PaymentsService - Security Tests', () => {
 
       expect(result.redirectUrl).toBe(mockPaymentSession.redirectUrl);
       expect(mockProvider.initiatePayment).toHaveBeenCalledWith(
-        floatingPointVariance,
+        expectedAmount,
         'booking-123',
         'traveler@example.com',
         'John Doe',

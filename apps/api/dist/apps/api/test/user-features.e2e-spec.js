@@ -181,7 +181,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip X', status: 'ACTIVE' } });
         const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 10, availableSeats: 10 } });
         const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'COMPLETED' } });
-        await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, userId: traveler.id, rating: 5, comment: 'Nice' } });
+        await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, travelerId: traveler.id, rating: 5, comment: 'Nice' } });
         await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/review`)
             .set('Authorization', 'Bearer traveler')
@@ -193,7 +193,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Update', status: 'ACTIVE' } });
         const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 10, availableSeats: 10 } });
         const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'COMPLETED' } });
-        const review = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, userId: traveler.id, rating: 4, comment: 'Good' } });
+        const review = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, travelerId: traveler.id, rating: 4, comment: 'Good' } });
         await request(app.getHttpServer())
             .patch(`/reviews/${review.id}`)
             .set('Authorization', 'Bearer traveler')
@@ -207,10 +207,10 @@ describe('User features E2E (user-features.e2e-spec)', () => {
         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Delete', status: 'ACTIVE' } });
         const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 10, availableSeats: 10 } });
         const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'COMPLETED' } });
-        const review = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, userId: traveler.id, rating: 4, comment: 'ToDelete' } });
+        const review = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, travelerId: traveler.id, rating: 4, comment: 'ToDelete' } });
         await request(app.getHttpServer()).delete(`/reviews/${review.id}`).set('Authorization', 'Bearer traveler').expect(200);
         await request(app.getHttpServer()).get(`/reviews/${review.id}`).set('Authorization', 'Bearer traveler').expect(404);
-        const rev2 = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, userId: traveler.id, rating: 3, comment: 'Another' } });
+        const rev2 = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, travelerId: traveler.id, rating: 3, comment: 'Another' } });
         await request(app.getHttpServer()).delete(`/reviews/${rev2.id}`).set('Authorization', 'Bearer admin').expect(200);
     });
     it('Agency responds to review', async () => {
@@ -218,7 +218,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Resp', status: 'ACTIVE' } });
         const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 10, availableSeats: 10 } });
         const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'COMPLETED' } });
-        const review = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, userId: traveler.id, rating: 4, comment: 'Nice' } });
+        const review = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, travelerId: traveler.id, rating: 4, comment: 'Nice' } });
         await request(app.getHttpServer()).post(`/reviews/${review.id}/response`).set('Authorization', 'Bearer agency').send({ response: 'Thank you!' }).expect(201);
         const updated = await db.review.findUnique({ where: { id: review.id } });
         expect(updated?.response).toBe('Thank you!');
@@ -228,7 +228,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
         const { agencyProfile, traveler } = await seedTestData();
         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Pag', status: 'ACTIVE' } });
         for (let i = 0; i < 15; i++) {
-            await db.review.create({ data: { tripTemplateId: template.id, userId: traveler.id, rating: 5, comment: `c${i}` } });
+            await db.review.create({ data: { tripTemplateId: template.id, travelerId: traveler.id, rating: 5, comment: `c${i}` } });
         }
         const res1 = await request(app.getHttpServer()).get(`/trips/${template.id}/reviews?page=1&limit=10`).expect(200);
         expect(res1.body.data.length).toBe(10);
@@ -241,7 +241,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Stats Trip', status: 'ACTIVE' } });
         const ratings = [5, 5, 4, 3, 5];
         for (const r of ratings) {
-            await db.review.create({ data: { tripTemplateId: template.id, userId: traveler.id, rating: r, comment: 'x' } });
+            await db.review.create({ data: { tripTemplateId: template.id, travelerId: traveler.id, rating: r, comment: 'x' } });
         }
         const res = await request(app.getHttpServer()).get(`/trips/${template.id}/reviews/stats`).expect(200);
         expect(res.body.averageRating).toBeCloseTo(4.4, 1);

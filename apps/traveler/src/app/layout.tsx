@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   description: "Traveler portal for Ouiboo",
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({
   children,
 }: Readonly<{

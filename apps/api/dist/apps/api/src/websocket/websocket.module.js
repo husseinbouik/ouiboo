@@ -21,7 +21,7 @@ exports.WebSocketModule = WebSocketModule = __decorate([
                 secret: process.env.JWT_SECRET || 'secret',
             }),
         ],
-        providers: [websocket_gateway_1.WebSocketGateway, websocket_service_1.WebSocketService],
+        providers: [websocket_gateway_1.NotificationGateway, websocket_service_1.WebSocketService],
         exports: [websocket_service_1.WebSocketService],
     })
 ], WebSocketModule);

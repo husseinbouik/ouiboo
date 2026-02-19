@@ -72,6 +72,17 @@ let EmailService = EmailService_1 = class EmailService {
             <p>Start exploring trips and managing bookings from your dashboard.</p>
         `;
     }
+    async sendOTP(to, otp) {
+        const html = this.getOTPTemplate(otp);
+        await this.sendEmail(to, this.generateOTPSubject(), html);
+    }
+    generateOTPSubject() {
+        return 'OUIBOO: Verify your email address';
+    }
+    async sendWelcomeEmail(to, name) {
+        const html = this.getWelcomeTemplate(name);
+        await this.sendEmail(to, 'Welcome to OUIBOO!', html);
+    }
     getPasswordResetTemplate(resetUrl) {
         return `
             <h1>Reset your password</h1>

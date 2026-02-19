@@ -1,0 +1,12 @@
+
+> @ouiboo/traveler@0.1.0 lint
+> next lint
+
+Invalid project directory provided, no such directory: C:\Users\MVpro\Documents\GitHub\ouiboo\apps\traveler\lint
+npm error Lifecycle script `lint` failed with error:
+npm error code 1
+npm error path C:\Users\MVpro\Documents\GitHub\ouiboo\apps\traveler
+npm error workspace @ouiboo/traveler@0.1.0
+npm error location C:\Users\MVpro\Documents\GitHub\ouiboo\apps\traveler
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c next lint

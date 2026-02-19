@@ -106,13 +106,13 @@ describe('User features E2E (user-features.e2e-spec)', () => {
 
     async function seedTestData() {
         // traveler
-        const traveler = await db.user.create({ data: { id: 'traveler-user-1', email: 'traveler@test.com', name: 'Traveler', password: 'x', role: UserRole.Traveler, isEmailVerified: true } });
+        const traveler = await db.user.create({ data: { id: 'traveler-user-1', email: 'traveler@test.com', name: 'Traveler', password: 'x', role: UserRole.Traveler, isEmailVerified: true } as any });
         // agency user
-        const agencyUser = await db.user.create({ data: { id: 'agency-user-1', email: 'agency@test.com', name: 'Agency', password: 'x', role: UserRole.Agency, isEmailVerified: true } });
-        const agencyProfile = await db.agencyProfile.create({ data: { id: 'agency-profile-1', userId: agencyUser.id, companyName: 'Agency Ltd' } });
+        const agencyUser = await db.user.create({ data: { id: 'agency-user-1', email: 'agency@test.com', name: 'Agency', password: 'x', role: UserRole.Agency, isEmailVerified: true } as any });
+        const agencyProfile = await db.agencyProfile.create({ data: { id: 'agency-profile-1', userId: agencyUser.id, companyName: 'Agency Ltd' } as any });
 
         // admin
-        const adminUser = await db.user.create({ data: { id: 'admin-user', email: 'admin@test.com', name: 'Admin', password: 'x', role: UserRole.Admin, isEmailVerified: true } });
+        const adminUser = await db.user.create({ data: { id: 'admin-user', email: 'admin@test.com', name: 'Admin', password: 'x', role: UserRole.Admin, isEmailVerified: true } as any });
 
         return { traveler, agencyUser, agencyProfile, adminUser };
     }
@@ -135,7 +135,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
         expect(u?.displayCurrency).toBe('USD');
 
         // attempt to update another user
-        const other = await db.user.create({ data: { id: 'traveler-2', email: 't2@test.com', name: 'T2', password: 'x', role: UserRole.Traveler } });
+        const other = await db.user.create({ data: { id: 'traveler-2', email: 't2@test.com', name: 'T2', password: 'x', role: UserRole.Traveler } as any });
         await request(app.getHttpServer())
             .patch('/users/profile')
             .set('Authorization', 'Bearer traveler')
@@ -180,9 +180,9 @@ describe('User features E2E (user-features.e2e-spec)', () => {
     // ===== Review CRUD tests =====
     it('Create review for completed booking', async () => {
         const { traveler, agencyProfile } = await seedTestData();
-        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Test Trip', status: 'ACTIVE' } });
-        const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 10, availableSeats: 10 } });
-        const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'COMPLETED' } });
+        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Test Trip', status: 'ACTIVE' } as any });
+        const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 10, availableSeats: 10 } as any });
+        const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'COMPLETED' } as any });
 
         const res = await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/review`)
@@ -198,9 +198,9 @@ describe('User features E2E (user-features.e2e-spec)', () => {
 
     it('Prevent review creation for non-completed bookings', async () => {
         const { traveler, agencyProfile } = await seedTestData();
-        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Test Trip 2', status: 'ACTIVE' } });
-        const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 10, availableSeats: 10 } });
-        const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'PENDING' } });
+        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Test Trip 2', status: 'ACTIVE' } as any });
+        const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 10, availableSeats: 10 } as any });
+        const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'PENDING' } as any });
 
         await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/review`)
@@ -214,11 +214,11 @@ describe('User features E2E (user-features.e2e-spec)', () => {
 
     it('Prevent duplicate reviews', async () => {
         const { traveler, agencyProfile } = await seedTestData();
-        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip X', status: 'ACTIVE' } });
-        const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 10, availableSeats: 10 } });
-        const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'COMPLETED' } });
+        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip X', status: 'ACTIVE' } as any });
+        const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 10, availableSeats: 10 } as any });
+        const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'COMPLETED' } as any });
 
-        await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, userId: traveler.id, rating: 5, comment: 'Nice' } });
+        await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, travelerId: traveler.id, rating: 5, comment: 'Nice' } as any });
 
         await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/review`)
@@ -229,10 +229,10 @@ describe('User features E2E (user-features.e2e-spec)', () => {
 
     it('Update review by author', async () => {
         const { traveler, agencyProfile } = await seedTestData();
-        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Update', status: 'ACTIVE' } });
-        const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 10, availableSeats: 10 } });
-        const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'COMPLETED' } });
-        const review = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, userId: traveler.id, rating: 4, comment: 'Good' } });
+        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Update', status: 'ACTIVE' } as any });
+        const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 10, availableSeats: 10 } as any });
+        const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'COMPLETED' } as any });
+        const review = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, travelerId: traveler.id, rating: 4, comment: 'Good' } as any });
 
         await request(app.getHttpServer())
             .patch(`/reviews/${review.id}`)
@@ -246,26 +246,26 @@ describe('User features E2E (user-features.e2e-spec)', () => {
 
     it('Delete review', async () => {
         const { traveler, agencyProfile, adminUser } = await seedTestData();
-        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Delete', status: 'ACTIVE' } });
-        const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 10, availableSeats: 10 } });
-        const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'COMPLETED' } });
-        const review = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, userId: traveler.id, rating: 4, comment: 'ToDelete' } });
+        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Delete', status: 'ACTIVE' } as any });
+        const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 10, availableSeats: 10 } as any });
+        const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'COMPLETED' } as any });
+        const review = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, travelerId: traveler.id, rating: 4, comment: 'ToDelete' } as any });
 
         // Author deletes
         await request(app.getHttpServer()).delete(`/reviews/${review.id}`).set('Authorization', 'Bearer traveler').expect(200);
         await request(app.getHttpServer()).get(`/reviews/${review.id}`).set('Authorization', 'Bearer traveler').expect(404);
 
         // admin can delete others
-        const rev2 = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, userId: traveler.id, rating: 3, comment: 'Another' } });
+        const rev2 = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, travelerId: traveler.id, rating: 3, comment: 'Another' } as any });
         await request(app.getHttpServer()).delete(`/reviews/${rev2.id}`).set('Authorization', 'Bearer admin').expect(200);
     });
 
     it('Agency responds to review', async () => {
         const { traveler, agencyProfile } = await seedTestData();
-        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Resp', status: 'ACTIVE' } });
-        const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 10, availableSeats: 10 } });
-        const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'COMPLETED' } });
-        const review = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, userId: traveler.id, rating: 4, comment: 'Nice' } });
+        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Resp', status: 'ACTIVE' } as any });
+        const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 10, availableSeats: 10 } as any });
+        const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'COMPLETED' } as any });
+        const review = await db.review.create({ data: { bookingId: booking.id, tripTemplateId: template.id, travelerId: traveler.id, rating: 4, comment: 'Nice' } as any });
 
         await request(app.getHttpServer()).post(`/reviews/${review.id}/response`).set('Authorization', 'Bearer agency').send({ response: 'Thank you!' }).expect(201);
 
@@ -278,10 +278,10 @@ describe('User features E2E (user-features.e2e-spec)', () => {
 
     it('Get reviews for trip with pagination', async () => {
         const { agencyProfile, traveler } = await seedTestData();
-        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Pag', status: 'ACTIVE' } });
+        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Pag', status: 'ACTIVE' } as any });
 
         for (let i = 0; i < 15; i++) {
-            await db.review.create({ data: { tripTemplateId: template.id, userId: traveler.id, rating: 5, comment: `c${i}` } });
+            await db.review.create({ data: { tripTemplateId: template.id, travelerId: traveler.id, rating: 5, comment: `c${i}` } as any });
         }
 
         const res1 = await request(app.getHttpServer()).get(`/trips/${template.id}/reviews?page=1&limit=10`).expect(200);
@@ -294,11 +294,11 @@ describe('User features E2E (user-features.e2e-spec)', () => {
 
     it('Get review statistics', async () => {
         const { agencyProfile, traveler } = await seedTestData();
-        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Stats Trip', status: 'ACTIVE' } });
+        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Stats Trip', status: 'ACTIVE' } as any });
 
-        const ratings = [5,5,4,3,5];
+        const ratings = [5, 5, 4, 3, 5];
         for (const r of ratings) {
-            await db.review.create({ data: { tripTemplateId: template.id, userId: traveler.id, rating: r, comment: 'x' } });
+            await db.review.create({ data: { tripTemplateId: template.id, travelerId: traveler.id, rating: r, comment: 'x' } as any });
         }
 
         const res = await request(app.getHttpServer()).get(`/trips/${template.id}/reviews/stats`).expect(200);
@@ -310,7 +310,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
     // ===== Wishlist tests =====
     it('Add trip to wishlist and prevent duplicates', async () => {
         const { traveler, agencyProfile } = await seedTestData();
-        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Wish Trip', status: 'ACTIVE' } });
+        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Wish Trip', status: 'ACTIVE' } as any });
 
         await request(app.getHttpServer()).post(`/users/wishlist/${template.id}`).set('Authorization', 'Bearer traveler').expect(201);
         await request(app.getHttpServer()).post(`/users/wishlist/${template.id}`).set('Authorization', 'Bearer traveler').expect(400);
@@ -318,7 +318,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
 
     it('Remove trip from wishlist', async () => {
         const { traveler, agencyProfile } = await seedTestData();
-        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Wish Trip 2', status: 'ACTIVE' } });
+        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Wish Trip 2', status: 'ACTIVE' } as any });
 
         await request(app.getHttpServer()).post(`/users/wishlist/${template.id}`).set('Authorization', 'Bearer traveler').expect(201);
         await request(app.getHttpServer()).delete(`/users/wishlist/${template.id}`).set('Authorization', 'Bearer traveler').expect(204);
@@ -328,8 +328,8 @@ describe('User features E2E (user-features.e2e-spec)', () => {
     it('Get user wishlist with pagination and count', async () => {
         const { traveler, agencyProfile } = await seedTestData();
         for (let i = 0; i < 25; i++) {
-            const t = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: `T${i}`, status: 'ACTIVE' } });
-            await db.wishlist.create({ data: { userId: traveler.id, tripTemplateId: t.id } });
+            const t = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: `T${i}`, status: 'ACTIVE' } as any });
+            await db.wishlist.create({ data: { userId: traveler.id, tripTemplateId: t.id } as any });
         }
 
         const res = await request(app.getHttpServer()).get('/users/wishlist?page=1&limit=20').set('Authorization', 'Bearer traveler').expect(200);
@@ -353,7 +353,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
 
     it('Preferences are user-specific', async () => {
         const { traveler } = await seedTestData();
-        const other = await db.user.create({ data: { id: 'trav-2', email: 't2@test.com', name: 'T2', password: 'x', role: UserRole.Traveler } });
+        const other = await db.user.create({ data: { id: 'trav-2', email: 't2@test.com', name: 'T2', password: 'x', role: UserRole.Traveler } as any });
 
         await request(app.getHttpServer()).patch('/users/notifications/preferences').set('Authorization', 'Bearer traveler').send({ smsNotifications: true }).expect(200);
         const prefOther = await db.notificationPreference.findUnique({ where: { userId: other.id } });
@@ -377,8 +377,8 @@ describe('User features E2E (user-features.e2e-spec)', () => {
     it('Tenant isolation for agency updates', async () => {
         const { agencyProfile } = await seedTestData();
         // try to update another agency
-        const other = await db.user.create({ data: { id: 'agency-2', email: 'a2@test.com', name: 'A2', password: 'x', role: UserRole.Agency } });
-        const otherProfile = await db.agencyProfile.create({ data: { id: 'agency-profile-2', userId: other.id, companyName: 'Other' } });
+        const other = await db.user.create({ data: { id: 'agency-2', email: 'a2@test.com', name: 'A2', password: 'x', role: UserRole.Agency } as any });
+        const otherProfile = await db.agencyProfile.create({ data: { id: 'agency-profile-2', userId: other.id, companyName: 'Other' } as any });
 
         await request(app.getHttpServer()).patch('/agency/profile').set('Authorization', 'Bearer agency-12345').send({ companyName: 'ShouldFail' }).expect(403);
     });
@@ -391,7 +391,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
 
     it('Users can only update their own data', async () => {
         const { traveler } = await seedTestData();
-        const other = await db.user.create({ data: { id: 'trav-3', email: 't3@test.com', name: 'T3', password: 'x', role: UserRole.Traveler } });
+        const other = await db.user.create({ data: { id: 'trav-3', email: 't3@test.com', name: 'T3', password: 'x', role: UserRole.Traveler } as any });
         await request(app.getHttpServer()).patch('/users/profile').set('Authorization', 'Bearer traveler').send({ id: other.id, name: 'Hacker' }).expect(403);
     });
 
@@ -404,8 +404,8 @@ describe('User features E2E (user-features.e2e-spec)', () => {
     // ===== Integration: complete user journey (smoke) =====
     it('Complete user journey: register -> profile -> avatar -> wishlist -> book -> review', async () => {
         const { traveler, agencyProfile } = await seedTestData();
-        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Journey Trip', status: 'ACTIVE' } });
-        const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 5, availableSeats: 5 } });
+        const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Journey Trip', status: 'ACTIVE' } as any });
+        const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 5, availableSeats: 5 } as any });
 
         // update profile
         await request(app.getHttpServer()).patch('/users/profile').set('Authorization', 'Bearer traveler').send({ name: 'Journeyer' }).expect(200);

@@ -154,7 +154,7 @@ export default function TravelerLoginPage() {
               disabled={loginMutation.isPending}
               className="w-full h-12 bg-sunset-orange hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors duration-200"
             >
-              {loginMutation.isPending ? 'Logging in...' : t('login.signIn')} 
+{loginMutation.isPending ? 'Logging in...' : t('login.signIn', 'Sign In')}
               {!loginMutation.isPending && <ArrowRight className="ml-2 h-5 w-5 inline" />}
             </Button>
 

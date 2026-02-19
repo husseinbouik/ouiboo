@@ -1,7 +1,7 @@
 import { OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { WebSocketService } from './websocket.service';
-export declare class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export declare class NotificationGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private webSocketService;
     server: Server;
     private readonly logger;

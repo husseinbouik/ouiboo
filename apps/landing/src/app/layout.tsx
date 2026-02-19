@@ -22,6 +22,8 @@ export const metadata: Metadata = {
   description: "The future of travel planning.", // A more descriptive default
 };
 
+export const dynamic = 'force-dynamic';
+
 // The signature of RootLayout now accepts `params` to get the locale
 // In Next.js 16, params is a Promise and needs to be awaited
 export default async function RootLayout({ 

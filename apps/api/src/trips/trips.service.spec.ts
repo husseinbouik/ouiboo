@@ -50,6 +50,7 @@ describe('TripsService', () => {
 
     describe('updateTemplate', () => {
         it('should update a template if user owns the agency', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
             db.tripTemplate.findFirst.mockResolvedValue(mockTripTemplate);
             db.tripTemplate.update.mockResolvedValue({ ...mockTripTemplate, title: 'Updated' });
 
@@ -63,6 +64,7 @@ describe('TripsService', () => {
         });
 
         it('should throw error if user does not own the agency', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
             db.tripTemplate.findFirst.mockResolvedValue(null); // No match for trip + new agency
 
             const dto = { title: 'Updated' };
@@ -72,12 +74,13 @@ describe('TripsService', () => {
 
         it('should throw error if agency profile not found', async () => {
             db.agencyProfile.findUnique.mockResolvedValue(null);
-            await expect(service.updateTemplate('trip-123', 'user-999', {})).rejects.toThrow(ForbiddenException);
+            await expect(service.updateTemplate('trip-123', 'user-999', {})).rejects.toThrow(NotFoundException);
         });
     });
 
     describe('deleteTemplate', () => {
         it('should delete a template if owned by user', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
             db.tripTemplate.findFirst.mockResolvedValue(mockTripTemplate);
             db.tripTemplate.delete.mockResolvedValue(mockTripTemplate);
 
@@ -90,6 +93,7 @@ describe('TripsService', () => {
         });
 
         it('should throw error if unauthorized', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
             db.tripTemplate.findFirst.mockResolvedValue(null); // Not found for this agency
 
             await expect(service.deleteTemplate('trip-123', 'user-123')).rejects.toThrow(NotFoundException);

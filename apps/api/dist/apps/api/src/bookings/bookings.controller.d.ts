@@ -10,6 +10,7 @@ export declare class BookingsController {
         updatedAt: Date;
         status: import("@ouiboo/database").$Enums.BookingStatus;
         cancellationReason: string | null;
+        travelerId: string;
         sessionId: string;
         guestsCount: number;
         fullName: string | null;
@@ -31,7 +32,6 @@ export declare class BookingsController {
         refundAmount: number | null;
         refundStatus: import("@ouiboo/database").$Enums.RefundStatus | null;
         refundProcessedAt: Date | null;
-        travelerId: string;
     }>;
     findMyBookings(req: any): Promise<({
         paymentProof: {
@@ -88,6 +88,7 @@ export declare class BookingsController {
         updatedAt: Date;
         status: import("@ouiboo/database").$Enums.BookingStatus;
         cancellationReason: string | null;
+        travelerId: string;
         sessionId: string;
         guestsCount: number;
         fullName: string | null;
@@ -109,7 +110,6 @@ export declare class BookingsController {
         refundAmount: number | null;
         refundStatus: import("@ouiboo/database").$Enums.RefundStatus | null;
         refundProcessedAt: Date | null;
-        travelerId: string;
     })[]>;
     uploadPaymentProof(req: any, id: string, file: Express.Multer.File): Promise<{
         downloadUrl: string;
@@ -127,6 +127,7 @@ export declare class BookingsController {
         updatedAt: Date;
         status: import("@ouiboo/database").$Enums.BookingStatus;
         cancellationReason: string | null;
+        travelerId: string;
         sessionId: string;
         guestsCount: number;
         fullName: string | null;
@@ -148,7 +149,6 @@ export declare class BookingsController {
         refundAmount: number | null;
         refundStatus: import("@ouiboo/database").$Enums.RefundStatus | null;
         refundProcessedAt: Date | null;
-        travelerId: string;
     }>;
     cancelBooking(req: any, id: string): Promise<{
         id: string;
@@ -156,6 +156,7 @@ export declare class BookingsController {
         updatedAt: Date;
         status: import("@ouiboo/database").$Enums.BookingStatus;
         cancellationReason: string | null;
+        travelerId: string;
         sessionId: string;
         guestsCount: number;
         fullName: string | null;
@@ -177,6 +178,5 @@ export declare class BookingsController {
         refundAmount: number | null;
         refundStatus: import("@ouiboo/database").$Enums.RefundStatus | null;
         refundProcessedAt: Date | null;
-        travelerId: string;
     }>;
 }

@@ -51,7 +51,16 @@ export default function AgencySignupPage() {
       router.push(`/verify?email=${user.email}`);
     },
     onError: (err: any) => {
-      setError(err?.response?.data?.message || 'Signup failed. Please try again.');
+      const message = err?.response?.data?.message;
+      if (message === 'EMAIL_ALREADY_IN_USE') {
+        setError('An account with this email already exists. Try logging in instead.');
+        return;
+      }
+      if (message === 'JWT_NOT_CONFIGURED') {
+        setError('The server is not fully configured. Please try again later or contact support.');
+        return;
+      }
+      setError(message || 'Signup failed. Please try again.');
     }
   });
 

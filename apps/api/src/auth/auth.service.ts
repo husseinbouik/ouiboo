@@ -23,9 +23,8 @@ export class AuthService {
         const user = await this.db.user.findUnique({ where: { email } });
         if (user && await bcrypt.compare(pass, user.password)) {
             if (!user.isEmailVerified) {
-                // We can either throw an error or handle it in the frontend
-                // Throwing an error for now
-                throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+                // Explicit code so frontends can show a friendly message
+                throw new UnauthorizedException('EMAIL_NOT_VERIFIED');
             }
             const { password, ...result } = user;
             return result;
@@ -37,7 +36,8 @@ export class AuthService {
         const accessSecret = process.env.JWT_SECRET;
         const refreshSecret = process.env.JWT_REFRESH_SECRET;
         if (!accessSecret || !refreshSecret) {
-            throw new Error('JWT secrets are not configured');
+            // Surface a clear configuration error instead of a generic 500
+            throw new HttpException('JWT_NOT_CONFIGURED', HttpStatus.INTERNAL_SERVER_ERROR);
         }
         const payload = { email: user.email, sub: user.id, role: user.role };
         const accessToken = this.jwtService.sign(payload, {
@@ -59,49 +59,65 @@ export class AuthService {
 
     async register(dto: RegisterDto) {
         const hashedPassword = await bcrypt.hash(dto.password, 10);
-        const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generate 6-digit OTP
+        // Generate 6-digit OTP (100000 to 999999)
+        const otp = Math.floor(100000 + Math.random() * 900000).toString().padStart(6, '0');
         const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
         const otpLastSentAt = new Date();
 
-        const user = await this.db.$transaction(async (tx) => {
-            const newUser = await tx.user.create({
-                data: {
-                    name: dto.name,
-                    email: dto.email,
-                    password: hashedPassword,
-                    role: dto.role as any,
-                    otp, // Store OTP
-                    otpExpiresAt,
-                    otpLastSentAt,
-                },
+        let user;
+        try {
+            user = await this.db.$transaction(async (tx) => {
+                const newUser = await tx.user.create({
+                    data: {
+                        name: dto.name,
+                        email: dto.email,
+                        password: hashedPassword,
+                        role: dto.role as any,
+                        otp, // Store OTP
+                        otpExpiresAt,
+                        otpLastSentAt,
+                    },
+                });
+
+                if (dto.role === 'AGENCY') {
+                    const profile = await tx.agencyProfile.create({
+                        data: {
+                            userId: newUser.id,
+                            companyName: dto.name, // Use name as initial company name
+                            ice: 'PENDING_' + newUser.id.substring(0, 7), // Temporary unique value
+                            patente: 'PENDING',
+                            rib: 'PENDING',
+                            subscriptionStatus: 'TRIAL',
+                            trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days trial
+                        }
+                    });
+
+                    await tx.wallet.create({
+                        data: {
+                            agencyId: profile.id,
+                        }
+                    });
+                }
+
+                return newUser;
             });
-
-            if (dto.role === 'AGENCY') {
-                const profile = await tx.agencyProfile.create({
-                    data: {
-                        userId: newUser.id,
-                        companyName: dto.name, // Use name as initial company name
-                        ice: 'PENDING_' + newUser.id.substring(0, 7), // Temporary unique value
-                        patente: 'PENDING',
-                        rib: 'PENDING',
-                        subscriptionStatus: 'TRIAL',
-                        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days trial
-                    }
-                });
-
-                await tx.wallet.create({
-                    data: {
-                        agencyId: profile.id,
-                    }
-                });
+        } catch (error: any) {
+            // Handle unique constraint violations (e.g. email already in use)
+            if (error?.code === 'P2002') {
+                throw new HttpException('EMAIL_ALREADY_IN_USE', HttpStatus.BAD_REQUEST);
             }
-
-            return newUser;
-        });
+            throw error;
+        }
 
         // Send OTP email
-        const html = this.emailService.getOTPTemplate(otp);
-        await this.emailService.sendMail(dto.email, 'Verify your Ouiboo account', html);
+        try {
+            const html = this.emailService.getOTPTemplate(otp);
+            await this.emailService.sendMail(dto.email, 'Verify your Ouiboo account', html);
+        } catch (error) {
+            // Log the error but don't fail registration - user can request OTP resend
+            console.error(`Failed to send OTP email during registration for ${dto.email}:`, error);
+            // Still allow registration to complete - user can resend OTP
+        }
 
         return this.login(user); // Still return tokens so they can stay logged in during verification
     }
@@ -110,15 +126,25 @@ export class AuthService {
         const user = await this.db.user.findUnique({ where: { email } });
 
         if (!user) {
-            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+            throw new UnauthorizedException('EMAIL_NOT_FOUND');
         }
 
-        if (user.otp !== otp) {
-            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        // Check if OTP exists
+        if (!user.otp) {
+            throw new UnauthorizedException('OTP_NOT_FOUND');
         }
 
+        // Check if OTP is expired first
         if (!user.otpExpiresAt || user.otpExpiresAt < new Date()) {
-            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+            throw new UnauthorizedException('OTP_EXPIRED');
+        }
+
+        // Normalize and compare OTPs (trim whitespace and ensure string comparison)
+        const normalizedOtp = otp.trim();
+        const normalizedStoredOtp = user.otp.trim();
+
+        if (normalizedStoredOtp !== normalizedOtp) {
+            throw new UnauthorizedException('INVALID_OTP');
         }
 
         await this.db.user.update({
@@ -131,8 +157,13 @@ export class AuthService {
         });
 
         // Send welcome email now that they are verified
-        const welcomeHtml = this.emailService.getWelcomeTemplate(user.name);
-        await this.emailService.sendMail(user.email, 'Welcome to Ouiboo!', welcomeHtml);
+        try {
+            const welcomeHtml = this.emailService.getWelcomeTemplate(user.name);
+            await this.emailService.sendMail(user.email, 'Welcome to Ouiboo!', welcomeHtml);
+        } catch (error) {
+            // Log error but don't fail verification - email verification is already complete
+            console.error(`Failed to send welcome email to ${user.email}:`, error);
+        }
 
         return { message: 'Email verified successfully' };
     }
@@ -149,15 +180,25 @@ export class AuthService {
             }
         }
 
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        // Generate 6-digit OTP (100000 to 999999)
+        const otp = Math.floor(100000 + Math.random() * 900000).toString().padStart(6, '0');
         const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
         await this.db.user.update({
             where: { id: user.id },
             data: { otp, otpExpiresAt, otpLastSentAt: new Date() }
         });
 
-        const html = this.emailService.getOTPTemplate(otp);
-        await this.emailService.sendMail(user.email, 'Your new verification code', html);
+        try {
+            const html = this.emailService.getOTPTemplate(otp);
+            await this.emailService.sendMail(user.email, 'Your new verification code', html);
+        } catch (error) {
+            // Log error and throw so frontend knows email failed
+            console.error(`Failed to send OTP email for ${user.email}:`, error);
+            throw new HttpException(
+                'Failed to send verification email. Please check your email configuration or try again later.',
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
 
         return { message: 'OTP resent successfully' };
     }

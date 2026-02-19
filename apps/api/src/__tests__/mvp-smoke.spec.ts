@@ -1,12 +1,15 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
+import * as request from 'supertest';
 import { AuthController } from '../auth/auth.controller';
 import { AuthService } from '../auth/auth.service';
 import { BookingsController } from '../bookings/bookings.controller';
 import { BookingsService } from '../bookings/bookings.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { EmailService } from '../email/email.service';
+import { UploadService } from '../upload/upload.service';
+import { DatabaseService } from '../database/database.service';
 
 describe('MVP smoke: auth + booking flow', () => {
     let app: INestApplication;
@@ -18,6 +21,17 @@ describe('MVP smoke: auth + booking flow', () => {
     const bookingsService = {
         create: jest.fn(),
         findAllByTraveler: jest.fn(),
+        uploadPaymentProof: jest.fn(),
+    };
+    const emailService = {
+        sendOTP: jest.fn(),
+        sendWelcomeEmail: jest.fn(),
+    };
+    const uploadService = {
+        uploadFile: jest.fn(),
+    };
+    const databaseService = {
+        user: { findUnique: jest.fn() },
     };
 
     beforeAll(async () => {
@@ -26,6 +40,9 @@ describe('MVP smoke: auth + booking flow', () => {
             providers: [
                 { provide: AuthService, useValue: authService },
                 { provide: BookingsService, useValue: bookingsService },
+                { provide: EmailService, useValue: emailService },
+                { provide: UploadService, useValue: uploadService },
+                { provide: DatabaseService, useValue: databaseService },
             ],
         })
             .overrideGuard(JwtAuthGuard)

@@ -15,6 +15,7 @@ const common_1 = require("@nestjs/common");
 const database_service_1 = require("../database/database.service");
 const email_service_1 = require("../email/email.service");
 const payment_provider_factory_1 = require("./providers/payment-provider.factory");
+const database_1 = require("@ouiboo/database");
 let PaymentsService = PaymentsService_1 = class PaymentsService {
     constructor(prisma, paymentProviderFactory, emailService) {
         this.prisma = prisma;
@@ -30,7 +31,7 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         if (!booking) {
             throw new common_1.BadRequestException('Booking not found');
         }
-        if (booking.status !== BookingStatus.PENDING) {
+        if (booking.status !== database_1.BookingStatus.PENDING) {
             throw new common_1.BadRequestException('Booking is not in pending status');
         }
         const expectedAmount = booking.session.price * booking.guestsCount;
@@ -44,7 +45,7 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
             data: {
                 bookingId: dto.bookingId,
                 amount: expectedAmount,
-                method: PaymentMethod.GATEWAY,
+                method: database_1.PaymentMethod.GATEWAY,
                 transactionId: paymentSession.sessionId,
                 status: 'INITIATED',
                 provider: dto.provider,
@@ -54,9 +55,9 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         await this.prisma.booking.update({
             where: { id: dto.bookingId },
             data: {
-                paymentMethod: PaymentMethod.GATEWAY,
+                paymentMethod: database_1.PaymentMethod.GATEWAY,
                 paymentGatewayTransactionId: paymentSession.sessionId,
-                paymentStatus: BookingPaymentStatus.UNPAID,
+                paymentStatus: database_1.BookingPaymentStatus.UNPAID,
                 totalAmount: expectedAmount,
             },
         });
@@ -109,7 +110,7 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
                         where: { id: dto.bookingId },
                         data: {
                             status: 'CANCELLED',
-                            paymentStatus: BookingPaymentStatus.FAILED,
+                            paymentStatus: database_1.BookingPaymentStatus.FAILED,
                         },
                     });
                     await tx.tripSession.update({
@@ -122,11 +123,11 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
                     });
                     await tx.auditLog.create({
                         data: {
-                            userId: booking.travelerId,
+                            actorId: booking.travelerId,
                             action: 'PAYMENT_FAILED',
-                            resourceType: 'BOOKING',
-                            resourceId: dto.bookingId,
-                            details: {
+                            targetType: 'BOOKING',
+                            targetId: dto.bookingId,
+                            metadata: {
                                 provider: dto.provider,
                                 transactionId: dto.transactionId,
                                 reason: result.error || 'Payment verification failed',
@@ -154,9 +155,9 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
                 where: { id: dto.bookingId },
                 data: {
                     refundAmount: dto.amount,
-                    refundStatus: 'COMPLETED',
+                    refundStatus: 'PROCESSED',
                     refundProcessedAt: new Date(),
-                    paymentStatus: BookingPaymentStatus.REFUNDED,
+                    paymentStatus: database_1.BookingPaymentStatus.REFUNDED,
                 },
             });
             if (booking.sessionId) {
@@ -247,7 +248,7 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         }
         const booking = await this.prisma.booking.findUnique({
             where: { id: bookingId },
-            include: { traveler: true, session: { include: { template: true, agency: true } } },
+            include: { traveler: true, session: { include: { template: { include: { agency: true } } } } },
         });
         if (!booking) {
             this.logger.warn(`Booking not found for Stripe webhook: ${bookingId}`);
@@ -304,7 +305,7 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
                 where: { id: booking.id },
                 data: {
                     status: 'CANCELLED',
-                    paymentStatus: BookingPaymentStatus.FAILED,
+                    paymentStatus: database_1.BookingPaymentStatus.FAILED,
                 },
             });
             await tx.tripSession.update({
@@ -317,11 +318,11 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
             });
             await tx.auditLog.create({
                 data: {
-                    userId: booking.travelerId,
+                    actorId: booking.travelerId,
                     action: 'PAYMENT_FAILED',
-                    resourceType: 'BOOKING',
-                    resourceId: booking.id,
-                    details: {
+                    targetType: 'BOOKING',
+                    targetId: booking.id,
+                    metadata: {
                         provider: 'Stripe',
                         paymentIntentId: paymentIntent.id,
                         reason: paymentIntent.last_payment_error?.message || 'Payment declined',
@@ -350,7 +351,7 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         await this.prisma.booking.update({
             where: { id: booking.id },
             data: {
-                paymentStatus: BookingPaymentStatus.REFUNDED,
+                paymentStatus: database_1.BookingPaymentStatus.REFUNDED,
                 refundAmount: charge.amount_refunded / 100,
                 refundProcessedAt: new Date(),
             },
@@ -371,7 +372,7 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
             this.logger.debug(`Transaction not found for Stripe payment intent: ${paymentIntent.id}`);
             return;
         }
-        if (transaction.booking.paymentStatus !== BookingPaymentStatus.PAID) {
+        if (transaction.booking.paymentStatus !== database_1.BookingPaymentStatus.PAID) {
             await this.transitionBookingToConfirmed(transaction.booking.id, {
                 provider: 'STRIPE',
                 paymentIntentId: paymentIntent.id,
@@ -409,7 +410,7 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         }
         const booking = await this.prisma.booking.findUnique({
             where: { id: bookingId },
-            include: { traveler: true, session: { include: { template: true, agency: true } } },
+            include: { traveler: true, session: { include: { template: { include: { agency: true } } } } },
         });
         if (!booking) {
             this.logger.warn(`Booking not found for CMI webhook: ${bookingId}`);
@@ -466,7 +467,7 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
                 where: { id: bookingId },
                 data: {
                     status: 'CANCELLED',
-                    paymentStatus: BookingPaymentStatus.FAILED,
+                    paymentStatus: database_1.BookingPaymentStatus.FAILED,
                 },
             });
             await tx.tripSession.update({
@@ -479,11 +480,11 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
             });
             await tx.auditLog.create({
                 data: {
-                    userId: booking.travelerId,
+                    actorId: booking.travelerId,
                     action: 'PAYMENT_FAILED',
-                    resourceType: 'BOOKING',
-                    resourceId: bookingId,
-                    details: {
+                    targetType: 'BOOKING',
+                    targetId: bookingId,
+                    metadata: {
                         provider: 'CMI',
                         cmiTransactionId: event.transactionId,
                         reason: event.failureReason || 'CMI payment failed',
@@ -510,7 +511,7 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         await this.prisma.booking.update({
             where: { id: bookingId },
             data: {
-                paymentStatus: BookingPaymentStatus.REFUNDED,
+                paymentStatus: database_1.BookingPaymentStatus.REFUNDED,
                 refundAmount: event.amount,
                 refundProcessedAt: new Date(),
             },
@@ -600,7 +601,7 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
                 where: { id: bookingId },
                 data: {
                     status: 'CANCELLED',
-                    paymentStatus: BookingPaymentStatus.FAILED,
+                    paymentStatus: database_1.BookingPaymentStatus.FAILED,
                 },
             });
             await tx.tripSession.update({
@@ -613,13 +614,13 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
             });
             await tx.auditLog.create({
                 data: {
-                    userId: booking.travelerId,
+                    actorId: booking.travelerId,
                     action: 'PAYMENT_FAILED',
-                    resourceType: 'BOOKING',
-                    resourceId: bookingId,
-                    details: {
+                    targetType: 'BOOKING',
+                    targetId: bookingId,
+                    metadata: {
                         provider: 'CashPlus',
-                        cashplusTransactionId: event.transactionId,
+                        transactionId: event.transactionId,
                         reason: event.failureReason || 'CashPlus payment failed',
                         seatsReleased: booking.guestsCount,
                     },
@@ -647,8 +648,8 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         const confirmedBooking = await this.prisma.booking.update({
             where: { id: bookingId },
             data: {
-                status: BookingStatus.CONFIRMED,
-                paymentStatus: BookingPaymentStatus.PAID,
+                status: database_1.BookingStatus.CONFIRMED,
+                paymentStatus: database_1.BookingPaymentStatus.PAID,
                 paymentGatewayMetadata: paymentMetadata,
                 confirmedAt: new Date(),
             },
@@ -678,6 +679,8 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
                 userId: booking.travelerId,
                 notificationType: 'BOOKING_CONFIRMATION',
                 recipientEmail: booking.traveler.email,
+                subject: 'Booking Confirmation',
+                message: `Your booking for ${booking.session.template.title} has been confirmed.`,
                 status: 'SENT',
                 sentAt: new Date(),
             },

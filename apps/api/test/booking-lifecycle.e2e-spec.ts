@@ -105,7 +105,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 password: 'hashed-password',
                 role: UserRole.Agency,
                 isEmailVerified: true,
-            },
+            } as any,
         });
 
         // Create agency profile
@@ -114,7 +114,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 id: 'agency-profile-456',
                 userId: agencyUser.id,
                 companyName: 'Test Agency Ltd',
-            },
+            } as any,
         });
 
         // Create trip template
@@ -127,7 +127,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 itinerary: 'Day 1: Trek start',
                 duration: 3,
                 difficulty: 'MEDIUM',
-            },
+            } as any,
         });
 
         // Create trip session
@@ -139,7 +139,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 endDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 days from now
                 price: 390,
                 availableSeats: 10,
-            },
+            } as any,
         });
 
         // Create traveler user
@@ -151,7 +151,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 password: 'hashed-password',
                 role: UserRole.Traveler,
                 isEmailVerified: true,
-            },
+            } as any,
         });
 
         return { agencyUser, agency, template, session, traveler };
@@ -256,7 +256,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 phoneNumber: '+1234567890',
                 documentNumber: 'ID123456',
                 status: 'CONFIRMED',
-            },
+            } as any,
         });
 
         // Reduce available seats
@@ -303,7 +303,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 phoneNumber: '+1234567890',
                 documentNumber: 'ID123456',
                 status: 'COMPLETED',
-            },
+            } as any,
         });
 
         await request(app.getHttpServer())
@@ -441,7 +441,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 documentNumber: 'ID123456',
                 status: 'PENDING',
                 bookingDate: new Date(Date.now() - 25 * 60 * 60 * 1000), // 25 hours ago
-            },
+            } as any,
         });
 
         const fixturePath = path.join(__dirname, 'fixtures', 'proof.png');
@@ -474,7 +474,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 documentNumber: 'ID123456',
                 status: 'PENDING',
                 bookingDate: new Date(), // Just created
-            },
+            } as any,
         });
 
         const fixturePath = path.join(__dirname, 'fixtures', 'proof.png');
@@ -503,7 +503,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 phoneNumber: '+1234567890',
                 documentNumber: 'ID123456',
                 status: 'PENDING',
-            },
+            } as any,
         });
 
         const proof = await db.paymentProof.create({
@@ -511,7 +511,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 bookingId: booking.id,
                 imageUrl: 'proof-file.pdf',
                 status: 'PENDING',
-            },
+            } as any,
         });
 
         await db.booking.update({
@@ -561,7 +561,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 phoneNumber: '+1234567890',
                 documentNumber: 'ID123456',
                 status: 'PENDING',
-            },
+            } as any,
         });
 
         // Upload payment proof (AWAITING_VALIDATION)
@@ -607,7 +607,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 phoneNumber: '+1234567890',
                 documentNumber: 'ID123456',
                 status: 'CONFIRMED', // Manually set to CONFIRMED (bypass logic)
-            },
+            } as any,
         });
 
         // Attempt to upload proof on CONFIRMED booking
@@ -705,7 +705,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 password: 'hashed-password',
                 role: UserRole.Traveler,
                 isEmailVerified: true,
-            },
+            } as any,
         });
 
         // Create bookings for both travelers
@@ -719,7 +719,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 phoneNumber: '+1234567890',
                 documentNumber: 'ID123456',
                 status: 'PENDING',
-            },
+            } as any,
         });
 
         const booking2 = await db.booking.create({
@@ -732,7 +732,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 phoneNumber: '+2234567890',
                 documentNumber: 'ID234567',
                 status: 'PENDING',
-            },
+            } as any,
         });
 
         // Get bookings as traveler 1
@@ -755,7 +755,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 password: 'hashed-password',
                 role: UserRole.Agency,
                 isEmailVerified: true,
-            },
+            } as any,
         });
 
         const agency2 = await db.agencyProfile.create({
@@ -763,7 +763,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 id: 'agency-profile-789',
                 userId: agency2User.id,
                 companyName: 'Agency 2 Ltd',
-            },
+            } as any,
         });
 
         const { template, session, agency } = await seedTestData();
@@ -778,7 +778,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 itinerary: 'Day 1: Beach',
                 duration: 2,
                 difficulty: 'EASY',
-            },
+            } as any,
         });
 
         // Create session for agency 2
@@ -790,7 +790,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 endDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
                 price: 200,
                 availableSeats: 10,
-            },
+            } as any,
         });
 
         // Create bookings on both agencies' trips
@@ -848,7 +848,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 id: 'agency-profile-999',
                 userId: agency2User.id,
                 companyName: 'Agency 3 Ltd',
-            },
+            } as any,
         });
 
         const { template, session } = await seedTestData();

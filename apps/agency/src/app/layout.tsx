@@ -10,6 +10,10 @@ export const metadata: Metadata = {
   description: "Agency portal for Ouiboo",
 };
 
+// Force dynamic rendering for all pages - prevents i18n HTTP backend
+// from hanging during static generation (no server to fetch translations from)
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({
   children,
 }: Readonly<{

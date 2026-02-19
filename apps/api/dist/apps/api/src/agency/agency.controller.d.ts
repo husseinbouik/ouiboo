@@ -73,6 +73,10 @@ export declare class AgencyController {
             uploadedAt: Date;
             rejectionReason: string | null;
         };
+        traveler: {
+            email: string;
+            name: string;
+        };
         session: {
             template: {
                 description: string;
@@ -113,16 +117,13 @@ export declare class AgencyController {
             currency: string;
             cancellationReason: string | null;
         };
-        traveler: {
-            email: string;
-            name: string;
-        };
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
         status: import("@ouiboo/database").$Enums.BookingStatus;
         cancellationReason: string | null;
+        travelerId: string;
         sessionId: string;
         guestsCount: number;
         fullName: string | null;
@@ -144,7 +145,6 @@ export declare class AgencyController {
         refundAmount: number | null;
         refundStatus: import("@ouiboo/database").$Enums.RefundStatus | null;
         refundProcessedAt: Date | null;
-        travelerId: string;
     })[]>;
     getPayouts(req: any): Promise<{
         id: string;

@@ -6,7 +6,7 @@ export const Slot = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLEleme
     if (React.isValidElement(children)) {
       return React.cloneElement(children, {
         ...props,
-        ...children.props,
+        ...(children.props as object),
         className: cn(props.className, (children.props as any).className),
         // @ts-ignore
         ref: children.ref || ref,

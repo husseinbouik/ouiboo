@@ -151,11 +151,11 @@ export class TripsService {
                                 id: true,
                             },
                         },
-                        review: {
+                        reviews: {
                             select: { rating: true },
                         },
                         _count: {
-                            select: { sessions: true, review: true, wishlist: true },
+                            select: { sessions: true, reviews: true, wishlists: true },
                         },
                     },
                     orderBy,
@@ -246,7 +246,7 @@ export class TripsService {
 
     async updateTemplate(id: string, agencyId: string, dto: Partial<CreateTripTemplateDto>) {
         const agency = await this.db.agencyProfile.findUnique({ where: { id: agencyId } });
-        if (!agency) throw new ForbiddenException('Agency profile not found');
+        if (!agency) throw new NotFoundException('Agency profile not found');
 
         const { itinerary, ...tripData } = dto;
         console.log(`[TripsService] Updating template ${id} for agency ${agencyId}`);
@@ -274,7 +274,7 @@ export class TripsService {
 
     async deleteTemplate(id: string, agencyId: string) {
         const agency = await this.db.agencyProfile.findUnique({ where: { id: agencyId } });
-        if (!agency) throw new ForbiddenException('Agency profile not found');
+        if (!agency) throw new NotFoundException('Agency profile not found');
 
         const existing = await this.db.tripTemplate.findFirst({
             where: { id, agencyId: agencyId }

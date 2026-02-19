@@ -15,36 +15,61 @@ export class EmailService {
         const pass = process.env.SMTP_PASS;
 
         if (host && user && pass) {
-            this.transporter = nodemailer.createTransport({
-                host,
-                port,
-                secure: port === 465,
-                auth: { user, pass },
-            });
-            this.logger.log('EmailService initialized with SMTP');
+            try {
+                this.transporter = nodemailer.createTransport({
+                    host,
+                    port,
+                    secure: port === 465,
+                    auth: { user, pass },
+                    // Add connection timeout and other options
+                    connectionTimeout: 5000,
+                    greetingTimeout: 5000,
+                    socketTimeout: 5000,
+                });
+                this.logger.log(`EmailService initialized with SMTP (${host}:${port})`);
+            } catch (error) {
+                this.logger.error('Failed to initialize SMTP transporter:', error);
+                this.transporter = undefined;
+            }
         } else {
-            this.logger.warn('EmailService: No SMTP credentials found. Emails will be logged to console.');
+            const missing = [];
+            if (!host) missing.push('SMTP_HOST');
+            if (!user) missing.push('SMTP_USER');
+            if (!pass) missing.push('SMTP_PASS');
+            this.logger.warn(`EmailService: SMTP not configured. Missing: ${missing.join(', ')}`);
+            this.logger.warn('Emails will be logged to console instead of being sent.');
+            this.transporter = undefined;
         }
+    }
+
+    isConfigured(): boolean {
+        return !!this.transporter;
     }
 
     async sendEmail(to: string, subject: string, html: string) {
         if (this.transporter) {
             try {
-                await this.transporter.sendMail({
+                const result = await this.transporter.sendMail({
                     from: `"OUIBOO" <${process.env.SMTP_USER}>`,
                     to,
                     subject,
                     html,
                 });
-                this.logger.log(`Email sent to ${to}`);
+                this.logger.log(`Email sent successfully to ${to}. MessageId: ${result.messageId}`);
+                return result;
             } catch (error) {
                 this.logger.error(`Failed to send email to ${to}`, error);
+                // Re-throw the error so callers know email failed
+                throw new Error(`Failed to send email to ${to}: ${error instanceof Error ? error.message : String(error)}`);
             }
         } else {
-            this.logger.debug(`[MOCK EMAIL] To: ${to} | Subject: ${subject}`);
-            this.logger.debug(`[MOCK EMAIL BODY] ${html}`);
-            // In a real zero-cost PROD env, we'd use a free tier like Resend or SendGrid.
-            // For now, console logging suffices for "Proof of Logic".
+            // Log prominently when SMTP is not configured
+            this.logger.warn(`[MOCK EMAIL - SMTP NOT CONFIGURED] To: ${to} | Subject: ${subject}`);
+            this.logger.warn(`[MOCK EMAIL BODY] ${html}`);
+            this.logger.warn(`To enable email sending, configure SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS environment variables.`);
+            // In development, we might want to allow this, but log it prominently
+            // In production, you might want to throw an error instead
+            // For now, we'll allow it but log prominently
         }
     }
 
@@ -54,10 +79,42 @@ export class EmailService {
 
     getOTPTemplate(otp: string) {
         return `
-            <h1>Verify your email</h1>
-            <p>Use the verification code below to complete your signup:</p>
-            <p style="font-size: 24px; font-weight: bold; letter-spacing: 2px;">${otp}</p>
-            <p>This code expires in 10 minutes.</p>
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #F3F4F6; padding: 24px;">
+                <div style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; padding: 32px 28px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);">
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <div style="display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 999px; background: linear-gradient(135deg,#0F172A,#1D4ED8); color: #ffffff; font-weight: 700; font-size: 18px; margin-bottom: 8px;">
+                            O
+                        </div>
+                        <div style="font-size: 20px; font-weight: 700; color: #0F172A;">Ouiboo</div>
+                    </div>
+
+                    <h1 style="font-size: 22px; line-height: 1.3; font-weight: 700; color: #0F172A; margin: 0 0 12px;">
+                        Verify your email address
+                    </h1>
+                    <p style="font-size: 14px; line-height: 1.6; color: #4B5563; margin: 0 0 20px;">
+                        Use the verification code below to complete your signup and secure your account.
+                    </p>
+
+                    <div style="text-align: center; margin: 24px 0;">
+                        <div style="display: inline-block; padding: 14px 26px; border-radius: 999px; background: #0F172A; color: #F9FAFB; letter-spacing: 0.4em; font-size: 22px; font-weight: 700;">
+                            ${otp}
+                        </div>
+                    </div>
+
+                    <p style="font-size: 13px; line-height: 1.6; color: #6B7280; margin: 0 0 8px;">
+                        This code expires in <strong>10 minutes</strong>. If it expires, you can request a new code from the app.
+                    </p>
+                    <p style="font-size: 12px; line-height: 1.6; color: #9CA3AF; margin: 0;">
+                        If you didn’t create an account on Ouiboo, you can safely ignore this email.
+                    </p>
+
+                    <div style="border-top: 1px solid #E5E7EB; margin-top: 24px; padding-top: 16px; text-align: center;">
+                        <p style="font-size: 11px; color: #9CA3AF; margin: 0;">
+                            © ${new Date().getFullYear()} Ouiboo. All rights reserved.
+                        </p>
+                    </div>
+                </div>
+            </div>
         `;
     }
 
@@ -68,6 +125,20 @@ export class EmailService {
             <p>Your email is verified and your account is ready to go.</p>
             <p>Start exploring trips and managing bookings from your dashboard.</p>
         `;
+    }
+
+    async sendOTP(to: string, otp: string) {
+        const html = this.getOTPTemplate(otp);
+        await this.sendEmail(to, this.generateOTPSubject(), html);
+    }
+
+    generateOTPSubject() {
+        return 'OUIBOO: Verify your email address';
+    }
+
+    async sendWelcomeEmail(to: string, name?: string | null) {
+        const html = this.getWelcomeTemplate(name);
+        await this.sendEmail(to, 'Welcome to OUIBOO!', html);
     }
 
     getPasswordResetTemplate(resetUrl: string) {

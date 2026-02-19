@@ -3,10 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const testing_1 = require("@nestjs/testing");
 const common_1 = require("@nestjs/common");
 const payments_service_1 = require("../payments.service");
-const database_1 = require("@ouiboo/database");
+const database_service_1 = require("../../database/database.service");
 const email_service_1 = require("../../email/email.service");
 const payment_provider_factory_1 = require("../providers/payment-provider.factory");
-const client_1 = require("@prisma/client");
+const database_1 = require("@ouiboo/database");
 describe('PaymentsService - Security Tests', () => {
     let service;
     let prismaService;
@@ -16,11 +16,11 @@ describe('PaymentsService - Security Tests', () => {
         id: 'booking-123',
         sessionId: 'session-123',
         travelerId: 'traveler-123',
-        status: client_1.BookingStatus.PENDING,
+        status: database_1.BookingStatus.PENDING,
         guestsCount: 2,
         totalAmount: 500,
-        paymentMethod: client_1.PaymentMethod.MANUAL,
-        paymentStatus: client_1.BookingPaymentStatus.UNPAID,
+        paymentMethod: database_1.PaymentMethod.MANUAL,
+        paymentStatus: database_1.BookingPaymentStatus.UNPAID,
         session: {
             id: 'session-123',
             templateId: 'template-123',
@@ -54,7 +54,7 @@ describe('PaymentsService - Security Tests', () => {
             providers: [
                 payments_service_1.PaymentsService,
                 {
-                    provide: database_1.PrismaService,
+                    provide: database_service_1.DatabaseService,
                     useValue: {
                         booking: {
                             findUnique: jest.fn(),
@@ -92,7 +92,7 @@ describe('PaymentsService - Security Tests', () => {
             ],
         }).compile();
         service = module.get(payments_service_1.PaymentsService);
-        prismaService = module.get(database_1.PrismaService);
+        prismaService = module.get(database_service_1.DatabaseService);
         emailService = module.get(email_service_1.EmailService);
         providerFactory = module.get(payment_provider_factory_1.PaymentProviderFactory);
     });
@@ -234,7 +234,7 @@ describe('PaymentsService - Security Tests', () => {
             expect(prismaService.booking.update).toHaveBeenCalledWith(expect.objectContaining({
                 data: expect.objectContaining({
                     totalAmount: expectedAmount,
-                    paymentStatus: client_1.BookingPaymentStatus.UNPAID,
+                    paymentStatus: database_1.BookingPaymentStatus.UNPAID,
                 }),
             }));
         });

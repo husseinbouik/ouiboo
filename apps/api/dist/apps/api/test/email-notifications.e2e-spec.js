@@ -153,11 +153,11 @@ describe('Email Notifications - Complete E2E (email-notifications.e2e-spec)', ()
     });
     describe('Booking Notification Emails', () => {
         it('Send booking notification to traveler and agency', async () => {
-            const agencyUser = await db.user.create({ data: { id: 'a1', email: 'agency@test.com', name: 'Agency', role: types_1.UserRole.Agency } });
+            const agencyUser = await db.user.create({ data: { id: 'a1', email: 'agency@test.com', name: 'Agency', role: types_1.UserRole.Agency, password: 'password' } });
             const agencyProfile = await db.agencyProfile.create({ data: { id: 'ap1', userId: agencyUser.id, companyName: 'Agency' } });
             const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Title', status: 'ACTIVE' } });
             const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 5, availableSeats: 5 } });
-            const traveler = await db.user.create({ data: { id: 't1', email: 'traveler@test.com', name: 'T', role: types_1.UserRole.Traveler } });
+            const traveler = await db.user.create({ data: { id: 't1', email: 'traveler@test.com', name: 'T', role: types_1.UserRole.Traveler, password: 'password' } });
             await emailService.sendBookingNotification(traveler.email, agencyUser.email, 'booking-1', template.title);
             expect(mockTransporter.sendMail).toHaveBeenCalled();
             const toAddrs = mockTransporter.sendMail.mock.calls.map(c => c[0].to);
@@ -173,24 +173,24 @@ describe('Email Notifications - Complete E2E (email-notifications.e2e-spec)', ()
     });
     describe('Payment Reminder Emails', () => {
         it('Send payment reminder for unpaid booking', async () => {
-            const agencyUser = await db.user.create({ data: { id: 'a2', email: 'ag2@test.com', name: 'A2', role: types_1.UserRole.Agency } });
+            const agencyUser = await db.user.create({ data: { id: 'a2', email: 'ag2@test.com', name: 'A2', role: types_1.UserRole.Agency, password: 'password' } });
             const agencyProfile = await db.agencyProfile.create({ data: { id: 'ap2', userId: agencyUser.id, companyName: 'A2' } });
             const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'PayTrip', status: 'ACTIVE' } });
             const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 5, availableSeats: 5 } });
-            const traveler = await db.user.create({ data: { id: 't2', email: 'trav2@test.com', name: 'T2' } });
+            const traveler = await db.user.create({ data: { id: 't2', email: 'trav2@test.com', name: 'T2', password: 'password' } });
             const oldDate = new Date(Date.now() - 13 * 60 * 60 * 1000);
             const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'AWAITING_VALIDATION', createdAt: oldDate } });
             await notificationJobsService.sendPaymentProofReminders();
             expect(mockTransporter.sendMail).toHaveBeenCalled();
             const updated = await db.booking.findUnique({ where: { id: booking.id } });
             expect(updated?.lastReminderSentAt).toBeTruthy();
-            const logs = await db.notificationLog.findMany({ where: { bookingId: booking.id } });
+            const logs = await db.notificationLog.findMany({ where: { userId: traveler.id } });
             expect(logs.length).toBeGreaterThan(0);
         });
         it('Skip payment reminder if already sent or paid', async () => {
             const template = await db.tripTemplate.create({ data: { agencyId: 'ap-skip', title: 'SkipTrip', status: 'ACTIVE' } });
             const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 5, availableSeats: 5 } });
-            const traveler = await db.user.create({ data: { id: 't-skip', email: 'tskip@test.com', name: 'TS' } });
+            const traveler = await db.user.create({ data: { id: 't-skip', email: 'tskip@test.com', name: 'TS', password: 'password' } });
             const recent = new Date();
             const b1 = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'AWAITING_VALIDATION', createdAt: new Date(Date.now() - 13 * 60 * 60 * 1000), lastReminderSentAt: recent } });
             const b2 = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'AWAITING_VALIDATION', createdAt: new Date(Date.now() - 13 * 60 * 60 * 1000), paymentStatus: 'PAID' } });
@@ -265,7 +265,7 @@ describe('Email Notifications - Complete E2E (email-notifications.e2e-spec)', ()
             mockTransporter.sendMail.mockImplementationOnce(() => { throw new Error('boom'); });
             const template = await db.tripTemplate.create({ data: { agencyId: 'ap-f', title: 'FTrip', status: 'ACTIVE' } });
             const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 5, availableSeats: 5 } });
-            const traveler = await db.user.create({ data: { id: 't-f', email: 'tf@test.com', name: 'TF' } });
+            const traveler = await db.user.create({ data: { id: 't-f', email: 'tf@test.com', name: 'TF', password: 'password' } });
             const res = await request(app.getHttpServer()).post('/bookings').set('Authorization', 'Bearer traveler').send({ sessionId: session.id, guestsCount: 1, fullName: 'F', phoneNumber: '+1', documentNumber: 'D', paymentMethod: 'BANK_TRANSFER' }).expect(201);
             expect(res.body.id).toBeDefined();
         });
@@ -281,7 +281,7 @@ describe('Email Notifications - Complete E2E (email-notifications.e2e-spec)', ()
                 callIndex += 1;
                 if (callIndex === 2)
                     throw new Error('boom');
-                return { messageId: 'ok' };
+                return Promise.resolve({ messageId: 'ok', accepted: [] });
             });
             await notificationJobsService.sendPaymentProofReminders();
             expect(mockTransporter.sendMail).toHaveBeenCalled();
@@ -289,7 +289,7 @@ describe('Email Notifications - Complete E2E (email-notifications.e2e-spec)', ()
     });
     describe('Email Personalization', () => {
         it('Welcome email includes user name', async () => {
-            const user = await db.user.create({ data: { id: 'u-per', email: 'u@p.com', name: 'Alice Smith', role: types_1.UserRole.Traveler } });
+            const user = await db.user.create({ data: { id: 'u-per', email: 'u@p.com', name: 'Alice Smith', role: types_1.UserRole.Traveler, password: 'password' } });
             await emailService.sendWelcomeEmail(user.email, user.name);
             expect(mockTransporter.sendMail).toHaveBeenCalled();
             const html = mockTransporter.sendMail.mock.calls[0][0].html;
@@ -325,10 +325,10 @@ describe('Email Notifications - Complete E2E (email-notifications.e2e-spec)', ()
     });
     describe('Complete Email Flow Integration', () => {
         it('Full booking lifecycle emails', async () => {
-            const trav = await db.user.create({ data: { id: 'trav-int', email: 'travint@test.com', name: 'TI', role: types_1.UserRole.Traveler } });
+            const trav = await db.user.create({ data: { id: 'trav-int', email: 'travint@test.com', name: 'TI', role: types_1.UserRole.Traveler, password: 'password' } });
             await emailService.sendOTP(trav.email, '0000');
             await emailService.sendWelcomeEmail(trav.email, trav.name);
-            const agencyUser = await db.user.create({ data: { id: 'ag-int', email: 'agint@test.com', name: 'AG', role: types_1.UserRole.Agency } });
+            const agencyUser = await db.user.create({ data: { id: 'ag-int', email: 'agint@test.com', name: 'AG', role: types_1.UserRole.Agency, password: 'password' } });
             const ap = await db.agencyProfile.create({ data: { id: 'ap-int', userId: agencyUser.id, companyName: 'AG' } });
             const tpl = await db.tripTemplate.create({ data: { agencyId: ap.id, title: 'FlowTrip', status: 'ACTIVE' } });
             const sess = await db.tripSession.create({ data: { templateId: tpl.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 5, availableSeats: 5 } });
@@ -337,7 +337,7 @@ describe('Email Notifications - Complete E2E (email-notifications.e2e-spec)', ()
             expect(mockTransporter.sendMail.mock.calls.length).toBeGreaterThanOrEqual(3);
         });
         it('Password reset flow emails', async () => {
-            const u = await db.user.create({ data: { id: 'u-pr', email: 'upr@test.com', name: 'UP', role: types_1.UserRole.Traveler } });
+            const u = await db.user.create({ data: { id: 'u-pr', email: 'upr@test.com', name: 'UP', role: types_1.UserRole.Traveler, password: 'password' } });
             await emailService.sendPasswordResetEmail(u.email, 'https://example.com/reset?token=tok');
             expect(mockTransporter.sendMail).toHaveBeenCalled();
         });
@@ -363,7 +363,7 @@ describe('Email Notifications - Complete E2E (email-notifications.e2e-spec)', ()
         });
     });
     async function seedUsersForReminder() {
-        const traveler = await db.user.create({ data: { id: `trav-rem-${Date.now()}`, email: `trav${Date.now()}@test.com`, name: 'RemTraveler', role: types_1.UserRole.Traveler } });
+        const traveler = await db.user.create({ data: { id: `trav-rem-${Date.now()}`, email: `trav${Date.now()}@test.com`, name: 'RemTraveler', role: types_1.UserRole.Traveler, password: 'password' } });
         return { traveler };
     }
 });

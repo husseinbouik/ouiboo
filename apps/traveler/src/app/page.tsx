@@ -1,6 +1,8 @@
 import { apiClient } from '@/lib/api-client';
 import HomeClient from './HomeClient';
 
+export const dynamic = 'force-dynamic';
+
 async function getFeaturedTrips() {
   try {
     let response = await apiClient.get('/trips?featured=true&status=ACTIVE');

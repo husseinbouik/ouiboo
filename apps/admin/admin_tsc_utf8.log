@@ -1,0 +1,1 @@
+﻿src/app/page.tsx(456,132): error TS2322: Type '"ACTIVE"' is not assignable to type 'VerificationStatusType'.

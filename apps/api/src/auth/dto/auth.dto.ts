@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength, IsEnum, IsOptional } from 'class-validator';
+import { IsEmail, IsString, MinLength, MaxLength, Matches, IsEnum, IsOptional } from 'class-validator';
 import { UserRole } from '@ouiboo/types';
 
 export class LoginDto {
@@ -48,6 +48,8 @@ export class VerifyEmailDto {
     @ApiProperty({ example: '123456' })
     @IsString()
     @MinLength(6)
+    @MaxLength(6)
+    @Matches(/^\d{6}$/, { message: 'OTP must be exactly 6 digits' })
     otp: string;
 }
 

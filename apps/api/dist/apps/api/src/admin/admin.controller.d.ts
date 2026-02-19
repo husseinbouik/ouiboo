@@ -12,6 +12,24 @@ export declare class AdminController {
     getPendingPayments(q?: string): Promise<{
         downloadUrl: string;
         booking: {
+            traveler: {
+                email: string;
+                password: string;
+                name: string | null;
+                role: import("@ouiboo/database").$Enums.UserRole;
+                otp: string | null;
+                id: string;
+                avatar: string | null;
+                isEmailVerified: boolean;
+                otpExpiresAt: Date | null;
+                otpLastSentAt: Date | null;
+                passwordResetTokenHash: string | null;
+                passwordResetExpiresAt: Date | null;
+                passwordResetSentAt: Date | null;
+                displayCurrency: string;
+                createdAt: Date;
+                updatedAt: Date;
+            };
             session: {
                 template: {
                     description: string;
@@ -52,30 +70,13 @@ export declare class AdminController {
                 currency: string;
                 cancellationReason: string | null;
             };
-            traveler: {
-                email: string;
-                password: string;
-                name: string | null;
-                role: import("@ouiboo/database").$Enums.UserRole;
-                otp: string | null;
-                id: string;
-                avatar: string | null;
-                isEmailVerified: boolean;
-                otpExpiresAt: Date | null;
-                otpLastSentAt: Date | null;
-                passwordResetTokenHash: string | null;
-                passwordResetExpiresAt: Date | null;
-                passwordResetSentAt: Date | null;
-                displayCurrency: string;
-                createdAt: Date;
-                updatedAt: Date;
-            };
         } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
             status: import("@ouiboo/database").$Enums.BookingStatus;
             cancellationReason: string | null;
+            travelerId: string;
             sessionId: string;
             guestsCount: number;
             fullName: string | null;
@@ -97,7 +98,6 @@ export declare class AdminController {
             refundAmount: number | null;
             refundStatus: import("@ouiboo/database").$Enums.RefundStatus | null;
             refundProcessedAt: Date | null;
-            travelerId: string;
         };
         id: string;
         status: import("@ouiboo/database").$Enums.VerificationStatus;
@@ -286,6 +286,24 @@ export declare class AdminController {
             uploadedAt: Date;
             rejectionReason: string | null;
         };
+        traveler: {
+            email: string;
+            password: string;
+            name: string | null;
+            role: import("@ouiboo/database").$Enums.UserRole;
+            otp: string | null;
+            id: string;
+            avatar: string | null;
+            isEmailVerified: boolean;
+            otpExpiresAt: Date | null;
+            otpLastSentAt: Date | null;
+            passwordResetTokenHash: string | null;
+            passwordResetExpiresAt: Date | null;
+            passwordResetSentAt: Date | null;
+            displayCurrency: string;
+            createdAt: Date;
+            updatedAt: Date;
+        };
         session: {
             template: {
                 description: string;
@@ -326,30 +344,13 @@ export declare class AdminController {
             currency: string;
             cancellationReason: string | null;
         };
-        traveler: {
-            email: string;
-            password: string;
-            name: string | null;
-            role: import("@ouiboo/database").$Enums.UserRole;
-            otp: string | null;
-            id: string;
-            avatar: string | null;
-            isEmailVerified: boolean;
-            otpExpiresAt: Date | null;
-            otpLastSentAt: Date | null;
-            passwordResetTokenHash: string | null;
-            passwordResetExpiresAt: Date | null;
-            passwordResetSentAt: Date | null;
-            displayCurrency: string;
-            createdAt: Date;
-            updatedAt: Date;
-        };
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
         status: import("@ouiboo/database").$Enums.BookingStatus;
         cancellationReason: string | null;
+        travelerId: string;
         sessionId: string;
         guestsCount: number;
         fullName: string | null;
@@ -371,7 +372,6 @@ export declare class AdminController {
         refundAmount: number | null;
         refundStatus: import("@ouiboo/database").$Enums.RefundStatus | null;
         refundProcessedAt: Date | null;
-        travelerId: string;
     })[]>;
     getPayoutRequests(q?: string, status?: string): import("@ouiboo/database").Prisma.PrismaPromise<({
         agency: {
@@ -429,12 +429,12 @@ export declare class AdminController {
     getAuditLogs(from?: string, to?: string, action?: string, actorEmail?: string, targetType?: string, limit?: string): Promise<{
         id: string;
         createdAt: Date;
+        metadata: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
         actorId: string | null;
         actorEmail: string | null;
         action: string;
         targetType: string;
         targetId: string | null;
-        metadata: import("../../../../packages/database/generated-client/runtime/library").JsonValue | null;
     }[]>;
     exportAuditLogs(req: any, res: Response, from?: string, to?: string, action?: string, actorEmail?: string, targetType?: string, limit?: string): Promise<Response<any, Record<string, any>>>;
     pruneAuditLogs(req: any, days?: number): Promise<{

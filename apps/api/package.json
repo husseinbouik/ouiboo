@@ -29,13 +29,15 @@
         "@nestjs/jwt": "^11.0.0",
         "@nestjs/passport": "^11.0.5",
         "@nestjs/platform-express": "^11.0.1",
-        "@nestjs/schedule": "^11.0.0",
+        "@nestjs/platform-socket.io": "^11.1.13",
+        "@nestjs/schedule": "^6.1.1",
         "@nestjs/serve-static": "^5.0.4",
         "@nestjs/swagger": "^11.0.3",
         "@nestjs/websockets": "^11.0.1",
         "@ouiboo/database": "^0.0.0",
         "@ouiboo/schemas": "*",
         "@ouiboo/types": "*",
+        "@prisma/client": "^7.4.0",
         "axios": "^1.5.0",
         "bcrypt": "^6.0.0",
         "class-transformer": "^0.5.1",
@@ -44,8 +46,9 @@
         "passport": "^0.7.0",
         "passport-jwt": "^4.0.1",
         "reflect-metadata": "^0.2.2",
-        "stripe": "^14.0.0",
-        "rxjs": "^7.8.1"
+        "rxjs": "^7.8.1",
+        "socket.io": "^4.8.3",
+        "stripe": "^14.0.0"
     },
     "devDependencies": {
         "@nestjs/cli": "^11.0.1",
@@ -86,7 +89,10 @@
             "**/*.(t|j)s"
         ],
         "coverageDirectory": "../coverage",
-        "coverageReporters": ["text", "lcov"],
+        "coverageReporters": [
+            "text",
+            "lcov"
+        ],
         "coverageThreshold": {
             "global": {
                 "branches": 50,

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { WebSocketGateway } from './websocket.gateway';
+import { NotificationGateway } from './websocket.gateway';
 import { WebSocketService } from './websocket.service';
 import { JwtModule } from '@nestjs/jwt';
 
@@ -9,7 +9,7 @@ import { JwtModule } from '@nestjs/jwt';
       secret: process.env.JWT_SECRET || 'secret',
     }),
   ],
-  providers: [WebSocketGateway, WebSocketService],
+  providers: [NotificationGateway, WebSocketService],
   exports: [WebSocketService],
 })
-export class WebSocketModule {}
+export class WebSocketModule { }

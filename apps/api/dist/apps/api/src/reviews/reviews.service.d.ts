@@ -8,8 +8,8 @@ export declare class ReviewsService {
         createdAt: Date;
         updatedAt: Date;
         rating: number;
-        travelerId: string;
         bookingId: string;
+        travelerId: string;
         tripTemplateId: string;
         comment: string | null;
         response: string | null;
@@ -27,8 +27,8 @@ export declare class ReviewsService {
             createdAt: Date;
             updatedAt: Date;
             rating: number;
-            travelerId: string;
             bookingId: string;
+            travelerId: string;
             tripTemplateId: string;
             comment: string | null;
             response: string | null;
@@ -54,8 +54,8 @@ export declare class ReviewsService {
         createdAt: Date;
         updatedAt: Date;
         rating: number;
-        travelerId: string;
         bookingId: string;
+        travelerId: string;
         tripTemplateId: string;
         comment: string | null;
         response: string | null;
@@ -66,8 +66,8 @@ export declare class ReviewsService {
         createdAt: Date;
         updatedAt: Date;
         rating: number;
-        travelerId: string;
         bookingId: string;
+        travelerId: string;
         tripTemplateId: string;
         comment: string | null;
         response: string | null;
@@ -79,8 +79,8 @@ export declare class ReviewsService {
         createdAt: Date;
         updatedAt: Date;
         rating: number;
-        travelerId: string;
         bookingId: string;
+        travelerId: string;
         tripTemplateId: string;
         comment: string | null;
         response: string | null;

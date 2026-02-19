@@ -125,7 +125,7 @@ export default function AdminDashboard() {
   });
 
   const verifyTripMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string, status: VerificationStatusType }) => {
+    mutationFn: async ({ id, status }: { id: string, status: string }) => {
       return apiClient.post(`/admin/trips/${id}/verify`, { status });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pending-trips'] })

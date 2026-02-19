@@ -1,6 +1,6 @@
 import React from 'react';
-import { act } from 'react-dom/test-utils';
-import { createRoot } from 'react-dom/client';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import TravelerLoginPage from './page';
 
 const mutateMock = jest.fn();
@@ -16,15 +16,13 @@ jest.mock('next/navigation', () => ({
 jest.mock('next/link', () => ({
     __esModule: true,
     default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
-        <a href={href} {...rest}>
-            {children}
-        </a>
+        <a href={href} {...rest}>{children}</a>
     ),
 }));
 
 jest.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (_key: string, fallback: string) => fallback,
+        t: (_key: string, fallback?: string) => fallback || _key,
         i18n: { language: 'en' },
     }),
 }));
@@ -35,39 +33,28 @@ jest.mock('@/components/AuthContext', () => ({
 
 describe('TravelerLoginPage', () => {
     it('renders login fields and submits credentials', async () => {
-        const container = document.createElement('div');
-        document.body.appendChild(container);
-        const root = createRoot(container);
+        const user = userEvent.setup();
+        render(<TravelerLoginPage />);
 
-        await act(async () => {
-            root.render(<TravelerLoginPage />);
-        });
+        expect(screen.getByText('Welcome Back')).not.toBeNull();
 
-        const emailInput = container.querySelector('input[placeholder="hello@example.com"]') as HTMLInputElement;
-        const passwordInput = container.querySelector('input[placeholder="********"]') as HTMLInputElement;
-        const submitButton = Array.from(container.querySelectorAll('button')).find((button) =>
-            button.textContent?.includes('Sign In')
-        ) as HTMLButtonElement;
+        const emailInput = screen.getByPlaceholderText('hello@example.com');
+        const passwordInput = screen.getByPlaceholderText('********');
+        const submitButton = screen.getByRole('button', { name: /sign in/i });
 
-        expect(container.textContent).toContain('Welcome Back');
         expect(emailInput).not.toBeNull();
         expect(passwordInput).not.toBeNull();
         expect(submitButton).not.toBeNull();
 
-        await act(async () => {
-            emailInput.value = 'traveler@example.com';
-            emailInput.dispatchEvent(new Event('input', { bubbles: true }));
-            passwordInput.value = 'Password123!';
-            passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
-            submitButton.click();
-        });
+        await user.type(emailInput, 'traveler@example.com');
+        await user.type(passwordInput, 'Password123!');
+        await user.click(submitButton);
 
-        expect(mutateMock).toHaveBeenCalledWith({
-            email: 'traveler@example.com',
-            password: 'Password123!',
+        await waitFor(() => {
+            expect(mutateMock).toHaveBeenCalledWith({
+                email: 'traveler@example.com',
+                password: 'Password123!',
+            });
         });
-
-        root.unmount();
-        document.body.removeChild(container);
     });
 });

@@ -111,7 +111,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
                 password: 'hashed-password',
                 role: UserRole.Agency,
                 isEmailVerified: true,
-            },
+            } as any,
         });
 
         // Create agency profile 1
@@ -120,7 +120,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
                 id: 'agency-profile-123',
                 userId: agencyUser1.id,
                 companyName: 'Test Agency',
-            },
+            } as any,
         });
 
         // Create agency user 2
@@ -132,7 +132,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
                 password: 'hashed-password',
                 role: UserRole.Agency,
                 isEmailVerified: true,
-            },
+            } as any,
         });
 
         // Create agency profile 2
@@ -141,7 +141,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
                 id: 'agency-profile-456',
                 userId: agencyUser2.id,
                 companyName: 'Other Agency',
-            },
+            } as any,
         });
 
         // Create traveler user
@@ -153,7 +153,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
                 password: 'hashed-password',
                 role: UserRole.Traveler,
                 isEmailVerified: true,
-            },
+            } as any,
         });
 
         return { agencyUser1, agency1, agencyUser2, agency2, traveler };
@@ -177,7 +177,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         };
 
         return db.tripTemplate.create({
-            data: { ...defaultData, ...overrides },
+            data: { ...defaultData, ...overrides } as any,
         });
     }
 
@@ -194,7 +194,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         };
 
         return db.tripSession.create({
-            data: { ...defaultData, ...overrides },
+            data: { ...defaultData, ...overrides } as any,
         });
     }
 
@@ -447,7 +447,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
                 phoneNumber: '+1234567890',
                 documentNumber: 'ID123',
                 status: 'CONFIRMED',
-            },
+            } as any,
         });
 
         await request(app.getHttpServer())
@@ -912,11 +912,11 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         // Create reviews
         await db.review.createMany({
             data: [
-                { tripTemplateId: template.id, userId: traveler.id, rating: 4, content: 'Good trip' },
-                { tripTemplateId: template.id, userId: traveler.id, rating: 5, content: 'Excellent' },
-                { tripTemplateId: template.id, userId: traveler.id, rating: 5, content: 'Amazing' },
-                { tripTemplateId: template.id, userId: traveler.id, rating: 3, content: 'OK' },
-            ],
+                { tripTemplateId: template.id, travelerId: traveler.id, rating: 4, comment: 'Good trip' },
+                { tripTemplateId: template.id, travelerId: traveler.id, rating: 5, comment: 'Excellent' },
+                { tripTemplateId: template.id, travelerId: traveler.id, rating: 5, comment: 'Amazing' },
+                { tripTemplateId: template.id, travelerId: traveler.id, rating: 3, comment: 'OK' },
+            ] as any,
         });
 
         const res = await request(app.getHttpServer())
