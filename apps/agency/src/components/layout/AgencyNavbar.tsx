@@ -1,22 +1,20 @@
 'use client';
 
-import { Bell, User, LogOut, Sun, Moon, Languages } from 'lucide-react';
+import { Bell, LogOut, Sun, Moon, Languages } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import { useTheme } from 'next-themes';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useState } from 'react';
-import { cn } from '@ouiboo/ui/utils';
+import { useSyncExternalStore } from 'react';
 
 export function AgencyNavbar() {
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const { i18n } = useTranslation();
-  const [mounted, setMounted] = useState(false);
-  
-  // Prevent hydration mismatch
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
 
   const initials = user?.name
     ? user.name.split(' ').map(n => n[0]).join('').toUpperCase()
@@ -26,8 +24,6 @@ export function AgencyNavbar() {
     const nextLang = i18n.language === 'en' ? 'fr' : i18n.language === 'fr' ? 'ar' : 'en';
     i18n.changeLanguage(nextLang);
   };
-
-  if (!mounted) return null;
 
   return (
     <header className="h-16 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between px-8 sticky top-0 z-10 transition-colors duration-200">
@@ -51,8 +47,9 @@ export function AgencyNavbar() {
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-all border border-transparent hover:border-gray-200 dark:hover:border-slate-700"
           title="Toggle Theme"
+          disabled={!mounted}
         >
-          {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          {mounted && theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </button>
 
         <button className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg relative transition-colors border border-transparent hover:border-gray-200 dark:hover:border-slate-700">

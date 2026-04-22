@@ -1,19 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@ouiboo/ui';
 import { 
-  Search, 
   Menu, 
   X, 
   User, 
   LogOut, 
   Calendar as CalendarIcon, 
   Heart,
-  ChevronDown,
-  Globe,
   LayoutDashboard,
   Compass,
   Zap
@@ -28,16 +25,19 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 
 export function Navbar() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
-    setMounted(true);
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
@@ -126,7 +126,11 @@ export function Navbar() {
                     >
                         <div className="w-8 h-8 rounded-full bg-deep-blue text-white flex items-center justify-center font-bold text-xs overflow-hidden">
                             {user.avatar ? (
-                                <img src={user.avatar} alt={user.name || 'Profile'} className="w-full h-full object-cover" />
+                                <div
+                                  aria-label={user.name || 'Profile'}
+                                  className="w-full h-full bg-cover bg-center"
+                                  style={{ backgroundImage: `url("${user.avatar}")` }}
+                                />
                             ) : user.name ? (
                                 user.name?.[0]?.toUpperCase()
                             ) : (

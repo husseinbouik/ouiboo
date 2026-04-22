@@ -4,13 +4,7 @@ import {
   PaymentVerificationResult,
   PaymentProvider,
 } from '../interfaces/payment-provider.interface';
-
-let Stripe: any;
-try {
-  Stripe = require('stripe').default;
-} catch (err) {
-  // Stripe not installed; will fail at runtime if used
-}
+import Stripe from 'stripe';
 
 /**
  * Stripe Payment Provider
@@ -18,25 +12,17 @@ try {
  */
 @Injectable()
 export class StripePaymentProvider implements PaymentProvider {
-  private stripe: any;
-  private publishableKey: string;
-  private callbackUrl: string;
+  private readonly stripe: Stripe;
+  private readonly publishableKey: string;
+  private readonly callbackUrl: string;
   private readonly logger = new Logger(StripePaymentProvider.name);
 
   constructor() {
-    if (!Stripe) {
-      this.logger.warn('Stripe module not available. Install stripe: npm install stripe');
-    } else {
-      try {
-        this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-          apiVersion: '2023-10-16',
-        });
-        this.publishableKey = process.env.STRIPE_PUBLISHABLE_KEY || '';
-        this.callbackUrl = process.env.STRIPE_CALLBACK_URL || '';
-      } catch (err) {
-        this.logger.error('Failed to initialize Stripe', err);
-      }
-    }
+    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+      apiVersion: '2023-10-16',
+    });
+    this.publishableKey = process.env.STRIPE_PUBLISHABLE_KEY || '';
+    this.callbackUrl = process.env.STRIPE_CALLBACK_URL || '';
   }
 
   async initiatePayment(
@@ -83,7 +69,7 @@ export class StripePaymentProvider implements PaymentProvider {
 
   async verifyPayment(
     transactionId: string,
-    bookingId: string,
+    _bookingId: string,
   ): Promise<PaymentVerificationResult> {
     try {
       const session = await this.stripe.checkout.sessions.retrieve(
@@ -109,9 +95,10 @@ export class StripePaymentProvider implements PaymentProvider {
         };
       }
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Payment verification failed';
       return {
         status: 'failure',
-        errorMessage: error.message,
+        errorMessage: message,
       };
     }
   }
@@ -131,9 +118,10 @@ export class StripePaymentProvider implements PaymentProvider {
         refundId: refund.id,
       };
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Refund failed';
       return {
         success: false,
-        error: error.message,
+        error: message,
       };
     }
   }
@@ -143,7 +131,7 @@ export class StripePaymentProvider implements PaymentProvider {
       const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
       this.stripe.webhooks.constructEvent(payload, signature, webhookSecret);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

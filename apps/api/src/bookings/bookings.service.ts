@@ -4,7 +4,8 @@ import { DatabaseService } from '../database/database.service';
 import { CreateBookingDto, PaymentMethodEnum } from './dto/create-booking.dto';
 import { EmailService } from '../email/email.service';
 import { UploadService } from '../upload/upload.service';
-import { PaymentMethod } from '@ouiboo/database';
+import { BookingPaymentStatus, PaymentMethod, TransactionType } from '@ouiboo/database';
+import { mapBookingDetails } from './booking-response.util';
 
 const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
 
@@ -109,21 +110,82 @@ export class BookingsService {
     }
 
     async findAllByTraveler(travelerId: string) {
-        return this.db.booking.findMany({
+        const bookings = await this.db.booking.findMany({
             where: { travelerId },
             include: {
                 session: {
                     include: {
-                        template: true,
+                        template: {
+                            include: {
+                                agency: true,
+                            },
+                        },
                     },
                 },
                 paymentProof: true,
+                review: {
+                    select: {
+                        id: true,
+                    },
+                },
+                traveler: {
+                    select: {
+                        email: true,
+                        name: true,
+                    },
+                },
             },
         });
+
+        return bookings.map(mapBookingDetails);
+    }
+
+    async findOneForUser(bookingId: string, userId: string, role?: string) {
+        const booking = await this.db.booking.findUnique({
+            where: { id: bookingId },
+            include: {
+                paymentProof: true,
+                session: {
+                    include: {
+                        template: {
+                            include: {
+                                agency: true,
+                            },
+                        },
+                    },
+                },
+                traveler: {
+                    select: {
+                        email: true,
+                        name: true,
+                    },
+                },
+                review: {
+                    select: {
+                        id: true,
+                    },
+                },
+            },
+        });
+
+        if (!booking) {
+            throw new BadRequestException('Booking not found');
+        }
+
+        const agency = await this.db.agencyProfile.findUnique({ where: { userId } });
+        const isTraveler = booking.travelerId === userId;
+        const isAgencyOwner = agency && booking.session.template.agencyId === agency.id;
+        const isAdmin = role === UserRole.Admin;
+
+        if (!isTraveler && !isAgencyOwner && !isAdmin) {
+            throw new ForbiddenException('Forbidden');
+        }
+
+        return mapBookingDetails(booking);
     }
 
     async findAllByAgency(tenantId: string) {
-        return this.db.booking.findMany({
+        const bookings = await this.db.booking.findMany({
             where: {
                 session: {
                     template: {
@@ -134,7 +196,11 @@ export class BookingsService {
             include: {
                 session: {
                     include: {
-                        template: true,
+                        template: {
+                            include: {
+                                agency: true,
+                            },
+                        },
                     },
                 },
                 traveler: {
@@ -144,8 +210,15 @@ export class BookingsService {
                     },
                 },
                 paymentProof: true,
+                review: {
+                    select: {
+                        id: true,
+                    },
+                },
             },
         });
+
+        return bookings.map(mapBookingDetails);
     }
 
     async uploadPaymentProof(bookingId: string, userId: string, file: Express.Multer.File) {
@@ -319,10 +392,35 @@ export class BookingsService {
 
             // Update Booking Status
             const newStatus = approved ? 'CONFIRMED' : 'REJECTED';
+            const confirmedAt = approved ? new Date() : null;
 
             console.log(`[BookingsService] Payment verification for booking ${bookingId}: ${approved ? 'APPROVED' : 'REJECTED'}`);
 
             if (approved) {
+                const wallet = await tx.wallet.upsert({
+                    where: { agencyId: booking.session.template.agencyId },
+                    update: {
+                        availableBalance: {
+                            increment: booking.totalAmount,
+                        },
+                    },
+                    create: {
+                        agencyId: booking.session.template.agencyId,
+                        availableBalance: booking.totalAmount,
+                        pendingBalance: 0,
+                    },
+                });
+
+                await tx.walletTransaction.create({
+                    data: {
+                        walletId: wallet.id,
+                        amount: booking.totalAmount,
+                        type: TransactionType.BOOKING,
+                        reason: `Manual payment confirmed for booking ${bookingId}`,
+                        referenceId: bookingId,
+                    },
+                });
+
                 // Send Payment Confirmation Email (Async)
                 const traveler = await tx.user.findUnique({ where: { id: booking.travelerId } });
                 if (traveler) {
@@ -335,7 +433,11 @@ export class BookingsService {
 
             return tx.booking.update({
                 where: { id: bookingId },
-                data: { status: newStatus }
+                data: {
+                    status: newStatus,
+                    paymentStatus: approved ? BookingPaymentStatus.PAID : BookingPaymentStatus.FAILED,
+                    confirmedAt,
+                }
             });
         });
     }
@@ -371,7 +473,10 @@ export class BookingsService {
 
             return tx.booking.update({
                 where: { id: bookingId },
-                data: { status: 'CANCELLED' }
+                data: {
+                    status: 'CANCELLED',
+                    cancelledAt: new Date(),
+                }
             });
         });
     }

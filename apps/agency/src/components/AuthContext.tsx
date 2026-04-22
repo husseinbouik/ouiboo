@@ -1,7 +1,6 @@
 'use client';
-'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import type { VerificationStatusType } from '@ouiboo/types';
@@ -43,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             try {
                 const response = await apiClient.get('/users/me');
                 return response.data;
-            } catch (error) {
+            } catch {
                 return null;
             }
         },

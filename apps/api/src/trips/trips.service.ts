@@ -1,6 +1,7 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateTripTemplateDto, CreateTripSessionDto } from './dto/create-trip.dto';
+import { SessionStatus, TripStatus } from '@ouiboo/database';
 
 @Injectable()
 export class TripsService {
@@ -75,7 +76,7 @@ export class TripsService {
 
             // Build WHERE clause for trip templates
             const where: any = {
-                status: status || 'APPROVED',
+                status: status || TripStatus.ACTIVE,
             };
 
             if (featured) where.featured = true;
@@ -95,7 +96,7 @@ export class TripsService {
 
             // Build session filters for nested query
             const sessionWhere: any = {
-                status: 'OPEN',
+                status: SessionStatus.OPEN,
                 startDate: { gte: new Date() },
             };
 

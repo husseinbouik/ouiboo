@@ -4,9 +4,6 @@ import React, { useState } from 'react';
 import { 
   Card, 
   CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription,
   Button,
   Input
 } from '@ouiboo/ui';
@@ -22,17 +19,18 @@ import {
   Users,
   Eye
 } from 'lucide-react';
-import { BookingStatus } from '@ouiboo/types';
+import { BookingStatus, VerificationStatus, type BookingDetails } from '@ouiboo/types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import Link from 'next/link';
 import { PaymentProofReviewModal } from '@/components/PaymentProofReviewModal';
+import { getAgencyBookingStatusMeta, getAgencyPaymentStatusMeta, getAgencyProofStatusLabel } from './booking-status';
 
 export default function BookingsManager() {
-  const [reviewingBooking, setReviewingBooking] = useState<any>(null);
+  const [reviewingBooking, setReviewingBooking] = useState<BookingDetails | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: bookings, isLoading } = useQuery({
+  const { data: bookings = [], isLoading } = useQuery<BookingDetails[]>({
     queryKey: ['agency-bookings'],
     queryFn: async () => {
       const response = await apiClient.get('/agency/bookings');
@@ -58,46 +56,12 @@ export default function BookingsManager() {
         alert('Payment rejected. Traveler will be notified.');
       }
     },
-    onError: (error: any) => {
+    onError: (error: { response?: { data?: { message?: string } }; message?: string }) => {
       const errorMessage = error?.response?.data?.message || error?.message || 'Failed to verify payment';
       alert(`Error: ${errorMessage}`);
       console.error('Payment verification failed:', error);
     }
   });
-
-  const getProofStatusLabel = (status?: string | null) => {
-    if (!status) {
-      return { 
-        label: 'Not uploaded', 
-        className: 'bg-slate-100 text-slate-600 ring-slate-200/70 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700/70',
-        icon: AlertCircle,
-        displayLabel: 'Not Uploaded'
-      };
-    }
-    const normalized = status.toUpperCase();
-    if (normalized === 'VERIFIED') {
-      return { 
-        label: 'Verified', 
-        className: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-900/20 dark:text-emerald-400 dark:ring-emerald-400/20',
-        icon: CheckCircle2,
-        displayLabel: 'Verified'
-      };
-    }
-    if (normalized === 'REJECTED') {
-      return { 
-        label: 'Rejected', 
-        className: 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-900/20 dark:text-rose-400 dark:ring-rose-400/20',
-        icon: AlertCircle,
-        displayLabel: 'Rejected'
-      };
-    }
-    return { 
-      label: 'Pending', 
-      className: 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-400/20',
-      icon: Clock,
-      displayLabel: 'Awaiting Review'
-    };
-  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -156,11 +120,15 @@ export default function BookingsManager() {
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center text-gray-500">Loading bookings...</td>
                   </tr>
-                ) : bookings?.length === 0 ? (
+                ) : bookings.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center text-gray-500">No bookings found yet.</td>
                   </tr>
-                ) : bookings?.map((booking: any) => (
+                ) : bookings.map((booking) => {
+                  const proofStatus = getAgencyProofStatusLabel(booking.paymentProof?.status);
+                  const bookingStatusMeta = getAgencyBookingStatusMeta(booking.status);
+                  const paymentStatusMeta = getAgencyPaymentStatusMeta(booking.paymentStatus);
+                  return (
                   <tr key={booking.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors group">
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
@@ -168,46 +136,52 @@ export default function BookingsManager() {
                           <User className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="font-bold text-deep-blue dark:text-gray-200">{booking.traveler?.name}</p>
+                          <p className="font-bold text-deep-blue dark:text-gray-200">{booking.traveler?.name || booking.fullName || 'Traveler'}</p>
                           <p className="text-xs text-gray-400 dark:text-gray-500">{booking.id} x {booking.guestsCount} guests</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-5">
                       <div>
-                        <p className="font-semibold text-gray-800 dark:text-gray-300">{booking.session?.template?.title}</p>
+                        <p className="font-semibold text-gray-800 dark:text-gray-300">{booking.session.template.title}</p>
                         <p className="text-xs text-sunset-orange dark:text-orange-400 font-medium">
-                          {new Date(booking.session?.startDate).toLocaleDateString()} - {new Date(booking.session?.endDate).toLocaleDateString()}
+                          {new Date(booking.session.startDate).toLocaleDateString()} - {new Date(booking.session.endDate).toLocaleDateString()}
                         </p>
                       </div>
                     </td>
                     <td className="px-6 py-5">
                       <p className="font-bold text-gray-900 dark:text-gray-100">{booking.totalAmount.toLocaleString()} MAD</p>
                       <p className="text-[10px] text-gray-400">Recorded on {new Date(booking.bookingDate).toLocaleDateString()}</p>
+                      <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ring-1 ring-inset ${paymentStatusMeta.className}`}>
+                        {paymentStatusMeta.label}
+                      </div>
                     </td>
                     <td className="px-6 py-5">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ring-1 ring-inset ${
-                        booking.status === BookingStatus.Confirmed ? "bg-green-50 text-green-700 ring-green-600/20 dark:bg-green-900/20 dark:text-green-400 dark:ring-green-400/20" :
-                        booking.status === BookingStatus.AwaitingValidation ? "bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-400/20" :
-                        "bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-900/20 dark:text-blue-400 dark:ring-blue-400/20"
-                      }`}>
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ring-1 ring-inset ${bookingStatusMeta.className}`}>
                         {booking.status === BookingStatus.Confirmed && <CheckCircle2 className="h-3 w-3" />}
                         {booking.status === BookingStatus.AwaitingValidation && <Clock className="h-3 w-3" />}
                         {booking.status === BookingStatus.Pending && <AlertCircle className="h-3 w-3" />}
                         {booking.status}
                       </span>
-                      <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ring-1 ring-inset ${getProofStatusLabel(booking.paymentProof?.status).className}`}>
-                        {React.createElement(getProofStatusLabel(booking.paymentProof?.status).icon, { className: 'h-3 w-3' })}
-                        {getProofStatusLabel(booking.paymentProof?.status).displayLabel}
+                      <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ring-1 ring-inset ${proofStatus.className}`}>
+                        {proofStatus.icon === 'verified' && <CheckCircle2 className="h-3 w-3" />}
+                        {proofStatus.icon === 'pending' && <Clock className="h-3 w-3" />}
+                        {(proofStatus.icon === 'missing' || proofStatus.icon === 'rejected') && <AlertCircle className="h-3 w-3" />}
+                        {proofStatus.displayLabel}
                       </div>
+                      {booking.paymentProof?.rejectionReason && (
+                        <p className="mt-2 max-w-xs text-[11px] font-medium text-rose-600 dark:text-rose-400">
+                          Proof note: {booking.paymentProof.rejectionReason}
+                        </p>
+                      )}
                     </td>
                     <td className="px-6 py-5 text-right">
                       {booking.paymentProof?.imageUrl ? (
                         <Button 
-                          variant={booking.paymentProof?.status === 'PENDING' ? 'default' : 'outline'} 
+                          variant={booking.paymentProof?.status === VerificationStatus.Pending ? 'default' : 'outline'} 
                           size="sm" 
                           className={`opacity-0 group-hover:opacity-100 transition-opacity gap-2 ${
-                            booking.paymentProof?.status === 'PENDING' 
+                            booking.paymentProof?.status === VerificationStatus.Pending 
                               ? 'bg-deep-blue hover:bg-blue-900 dark:bg-blue-600 dark:hover:bg-blue-700' 
                               : 'dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-slate-800'
                           }`}
@@ -228,7 +202,8 @@ export default function BookingsManager() {
                       )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -242,7 +217,7 @@ export default function BookingsManager() {
           <p className="font-bold">Important Notice</p>
           <p className="mt-1 opacity-90 leading-relaxed">
             As an agency, you have <strong>Read-Only</strong> access to booking verification. 
-            Once a traveler uploads a payment proof, the Admin must verify the funds before the status changes to "Confirmed". 
+            Once a traveler uploads a payment proof, the Admin must verify the funds before the status changes to &ldquo;Confirmed&rdquo;. 
             If you need to cancel a booking, please contact support.
           </p>
         </div>
@@ -266,10 +241,11 @@ export default function BookingsManager() {
               bookingId: reviewingBooking.id,
               approved: false,
               rejectionReason: reason
-            });
-          }
-        }}
-        isLoading={verifyPaymentMutation.isPending}
-      />    </div>
+                            });
+                          }
+                        }}
+                        isLoading={verifyPaymentMutation.isPending}
+      />
+    </div>
   );
 }

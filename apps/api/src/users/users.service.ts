@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 
 @Injectable()
 export class UsersService {
@@ -8,6 +9,16 @@ export class UsersService {
     async findOne(id: string) {
         return this.db.user.findUnique({
             where: { id },
+            include: {
+                agencyProfile: true,
+            },
+        });
+    }
+
+    async updateUserProfile(userId: string, data: UpdateUserProfileDto) {
+        return this.db.user.update({
+            where: { id: userId },
+            data,
             include: {
                 agencyProfile: true,
             },

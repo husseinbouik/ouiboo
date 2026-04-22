@@ -1,5 +1,6 @@
 'use client';
 
+import type { AxiosError } from 'axios';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, Input } from '@ouiboo/ui';
@@ -15,6 +16,10 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 type AdminLoginForm = {
   username: string;
   password: string;
+};
+
+type ApiErrorResponse = {
+  message?: string;
 };
 
 export default function AdminLoginPage() {
@@ -41,8 +46,8 @@ export default function AdminLoginPage() {
       }
       router.push('/');
     },
-    onError: (err: any) => {
-      setError(err?.response?.data?.message || 'Login failed. Please try again.');
+    onError: (err: AxiosError<ApiErrorResponse>) => {
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
     },
   });
 

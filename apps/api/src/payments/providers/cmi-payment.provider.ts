@@ -7,6 +7,24 @@ import {
 import axios, { AxiosInstance } from 'axios';
 import * as crypto from 'crypto';
 
+type CmiApiResponse = {
+  errorMessage?: string;
+  redirectUrl?: string;
+  refundId?: string;
+  sessionId?: string;
+  status?: string;
+  transactionId?: string;
+} & Record<string, unknown>;
+
+const getResponseString = (
+  response: CmiApiResponse,
+  key: keyof CmiApiResponse,
+  fallback = '',
+): string => {
+  const value = response[key];
+  return typeof value === 'string' ? value : fallback;
+};
+
 /**
  * CMI Payment Gateway Provider
  * Implements CMI (Crédit Mutuel Irland) payment integration for Morocco
@@ -45,17 +63,17 @@ export class CMIPaymentProvider implements PaymentProvider {
         description: `Trip Booking - ${bookingId}`,
         customerEmail: travelerEmail,
         customerName: travelerName,
-        returnUrl: `${this.callbackUrl}/payments/callback`,
-        cancelUrl: `${this.callbackUrl}/payments/cancel`,
-        notifyUrl: `${this.callbackUrl}/payments/webhook`,
+        returnUrl: this.buildTravelerReturnUrl('success', bookingId, bookingId),
+        cancelUrl: this.buildTravelerReturnUrl('cancelled', bookingId, bookingId),
+        notifyUrl: `${this.callbackUrl}/payments/webhook/cmi`,
       };
 
       // TODO: Implement actual CMI API call
       const response = await this.callCMIAPI('/payments/initiate', paymentData);
 
       return {
-        sessionId: response.sessionId,
-        redirectUrl: response.redirectUrl,
+        sessionId: getResponseString(response, 'sessionId'),
+        redirectUrl: getResponseString(response, 'redirectUrl'),
         expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
         metadata: { provider: 'CMI', ...response },
       };
@@ -79,7 +97,7 @@ export class CMIPaymentProvider implements PaymentProvider {
       if (response.status === 'SUCCESS') {
         return {
           status: 'success',
-          transactionId: response.transactionId,
+          transactionId: getResponseString(response, 'transactionId'),
           metadata: response,
         };
       } else if (response.status === 'PENDING') {
@@ -90,7 +108,7 @@ export class CMIPaymentProvider implements PaymentProvider {
       } else {
         return {
           status: 'failure',
-          errorMessage: response.errorMessage || 'Payment verification failed',
+          errorMessage: getResponseString(response, 'errorMessage', 'Payment verification failed'),
           metadata: response,
         };
       }
@@ -116,8 +134,8 @@ export class CMIPaymentProvider implements PaymentProvider {
 
       return {
         success: response.status === 'SUCCESS',
-        refundId: response.refundId,
-        error: response.errorMessage,
+        refundId: getResponseString(response, 'refundId') || undefined,
+        error: getResponseString(response, 'errorMessage') || undefined,
       };
     } catch (error) {
       return {
@@ -130,7 +148,6 @@ export class CMIPaymentProvider implements PaymentProvider {
   validateWebhookSignature(payload: string, signature: string): boolean {
     // TODO: Implement CMI webhook signature validation
     // Typically involves HMAC-SHA256 signing with the API key
-    const crypto = require('crypto');
     const expectedSignature = crypto
       .createHmac('sha256', this.apiKey)
       .update(payload)
@@ -139,7 +156,7 @@ export class CMIPaymentProvider implements PaymentProvider {
     return expectedSignature === signature;
   }
 
-  private async callCMIAPI(endpoint: string, data: any): Promise<any> {
+  private async callCMIAPI(endpoint: string, data: unknown): Promise<CmiApiResponse> {
     try {
       const url = `${this.baseUrl}${endpoint}`;
 
@@ -165,12 +182,20 @@ export class CMIPaymentProvider implements PaymentProvider {
         throw new Error('Empty response from CMI');
       }
 
-      const body = res.data;
+      const body = res.data as CmiApiResponse;
 
       return body;
-    } catch (err: any) {
-      this.logger.error('CMI API error', err?.message || err);
-      throw err;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error('CMI API error', message);
+      throw error;
     }
+  }
+
+  private buildTravelerReturnUrl(status: 'success' | 'cancelled', bookingId: string, transactionId: string) {
+    const fallbackBaseUrl = process.env.TRAVELER_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3002';
+    const returnBaseUrl = this.callbackUrl || `${fallbackBaseUrl.replace(/\/$/, '')}/checkout/confirmation`;
+    const separator = returnBaseUrl.includes('?') ? '&' : '?';
+    return `${returnBaseUrl}${separator}bookingId=${encodeURIComponent(bookingId)}&provider=CMI&transactionId=${encodeURIComponent(transactionId)}&gatewayStatus=${status}`;
   }
 }

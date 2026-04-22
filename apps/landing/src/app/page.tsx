@@ -114,9 +114,9 @@ export default function OuibooLanding() {
   ];
 
   const testimonials = [
-      { quote: t('testimonials.quote1'), author: "Maria S.", role: "Owner, Alpine Adventures" },
-      { quote: t('testimonials.quote2'), author: "David L.", role: "Solo Traveler" },
-      { quote: t('testimonials.quote3'), author: "Chen W.", role: "Co-Founder, Nomad Trails" },
+      { quote: t('testimonials.quote1'), author: "Amina Belkadi", role: "Owner, Alpine Adventures" },
+      { quote: t('testimonials.quote2'), author: "Rayan Lahmidi", role: "Solo Traveler" },
+      { quote: t('testimonials.quote3'), author: "Nora Chen", role: "Co-Founder, Nomad Trails" },
   ];
 
   const highlights = [

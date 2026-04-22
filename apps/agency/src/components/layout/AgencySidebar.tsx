@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -26,8 +26,12 @@ export function AgencySidebar() {
   const pathname = usePathname();
   const { logout } = useAuth();
   const { t } = useTranslation();
+  const mounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   const navigation = [
     { name: t('sidebar.dashboard'), href: '/dashboard', icon: LayoutDashboard },
@@ -40,19 +44,15 @@ export function AgencySidebar() {
     { name: t('sidebar.settings'), href: '/dashboard/settings', icon: Settings },
   ];
 
-  useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem('sidebar-collapsed');
-    if (saved === 'true') setIsCollapsed(true);
-  }, []);
-
   const toggleCollapse = () => {
     const newState = !isCollapsed;
     setIsCollapsed(newState);
     localStorage.setItem('sidebar-collapsed', String(newState));
   };
 
-  if (!mounted) return <div className="h-full w-64 bg-white border-r border-gray-200" suppressHydrationWarning />;
+  if (!mounted) {
+    return <div className="h-full w-64 bg-white border-r border-gray-200" suppressHydrationWarning />;
+  }
 
   return (
     <motion.div 

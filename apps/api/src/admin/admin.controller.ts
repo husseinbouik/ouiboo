@@ -5,8 +5,12 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import {
+    type BookingStatusType,
+    type PayoutStatusType,
+    type SubscriptionStatusType,
     UserRole,
     VerificationStatus,
+    type VerificationStatusType,
     SubscriptionStatus,
     BookingStatus,
     PayoutStatus,
@@ -15,6 +19,9 @@ import { WalletsService } from '../wallets/wallets.service';
 import { EmailService } from '../email/email.service';
 import { AuditLogService } from './audit-log.service';
 import { Response } from 'express';
+import { mapBookingDetails } from '../bookings/booking-response.util';
+import { mapPayoutDetails } from '../agency/payout-response.util';
+import { PaymentsService } from '../payments/payments.service';
 
 const parseEnumQuery = <T extends string>(value: string | undefined, allowedValues: readonly T[]) => {
     if (!value) {
@@ -40,12 +47,14 @@ const buildAuditLogWhere = ({
     action,
     actorEmail,
     targetType,
+    search,
 }: {
     fromDate?: Date;
     toDate?: Date;
     action?: string;
     actorEmail?: string;
     targetType?: string;
+    search?: string;
 }) => {
     const where: Record<string, any> = {};
     if (fromDate || toDate) {
@@ -63,6 +72,14 @@ const buildAuditLogWhere = ({
     if (targetType) {
         where.targetType = targetType;
     }
+    if (search) {
+        where.OR = [
+            { action: { contains: search, mode: 'insensitive' } },
+            { actorEmail: { contains: search, mode: 'insensitive' } },
+            { targetType: { contains: search, mode: 'insensitive' } },
+            { targetId: { contains: search, mode: 'insensitive' } },
+        ];
+    }
     return where;
 };
 
@@ -77,16 +94,10 @@ const escapeCsvValue = (value: unknown) => {
     return stringValue;
 };
 
-type EnumValue<T> = T[keyof T];
-type VerificationStatusValue = EnumValue<typeof VerificationStatus>;
-type SubscriptionStatusValue = EnumValue<typeof SubscriptionStatus>;
-type BookingStatusValue = EnumValue<typeof BookingStatus>;
-type PayoutStatusValue = EnumValue<typeof PayoutStatus>;
-
-const VERIFICATION_STATUSES = Object.values(VerificationStatus) as VerificationStatusValue[];
-const SUBSCRIPTION_STATUSES = Object.values(SubscriptionStatus) as SubscriptionStatusValue[];
-const BOOKING_STATUSES = Object.values(BookingStatus) as BookingStatusValue[];
-const PAYOUT_STATUSES = Object.values(PayoutStatus) as PayoutStatusValue[];
+const VERIFICATION_STATUSES = Object.values(VerificationStatus) as VerificationStatusType[];
+const SUBSCRIPTION_STATUSES = Object.values(SubscriptionStatus) as SubscriptionStatusType[];
+const BOOKING_STATUSES = Object.values(BookingStatus) as BookingStatusType[];
+const PAYOUT_STATUSES = Object.values(PayoutStatus) as PayoutStatusType[];
 
 @ApiTags('Admin')
 @Controller('admin')
@@ -99,6 +110,7 @@ export class AdminController {
         private walletsService: WalletsService,
         private emailService: EmailService,
         private auditLogService: AuditLogService,
+        private paymentsService: PaymentsService,
     ) { }
 
     @Get('pending-payments')
@@ -123,6 +135,7 @@ export class AdminController {
 
         return proofs.map((proof) => ({
             ...proof,
+            booking: mapBookingDetails(proof.booking),
             downloadUrl: `${apiUrl}/bookings/${proof.bookingId}/payment-proof/download`,
         }));
     }
@@ -167,7 +180,11 @@ export class AdminController {
 
             const updatedBooking = await tx.booking.update({
                 where: { id: proof.bookingId },
-                data: { status: status === 'VERIFIED' ? 'CONFIRMED' : 'REJECTED' },
+                data: {
+                    status: status === 'VERIFIED' ? 'CONFIRMED' : 'REJECTED',
+                    paymentStatus: status === 'VERIFIED' ? 'PAID' : 'FAILED',
+                    confirmedAt: status === 'VERIFIED' ? new Date() : null,
+                },
                 include: { session: { include: { template: true } } }
             });
 
@@ -309,7 +326,7 @@ export class AdminController {
     async updateAgencyStatus(
         @Request() req,
         @Param('id') id: string,
-        @Body() data: { verificationStatus?: any, subscriptionStatus?: any },
+        @Body() data: { verificationStatus?: VerificationStatusType; subscriptionStatus?: SubscriptionStatusType },
     ) {
         const updated = await this.db.agencyProfile.update({
             where: { id },
@@ -334,10 +351,10 @@ export class AdminController {
 
     @Get('bookings')
     @ApiOperation({ summary: 'Get all bookings in the system' })
-    getBookings(@Query('q') q?: string, @Query('status') status?: string) {
+    async getBookings(@Query('q') q?: string, @Query('status') status?: string) {
         const search = q?.trim();
         const statusFilter = parseEnumQuery(status, BOOKING_STATUSES);
-        return this.db.booking.findMany({
+        const bookings = await this.db.booking.findMany({
             where: {
                 ...(statusFilter ? { status: statusFilter } : {}),
                 ...(search ? {
@@ -350,20 +367,59 @@ export class AdminController {
                 } : {}),
             },
             include: {
-                traveler: true,
-                session: { include: { template: true } },
+                traveler: {
+                    select: {
+                        email: true,
+                        name: true,
+                    },
+                },
+                session: {
+                    include: {
+                        template: {
+                            include: {
+                                agency: true,
+                            },
+                        },
+                    },
+                },
                 paymentProof: true
             },
             orderBy: { bookingDate: 'desc' }
         });
+
+        return bookings.map(mapBookingDetails);
+    }
+
+    @Post('bookings/:id/refund')
+    @ApiOperation({ summary: 'Refund a paid gateway booking' })
+    async refundBooking(
+        @Request() req,
+        @Param('id') id: string,
+        @Body('amount') amount?: number,
+    ) {
+        const result = await this.paymentsService.refundBookingById(id, amount);
+
+        this.auditLogService.log({
+            actorId: req?.user?.userId,
+            actorEmail: req?.user?.email,
+            action: 'BOOKING_REFUNDED',
+            targetType: 'Booking',
+            targetId: id,
+            metadata: {
+                amount,
+                result,
+            },
+        }).catch((err) => console.error('Audit log failed', err));
+
+        return result;
     }
 
     @Get('payout-requests')
     @ApiOperation({ summary: 'Get all payout requests' })
-    getPayoutRequests(@Query('q') q?: string, @Query('status') status?: string) {
+    async getPayoutRequests(@Query('q') q?: string, @Query('status') status?: string) {
         const search = q?.trim();
         const statusFilter = parseEnumQuery(status, PAYOUT_STATUSES);
-        return this.db.payoutRequest.findMany({
+        const payouts = await this.db.payoutRequest.findMany({
             where: {
                 ...(statusFilter ? { status: statusFilter } : {}),
                 ...(search ? {
@@ -376,17 +432,71 @@ export class AdminController {
             },
             include: { agency: { include: { user: true } } }
         });
+
+        return payouts.map(mapPayoutDetails);
     }
 
     @Post('payouts/:id/process')
     @ApiOperation({ summary: 'Mark payout as paid or rejected' })
     async processPayout(@Request() req, @Param('id') id: string, @Body('status') status: 'PAID' | 'REJECTED') {
-        const updated = await this.db.payoutRequest.update({
-            where: { id },
-            data: {
-                status: status,
-                processedAt: new Date()
+        const updated = await this.db.$transaction(async (tx) => {
+            const payout = await tx.payoutRequest.findUnique({
+                where: { id },
+                include: {
+                    agency: {
+                        include: {
+                            wallet: true,
+                        },
+                    },
+                },
+            });
+
+            if (!payout) {
+                throw new BadRequestException('Payout request not found');
             }
+
+            if (payout.status !== PayoutStatus.Pending) {
+                throw new BadRequestException('Payout request has already been processed');
+            }
+
+            const processedPayout = await tx.payoutRequest.update({
+                where: { id },
+                data: {
+                    status,
+                    processedAt: new Date(),
+                },
+            });
+
+            if (status === 'REJECTED') {
+                const wallet = payout.agency.wallet ?? await tx.wallet.create({
+                    data: {
+                        agencyId: payout.agencyId,
+                        availableBalance: 0,
+                        pendingBalance: 0,
+                    },
+                });
+
+                await tx.wallet.update({
+                    where: { id: wallet.id },
+                    data: {
+                        availableBalance: {
+                            increment: payout.amount,
+                        },
+                    },
+                });
+
+                await tx.walletTransaction.create({
+                    data: {
+                        walletId: wallet.id,
+                        amount: payout.amount,
+                        type: 'CREDIT',
+                        reason: `Payout request ${payout.id} rejected and funds restored`,
+                        referenceId: payout.id,
+                    },
+                });
+            }
+
+            return processedPayout;
         });
         this.auditLogService.log({
             actorId: req?.user?.userId,
@@ -407,6 +517,7 @@ export class AdminController {
         @Query('action') action?: string,
         @Query('actorEmail') actorEmail?: string,
         @Query('targetType') targetType?: string,
+        @Query('q') q?: string,
         @Query('limit') limit?: string,
     ) {
         const fromDate = parseDateQuery(from);
@@ -419,6 +530,7 @@ export class AdminController {
             action: action?.trim(),
             actorEmail: actorEmail?.trim(),
             targetType: targetType?.trim(),
+            search: q?.trim(),
         });
 
         return this.db.auditLog.findMany({
@@ -438,6 +550,7 @@ export class AdminController {
         @Query('action') action?: string,
         @Query('actorEmail') actorEmail?: string,
         @Query('targetType') targetType?: string,
+        @Query('q') q?: string,
         @Query('limit') limit?: string,
     ) {
         const fromDate = parseDateQuery(from);
@@ -450,6 +563,7 @@ export class AdminController {
             action: action?.trim(),
             actorEmail: actorEmail?.trim(),
             targetType: targetType?.trim(),
+            search: q?.trim(),
         });
         const logs = await this.db.auditLog.findMany({
             where,
@@ -481,6 +595,7 @@ export class AdminController {
                 action,
                 actorEmail,
                 targetType,
+                q,
                 count: logs.length,
             },
         }).catch((err) => console.error('Audit log failed', err));

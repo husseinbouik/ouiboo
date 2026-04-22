@@ -2,7 +2,17 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
-import { NotificationType } from '@prisma/client';
+import { NotificationType } from '@ouiboo/database';
+
+type NotificationMap = Record<string, string>;
+
+const getNotificationState = (value: unknown): NotificationMap => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  return value as NotificationMap;
+};
 
 @Injectable()
 export class NotificationJobsService {
@@ -20,14 +30,14 @@ export class NotificationJobsService {
   async sendPaymentProofReminders() {
     this.logger.log('Running payment proof reminder job');
     try {
-      const twoHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+      const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
 
       const bookings = await this.prisma.booking.findMany({
         where: {
           status: 'AWAITING_VALIDATION',
           paymentStatus: 'UNPAID',
           createdAt: {
-            lt: twoHoursAgo,
+            lt: twelveHoursAgo,
           },
           lastReminderSentAt: null,
         },
@@ -54,7 +64,7 @@ export class NotificationJobsService {
             data: {
               lastReminderSentAt: new Date(),
               notificationsSent: {
-                ...((booking.notificationsSent as any) || {}),
+                ...getNotificationState(booking.notificationsSent),
                 paymentReminder: new Date().toISOString(),
               },
             },
@@ -64,6 +74,7 @@ export class NotificationJobsService {
             booking.travelerId,
             'PAYMENT_REMINDER',
             booking.traveler.email,
+            `Payment reminder sent for booking ${booking.id}`,
           );
         } catch (error) {
           this.logger.error(
@@ -101,21 +112,29 @@ export class NotificationJobsService {
         },
         include: {
           traveler: true,
-          session: { include: { template: true, agency: true } },
+          session: {
+            include: {
+              template: {
+                include: {
+                  agency: true,
+                },
+              },
+            },
+          },
         },
       });
 
       for (const booking of bookings) {
         try {
-          const notificationsSent = (booking.notificationsSent as any) || {};
+          const notificationsSent = getNotificationState(booking.notificationsSent);
           if (!notificationsSent.tripReminder7Days) {
-            const tripDetailsUrl = `${process.env.TRAVELER_APP_URL}/trips/${booking.session.template.id}`;
+            const tripDetailsUrl = `${process.env.TRAVELER_APP_URL}/trip/${booking.session.template.id}`;
             
             await this.emailService.sendTripReminder(
               booking.traveler.email,
               booking.session.template.title,
               7,
-              booking.session.agency.name,
+              booking.session.template.agency.companyName,
               tripDetailsUrl,
             );
 
@@ -133,6 +152,7 @@ export class NotificationJobsService {
               booking.travelerId,
               'TRIP_REMINDER',
               booking.traveler.email,
+              `7-day trip reminder sent for booking ${booking.id}`,
             );
           }
         } catch (error) {
@@ -169,21 +189,29 @@ export class NotificationJobsService {
         },
         include: {
           traveler: true,
-          session: { include: { template: true, agency: true } },
+          session: {
+            include: {
+              template: {
+                include: {
+                  agency: true,
+                },
+              },
+            },
+          },
         },
       });
 
       for (const booking of bookings) {
         try {
-          const notificationsSent = (booking.notificationsSent as any) || {};
+          const notificationsSent = getNotificationState(booking.notificationsSent);
           if (!notificationsSent.tripReminder1Day) {
-            const tripDetailsUrl = `${process.env.TRAVELER_APP_URL}/trips/${booking.session.template.id}`;
+            const tripDetailsUrl = `${process.env.TRAVELER_APP_URL}/trip/${booking.session.template.id}`;
             
             await this.emailService.sendTripReminder(
               booking.traveler.email,
               booking.session.template.title,
               1,
-              booking.session.agency.name,
+              booking.session.template.agency.companyName,
               tripDetailsUrl,
             );
 
@@ -201,6 +229,7 @@ export class NotificationJobsService {
               booking.travelerId,
               'TRIP_REMINDER',
               booking.traveler.email,
+              `1-day trip reminder sent for booking ${booking.id}`,
             );
           }
         } catch (error) {
@@ -269,6 +298,7 @@ export class NotificationJobsService {
             booking.travelerId,
             'CANCELLATION',
             booking.traveler.email,
+            `Booking ${booking.id} auto-cancelled due to non-payment`,
           );
         } catch (error) {
           this.logger.error(
@@ -286,12 +316,14 @@ export class NotificationJobsService {
     userId: string,
     type: NotificationType,
     email: string,
+    message: string,
   ) {
     await this.prisma.notificationLog.create({
       data: {
         userId,
         notificationType: type,
         recipientEmail: email,
+        message,
         status: 'SENT',
         sentAt: new Date(),
       },

@@ -18,13 +18,55 @@ export enum VerificationStatus {
     Rejected = "REJECTED",
 }
 
-export type VerificationStatusType = (typeof VerificationStatus)[keyof typeof VerificationStatus];
+export type VerificationStatusType = VerificationStatus;
 
 export enum SubscriptionStatus {
     Trial = "TRIAL",
     Active = "ACTIVE",
     Cancelled = "CANCELLED",
     Expired = "EXPIRED",
+}
+
+export type SubscriptionStatusType = SubscriptionStatus;
+
+export enum PaymentMethod {
+    Manual = "MANUAL",
+    Gateway = "GATEWAY",
+}
+
+export type PaymentMethodType = PaymentMethod;
+
+export enum PaymentProvider {
+    Cmi = "CMI",
+    Stripe = "STRIPE",
+    CashPlus = "CASHPLUS",
+}
+
+export type PaymentProviderType = PaymentProvider;
+
+export enum BookingPaymentStatus {
+    Unpaid = "UNPAID",
+    Paid = "PAID",
+    Refunded = "REFUNDED",
+    Failed = "FAILED",
+}
+
+export type BookingPaymentStatusType = BookingPaymentStatus;
+
+export enum RefundStatus {
+    Pending = "PENDING",
+    Processed = "PROCESSED",
+    Failed = "FAILED",
+}
+
+export type RefundStatusType = RefundStatus;
+
+export enum NotificationType {
+    PaymentReminder = "PAYMENT_REMINDER",
+    TripReminder = "TRIP_REMINDER",
+    BookingConfirmation = "BOOKING_CONFIRMATION",
+    Cancellation = "CANCELLATION",
+    ReviewRequest = "REVIEW_REQUEST",
 }
 
 export interface AgencyProfile {
@@ -47,6 +89,16 @@ export enum TripStatus {
     Draft = "DRAFT",
     Archived = "ARCHIVED",
 }
+
+export type TripStatusType = TripStatus;
+
+export enum SessionStatus {
+    Open = "OPEN",
+    Full = "FULL",
+    Cancelled = "CANCELLED",
+}
+
+export type SessionStatusType = SessionStatus;
 
 export enum TripCategory {
     Adventure = "ADVENTURE",
@@ -97,7 +149,7 @@ export interface TripSession {
     deposit: number;
     totalSeats: number;
     availableSeats: number;
-    status: "OPEN" | "CLOSED" | "CANCELLED";
+    status: SessionStatus;
 }
 
 export enum BookingStatus {
@@ -109,6 +161,8 @@ export enum BookingStatus {
     Completed = "COMPLETED",
 }
 
+export type BookingStatusType = BookingStatus;
+
 export interface Booking {
     id: string;
     sessionId: string;
@@ -117,8 +171,51 @@ export interface Booking {
     status: BookingStatus;
     totalAmount: number;
     guestsCount: number;
+    paymentMethod: PaymentMethod;
+    paymentStatus: BookingPaymentStatus;
     paymentProofUrl?: string;
     paymentProofId?: string;
+    cancelledAt?: string;
+    refundAmount?: number;
+    refundStatus?: RefundStatus;
+    confirmedAt?: string;
+    paymentGatewayTransactionId?: string;
+    paymentGatewayMetadata?: Record<string, unknown>;
+    fullName?: string;
+    phoneNumber?: string;
+    documentNumber?: string;
+}
+
+export interface BookingTravelerSummary {
+    email: string;
+    name?: string | null;
+}
+
+export interface BookingAgencySummary {
+    companyName: string;
+    id: string;
+}
+
+export interface BookingTemplateSummary {
+    agency: BookingAgencySummary;
+    agencyId: string;
+    id: string;
+    images: string[];
+    startLocation: string;
+    title: string;
+}
+
+export interface BookingSessionSummary extends TripSession {
+    template: BookingTemplateSummary;
+}
+
+export interface BookingDetails extends Booking {
+    paymentProof?: PaymentProof;
+    review?: {
+        id: string;
+    };
+    session: BookingSessionSummary;
+    traveler: BookingTravelerSummary;
 }
 
 export interface PaymentProof {
@@ -127,6 +224,7 @@ export interface PaymentProof {
     imageUrl: string;
     uploadedAt: string;
     status: VerificationStatus;
+    rejectionReason?: string;
 }
 
 export interface Wallet {
@@ -142,6 +240,8 @@ export enum PayoutStatus {
     Paid = "PAID",
 }
 
+export type PayoutStatusType = PayoutStatus;
+
 export interface PayoutRequest {
     id: string;
     agencyId: string;
@@ -150,4 +250,16 @@ export interface PayoutRequest {
     requestedAt: string;
     processedAt?: string;
     bankDetails: string; // Copy of RIB at time of request
+}
+
+export interface PayoutAgencySummary {
+    companyName: string;
+    id: string;
+    user?: {
+        email?: string | null;
+    } | null;
+}
+
+export interface PayoutDetails extends PayoutRequest {
+    agency: PayoutAgencySummary;
 }

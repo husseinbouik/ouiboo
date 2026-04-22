@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateAgencyProfileDto } from './dto/update-profile.dto';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -15,6 +16,14 @@ export class UsersController {
     @ApiOperation({ summary: 'Get current user profile' })
     getMe(@Request() req) {
         return this.usersService.getMe(req.user.userId);
+    }
+
+    @Patch('me')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Update current user profile' })
+    updateMe(@Request() req, @Body() body: UpdateUserProfileDto) {
+        return this.usersService.updateUserProfile(req.user.userId, body);
     }
 
     @Post('agency-profile')

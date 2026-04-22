@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { apiClient } from '@/lib/api-client';
+import Link from 'next/link';
 import { 
   Card, 
   CardContent, 
@@ -15,10 +16,8 @@ import {
 } from '@ouiboo/ui';
 import { 
   User, 
-  Building2, 
   ShieldCheck, 
   Bell, 
-  Languages, 
   Sun, 
   Moon,
   Save,
@@ -29,12 +28,22 @@ import { useTheme } from 'next-themes';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 
+type SettingsFormValues = {
+  bankDetails: string;
+  bio: string;
+  companyName: string;
+  email: string;
+  name: string;
+};
+
+type SaveFeedback = { type: 'success' | 'error'; text: string } | null;
+
 export default function SettingsPage() {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
-  const { i18n, t } = useTranslation();
+  const { i18n } = useTranslation();
 
-  const { register, handleSubmit, reset } = useForm({
+  const { register, handleSubmit, reset } = useForm<SettingsFormValues>({
     defaultValues: {
       name: user?.name || '',
       email: user?.email || '',
@@ -45,18 +54,22 @@ export default function SettingsPage() {
   });
 
   const [isSaving, setIsSaving] = React.useState(false);
-  const [feedback, setFeedback] = React.useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [feedback, setFeedback] = React.useState<SaveFeedback>(null);
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: SettingsFormValues) => {
     try {
       setIsSaving(true);
       setFeedback(null);
-      await apiClient.patch('/agency/profile', {
-        companyName: data.companyName,
-        bio: data.bio,
-        bankDetails: data.bankDetails
-      });
+      await Promise.all([
+        apiClient.patch('/users/me', { name: data.name }),
+        apiClient.patch('/agency/profile', {
+          companyName: data.companyName,
+          bio: data.bio,
+          bankDetails: data.bankDetails
+        }),
+      ]);
       setFeedback({ type: 'success', text: 'Settings updated successfully.' });
+      reset(data);
     } catch (error) {
       console.error('Failed to update settings:', error);
       setFeedback({ type: 'error', text: 'Failed to update settings. Please try again.' });
@@ -86,18 +99,23 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
         {/* Sidebar Navigation for Settings */}
         <div className="space-y-1">
-          <button className="w-full flex items-center gap-3 px-4 py-2 text-sm font-semibold bg-deep-blue text-white rounded-lg shadow-md">
+          <Link href="/dashboard/settings" className="w-full flex items-center gap-3 px-4 py-2 text-sm font-semibold bg-deep-blue text-white rounded-lg shadow-md">
             <User className="h-4 w-4" /> Profile
-          </button>
-          <button className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg">
-            <Lock className="h-4 w-4" /> Security
-          </button>
-          <button className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg">
+          </Link>
+          <Link href="/dashboard/onboarding" className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg">
             <ShieldCheck className="h-4 w-4" /> Compliance
-          </button>
-          <button className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg">
+          </Link>
+          <Link href="/dashboard/settings/notifications" className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg">
             <Bell className="h-4 w-4" /> Notifications
-          </button>
+          </Link>
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-500 dark:border-slate-800 dark:bg-slate-900/70 dark:text-gray-400">
+            <div className="flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-200">
+              <Lock className="h-4 w-4" /> Security
+            </div>
+            <p className="mt-2">
+              Password and session controls are managed through the auth screens for the MVP.
+            </p>
+          </div>
         </div>
 
         {/* Content Area */}

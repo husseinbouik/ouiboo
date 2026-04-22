@@ -5,6 +5,8 @@ import { AuthController } from '../auth/auth.controller';
 import { AuthService } from '../auth/auth.service';
 import { BookingsController } from '../bookings/bookings.controller';
 import { BookingsService } from '../bookings/bookings.service';
+import { UsersController } from '../users/users.controller';
+import { UsersService } from '../users/users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { EmailService } from '../email/email.service';
@@ -23,6 +25,11 @@ describe('MVP smoke: auth + booking flow', () => {
         findAllByTraveler: jest.fn(),
         uploadPaymentProof: jest.fn(),
     };
+    const usersService = {
+        getMe: jest.fn(),
+        updateUserProfile: jest.fn(),
+        updateAgencyProfile: jest.fn(),
+    };
     const emailService = {
         sendOTP: jest.fn(),
         sendWelcomeEmail: jest.fn(),
@@ -36,10 +43,11 @@ describe('MVP smoke: auth + booking flow', () => {
 
     beforeAll(async () => {
         const moduleRef = await Test.createTestingModule({
-            controllers: [AuthController, BookingsController],
+            controllers: [AuthController, BookingsController, UsersController],
             providers: [
                 { provide: AuthService, useValue: authService },
                 { provide: BookingsService, useValue: bookingsService },
+                { provide: UsersService, useValue: usersService },
                 { provide: EmailService, useValue: emailService },
                 { provide: UploadService, useValue: uploadService },
                 { provide: DatabaseService, useValue: databaseService },
@@ -66,6 +74,8 @@ describe('MVP smoke: auth + booking flow', () => {
         authService.login.mockReset();
         authService.register.mockReset();
         bookingsService.create.mockReset();
+        usersService.getMe.mockReset();
+        usersService.updateUserProfile.mockReset();
     });
 
     afterAll(async () => {
@@ -119,6 +129,50 @@ describe('MVP smoke: auth + booking flow', () => {
                     id: 'booking-456',
                     travelerId: 'user-123',
                     status: 'pending',
+                });
+            });
+    });
+
+    it('loads and updates the current traveler profile', async () => {
+        usersService.getMe.mockResolvedValue({
+            id: 'user-123',
+            email: 'traveler@example.com',
+            name: 'Traveler Test',
+            role: 'TRAVELER',
+        });
+        usersService.updateUserProfile.mockResolvedValue({
+            id: 'user-123',
+            email: 'traveler@example.com',
+            name: 'Traveler Updated',
+            role: 'TRAVELER',
+            avatar: 'https://example.com/avatar.png',
+        });
+
+        await request(app.getHttpServer())
+            .get('/users/me')
+            .set('Authorization', 'Bearer token')
+            .expect(200)
+            .expect(({ body }) => {
+                expect(body).toMatchObject({
+                    id: 'user-123',
+                    email: 'traveler@example.com',
+                    name: 'Traveler Test',
+                });
+            });
+
+        await request(app.getHttpServer())
+            .patch('/users/me')
+            .set('Authorization', 'Bearer token')
+            .send({
+                name: 'Traveler Updated',
+                avatar: 'https://example.com/avatar.png',
+            })
+            .expect(200)
+            .expect(({ body }) => {
+                expect(body).toMatchObject({
+                    id: 'user-123',
+                    name: 'Traveler Updated',
+                    avatar: 'https://example.com/avatar.png',
                 });
             });
     });

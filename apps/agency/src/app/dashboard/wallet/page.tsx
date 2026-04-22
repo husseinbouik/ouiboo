@@ -25,23 +25,47 @@ import {
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
+import { PayoutStatus, type PayoutDetails } from '@ouiboo/types';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
 import { useAuth } from '@/components/AuthContext';
+
+const getPayoutStatusMeta = (status: PayoutStatus) => {
+  if (status === PayoutStatus.Paid) {
+    return {
+      className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 shadow-sm',
+      description: 'Transferred to your bank account',
+    };
+  }
+
+  if (status === PayoutStatus.Rejected) {
+    return {
+      className: 'bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400 shadow-sm',
+      description: 'Rejected and returned to your available balance',
+    };
+  }
+
+  if (status === PayoutStatus.Approved) {
+    return {
+      className: 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 shadow-sm',
+      description: 'Approved and waiting for transfer',
+    };
+  }
+
+  return {
+    className: 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 shadow-sm',
+    description: 'Pending manual review',
+  };
+};
 
 export default function WalletPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [mounted, setMounted] = useState(false);
   const [payoutAmount, setPayoutAmount] = useState('');
   const [bankDetails, setBankDetails] = useState('');
   const [payoutError, setPayoutError] = useState<string | null>(null);
   const [payoutSuccess, setPayoutSuccess] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const { data: statsData, isLoading: statsLoading } = useQuery({
     queryKey: ['agency-stats'],
@@ -51,7 +75,7 @@ export default function WalletPage() {
     }
   });
 
-  const { data: payouts, isLoading: payoutsLoading } = useQuery({
+  const { data: payouts = [], isLoading: payoutsLoading } = useQuery<PayoutDetails[]>({
     queryKey: ['agency-payouts'],
     queryFn: async () => {
       const response = await apiClient.get('/agency/payouts');
@@ -80,7 +104,7 @@ export default function WalletPage() {
       setPayoutError(null);
       setPayoutSuccess('Payout request submitted. Expect confirmation in 1-2 business days.');
     },
-    onError: (error: any) => {
+    onError: (error: { response?: { data?: { message?: string } } }) => {
       setPayoutSuccess(null);
       setPayoutError(error?.response?.data?.message || 'Unable to request payout.');
     }
@@ -113,8 +137,6 @@ export default function WalletPage() {
       section.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
-
-  if (!mounted) return null;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
@@ -313,11 +335,13 @@ export default function WalletPage() {
                   <tr>
                     <td colSpan={4} className="px-6 py-12 text-center text-gray-400">Loading transactions...</td>
                   </tr>
-                ) : payouts?.length === 0 ? (
+                ) : payouts.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="px-6 py-12 text-center text-gray-400 italic">No payout history yet.</td>
                   </tr>
-                ) : payouts?.map((payout: any) => (
+                ) : payouts.map((payout) => {
+                  const statusMeta = getPayoutStatusMeta(payout.status);
+                  return (
                   <tr key={payout.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="px-6 py-5 font-bold text-deep-blue dark:text-blue-400 text-xs">
                       #{payout.id.slice(-8).toUpperCase()}
@@ -329,20 +353,23 @@ export default function WalletPage() {
                       <div className="flex items-center gap-2">
                         <span className={cn(
                           "text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide flex items-center gap-1.5",
-                          payout.status === 'PAID' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 shadow-sm' : 
-                          payout.status === 'PENDING' ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 shadow-sm' : 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 shadow-sm'
+                          statusMeta.className,
                         )}>
-                          {payout.status === 'PAID' && <CheckCircle2 className="h-3 w-3" />}
-                          {payout.status === 'PENDING' && <Clock className="h-3 w-3" />}
+                          {payout.status === PayoutStatus.Paid && <CheckCircle2 className="h-3 w-3" />}
+                          {payout.status === PayoutStatus.Pending && <Clock className="h-3 w-3" />}
+                          {payout.status === PayoutStatus.Rejected && <AlertCircle className="h-3 w-3" />}
                           {payout.status}
+                        </span>
+                        <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500">
+                          {statusMeta.description}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-5 text-xs font-bold text-gray-400 dark:text-gray-500">
-                      {new Date(payout.requestedAt).toLocaleDateString()}
+                      {(payout.processedAt || payout.requestedAt) ? new Date(payout.processedAt || payout.requestedAt).toLocaleDateString() : 'N/A'}
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>
@@ -357,7 +384,7 @@ export default function WalletPage() {
           <p className="text-blue-700/80 dark:text-blue-400/80 mt-1 leading-relaxed font-medium">
             When a traveler books a trip, the money is held in <strong>Escrow</strong> (Pending Balance). 
             Funds are moved to your <strong>Available Balance</strong> 24 hours after the trip is completed. 
-            Once in Available Balance, you can request a withdrawal to your registered RIB.
+            Once in Available Balance, you can request a withdrawal to your registered RIB. Rejected payouts are restored to your wallet automatically.
           </p>
         </div>
       </div>

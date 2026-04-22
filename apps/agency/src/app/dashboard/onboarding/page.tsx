@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AgencyProfileSchema } from '@ouiboo/schemas';
@@ -23,14 +23,23 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
 import { VerificationStatus } from '@ouiboo/types';
 
+type AgencyOnboardingValues = {
+  bio?: string;
+  companyName: string;
+  ice: string;
+  patente: string;
+  rib: string;
+};
+
 export default function OnboardingPage() {
   const { user, refetch } = useAuth();
   const { t } = useTranslation();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const {
     register,
@@ -61,28 +70,34 @@ export default function OnboardingPage() {
   }, [user, reset]);
 
   const profileMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: AgencyOnboardingValues) => {
       const response = await apiClient.post('/users/agency-profile', data);
       return response.data;
     },
     onSuccess: () => {
-      alert(t('common.success', 'Compliance documents submitted for verification!'));
+      setFeedback({
+        type: 'success',
+        text: t('common.success', 'Compliance documents submitted for verification!'),
+      });
       refetch();
     },
-    onError: (err: any) => {
+    onError: (err: { response?: { data?: { message?: string } } }) => {
       console.error('Update failed:', err);
-      alert(err?.response?.data?.message || t('common.error', 'Update failed. Please check your data.'));
+      setFeedback({
+        type: 'error',
+        text: err?.response?.data?.message || t('common.error', 'Update failed. Please check your data.'),
+      });
     }
   });
 
-  const onSubmit = (data: any) => {
+  const onSubmit = (data: AgencyOnboardingValues) => {
+    setFeedback(null);
     profileMutation.mutate(data);
   };
 
   if (!mounted) return null;
 
   const isVerified = user?.agencyProfile?.verificationStatus === VerificationStatus.Verified;
-  const isPending = user?.agencyProfile?.verificationStatus === VerificationStatus.Pending || !user?.agencyProfile;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
@@ -94,6 +109,18 @@ export default function OnboardingPage() {
           <p className="text-gray-500 dark:text-gray-400 mt-1">
             {t('onboarding.subtitle', 'Complete your profile to start publishing trips.')}
           </p>
+          {feedback && (
+            <div
+              className={cn(
+                'mt-4 rounded-xl border px-4 py-3 text-sm font-medium',
+                feedback.type === 'success'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200'
+                  : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200',
+              )}
+            >
+              {feedback.text}
+            </div>
+          )}
         </div>
         <div className={cn(
           "flex items-center gap-2 px-4 py-2 rounded-xl border transition-colors",
@@ -204,8 +231,22 @@ export default function OnboardingPage() {
 
         {!isVerified && (
           <div className="flex justify-end gap-4 mt-8">
-            <Button variant="outline" type="button" className="h-12 px-8 dark:border-slate-700 dark:text-gray-300">
-              {t('common.saveDraft', 'Save Draft')}
+            <Button
+              variant="outline"
+              type="button"
+              className="h-12 px-8 dark:border-slate-700 dark:text-gray-300"
+              onClick={() => {
+                reset({
+                  companyName: user?.agencyProfile?.companyName || '',
+                  ice: user?.agencyProfile?.ice?.startsWith('PENDING_') ? '' : (user?.agencyProfile?.ice || ''),
+                  patente: user?.agencyProfile?.patente === 'PENDING' ? '' : (user?.agencyProfile?.patente || ''),
+                  rib: user?.agencyProfile?.rib === 'PENDING' ? '' : (user?.agencyProfile?.rib || ''),
+                  bio: user?.agencyProfile?.bio || '',
+                });
+                setFeedback(null);
+              }}
+            >
+              {t('common.discardChanges', 'Reset Changes')}
             </Button>
             <Button type="submit" disabled={profileMutation.isPending} className="h-12 px-10 bg-sunset-orange hover:bg-orange-600 text-white border-none shadow-lg shadow-orange-900/20 font-bold">
               {profileMutation.isPending ? t('common.submitting', "Submitting...") : t('onboarding.submit', "Submit for Verification")}

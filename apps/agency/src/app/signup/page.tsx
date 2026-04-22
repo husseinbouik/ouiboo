@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, Input } from '@ouiboo/ui';
 import Link from 'next/link';
@@ -18,6 +18,14 @@ type AgencySignupFormValues = Omit<RegisterInput, 'role'> & {
   acceptTerms: boolean;
 };
 
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
 export default function AgencySignupPage() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
@@ -27,12 +35,15 @@ export default function AgencySignupPage() {
       acceptTerms: true,
     },
   });
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
@@ -50,7 +61,7 @@ export default function AgencySignupPage() {
       await refetch();
       router.push(`/verify?email=${user.email}`);
     },
-    onError: (err: any) => {
+    onError: (err: ApiError) => {
       const message = err?.response?.data?.message;
       if (message === 'EMAIL_ALREADY_IN_USE') {
         setError('An account with this email already exists. Try logging in instead.');
@@ -66,8 +77,12 @@ export default function AgencySignupPage() {
 
   const onSubmit = (data: AgencySignupFormValues) => {
     setError(null);
-    const { acceptTerms, ...formData } = data;
-    signupMutation.mutate({ ...formData, role: 'AGENCY' });
+    signupMutation.mutate({
+      email: data.email,
+      name: data.name,
+      password: data.password,
+      role: 'AGENCY',
+    });
   };
 
   if (!mounted) return <div className="min-h-screen bg-white" />;

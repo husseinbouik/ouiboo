@@ -1,10 +1,24 @@
 import { z } from "zod";
+import {
+    BookingPaymentStatus,
+    BookingStatus,
+    PayoutStatus,
+    PaymentMethod,
+    PaymentProvider,
+    RefundStatus,
+    SessionStatus,
+    SubscriptionStatus,
+    TripCategory,
+    TripStatus,
+    UserRole,
+    VerificationStatus,
+} from "@ouiboo/types";
 
 export const UserSchema = z.object({
     id: z.string(),
     name: z.string(),
     email: z.string().email(),
-    role: z.enum(["AGENCY", "TRAVELER", "ADMIN"]),
+    role: z.nativeEnum(UserRole),
     avatar: z.string().optional(),
 });
 
@@ -15,9 +29,12 @@ export const AgencyProfileSchema = z.object({
     ice: z.string().regex(/^[0-9]{15}$/, "ICE must be 15 digits"),
     patente: z.string().min(5, "Patente is required"),
     rib: z.string().regex(/^[0-9]{24}$/, "RIB must be 24 digits"),
-    verificationStatus: z.enum(["PENDING", "VERIFIED", "REJECTED"]),
+    verificationStatus: z.nativeEnum(VerificationStatus),
     bio: z.string().optional(),
     logo: z.string().optional(),
+    subscriptionStatus: z.nativeEnum(SubscriptionStatus).optional(),
+    trialEndsAt: z.string().datetime().optional(),
+    subscriptionEndsAt: z.string().datetime().optional(),
 });
 
 export const ItineraryDaySchema = z.object({
@@ -39,7 +56,7 @@ export const TripTemplateSchema = z.object({
     agencyId: z.string(),
     title: z.string().min(3, "Title must be at least 3 characters"),
     description: z.string().min(10, "Description must be at least 10 characters"),
-    category: z.enum(["ADVENTURE", "CULTURAL", "LUXURY", "BUDGET"]),
+    category: z.nativeEnum(TripCategory),
     startLocation: z.string(),
     durationDays: z.number().int().positive(),
     durationNights: z.number().int().nonnegative(),
@@ -48,7 +65,7 @@ export const TripTemplateSchema = z.object({
     checklist: z.array(z.string()),
     images: z.array(z.string()).min(1, "At least one image is required"),
     itinerary: z.array(ItineraryDaySchema).optional(),
-    status: z.enum(["ACTIVE", "DRAFT", "ARCHIVED"]),
+    status: z.nativeEnum(TripStatus),
     createdAt: z.string().datetime(),
 });
 
@@ -70,7 +87,7 @@ export const TripSessionSchema = z.object({
     deposit: z.number().nonnegative(),
     totalSeats: z.number().int().positive(),
     availableSeats: z.number().int().nonnegative(),
-    status: z.enum(["OPEN", "CLOSED", "CANCELLED"]),
+    status: z.nativeEnum(SessionStatus),
 });
 
 export const CreateTripSessionSchema = TripSessionSchema.omit({
@@ -83,10 +100,22 @@ export const BookingSchema = z.object({
     sessionId: z.string(),
     travelerId: z.string(),
     bookingDate: z.string().datetime(),
-    status: z.enum(["Pending", "Confirmed", "Cancelled", "Completed", "PendingPayment"]),
+    status: z.nativeEnum(BookingStatus),
     totalAmount: z.number().positive(),
     guestsCount: z.number().int().positive(),
+    paymentMethod: z.nativeEnum(PaymentMethod).optional(),
+    paymentStatus: z.nativeEnum(BookingPaymentStatus).optional(),
     paymentProofId: z.string().optional(),
+    paymentProofUrl: z.string().optional(),
+    fullName: z.string().optional(),
+    phoneNumber: z.string().optional(),
+    documentNumber: z.string().optional(),
+    paymentGatewayTransactionId: z.string().optional(),
+    paymentGatewayMetadata: z.record(z.string(), z.unknown()).optional(),
+    cancelledAt: z.string().datetime().optional(),
+    confirmedAt: z.string().datetime().optional(),
+    refundAmount: z.number().nonnegative().optional(),
+    refundStatus: z.nativeEnum(RefundStatus).optional(),
 });
 
 export const PaymentProofSchema = z.object({
@@ -94,17 +123,60 @@ export const PaymentProofSchema = z.object({
     bookingId: z.string(),
     imageUrl: z.string(),
     uploadedAt: z.string().datetime(),
-    status: z.enum(["Pending", "Verified", "Rejected"]),
+    status: z.nativeEnum(VerificationStatus),
+    rejectionReason: z.string().optional(),
 });
 
 export const PayoutRequestSchema = z.object({
     id: z.string(),
     agencyId: z.string(),
     amount: z.number().positive(),
-    status: z.enum(["Pending", "Approved", "Rejected", "Paid"]),
+    status: z.nativeEnum(PayoutStatus),
     requestedAt: z.string().datetime(),
     processedAt: z.string().datetime().optional(),
     bankDetails: z.string(),
+});
+
+export const PayoutDetailsSchema = PayoutRequestSchema.extend({
+    agency: z.object({
+        companyName: z.string(),
+        id: z.string(),
+        user: z.object({
+            email: z.string().email().nullable().optional(),
+        }).nullable().optional(),
+    }),
+});
+
+export const BookingDetailsSchema = BookingSchema.extend({
+    paymentProof: PaymentProofSchema.optional(),
+    review: z.object({
+        id: z.string(),
+    }).optional(),
+    traveler: z.object({
+        email: z.string().email(),
+        name: z.string().optional(),
+    }),
+    session: TripSessionSchema.extend({
+        template: z.object({
+            agency: z.object({
+                companyName: z.string(),
+                id: z.string(),
+            }),
+            agencyId: z.string(),
+            id: z.string(),
+            images: z.array(z.string()),
+            startLocation: z.string(),
+            title: z.string(),
+        }),
+    }),
+});
+
+export const InitiateGatewayPaymentSchema = z.object({
+    amount: z.number().positive(),
+    bookingId: z.string(),
+    provider: z.nativeEnum(PaymentProvider),
+    travelerEmail: z.string().email(),
+    travelerName: z.string().min(2),
 });
 export const LoginSchema = z.object({
     email: z.string().email("Invalid email address"),
@@ -115,7 +187,7 @@ export const RegisterSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
     email: z.string().email("Invalid email address"),
     password: z.string().min(8, "Password must be at least 8 characters"),
-    role: z.enum(["AGENCY", "TRAVELER"]),
+    role: z.enum([UserRole.Agency, UserRole.Traveler]),
 });
 
 export type LoginInput = z.infer<typeof LoginSchema>;

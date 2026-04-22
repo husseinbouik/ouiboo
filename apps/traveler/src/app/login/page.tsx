@@ -1,9 +1,10 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -12,22 +13,44 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/components/AuthContext';
 import '../../lib/i18n';
 
+type LoginFormValues = {
+  email: string;
+  password: string;
+  rememberMe?: boolean;
+};
+
+type LoginResponse = {
+  accessToken: string;
+  refreshToken: string;
+};
+
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
 export default function TravelerLoginPage() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const { refetch } = useAuth();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
   const [error, setError] = useState<string | null>(null);
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>();
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
-  const loginMutation = useMutation({
-    mutationFn: async (data: any) => {
+  const loginMutation = useMutation<LoginResponse, ApiError, LoginFormValues>({
+    mutationFn: async (data) => {
       const response = await apiClient.post('/auth/login', data);
       return response.data;
     },
@@ -41,7 +64,7 @@ export default function TravelerLoginPage() {
       await refetch();
       router.push('/');
     },
-    onError: (err: any) => {
+    onError: (err) => {
       const message = err?.response?.data?.message;
       if (message === 'EMAIL_NOT_VERIFIED') {
         const email = (document.getElementById('email') as HTMLInputElement)?.value;
@@ -52,9 +75,12 @@ export default function TravelerLoginPage() {
     },
   });
 
-  const onSubmit = (data: any) => {
+  const onSubmit: SubmitHandler<LoginFormValues> = (data) => {
     setError(null);
-    const { rememberMe, ...payload } = data;
+    const payload = {
+      email: data.email,
+      password: data.password,
+    };
     loginMutation.mutate(payload);
   };
 
@@ -169,11 +195,11 @@ export default function TravelerLoginPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-5 w-5 mr-2" alt="Google" />
+                <Image src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-5 w-5 mr-2" alt="Google" width={20} height={20} unoptimized />
                 <span className="text-sm font-medium text-gray-700">{t('login.google')}</span>
               </button>
               <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" className="h-5 w-5 mr-2" alt="Facebook" />
+                <Image src="https://www.svgrepo.com/show/475647/facebook-color.svg" className="h-5 w-5 mr-2" alt="Facebook" width={20} height={20} unoptimized />
                 <span className="text-sm font-medium text-gray-700">{t('login.facebook')}</span>
               </button>
             </div>

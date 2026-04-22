@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Heart } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -20,7 +20,7 @@ export function WishlistButton({ tripId, className }: WishlistButtonProps) {
   const [optimisticState, setOptimisticState] = useState(false);
 
   // Check if trip is wishlisted
-  const { data: wishlistData, isLoading } = useQuery({
+  const { data: wishlistData } = useQuery({
     queryKey: ['wishlist-status', tripId],
     queryFn: async () => {
       const response = await apiClient.get(`/users/wishlist/${tripId}/is-wishlisted`);

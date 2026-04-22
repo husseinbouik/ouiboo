@@ -1,9 +1,12 @@
 'use client';
 
+import type { AxiosError } from 'axios';
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
+import { useAuth } from '@/components/AuthContext';
+import { type BookingDetails } from '@ouiboo/types';
 import { 
   Card, 
   CardContent, 
@@ -32,15 +35,61 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
 
+type ApiErrorResponse = {
+  message?: string;
+};
+
+type CheckoutTripSession = {
+  availableSeats: number;
+  endDate: string;
+  id: string;
+  price: number;
+  startDate: string;
+};
+
+type CheckoutTrip = {
+  agency?: {
+    bankDetails?: string | null;
+    companyName?: string | null;
+  } | null;
+  images?: string[];
+  sessions?: CheckoutTripSession[];
+  startLocation: string;
+  title: string;
+};
+
+type BookingResponse = {
+  id: string;
+};
+
+type SupportedPaymentProvider = 'CMI' | 'CASHPLUS';
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error && typeof error === 'object' && 'response' in error) {
+    const axiosError = error as AxiosError<ApiErrorResponse>;
+    return axiosError.response?.data?.message || axiosError.message || fallback;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
+const getManualPaymentMethod = (method: string) =>
+  method === 'cash' ? 'WALLET' : 'BANK_TRANSFER';
+
 export default function CheckoutPage() {
   const { tripId } = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [paymentMethod, setPaymentMethod] = useState('virement');
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
-    const [onlineProvider, setOnlineProvider] = useState<'CMI' | 'CASHPLUS' | null>(null);
-    const [isInitiatingPayment, setIsInitiatingPayment] = useState(false);
+  const [onlineProvider, setOnlineProvider] = useState<SupportedPaymentProvider | null>(null);
+  const [isInitiatingPayment, setIsInitiatingPayment] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [guestCount, setGuestCount] = useState(1);
   const [fullName, setFullName] = useState('');
@@ -48,6 +97,8 @@ export default function CheckoutPage() {
   const [documentNumber, setDocumentNumber] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const hasInitializedFromQuery = useRef(false);
+  const hasHydratedRetryBooking = useRef(false);
+  const retryBookingId = searchParams.get('retryBooking');
 
   useEffect(() => {
     return () => {
@@ -57,12 +108,25 @@ export default function CheckoutPage() {
     };
   }, [proofPreview]);
 
-  const { data: trip, isLoading } = useQuery({
+  const { data: trip, isLoading } = useQuery<CheckoutTrip>({
     queryKey: ['trip', tripId],
     queryFn: async () => {
       const response = await apiClient.get(`/trips/${tripId}`);
       return response.data;
     }
+  });
+
+  const { data: retryBooking } = useQuery<BookingDetails | null>({
+    enabled: Boolean(retryBookingId),
+    queryKey: ['retry-booking', retryBookingId],
+    queryFn: async () => {
+      if (!retryBookingId) {
+        return null;
+      }
+
+      const response = await apiClient.get(`/bookings/${retryBookingId}`);
+      return response.data;
+    },
   });
 
   useEffect(() => {
@@ -99,14 +163,27 @@ export default function CheckoutPage() {
     }
   }, [searchParams]);
 
-  const selectedSession = trip?.sessions?.find((session: any) => session.id === selectedSessionId);
+  useEffect(() => {
+    if (!retryBooking || hasHydratedRetryBooking.current) {
+      return;
+    }
+
+    setSelectedSessionId((current) => current || retryBooking.session.id);
+    setGuestCount((current) => current || retryBooking.guestsCount);
+    setFullName((current) => current || retryBooking.fullName || retryBooking.traveler?.name || '');
+    setPhoneNumber((current) => current || retryBooking.phoneNumber || '');
+    setDocumentNumber((current) => current || retryBooking.documentNumber || '');
+    hasHydratedRetryBooking.current = true;
+  }, [retryBooking]);
+
+  const selectedSession = trip?.sessions?.find((session) => session.id === selectedSessionId);
   const sessionPrice = selectedSession?.price ?? 0;
   const totalPrice = sessionPrice * guestCount;
   const sessionDateLabel = selectedSession
     ? `${new Date(selectedSession.startDate).toLocaleDateString()} - ${new Date(selectedSession.endDate).toLocaleDateString()}`
     : 'Select a session';
 
-  const createBookingMutation = useMutation({
+  const createBookingMutation = useMutation<BookingResponse, Error>({
     mutationFn: async () => {
       setErrorMessage(null);
       if (!selectedSessionId) {
@@ -121,7 +198,8 @@ export default function CheckoutPage() {
         guestsCount: guestCount,
         fullName: fullName.trim(),
         phoneNumber: phoneNumber.trim(),
-        documentNumber: documentNumber.trim()
+        documentNumber: documentNumber.trim(),
+        paymentMethod: getManualPaymentMethod(paymentMethod),
       });
       const booking = response.data;
 
@@ -138,55 +216,57 @@ export default function CheckoutPage() {
     onSuccess: (data) => {
       router.push(`/checkout/confirmation?bookingId=${data?.id ?? ''}&proof=${proofFile ? '1' : '0'}`);
     },
-    onError: (error: any) => {
-      setErrorMessage(error?.response?.data?.message || error?.message || 'Unable to complete booking');
+    onError: (error) => {
+      setErrorMessage(getErrorMessage(error, 'Unable to complete booking'));
     }
   });
 
-    const initiateGatewayPayment = async (provider: 'CMI' | 'CASHPLUS') => {
-        try {
-            setErrorMessage(null);
-            setIsInitiatingPayment(true);
+  const initiateGatewayPayment = async (provider: SupportedPaymentProvider) => {
+    try {
+      setErrorMessage(null);
+      setIsInitiatingPayment(true);
 
-            if (!selectedSessionId) throw new Error('Session is required');
-            if (!fullName.trim() || !phoneNumber.trim() || !documentNumber.trim()) {
-                throw new Error('Guest contact details are required');
-            }
+      if (!selectedSessionId) throw new Error('Session is required');
+      if (!fullName.trim() || !phoneNumber.trim() || !documentNumber.trim()) {
+        throw new Error('Guest contact details are required');
+      }
 
-            // Create booking first (same as manual flow) without uploading proof
-            const bookingRes = await apiClient.post('/bookings', {
-                sessionId: selectedSessionId,
-                guestsCount: guestCount,
-                fullName: fullName.trim(),
-                phoneNumber: phoneNumber.trim(),
-                documentNumber: documentNumber.trim(),
-            });
-            const booking = bookingRes.data;
+      const travelerEmail = user?.email?.trim();
+      if (!travelerEmail) {
+        throw new Error('You must be logged in with a valid email before paying online');
+      }
 
-            // Initiate payment session for the booking
-            const initiateRes = await apiClient.post('/payments/initiate', {
-                bookingId: booking.id,
-                amount: totalPrice,
-                travelerEmail: phoneNumber.includes('@') ? phoneNumber : `${fullName.replace(/\s+/g, '').toLowerCase()}@example.com`,
-                travelerName: fullName,
-                provider,
-            });
+      const bookingRes = await apiClient.post<BookingResponse>('/bookings', {
+        sessionId: selectedSessionId,
+        guestsCount: guestCount,
+        fullName: fullName.trim(),
+        phoneNumber: phoneNumber.trim(),
+        documentNumber: documentNumber.trim(),
+        paymentMethod: provider === 'CMI' ? 'CARD' : 'MOBILE_MONEY',
+      });
+      const booking = bookingRes.data;
 
-            const payload = initiateRes.data;
-            const redirectUrl = payload?.redirectUrl || payload?.paymentUrl || payload?.url;
-            if (!redirectUrl) {
-                // If no redirect provided, fallback to booking confirmation
-                router.push(`/checkout/confirmation?bookingId=${booking.id}&proof=0`);
-                return;
-            }
+      const initiateRes = await apiClient.post('/payments/initiate', {
+        bookingId: booking.id,
+        amount: totalPrice,
+        travelerEmail,
+        travelerName: fullName.trim(),
+        provider,
+      });
 
-            // Redirect browser to payment gateway
-            window.location.href = redirectUrl;
-        } catch (err: any) {
-            setErrorMessage(err?.response?.data?.message || err?.message || 'Unable to initiate payment');
-            setIsInitiatingPayment(false);
-        }
-    };
+      const payload = initiateRes.data as { paymentUrl?: string; redirectUrl?: string; url?: string };
+      const redirectUrl = payload?.redirectUrl || payload?.paymentUrl || payload?.url;
+      if (!redirectUrl) {
+        router.push(`/checkout/confirmation?bookingId=${booking.id}&proof=0`);
+        return;
+      }
+
+      window.location.href = redirectUrl;
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error, 'Unable to initiate payment'));
+      setIsInitiatingPayment(false);
+    }
+  };
 
   const clearProof = () => {
     if (proofPreview) {
@@ -207,7 +287,7 @@ export default function CheckoutPage() {
     setProofFile(file);
   };
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center font-black animate-pulse">Initializing Security...</div>;
+  if (isLoading || isAuthLoading) return <div className="min-h-screen flex items-center justify-center font-black animate-pulse">Initializing Security...</div>;
 
   return (
     <div className="min-h-screen bg-muted/20 pb-40">
@@ -229,7 +309,15 @@ export default function CheckoutPage() {
           <div className="lg:col-span-8 space-y-8">
             <Card className="border-none shadow-xl shadow-black/5 rounded-[2.5rem] overflow-hidden">
                 <CardContent className="p-10 space-y-10">
-                        <div className="space-y-6">
+                    <div className="space-y-6">
+                        {retryBooking && (
+                            <div className="rounded-[2rem] border border-amber-200 bg-amber-50 p-5">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">Retry payment</p>
+                                <p className="mt-2 text-sm font-semibold text-amber-900">
+                                    We restored your last booking details from reference {retryBooking.id.slice(0, 8)} so you can retry payment without re-entering everything.
+                                </p>
+                            </div>
+                        )}
                         <div className="flex items-center gap-4">
                             <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center font-black">1</div>
                             <h2 className="text-2xl font-black font-display">Guest Details</h2>
@@ -242,7 +330,7 @@ export default function CheckoutPage() {
                                     onValueChange={setSelectedSessionId}
                                     className="mt-3 grid grid-cols-1 gap-3"
                                 >
-                                    {trip.sessions?.length ? trip.sessions.map((session: any) => (
+                                    {trip.sessions?.length ? trip.sessions.map((session) => (
                                         <div 
                                             key={session.id}
                                             onClick={() => setSelectedSessionId(session.id)}

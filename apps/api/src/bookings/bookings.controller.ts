@@ -32,6 +32,14 @@ export class BookingsController {
         return this.bookingsService.findAllByTraveler(req.user.userId);
     }
 
+    @Get(':id')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Get a booking by ID for the traveler, owning agency, or admin' })
+    findOne(@Request() req, @Param('id') id: string) {
+        return this.bookingsService.findOneForUser(id, req.user.userId, req.user?.role);
+    }
+
     @Post(':id/payment-proof')
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)

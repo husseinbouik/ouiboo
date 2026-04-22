@@ -8,6 +8,8 @@ import { UserRole } from '@ouiboo/types';
 import { DatabaseService } from '../database/database.service';
 import { WalletsService } from '../wallets/wallets.service';
 import { RequestPayoutDto } from './dto/payout-request.dto';
+import { mapBookingDetails } from '../bookings/booking-response.util';
+import { mapPayoutDetails } from './payout-response.util';
 
 @ApiTags('Agency')
 @Controller('agency')
@@ -85,7 +87,7 @@ export class AgencyController {
     async getBookings(@Request() req) {
         const agencyId = req.tenantId;
 
-        return this.prisma.booking.findMany({
+        const bookings = await this.prisma.booking.findMany({
             where: {
                 session: {
                     template: { agencyId }
@@ -94,7 +96,11 @@ export class AgencyController {
             include: {
                 session: {
                     include: {
-                        template: true
+                        template: {
+                            include: {
+                                agency: true,
+                            },
+                        },
                     }
                 },
                 traveler: {
@@ -109,17 +115,32 @@ export class AgencyController {
                 bookingDate: 'desc'
             }
         });
+
+        return bookings.map(mapBookingDetails);
     }
     @Get('payouts')
     @ApiOperation({ summary: 'Get agency payout history' })
     async getPayouts(@Request() req) {
         const agencyId = req.tenantId;
 
-        return this.prisma.payoutRequest.findMany({
+        const payouts = await this.prisma.payoutRequest.findMany({
             where: { agencyId },
+            include: {
+                agency: {
+                    include: {
+                        user: {
+                            select: {
+                                email: true,
+                            },
+                        },
+                    },
+                },
+            },
             orderBy: { requestedAt: 'desc' },
             take: 20
         });
+
+        return payouts.map(mapPayoutDetails);
     }
     @Get('reviews')
     @ApiOperation({ summary: 'Get agency reviews' })

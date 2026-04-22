@@ -42,8 +42,9 @@ export class CashPlusPaymentProvider implements PaymentProvider {
         orderId: bookingId,
         customerEmail: travelerEmail,
         customerName: travelerName,
-        returnUrl: `${this.callbackUrl}/payments/callback`,
-        notifyUrl: `${this.callbackUrl}/payments/webhook`,
+        returnUrl: this.buildTravelerReturnUrl('success', bookingId, bookingId),
+        cancelUrl: this.buildTravelerReturnUrl('cancelled', bookingId, bookingId),
+        notifyUrl: `${this.callbackUrl}/payments/webhook/cashplus`,
       };
 
       const res = await this.callCashPlusAPI('/v1/payments/initiate', payload);
@@ -131,5 +132,12 @@ export class CashPlusPaymentProvider implements PaymentProvider {
       this.logger.error('CashPlus API error', err?.message || err);
       throw err;
     }
+  }
+
+  private buildTravelerReturnUrl(status: 'success' | 'cancelled', bookingId: string, transactionId: string) {
+    const fallbackBaseUrl = process.env.TRAVELER_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3002';
+    const returnBaseUrl = this.callbackUrl || `${fallbackBaseUrl.replace(/\/$/, '')}/checkout/confirmation`;
+    const separator = returnBaseUrl.includes('?') ? '&' : '?';
+    return `${returnBaseUrl}${separator}bookingId=${encodeURIComponent(bookingId)}&provider=CASHPLUS&transactionId=${encodeURIComponent(transactionId)}&gatewayStatus=${status}`;
   }
 }

@@ -5,6 +5,54 @@ import { NextResponse } from 'next/server';
 import { format } from 'date-fns';
 import nodemailer from 'nodemailer';
 
+type Language = 'en' | 'fr' | 'ar';
+type UserSegment = 'agency' | 'traveler';
+
+type AgencyEmailContent = {
+  cta: string;
+  features: string[];
+  featuresTitle: string;
+  footer: string;
+  footerBottom: string;
+  greeting: string;
+  subject: string;
+  title: string;
+};
+
+type TravelerEmailContent = {
+  closing: string;
+  cta: string;
+  footer: string;
+  footerBottom: string;
+  greeting: string;
+  highlight: string;
+  subject: string;
+  title: string;
+};
+
+type LanguageContent = {
+  agency: AgencyEmailContent;
+  traveler: TravelerEmailContent;
+  rtl?: boolean;
+};
+
+type SubscribeRequestBody = {
+  agencyName?: string;
+  email?: string;
+  language?: string;
+  name?: string;
+  phoneNumber?: string;
+  userType?: string;
+};
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'Unknown error';
+};
+
 // --- NEW HELPER FUNCTION TO GENERATE DYNAMIC EMAILS ---
 // This keeps your main API route clean and focused.
 // Supports multiple languages: en, fr, ar
@@ -14,9 +62,9 @@ const generateEmailHtml = (name: string, userType: string, language: string = 'e
   const officialWebsiteUrl = 'https://ouiboo.vercel.app/';
 
   // Normalize language code
-  const lang = ['en', 'fr', 'ar'].includes(language) ? language : 'en';
+  const lang: Language = ['en', 'fr', 'ar'].includes(language) ? (language as Language) : 'en';
   // Email content based on language and user type
-  const content: Record<string, Record<string, any>> = {
+  const content: Record<Language, LanguageContent> = {
     en: {
       agency: {
         subject: `Welcome aboard, ${name}. Your agency just unlocked its next chapter.`,
@@ -105,7 +153,8 @@ const generateEmailHtml = (name: string, userType: string, language: string = 'e
     ? "'Segoe UI', Tahoma, Arial, sans-serif"
     : "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
-  const emailContent = content[lang][userType === 'Agency' ? 'agency' : 'traveler'];
+  const emailSegment: UserSegment = userType === 'Agency' ? 'agency' : 'traveler';
+  const emailContent = content[lang][emailSegment];
 
   if (userType === 'Agency') {
     subject = emailContent.subject;
@@ -286,7 +335,7 @@ const generateEmailHtml = (name: string, userType: string, language: string = 'e
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body = (await req.json()) as SubscribeRequestBody;
     const { name, email, userType, phoneNumber, agencyName, language } = body;
 
     // 1. Basic Validation
@@ -335,9 +384,10 @@ export async function POST(req: Request) {
             html: html,
           });
           return { task: 'email', status: 'success' };
-        } catch (err: any) {
-          console.error('Email Error:', err.message);
-          throw new Error(`Email failed: ${err.message}`);
+        } catch (error) {
+          const message = getErrorMessage(error);
+          console.error('Email Error:', message);
+          throw new Error(`Email failed: ${message}`);
         }
       })(),
 
@@ -363,9 +413,10 @@ export async function POST(req: Request) {
             requestBody: { values: [newRow] },
           });
           return { task: 'sheets', status: 'success' };
-        } catch (err: any) {
-          console.error('Sheets Error:', err.message);
-          throw new Error(`Sheets failed: ${err.message}`);
+        } catch (error) {
+          const message = getErrorMessage(error);
+          console.error('Sheets Error:', message);
+          throw new Error(`Sheets failed: ${message}`);
         }
       })()
     ]);
@@ -385,9 +436,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ message: 'Success!' }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error) {
+    const message = getErrorMessage(error);
     console.error('API Error:', error);
-    return NextResponse.json({ message: 'Internal server error', error: error.message }, { status: 500 });
+    return NextResponse.json({ message: 'Internal server error', error: message }, { status: 500 });
   }
 }
 

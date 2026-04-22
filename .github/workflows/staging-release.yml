@@ -1,0 +1,61 @@
+name: Staging Release
+
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+
+concurrency:
+  group: staging-release
+  cancel-in-progress: true
+
+jobs:
+  verify-and-migrate:
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      NODE_ENV: production
+      DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      NEXT_PUBLIC_API_URL: ${{ vars.STAGING_API_URL }}
+      STORAGE_PROVIDER: s3
+      S3_BUCKET: ${{ secrets.S3_BUCKET }}
+      S3_REGION: ${{ secrets.S3_REGION }}
+      S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+      S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+      S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate launch contract
+        run: npm run check:env && npm run check:placeholders
+
+      - name: Build release candidate
+        run: npm run build
+
+      - name: Apply Prisma migrations
+        run: npx prisma migrate deploy --schema packages/database/prisma/schema.prisma
+
+      - name: Smoke deployed staging services
+        env:
+          SMOKE_API_URL: ${{ vars.STAGING_API_URL }}
+          SMOKE_TRAVELER_URL: ${{ vars.STAGING_TRAVELER_URL }}
+          SMOKE_AGENCY_URL: ${{ vars.STAGING_AGENCY_URL }}
+          SMOKE_ADMIN_URL: ${{ vars.STAGING_ADMIN_URL }}
+          SMOKE_LANDING_URL: ${{ vars.STAGING_LANDING_URL }}
+        run: node scripts/smoke-deploy.mjs

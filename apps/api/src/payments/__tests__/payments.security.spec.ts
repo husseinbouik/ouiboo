@@ -5,7 +5,7 @@ import { DatabaseService } from '../../database/database.service';
 import { EmailService } from '../../email/email.service';
 import { PaymentProviderFactory } from '../providers/payment-provider.factory';
 import { InitiatePaymentDto } from '../dto/payment.dto';
-import { BookingStatus, BookingPaymentStatus, PaymentMethod } from '@ouiboo/database';
+import { BookingStatus, BookingPaymentStatus, PaymentMethod, TransactionType } from '@ouiboo/database';
 
 describe('PaymentsService - Security Tests', () => {
   let service: PaymentsService;
@@ -72,12 +72,17 @@ describe('PaymentsService - Security Tests', () => {
             walletTransaction: {
               create: jest.fn(),
             },
+            wallet: {
+              upsert: jest.fn(),
+              update: jest.fn(),
+            },
             notificationLog: {
               create: jest.fn(),
             },
             tripSession: {
               findUnique: jest.fn(),
             },
+            $transaction: jest.fn(async (callback) => callback(module.get(DatabaseService))),
           },
         },
         {
@@ -305,6 +310,165 @@ describe('PaymentsService - Security Tests', () => {
           }),
         }),
       );
+    });
+  });
+
+  describe('verifyPayment - Booking and wallet finalization', () => {
+    it('credits the agency wallet when a gateway payment verifies successfully', async () => {
+      const providerResult = {
+        status: 'success' as const,
+        metadata: { provider: 'CASHPLUS', paid: true },
+      };
+
+      const provider = {
+        verifyPayment: jest.fn().mockResolvedValue(providerResult),
+        initiatePayment: jest.fn(),
+        validateWebhookSignature: jest.fn(),
+        processRefund: jest.fn(),
+      };
+
+      jest.spyOn(providerFactory, 'getProvider').mockReturnValue(provider as any);
+      jest.spyOn(prismaService.booking, 'findUnique')
+        .mockResolvedValueOnce({
+          ...mockBooking,
+          session: { ...mockBooking.session, template: { id: 'template-1', agencyId: 'agency-123', title: 'Sahara Escape' } },
+        } as any)
+        .mockResolvedValueOnce({
+          ...mockBooking,
+          traveler: mockBooking.traveler,
+          session: {
+            ...mockBooking.session,
+            template: {
+              id: 'template-1',
+              agencyId: 'agency-123',
+              title: 'Sahara Escape',
+              agency: { id: 'agency-123', wallet: null },
+            },
+          },
+        } as any);
+
+      jest.spyOn(prismaService.booking, 'update').mockResolvedValue({
+        ...mockBooking,
+        status: BookingStatus.CONFIRMED,
+        paymentStatus: BookingPaymentStatus.PAID,
+      } as any);
+      jest.spyOn(prismaService.paymentTransaction, 'updateMany').mockResolvedValue({ count: 1 } as any);
+      jest.spyOn(prismaService.wallet, 'upsert').mockResolvedValue({
+        id: 'wallet-123',
+        agencyId: 'agency-123',
+      } as any);
+      jest.spyOn(prismaService.walletTransaction, 'create').mockResolvedValue({ id: 'wallet-tx-1' } as any);
+      jest.spyOn(prismaService.notificationLog, 'create').mockResolvedValue({ id: 'notif-1' } as any);
+      jest.spyOn(emailService, 'sendPaymentConfirmation').mockResolvedValue(undefined);
+
+      await service.verifyPayment({
+        bookingId: 'booking-123',
+        provider: 'CASHPLUS',
+        transactionId: 'gateway-tx-1',
+      });
+
+      expect(prismaService.wallet.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { agencyId: 'agency-123' },
+          update: expect.objectContaining({
+            availableBalance: { increment: mockBooking.totalAmount },
+          }),
+        }),
+      );
+      expect(prismaService.walletTransaction.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            walletId: 'wallet-123',
+            amount: mockBooking.totalAmount,
+            type: TransactionType.BOOKING,
+          }),
+        }),
+      );
+    });
+
+    it('debits the agency wallet when a refund succeeds', async () => {
+      const provider = {
+        verifyPayment: jest.fn(),
+        initiatePayment: jest.fn(),
+        validateWebhookSignature: jest.fn(),
+        processRefund: jest.fn().mockResolvedValue({ success: true, refundId: 'refund-1' }),
+      };
+
+      jest.spyOn(providerFactory, 'getProvider').mockReturnValue(provider as any);
+      jest.spyOn(prismaService.booking, 'findUnique').mockResolvedValue({
+        ...mockBooking,
+        status: BookingStatus.CONFIRMED,
+        paymentStatus: BookingPaymentStatus.PAID,
+      } as any);
+      jest.spyOn(prismaService.booking, 'update').mockResolvedValue({ ...mockBooking } as any);
+      jest.spyOn(prismaService.tripSession, 'findUnique').mockResolvedValue({
+        id: 'session-123',
+        template: {
+          agency: {
+            wallet: {
+              id: 'wallet-123',
+            },
+          },
+        },
+      } as any);
+      jest.spyOn(prismaService.wallet, 'update').mockResolvedValue({ id: 'wallet-123' } as any);
+      jest.spyOn(prismaService.walletTransaction, 'create').mockResolvedValue({ id: 'wallet-tx-2' } as any);
+
+      await service.processRefund({
+        bookingId: 'booking-123',
+        provider: 'CASHPLUS',
+        transactionId: 'gateway-tx-1',
+        amount: 120,
+      });
+
+      expect(prismaService.wallet.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'wallet-123' },
+          data: expect.objectContaining({
+            availableBalance: { decrement: 120 },
+          }),
+        }),
+      );
+      expect(prismaService.walletTransaction.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            walletId: 'wallet-123',
+            amount: -120,
+            type: TransactionType.REFUND,
+          }),
+        }),
+      );
+    });
+
+    it('derives the provider transaction when refunding by booking id', async () => {
+      jest.spyOn(prismaService.booking, 'findUnique').mockResolvedValue({
+        ...mockBooking,
+        status: BookingStatus.CONFIRMED,
+        paymentMethod: PaymentMethod.GATEWAY,
+        paymentStatus: BookingPaymentStatus.PAID,
+        paymentGatewayTransactionId: 'gateway-session-123',
+        paymentTransactions: [
+          {
+            status: 'SUCCESS',
+            provider: 'CASHPLUS',
+            transactionId: 'gateway-session-123',
+          },
+        ],
+      } as any);
+
+      const processRefundSpy = jest.spyOn(service, 'processRefund').mockResolvedValue({
+        success: true,
+        refundId: 'refund-123',
+      } as any);
+
+      await service.refundBookingById('booking-123');
+
+      expect(processRefundSpy).toHaveBeenCalledWith({
+        bookingId: 'booking-123',
+        amount: mockBooking.totalAmount,
+        provider: 'CASHPLUS',
+        transactionId: 'gateway-session-123',
+      });
     });
   });
 });

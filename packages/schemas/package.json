@@ -7,6 +7,7 @@
         "build": "tsc"
     },
     "dependencies": {
+        "@ouiboo/types": "*",
         "zod": "^3.0.0"
     },
     "devDependencies": {

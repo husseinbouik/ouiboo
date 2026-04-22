@@ -6,10 +6,12 @@
         "dev": "next dev -p 3002",
         "build": "next build",
         "start": "next start -p 3002",
-        "lint": "next lint"
+        "lint": "eslint .",
+        "test": "jest"
     },
     "dependencies": {
         "@hookform/resolvers": "^5.2.2",
+        "@ouiboo/api-client": "*",
         "@ouiboo/schemas": "*",
         "@ouiboo/types": "*",
         "@ouiboo/ui": "*",

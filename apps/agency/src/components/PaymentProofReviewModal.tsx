@@ -1,34 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle2, AlertCircle, FileText, Loader } from 'lucide-react';
+import Image from 'next/image';
 import { Button } from '@ouiboo/ui';
-
-interface PaymentProof {
-  id?: string;
-  imageUrl?: string;
-  status?: 'PENDING' | 'VERIFIED' | 'REJECTED';
-  rejectionReason?: string | null;
-}
-
-interface Booking {
-  id: string;
-  fullName?: string;
-  traveler?: { name: string };
-  totalAmount: number;
-  paymentProof?: PaymentProof;
-  session?: {
-    template?: {
-      title: string;
-    };
-  };
-}
+import { VerificationStatus, type BookingDetails } from '@ouiboo/types';
 
 interface PaymentProofReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  booking?: Booking | null;
+  booking?: BookingDetails | null;
   onApprove: () => void;
   onReject: (reason: string) => void;
   isLoading?: boolean;
@@ -50,8 +32,8 @@ export function PaymentProofReviewModal({
 
   if (!booking) return null;
 
-  const isReadOnly = booking.paymentProof?.status && booking.paymentProof.status !== 'PENDING';
-  const tripTitle = booking.session?.template?.title || 'Trip';
+  const isReadOnly = booking.paymentProof?.status && booking.paymentProof.status !== VerificationStatus.Pending;
+  const tripTitle = booking.session.template.title || 'Trip';
   const travelerName = booking.fullName || booking.traveler?.name || 'Traveler';
   const proofUrl = booking.paymentProof?.imageUrl ? `/bookings/${booking.id}/payment-proof/download` : null;
 
@@ -147,13 +129,13 @@ export function PaymentProofReviewModal({
             {isReadOnly && (
               <div
                 className={`px-6 py-4 border-b ${
-                  booking.paymentProof?.status === 'VERIFIED'
+                  booking.paymentProof?.status === VerificationStatus.Verified
                     ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/30'
                     : 'bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/30'
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  {booking.paymentProof?.status === 'VERIFIED' ? (
+                  {booking.paymentProof?.status === VerificationStatus.Verified ? (
                     <>
                       <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                       <div>
@@ -271,10 +253,13 @@ export function PaymentProofReviewModal({
                           <Loader className="h-8 w-8 text-gray-400 animate-spin" />
                         </div>
                       )}
-                      <img
+                      <Image
                         src={proofUrl}
                         alt="Payment Proof"
                         className="w-full h-auto max-h-96 object-contain"
+                        width={1200}
+                        height={900}
+                        unoptimized
                         onLoad={handleImageLoad}
                         onError={handleImageError}
                       />
@@ -337,7 +322,7 @@ export function PaymentProofReviewModal({
                         This payment will be marked as rejected and the traveler will be notified with the following reason:
                       </p>
                       <div className="bg-white dark:bg-slate-900 p-3 rounded border border-rose-200 dark:border-rose-900/30 text-sm text-gray-700 dark:text-gray-300 italic">
-                        "{rejectionReason}"
+                        &ldquo;{rejectionReason}&rdquo;
                       </div>
                       <div className="flex gap-3">
                         <Button

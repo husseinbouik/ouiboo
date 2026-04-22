@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import { useAuth } from './AuthContext';
 import { X, Clock, AlertTriangle } from 'lucide-react';
 import { Button } from '@ouiboo/ui';
@@ -9,18 +9,23 @@ import { useRouter } from 'next/navigation';
 
 export function TrialBanner() {
   const { user } = useAuth();
-  const [isVisible, setIsVisible] = useState(false);
   const router = useRouter();
+  const dismissed = useSyncExternalStore(
+    () => () => undefined,
+    () => (typeof window !== 'undefined' ? localStorage.getItem('trial_banner_dismissed') === 'true' : false),
+    () => false,
+  );
+  const [isDismissed, setIsDismissed] = useState(false);
 
-  useEffect(() => {
-    // Only show if user is Agency and in Trial
-    if (user?.role === 'AGENCY' && user?.agencyProfile?.subscriptionStatus === 'TRIAL' && user?.agencyProfile?.trialEndsAt) {
-      const dismissed = localStorage.getItem('trial_banner_dismissed');
-      if (dismissed !== 'true') {
-        setIsVisible(true);
-      }
-    }
-  }, [user]);
+  const isVisible = useMemo(() => {
+    return (
+      !dismissed &&
+      !isDismissed &&
+      user?.role === 'AGENCY' &&
+      user?.agencyProfile?.subscriptionStatus === 'TRIAL' &&
+      Boolean(user?.agencyProfile?.trialEndsAt)
+    );
+  }, [dismissed, isDismissed, user]);
 
   if (!isVisible || !user?.agencyProfile?.trialEndsAt) return null;
 
@@ -34,7 +39,7 @@ export function TrialBanner() {
   const isUrgent = daysLeft <= 3;
 
   const handleDismiss = () => {
-    setIsVisible(false);
+    setIsDismissed(true);
     localStorage.setItem('trial_banner_dismissed', 'true');
   };
 

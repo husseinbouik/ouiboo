@@ -10,6 +10,14 @@ import { useMutation } from '@tanstack/react-query';
 
 const RESEND_COOLDOWN_SECONDS = 30;
 
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
 const getFriendlyError = (message?: string) => {
   if (!message) {
     return 'Verification failed. Please check the code.';
@@ -42,7 +50,10 @@ export default function VerifyEmailPage() {
   const email = searchParams.get('email');
   const reason = searchParams.get('reason');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [error, setError] = useState<string | null>(null);
+  const initialError = reason === 'unverified'
+    ? 'Your account is not verified yet. Enter the code we emailed you to continue.'
+    : null;
+  const [error, setError] = useState<string | null>(initialError);
   const [success, setSuccess] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
@@ -51,12 +62,6 @@ export default function VerifyEmailPage() {
       router.push('/signup');
     }
   }, [email, router]);
-
-  useEffect(() => {
-    if (reason === 'unverified') {
-      setError('Your account is not verified yet. Enter the code we emailed you to continue.');
-    }
-  }, [reason]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -80,7 +85,7 @@ export default function VerifyEmailPage() {
         router.push('/dashboard');
       }, 2000);
     },
-    onError: (err: any) => {
+    onError: (err: ApiError) => {
       setError(getFriendlyError(err?.response?.data?.message));
     },
   });
@@ -94,7 +99,7 @@ export default function VerifyEmailPage() {
       setError(null);
       setCooldown(RESEND_COOLDOWN_SECONDS);
     },
-    onError: (err: any) => {
+    onError: (err: ApiError) => {
       setError(getFriendlyError(err?.response?.data?.message));
     },
   });
@@ -208,7 +213,7 @@ export default function VerifyEmailPage() {
 
         <div className="text-center space-y-4">
           <p className="text-sm text-gray-500">
-            Didn't receive the code?
+            Did not receive the code?
           </p>
           <button 
             type="button" 

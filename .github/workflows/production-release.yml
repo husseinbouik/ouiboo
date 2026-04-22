@@ -1,0 +1,77 @@
+name: Production Release
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+
+jobs:
+  verify-and-migrate:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      NODE_ENV: production
+      DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      NEXT_PUBLIC_API_URL: ${{ vars.PRODUCTION_API_URL }}
+      STORAGE_PROVIDER: s3
+      S3_BUCKET: ${{ secrets.S3_BUCKET }}
+      S3_REGION: ${{ secrets.S3_REGION }}
+      S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+      S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+      S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate launch contract
+        run: npm run check:env && npm run check:placeholders
+
+      - name: Build release candidate
+        run: npm run build
+
+      - name: Apply Prisma migrations
+        run: npx prisma migrate deploy --schema packages/database/prisma/schema.prisma
+
+      - name: Smoke deployed production services
+        env:
+          SMOKE_API_URL: ${{ vars.PRODUCTION_API_URL }}
+          SMOKE_TRAVELER_URL: ${{ vars.PRODUCTION_TRAVELER_URL }}
+          SMOKE_AGENCY_URL: ${{ vars.PRODUCTION_AGENCY_URL }}
+          SMOKE_ADMIN_URL: ${{ vars.PRODUCTION_ADMIN_URL }}
+          SMOKE_LANDING_URL: ${{ vars.PRODUCTION_LANDING_URL }}
+        run: node scripts/smoke-deploy.mjs
+
+  rollback-guidance:
+    runs-on: ubuntu-latest
+    needs: verify-and-migrate
+    if: failure()
+    steps:
+      - name: Publish rollback guidance
+        run: |
+          {
+            echo "## Production rollback";
+            echo "";
+            echo "The release verification failed. Restore the previously known-good deployment in your platform, then rerun the smoke checks.";
+            echo "";
+            echo "Recommended immediate actions:";
+            echo "1. Roll back the app deployment in your hosting platform or cluster.";
+            echo "2. Re-run health checks against the previous production URLs.";
+            echo "3. Review migration impact before promoting again.";
+          } >> "$GITHUB_STEP_SUMMARY"

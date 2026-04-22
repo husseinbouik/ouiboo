@@ -21,17 +21,38 @@ import { useTranslation } from 'react-i18next';
 
 import { DeleteConfirmation } from '@/components/DeleteConfirmation';
 
+type AgencyTripSessionSummary = {
+  id: string;
+  price: number;
+  _count?: {
+    bookings?: number;
+  };
+};
+
+type AgencyTripSummary = {
+  id: string;
+  title: string;
+  category?: string | null;
+  status: 'ACTIVE' | 'DRAFT' | 'ARCHIVED';
+  startLocation?: string | null;
+  durationDays: number;
+  durationNights: number;
+  createdAt?: string;
+  images?: string[] | null;
+  sessions?: AgencyTripSessionSummary[];
+};
+
+type TripSortOption = 'recent' | 'price' | 'sales';
+
 export default function AgencyTripsPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [deleteTripId, setDeleteTripId] = React.useState<string | null>(null);
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [statusFilter, setStatusFilter] = React.useState<'ALL' | AgencyTripSummary['status']>('ALL');
+  const [sortBy, setSortBy] = React.useState<TripSortOption>('recent');
   
-  const { data: trips, isLoading } = useQuery({
+  const { data: trips = [], isLoading } = useQuery<AgencyTripSummary[]>({
     queryKey: ['agency-trips'],
     queryFn: async () => {
       const response = await apiClient.get('/agency/trips');
@@ -67,10 +88,37 @@ export default function AgencyTripsPage() {
     updateStatusMutation.mutate({ id, status: newStatus });
   };
 
-  if (!mounted) return null;
+  const filteredTrips = React.useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const filtered = trips.filter((trip) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        trip.title.toLowerCase().includes(normalizedSearch) ||
+        trip.startLocation?.toLowerCase().includes(normalizedSearch);
+      const matchesStatus = statusFilter === 'ALL' || trip.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+
+    return filtered.sort((left, right) => {
+      if (sortBy === 'price') {
+        const leftPrice = left.sessions?.[0]?.price || 0;
+        const rightPrice = right.sessions?.[0]?.price || 0;
+        return rightPrice - leftPrice;
+      }
+
+      if (sortBy === 'sales') {
+        const leftSales = left.sessions?.reduce((acc, session) => acc + (session._count?.bookings || 0), 0) || 0;
+        const rightSales = right.sessions?.reduce((acc, session) => acc + (session._count?.bookings || 0), 0) || 0;
+        return rightSales - leftSales;
+      }
+
+      return new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime();
+    });
+  }, [searchTerm, sortBy, statusFilter, trips]);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500" suppressHydrationWarning>
+    <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-deep-blue dark:text-gray-100">{t('sidebar.myTrips')}</h1>
@@ -89,24 +137,37 @@ export default function AgencyTripsPage() {
            <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                 <Input placeholder="Search trips by name or location..." className="pl-10 h-11 dark:bg-slate-800 dark:border-slate-700" />
+                 <Input
+                   placeholder="Search trips by name or location..."
+                   className="pl-10 h-11 dark:bg-slate-800 dark:border-slate-700"
+                   value={searchTerm}
+                   onChange={(event) => setSearchTerm(event.target.value)}
+                 />
               </div>
               <div className="flex gap-2">
                  <div className="relative group">
                     <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                    <select className="h-11 pl-10 pr-4 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-deep-blue/5 dark:text-gray-300 appearance-none min-w-[140px]">
-                       <option>All Status</option>
-                       <option>Active</option>
-                       <option>Draft</option>
-                       <option>Archived</option>
+                    <select
+                      value={statusFilter}
+                      onChange={(event) => setStatusFilter(event.target.value as 'ALL' | AgencyTripSummary['status'])}
+                      className="h-11 pl-10 pr-4 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-deep-blue/5 dark:text-gray-300 appearance-none min-w-[140px]"
+                    >
+                       <option value="ALL">All Status</option>
+                       <option value="ACTIVE">Active</option>
+                       <option value="DRAFT">Draft</option>
+                       <option value="ARCHIVED">Archived</option>
                     </select>
                  </div>
                  <div className="relative group">
                     <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                    <select className="h-11 pl-10 pr-4 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-deep-blue/5 dark:text-gray-300 appearance-none min-w-[140px]">
-                       <option>Most Recent</option>
-                       <option>Highest Price</option>
-                       <option>Most Booked</option>
+                    <select
+                      value={sortBy}
+                      onChange={(event) => setSortBy(event.target.value as TripSortOption)}
+                      className="h-11 pl-10 pr-4 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-deep-blue/5 dark:text-gray-300 appearance-none min-w-[140px]"
+                    >
+                       <option value="recent">Most Recent</option>
+                       <option value="price">Highest Price</option>
+                       <option value="sales">Most Booked</option>
                     </select>
                  </div>
               </div>
@@ -117,8 +178,8 @@ export default function AgencyTripsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
           <div className="col-span-full py-12 flex justify-center text-gray-500">Loading trips...</div>
-        ) : trips && trips.length > 0 ? (
-          trips.map((trip: any) => (
+        ) : filteredTrips.length > 0 ? (
+          filteredTrips.map((trip) => (
             <Card key={trip.id} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden bg-white dark:bg-slate-900 border dark:border-slate-800 flex flex-col">
               <div className="relative h-48 overflow-hidden">
                  <img 
@@ -157,7 +218,7 @@ export default function AgencyTripsPage() {
                    </div>
                    <div className="flex items-center gap-1.5 font-medium">
                       <Users className="h-4 w-4 text-gray-400" />
-                      {trip.sessions?.reduce((acc: number, s: any) => acc + (s._count?.bookings || 0), 0)} sales
+                      {trip.sessions?.reduce((acc, session) => acc + (session._count?.bookings || 0), 0) || 0} sales
                    </div>
                 </div>
 
@@ -184,7 +245,26 @@ export default function AgencyTripsPage() {
               </CardContent>
             </Card>
           ))
-        ) : null}
+        ) : (
+          <div className="col-span-full">
+            <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
+              <CardContent className="py-16 text-center">
+                <p className="text-lg font-bold text-deep-blue dark:text-gray-100">No trips match these filters</p>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  Try a different search term, clear the status filter, or create a new trip.
+                </p>
+                <div className="mt-6 flex items-center justify-center gap-3">
+                  <Button variant="outline" onClick={() => { setSearchTerm(''); setStatusFilter('ALL'); setSortBy('recent'); }}>
+                    Clear filters
+                  </Button>
+                  <Link href="/dashboard/trips/create">
+                    <Button className="bg-sunset-orange hover:bg-orange-600 border-none">Create trip</Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Add New Card */}
         <Link href="/dashboard/trips/create" className="group">

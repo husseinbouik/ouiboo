@@ -53,7 +53,7 @@
         "title": "Create an account",
         "subtitle": "Join Ouiboo and start your journey.",
         "name": "Full Name",
-        "namePlaceholder": "John Doe",
+        "namePlaceholder": "Your full name",
         "email": "Email",
         "emailPlaceholder": "Enter your email",
         "password": "Password",

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
@@ -11,6 +11,7 @@ interface User {
     email: string;
     role: string;
     avatar?: string;
+    displayCurrency?: string;
 }
 
 interface AuthContextType {
@@ -36,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
                 const response = await apiClient.get('/users/me');
                 return response.data;
-            } catch (error) {
+            } catch {
                 return null;
             }
         },

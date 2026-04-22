@@ -3,7 +3,7 @@ import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
 import { PaymentProviderFactory } from './providers/payment-provider.factory';
 import { InitiatePaymentDto, VerifyPaymentDto, ProcessRefundDto } from './dto/payment.dto';
-import { PaymentMethod, BookingStatus, BookingPaymentStatus, RefundStatus } from '@ouiboo/database';
+import { PaymentMethod, BookingStatus, BookingPaymentStatus, RefundStatus, TransactionType } from '@ouiboo/database';
 
 @Injectable()
 export class PaymentsService {
@@ -243,12 +243,21 @@ export class PaymentsService {
           throw new BadRequestException('Agency missing wallet');
         }
 
+        await this.prisma.wallet.update({
+          where: { id: agencyWallet.id },
+          data: {
+            availableBalance: {
+              decrement: Math.abs(dto.amount),
+            },
+          },
+        });
+
         // Create refund transaction (debit agency wallet)
         await this.prisma.walletTransaction.create({
           data: {
             walletId: agencyWallet.id,
             amount: -Math.abs(dto.amount),
-            type: 'REFUND',
+            type: TransactionType.REFUND,
             reason: `Refund for booking ${dto.bookingId}`,
             referenceId: refundResult.refundId || null,
           },
@@ -260,6 +269,51 @@ export class PaymentsService {
     }
 
     return refundResult;
+  }
+
+  async refundBookingById(bookingId: string, amount?: number) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        paymentTransactions: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    if (!booking) {
+      throw new BadRequestException('Booking not found');
+    }
+
+    if (booking.paymentMethod !== PaymentMethod.GATEWAY) {
+      throw new BadRequestException('Only gateway payments can be refunded automatically');
+    }
+
+    if (booking.paymentStatus === BookingPaymentStatus.REFUNDED) {
+      throw new BadRequestException('Booking has already been refunded');
+    }
+
+    if (booking.paymentStatus !== BookingPaymentStatus.PAID) {
+      throw new BadRequestException('Only paid bookings can be refunded');
+    }
+
+    const successfulTransaction = booking.paymentTransactions.find(
+      (transaction) => transaction.status === 'SUCCESS' && transaction.provider && transaction.transactionId,
+    );
+
+    const provider = successfulTransaction?.provider;
+    const transactionId = successfulTransaction?.transactionId || booking.paymentGatewayTransactionId;
+
+    if (!provider || !transactionId) {
+      throw new BadRequestException('Missing provider transaction data for this booking');
+    }
+
+    return this.processRefund({
+      bookingId,
+      amount: amount ?? booking.totalAmount,
+      provider,
+      transactionId,
+    });
   }
 
   /**
@@ -890,17 +944,26 @@ export class PaymentsService {
       },
     });
 
-    // Create wallet transaction for agency commission/payment
-    const agencyWallet = booking.session?.template?.agency?.wallet;
-    if (!agencyWallet) {
-      throw new BadRequestException('Agency missing wallet');
-    }
+    // Credit agency wallet for the confirmed booking.
+    const agencyWallet = await this.prisma.wallet.upsert({
+      where: { agencyId: booking.session.template.agencyId },
+      update: {
+        availableBalance: {
+          increment: booking.totalAmount,
+        },
+      },
+      create: {
+        agencyId: booking.session.template.agencyId,
+        availableBalance: booking.totalAmount,
+        pendingBalance: 0,
+      },
+    });
 
     await this.prisma.walletTransaction.create({
       data: {
         walletId: agencyWallet.id,
         amount: booking.totalAmount,
-        type: 'BOOKING',
+        type: TransactionType.BOOKING,
         reason: `Payment received for booking ${bookingId}`,
         referenceId: bookingId,
       },

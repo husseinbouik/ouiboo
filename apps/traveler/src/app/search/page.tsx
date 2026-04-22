@@ -8,7 +8,6 @@ import {
   Search,
   Filter,
   Compass,
-  Zap,
   X,
   ChevronLeft,
   ChevronRight,
@@ -17,17 +16,61 @@ import { Button, Input, Badge } from "@ouiboo/ui";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@ouiboo/ui/utils";
 import { TripCard } from "@/components/TripCard";
+import { TripStatus, type SessionStatusType, type VerificationStatusType } from "@ouiboo/types";
+
+type SearchFilters = {
+  category: string;
+  duration: string;
+  priceMax: string;
+  searchQuery: string;
+  dateFrom: string;
+  dateTo: string;
+  priceMin: string;
+  availabilityOnly: boolean;
+  ratingMin: number;
+};
+
+type SearchTrip = {
+  id: string;
+  title: string;
+  category?: string;
+  startLocation?: string;
+  durationDays: number;
+  images?: string[];
+  agency?: {
+    verificationStatus?: VerificationStatusType;
+  };
+  sessions?: Array<{
+    id: string;
+    status: SessionStatusType;
+    availableSeats: number;
+    price: number;
+    startDate: string;
+  }>;
+};
+
+type TripsSearchResponse = {
+  data: SearchTrip[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+};
+
+type FilterKey = keyof SearchFilters;
+type SortBy = "price" | "rating" | "popularity" | "createdAt";
+type SortOrder = "asc" | "desc";
 
 export default function SearchPage() {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQueryInput, setSearchQueryInput] = useState("");
-  const [sortBy, setSortBy] = useState<"price" | "rating" | "popularity" | "createdAt">(
-    "createdAt"
-  );
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sortBy, setSortBy] = useState<SortBy>("createdAt");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<SearchFilters>({
     category: "",
     duration: "",
     priceMax: "",
@@ -39,7 +82,30 @@ export default function SearchPage() {
     ratingMin: 0,
   });
 
-  const [activeFiltersCount, setActiveFiltersCount] = useState(0);
+  const activeFiltersCount = useMemo(
+    () =>
+      Object.entries(filters).filter(([key, value]) => {
+        if (key === "searchQuery") return false;
+        if (typeof value === "boolean") return value;
+        if (typeof value === "number") return value > 0;
+        return value !== "";
+      }).length,
+    [filters],
+  );
+
+  const updateFilter = useCallback((key: FilterKey, value: SearchFilters[FilterKey]) => {
+    setFilters((currentFilters) => {
+      const nextFilters = { ...currentFilters, [key]: value };
+      const params = new URLSearchParams();
+      if (nextFilters.searchQuery) params.append("q", nextFilters.searchQuery);
+      if (nextFilters.category) params.append("cat", nextFilters.category);
+      if (nextFilters.priceMin) params.append("priceMin", nextFilters.priceMin);
+      if (nextFilters.priceMax) params.append("priceMax", nextFilters.priceMax);
+      router.push(`/search?${params.toString()}`);
+      return nextFilters;
+    });
+    setCurrentPage(1);
+  }, [router]);
 
   // Debounce local input -> sync to filters.searchQuery
   useEffect(() => {
@@ -48,12 +114,11 @@ export default function SearchPage() {
       setCurrentPage(1);
     }, 300);
     return () => clearTimeout(t);
-  }, [searchQueryInput]);
+  }, [searchQueryInput, updateFilter]);
 
   const buildQueryParams = useCallback(() => {
     const params = new URLSearchParams();
-    // backend expects status=APPROVED
-    params.append("status", "APPROVED");
+    params.append("status", TripStatus.Active);
     if (filters.searchQuery) params.append("q", filters.searchQuery);
     if (filters.category) params.append("category", filters.category);
     if (filters.priceMin) params.append("priceMin", filters.priceMin);
@@ -69,7 +134,7 @@ export default function SearchPage() {
     return params;
   }, [filters, sortBy, sortOrder, currentPage]);
 
-  const { data: response, isLoading, error, isError } = useQuery({
+  const { data: response, isLoading, error, isError } = useQuery<TripsSearchResponse>({
     queryKey: ["trips", filters, sortBy, sortOrder, currentPage],
     queryFn: async () => {
       const params = buildQueryParams();
@@ -81,28 +146,6 @@ export default function SearchPage() {
 
   const trips = response?.data || [];
   const pagination = response?.pagination || { total: 0, page: 1, limit: 20, totalPages: 0 };
-
-  const updateFilter = (key: string, value: string | boolean | number) => {
-    const newFilters = { ...filters, [key]: value } as any;
-    setFilters(newFilters);
-    setCurrentPage(1);
-
-    const count = Object.entries(newFilters).filter(([k, v]) => {
-      if (k === "searchQuery") return false;
-      if (typeof v === "boolean") return v;
-      if (typeof v === "number") return v > 0;
-      return v !== "";
-    }).length;
-    setActiveFiltersCount(count);
-
-    // update shallow URL for shareability (keeps it light)
-    const params = new URLSearchParams();
-    if (newFilters.searchQuery) params.append("q", newFilters.searchQuery);
-    if (newFilters.category) params.append("cat", newFilters.category);
-    if (newFilters.priceMin) params.append("priceMin", newFilters.priceMin);
-    if (newFilters.priceMax) params.append("priceMax", newFilters.priceMax);
-    router.push(`/search?${params.toString()}`);
-  };
 
   const clearAllFilters = () => {
     setFilters({
@@ -133,12 +176,12 @@ export default function SearchPage() {
     if (filters.dateFrom || filters.dateTo) {
       const from = filters.dateFrom ? new Date(filters.dateFrom).toLocaleDateString() : "any";
       const to = filters.dateTo ? new Date(filters.dateTo).toLocaleDateString() : "any";
-      chips.push({ label: `Dates: ${from} ? ${to}`, onRemove: () => { updateFilter("dateFrom", ""); updateFilter("dateTo", ""); } });
+      chips.push({ label: `Dates: ${from} - ${to}`, onRemove: () => { updateFilter("dateFrom", ""); updateFilter("dateTo", ""); } });
     }
     if (filters.availabilityOnly) chips.push({ label: "Available Only", onRemove: () => updateFilter("availabilityOnly", false) });
-    if (filters.ratingMin > 0) chips.push({ label: `Rating: ${filters.ratingMin}+ ?`, onRemove: () => updateFilter("ratingMin", 0) });
+    if (filters.ratingMin > 0) chips.push({ label: `Rating: ${filters.ratingMin}+`, onRemove: () => updateFilter("ratingMin", 0) });
     return chips;
-  }, [filters]);
+  }, [filters, updateFilter]);
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">
@@ -177,15 +220,15 @@ export default function SearchPage() {
 
               <div className="space-y-3">
                 <p className="text-xs font-bold text-muted-foreground uppercase">Dates</p>
-                <Input type="date" value={filters.dateFrom} onChange={(e:any)=> updateFilter('dateFrom', e.target.value)} />
-                <Input type="date" value={filters.dateTo} onChange={(e:any)=> updateFilter('dateTo', e.target.value)} />
+                <Input type="date" value={filters.dateFrom} onChange={(event) => updateFilter('dateFrom', event.target.value)} />
+                <Input type="date" value={filters.dateTo} onChange={(event) => updateFilter('dateTo', event.target.value)} />
               </div>
 
               <div className="space-y-3">
                 <p className="text-xs font-bold text-muted-foreground uppercase">Price (MAD)</p>
                 <div className="grid grid-cols-2 gap-2">
-                  <Input type="number" placeholder="Min" value={filters.priceMin} onChange={(e:any)=> updateFilter('priceMin', e.target.value)} />
-                  <Input type="number" placeholder="Max" value={filters.priceMax} onChange={(e:any)=> updateFilter('priceMax', e.target.value)} />
+                  <Input type="number" placeholder="Min" value={filters.priceMin} onChange={(event) => updateFilter('priceMin', event.target.value)} />
+                  <Input type="number" placeholder="Max" value={filters.priceMax} onChange={(event) => updateFilter('priceMax', event.target.value)} />
                 </div>
               </div>
 
@@ -203,7 +246,7 @@ export default function SearchPage() {
                     { value: 'rating', label: 'Rating' },
                     { value: 'popularity', label: 'Popularity' },
                   ].map((opt) => (
-                    <button key={opt.value} onClick={() => setSortBy(opt.value as any)} className={cn('px-3 py-2 rounded-lg', sortBy === opt.value ? 'bg-sunset-orange/10' : 'bg-muted')}>{opt.label}</button>
+                    <button key={opt.value} onClick={() => setSortBy(opt.value as SortBy)} className={cn('px-3 py-2 rounded-lg', sortBy === opt.value ? 'bg-sunset-orange/10' : 'bg-muted')}>{opt.label}</button>
                   ))}
                 </div>
               </div>
@@ -224,14 +267,14 @@ export default function SearchPage() {
             <div className="mb-4 flex items-center justify-between bg-muted/50 p-3 rounded-lg border border-border">
               <div className="text-sm text-muted-foreground">Showing <strong className="text-foreground">{(pagination.page - 1) * pagination.limit + trips.length}</strong> of <strong>{pagination.total}</strong></div>
               <div className="flex items-center gap-2">
-                <button onClick={() => setSortOrder(s => s==='asc'?'desc':'asc')} className="px-3 py-1 rounded-lg bg-muted">{sortOrder==='asc'?'? Asc':'? Desc'}</button>
+                <button onClick={() => setSortOrder((state) => state === 'asc' ? 'desc' : 'asc')} className="px-3 py-1 rounded-lg bg-muted">{sortOrder === 'asc' ? 'Asc' : 'Desc'}</button>
               </div>
             </div>
 
             {isError && (
               <div className="p-6 bg-red-50 border border-red-200 rounded-lg text-center">
                 <p className="font-semibold text-red-700">Failed to load trips</p>
-                <p className="text-sm text-red-600 mt-1">{(error as any)?.message || 'Please try again'}</p>
+                <p className="text-sm text-red-600 mt-1">{error instanceof Error ? error.message : 'Please try again'}</p>
                 <div className="mt-3"><Button onClick={() => window.location.reload()}>Retry</Button></div>
               </div>
             )}
@@ -246,9 +289,9 @@ export default function SearchPage() {
                 ))
               ) : trips.length > 0 ? (
                 <AnimatePresence>
-                  {trips.map((t:any, idx:number) => (
-                    <motion.div key={t.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-                      <TripCard trip={t} />
+                  {trips.map((trip, idx) => (
+                    <motion.div key={trip.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}>
+                      <TripCard trip={trip} />
                     </motion.div>
                   ))}
                 </AnimatePresence>

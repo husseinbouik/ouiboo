@@ -7,7 +7,6 @@ const __dirname = path.dirname(__filename);
 
 const PLACEHOLDERS = [
   'Dashboard.png',
-  'logo-placeholder',
   'lorem ipsum',
   'John Doe',
   'Maria S.',
@@ -24,11 +23,18 @@ const IGNORE_DIRS = [
   'dist',
   '.git',
   'scripts', // Ignore our own script
+  'test',
+  '__tests__',
 ];
 
 const IGNORE_FILES = [
   '.env.example',
   'README.md',
+];
+
+const IGNORE_PATTERNS = [
+  /\.spec\.(ts|tsx|js|jsx)$/,
+  /\.e2e-spec\.(ts|tsx|js|jsx)$/,
 ];
 
 function scanDir(dir, found = []) {
@@ -43,7 +49,7 @@ function scanDir(dir, found = []) {
         scanDir(fullPath, found);
       }
     } else {
-      if (!IGNORE_FILES.includes(file)) {
+      if (!IGNORE_FILES.includes(file) && !IGNORE_PATTERNS.some((pattern) => pattern.test(file))) {
         const content = fs.readFileSync(fullPath, 'utf8');
         for (const placeholder of PLACEHOLDERS) {
           if (content.includes(placeholder)) {

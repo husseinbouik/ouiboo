@@ -9,6 +9,21 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: https://db.example.com/ouiboo
+      JWT_SECRET: replace-with-a-long-jwt-secret
+      JWT_REFRESH_SECRET: replace-with-a-long-refresh-secret
+      SMTP_HOST: smtp.example.com
+      SMTP_PORT: 587
+      SMTP_USER: mailer@example.com
+      SMTP_PASS: replace-with-smtp-password
+      NEXT_PUBLIC_API_URL: https://api.example.com
+      STORAGE_PROVIDER: s3
+      S3_BUCKET: ouiboo-production
+      S3_REGION: eu-west-3
+      S3_ACCESS_KEY_ID: example-access-key
+      S3_SECRET_ACCESS_KEY: example-secret-key
+      S3_ENDPOINT: https://s3.example.com
 
     strategy:
       matrix:
@@ -25,6 +40,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Validate launch environment contract
+        run: npm run check:env
+
+      - name: Check for launch placeholders
+        run: npm run check:placeholders
 
       - name: Lint
         run: npm run lint
