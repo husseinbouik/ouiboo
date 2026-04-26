@@ -43,11 +43,14 @@
         "showPassword": "Show password",
         "hidePassword": "Hide password",
         "createAccount": "Create Agency Account",
+        "creatingAccount": "Creating account...",
         "orSignUp": "Or sign up with",
         "google": "Google",
         "linkedin": "LinkedIn",
         "hasAccount": "Already a partner?",
-        "logInLink": "Log in to dashboard"
+        "logInLink": "Log in to dashboard",
+        "heroTitle": "Join the future of travel.",
+        "heroSubtitle": "Connect with millions of travelers and manage your agency with ease."
     },
     "forgotPassword": {
         "title": "Reset your password",

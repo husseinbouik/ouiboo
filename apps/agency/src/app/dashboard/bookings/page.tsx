@@ -20,7 +20,7 @@ import {
   Eye
 } from 'lucide-react';
 import { BookingStatus, VerificationStatus, type BookingDetails } from '@ouiboo/types';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import Link from 'next/link';
 import { PaymentProofReviewModal } from '@/components/PaymentProofReviewModal';
@@ -28,38 +28,12 @@ import { getAgencyBookingStatusMeta, getAgencyPaymentStatusMeta, getAgencyProofS
 
 export default function BookingsManager() {
   const [reviewingBooking, setReviewingBooking] = useState<BookingDetails | null>(null);
-  const queryClient = useQueryClient();
 
   const { data: bookings = [], isLoading } = useQuery<BookingDetails[]>({
     queryKey: ['agency-bookings'],
     queryFn: async () => {
       const response = await apiClient.get('/agency/bookings');
       return response.data;
-    }
-  });
-
-  const verifyPaymentMutation = useMutation({
-    mutationFn: async ({ bookingId, approved, rejectionReason }: { bookingId: string; approved: boolean; rejectionReason?: string }) => {
-      await apiClient.patch(`/bookings/${bookingId}/verify-payment`, {
-        approved,
-        rejectionReason: rejectionReason || undefined
-      });
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['agency-bookings'] });
-      setReviewingBooking(null);
-      
-      // Show success message
-      if (variables.approved) {
-        alert('Payment verified successfully. Booking status updated to Confirmed.');
-      } else {
-        alert('Payment rejected. Traveler will be notified.');
-      }
-    },
-    onError: (error: { response?: { data?: { message?: string } }; message?: string }) => {
-      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to verify payment';
-      alert(`Error: ${errorMessage}`);
-      console.error('Payment verification failed:', error);
     }
   });
 
@@ -186,9 +160,8 @@ export default function BookingsManager() {
                               : 'dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-slate-800'
                           }`}
                           onClick={() => setReviewingBooking(booking)}
-                          disabled={verifyPaymentMutation.isPending}
                         >
-                          <Eye className="h-4 w-4" /> View Proof
+                          <Eye className="h-4 w-4" /> Inspect Proof
                         </Button>
                       ) : (
                         <Button 
@@ -216,9 +189,9 @@ export default function BookingsManager() {
         <div className="text-sm">
           <p className="font-bold">Important Notice</p>
           <p className="mt-1 opacity-90 leading-relaxed">
-            As an agency, you have <strong>Read-Only</strong> access to booking verification. 
-            Once a traveler uploads a payment proof, the Admin must verify the funds before the status changes to &ldquo;Confirmed&rdquo;. 
-            If you need to cancel a booking, please contact support.
+            Agencies can inspect uploaded bank-transfer proofs and follow booking progress from this screen.
+            Payment confirmation is finalized by the <strong>Admin finance review</strong> flow, which updates the
+            traveler, agency wallet, and payout state in one place.
           </p>
         </div>
       </div>
@@ -227,24 +200,7 @@ export default function BookingsManager() {
         isOpen={!!reviewingBooking}
         onClose={() => setReviewingBooking(null)}
         booking={reviewingBooking}
-        onApprove={() => {
-          if (reviewingBooking) {
-            verifyPaymentMutation.mutate({
-              bookingId: reviewingBooking.id,
-              approved: true
-            });
-          }
-        }}
-        onReject={(reason) => {
-          if (reviewingBooking) {
-            verifyPaymentMutation.mutate({
-              bookingId: reviewingBooking.id,
-              approved: false,
-              rejectionReason: reason
-                            });
-                          }
-                        }}
-                        isLoading={verifyPaymentMutation.isPending}
+        readOnly
       />
     </div>
   );

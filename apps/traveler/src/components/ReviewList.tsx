@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { Badge, Button } from '@ouiboo/ui';
-import { Star, ChevronDown, Loader2, MessageCircle } from 'lucide-react';
+import { Star, Loader2, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -28,12 +28,18 @@ interface Review {
 
 type SortBy = 'recent' | 'highest' | 'lowest';
 
+type ReviewListResponse = {
+  reviews: Review[];
+  total: number;
+  pages: number;
+};
+
 export function ReviewList({ tripId }: ReviewListProps) {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortBy>('recent');
   const [expandedReviewIds, setExpandedReviewIds] = useState<Set<string>>(new Set());
 
-  const { data: reviewsData, isLoading } = useQuery({
+  const { data: reviewsData, isLoading } = useQuery<ReviewListResponse>({
     queryKey: ['trip-reviews', tripId, page, sortBy],
     queryFn: async () => {
       const response = await apiClient.get(`/trips/${tripId}/reviews`, {

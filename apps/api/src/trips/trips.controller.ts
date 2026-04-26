@@ -28,6 +28,9 @@ export class TripsController {
     findAll(
         @Query('featured') featured?: string,
         @Query('status') status?: string,
+        @Query('q') q?: string,
+        @Query('category') category?: string,
+        @Query('agencyId') agencyId?: string,
         @Query('priceMin') priceMin?: string,
         @Query('priceMax') priceMax?: string,
         @Query('durationMin') durationMin?: string,
@@ -44,6 +47,9 @@ export class TripsController {
         return this.tripsService.findAllTemplates({
             featured: featured === 'true',
             status,
+            q,
+            category,
+            agencyId,
             priceMin: priceMin ? parseFloat(priceMin) : undefined,
             priceMax: priceMax ? parseFloat(priceMax) : undefined,
             durationMin: durationMin ? parseInt(durationMin) : undefined,

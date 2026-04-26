@@ -1,7 +1,9 @@
 'use client';
 
 import type { AxiosError } from 'axios';
+import Image from 'next/image';
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { 
@@ -27,6 +29,8 @@ import {
   PaymentMethod,
   PayoutStatus,
   type PayoutDetails,
+  TripStatus,
+  type TripStatusType,
   VerificationStatus,
   type VerificationStatusType,
 } from '@ouiboo/types';
@@ -66,6 +70,7 @@ type AdminAgency = {
 type AdminTrip = {
   id: string;
   title: string;
+  status?: TripStatusType;
   images?: string[];
   agency: {
     companyName: string;
@@ -103,6 +108,12 @@ type FeedbackState = {
   message: string;
 };
 
+const ADMIN_TABS: AdminTab[] = ['PENDING', 'AGENCIES', 'BOOKINGS', 'PAYMENT_PROOFS', 'PAYOUTS', 'AUDIT'];
+
+const isAdminTab = (value: string | null): value is AdminTab => {
+  return value !== null && ADMIN_TABS.includes(value as AdminTab);
+};
+
 const getErrorMessage = (
   error: AxiosError<ApiErrorResponse> | Error | null | undefined,
   fallback: string,
@@ -130,6 +141,26 @@ export default function AdminDashboard() {
   const [isExportingAuditLogs, setIsExportingAuditLogs] = useState(false);
   const queryClient = useQueryClient();
   const { t } = useTranslation();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const requestedTab = searchParams.get('tab');
+    if (isAdminTab(requestedTab) && requestedTab !== activeTab) {
+      setActiveTab(requestedTab);
+    }
+  }, [activeTab, searchParams]);
+
+  const handleTabChange = (nextTab: AdminTab) => {
+    setActiveTab(nextTab);
+
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.set('tab', nextTab);
+    window.history.replaceState({}, '', nextUrl);
+  };
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -545,6 +576,10 @@ export default function AdminDashboard() {
 
   const canApproveAgency = (status?: VerificationStatusType) => status !== VerificationStatus.Verified;
   const canRejectAgency = (status?: VerificationStatusType) => status !== VerificationStatus.Rejected;
+  const canApproveTrip = (status?: TripStatusType) => status !== TripStatus.Active;
+  const canRejectTrip = (status?: TripStatusType) => status !== TripStatus.Archived;
+  const canApprovePaymentProof = (status?: VerificationStatusType) => status !== VerificationStatus.Verified;
+  const canRejectPaymentProof = (status?: VerificationStatusType) => status !== VerificationStatus.Rejected;
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -561,7 +596,7 @@ export default function AdminDashboard() {
               return (
                 <button
                   key={item.key}
-                  onClick={() => setActiveTab(item.key)}
+                  onClick={() => handleTabChange(item.key)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive ? "bg-white/10 text-white" : "text-white/60 hover:text-white"}`}
                 >
                   <item.icon className="h-5 w-5" />
@@ -596,7 +631,7 @@ export default function AdminDashboard() {
                   />
                </div>
                <div className="h-10 w-10 bg-gray-200 rounded-full border-2 border-white shadow-sm overflow-hidden">
-                  <img src="https://ui-avatars.com/api/?name=Admin&background=1E3A8A&color=fff" alt="" />
+                  <Image src="https://ui-avatars.com/api/?name=Admin&background=1E3A8A&color=fff" alt="" width={40} height={40} />
                </div>
             </div>
          </header>
@@ -636,7 +671,7 @@ export default function AdminDashboard() {
                              <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-6">
                                    <div className="h-16 w-16 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
-                                      <img src={agency.logo || `https://ui-avatars.com/api/?name=${agency.companyName}&background=F3F4F6&color=1E3A8A`} alt="" />
+                                      <Image src={agency.logo || `https://ui-avatars.com/api/?name=${agency.companyName}&background=F3F4F6&color=1E3A8A`} alt="" width={64} height={64} className="h-full w-full object-cover" />
                                    </div>
                                    <div>
                                       <h3 className="text-lg font-bold text-deep-blue">{agency.companyName}</h3>
@@ -686,20 +721,41 @@ export default function AdminDashboard() {
                        {t('dashboard.sections.tripQualityReview')} ({pendingTrips.length})
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       {pendingTrips.map((trip) => (
-                          <Card key={trip.id} className="border-none shadow-sm rounded-3xl overflow-hidden bg-white">
-                             <div className="h-32 relative">
-                                <img src={trip.images?.[0]} className="w-full h-full object-cover" alt="" />
-                             </div>
-                             <CardContent className="p-4 flex items-center justify-between">
-                                <div>
-                                   <h3 className="font-bold text-deep-blue line-clamp-1">{trip.title}</h3>
-                                   <p className="text-xs text-gray-500">{trip.agency.companyName}</p>
-                                </div>
-                                <Button size="sm" className="bg-green-600" onClick={() => verifyTripMutation.mutate({ id: trip.id, status: 'ACTIVE' })}>{t('dashboard.actions.approve')}</Button>
-                             </CardContent>
-                          </Card>
-                       ))}
+                       {pendingTrips.map((trip) => {
+                         const canApprove = canApproveTrip(trip.status);
+                         const canReject = canRejectTrip(trip.status);
+                         return (
+                            <Card key={trip.id} className="border-none shadow-sm rounded-3xl overflow-hidden bg-white">
+                               <div className="h-32 relative">
+                                  <Image src={trip.images?.[0] || 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop'} className="w-full h-full object-cover" alt="" fill sizes="(min-width: 1024px) 25vw, 100vw" />
+                               </div>
+                               <CardContent className="p-4 flex items-center justify-between gap-3">
+                                  <div>
+                                     <h3 className="font-bold text-deep-blue line-clamp-1">{trip.title}</h3>
+                                     <p className="text-xs text-gray-500">{trip.agency.companyName}</p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      size="sm"
+                                      className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
+                                      onClick={() => verifyTripMutation.mutate({ id: trip.id, status: TripStatus.Archived })}
+                                      disabled={!canReject || verifyTripMutation.isPending}
+                                    >
+                                      {t('dashboard.actions.reject')}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      className="bg-green-600"
+                                      onClick={() => verifyTripMutation.mutate({ id: trip.id, status: TripStatus.Active })}
+                                      disabled={!canApprove || verifyTripMutation.isPending}
+                                    >
+                                      {t('dashboard.actions.approve')}
+                                    </Button>
+                                  </div>
+                               </CardContent>
+                            </Card>
+                         );
+                       })}
                     </div>
                  </section>
               </div>
@@ -717,7 +773,7 @@ export default function AdminDashboard() {
                          <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                <div className="h-12 w-12 bg-gray-100 rounded-xl overflow-hidden">
-                                  <img src={agency.logo || `https://ui-avatars.com/api/?name=${agency.companyName}`} alt="" />
+                                  <Image src={agency.logo || `https://ui-avatars.com/api/?name=${agency.companyName}`} alt="" width={48} height={48} className="h-full w-full object-cover" />
                                </div>
                                <div>
                                   <h3 className="font-bold text-deep-blue">{agency.companyName}</h3>
@@ -847,8 +903,12 @@ export default function AdminDashboard() {
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                           {pendingPaymentProofs.map((payment) => (
-                              <tr key={payment.id} className="hover:bg-gray-50/50 transition-colors">
+                           {pendingPaymentProofs.map((payment) => {
+                             const proofStatus = payment.booking?.paymentProof?.status;
+                             const canApprove = canApprovePaymentProof(proofStatus);
+                             const canReject = canRejectPaymentProof(proofStatus);
+                             return (
+                                <tr key={payment.id} className="hover:bg-gray-50/50 transition-colors">
                                  <td className="px-6 py-4">
                                     <p className="font-bold text-sm">{payment.booking?.session?.template?.title || t('dashboard.labels.booking')}</p>
                                     <p className="text-[10px] text-gray-400 font-mono italic">#{payment.booking?.id?.substring(0, 8)}</p>
@@ -871,12 +931,13 @@ export default function AdminDashboard() {
                                       <Eye className="h-4 w-4 mr-2" />
                                       {viewingProofId === (payment.booking?.id || payment.bookingId) ? t('dashboard.messages.loading') : t('dashboard.actions.view')}
                                     </Button>
-                                    <Button
-                                      size="sm"
-                                      className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
-                                      onClick={() => {
-                                        const reason = window.prompt(t('dashboard.prompts.paymentProofRejection'));
-                                        if (!reason) {
+                                      <Button
+                                        size="sm"
+                                        className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
+                                        disabled={!canReject || verifyPaymentMutation.isPending}
+                                        onClick={() => {
+                                          const reason = window.prompt(t('dashboard.prompts.paymentProofRejection'));
+                                          if (!reason) {
                                           setPaymentProofFeedback({
                                             type: 'error',
                                             message: t('dashboard.prompts.paymentProofReasonRequired'),
@@ -888,16 +949,18 @@ export default function AdminDashboard() {
                                     >
                                       {t('dashboard.actions.reject')}
                                     </Button>
-                                    <Button
-                                      size="sm"
-                                      className="bg-green-600 hover:bg-green-700 text-white border-none"
-                                      onClick={() => verifyPaymentMutation.mutate({ id: payment.id, status: VerificationStatus.Verified })}
-                                    >
-                                      {t('dashboard.actions.approve')}
-                                    </Button>
-                                 </td>
-                              </tr>
-                           ))}
+                                      <Button
+                                        size="sm"
+                                        className="bg-green-600 hover:bg-green-700 text-white border-none"
+                                        disabled={!canApprove || verifyPaymentMutation.isPending}
+                                        onClick={() => verifyPaymentMutation.mutate({ id: payment.id, status: VerificationStatus.Verified })}
+                                      >
+                                        {t('dashboard.actions.approve')}
+                                      </Button>
+                                   </td>
+                                </tr>
+                             );
+                           })}
                         </tbody>
                       </table>
                     ) : (
@@ -1194,7 +1257,7 @@ export default function AdminDashboard() {
             <CardContent className="space-y-6">
               <div className="flex items-center gap-4">
                 <div className="h-14 w-14 bg-gray-100 rounded-2xl overflow-hidden">
-                  <img src={selectedAgency.logo || `https://ui-avatars.com/api/?name=${selectedAgency.companyName}`} alt="" />
+                  <Image src={selectedAgency.logo || `https://ui-avatars.com/api/?name=${selectedAgency.companyName}`} alt="" width={56} height={56} className="h-full w-full object-cover" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-deep-blue">{selectedAgency.companyName}</h3>

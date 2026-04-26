@@ -5,16 +5,31 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import Backend from 'i18next-http-backend';
 
+const supportedLanguages = ['en', 'fr', 'ar'];
+
+export const normalizeLanguage = (language = 'en') => {
+  const baseLanguage = language?.split('-')[0]?.toLowerCase();
+  return supportedLanguages.includes(baseLanguage) ? baseLanguage : 'en';
+};
+
+export const getInitialLanguage = (fallback = 'en') => {
+  if (typeof window === 'undefined') {
+    return normalizeLanguage(fallback);
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const queryLanguage = params.get('lang');
+  if (queryLanguage) {
+    return normalizeLanguage(queryLanguage);
+  }
+
+  const storedLanguage = localStorage.getItem('i18nextLng');
+  return storedLanguage ? normalizeLanguage(storedLanguage) : normalizeLanguage(fallback);
+};
+
 // The 'i18n' instance is passed in from your TranslationsProvider
 const initTranslations = (i18n, lng = 'en') => {
-  // Check for stored language preference first (client-side only)
-  let initialLng = lng;
-  if (typeof window !== 'undefined') {
-    const storedLang = localStorage.getItem('i18nextLng');
-    if (storedLang && ['en', 'fr', 'ar'].includes(storedLang)) {
-      initialLng = storedLang;
-    }
-  }
+  const initialLng = getInitialLanguage(lng);
 
   return i18n
     .use(Backend) // Loads translations from a server (e.g., /public/locales)
@@ -26,6 +41,10 @@ const initTranslations = (i18n, lng = 'en') => {
       // we start with the user's saved preference
       lng: initialLng,
       fallbackLng: 'en', // Use 'en' if the detected language is not available
+      supportedLngs: supportedLanguages,
+      nonExplicitSupportedLngs: true,
+      load: 'languageOnly',
+      cleanCode: true,
       debug: process.env.NODE_ENV === 'development', // Logs info to console in dev mode
 
       // Define which namespaces to load. Your translations are in 'translation.json'
@@ -39,7 +58,7 @@ const initTranslations = (i18n, lng = 'en') => {
         // 2. 'cookie': Checks for a language cookie.
         // 3. 'navigator': Checks the browser's language setting.
         // 4. 'htmlTag': Checks the `lang` attribute on the <html> tag.
-        order: ['localStorage', 'cookie', 'navigator', 'htmlTag'],
+        order: ['querystring', 'localStorage', 'cookie', 'navigator', 'htmlTag'],
 
         // Where to cache the user's chosen language.
         // When you call `i18n.changeLanguage('fr')`, this plugin will
@@ -51,6 +70,8 @@ const initTranslations = (i18n, lng = 'en') => {
         
         // Lookup localStorage key
         lookupLocalStorage: 'i18nextLng',
+        lookupQuerystring: 'lang',
+        convertDetectedLanguage: normalizeLanguage,
       },
 
       interpolation: {

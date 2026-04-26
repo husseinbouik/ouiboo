@@ -4,9 +4,6 @@ import React, { useState } from 'react';
 import { 
   Card, 
   CardContent, 
-  CardHeader, 
-  CardTitle,
-  CardDescription,
   Button,
   Input,
   Textarea,
@@ -15,8 +12,6 @@ import {
 import { 
   Search, 
   Star, 
-  Users,
-  Filter,
   Loader2,
   MessageCircle,
   Check,
@@ -26,6 +21,27 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { Review } from '@ouiboo/types';
+
+type AgencyReview = Review & {
+  traveler?: {
+    name?: string;
+  };
+  trip?: {
+    title?: string;
+  };
+};
+
+type ReviewsResponse = {
+  reviews: AgencyReview[];
+};
+
+type ReviewStats = {
+  totalReviews: number;
+  averageRating?: number;
+  pendingResponses: number;
+  responseRate: number;
+};
 
 export default function ReviewsManager() {
   const queryClient = useQueryClient();
@@ -35,7 +51,7 @@ export default function ReviewsManager() {
   const [responseText, setResponseText] = useState('');
   const [isResponseModalOpen, setIsResponseModalOpen] = useState(false);
 
-  const { data: reviews, isLoading } = useQuery({
+  const { data: reviews, isLoading } = useQuery<ReviewsResponse>({
     queryKey: ['agency-reviews', filterStatus, searchTerm],
     queryFn: async () => {
       const response = await apiClient.get('/agency/reviews', {
@@ -48,7 +64,7 @@ export default function ReviewsManager() {
     }
   });
 
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<ReviewStats>({
     queryKey: ['agency-reviews-stats'],
     queryFn: async () => {
       const response = await apiClient.get('/agency/reviews/stats');
@@ -69,7 +85,7 @@ export default function ReviewsManager() {
     }
   });
 
-  const handleOpenResponse = (review: any) => {
+  const handleOpenResponse = (review: AgencyReview) => {
     setSelectedReviewId(review.id);
     setResponseText(review.response || '');
     setIsResponseModalOpen(true);
@@ -160,7 +176,7 @@ export default function ReviewsManager() {
         <div className="flex items-center gap-2 w-full md:w-auto">
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as any)}
+            onChange={(e) => setFilterStatus(e.target.value as 'all' | 'pending' | 'responded')}
             className="h-11 px-4 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground font-medium text-sm focus:outline-none focus:ring-2 focus:ring-deep-blue"
           >
             <option value="all">All Reviews</option>
@@ -198,7 +214,7 @@ export default function ReviewsManager() {
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                   <AnimatePresence mode="popLayout">
-                    {filteredReviews.map((review: any, idx: number) => (
+                    {filteredReviews.map((review, idx: number) => (
                       <motion.tr
                         key={review.id}
                         initial={{ opacity: 0, y: 10 }}

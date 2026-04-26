@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
@@ -12,6 +13,14 @@ import { apiClient } from '@/lib/api-client';
 
 type ForgotPasswordForm = {
   email: string;
+};
+
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
 };
 
 export default function TravelerForgotPasswordPage() {
@@ -31,8 +40,9 @@ export default function TravelerForgotPasswordPage() {
     try {
       await apiClient.post('/auth/forgot-password', { email: data.email });
       setSubmitted(true);
-    } catch (error: any) {
-      setErrorMessage(error?.response?.data?.message || 'Unable to send reset email. Please try again.');
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      setErrorMessage(apiError?.response?.data?.message || 'Unable to send reset email. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -47,10 +57,12 @@ export default function TravelerForgotPasswordPage() {
           transition={{ duration: 1.5 }}
           className="absolute inset-0"
         >
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=2070&auto=format&fit=crop"
             alt="Quiet travel planning"
             className="w-full h-full object-cover opacity-60"
+            fill
+            sizes="50vw"
           />
         </motion.div>
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">

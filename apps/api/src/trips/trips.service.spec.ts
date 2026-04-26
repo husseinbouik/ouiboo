@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TripsService } from './trips.service';
 import { DatabaseService } from '../database/database.service';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 
 const mockTripTemplate = {
     id: 'trip-123',
@@ -14,6 +14,7 @@ const mockDatabaseService = {
         findFirst: jest.fn(),
         findMany: jest.fn(),
         findUnique: jest.fn(),
+        count: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
         delete: jest.fn(),
@@ -97,6 +98,39 @@ describe('TripsService', () => {
             db.tripTemplate.findFirst.mockResolvedValue(null); // Not found for this agency
 
             await expect(service.deleteTemplate('trip-123', 'user-123')).rejects.toThrow(NotFoundException);
+        });
+    });
+
+    describe('findAllTemplates', () => {
+        it('should pass q, category, and agencyId filters into the trip query', async () => {
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(0);
+
+            await service.findAllTemplates({
+                q: 'atlas',
+                category: 'Adventure',
+                agencyId: 'agency-123',
+                status: 'ACTIVE',
+            });
+
+            expect(db.tripTemplate.findMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({
+                    status: 'ACTIVE',
+                    category: 'Adventure',
+                    agencyId: 'agency-123',
+                    OR: [
+                        { title: { contains: 'atlas', mode: 'insensitive' } },
+                        { description: { contains: 'atlas', mode: 'insensitive' } },
+                        { startLocation: { contains: 'atlas', mode: 'insensitive' } },
+                    ],
+                }),
+            }));
+            expect(db.tripTemplate.count).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({
+                    category: 'Adventure',
+                    agencyId: 'agency-123',
+                }),
+            }));
         });
     });
 });

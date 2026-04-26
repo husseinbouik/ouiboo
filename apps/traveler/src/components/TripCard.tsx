@@ -1,16 +1,22 @@
 'use client';
 
+import Image from 'next/image';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, Badge, Button } from '@ouiboo/ui';
-import { MapPin, Star, Heart, ChevronLeft, ChevronRight, Zap, ShieldCheck, Ticket } from 'lucide-react';
+import { Card, Badge, Button } from '@ouiboo/ui';
+import { MapPin, Star, ChevronLeft, ChevronRight, Zap, ShieldCheck, Ticket } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@ouiboo/ui/utils';
-import { VerificationStatus } from '@ouiboo/types';
+import { SessionStatus, type TripSession, type TripTemplate, VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 import { WishlistButton } from './WishlistButton';
 
 interface TripCardProps {
-  trip: any;
+  trip: TripTemplate & {
+    sessions?: TripSession[];
+    agency?: {
+      verificationStatus?: VerificationStatusType;
+    } | null;
+  };
 }
 
 export function TripCard({ trip }: TripCardProps) {
@@ -20,13 +26,13 @@ export function TripCard({ trip }: TripCardProps) {
     : ['https://images.unsplash.com/photo-1489749798305-4fea3ae63d43'];
   const sessions = trip.sessions || [];
   const openSessions = sessions.filter(
-    (session: any) => session.status === 'OPEN' && session.availableSeats > 0
+    (session) => session.status === SessionStatus.Open && session.availableSeats > 0
   );
-  const nextSession = [...openSessions].sort((a: any, b: any) => {
+  const nextSession = [...openSessions].sort((a, b) => {
     return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
   })[0];
   const minPrice = sessions.length
-    ? Math.min(...sessions.map((session: any) => Number(session.price || 0)))
+    ? Math.min(...sessions.map((session) => Number(session.price || 0)))
     : null;
   const isAgencyVerified = trip.agency?.verificationStatus === VerificationStatus.Verified;
 
@@ -44,16 +50,22 @@ export function TripCard({ trip }: TripCardProps) {
     <Card className="group border-border shadow-sm hover:shadow-xl transition-all duration-300 rounded-[2rem] overflow-hidden bg-card h-full flex flex-col">
       <div className="relative h-64 overflow-hidden">
         <AnimatePresence mode="wait">
-          <motion.img
+          <motion.div
             key={currentImage}
-            src={images[currentImage]}
             initial={{ opacity: 0, scale: 1.1 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.5 }}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            alt={trip.title}
-          />
+            className="absolute inset-0"
+          >
+            <Image
+              src={images[currentImage]}
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              alt={trip.title}
+              fill
+              sizes="(min-width: 1024px) 33vw, 100vw"
+            />
+          </motion.div>
         </AnimatePresence>
         
         <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent opacity-60" />

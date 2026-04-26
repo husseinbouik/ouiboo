@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar } from 'lucide-react';
-import { Button, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from '@ouiboo/ui';
+import { Button, CardContent, Input, Label } from '@ouiboo/ui';
 import { Card } from '@ouiboo/ui';
+import { SessionStatus, type SessionStatusType } from '@ouiboo/types';
 
 interface Session {
   id: string;
@@ -14,7 +15,7 @@ interface Session {
   deposit: number;
   totalSeats: number;
   availableSeats: number;
-  status: 'OPEN' | 'FULL' | 'CANCELLED';
+  status: SessionStatusType;
   currency: string;
   cancellationReason?: string | null;
 }
@@ -38,13 +39,33 @@ export function EditSessionModal({
   isDelete = false,
   onDelete
 }: EditSessionModalProps) {
-  const [formData, setFormData] = useState<Partial<Session>>(session || {});
-
-  useEffect(() => {
-    if (session) {
-      setFormData(session);
+  const sessionKey = useMemo(() => {
+    if (!session) {
+      return 'empty';
     }
+
+    return [
+      session.id,
+      session.startDate,
+      session.endDate,
+      session.price,
+      session.deposit,
+      session.totalSeats,
+      session.availableSeats,
+      session.status,
+      session.currency,
+      session.cancellationReason ?? '',
+    ].join('|');
   }, [session]);
+  const [draftState, setDraftState] = useState<{ key: string; value: Partial<Session> }>({
+    key: sessionKey,
+    value: session || {},
+  });
+  const formData = draftState.key === sessionKey ? draftState.value : (session || {});
+
+  const updateFormData = (next: Partial<Session>) => {
+    setDraftState({ key: sessionKey, value: next });
+  };
 
   const handleSubmit = () => {
     if (!formData.startDate || !formData.endDate || !formData.price) {
@@ -146,7 +167,7 @@ export function EditSessionModal({
                       <Input
                         type="date"
                         value={formData.startDate?.split('T')[0] || ''}
-                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                        onChange={(e) => updateFormData({ ...formData, startDate: e.target.value })}
                         className="h-10 dark:bg-slate-800 dark:border-slate-700"
                         disabled={isLoading}
                       />
@@ -156,7 +177,7 @@ export function EditSessionModal({
                       <Input
                         type="date"
                         value={formData.endDate?.split('T')[0] || ''}
-                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                        onChange={(e) => updateFormData({ ...formData, endDate: e.target.value })}
                         className="h-10 dark:bg-slate-800 dark:border-slate-700"
                         disabled={isLoading}
                       />
@@ -170,7 +191,7 @@ export function EditSessionModal({
                         <Input
                           type="number"
                           value={formData.price || ''}
-                          onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                          onChange={(e) => updateFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
                           className="h-10 pr-12 dark:bg-slate-800 dark:border-slate-700"
                           step="0.01"
                           min="0"
@@ -187,7 +208,7 @@ export function EditSessionModal({
                         <Input
                           type="number"
                           value={formData.deposit || ''}
-                          onChange={(e) => setFormData({ ...formData, deposit: parseFloat(e.target.value) || 0 })}
+                          onChange={(e) => updateFormData({ ...formData, deposit: parseFloat(e.target.value) || 0 })}
                           className="h-10 pr-12 dark:bg-slate-800 dark:border-slate-700"
                           step="0.01"
                           min="0"
@@ -203,24 +224,24 @@ export function EditSessionModal({
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Status</Label>
                     <select 
-                      value={formData.status || 'OPEN'} 
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                      value={formData.status || SessionStatus.Open} 
+                      onChange={(e) => updateFormData({ ...formData, status: e.target.value as SessionStatusType })}
                       className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300"
                       disabled={isLoading}
                     >
-                      <option value="OPEN">Open for Bookings</option>
-                      <option value="FULL">Full</option>
-                      <option value="CANCELLED">Cancelled</option>
+                      <option value={SessionStatus.Open}>Open for Bookings</option>
+                      <option value={SessionStatus.Full}>Full</option>
+                      <option value={SessionStatus.Cancelled}>Cancelled</option>
                     </select>
                   </div>
 
-                  {formData.status === 'CANCELLED' && (
+                  {formData.status === SessionStatus.Cancelled && (
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">Cancellation Reason</Label>
                       <Input
                         type="text"
                         value={formData.cancellationReason || ''}
-                        onChange={(e) => setFormData({ ...formData, cancellationReason: e.target.value })}
+                        onChange={(e) => updateFormData({ ...formData, cancellationReason: e.target.value })}
                         placeholder="e.g., Insufficient bookings, Emergency closure..."
                         className="h-10 dark:bg-slate-800 dark:border-slate-700"
                         disabled={isLoading}

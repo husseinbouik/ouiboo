@@ -43,11 +43,14 @@
         "showPassword": "Afficher le mot de passe",
         "hidePassword": "Masquer le mot de passe",
         "createAccount": "Créer un compte agence",
+        "creatingAccount": "Création du compte...",
         "orSignUp": "Ou s'inscrire avec",
         "google": "Google",
         "linkedin": "LinkedIn",
         "hasAccount": "Déjà partenaire ?",
-        "logInLink": "Se connecter au tableau de bord"
+        "logInLink": "Se connecter au tableau de bord",
+        "heroTitle": "Rejoignez le futur du voyage.",
+        "heroSubtitle": "Connectez-vous à des millions de voyageurs et gérez votre agence simplement."
     },
     "forgotPassword": {
         "title": "Réinitialiser votre mot de passe",

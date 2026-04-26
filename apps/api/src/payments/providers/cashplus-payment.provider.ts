@@ -108,7 +108,7 @@ export class CashPlusPaymentProvider implements PaymentProvider {
     try {
       const expected = this.apiKey ? crypto.createHmac('sha256', this.apiKey).update(payload).digest('hex') : '';
       return expected === signature;
-    } catch (err) {
+    } catch {
       return false;
     }
   }

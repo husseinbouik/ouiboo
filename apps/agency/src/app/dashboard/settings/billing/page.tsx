@@ -97,7 +97,7 @@ export default function BillingSettingsPage() {
         <div>
           <h1 className="text-3xl font-bold text-deep-blue dark:text-gray-100">Billing & Subscription</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
-            Track your current plan, payout readiness, and launch-MVP billing state.
+            Track the subscription state and payout readiness your team needs for day-to-day launch operations.
           </p>
         </div>
         <Link href="/dashboard/wallet">
@@ -115,7 +115,7 @@ export default function BillingSettingsPage() {
             Current Plan
           </CardTitle>
           <CardDescription>
-            The MVP currently uses a lightweight subscription state while paid plans are being prepared.
+            This page keeps plan visibility and payout readiness in one place for the launch MVP.
           </CardDescription>
         </CardHeader>
         <CardContent className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -138,9 +138,9 @@ export default function BillingSettingsPage() {
             </div>
           </div>
           <div className="rounded-2xl border border-border/60 bg-muted/20 p-5 space-y-2">
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Launch MVP note</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Current scope</p>
             <p className="text-sm text-foreground">
-              Invoice downloads and payment-method management are still ahead of us, but plan visibility and payout readiness are now available here.
+              This release covers plan state, verification readiness, and payout readiness without exposing unfinished billing controls.
             </p>
           </div>
         </CardContent>
@@ -219,16 +219,16 @@ export default function BillingSettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-amber-500" />
-              What’s Next
+              Launch Checklist
             </CardTitle>
             <CardDescription>
-              The launch-MVP billing roadmap is now visible here instead of hidden behind a placeholder.
+              Use this checklist to confirm the account is ready to operate before launch.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-muted-foreground">
-            <p>Invoices and payment-method management are not wired yet.</p>
-            <p>Trial state, payout readiness, verification state, and wallet visibility are already live.</p>
-            <p>When paid plans land, this page is where upgrade controls and invoice history should plug in.</p>
+            <p>Keep verification approved so trip publishing and payouts stay available.</p>
+            <p>Add bank details before requesting a payout from the wallet screen.</p>
+            <p>Use wallet and analytics together to monitor available balance and booking revenue.</p>
             <div className="pt-2 flex flex-wrap gap-3">
               <Link href="/dashboard/wallet">
                 <Button>Manage payouts</Button>

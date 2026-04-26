@@ -60,9 +60,25 @@ export const mockTravelerApi = async (page: Page) => {
       return jsonResponse(route, 200, { count: 1 });
     }
 
-    if (pathname === '/api/trips' && method === 'GET') {
+    if (pathname === '/api/agencies/agency-1/public' && method === 'GET') {
       return jsonResponse(route, 200, {
-        data: [
+        id: 'agency-1',
+        companyName: 'Atlas Agency',
+        bio: 'Trusted mountain escapes across Morocco.',
+        logo: null,
+        verificationStatus: 'VERIFIED',
+      });
+    }
+
+    if (pathname === '/api/trips' && method === 'GET') {
+      const agencyId = searchParams.get('agencyId');
+      const q = (searchParams.get('q') || '').toLowerCase();
+      const category = searchParams.get('category');
+      const matchesSearch = !q || 'atlas weekend escape'.includes(q) || 'marrakech'.includes(q);
+      const matchesCategory = !category || category === 'Adventure';
+      const matchesAgency = !agencyId || agencyId === 'agency-1';
+      const tripData = matchesSearch && matchesCategory && matchesAgency
+        ? [
           {
             id: 'trip-1',
             title: 'Atlas Weekend Escape',
@@ -70,7 +86,10 @@ export const mockTravelerApi = async (page: Page) => {
             startLocation: 'Marrakech',
             durationDays: 3,
             images: ['https://example.com/trip.jpg'],
-            agency: { verificationStatus: 'VERIFIED' },
+            agency: {
+              id: 'agency-1',
+              verificationStatus: 'VERIFIED',
+            },
             sessions: [
               {
                 id: 'session-1',
@@ -81,12 +100,16 @@ export const mockTravelerApi = async (page: Page) => {
               },
             ],
           },
-        ],
+        ]
+        : [];
+
+      return jsonResponse(route, 200, {
+        data: tripData,
         pagination: {
-          total: 1,
+          total: tripData.length,
           page: Number(searchParams.get('page') || 1),
           limit: 20,
-          totalPages: 1,
+          totalPages: tripData.length > 0 ? 1 : 0,
         },
       });
     }
@@ -189,6 +212,17 @@ export const mockTravelerApi = async (page: Page) => {
 };
 
 export const mockAgencyApi = async (page: Page) => {
+  await page.route('**/bookings/*/payment-proof/download', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'image/png',
+      body: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgR05oigAAAAASUVORK5CYII=',
+        'base64',
+      ),
+    });
+  });
+
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url());
     const { pathname } = url;
@@ -227,6 +261,40 @@ export const mockAgencyApi = async (page: Page) => {
 
     if (pathname === '/api/agency/payouts' && method === 'POST') {
       return jsonResponse(route, 201, { id: 'payout-1', status: 'PENDING' });
+    }
+
+    if (pathname === '/api/agency/bookings' && method === 'GET') {
+      return jsonResponse(route, 200, [
+        {
+          id: 'booking-1',
+          bookingDate: '2026-04-22T10:00:00.000Z',
+          status: 'AWAITING_VALIDATION',
+          paymentStatus: 'UNPAID',
+          paymentMethod: 'MANUAL',
+          totalAmount: 1800,
+          guestsCount: 1,
+          fullName: 'Launch Traveler',
+          traveler: {
+            id: 'traveler-1',
+            name: 'Launch Traveler',
+            email: 'traveler@example.com',
+          },
+          session: {
+            id: 'session-1',
+            startDate: '2026-05-10T00:00:00.000Z',
+            endDate: '2026-05-12T00:00:00.000Z',
+            template: {
+              id: 'trip-1',
+              title: 'Atlas Weekend Escape',
+            },
+          },
+          paymentProof: {
+            id: 'proof-1',
+            imageUrl: 'proof-1.png',
+            status: 'PENDING',
+          },
+        },
+      ]);
     }
 
     return jsonResponse(route, 200, []);

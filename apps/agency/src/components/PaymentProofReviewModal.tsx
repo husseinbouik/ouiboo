@@ -11,9 +11,10 @@ interface PaymentProofReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   booking?: BookingDetails | null;
-  onApprove: () => void;
-  onReject: (reason: string) => void;
+  onApprove?: () => void;
+  onReject?: (reason: string) => void;
   isLoading?: boolean;
+  readOnly?: boolean;
 }
 
 export function PaymentProofReviewModal({
@@ -22,7 +23,8 @@ export function PaymentProofReviewModal({
   booking,
   onApprove,
   onReject,
-  isLoading = false
+  isLoading = false,
+  readOnly = false,
 }: PaymentProofReviewModalProps) {
   const [showRejectInput, setShowRejectInput] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -32,7 +34,8 @@ export function PaymentProofReviewModal({
 
   if (!booking) return null;
 
-  const isReadOnly = booking.paymentProof?.status && booking.paymentProof.status !== VerificationStatus.Pending;
+  const hasFinalReviewStatus = booking.paymentProof?.status && booking.paymentProof.status !== VerificationStatus.Pending;
+  const isReadOnly = readOnly || hasFinalReviewStatus;
   const tripTitle = booking.session.template.title || 'Trip';
   const travelerName = booking.fullName || booking.traveler?.name || 'Traveler';
   const proofUrl = booking.paymentProof?.imageUrl ? `/bookings/${booking.id}/payment-proof/download` : null;
@@ -47,6 +50,9 @@ export function PaymentProofReviewModal({
   };
 
   const handleApprove = () => {
+    if (!onApprove) {
+      return;
+    }
     onApprove();
   };
 
@@ -61,6 +67,9 @@ export function PaymentProofReviewModal({
     }
     if (rejectionReason.trim().length < 10) {
       alert('Rejection reason must be at least 10 characters');
+      return;
+    }
+    if (!onReject) {
       return;
     }
     onReject(rejectionReason.trim());
@@ -113,7 +122,7 @@ export function PaymentProofReviewModal({
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   {isReadOnly
-                    ? `Verification: ${booking.paymentProof?.status}`
+                    ? 'View-only payment proof inspection for agency operators'
                     : 'Review and approve or reject this payment proof'}
                 </p>
               </div>

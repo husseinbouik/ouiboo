@@ -2,25 +2,41 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Lock, LogIn, UserPlus } from 'lucide-react';
+import { X, Mail, Lock } from 'lucide-react';
 import { Button, Input } from '@ouiboo/ui';
 import { useAuth } from './AuthContext';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
-import { cn } from '@ouiboo/ui/utils';
+import Link from 'next/link';
+
+type AuthModalFormValues = {
+    email: string;
+    password: string;
+};
+
+type LoginResponse = {
+    accessToken: string;
+    refreshToken: string;
+};
+
+type ApiError = {
+    response?: {
+        data?: {
+            message?: string;
+        };
+    };
+};
 
 export function AuthModal() {
-    const { t } = useTranslation();
     const { showLoginModal, setShowLoginModal, refetch } = useAuth();
     const [error, setError] = useState<string | null>(null);
-    const { register, handleSubmit, formState: { errors }, reset } = useForm();
+    const { register, handleSubmit, reset } = useForm<AuthModalFormValues>();
 
     const loginMutation = useMutation({
-        mutationFn: async (data: any) => {
+        mutationFn: async (data: AuthModalFormValues) => {
             const response = await apiClient.post('/auth/login', data);
-            return response.data;
+            return response.data as LoginResponse;
         },
         onSuccess: async (data) => {
             const { accessToken, refreshToken } = data;
@@ -33,12 +49,12 @@ export function AuthModal() {
             reset();
             setError(null);
         },
-        onError: (err: any) => {
+        onError: (err: ApiError) => {
             setError(err?.response?.data?.message || 'Login failed. Please try again.');
         },
     });
 
-    const onSubmit = (data: any) => {
+    const onSubmit = (data: AuthModalFormValues) => {
         loginMutation.mutate(data);
     };
 
@@ -128,17 +144,14 @@ export function AuthModal() {
                                     <div className="h-px flex-1 bg-border" />
                                 </div>
                                 <p className="text-sm font-medium text-muted-foreground">
-                                    Don't have an account?{' '}
-                                    <button 
-                                        type="button"
-                                        onClick={() => {
-                                            setShowLoginModal(false);
-                                            window.location.href = '/signup';
-                                        }}
+                                    Do not have an account?{' '}
+                                    <Link
+                                        href="/signup"
+                                        onClick={() => setShowLoginModal(false)}
                                         className="text-sunset-orange font-bold hover:underline"
                                     >
                                         Sign Up
-                                    </button>
+                                    </Link>
                                 </p>
                             </div>
                         </form>

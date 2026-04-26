@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Sheet, SheetContent, SheetTrigger, Button, buttonVariants, Logo } from '@ouiboo/ui';
+import { Sheet, SheetContent, SheetTrigger, buttonVariants, Logo } from '@ouiboo/ui';
 import { Menu, LayoutDashboard, Map, BookOpen, Wallet, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -54,7 +54,7 @@ export function AgencyMobileNav() {
                 })}
             </nav>
             <div className="p-6 border-t bg-muted/30">
-                <p className="text-sm font-medium text-muted-foreground">© 2024 Ouiboo Platform</p>
+                <p className="text-sm font-medium text-muted-foreground">Copyright 2024 Ouiboo Platform</p>
             </div>
         </div>
       </SheetContent>

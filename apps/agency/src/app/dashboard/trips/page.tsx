@@ -1,13 +1,13 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { 
   Plus, 
   Clock, 
   Users, 
   Edit,
   Trash,
-  ExternalLink,
   Search,
   Filter,
   ArrowUpDown
@@ -182,10 +182,12 @@ export default function AgencyTripsPage() {
           filteredTrips.map((trip) => (
             <Card key={trip.id} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden bg-white dark:bg-slate-900 border dark:border-slate-800 flex flex-col">
               <div className="relative h-48 overflow-hidden">
-                 <img 
-                   src={trip.images?.[0] || `https://ui-avatars.com/api/?name=${trip.title}&background=1E3A8A&color=fff`} 
-                   alt={trip.title} 
-                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                 <Image
+                   src={trip.images?.[0] || `https://ui-avatars.com/api/?name=${encodeURIComponent(trip.title)}&background=1E3A8A&color=fff`}
+                   alt={trip.title}
+                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                   fill
+                   sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                  />
                  <div className="absolute top-4 right-4">
                     <button 

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Trash2, Calendar } from 'lucide-react';
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from '@ouiboo/ui';
+import { Button, Card, CardContent, Input, Label } from '@ouiboo/ui';
 
 interface BulkSessionInput {
   id: string;
@@ -53,7 +53,7 @@ export function BulkSessionCreationModal({
     }
   };
 
-  const updateSession = (id: string, field: keyof BulkSessionInput, value: any) => {
+  const updateSession = (id: string, field: keyof BulkSessionInput, value: BulkSessionInput[keyof BulkSessionInput]) => {
     setSessions(sessions.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 

@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   transpilePackages: ["@ouiboo/ui"],
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',

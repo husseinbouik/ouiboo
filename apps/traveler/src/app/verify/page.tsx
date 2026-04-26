@@ -188,7 +188,7 @@ export default function VerifyEmailPage() {
                 <span className="text-2xl font-bold text-deep-blue dark:text-white">Ouiboo</span>
             </div>
           <h2 className="text-3xl font-bold text-foreground tracking-tight">Check your email</h2>
-          <p className="text-muted-foreground font-medium text-sm">We've sent a 6-digit verification code to <br/> <span className="font-semibold text-foreground">{email}</span></p>
+          <p className="text-muted-foreground font-medium text-sm">We have sent a 6-digit verification code to <br/> <span className="font-semibold text-foreground">{email}</span></p>
         </div>
 
         <div className="bg-muted/60 border border-border rounded-2xl p-4 text-sm text-muted-foreground space-y-2">

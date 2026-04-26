@@ -3,6 +3,7 @@
 import React from 'react';
 import { Card, Select } from '@ouiboo/ui';
 import { Star } from 'lucide-react';
+import type { ChangeEvent } from 'react';
 
 type Trip = { id: string; title: string; bookings: number; revenue: number; avgRating: number; reviewCount: number };
 
@@ -15,7 +16,7 @@ export default function TopTripsTable({ data = [], limit = 5, onLimitChange }: {
           <p className="text-sm text-slate-500">Your best trips by bookings and revenue</p>
         </div>
         <div className="flex items-center gap-3">
-          <Select value={String(limit)} onChange={(e: any) => onLimitChange?.(Number(e.target.value))}>
+          <Select value={String(limit)} onChange={(e: ChangeEvent<HTMLSelectElement>) => onLimitChange?.(Number(e.target.value))}>
             <option value="5">Top 5</option>
             <option value="10">Top 10</option>
             <option value="20">Top 20</option>

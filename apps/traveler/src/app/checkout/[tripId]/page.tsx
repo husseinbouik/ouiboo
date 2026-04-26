@@ -1,6 +1,7 @@
 'use client';
 
 import type { AxiosError } from 'axios';
+import Image from 'next/image';
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -538,7 +539,7 @@ export default function CheckoutPage() {
                                                 animate={{ opacity: 1, scale: 1 }}
                                                 className="relative w-full h-full p-4"
                                             >
-                                                <img src={proofPreview} className="w-full h-full object-cover rounded-xl" alt="Proof" />
+                                                <Image src={proofPreview} className="w-full h-full object-cover rounded-xl" alt="Proof" fill sizes="(min-width: 1024px) 40vw, 100vw" unoptimized />
                                                 <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
                                                     <p className="text-white font-black text-xs">Change Photo</p>
                                                 </div>
@@ -600,7 +601,7 @@ export default function CheckoutPage() {
                     <div className="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20"><Info className="h-6 w-6" /></div>
                     <div className="space-y-1">
                         <h4 className="font-black text-blue-900 dark:text-blue-200 uppercase text-[10px] tracking-widest">Important Disclaimer</h4>
-                        <p className="text-sm text-blue-700 dark:text-blue-300 font-medium leading-relaxed">Your booking will be marked as "Pending Verification" until the agency confirms receipt of your payment manually. This usually takes 2-4 business hours.</p>
+                        <p className="text-sm text-blue-700 dark:text-blue-300 font-medium leading-relaxed">Your booking will be marked as &quot;Pending Verification&quot; until the agency confirms receipt of your payment manually. This usually takes 2-4 business hours.</p>
                     </div>
                 </div>
             </div>
@@ -611,7 +612,7 @@ export default function CheckoutPage() {
                    <div className="space-y-6">
                       <div className="flex gap-4">
                          <div className="h-20 w-20 rounded-2xl overflow-hidden shrink-0 shadow-lg">
-                            <img src={trip.images?.[0]} className="w-full h-full object-cover" alt="" />
+                            <Image src={trip.images?.[0] || 'https://images.unsplash.com/photo-1489749798305-4fea3ae63d43?q=80&w=1200&auto=format&fit=crop'} className="w-full h-full object-cover" alt="" width={80} height={80} />
                          </div>
                      <div className="space-y-1">
                         <h3 className="font-black text-lg leading-tight line-clamp-2">{trip.title}</h3>

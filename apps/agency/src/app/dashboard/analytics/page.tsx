@@ -19,7 +19,7 @@ export default function AnalyticsPage() {
     const d = new Date(); d.setDate(d.getDate() - 6); return d;
   });
   const [endDate, setEndDate] = useState(new Date());
-  const [period, setPeriod] = useState<'daily'|'weekly'|'monthly'>('daily');
+  const [period] = useState<'daily'|'weekly'|'monthly'>('daily');
   const [limit, setLimit] = useState(5);
 
   const rangeLabel = useMemo(() => `${format(startDate, 'MMM d, yyyy')} — ${format(endDate, 'MMM d, yyyy')}`, [startDate, endDate]);

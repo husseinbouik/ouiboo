@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import Image from 'next/image';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, Input } from '@ouiboo/ui';
 import Link from 'next/link';
@@ -18,17 +19,28 @@ type AgencyLoginFormValues = LoginInput & {
   rememberMe?: boolean;
 };
 
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
 export default function AgencyLoginPage() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const { refetch } = useAuth();
   const { register, handleSubmit, formState: { errors } } = useForm<AgencyLoginFormValues>();
-  const [mounted, setMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const isMounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
 
   useEffect(() => {
-    setMounted(true);
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
@@ -46,7 +58,7 @@ export default function AgencyLoginPage() {
       await refetch();
       router.push('/dashboard');
     },
-    onError: (err: any) => {
+    onError: (err: ApiError) => {
       console.error('Login failed:', err);
       const message = err?.response?.data?.message;
       if (message === 'EMAIL_NOT_VERIFIED') {
@@ -60,11 +72,13 @@ export default function AgencyLoginPage() {
 
   const onSubmit = (data: AgencyLoginFormValues) => {
     setError(null);
-    const { rememberMe, ...payload } = data;
-    loginMutation.mutate(payload);
+    loginMutation.mutate({
+      email: data.email,
+      password: data.password,
+    });
   };
 
-  if (!mounted) return <div className="min-h-screen bg-white" />;
+  if (!isMounted) return <div className="min-h-screen bg-white" />;
 
   return (
     <div className="min-h-screen flex bg-white">
@@ -165,11 +179,11 @@ export default function AgencyLoginPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-5 w-5 mr-2" alt="Google" />
+                <Image src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-5 w-5 mr-2" alt="Google" width={20} height={20} />
                 <span className="text-sm font-medium text-gray-700">{t('login.google')}</span>
               </button>
               <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <img src="https://www.svgrepo.com/show/448234/linkedin.svg" className="h-5 w-5 mr-2" alt="LinkedIn" />
+                <Image src="https://www.svgrepo.com/show/448234/linkedin.svg" className="h-5 w-5 mr-2" alt="LinkedIn" width={20} height={20} />
                 <span className="text-sm font-medium text-gray-700">{t('login.linkedin')}</span>
               </button>
             </div>
@@ -192,10 +206,12 @@ export default function AgencyLoginPage() {
           transition={{ duration: 1.5 }}
           className="absolute inset-0"
         >
-          <img 
+          <Image 
             src="https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop" 
             alt="Modern Office" 
             className="w-full h-full object-cover opacity-40"
+            fill
+            sizes="50vw"
           />
         </motion.div>
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full h-full">

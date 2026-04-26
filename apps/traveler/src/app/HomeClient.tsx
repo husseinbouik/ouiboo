@@ -3,16 +3,21 @@
 import React from 'react';
 import Link from 'next/link';
 import { 
-  Search, MapPin, Calendar, Star, ArrowRight, Compass, Shield, Zap, Heart, 
-  Map as MapIcon, Plane, Camera, Coffee, Mountain, Umbrella, Palmtree
+  MapPin, Calendar, Star, ArrowRight, Compass, Shield, Zap, Heart, Mountain, Palmtree
 } from 'lucide-react';
-import { Button, Badge } from '@ouiboo/ui';
+import { Button } from '@ouiboo/ui';
 import { motion, Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { TripCard } from "@/components/TripCard";
+import type { TripSession, TripTemplate, VerificationStatusType } from '@ouiboo/types';
 
 interface HomeClientProps {
-  featuredTrips: any[];
+  featuredTrips: Array<TripTemplate & {
+    sessions?: TripSession[];
+    agency?: {
+      verificationStatus?: VerificationStatusType;
+    } | null;
+  }>;
 }
 
 const fadeInUp: Variants = {
@@ -116,7 +121,7 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12"
           >
             {featuredTrips.length > 0 ? (
-              featuredTrips.map((trip: any) => (
+              featuredTrips.map((trip) => (
                 <motion.div key={trip.id} variants={fadeInUp}>
                   <TripCard trip={trip} />
                 </motion.div>

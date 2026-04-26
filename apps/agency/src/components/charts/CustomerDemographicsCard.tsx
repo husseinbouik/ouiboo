@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Card, Badge } from '@ouiboo/ui';
+import { Card } from '@ouiboo/ui';
 import { Users, UserCheck, TrendingUp } from 'lucide-react';
 
 export default function CustomerDemographicsCard({ data = { totalCustomers: 0, repeatCustomers: 0, repeatCustomerRate: 0 } }: { data?: { totalCustomers: number; repeatCustomers: number; repeatCustomerRate: number } }) {

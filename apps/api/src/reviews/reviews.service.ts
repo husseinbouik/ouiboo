@@ -237,6 +237,7 @@ export class ReviewsService {
   async moderateReview(reviewId: string, action: 'approve' | 'reject') {
     // TODO: Implement review moderation logic
     // For now, we'll just return the review
+    void action;
     return this.prisma.review.findUnique({
       where: { id: reviewId },
     });

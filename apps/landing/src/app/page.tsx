@@ -8,6 +8,7 @@ import axios from 'axios'
 import { Dialog, Transition, Menu } from '@headlessui/react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from 'next-themes'
+import Image from 'next/image'
 import { Logo } from '@ouiboo/ui'
 
 // --- Helper Components & Types ---
@@ -141,6 +142,12 @@ export default function OuibooLanding() {
     i18n.changeLanguage(lng);
   };
 
+  const getInitials = (name: string) => name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -441,7 +448,7 @@ export default function OuibooLanding() {
                     </motion.div>
                     <motion.div style={{ scale: heroImageScale, rotate: heroImageRotate }} className="mt-16 flow-root sm:mt-24">
                         <div className="-m-2 rounded-xl bg-gray-900/5 p-2 ring-1 ring-inset ring-gray-900/10 lg:-m-4 lg:rounded-2xl lg:p-4">
-                            <img src="/dashboard-hero.png" alt="Ouiboo Dashboard" width={2432} height={1442} className="rounded-md shadow-2xl ring-1 ring-gray-900/10"/>
+                            <Image src="/dashboard-hero.png" alt="Ouiboo Dashboard" width={2432} height={1442} className="rounded-md shadow-2xl ring-1 ring-gray-900/10"/>
                         </div>
                     </motion.div>
                 </div>
@@ -544,7 +551,7 @@ export default function OuibooLanding() {
                   <p className="mt-2 text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('travelers.title')}</p>
                   <p className="mt-6 text-lg leading-8 text-gray-600">{t('travelers.subtitle')}</p>
                   <motion.dl variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mt-10 max-w-xl space-y-6 text-base leading-7 text-gray-600 lg:max-w-none">
-                    {travelerFeatures.map((feature, index) => (
+                    {travelerFeatures.map((feature) => (
                       <motion.div 
                         key={feature.name} 
                         variants={fadeInUp}
@@ -600,7 +607,7 @@ export default function OuibooLanding() {
                   <p className="mt-2 text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('agencies.title')}</p>
                   <p className="mt-6 text-lg leading-8 text-gray-600">{t('agencies.subtitle')}</p>
                   <motion.dl variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mt-10 max-w-xl space-y-6 text-base leading-7 text-gray-600 lg:max-w-none">
-                    {agencyFeatures.map((feature, index) => (
+                    {agencyFeatures.map((feature) => (
                       <motion.div 
                         key={feature.name} 
                         variants={fadeInUp}
@@ -671,7 +678,9 @@ export default function OuibooLanding() {
                                 <p>“{testimonial.quote}”</p>
                             </blockquote>
                             <figcaption className="mt-6 flex items-center gap-x-4">
-                                <img className="h-12 w-12 rounded-full bg-gray-50 object-cover" src={`https://ui-avatars.com/api/?name=${testimonial.author.replace(' ', '+')}&background=1E3A8A&color=fff`} alt={testimonial.author} />
+                                <span className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-deep-blue text-sm font-bold text-white shadow-sm" aria-hidden="true">
+                                  {getInitials(testimonial.author)}
+                                </span>
                                 <div>
                                     <div className="font-semibold text-deep-blue">{testimonial.author}</div>
                                     <div className="text-sm text-gray-600">{testimonial.role}</div>

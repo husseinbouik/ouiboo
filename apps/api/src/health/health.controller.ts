@@ -10,7 +10,7 @@ export class HealthController {
         let dbStatus = 'ok';
         try {
             await this.db.$queryRaw`SELECT 1`;
-        } catch (_e) {
+        } catch {
             dbStatus = 'unhealthy';
         }
 
@@ -27,7 +27,7 @@ export class HealthController {
         try {
             await this.db.$queryRaw`SELECT 1`;
             return { status: 'ok' };
-        } catch (_error) {
+        } catch {
             throw new ServiceUnavailableException('Database unreachable');
         }
     }

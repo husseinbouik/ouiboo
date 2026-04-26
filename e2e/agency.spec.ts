@@ -17,4 +17,18 @@ test.describe('agency launch flow', () => {
     await expect(page.getByText(/add your bank details before requesting a payout/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /request payout/i })).toBeDisabled();
   });
+
+  test('agency can inspect proof but not finalize bank-transfer verification', async ({ page }) => {
+    await page.goto('/dashboard/bookings', { waitUntil: 'domcontentloaded' });
+
+    await expect(page.getByRole('heading', { name: /booking manager/i })).toBeVisible();
+    await expect(page.getByText(/loading bookings/i)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /inspect proof/i })).toBeVisible();
+    await page.getByRole('button', { name: /inspect proof/i }).click();
+
+    await expect(page.getByRole('heading', { name: /review payment proof/i })).toBeVisible();
+    await expect(page.getByText(/admin finance review/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /approve payment/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /reject payment/i })).toHaveCount(0);
+  });
 });

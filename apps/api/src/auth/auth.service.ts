@@ -26,7 +26,8 @@ export class AuthService {
                 // Explicit code so frontends can show a friendly message
                 throw new UnauthorizedException('EMAIL_NOT_VERIFIED');
             }
-            const { password, ...result } = user;
+            const result = { ...user };
+            delete result.password;
             return result;
         }
         return null;
@@ -109,17 +110,19 @@ export class AuthService {
             throw error;
         }
 
-        // Send OTP email
-        try {
-            const html = this.emailService.getOTPTemplate(otp);
-            await this.emailService.sendMail(dto.email, 'Verify your Ouiboo account', html);
-        } catch (error) {
-            // Log the error but don't fail registration - user can request OTP resend
-            console.error(`Failed to send OTP email during registration for ${dto.email}:`, error);
-            // Still allow registration to complete - user can resend OTP
-        }
+        // Do not block signup on SMTP. If sending fails, users can request a resend.
+        void this.sendRegistrationOtp(dto.email, otp);
 
         return this.login(user); // Still return tokens so they can stay logged in during verification
+    }
+
+    private async sendRegistrationOtp(email: string, otp: string) {
+        try {
+            const html = this.emailService.getOTPTemplate(otp);
+            await this.emailService.sendMail(email, 'Verify your Ouiboo account', html);
+        } catch (error) {
+            console.error(`Failed to send OTP email during registration for ${email}:`, error);
+        }
     }
 
     async verifyEmail(email: string, otp: string) {
@@ -322,7 +325,7 @@ export class AuthService {
                     role: user.role,
                 },
             };
-        } catch (e) {
+        } catch {
             throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
         }
     }

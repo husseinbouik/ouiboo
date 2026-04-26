@@ -245,7 +245,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
     });
 
     it('Delete review', async () => {
-        const { traveler, agencyProfile, adminUser } = await seedTestData();
+        const { traveler, agencyProfile } = await seedTestData();
         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Delete', status: 'ACTIVE' } as any });
         const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 10, availableSeats: 10 } as any });
         const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'COMPLETED' } as any });
@@ -309,7 +309,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
 
     // ===== Wishlist tests =====
     it('Add trip to wishlist and prevent duplicates', async () => {
-        const { traveler, agencyProfile } = await seedTestData();
+        const { agencyProfile } = await seedTestData();
         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Wish Trip', status: 'ACTIVE' } as any });
 
         await request(app.getHttpServer()).post(`/users/wishlist/${template.id}`).set('Authorization', 'Bearer traveler').expect(201);
@@ -317,7 +317,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
     });
 
     it('Remove trip from wishlist', async () => {
-        const { traveler, agencyProfile } = await seedTestData();
+        const { agencyProfile } = await seedTestData();
         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Wish Trip 2', status: 'ACTIVE' } as any });
 
         await request(app.getHttpServer()).post(`/users/wishlist/${template.id}`).set('Authorization', 'Bearer traveler').expect(201);
@@ -352,7 +352,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
     });
 
     it('Preferences are user-specific', async () => {
-        const { traveler } = await seedTestData();
+        await seedTestData();
         const other = await db.user.create({ data: { id: 'trav-2', email: 't2@test.com', name: 'T2', password: 'x', role: UserRole.Traveler } as any });
 
         await request(app.getHttpServer()).patch('/users/notifications/preferences').set('Authorization', 'Bearer traveler').send({ smsNotifications: true }).expect(200);
@@ -362,8 +362,8 @@ describe('User features E2E (user-features.e2e-spec)', () => {
 
     // ===== Agency profile tests =====
     it('Update agency profile (company info and bank details) and verification read-only', async () => {
-        const { agencyUser, agencyProfile } = await seedTestData();
-        const res = await request(app.getHttpServer()).patch('/agency/profile').set('Authorization', 'Bearer agency').send({ companyName: 'New Name', bio: 'Updated bio', logo: 'https://example.com/logo.png', bankDetails: 'IBAN: MA123' }).expect(200);
+        const { agencyProfile } = await seedTestData();
+        await request(app.getHttpServer()).patch('/agency/profile').set('Authorization', 'Bearer agency').send({ companyName: 'New Name', bio: 'Updated bio', logo: 'https://example.com/logo.png', bankDetails: 'IBAN: MA123' }).expect(200);
         const updated = await db.agencyProfile.findUnique({ where: { id: agencyProfile.id } });
         expect(updated?.companyName).toBe('New Name');
         expect(updated?.rib || updated?.bankDetails || '').toBeDefined();
@@ -375,10 +375,10 @@ describe('User features E2E (user-features.e2e-spec)', () => {
     });
 
     it('Tenant isolation for agency updates', async () => {
-        const { agencyProfile } = await seedTestData();
+        await seedTestData();
         // try to update another agency
         const other = await db.user.create({ data: { id: 'agency-2', email: 'a2@test.com', name: 'A2', password: 'x', role: UserRole.Agency } as any });
-        const otherProfile = await db.agencyProfile.create({ data: { id: 'agency-profile-2', userId: other.id, companyName: 'Other' } as any });
+        await db.agencyProfile.create({ data: { id: 'agency-profile-2', userId: other.id, companyName: 'Other' } as any });
 
         await request(app.getHttpServer()).patch('/agency/profile').set('Authorization', 'Bearer agency-12345').send({ companyName: 'ShouldFail' }).expect(403);
     });
@@ -390,7 +390,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
     });
 
     it('Users can only update their own data', async () => {
-        const { traveler } = await seedTestData();
+        await seedTestData();
         const other = await db.user.create({ data: { id: 'trav-3', email: 't3@test.com', name: 'T3', password: 'x', role: UserRole.Traveler } as any });
         await request(app.getHttpServer()).patch('/users/profile').set('Authorization', 'Bearer traveler').send({ id: other.id, name: 'Hacker' }).expect(403);
     });
@@ -403,7 +403,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
 
     // ===== Integration: complete user journey (smoke) =====
     it('Complete user journey: register -> profile -> avatar -> wishlist -> book -> review', async () => {
-        const { traveler, agencyProfile } = await seedTestData();
+        const { agencyProfile } = await seedTestData();
         const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Journey Trip', status: 'ACTIVE' } as any });
         const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 5, availableSeats: 5 } as any });
 

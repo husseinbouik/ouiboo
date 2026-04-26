@@ -191,7 +191,7 @@ export default function AgencySignupPage() {
               disabled={signupMutation.isPending}
               className="w-full h-12 bg-deep-blue hover:bg-blue-900 text-white font-semibold rounded-lg transition-colors duration-200"
             >
-              {signupMutation.isPending ? 'Creating account...' : t('signup.createAccount')} 
+              {signupMutation.isPending ? t('signup.creatingAccount', 'Creating account...') : t('signup.createAccount')} 
               {!signupMutation.isPending && <ArrowRight className="ml-2 h-5 w-5 inline" />}
             </Button>
 
@@ -206,11 +206,11 @@ export default function AgencySignupPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-5 w-5 mr-2" alt="Google" />
+                <span className="mr-2 flex h-5 w-5 items-center justify-center rounded-full bg-white text-sm font-bold text-blue-600 shadow-sm ring-1 ring-gray-200">G</span>
                 <span className="text-sm font-medium text-gray-700">{t('signup.google')}</span>
               </button>
               <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <img src="https://www.svgrepo.com/show/448234/linkedin.svg" className="h-5 w-5 mr-2" alt="LinkedIn" />
+                <span className="mr-2 flex h-5 w-5 items-center justify-center rounded bg-[#0A66C2] text-xs font-bold text-white">in</span>
                 <span className="text-sm font-medium text-gray-700">{t('signup.linkedin')}</span>
               </button>
             </div>
@@ -231,14 +231,11 @@ export default function AgencySignupPage() {
           initial={{ scale: 1.1, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 1.5 }}
-          className="absolute inset-0"
-        >
-          <img 
-            src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2070&auto=format&fit=crop" 
-            alt="Team Collaboration" 
-            className="w-full h-full object-cover opacity-40"
-          />
-        </motion.div>
+          className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.24),transparent_30%),radial-gradient(circle_at_80%_10%,rgba(249,115,22,0.35),transparent_28%),linear-gradient(135deg,#0f2a5f_0%,#1e3a8a_55%,#0f172a_100%)]"
+        />
+        <div className="absolute -left-24 top-16 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+        <div className="absolute bottom-16 right-10 h-96 w-96 rounded-full bg-orange-400/20 blur-3xl" />
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.08)_0,rgba(255,255,255,0.08)_1px,transparent_1px,transparent_32px)]" />
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full h-full">
           <div className="flex justify-end">
              <div className="text-3xl font-bold tracking-tight">Ouiboo</div>
@@ -249,9 +246,9 @@ export default function AgencySignupPage() {
             transition={{ delay: 0.8, duration: 0.8 }}
             className="mb-12"
           >
-            <h2 className="text-4xl font-bold mb-4 leading-tight">Join the future of travel.</h2>
+            <h2 className="text-4xl font-bold mb-4 leading-tight">{t('signup.heroTitle', 'Join the future of travel.')}</h2>
             <p className="text-lg text-gray-200 max-w-md">
-              Connect with millions of travelers and manage your agency with ease.
+              {t('signup.heroSubtitle', 'Connect with millions of travelers and manage your agency with ease.')}
             </p>
           </motion.div>
         </div>

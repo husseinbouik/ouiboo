@@ -69,9 +69,10 @@ export class StripePaymentProvider implements PaymentProvider {
 
   async verifyPayment(
     transactionId: string,
-    _bookingId: string,
+    bookingId: string,
   ): Promise<PaymentVerificationResult> {
     try {
+      void bookingId;
       const session = await this.stripe.checkout.sessions.retrieve(
         transactionId,
       );

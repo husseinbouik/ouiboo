@@ -18,14 +18,16 @@ interface Trip {
   images: string[];
   durationDays: number;
   startLocation: string;
-  sessions: any[];
+  sessions: Array<{
+    id: string;
+  }>;
 }
 
 async function getAgency(id: string): Promise<AgencyPublicProfile | null> {
   try {
     const res = await apiClient.get(`/agencies/${id}/public`);
     return res.data;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -33,7 +35,7 @@ async function getAgency(id: string): Promise<AgencyPublicProfile | null> {
 async function getAgencyTrips(agencyId: string): Promise<Trip[]> {
   try {
     const res = await apiClient.get(`/trips?agencyId=${agencyId}&status=ACTIVE`);
-    return res.data;
+    return Array.isArray(res.data?.data) ? res.data.data : [];
   } catch (error) {
     console.error(error);
     return [];

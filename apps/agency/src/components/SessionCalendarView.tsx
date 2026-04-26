@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import {
-  MoreVertical,
   Trash2,
   Edit2,
   Users,
@@ -25,7 +24,7 @@ interface Session {
   status: 'OPEN' | 'FULL' | 'CANCELLED';
   currency: string;
   cancellationReason?: string | null;
-  bookings?: any[];
+  bookings?: Array<{ id: string }>;
 }
 
 interface SessionCalendarViewProps {
@@ -68,13 +67,6 @@ export function SessionCalendarView({
       month: 'short',
       day: 'numeric',
       year: 'numeric'
-    });
-  };
-
-  const formatDateShort = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
     });
   };
 

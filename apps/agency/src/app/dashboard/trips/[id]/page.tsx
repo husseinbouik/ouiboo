@@ -1,19 +1,17 @@
 'use client';
 
+import Image from 'next/image';
 import React, { useState } from 'react';
 import { 
   Calendar as CalendarIcon, 
   Plus, 
-  Users, 
   MapPin, 
   Clock, 
   ChevronLeft,
   Settings,
-  MoreVertical,
   Trash,
   CheckCircle2,
   AlertCircle,
-  X,
   Grid3x3,
   List
 } from 'lucide-react';
@@ -21,23 +19,53 @@ import {
   Button, 
   Card, 
   CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription,
-  Badge,
-  Input,
-  Label
+  Badge
 } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
 import { BulkSessionCreationModal } from '@/components/BulkSessionCreationModal';
 import { SessionCalendarView } from '@/components/SessionCalendarView';
 import { EditSessionModal } from '@/components/EditSessionModal';
 import { DeleteConfirmation } from '@/components/DeleteConfirmation';
+import { TripStatus, type SessionStatusType, type TripStatusType } from '@ouiboo/types';
+
+type SessionItem = {
+  id: string;
+  startDate: string;
+  endDate: string;
+  price: number;
+  deposit: number;
+  totalSeats: number;
+  availableSeats: number;
+  status: SessionStatusType;
+  currency: string;
+  cancellationReason?: string | null;
+};
+
+type TripDetail = {
+  id: string;
+  title: string;
+  category: string;
+  status: TripStatusType;
+  startLocation: string;
+  durationDays: number;
+  durationNights: number;
+  description: string;
+  images?: string[];
+  sessions?: SessionItem[];
+};
+
+type BulkSessionInput = {
+  startDate: string;
+  endDate: string;
+  price: number;
+  deposit?: number;
+  totalSeats: number;
+  currency: string;
+};
 
 function TripDetailSkeleton() {
   return (
@@ -54,14 +82,14 @@ function TripDetailSkeleton() {
 export default function TripDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = React.use(paramsPromise);
   const [showBulkSessionModal, setShowBulkSessionModal] = useState(false);
-  const [editingSession, setEditingSession] = useState<any>(null);
-  const [deletingSession, setDeletingSession] = useState<any>(null);
+  const [editingSession, setEditingSession] = useState<SessionItem | null>(null);
+  const [deletingSession, setDeletingSession] = useState<SessionItem | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { data: trip, isLoading, error } = useQuery({
+  const { data: trip, isLoading, error } = useQuery<TripDetail>({
     queryKey: ['trip', params.id],
     queryFn: async () => {
       const response = await apiClient.get(`/trips/${params.id}`);
@@ -80,7 +108,7 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async (status: string) => {
+    mutationFn: async (status: TripStatusType) => {
       await apiClient.patch(`/trips/${params.id}`, { status });
     },
     onSuccess: () => {
@@ -91,7 +119,7 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
 
   // Bulk session creation
   const bulkCreateSessionMutation = useMutation({
-    mutationFn: async (sessions: any[]) => {
+    mutationFn: async (sessions: BulkSessionInput[]) => {
       const results = await Promise.all(
         sessions.map(session =>
           apiClient.post(`/trips/${params.id}/sessions`, {
@@ -114,7 +142,7 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
 
   // Edit session
   const editSessionMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: Partial<SessionItem>) => {
       await apiClient.patch(`/trips/${params.id}/sessions/${editingSession.id}`, data);
     },
     onSuccess: () => {
@@ -141,20 +169,20 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
 
   const handleToggleStatus = () => {
     if (!trip) return;
-    const newStatus = trip.status === 'ACTIVE' ? 'DRAFT' : 'ACTIVE';
+    const newStatus = trip.status === TripStatus.Active ? TripStatus.Draft : TripStatus.Active;
     updateStatusMutation.mutate(newStatus);
   };
 
-  const handleEditSession = (session: any) => {
+  const handleEditSession = (session: SessionItem) => {
     setEditingSession(session);
   };
 
-  const handleDeleteSession = (session: any) => {
+  const handleDeleteSession = (session: SessionItem) => {
     setDeletingSession(session);
     setDeleteConfirmOpen(true);
   };
 
-  const handleEditSessionSubmit = (data: any) => {
+  const handleEditSessionSubmit = (data: Partial<SessionItem>) => {
     editSessionMutation.mutate(data);
   };
 
@@ -176,13 +204,13 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
             size="sm" 
             className={cn(
                 "gap-2",
-                trip.status === 'ACTIVE' ? "text-emerald-600 border-emerald-100 bg-emerald-50/50" : "text-slate-600 border-slate-100 bg-slate-50/50"
+                trip.status === TripStatus.Active ? "text-emerald-600 border-emerald-100 bg-emerald-50/50" : "text-slate-600 border-slate-100 bg-slate-50/50"
             )}
             onClick={handleToggleStatus}
             disabled={updateStatusMutation.isPending}
           >
             <CheckCircle2 className="h-4 w-4" /> 
-            {updateStatusMutation.isPending ? 'Updating...' : (trip.status === 'ACTIVE' ? 'Set to Draft' : 'Activate Trip')}
+            {updateStatusMutation.isPending ? 'Updating...' : (trip.status === TripStatus.Active ? 'Set to Draft' : 'Activate Trip')}
           </Button>
           <Link href={`/dashboard/trips/${params.id}/edit`}>
             <Button variant="outline" size="sm" className="gap-2">
@@ -206,7 +234,7 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
         <div className="lg:col-span-1 space-y-6">
           <Card className="border-none shadow-sm overflow-hidden dark:bg-slate-900 border dark:border-slate-800">
              <div className="h-48 bg-gray-200 dark:bg-slate-800">
-                <img src={trip.images?.[0] || "https://images.unsplash.com/photo-1539650116574-8efeb43e2750?q=80&w=2070&auto=format&fit=crop"} alt="Trip" className="w-full h-full object-cover" />
+                <Image src={trip.images?.[0] || "https://images.unsplash.com/photo-1539650116574-8efeb43e2750?q=80&w=2070&auto=format&fit=crop"} alt="Trip" className="w-full h-full object-cover" width={800} height={400} />
              </div>
              <CardContent className="p-6 space-y-4">
                 <div>
@@ -235,7 +263,7 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
                 <span>Verification Required</span>
              </div>
              <p className="text-sm text-blue-700 dark:text-blue-300 leading-relaxed">
-                Your agency verification is pending. You can create templates and sessions, but they won't be visible to travelers until your profile is verified.
+                Your agency verification is pending. You can create templates and sessions, but they will not be visible to travelers until your profile is verified.
              </p>
              <Link href="/dashboard/onboarding" className="inline-block text-sm font-bold text-blue-900 dark:text-blue-400 underline mt-2">
                 Check Verification Status

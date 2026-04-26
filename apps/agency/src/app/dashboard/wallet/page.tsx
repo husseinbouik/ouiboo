@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -85,13 +85,12 @@ export default function WalletPage() {
 
   const wallet = statsData?.wallet || { availableBalance: 0, pendingBalance: 0 };
   const availableBalance = Number(wallet.availableBalance || 0);
-  const hasBankDetails = bankDetails.trim().length > 0;
-
-  useEffect(() => {
-    if (!bankDetails && user?.agencyProfile?.bankDetails) {
-      setBankDetails(user.agencyProfile.bankDetails);
-    }
-  }, [bankDetails, user?.agencyProfile?.bankDetails]);
+  const initialBankDetails = useMemo(
+    () => user?.agencyProfile?.bankDetails ?? '',
+    [user?.agencyProfile?.bankDetails],
+  );
+  const effectiveBankDetails = bankDetails || initialBankDetails;
+  const hasBankDetails = effectiveBankDetails.trim().length > 0;
 
   const payoutMutation = useMutation({
     mutationFn: async (payload: { amount: number; bankDetails: string }) => {
@@ -128,7 +127,7 @@ export default function WalletPage() {
       return;
     }
 
-    payoutMutation.mutate({ amount: amountValue, bankDetails: bankDetails.trim() });
+    payoutMutation.mutate({ amount: amountValue, bankDetails: effectiveBankDetails.trim() });
   };
 
   const handleScrollToRequest = () => {
@@ -270,7 +269,7 @@ export default function WalletPage() {
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Bank details for this payout</Label>
                   <Textarea
-                    value={bankDetails}
+                    value={effectiveBankDetails}
                     onChange={(event) => setBankDetails(event.target.value)}
                     placeholder="Add your RIB and bank name"
                     className="min-h-[120px] dark:bg-slate-800 dark:border-slate-700 text-xs font-medium"

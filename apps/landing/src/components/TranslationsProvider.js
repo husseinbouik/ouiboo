@@ -2,30 +2,32 @@
 'use client';
 
 import { I18nextProvider } from 'react-i18next';
-import initTranslations from '../i18n';
+import initTranslations, { getInitialLanguage } from '../i18n';
 import { createInstance } from 'i18next';
 import { useEffect, useState } from 'react';
 import LoadingSpinner from './LoadingSpinner'; // Import the new component
+
+const syncDocumentLanguage = (language) => {
+  const lang = language?.split('-')[0] || 'en';
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+};
 
 export default function TranslationsProvider({ children, locale = 'en' }) {
   const [i18n, setI18n] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let instance;
+
     const initializeI18n = async () => {
       try {
-        // Check localStorage for saved language preference first
-        // This ensures the user's choice persists across page refreshes
-        let initialLocale = locale;
-        if (typeof window !== 'undefined') {
-          const savedLang = localStorage.getItem('i18nextLng');
-          if (savedLang && ['en', 'fr', 'ar'].includes(savedLang)) {
-            initialLocale = savedLang;
-          }
-        }
+        const initialLocale = getInitialLanguage(locale);
         
-        const instance = createInstance();
+        instance = createInstance();
         await initTranslations(instance, initialLocale);
+        syncDocumentLanguage(instance.language);
+        instance.on('languageChanged', syncDocumentLanguage);
         setI18n(instance);
       } catch (error) {
         console.error('Failed to initialize i18n:', error);
@@ -35,6 +37,10 @@ export default function TranslationsProvider({ children, locale = 'en' }) {
     };
 
     initializeI18n();
+
+    return () => {
+      instance?.off('languageChanged', syncDocumentLanguage);
+    };
   }, [locale]);
 
   if (isLoading) {

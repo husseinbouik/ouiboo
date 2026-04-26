@@ -2,7 +2,17 @@ import { format } from 'date-fns';
 
 const BOM = '\uFEFF';
 
-function escapeField(value: any) {
+type CsvScalar = string | number | boolean | null | undefined;
+
+type TopTripCsvRow = {
+  title: string;
+  bookings: number;
+  revenue: number;
+  avgRating: number;
+  reviewCount: number;
+};
+
+function escapeField(value: CsvScalar) {
   if (value === null || value === undefined) return '';
   const s = String(value);
   if (s.includes(',') || s.includes('\n') || s.includes('"')) {
@@ -30,9 +40,9 @@ export function exportRevenueTrendsToCSV(data: Array<{ date: string; amount: num
   downloadCSV(body, filename);
 }
 
-export function exportTopTripsToCSV(data: Array<any>, filename = 'top-trips.csv') {
+export function exportTopTripsToCSV(data: TopTripCsvRow[], filename = 'top-trips.csv') {
   const headers = ['Rank', 'Trip Title', 'Bookings', 'Revenue', 'AvgRating', 'Reviews'];
-  const rows = data.map((t: any, idx: number) => [idx + 1, t.title, t.bookings, t.revenue, t.avgRating, t.reviewCount]);
+  const rows = data.map((t, idx) => [idx + 1, t.title, t.bookings, t.revenue, t.avgRating, t.reviewCount]);
   const body = [headers.join(','), ...rows.map(r => r.map(escapeField).join(','))].join('\n');
   downloadCSV(body, filename);
 }

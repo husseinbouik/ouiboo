@@ -12,6 +12,14 @@ interface ReviewFormProps {
   onSuccess?: () => void;
 }
 
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
 export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
   const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
@@ -36,7 +44,7 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
         onSuccess?.();
       }, 2000);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       setErrorMessage(error?.response?.data?.message || 'Failed to submit review');
     }
   });

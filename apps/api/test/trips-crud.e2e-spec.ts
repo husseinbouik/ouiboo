@@ -243,7 +243,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
     });
 
     it('Agency creates trip template without itinerary', async () => {
-        const { agency1 } = await seedTestData();
+        await seedTestData();
 
         const res = await request(app.getHttpServer())
             .post('/trips')
@@ -437,7 +437,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         const template = await createTripTemplate(agency1.id);
         const session = await createTripSession(template.id);
 
-        const booking = await db.booking.create({
+        await db.booking.create({
             data: {
                 sessionId: session.id,
                 travelerId: 'traveler-user-123',

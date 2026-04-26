@@ -6,7 +6,6 @@ import { DatabaseModule } from '../src/database/database.module';
 import { EmailModule } from '../src/email/email.module';
 import { DatabaseService } from '../src/database/database.service';
 import { EmailService } from '../src/email/email.service';
-import * as jwt from 'jsonwebtoken';
 
 jest.setTimeout(60_000);
 
@@ -59,10 +58,6 @@ describe('Auth - Complete E2E (auth-complete.e2e-spec)', () => {
         await db.paymentProof.deleteMany();
         await db.booking.deleteMany();
         await db.user.deleteMany();
-    }
-
-    function decodeJwt(token: string) {
-        return jwt.decode(token) as any;
     }
 
     it('Register TRAVELER and verify OTP flow', async () => {

@@ -1,14 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
+import React, { useState, useSyncExternalStore } from 'react';
 import { 
   MapPin, 
   Clock, 
   Plus, 
   Image as ImageIcon,
   ChevronLeft,
-  Calendar,
-  DollarSign,
   Info,
   X,
   Check
@@ -23,6 +22,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
+import { TripStatus } from '@ouiboo/types';
+
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string | string[];
+    };
+  };
+  message?: string;
+};
 
 export default function CreateTripPage() {
   const { t } = useTranslation();
@@ -30,11 +39,11 @@ export default function CreateTripPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const isMounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
 
   const { register, handleSubmit, control, watch, setValue, trigger, formState: { errors } } = useForm<CreateTripInput>({
     resolver: zodResolver(CreateTripTemplateSchema),
@@ -44,30 +53,30 @@ export default function CreateTripPage() {
       exclusions: [],
       checklist: [],
       images: [],
-      status: 'DRAFT',
+      status: TripStatus.Draft,
       durationDays: 1,
       durationNights: 0,
-    } as any
+    }
   });
 
   const { fields: inclusionFields, append: appendInclusion, remove: removeInclusion } = useFieldArray({
     control,
-    name: 'inclusions' as any
+    name: 'inclusions'
   });
 
   const { fields: exclusionFields, append: appendExclusion, remove: removeExclusion } = useFieldArray({
     control,
-    name: 'exclusions' as any
+    name: 'exclusions'
   });
 
   const { fields: checklistFields, append: appendChecklistItem, remove: removeChecklistItem } = useFieldArray({
     control,
-    name: 'checklist' as any
+    name: 'checklist'
   });
 
-  const { fields: itineraryFields, append: appendDay, remove: removeDay } = useFieldArray({
+  const { fields: itineraryFields, append: appendDay } = useFieldArray({
     control,
-    name: 'itinerary' as any
+    name: 'itinerary'
   });
 
   const watchedImages = watch('images') || [];
@@ -110,9 +119,10 @@ export default function CreateTripPage() {
       
       const currentImages = watch('images') || [];
       setValue('images', [...currentImages, imageUrl], { shouldValidate: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
       console.error('Upload failed:', error);
-      const message = error.response?.data?.message || error.message || 'Upload failed';
+      const message = apiError.response?.data?.message || apiError.message || 'Upload failed';
       alert(`Upload failed: ${Array.isArray(message) ? message.join(', ') : message}`);
     } finally {
       setUploading(false);
@@ -120,12 +130,12 @@ export default function CreateTripPage() {
   };
 
   const nextStep = async () => {
-    let fieldsToValidate: any[] = [];
+    let fieldsToValidate: Array<keyof CreateTripInput | 'itinerary'> = [];
     if (step === 1) fieldsToValidate = ['title', 'description', 'category', 'startLocation', 'durationDays', 'durationNights'];
     if (step === 2) fieldsToValidate = ['itinerary'];
     if (step === 3) fieldsToValidate = ['images'];
     
-    const isValid = await trigger(fieldsToValidate as any);
+    const isValid = await trigger(fieldsToValidate);
     if (isValid) {
       if (step === 1 && itineraryFields.length === 0) {
         // Initialize itinerary based on durationDays
@@ -150,7 +160,7 @@ export default function CreateTripPage() {
     // Clean up itinerary data to remove IDs and ensure proper types
     const cleanedData = {
       ...data,
-      itinerary: data.itinerary?.map((day: any) => ({
+      itinerary: data.itinerary?.map((day) => ({
         dayNumber: Number(day.dayNumber),
         title: day.title,
         description: day.description,
@@ -159,10 +169,10 @@ export default function CreateTripPage() {
     };
 
     console.log('Finalizing trip submission:', cleanedData);
-    createTripMutation.mutate(cleanedData as any);
+    createTripMutation.mutate(cleanedData);
   };
 
-  if (!mounted) return null;
+  if (!isMounted) return null;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in slide-in-from-bottom duration-500 pb-12">
@@ -265,16 +275,16 @@ export default function CreateTripPage() {
                         <div className="grid grid-cols-1 gap-4">
                           <div className="space-y-2">
                             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Title</label>
-                            <Input {...register(`itinerary.${index}.title` as any)} placeholder="e.g. Arrival and City Tour" className="h-12 dark:bg-slate-800 dark:border-slate-700" />
+                            <Input {...register(`itinerary.${index}.title`)} placeholder="e.g. Arrival and City Tour" className="h-12 dark:bg-slate-800 dark:border-slate-700" />
                           </div>
                           <div className="space-y-2">
                             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">What happens on this day?</label>
                             <textarea 
-                              {...register(`itinerary.${index}.description` as any)}
+                              {...register(`itinerary.${index}.description`)}
                               className="w-full h-24 p-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-deep-blue/5 focus:border-deep-blue dark:focus:border-blue-500 transition-all text-gray-900 dark:text-gray-100"
                               placeholder="Describe the plan for the day..."
                             ></textarea>
-                            <input type="hidden" {...register(`itinerary.${index}.dayNumber` as any, { valueAsNumber: true })} />
+                            <input type="hidden" {...register(`itinerary.${index}.dayNumber`, { valueAsNumber: true })} />
                           </div>
                         </div>
                       </CardContent>
@@ -299,7 +309,7 @@ export default function CreateTripPage() {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {watchedImages.map((img, idx) => (
                         <div key={idx} className="relative aspect-video bg-gray-100 dark:bg-slate-800 rounded-xl overflow-hidden group border dark:border-slate-700">
-                          <img src={img} className="w-full h-full object-cover" alt="" />
+                          <Image src={img} className="w-full h-full object-cover" alt="" fill sizes="(min-width: 768px) 33vw, 50vw" />
                           <button 
                             type="button"
                             onClick={() => {
@@ -354,7 +364,7 @@ export default function CreateTripPage() {
                     <div className="space-y-4">
                       {inclusionFields.map((field, index) => (
                         <div key={field.id} className="flex gap-2">
-                          <Input {...register(`inclusions.${index}` as any)} placeholder="e.g. Comfy transport" className="dark:bg-slate-800" />
+                          <Input {...register(`inclusions.${index}`)} placeholder="e.g. Comfy transport" className="dark:bg-slate-800" />
                           <Button type="button" variant="ghost" size="icon" onClick={() => removeInclusion(index)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
                             <X className="h-4 w-4" />
                           </Button>
@@ -381,7 +391,7 @@ export default function CreateTripPage() {
                     <div className="space-y-4">
                       {exclusionFields.map((field, index) => (
                         <div key={field.id} className="flex gap-2">
-                          <Input {...register(`exclusions.${index}` as any)} placeholder="e.g. Safari Nature (150 Dhs)" className="dark:bg-slate-800" />
+                          <Input {...register(`exclusions.${index}`)} placeholder="e.g. Safari Nature (150 Dhs)" className="dark:bg-slate-800" />
                           <Button type="button" variant="ghost" size="icon" onClick={() => removeExclusion(index)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
                             <X className="h-4 w-4" />
                           </Button>
@@ -408,7 +418,7 @@ export default function CreateTripPage() {
                     <div className="space-y-4">
                       {checklistFields.map((field, index) => (
                         <div key={field.id} className="flex gap-2">
-                          <Input {...register(`checklist.${index}` as any)} placeholder="e.g. Your smile 😊" className="dark:bg-slate-800" />
+                          <Input {...register(`checklist.${index}`)} placeholder="e.g. Your smile" className="dark:bg-slate-800" />
                           <Button type="button" variant="ghost" size="icon" onClick={() => removeChecklistItem(index)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
                             <X className="h-4 w-4" />
                           </Button>
@@ -479,7 +489,7 @@ export default function CreateTripPage() {
                 <Card className="border-none shadow-2xl overflow-hidden rounded-2xl dark:bg-slate-900 dark:border-slate-800 group">
                    <div className="relative h-48 bg-gray-200 dark:bg-slate-800">
                       {watchedImages[0] ? (
-                        <img src={watchedImages[0]} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
+                        <Image src={watchedImages[0]} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" fill sizes="(min-width: 1024px) 20vw, 100vw" />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-gray-400 dark:text-slate-600">
                            <ImageIcon className="h-12 w-12" />

@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import Image from 'next/image';
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
@@ -10,24 +11,59 @@ import {
   Users, 
   Check, 
   ChevronLeft, 
-  Share2, 
-  Heart,
-  Calendar,
   ShieldCheck,
   TrendingUp,
   Star,
-  Info,
-  ArrowRight,
   X,
   ClipboardList
 } from 'lucide-react';
-import { Button, Card, CardContent, Badge } from '@ouiboo/ui';
+import { Button, Badge } from '@ouiboo/ui';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
 import { useAuth } from '@/components/AuthContext';
 import { ReviewList } from '@/components/ReviewList';
+import { SessionStatus, type SessionStatusType } from '@ouiboo/types';
+
+type TripDay = {
+  dayNumber: number;
+  title?: string;
+  description?: string;
+  activities?: string[];
+};
+
+type TripSession = {
+  id: string;
+  startDate: string;
+  endDate: string;
+  price: number;
+  deposit: number;
+  availableSeats: number;
+  status: SessionStatusType;
+};
+
+type TripDetails = {
+  id: string;
+  title: string;
+  category?: string;
+  startLocation: string;
+  durationDays: number;
+  durationNights: number;
+  description: string;
+  images?: string[];
+  sessions?: TripSession[];
+  itinerary?: TripDay[];
+  inclusions?: string[];
+  exclusions?: string[];
+  checklist?: string[];
+};
+
+type ReviewStats = {
+  averageRating?: number;
+  totalReviews: number;
+  distribution?: Record<number, number>;
+};
 
 export default function TripDetailsPage() {
   const { id } = useParams();
@@ -38,7 +74,7 @@ export default function TripDetailsPage() {
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [activeImage, setActiveImage] = useState(0);
 
-  const { data: trip, isLoading } = useQuery({
+  const { data: trip, isLoading } = useQuery<TripDetails>({
     queryKey: ['trip', tripId],
     enabled: !!tripId,
     queryFn: async () => {
@@ -47,7 +83,7 @@ export default function TripDetailsPage() {
     }
   });
 
-  const { data: reviewStats } = useQuery({
+  const { data: reviewStats } = useQuery<ReviewStats>({
     queryKey: ['trip-reviews-stats', tripId],
     enabled: !!tripId,
     queryFn: async () => {
@@ -75,8 +111,10 @@ export default function TripDetailsPage() {
     </div>
   );
 
-  const openSessions = trip.sessions?.filter((s: any) => s.status === 'OPEN' && new Date(s.startDate) > new Date()) || [];
-  const minPrice = openSessions.length > 0 ? Math.min(...openSessions.map((s: any) => s.price)) : '---';
+  const openSessions = trip.sessions?.filter(
+    (session) => session.status === SessionStatus.Open && new Date(session.startDate) > new Date(),
+  ) || [];
+  const minPrice = openSessions.length > 0 ? Math.min(...openSessions.map((session) => session.price)) : '---';
 
   return (
     <div className="min-h-screen bg-background pb-32 font-sans text-foreground overflow-hidden relative">
@@ -101,14 +139,16 @@ export default function TripDetailsPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="lg:col-span-7 relative h-[400px] lg:h-full rounded-[2rem] overflow-hidden shadow-2xl shadow-black/5 dark:shadow-black/20 group border border-border/50"
             >
-                <img 
+                <Image 
                     src={trip.images?.[activeImage] || 'https://images.unsplash.com/photo-1489749798305-4fea3ae63d43'} 
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
                     alt={trip.title} 
+                    fill
+                    sizes="(min-width: 1024px) 60vw, 100vw"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
                 <div className="absolute bottom-6 left-6 flex gap-2">
-                    {trip.images?.map((_: any, idx: number) => (
+                    {trip.images?.map((_, idx: number) => (
                         <button 
                             key={idx}
                             onClick={() => setActiveImage(idx)}
@@ -128,7 +168,7 @@ export default function TripDetailsPage() {
             >
                 {trip.images?.slice(1, 4).map((img: string, idx: number) => (
                     <div key={idx} className="relative rounded-[1.5rem] overflow-hidden shadow-lg border border-border/50 group cursor-pointer" onClick={() => setActiveImage(idx + 1)}>
-                        <img src={img} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" />
+                        <Image src={img} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" fill sizes="(min-width: 1024px) 20vw, 50vw" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                     </div>
                 ))}
@@ -207,7 +247,7 @@ export default function TripDetailsPage() {
                     </Badge>
                   </div>
                   <div className="space-y-1">
-                    {trip.itinerary.map((day: any, idx: number) => (
+                    {trip.itinerary.map((day, idx: number) => (
                       <div key={idx} className="relative pl-12 pb-10 last:pb-0 group">
                         {/* Timeline Connector */}
                         <div className="absolute left-4 top-2 bottom-0 w-0.5 bg-border/60 group-last:hidden" />
@@ -226,7 +266,7 @@ export default function TripDetailsPage() {
                           </div>
                           
                           <p className="text-muted-foreground leading-relaxed font-medium whitespace-pre-wrap text-base">
-                            {day.description || "The agency has not provided a description for this day."}
+                            {day.description || 'The agency has not provided a description for this day.'}
                           </p>
                           
                           {day.activities && day.activities.length > 0 && (
@@ -243,20 +283,22 @@ export default function TripDetailsPage() {
                     ))}
                   </div>
                </div>
-             ) : (
-                <div className="p-8 rounded-[2rem] bg-muted/30 border border-dashed border-border flex flex-col items-center justify-center gap-3 text-center">
-                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                        <ClipboardList className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-foreground text-sm uppercase tracking-wider">Itinerary coming soon</h3>
-                        <p className="text-xs text-muted-foreground mt-1 max-w-[250px]">The agency is finalizing the daily details for this experience.</p>
-                    </div>
-                </div>
-             )}
+              ) : (
+                 <div className="p-8 rounded-[2rem] bg-muted/30 border border-dashed border-border flex flex-col items-center justify-center gap-3 text-center">
+                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                          <ClipboardList className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-sm uppercase tracking-wider">Flexible trip structure</h3>
+                         <p className="text-xs text-muted-foreground mt-1 max-w-[320px]">
+                           This experience is available for booking now. Use the description, inclusions, and session dates below to review the current trip scope.
+                         </p>
+                      </div>
+                  </div>
+               )}
 
              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-foreground font-display">What's Included</h2>
+                <h2 className="text-2xl font-bold text-foreground font-display">What&apos;s Included</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    {trip.inclusions?.map((item: string, idx: number) => (
                       <motion.div 
@@ -278,7 +320,7 @@ export default function TripDetailsPage() {
 
              {trip.exclusions && trip.exclusions.length > 0 && (
                <div className="space-y-6 pt-6">
-                  <h2 className="text-2xl font-bold text-foreground font-display">What's Excluded</h2>
+                  <h2 className="text-2xl font-bold text-foreground font-display">What&apos;s Excluded</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                      {trip.exclusions.map((item: string, idx: number) => (
                         <motion.div 
@@ -408,7 +450,7 @@ export default function TripDetailsPage() {
                         <label className="text-xs font-bold text-foreground uppercase tracking-wider ml-1">Select Date</label>
                         <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                            {openSessions.length > 0 ? (
-                                openSessions.map((session: any) => (
+                                openSessions.map((session) => (
                                 <div 
                                     key={session.id}
                                     onClick={() => setSelectedSession(session.id)}

@@ -43,6 +43,9 @@ export class TripsService {
     async findAllTemplates(filters?: {
         featured?: boolean;
         status?: string;
+        q?: string;
+        category?: string;
+        agencyId?: string;
         priceMin?: number;
         priceMax?: number;
         durationMin?: number;
@@ -60,6 +63,9 @@ export class TripsService {
             const {
                 featured,
                 status,
+                q,
+                category,
+                agencyId,
                 priceMin,
                 priceMax,
                 durationMin,
@@ -80,6 +86,16 @@ export class TripsService {
             };
 
             if (featured) where.featured = true;
+            if (agencyId) where.agencyId = agencyId;
+            if (category) where.category = category;
+            if (q?.trim()) {
+                const search = q.trim();
+                where.OR = [
+                    { title: { contains: search, mode: 'insensitive' } },
+                    { description: { contains: search, mode: 'insensitive' } },
+                    { startLocation: { contains: search, mode: 'insensitive' } },
+                ];
+            }
 
             // Price filter: applied to sessions, so we'll filter after query
             // Duration filter

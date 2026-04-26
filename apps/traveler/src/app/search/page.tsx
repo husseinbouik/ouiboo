@@ -98,7 +98,7 @@ export default function SearchPage() {
       const nextFilters = { ...currentFilters, [key]: value };
       const params = new URLSearchParams();
       if (nextFilters.searchQuery) params.append("q", nextFilters.searchQuery);
-      if (nextFilters.category) params.append("cat", nextFilters.category);
+      if (nextFilters.category) params.append("category", nextFilters.category);
       if (nextFilters.priceMin) params.append("priceMin", nextFilters.priceMin);
       if (nextFilters.priceMax) params.append("priceMax", nextFilters.priceMax);
       router.push(`/search?${params.toString()}`);

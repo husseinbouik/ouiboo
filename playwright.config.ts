@@ -6,7 +6,8 @@ export default defineConfig({
   expect: {
     timeout: 10_000,
   },
-  fullyParallel: true,
+  fullyParallel: false,
+  workers: 1,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
@@ -17,22 +18,22 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'npm run dev --workspace apps/traveler',
+      command: 'npm run build --workspace apps/traveler && set NEXT_PUBLIC_API_URL=http://localhost:3000/api&& npm run start --workspace apps/traveler',
       url: 'http://localhost:3001/login',
       reuseExistingServer: !process.env.CI,
-      timeout: 180_000,
+      timeout: 300_000,
     },
     {
-      command: 'npm run dev --workspace apps/agency',
+      command: 'npm run build --workspace apps/agency && set NEXT_PUBLIC_API_URL=http://localhost:3000/api&& npm run start --workspace apps/agency',
       url: 'http://localhost:3002/login',
       reuseExistingServer: !process.env.CI,
-      timeout: 180_000,
+      timeout: 300_000,
     },
     {
-      command: 'npm run dev --workspace apps/admin',
+      command: 'npm run build --workspace apps/admin && set NEXT_PUBLIC_API_URL=http://localhost:3000/api&& npm run start --workspace apps/admin',
       url: 'http://localhost:3003/login',
       reuseExistingServer: !process.env.CI,
-      timeout: 180_000,
+      timeout: 300_000,
     },
   ],
   projects: [

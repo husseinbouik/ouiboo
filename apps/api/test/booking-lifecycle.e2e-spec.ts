@@ -566,14 +566,14 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
 
         // Upload payment proof (AWAITING_VALIDATION)
         const fixturePath = path.join(__dirname, 'fixtures', 'proof.png');
-        const uploadRes = await request(app.getHttpServer())
+        await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/payment-proof`)
             .set('Authorization', `Bearer traveler-token`)
             .attach('file', fixturePath)
             .expect(201);
 
         // Verify can upload again (upsert)
-        const uploadRes2 = await request(app.getHttpServer())
+        await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/payment-proof`)
             .set('Authorization', `Bearer traveler-token`)
             .attach('file', fixturePath)
@@ -697,7 +697,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const { session } = await seedTestData();
 
         // Create second traveler
-        const traveler2 = await db.user.create({
+        await db.user.create({
             data: {
                 id: 'traveler-user-456',
                 email: 'traveler2@example.com',
@@ -722,10 +722,10 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             } as any,
         });
 
-        const booking2 = await db.booking.create({
+        await db.booking.create({
             data: {
                 sessionId: session.id,
-                travelerId: traveler2.id,
+                travelerId: 'traveler-user-456',
                 guestsCount: 2,
                 totalAmount: 780,
                 fullName: 'Test Traveler 2',
@@ -766,7 +766,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             } as any,
         });
 
-        const { template, session, agency } = await seedTestData();
+        const { template, session } = await seedTestData();
 
         // Create template for agency 2
         const template2 = await db.tripTemplate.create({
@@ -843,7 +843,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             },
         });
 
-        const agency2 = await db.agencyProfile.create({
+        await db.agencyProfile.create({
             data: {
                 id: 'agency-profile-999',
                 userId: agency2User.id,
@@ -851,7 +851,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             } as any,
         });
 
-        const { template, session } = await seedTestData();
+        const { session } = await seedTestData();
 
         // Create booking on agency 1's trip
         const booking = await db.booking.create({
@@ -895,7 +895,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const { session, traveler } = await seedTestData();
 
         // Create second traveler
-        const traveler2 = await db.user.create({
+        await db.user.create({
             data: {
                 id: 'traveler-user-999',
                 email: 'traveler-other@example.com',

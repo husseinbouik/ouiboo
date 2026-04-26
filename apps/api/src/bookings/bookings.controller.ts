@@ -3,10 +3,6 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nes
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { TenantGuard } from '../auth/guards/tenant.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '@ouiboo/types';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { ALLOWED_MIME_TYPES_REGEX, MAX_UPLOAD_SIZE_BYTES } from '../upload/upload.constants';
@@ -94,20 +90,6 @@ export class BookingsController {
 
         return res.sendFile(filePath);
     }
-    @Patch(':id/verify-payment')
-    @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
-    @Roles(UserRole.Agency)
-    @ApiOperation({ summary: 'Verify payment proof (Agency only)' })
-    verifyPayment(
-        @Request() req,
-        @Param('id') id: string,
-        @Body('approved') approved: boolean,
-        @Body('rejectionReason') rejectionReason?: string
-    ) {
-        return this.bookingsService.verifyPayment(id, req.tenantId, approved, rejectionReason);
-    }
-
     @Patch(':id/cancel')
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)

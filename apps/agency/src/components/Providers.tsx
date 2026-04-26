@@ -14,6 +14,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         defaultOptions: {
             queries: {
                 staleTime: 60 * 1000,
+                refetchOnWindowFocus: false,
+                retry: 1,
             },
         },
     }));
@@ -32,7 +34,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
                     {children}
                 </AuthProvider>
             </ThemeProvider>
-            <ReactQueryDevtools initialIsOpen={false} />
+            {process.env.NODE_ENV === 'development' ? <ReactQueryDevtools initialIsOpen={false} /> : null}
         </QueryClientProvider>
     );
 }

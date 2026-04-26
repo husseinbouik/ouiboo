@@ -3,23 +3,23 @@
 import React, { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
+import {
   BarChart3,
-  Map, 
-  Calendar, 
-  CreditCard,
-  ShieldCheck,
-  Settings, 
-  LogOut,
-  ChevronRight,
-  PlusCircle,
+  Calendar,
   ChevronLeft,
-  Star
+  ChevronRight,
+  CreditCard,
+  LayoutDashboard,
+  LogOut,
+  Map,
+  PlusCircle,
+  Settings,
+  ShieldCheck,
+  Star,
 } from 'lucide-react';
-import { cn } from '@ouiboo/ui/utils';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { cn } from '@ouiboo/ui/utils';
 import { useAuth } from '../AuthContext';
 
 export function AgencySidebar() {
@@ -31,7 +31,9 @@ export function AgencySidebar() {
     () => true,
     () => false,
   );
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(
+    () => typeof window !== 'undefined' && window.localStorage.getItem('sidebar-collapsed') === 'true',
+  );
 
   const navigation = [
     { name: t('sidebar.dashboard'), href: '/dashboard', icon: LayoutDashboard },
@@ -45,9 +47,9 @@ export function AgencySidebar() {
   ];
 
   const toggleCollapse = () => {
-    const newState = !isCollapsed;
-    setIsCollapsed(newState);
-    localStorage.setItem('sidebar-collapsed', String(newState));
+    const nextState = !isCollapsed;
+    setIsCollapsed(nextState);
+    localStorage.setItem('sidebar-collapsed', String(nextState));
   };
 
   if (!mounted) {
@@ -55,13 +57,13 @@ export function AgencySidebar() {
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial={false}
       animate={{ width: isCollapsed ? 80 : 256 }}
       className="flex h-full flex-col bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 transition-colors duration-200 relative group"
       suppressHydrationWarning
     >
-      <button 
+      <button
         onClick={toggleCollapse}
         className="absolute -right-3 top-20 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full p-1.5 shadow-sm text-gray-500 hover:text-deep-blue dark:hover:text-blue-400 z-50 opacity-0 group-hover:opacity-100 transition-opacity"
       >
@@ -74,7 +76,7 @@ export function AgencySidebar() {
             O
           </div>
           {!isCollapsed && (
-            <motion.span 
+            <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="text-xl font-bold text-deep-blue dark:text-gray-100"
@@ -93,19 +95,21 @@ export function AgencySidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 relative",
-                isActive 
-                  ? "bg-deep-blue text-white shadow-lg shadow-blue-950/20 dark:bg-blue-600" 
-                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-deep-blue dark:hover:text-blue-400"
+                'group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 relative',
+                isActive
+                  ? 'bg-deep-blue text-white shadow-lg shadow-blue-950/20 dark:bg-blue-600'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-deep-blue dark:hover:text-blue-400',
               )}
               title={isCollapsed ? item.name : ''}
             >
-              <item.icon className={cn(
-                "h-5 w-5 flex-shrink-0 transition-colors",
-                isCollapsed ? "mx-auto" : "mr-3",
-                isActive ? "text-white" : "text-gray-400 dark:text-gray-500 group-hover:text-deep-blue dark:group-hover:text-blue-400"
-              )} />
-              
+              <item.icon
+                className={cn(
+                  'h-5 w-5 flex-shrink-0 transition-colors',
+                  isCollapsed ? 'mx-auto' : 'mr-3',
+                  isActive ? 'text-white' : 'text-gray-400 dark:text-gray-500 group-hover:text-deep-blue dark:group-hover:text-blue-400',
+                )}
+              />
+
               {!isCollapsed && (
                 <motion.span
                   initial={{ opacity: 0, x: -10 }}
@@ -119,32 +123,32 @@ export function AgencySidebar() {
           );
         })}
 
-        <div className={cn("pt-4 mt-4 border-t border-gray-100 dark:border-slate-800", isCollapsed && "items-center")}>
+        <div className={cn('pt-4 mt-4 border-t border-gray-100 dark:border-slate-800', isCollapsed && 'items-center')}>
           <Link
             href="/dashboard/trips/create"
             className={cn(
-              "flex items-center text-sm font-bold transition-all duration-200",
-              isCollapsed 
-                ? "justify-center w-10 h-10 mx-auto bg-sunset-orange text-white rounded-full shadow-lg shadow-orange-900/20" 
-                : "px-4 py-3 text-sunset-orange bg-orange-50 dark:bg-orange-950/20 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/30"
+              'flex items-center text-sm font-bold transition-all duration-200',
+              isCollapsed
+                ? 'justify-center w-10 h-10 mx-auto bg-sunset-orange text-white rounded-full shadow-lg shadow-orange-900/20'
+                : 'px-4 py-3 text-sunset-orange bg-orange-50 dark:bg-orange-950/20 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/30',
             )}
-            title={isCollapsed ? t('sidebar.createNew') : ""}
+            title={isCollapsed ? t('sidebar.createNew') : ''}
           >
-            <PlusCircle className={cn("h-5 w-5 flex-shrink-0", !isCollapsed && "mr-3")} />
+            <PlusCircle className={cn('h-5 w-5 flex-shrink-0', !isCollapsed && 'mr-3')} />
             {!isCollapsed && <span>{t('sidebar.createNew')}</span>}
           </Link>
         </div>
       </div>
 
       <div className="p-4 border-t border-gray-100 dark:border-slate-800">
-        <button 
+        <button
           onClick={logout}
           className={cn(
-            "flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/10 hover:text-red-600 transition-all duration-200 w-full",
-            isCollapsed ? "justify-center py-3" : "px-3 py-2.5"
+            'flex items-center text-sm font-medium text-gray-500 dark:text-gray-400 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/10 hover:text-red-600 transition-all duration-200 w-full',
+            isCollapsed ? 'justify-center py-3' : 'px-3 py-2.5',
           )}
         >
-          <LogOut className={cn("h-5 w-5 flex-shrink-0", !isCollapsed && "mr-3")} />
+          <LogOut className={cn('h-5 w-5 flex-shrink-0', !isCollapsed && 'mr-3')} />
           {!isCollapsed && <span>{t('sidebar.signOut')}</span>}
         </button>
       </div>

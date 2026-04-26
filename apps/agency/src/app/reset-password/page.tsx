@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -14,6 +15,14 @@ import { apiClient } from '@/lib/api-client';
 type ResetPasswordForm = {
   password: string;
   confirmPassword: string;
+};
+
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
 };
 
 export default function AgencyResetPasswordPage() {
@@ -48,8 +57,9 @@ export default function AgencyResetPasswordPage() {
         newPassword: data.password,
       });
       setSubmitted(true);
-    } catch (error: any) {
-      setErrorMessage(error?.response?.data?.message || 'Unable to reset password. Please try again.');
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      setErrorMessage(apiError.response?.data?.message || 'Unable to reset password. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -148,10 +158,12 @@ export default function AgencyResetPasswordPage() {
           transition={{ duration: 1.5 }}
           className="absolute inset-0"
         >
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1489515217757-5fd1be406fef?q=80&w=2070&auto=format&fit=crop"
             alt="Agency planning"
             className="w-full h-full object-cover opacity-40"
+            fill
+            sizes="50vw"
           />
         </motion.div>
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full h-full">

@@ -3,8 +3,6 @@
 import React, { useMemo } from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { Card, Badge } from '@ouiboo/ui';
-import { Download } from 'lucide-react';
-import { exportTopTripsToCSV } from '../../lib/export-utils';
 
 export default function PaymentMethodChart({ data = { MANUAL: 0, GATEWAY: 0 } }: { data?: { MANUAL: number; GATEWAY: number } }) {
   const transformed = useMemo(() => {

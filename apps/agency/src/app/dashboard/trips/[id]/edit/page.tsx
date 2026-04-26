@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
+import React, { useState, useEffect, useSyncExternalStore } from 'react';
 import { 
   Plus, 
   Image as ImageIcon,
@@ -9,7 +10,6 @@ import {
   X,
   Clock,
   MapPin,
-  AlertCircle,
   Check,
   Save
 } from 'lucide-react';
@@ -23,6 +23,17 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
+import { TripStatus, type TripStatusType } from '@ouiboo/types';
+
+type TripEditorData = CreateTripInput & {
+  title: string;
+  description: string;
+  category: CreateTripInput['category'];
+  startLocation: string;
+  durationDays: number;
+  durationNights: number;
+  status: TripStatusType;
+};
 
 export default function EditTripPage() {
   const { id } = useParams();
@@ -31,13 +42,13 @@ export default function EditTripPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const isMounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const { data: trip, isLoading: isLoadingTrip } = useQuery({
+  const { data: trip, isLoading: isLoadingTrip } = useQuery<TripEditorData>({
     queryKey: ['trip', id],
     queryFn: async () => {
       const response = await apiClient.get(`/trips/${id}`);
@@ -70,22 +81,22 @@ export default function EditTripPage() {
 
   const { fields: inclusionFields, append: appendInclusion, remove: removeInclusion } = useFieldArray({
     control,
-    name: 'inclusions' as any
+    name: 'inclusions'
   });
 
   const { fields: exclusionFields, append: appendExclusion, remove: removeExclusion } = useFieldArray({
     control,
-    name: 'exclusions' as any
+    name: 'exclusions'
   });
 
   const { fields: checklistFields, append: appendChecklistItem, remove: removeChecklistItem } = useFieldArray({
     control,
-    name: 'checklist' as any
+    name: 'checklist'
   });
 
-  const { fields: itineraryFields, append: appendDay, remove: removeDay } = useFieldArray({
+  const { fields: itineraryFields, append: appendDay } = useFieldArray({
     control,
-    name: 'itinerary' as any
+    name: 'itinerary'
   });
 
   const watchedImages = watch('images') || [];
@@ -122,12 +133,12 @@ export default function EditTripPage() {
   };
 
   const nextStep = async () => {
-    let fieldsToValidate: any[] = [];
+    let fieldsToValidate: Array<keyof CreateTripInput | 'itinerary'> = [];
     if (step === 1) fieldsToValidate = ['title', 'description', 'category', 'startLocation', 'durationDays', 'durationNights'];
     if (step === 2) fieldsToValidate = ['itinerary'];
     if (step === 3) fieldsToValidate = ['images'];
     
-    const isValid = await trigger(fieldsToValidate as any);
+    const isValid = await trigger(fieldsToValidate);
     if (isValid) {
       if (step === 1 && (!itineraryFields || itineraryFields.length === 0)) {
         // Initialize itinerary based on durationDays if empty
@@ -164,10 +175,10 @@ export default function EditTripPage() {
       checklist: data.checklist?.filter((item: string) => typeof item === 'string' && item.trim() !== '') || [],
     };
 
-    updateTripMutation.mutate(cleanedData as any);
+    updateTripMutation.mutate(cleanedData);
   };
 
-  if (!mounted || isLoadingTrip) return (
+  if (!isMounted || isLoadingTrip) return (
     <div className="flex items-center justify-center py-20">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sunset-orange"></div>
     </div>
@@ -276,16 +287,16 @@ export default function EditTripPage() {
                         <div className="grid grid-cols-1 gap-4">
                           <div className="space-y-2">
                             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Title</label>
-                            <Input {...register(`itinerary.${index}.title` as any)} placeholder="e.g. Arrival and City Tour" className="h-12 dark:bg-slate-800 dark:border-slate-700" />
+                            <Input {...register(`itinerary.${index}.title`)} placeholder="e.g. Arrival and City Tour" className="h-12 dark:bg-slate-800 dark:border-slate-700" />
                           </div>
                           <div className="space-y-2">
                             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">What happens on this day?</label>
                             <textarea 
-                              {...register(`itinerary.${index}.description` as any)}
+                              {...register(`itinerary.${index}.description`)}
                               className="w-full h-24 p-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-deep-blue/5 focus:border-deep-blue dark:focus:border-blue-500 transition-all text-gray-900 dark:text-gray-100"
                               placeholder="Describe the plan for the day..."
                             ></textarea>
-                            <input type="hidden" {...register(`itinerary.${index}.dayNumber` as any, { valueAsNumber: true })} />
+                            <input type="hidden" {...register(`itinerary.${index}.dayNumber`, { valueAsNumber: true })} />
                           </div>
                         </div>
                       </CardContent>
@@ -310,7 +321,7 @@ export default function EditTripPage() {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {watchedImages.map((img, idx) => (
                         <div key={idx} className="relative aspect-video bg-gray-100 dark:bg-slate-800 rounded-xl overflow-hidden group border dark:border-slate-700">
-                          <img src={img} className="w-full h-full object-cover" alt="" />
+                          <Image src={img} className="w-full h-full object-cover" alt="" fill sizes="(min-width: 768px) 33vw, 50vw" />
                           <button 
                             type="button"
                             onClick={() => {
@@ -358,7 +369,7 @@ export default function EditTripPage() {
                     <div className="space-y-4">
                       {inclusionFields.map((field, index) => (
                         <div key={field.id} className="flex gap-2">
-                          <Input {...register(`inclusions.${index}` as any)} placeholder="e.g. Comfy transport" className="dark:bg-slate-800" />
+                          <Input {...register(`inclusions.${index}`)} placeholder="e.g. Comfy transport" className="dark:bg-slate-800" />
                           <Button type="button" variant="ghost" size="icon" onClick={() => removeInclusion(index)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
                             <X className="h-4 w-4" />
                           </Button>
@@ -385,7 +396,7 @@ export default function EditTripPage() {
                     <div className="space-y-4">
                       {exclusionFields.map((field, index) => (
                         <div key={field.id} className="flex gap-2">
-                          <Input {...register(`exclusions.${index}` as any)} placeholder="e.g. Safari Nature (150 Dhs)" className="dark:bg-slate-800" />
+                          <Input {...register(`exclusions.${index}`)} placeholder="e.g. Safari Nature (150 Dhs)" className="dark:bg-slate-800" />
                           <Button type="button" variant="ghost" size="icon" onClick={() => removeExclusion(index)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
                             <X className="h-4 w-4" />
                           </Button>
@@ -412,7 +423,7 @@ export default function EditTripPage() {
                     <div className="space-y-4">
                       {checklistFields.map((field, index) => (
                         <div key={field.id} className="flex gap-2">
-                          <Input {...register(`checklist.${index}` as any)} placeholder="e.g. Your smile 😊" className="dark:bg-slate-800" />
+                          <Input {...register(`checklist.${index}`)} placeholder="e.g. Your smile" className="dark:bg-slate-800" />
                           <Button type="button" variant="ghost" size="icon" onClick={() => removeChecklistItem(index)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
                             <X className="h-4 w-4" />
                           </Button>
@@ -428,7 +439,7 @@ export default function EditTripPage() {
                 <div className="space-y-4 pt-4 border-t dark:border-slate-800">
                       <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Publish Status</label>
                       <div className="flex gap-6">
-                        {['DRAFT', 'ACTIVE'].map((s) => (
+                        {[TripStatus.Draft, TripStatus.Active].map((s) => (
                           <label key={s} className="flex items-center gap-3 cursor-pointer group">
                              <input 
                                type="radio" 
@@ -440,7 +451,7 @@ export default function EditTripPage() {
                                "text-sm font-bold transition-colors",
                                watch('status') === s ? "text-deep-blue dark:text-blue-400" : "text-gray-400 group-hover:text-gray-600"
                              )}>
-                               {s}
+                               {s === TripStatus.Draft ? 'DRAFT' : 'ACTIVE'}
                              </span>
                           </label>
                         ))}
@@ -494,7 +505,7 @@ export default function EditTripPage() {
                 <Card className="border-none shadow-2xl overflow-hidden rounded-2xl dark:bg-slate-900 dark:border-slate-800 group scale-[0.9] origin-top">
                    <div className="relative h-48 bg-gray-200 dark:bg-slate-800">
                       {watchedImages[0] ? (
-                        <img src={watchedImages[0]} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" />
+                        <Image src={watchedImages[0]} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" fill sizes="(min-width: 1024px) 20vw, 100vw" />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-gray-400 dark:text-slate-600">
                            <ImageIcon className="h-12 w-12" />

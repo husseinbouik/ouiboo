@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Badge } from '@ouiboo/ui';
 import { AlertCircle, Check, Lock } from 'lucide-react';
 
 interface SessionStatusBadgeProps {
