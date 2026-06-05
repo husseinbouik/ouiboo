@@ -1,6 +1,6 @@
 import axios, { type AxiosInstance } from 'axios';
 
-const DEFAULT_API_URL = 'http://localhost:3000/api';
+const DEFAULT_API_URL = 'http://localhost:3000/api/v1';
 const DEFAULT_LOGIN_PATH = '/login';
 const DEFAULT_TOKEN_KEY = 'token';
 const DEFAULT_REFRESH_TOKEN_KEY = 'refresh_token';

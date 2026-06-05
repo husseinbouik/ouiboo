@@ -43,3 +43,4 @@ export function LanguageSwitcher({ isTransparent }: { isTransparent?: boolean })
     </button>
   );
 }
+

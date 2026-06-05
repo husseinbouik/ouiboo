@@ -7,9 +7,13 @@
         "profile": "Profile",
         "bookings": "My Bookings",
         "wishlist": "Wishlist",
-        "logout": "Sign Out"
+        "logout": "Sign Out",
+        "agencyPanel": "Agency Panel",
+        "joinNow": "Join Now",
+        "startStory": "Start Your Story"
     },
     "hero": {
+        "tagline": "Discover the Uncharted",
         "title": "Discover Morocco's",
         "accent": "Hidden Gems",
         "subtitle": "Book unique adventures curated by local experts. Experience authentic Moroccan culture like never before.",
@@ -18,17 +22,33 @@
         "search": "Search"
     },
     "featured": {
-        "title": "Editor's Choice",
-        "subtitle": "Specially curated adventures for unforgettable memories.",
+        "title": "Featured Experiences",
+        "subtitle": "Hand-picked itineraries from our top rated local agencies.",
         "viewAll": "View all trips",
-        "from": "From"
+        "from": "From",
+        "emptyTitle": "No trips found",
+        "emptySubtitle": "Check back later for new adventures."
     },
     "categories": {
-        "title": "Find Your Adventure Type",
+        "title": "Travel your way",
+        "subtitle": "Explore destinations by your preferred travel style.",
         "adventure": "Adventure",
         "cultural": "Cultural",
         "luxury": "Luxury",
-        "budget": "Budget"
+        "budget": "Budget",
+        "nature": "Nature",
+        "discoverTrips": "Discover trips"
+    },
+    "trust": {
+        "secureTitle": "Secure Payments",
+        "secureDescription": "Your payments are protected with enterprise-grade security.",
+        "verifiedTitle": "Verified Experts",
+        "verifiedDescription": "Every agency is vetted to ensure high quality experiences.",
+        "instantTitle": "Instant Booking",
+        "instantDescription": "Book your dream trip instantly with no hidden fees."
+    },
+    "footer": {
+        "rights": "Copyright {{year}} Ouiboo. All rights reserved."
     },
     "login": {
         "title": "Welcome back",

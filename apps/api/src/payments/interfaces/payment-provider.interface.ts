@@ -18,7 +18,7 @@ export interface PaymentProvider {
    * Initialize a payment session
    */
   initiatePayment(
-    amount: number,
+    amount: MoneyInput,
     bookingId: string,
     travelerEmail: string,
     travelerName: string,
@@ -37,7 +37,7 @@ export interface PaymentProvider {
    */
   processRefund(
     transactionId: string,
-    amount: number,
+    amount: MoneyInput,
   ): Promise<{ success: boolean; refundId?: string; error?: string }>;
 
   /**
@@ -48,3 +48,4 @@ export interface PaymentProvider {
     signature: string,
   ): boolean;
 }
+import { type MoneyInput } from '../../common/money.util';

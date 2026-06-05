@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { MoneyInput, toMoneyDecimal } from '../common/money.util';
 
 @Injectable()
 export class WalletsService {
@@ -12,18 +13,19 @@ export class WalletsService {
         });
     }
 
-    async creditWallet(tenantId: string, amount: number, reason: string) {
+    async creditWallet(tenantId: string, amount: MoneyInput, reason: string) {
+        const decimalAmount = toMoneyDecimal(amount);
         return this.db.$transaction(async (tx) => {
             const wallet = await tx.wallet.upsert({
                 where: { agencyId: tenantId },
-                update: { availableBalance: { increment: amount } },
-                create: { agencyId: tenantId, availableBalance: amount, pendingBalance: 0 }
+                update: { availableBalance: { increment: decimalAmount } },
+                create: { agencyId: tenantId, availableBalance: decimalAmount, pendingBalance: 0 }
             });
 
             await tx.walletTransaction.create({
                 data: {
                     walletId: wallet.id,
-                    amount,
+                    amount: decimalAmount,
                     type: 'CREDIT',
                     reason
                 }
@@ -33,22 +35,23 @@ export class WalletsService {
         });
     }
 
-    async requestPayout(tenantId: string, amount: number, bankDetails: string) {
+    async requestPayout(tenantId: string, amount: MoneyInput, bankDetails: string) {
+        const decimalAmount = toMoneyDecimal(amount);
         return this.db.$transaction(async (tx) => {
             const wallet = await tx.wallet.findUnique({ where: { agencyId: tenantId } });
-            if (!wallet || wallet.availableBalance < amount) {
+            if (!wallet || wallet.availableBalance.lt(decimalAmount)) {
                 throw new Error('Insufficient balance');
             }
 
             await tx.wallet.update({
                 where: { agencyId: tenantId },
-                data: { availableBalance: { decrement: amount } }
+                data: { availableBalance: { decrement: decimalAmount } }
             });
 
             const request = await tx.payoutRequest.create({
                 data: {
                     agencyId: tenantId,
-                    amount,
+                    amount: decimalAmount,
                     bankDetails,
                     status: 'PENDING'
                 }
@@ -57,7 +60,7 @@ export class WalletsService {
             await tx.walletTransaction.create({
                 data: {
                     walletId: wallet.id,
-                    amount: -amount,
+                    amount: decimalAmount.neg(),
                     type: 'DEBIT',
                     reason: `Payout request #${request.id}`
                 }

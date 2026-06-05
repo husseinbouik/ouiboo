@@ -928,6 +928,7 @@ export default function OuibooLanding() {
                       autoComplete="name" 
                       required 
                       className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/10 backdrop-blur-sm px-3.5 py-2.5 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white focus:bg-white/20 transition-all duration-300 sm:text-sm sm:leading-6 placeholder:text-gray-300" 
+                      aria-label={t('waitlist.form.name')}
                       placeholder={t('waitlist.form.name')} 
                       value={formData.name} 
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -940,6 +941,7 @@ export default function OuibooLanding() {
                       autoComplete="email" 
                       required 
                       className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/10 backdrop-blur-sm px-3.5 py-2.5 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white focus:bg-white/20 transition-all duration-300 sm:text-sm sm:leading-6 placeholder:text-gray-300" 
+                      aria-label={t('waitlist.form.email')}
                       placeholder={t('waitlist.form.email')} 
                       value={formData.email} 
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -952,13 +954,14 @@ export default function OuibooLanding() {
                     autoComplete="tel" 
                     required 
                     className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/10 backdrop-blur-sm px-3.5 py-2.5 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white focus:bg-white/20 transition-all duration-300 sm:text-sm sm:leading-6 placeholder:text-gray-300" 
+                    aria-label={t('waitlist.form.phone')}
                     placeholder={t('waitlist.form.phone')} 
                     value={formData.phoneNumber} 
                     onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                   />
                 </motion.div>
                 <motion.div variants={fadeInUp}>
-                    <select name="userType" className="min-w-0 w-full h-full flex-auto rounded-md border-0 bg-white/10 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6" value={formData.userType} onChange={(e) => setFormData({ ...formData, userType: e.target.value })}>
+                    <select name="userType" aria-label={t('waitlist.form.userType.label', 'User type')} className="min-w-0 w-full h-full flex-auto rounded-md border-0 bg-white/10 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6" value={formData.userType} onChange={(e) => setFormData({ ...formData, userType: e.target.value })}>
                       <option value="Traveler" className="text-black">{t('waitlist.form.userType.traveler')}</option>
                       <option value="Agency" className="text-black">{t('waitlist.form.userType.agency')}</option>
                     </select>
@@ -988,6 +991,7 @@ export default function OuibooLanding() {
                       type="text" 
                       required 
                       className="mt-4 min-w-0 w-full flex-auto rounded-md border-0 bg-white/10 backdrop-blur-sm px-3.5 py-2.5 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white focus:bg-white/20 transition-all duration-300 sm:text-sm sm:leading-6 placeholder:text-gray-300" 
+                      aria-label={t('waitlist.form.agencyName')}
                       placeholder={t('waitlist.form.agencyName')} 
                       value={formData.agencyName} 
                       onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}

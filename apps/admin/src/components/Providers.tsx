@@ -2,12 +2,17 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ThemeProvider } from 'next-themes';
 import '@/lib/i18n';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+    const mounted = useSyncExternalStore(
+        () => () => undefined,
+        () => true,
+        () => false,
+    );
     const [queryClient] = useState(() => new QueryClient({
         defaultOptions: {
             queries: {
@@ -24,6 +29,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         document.documentElement.dir = dir;
         document.documentElement.lang = i18n.language;
     }, [i18n.language]);
+
+    if (!mounted) {
+        return <div className="min-h-screen bg-background" />;
+    }
 
     return (
         <QueryClientProvider client={queryClient}>

@@ -495,7 +495,7 @@ export default function CheckoutPage() {
                                             <Info className="h-4 w-4" />
                                             <span className="text-[10px] font-black uppercase tracking-widest">Official Bank Instructions</span>
                                         </div>
-                                        <div className="bg-white/50 p-4 rounded-xl font-mono text-sm whitespace-pre-wrap break-all leading-relaxed">
+                                        <div className="bg-card/70 p-4 rounded-xl font-mono text-sm whitespace-pre-wrap break-all leading-relaxed">
                                             {trip.agency?.bankDetails || 'Bank Name: Attijariwafa Bank\nRIB: 011 780 0000 1234 5678 9012 34\nAccount Name: Sun Travels Morocco'}
                                         </div>
                                         <div className="p-4 bg-amber-50 rounded-xl flex gap-3 items-center">
@@ -565,7 +565,7 @@ export default function CheckoutPage() {
                                 <p className="text-xs font-black text-foreground uppercase tracking-widest">Payment Status</p>
                                 <div className="space-y-3">
                                     <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
-                                        <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center", proofFile ? "bg-emerald-500 text-white" : "bg-amber-500 text-white")}>
+                                        <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center", proofFile ? "bg-success/100 text-white" : "bg-amber-500 text-white")}>
                                             {proofFile ? <CheckCircle2 className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
                                         </div>
                                         <div>
@@ -574,7 +574,7 @@ export default function CheckoutPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
-                                        <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center", proofFile ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground")}>
+                                        <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center", proofFile ? "bg-success/100 text-white" : "bg-muted text-muted-foreground")}>
                                             <UploadCloud className="h-4 w-4" />
                                         </div>
                                         <div>
@@ -597,11 +597,11 @@ export default function CheckoutPage() {
                     </CardContent>
                 </Card>
 
-                <div className="p-8 bg-blue-50 dark:bg-blue-950/20 rounded-[2.5rem] border border-blue-100 dark:border-blue-900/50 flex gap-6">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20"><Info className="h-6 w-6" /></div>
+                <div className="p-8 bg-ocean-500/10 rounded-[2.5rem] border border-ocean-500/20 flex gap-6">
+                    <div className="w-12 h-12 rounded-2xl bg-ocean-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-ocean-500/20"><Info className="h-6 w-6" /></div>
                     <div className="space-y-1">
                         <h4 className="font-black text-blue-900 dark:text-blue-200 uppercase text-[10px] tracking-widest">Important Disclaimer</h4>
-                        <p className="text-sm text-blue-700 dark:text-blue-300 font-medium leading-relaxed">Your booking will be marked as &quot;Pending Verification&quot; until the agency confirms receipt of your payment manually. This usually takes 2-4 business hours.</p>
+                        <p className="text-sm text-ocean-700 dark:text-ocean-300 dark:text-blue-300 font-medium leading-relaxed">Your booking will be marked as &quot;Pending Verification&quot; until the agency confirms receipt of your payment manually. This usually takes 2-4 business hours.</p>
                     </div>
                 </div>
             </div>
@@ -640,7 +640,7 @@ export default function CheckoutPage() {
                       </div>
                       <div className="flex justify-between items-center">
                           <span className="text-muted-foreground font-medium">Service Fee</span>
-                          <Badge variant="outline" className="border-emerald-500/30 text-emerald-600 bg-emerald-50 font-black text-[8px] uppercase tracking-widest">Free</Badge>
+                          <Badge variant="outline" className="border-emerald-500/30 text-success bg-success/10 font-black text-[8px] uppercase tracking-widest">Free</Badge>
                       </div>
                       <div className="flex justify-between items-end pt-4 border-t border-border/50">
                           <span className="text-lg font-black font-display tracking-tight text-foreground">Total to pay</span>
@@ -683,4 +683,5 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
 

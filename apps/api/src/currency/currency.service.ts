@@ -139,11 +139,7 @@ export class CurrencyService {
       if (!rate) {
         throw new Error(`Currency ${targetCurrency} not supported`);
       }
-
       return rate;
-    } catch (error) {
-      this.logger.error(`Failed to fetch exchange rate for ${targetCurrency}`, error);
-      throw error;
     } finally {
       clearTimeout(timeout);
     }

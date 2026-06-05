@@ -73,3 +73,4 @@ export default async function FeaturedTripsPage() {
     </div>
   );
 }
+

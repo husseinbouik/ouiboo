@@ -49,8 +49,8 @@ export default function TravelerForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-white">
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gray-900">
+    <div className="min-h-screen flex bg-background">
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-deep-blue">
         <motion.div
           initial={{ scale: 1.1, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -91,39 +91,39 @@ export default function TravelerForgotPasswordPage() {
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   {t('forgotPassword.backToLogin')}
                 </Link>
-                <h2 className="text-3xl font-bold text-gray-900">{t('forgotPassword.title')}</h2>
-                <p className="text-gray-600">{t('forgotPassword.subtitle')}</p>
+                <h2 className="text-3xl font-bold text-foreground">{t('forgotPassword.title')}</h2>
+                <p className="text-muted-foreground">{t('forgotPassword.subtitle')}</p>
               </div>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium text-gray-700">{t('forgotPassword.emailLabel')}</label>
+                  <label htmlFor="email" className="text-sm font-medium text-foreground">{t('forgotPassword.emailLabel')}</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="email"
                       type="email"
                       placeholder={t('forgotPassword.emailPlaceholder')}
-                      className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
+                      className="pl-10 h-12 bg-muted border-border focus:bg-background focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
                       {...register('email', { required: 'Email is required' })}
                     />
                   </div>
-                  {errors.email && <span className="text-red-500 text-sm">{errors.email.message}</span>}
+                  {errors.email && <span className="text-danger text-sm">{errors.email.message}</span>}
                 </div>
 
                 <Button type="submit" disabled={isSubmitting} className="w-full h-12 bg-sunset-orange hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors duration-200">
                   {isSubmitting ? 'Sending...' : t('forgotPassword.sendReset')}
                 </Button>
                 {errorMessage && (
-                  <p className="text-sm text-red-600 font-medium">{errorMessage}</p>
+                  <p className="text-sm text-danger font-medium">{errorMessage}</p>
                 )}
               </form>
             </>
           ) : (
-            <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+            <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
               <CheckCircle className="h-12 w-12 text-sunset-orange" />
-              <h2 className="mt-4 text-2xl font-bold text-gray-900">{t('forgotPassword.successTitle')}</h2>
-              <p className="mt-2 text-gray-600">{t('forgotPassword.successMessage')}</p>
+              <h2 className="mt-4 text-2xl font-bold text-foreground">{t('forgotPassword.successTitle')}</h2>
+              <p className="mt-2 text-muted-foreground">{t('forgotPassword.successMessage')}</p>
               <div className="mt-6 flex flex-col gap-3">
                 <Button asChild className="w-full h-12 bg-sunset-orange hover:bg-orange-600 text-white font-semibold rounded-lg">
                   <Link href={`/login?lang=${i18n.language}`}>{t('forgotPassword.backToLogin')}</Link>
@@ -131,7 +131,7 @@ export default function TravelerForgotPasswordPage() {
                 <button
                   type="button"
                   onClick={() => setSubmitted(false)}
-                  className="text-sm font-medium text-gray-600 hover:text-gray-800"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
                 >
                   {t('forgotPassword.tryAnotherEmail')}
                 </button>
@@ -143,3 +143,5 @@ export default function TravelerForgotPasswordPage() {
     </div>
   );
 }
+
+

@@ -141,7 +141,7 @@ export default function BookingDetailsPage() {
           </Link>
         </div>
 
-        <Card className="group border border-gray-100 dark:border-slate-800 shadow-sm rounded-[2rem] overflow-hidden bg-white dark:bg-slate-900">
+        <Card className="group border border-border shadow-sm rounded-[2rem] overflow-hidden bg-card">
           <div className="flex flex-col lg:flex-row">
             <div className="w-full lg:w-96 h-64 lg:h-auto overflow-hidden relative">
               <Image
@@ -268,7 +268,7 @@ export default function BookingDetailsPage() {
         </Card>
 
         {(canReviewBooking || booking.review) && (
-          <Card className="rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+          <Card className="rounded-[2rem] border border-border shadow-sm bg-card">
             <div className="p-8 space-y-6">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Trip Review</p>
@@ -283,7 +283,7 @@ export default function BookingDetailsPage() {
               </div>
 
               {booking.review ? (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+                <div className="rounded-2xl border border-success/20 bg-success/10 px-4 py-3 text-sm font-semibold text-success">
                   Review submitted successfully.
                 </div>
               ) : (
@@ -299,3 +299,4 @@ export default function BookingDetailsPage() {
     </div>
   );
 }
+

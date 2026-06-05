@@ -1,8 +1,10 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
 @import "tailwindcss";
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: var(--font-geist-sans);
+  --font-sans: 'Manrope', var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Manrope', var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -18,42 +20,64 @@
   --color-input: var(--input);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --primary: #111827;
+  --background: #fffaf4;
+  --foreground: #07152f;
+  --primary: #07152f;
   --primary-foreground: #ffffff;
-  --card: #ffffff;
-  --card-foreground: #111827;
-  --muted: #f3f4f6;
-  --muted-foreground: #6b7280;
-  --border: #e5e7eb;
-  --input: #f9fafb;
-  --accent: #111827;
+  --card: rgba(255, 255, 255, 0.94);
+  --card-foreground: #07152f;
+  --muted: #f5eadc;
+  --muted-foreground: #6b6175;
+  --border: rgba(7, 21, 47, 0.12);
+  --input: rgba(255, 255, 255, 0.86);
+  --accent: #FF6B35;
   --accent-foreground: #ffffff;
+  --success: #059669;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #07152f;
+  --danger: #e11d48;
+  --danger-foreground: #ffffff;
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --primary: #f9fafb;
-  --primary-foreground: #111827;
-  --card: #111827;
+  --background: #06101f;
+  --foreground: #f8fafc;
+  --primary: #FF6B35;
+  --primary-foreground: #ffffff;
+  --card: rgba(13, 28, 52, 0.94);
   --card-foreground: #f9fafb;
-  --muted: #1f2937;
-  --muted-foreground: #9ca3af;
-  --border: #1f2937;
-  --input: #111827;
-  --accent: #f9fafb;
-  --accent-foreground: #111827;
+  --muted: #13243d;
+  --muted-foreground: #a6b4c8;
+  --border: rgba(226, 232, 240, 0.14);
+  --input: rgba(15, 31, 55, 0.9);
+  --accent: #FF6B35;
+  --accent-foreground: #ffffff;
+  --success: #34d399;
+  --success-foreground: #052e1b;
+  --warning: #fbbf24;
+  --warning-foreground: #231a05;
+  --danger: #fb7185;
+  --danger-foreground: #3f0713;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display);
 }
 
 .dark .text-deep-blue {
@@ -131,3 +155,5 @@ body {
 .dark .divide-gray-50 > :not([hidden]) ~ :not([hidden]) {
   border-color: #1f2937;
 }
+
+

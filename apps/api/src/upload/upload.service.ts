@@ -1,13 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { IStorageProvider } from './interfaces/storage-provider.interface';
-// Dynamic imports used in constructor to avoid missing dependency errors
 
 @Injectable()
 export class UploadService {
-    private storageProvider: IStorageProvider;
+    private storageProvider?: IStorageProvider;
+    private initialization: Promise<void>;
 
     constructor() {
-        this.initializeProvider();
+        this.initialization = this.initializeProvider();
     }
 
     private async initializeProvider() {
@@ -25,7 +25,8 @@ export class UploadService {
     }
 
     async uploadFile(file: Express.Multer.File, folder: string) {
-        const result = await this.storageProvider.upload(file, folder);
+        const provider = await this.getStorageProvider();
+        const result = await provider.upload(file, folder);
 
         return {
             url: result.url,
@@ -34,11 +35,21 @@ export class UploadService {
         };
     }
 
-    getFilePath(key: string) {
-        return this.storageProvider.getFilePath(key);
+    async getFilePath(key: string) {
+        const provider = await this.getStorageProvider();
+        return provider.getFilePath(key);
     }
 
-    isLocal() {
-        return this.storageProvider.isLocal();
+    async isLocal() {
+        const provider = await this.getStorageProvider();
+        return provider.isLocal();
+    }
+
+    private async getStorageProvider() {
+        await this.initialization;
+        if (!this.storageProvider) {
+            throw new ServiceUnavailableException('Storage provider is not initialized');
+        }
+        return this.storageProvider;
     }
 }

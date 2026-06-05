@@ -14,15 +14,17 @@ import { UploadResponseDto } from './dto/upload-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UseGuards, Request } from '@nestjs/common';
 import { ALLOWED_MIME_TYPES_REGEX, MAX_UPLOAD_SIZE_BYTES } from './upload.constants';
+import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
 
 @ApiTags('Upload')
 @Controller('upload')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RateLimitGuard)
 export class UploadController {
     constructor(private readonly uploadService: UploadService) { }
 
     @Post()
+    @RateLimit({ points: 20, windowMs: 60_000, keyPrefix: 'upload:file' })
     @ApiOperation({ summary: 'Upload a file (Images or PDF)' })
     @ApiConsumes('multipart/form-data')
     @ApiBody({

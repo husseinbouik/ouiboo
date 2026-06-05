@@ -141,28 +141,28 @@ export default function VerifyEmailPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-6 font-sans relative overflow-hidden">
         {/* Background Blobs */}
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[40rem] h-[40rem] bg-green-50 dark:bg-green-900/20 rounded-full blur-3xl opacity-50" />
-        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-[40rem] h-[40rem] bg-blue-50 dark:bg-blue-900/20 rounded-full blur-3xl opacity-50" />
+        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[40rem] h-[40rem] bg-success/10 rounded-full blur-3xl opacity-50" />
+        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-[40rem] h-[40rem] bg-ocean-500/10 rounded-full blur-3xl opacity-50" />
         
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl p-12 rounded-[2.5rem] shadow-xl border border-gray-100 dark:border-slate-800 text-center max-w-md w-full space-y-8 relative z-10"
+          className="bg-card/90 backdrop-blur-xl p-12 rounded-[2.5rem] shadow-xl border border-border text-center max-w-md w-full space-y-8 relative z-10"
         >
-          <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto shadow-sm">
-            <ShieldCheck className="h-10 w-10 text-green-600 dark:text-green-400" />
+          <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto shadow-sm">
+            <ShieldCheck className="h-10 w-10 text-success" />
           </div>
           <div className="space-y-3">
               <h2 className="text-3xl font-bold text-foreground tracking-tight">Verified Successfully!</h2>
               <p className="text-muted-foreground font-medium">Welcome to Ouiboo. Redirecting you...</p>
           </div>
           <div className="flex justify-center pt-2">
-              <div className="w-12 h-1 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div className="w-12 h-1 bg-muted rounded-full overflow-hidden">
                   <motion.div 
                     initial={{ x: '-100%' }}
                     animate={{ x: '100%' }}
                     transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                    className="w-full h-full bg-green-500"
+                    className="w-full h-full bg-success"
                   />
               </div>
           </div>
@@ -180,12 +180,12 @@ export default function VerifyEmailPage() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-xl border border-gray-100 dark:border-slate-800 max-w-md w-full space-y-8 relative z-10"
+        className="bg-card/90 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-xl border border-border max-w-md w-full space-y-8 relative z-10"
       >
         <div className="text-center space-y-4">
              <div className="inline-flex items-center justify-center gap-2 mb-4 group">
-                <div className="w-10 h-10 rounded-xl bg-deep-blue dark:bg-white text-white dark:text-deep-blue flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">O</div>
-                <span className="text-2xl font-bold text-deep-blue dark:text-white">Ouiboo</span>
+                <div className="w-10 h-10 rounded-xl bg-deep-blue dark:bg-sunset-orange text-white flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">O</div>
+                <span className="text-2xl font-bold text-deep-blue dark:text-foreground">Ouiboo</span>
             </div>
           <h2 className="text-3xl font-bold text-foreground tracking-tight">Check your email</h2>
           <p className="text-muted-foreground font-medium text-sm">We have sent a 6-digit verification code to <br/> <span className="font-semibold text-foreground">{email}</span></p>
@@ -210,15 +210,15 @@ export default function VerifyEmailPage() {
                 value={digit}
                 onChange={(e) => handleChange(idx, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(idx, e)}
-                className="w-full h-14 text-center text-2xl font-bold bg-gray-50 dark:bg-slate-800 border border-gray-200 rounded-xl focus:border-sunset-orange focus:ring-2 focus:ring-sunset-orange/10 focus:bg-white outline-none transition-all text-foreground"
+                className="w-full h-14 text-center text-2xl font-bold bg-muted border border-border rounded-xl focus:border-sunset-orange focus:ring-2 focus:ring-sunset-orange/10 focus:bg-background outline-none transition-all text-foreground"
                 maxLength={1}
               />
             ))}
           </div>
 
           {error && (
-            <div className="p-3 text-sm font-semibold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-xl flex items-center justify-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-red-500 dark:bg-red-400" />
+            <div className="p-3 text-sm font-semibold text-danger bg-danger/10 border border-danger/20 rounded-xl flex items-center justify-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-danger" />
               {error}
             </div>
           )}
@@ -232,7 +232,7 @@ export default function VerifyEmailPage() {
           </Button>
         </form>
 
-        <div className="text-center space-y-4 pt-4 border-t border-gray-100">
+        <div className="text-center space-y-4 pt-4 border-t border-border">
           <p className="text-sm font-medium text-muted-foreground">
             Didn&rsquo;t receive the code?
           </p>
@@ -253,3 +253,4 @@ export default function VerifyEmailPage() {
     </div>
   );
 }
+

@@ -94,7 +94,7 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
                   className={`h-10 w-10 transition-all duration-200 cursor-pointer ${
                     star <= (hoveredRating || rating)
                       ? 'fill-sunset-orange text-sunset-orange'
-                      : 'text-gray-300 dark:text-gray-600'
+                      : 'text-muted-foreground/40'
                   }`}
                 />
               </motion.button>
@@ -113,7 +113,7 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
               }
             }}
             placeholder="Share your experience with this trip..."
-            className="min-h-32 resize-none dark:bg-slate-800 dark:border-slate-700"
+            className="min-h-32 resize-none dark:bg-muted dark:border-border"
           />
           <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
             {comment.length} / 500 characters
@@ -123,7 +123,7 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
         {/* Photo Upload Section */}
         <div className="space-y-3">
           <label className="text-sm font-bold text-foreground uppercase tracking-widest">Add Photo (Optional)</label>
-          <div className="border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl p-6 text-center hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+          <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:bg-muted transition-colors">
             {uploadedFile ? (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -138,7 +138,7 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
                 <button
                   type="button"
                   onClick={() => setUploadedFile(null)}
-                  className="text-red-500 hover:text-red-600 font-bold text-sm"
+                  className="text-red-500 hover:text-danger font-bold text-sm"
                 >
                   Remove
                 </button>
@@ -152,7 +152,7 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
                   onChange={handleFileUpload}
                 />
                 <div className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 bg-ocean-500/10 rounded-lg flex items-center justify-center">
                     <Upload className="h-6 w-6 text-blue-500" />
                   </div>
                   <p className="font-semibold text-foreground text-sm">Click to upload image</p>
@@ -170,10 +170,10 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-500/5 rounded-xl border border-emerald-200 dark:border-emerald-500/20"
+              className="flex items-center gap-3 p-4 bg-success/10 rounded-xl border border-success/20"
             >
-              <Check className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              <p className="font-medium text-emerald-700 dark:text-emerald-300 text-sm">{successMessage}</p>
+              <Check className="h-5 w-5 text-success dark:text-emerald-400" />
+              <p className="font-medium text-success dark:text-emerald-300 text-sm">{successMessage}</p>
             </motion.div>
           )}
           {errorMessage && (
@@ -181,10 +181,10 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-500/5 rounded-xl border border-red-200 dark:border-red-500/20"
+              className="flex items-center gap-3 p-4 bg-danger/10 rounded-xl border border-danger/20"
             >
-              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-              <p className="font-medium text-red-700 dark:text-red-300 text-sm">{errorMessage}</p>
+              <AlertCircle className="h-5 w-5 text-danger dark:text-red-400" />
+              <p className="font-medium text-danger dark:text-red-300 text-sm">{errorMessage}</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -213,3 +213,4 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
     </div>
   );
 }
+

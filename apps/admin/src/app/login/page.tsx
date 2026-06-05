@@ -59,7 +59,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] bg-slate-50">
+    <main className="min-h-screen grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] bg-background text-foreground">
       <div className="hidden lg:flex relative overflow-hidden bg-deep-blue text-white">
         <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.12),_transparent_60%)]" />
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
@@ -68,7 +68,7 @@ export default function AdminLoginPage() {
             <span className="text-2xl font-black tracking-tight">{t('login.brand', 'Ouiboo Admin')}</span>
           </div>
           <div className="space-y-4 max-w-md">
-            <h1 className="text-4xl font-black leading-tight">{t('login.heroTitle', 'Admin command center')}</h1>
+            <p className="text-4xl font-black leading-tight">{t('login.heroTitle', 'Admin command center')}</p>
             <p className="text-white/80 text-lg">
               {t('login.heroSubtitle', 'Approve agencies, confirm payments, and keep the marketplace healthy.')}
             </p>
@@ -90,55 +90,55 @@ export default function AdminLoginPage() {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-sunset-orange/10 text-sunset-orange font-black text-xl">
               A
             </div>
-            <h2 className="text-3xl font-black text-deep-blue">{t('login.title')}</h2>
-            <p className="text-sm text-gray-500">{t('login.subtitle')}</p>
+            <h1 className="text-3xl font-black text-foreground">{t('login.title')}</h1>
+            <p className="text-sm text-muted-foreground">{t('login.subtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-2">
-              <label htmlFor="username" className="text-xs font-bold uppercase tracking-widest text-gray-500">{t('login.username')}</label>
+              <label htmlFor="username" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t('login.username')}</label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   id="username"
                   type="text"
                   placeholder="admin"
-                  className="pl-10 h-12 bg-white border-gray-200 focus:bg-white focus:border-deep-blue focus:ring-deep-blue"
+                  className="pl-10 h-12 bg-input border-border focus:bg-background focus:border-deep-blue focus:ring-deep-blue"
                   {...register('username', { required: 'Username is required' })}
                 />
               </div>
-              {errors.username && <p className="text-xs text-red-500">{errors.username.message}</p>}
+              {errors.username && <p className="text-xs text-danger">{errors.username.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-gray-500">{t('login.password')}</label>
+              <label htmlFor="password" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t('login.password')}</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="********"
-                  className="pl-10 pr-12 h-12 bg-white border-gray-200 focus:bg-white focus:border-deep-blue focus:ring-deep-blue"
+                  className="pl-10 pr-12 h-12 bg-input border-border focus:bg-background focus:border-deep-blue focus:ring-deep-blue"
                   {...register('password', { required: 'Password is required' })}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
-              {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
+              {errors.password && <p className="text-xs text-danger">{errors.password.message}</p>}
             </div>
 
-            <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-700">
+            <div className="rounded-2xl border border-ocean-500/20 bg-ocean-500/10 px-4 py-3 text-xs text-ocean-700 dark:text-ocean-300">
               {t('login.helper', 'Default credentials: admin / admin')}
             </div>
 
             {error && (
-              <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-xs text-red-600">
+              <div className="rounded-2xl border border-danger/20 bg-danger/10 px-4 py-3 text-xs text-danger">
                 {error}
               </div>
             )}
@@ -153,6 +153,6 @@ export default function AdminLoginPage() {
           </form>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

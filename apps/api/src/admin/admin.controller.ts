@@ -22,6 +22,7 @@ import { Response } from 'express';
 import { mapBookingDetails } from '../bookings/booking-response.util';
 import { mapPayoutDetails } from '../agency/payout-response.util';
 import { PaymentsService } from '../payments/payments.service';
+import { type MoneyInput } from '../common/money.util';
 
 const parseEnumQuery = <T extends string>(value: string | undefined, allowedValues: readonly T[]) => {
     if (!value) {
@@ -131,7 +132,7 @@ export class AdminController {
             },
             include: { booking: { include: { traveler: true, session: { include: { template: true } } } } }
         });
-        const apiUrl = (process.env.API_URL || 'http://localhost:3000/api').replace(/\/$/, '');
+        const apiUrl = (process.env.API_URL || 'http://localhost:3000/api/v1').replace(/\/$/, '');
 
         return proofs.map((proof) => ({
             ...proof,
@@ -395,7 +396,7 @@ export class AdminController {
     async refundBooking(
         @Request() req,
         @Param('id') id: string,
-        @Body('amount') amount?: number,
+        @Body('amount') amount?: MoneyInput,
     ) {
         const result = await this.paymentsService.refundBookingById(id, amount);
 

@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request, Patch, Body, Post } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request, Patch, Body, Post, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -10,6 +10,18 @@ import { WalletsService } from '../wallets/wallets.service';
 import { RequestPayoutDto } from './dto/payout-request.dto';
 import { mapBookingDetails } from '../bookings/booking-response.util';
 import { mapPayoutDetails } from './payout-response.util';
+
+const clampListLimit = (value?: string, fallback = 50, max = 200) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.min(Math.max(Math.floor(parsed), 1), max);
+};
+
+const parsePage = (value?: string) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return 1;
+    return Math.max(Math.floor(parsed), 1);
+};
 
 @ApiTags('Agency')
 @Controller('agency')
@@ -31,42 +43,49 @@ export class AgencyController {
             this.prisma.tripTemplate.count({
                 where: { agencyId, status: 'ACTIVE' },
             }),
-            this.prisma.booking.findMany({
+            this.prisma.booking.groupBy({
+                by: ['travelerId'],
                 where: {
                     session: {
                         template: { agencyId }
                     },
                 },
-                select: {
-                    totalAmount: true,
-                    status: true,
-                    travelerId: true,
-                }
             }),
             this.prisma.wallet.findUnique({
                 where: { agencyId }
             })
         ]);
 
-        const revenue = bookings
-            .filter(b => b.status === 'CONFIRMED' || b.status === 'COMPLETED')
-            .reduce((sum, b) => sum + b.totalAmount, 0);
-
-        const uniqueCustomers = new Set(bookings.map(b => b.travelerId)).size;
+        const [bookingCount, revenueAggregate] = await Promise.all([
+            this.prisma.booking.count({
+                where: {
+                    session: { template: { agencyId } },
+                },
+            }),
+            this.prisma.booking.aggregate({
+                where: {
+                    status: { in: ['CONFIRMED', 'COMPLETED'] },
+                    session: { template: { agencyId } },
+                },
+                _sum: { totalAmount: true },
+            }),
+        ]);
 
         return {
-            revenue,
+            revenue: revenueAggregate._sum.totalAmount || 0,
             activeTrips: tripsCount,
-            totalBookings: bookings.length,
-            totalCustomers: uniqueCustomers,
+            totalBookings: bookingCount,
+            totalCustomers: bookings.length,
             wallet: wallet || { availableBalance: 0, pendingBalance: 0 }
         };
     }
 
     @Get('trips')
     @ApiOperation({ summary: 'Get agency trips' })
-    async getTrips(@Request() req) {
+    async getTrips(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
         const agencyId = req.tenantId;
+        const take = clampListLimit(limit);
+        const skip = (parsePage(page) - 1) * take;
 
         return this.prisma.tripTemplate.findMany({
             where: { agencyId },
@@ -78,14 +97,19 @@ export class AgencyController {
                         }
                     }
                 }
-            }
+            },
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take,
         });
     }
 
     @Get('bookings')
     @ApiOperation({ summary: 'Get agency bookings' })
-    async getBookings(@Request() req) {
+    async getBookings(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
         const agencyId = req.tenantId;
+        const take = clampListLimit(limit);
+        const skip = (parsePage(page) - 1) * take;
 
         const bookings = await this.prisma.booking.findMany({
             where: {
@@ -113,7 +137,9 @@ export class AgencyController {
             },
             orderBy: {
                 bookingDate: 'desc'
-            }
+            },
+            skip,
+            take,
         });
 
         return bookings.map(mapBookingDetails);
@@ -144,8 +170,10 @@ export class AgencyController {
     }
     @Get('reviews')
     @ApiOperation({ summary: 'Get agency reviews' })
-    async getReviews(@Request() req) {
+    async getReviews(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
         const agencyId = req.tenantId;
+        const take = clampListLimit(limit);
+        const skip = (parsePage(page) - 1) * take;
 
         const reviews = await this.prisma.review.findMany({
             where: {
@@ -173,7 +201,9 @@ export class AgencyController {
                     }
                 }
             },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take,
         });
 
         // Transform to match frontend expectations

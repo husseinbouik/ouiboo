@@ -1,8 +1,9 @@
-import { Controller, Post, Body, UnauthorizedException, Request, Res } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, Request, Res, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, RefreshTokenDto, VerifyEmailDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 import { Request as ExpressRequest, Response } from 'express';
+import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
 
 const REFRESH_COOKIE_NAME = 'refresh_token';
 const REFRESH_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -10,10 +11,12 @@ const UNAUTHORIZED_MESSAGE = 'Unauthorized';
 
 @ApiTags('Authentication')
 @Controller('auth')
+@UseGuards(RateLimitGuard)
 export class AuthController {
     constructor(private authService: AuthService) { }
 
     @Post('login')
+    @RateLimit({ points: 8, windowMs: 60_000, keyPrefix: 'auth:login' })
     @ApiOperation({ summary: 'Login and get JWT token' })
     async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
         const user = await this.authService.validateUser(loginDto.email, loginDto.password);
@@ -26,6 +29,7 @@ export class AuthController {
     }
 
     @Post('register')
+    @RateLimit({ points: 5, windowMs: 60_000, keyPrefix: 'auth:register' })
     @ApiOperation({ summary: 'Register a new user' })
     async register(@Body() registerDto: RegisterDto, @Res({ passthrough: true }) res: Response) {
         const tokens = await this.authService.register(registerDto);
@@ -36,6 +40,7 @@ export class AuthController {
     }
 
     @Post('refresh')
+    @RateLimit({ points: 30, windowMs: 60_000, keyPrefix: 'auth:refresh' })
     @ApiOperation({ summary: 'Refresh access token using refresh token' })
     async refresh(
         @Body() dto: RefreshTokenDto,
@@ -64,30 +69,34 @@ export class AuthController {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
-            path: '/api/auth',
+            path: '/api/v1/auth',
         });
         return result;
     }
 
     @Post('verify-email')
+    @RateLimit({ points: 10, windowMs: 60_000, keyPrefix: 'auth:verify-email' })
     @ApiOperation({ summary: 'Verify email with OTP' })
     async verifyEmail(@Body() dto: VerifyEmailDto) {
         return this.authService.verifyEmail(dto.email, dto.otp);
     }
 
     @Post('resend-otp')
+    @RateLimit({ points: 3, windowMs: 60_000, keyPrefix: 'auth:resend-otp' })
     @ApiOperation({ summary: 'Resend verification OTP' })
     async resendOtp(@Body() dto: ResendOtpDto) {
         return this.authService.resendOTP(dto.email);
     }
 
     @Post('forgot-password')
+    @RateLimit({ points: 3, windowMs: 60_000, keyPrefix: 'auth:forgot-password' })
     @ApiOperation({ summary: 'Request password reset email' })
     async forgotPassword(@Body() dto: ForgotPasswordDto) {
         return this.authService.requestPasswordReset(dto.email);
     }
 
     @Post('reset-password')
+    @RateLimit({ points: 5, windowMs: 60_000, keyPrefix: 'auth:reset-password' })
     @ApiOperation({ summary: 'Reset password using token' })
     async resetPassword(@Body() dto: ResetPasswordDto) {
         return this.authService.resetPassword(dto.email, dto.token, dto.newPassword);
@@ -99,7 +108,7 @@ export class AuthController {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             maxAge: REFRESH_COOKIE_MAX_AGE_MS,
-            path: '/api/auth',
+            path: '/api/v1/auth',
         });
     }
 

@@ -183,6 +183,11 @@ model TripTemplate {
   minBookings    Int           @default(1)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  @@index([agencyId, status, createdAt])
+  @@index([status, featured])
+  @@index([category, status])
+  @@index([createdAt])
 }
 
 model ItineraryDay {
@@ -201,8 +206,8 @@ model TripSession {
   template       TripTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
   startDate      DateTime
   endDate        DateTime
-  price          Float
-  deposit        Float        @default(0)
+  price          Decimal      @db.Decimal(18, 2)
+  deposit        Decimal      @default(0) @db.Decimal(18, 2)
   totalSeats     Int
   availableSeats Int
   status         SessionStatus @default(OPEN)
@@ -215,6 +220,8 @@ model TripSession {
 
   @@index([startDate])
   @@index([endDate])
+  @@index([templateId, status, startDate])
+  @@index([status, startDate])
 }
 
 model Booking {
@@ -225,7 +232,7 @@ model Booking {
   traveler                  User                   @relation(fields: [travelerId], references: [id])
   bookingDate               DateTime               @default(now())
   status                    BookingStatus          @default(PENDING)
-  totalAmount               Float
+  totalAmount               Decimal                @db.Decimal(18, 2)
   guestsCount               Int
   fullName                  String?
   phoneNumber               String?
@@ -243,7 +250,7 @@ model Booking {
   cancelledBy               String?
   cancellationReason        String?
   confirmedAt               DateTime?
-  refundAmount              Float?
+  refundAmount              Decimal?               @db.Decimal(18, 2)
   refundStatus              RefundStatus?
   refundProcessedAt         DateTime?
   review                    Review?
@@ -254,6 +261,10 @@ model Booking {
   @@index([travelerId])
   @@index([sessionId])
   @@index([status])
+  @@index([travelerId, bookingDate])
+  @@index([status, bookingDate])
+  @@index([paymentStatus, bookingDate])
+  @@index([cancelledAt])
 }
 
 model PaymentProof {
@@ -270,8 +281,8 @@ model Wallet {
   id               String              @id @default(cuid())
   agencyId         String              @unique
   agency           AgencyProfile       @relation(fields: [agencyId], references: [id])
-  availableBalance Float               @default(0)
-  pendingBalance   Float               @default(0)
+  availableBalance Decimal             @default(0) @db.Decimal(18, 2)
+  pendingBalance   Decimal             @default(0) @db.Decimal(18, 2)
   transactions     WalletTransaction[]
 }
 
@@ -279,22 +290,27 @@ model WalletTransaction {
   id        String          @id @default(cuid())
   walletId  String
   wallet    Wallet          @relation(fields: [walletId], references: [id])
-  amount    Float
+  amount    Decimal         @db.Decimal(18, 2)
   type      TransactionType
   reason    String
   referenceId String?
   createdAt DateTime        @default(now())
+
+  @@index([walletId, createdAt])
 }
 
 model PayoutRequest {
   id          String       @id @default(cuid())
   agencyId    String
   agency      AgencyProfile @relation(fields: [agencyId], references: [id])
-  amount      Float
+  amount      Decimal      @db.Decimal(18, 2)
   status      PayoutStatus @default(PENDING)
   requestedAt DateTime     @default(now())
   processedAt DateTime?
   bankDetails String
+
+  @@index([agencyId, status, requestedAt])
+  @@index([status, requestedAt])
 }
 
 model AuditLog {
@@ -309,6 +325,8 @@ model AuditLog {
 
   @@index([actorId])
   @@index([targetType])
+  @@index([createdAt])
+  @@index([action, createdAt])
 }
 
 // Reviews & Ratings
@@ -375,6 +393,7 @@ model NotificationLog {
 
   @@index([userId])
   @@index([sentAt])
+  @@index([userId, notificationType, sentAt])
 }
 
 // Payment Transactions
@@ -382,7 +401,7 @@ model PaymentTransaction {
   id                       String   @id @default(cuid())
   bookingId                String
   booking                  Booking        @relation(fields: [bookingId], references: [id])
-  amount                   Float
+  amount                   Decimal  @db.Decimal(18, 2)
   method                   PaymentMethod
   transactionId            String?
   status                   String   // INITIATED, SUCCESS, FAILED, PENDING
@@ -394,6 +413,7 @@ model PaymentTransaction {
 
   @@index([bookingId])
   @@index([transactionId])
+  @@index([provider, status, createdAt])
 }
 
 // Conversations & Messages
@@ -424,6 +444,8 @@ model Message {
 
   @@index([conversationId])
   @@index([senderId])
+  @@index([conversationId, createdAt])
+  @@index([conversationId, isRead])
 }
 
 // Exchange Rates Cache
@@ -431,7 +453,7 @@ model ExchangeRate {
   id               String   @id @default(cuid())
   baseCurrency     String   @default("MAD")
   targetCurrency   String
-  rate             Float
+  rate             Decimal  @db.Decimal(18, 8)
   lastUpdated      DateTime @default(now())
   expiresAt        DateTime
 

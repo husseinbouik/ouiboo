@@ -6,6 +6,7 @@ import {
 } from '../interfaces/payment-provider.interface';
 import axios, { AxiosInstance } from 'axios';
 import * as crypto from 'crypto';
+import { MoneyInput, toMinorUnits } from '../../common/money.util';
 
 type CmiApiResponse = {
   errorMessage?: string;
@@ -47,7 +48,7 @@ export class CMIPaymentProvider implements PaymentProvider {
   }
 
   async initiatePayment(
-    amount: number,
+    amount: MoneyInput,
     bookingId: string,
     travelerEmail: string,
     travelerName: string,
@@ -57,7 +58,7 @@ export class CMIPaymentProvider implements PaymentProvider {
       // This would call the CMI API to create a payment session
       const paymentData = {
         merchantId: this.merchantId,
-        amount: Math.round(amount * 100), // Convert to cents
+        amount: toMinorUnits(amount),
         currency: 'MAD',
         orderId: bookingId,
         description: `Trip Booking - ${bookingId}`,
@@ -65,7 +66,7 @@ export class CMIPaymentProvider implements PaymentProvider {
         customerName: travelerName,
         returnUrl: this.buildTravelerReturnUrl('success', bookingId, bookingId),
         cancelUrl: this.buildTravelerReturnUrl('cancelled', bookingId, bookingId),
-        notifyUrl: `${this.callbackUrl}/payments/webhook/cmi`,
+        notifyUrl: `${this.getApiCallbackBaseUrl()}/payments/webhook/cmi`,
       };
 
       // TODO: Implement actual CMI API call
@@ -122,13 +123,13 @@ export class CMIPaymentProvider implements PaymentProvider {
 
   async processRefund(
     transactionId: string,
-    amount: number,
+    amount: MoneyInput,
   ): Promise<{ success: boolean; refundId?: string; error?: string }> {
     try {
       // TODO: Implement actual CMI API call for refund
       const response = await this.callCMIAPI('/payments/refund', {
         transactionId,
-        amount: Math.round(amount * 100),
+        amount: toMinorUnits(amount),
         merchantId: this.merchantId,
       });
 
@@ -197,5 +198,9 @@ export class CMIPaymentProvider implements PaymentProvider {
     const returnBaseUrl = this.callbackUrl || `${fallbackBaseUrl.replace(/\/$/, '')}/checkout/confirmation`;
     const separator = returnBaseUrl.includes('?') ? '&' : '?';
     return `${returnBaseUrl}${separator}bookingId=${encodeURIComponent(bookingId)}&provider=CMI&transactionId=${encodeURIComponent(transactionId)}&gatewayStatus=${status}`;
+  }
+
+  private getApiCallbackBaseUrl() {
+    return (this.callbackUrl || process.env.API_URL || 'http://localhost:3000/api/v1').replace(/\/$/, '');
   }
 }

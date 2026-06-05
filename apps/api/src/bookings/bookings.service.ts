@@ -6,6 +6,7 @@ import { EmailService } from '../email/email.service';
 import { UploadService } from '../upload/upload.service';
 import { BookingPaymentStatus, PaymentMethod, TransactionType } from '@ouiboo/database';
 import { mapBookingDetails } from './booking-response.util';
+import { multiplyMoney } from '../common/money.util';
 
 const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
 
@@ -76,12 +77,14 @@ export class BookingsService {
               ? paymentMethodMap[dto.paymentMethod]
               : PaymentMethod.MANUAL;
 
+            const totalAmount = multiplyMoney(sessionWithInfo.price, dto.guestsCount);
+
             const booking = await tx.booking.create({
                 data: {
                     sessionId: dto.sessionId,
                     travelerId,
                     guestsCount: dto.guestsCount,
-                    totalAmount: sessionWithInfo.price * dto.guestsCount,
+                    totalAmount,
                     status: 'PENDING',
                     fullName: dto.fullName,
                     phoneNumber: dto.phoneNumber,
@@ -321,7 +324,7 @@ export class BookingsService {
             throw new BadRequestException('No payment proof uploaded');
         }
 
-        const filePath = this.uploadService.getFilePath(booking.paymentProof.imageUrl);
+        const filePath = await this.uploadService.getFilePath(booking.paymentProof.imageUrl);
 
         return { filePath };
     }
@@ -332,7 +335,7 @@ export class BookingsService {
 
 
     private buildPaymentProofDownloadUrl(bookingId: string) {
-        const apiUrl = process.env.API_URL || 'http://localhost:3000/api';
+        const apiUrl = process.env.API_URL || 'http://localhost:3000/api/v1';
         return `${apiUrl}/bookings/${bookingId}/payment-proof/download`;
     }
 
@@ -406,7 +409,7 @@ export class BookingsService {
                     },
                     create: {
                         agencyId: booking.session.template.agencyId,
-                        availableBalance: booking.totalAmount,
+                    availableBalance: booking.totalAmount,
                         pendingBalance: 0,
                     },
                 });

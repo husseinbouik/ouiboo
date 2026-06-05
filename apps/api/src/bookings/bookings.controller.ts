@@ -84,7 +84,7 @@ export class BookingsController {
     ) {
         const { filePath } = await this.bookingsService.getPaymentProofFile(id, req.user.userId, req.user?.role);
 
-        if (!this.bookingsService.isLocal()) {
+        if (!(await this.bookingsService.isLocal())) {
             return res.redirect(filePath);
         }
 

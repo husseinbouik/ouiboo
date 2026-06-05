@@ -1,8 +1,10 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
 @import "tailwindcss";
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: var(--font-geist-sans);
+  --font-sans: 'Manrope', var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Manrope', var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
   
   --color-deep-blue: #1E3A8A;
@@ -23,44 +25,68 @@
   --color-input: var(--input);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
 }
 
 :root {
-  --background: #F9FAFB;
-  --foreground: #1E3A8A;
-  --primary: #1E3A8A;
+  --background: #fffaf4;
+  --foreground: #07152f;
+  --primary: #07152f;
   --primary-foreground: #ffffff;
-  --card: #ffffff;
-  --card-foreground: #1E3A8A;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --border: #e2e8f0;
-  --input: #ffffff;
-  --accent: #F97316;
+  --card: rgba(255, 255, 255, 0.92);
+  --card-foreground: #07152f;
+  --muted: #f5eadc;
+  --muted-foreground: #6b6175;
+  --border: rgba(7, 21, 47, 0.12);
+  --input: rgba(255, 255, 255, 0.86);
+  --accent: #FF6B35;
   --accent-foreground: #ffffff;
+  --success: #059669;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #07152f;
+  --danger: #e11d48;
+  --danger-foreground: #ffffff;
 }
 
 .dark {
-  --background: #020617;
+  --background: #06101f;
   --foreground: #f8fafc;
-  --primary: #F97316;
+  --primary: #FF6B35;
   --primary-foreground: #ffffff;
-  --card: #0f172a;
+  --card: rgba(13, 28, 52, 0.92);
   --card-foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --border: #1e293b;
-  --input: #0f172a;
-  --accent: #F97316;
+  --muted: #13243d;
+  --muted-foreground: #a6b4c8;
+  --border: rgba(226, 232, 240, 0.14);
+  --input: rgba(15, 31, 55, 0.9);
+  --accent: #FF6B35;
   --accent-foreground: #ffffff;
+  --success: #34d399;
+  --success-foreground: #052e1b;
+  --warning: #fbbf24;
+  --warning-foreground: #231a05;
+  --danger: #fb7185;
+  --danger-foreground: #3f0713;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
   @apply antialiased;
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans);
   transition-property: background-color, border-color, color, fill, stroke;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 200ms;
 }
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display);
+}
+
+

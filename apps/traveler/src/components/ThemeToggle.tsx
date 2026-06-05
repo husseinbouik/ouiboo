@@ -35,3 +35,4 @@ export function ThemeToggle({ isTransparent }: { isTransparent?: boolean }) {
     </button>
   );
 }
+

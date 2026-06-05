@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Image from 'next/image';
 import React, { useState } from 'react';
@@ -307,9 +307,9 @@ export default function TripDetailsPage() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: idx * 0.05 }}
-                        className="flex items-center gap-3 p-4 bg-emerald-50/30 dark:bg-emerald-500/5 rounded-2xl border border-emerald-100/50 dark:border-emerald-500/10"
+                        className="flex items-center gap-3 p-4 bg-success/10 rounded-2xl border border-success/20"
                       >
-                         <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                         <div className="h-8 w-8 rounded-full bg-success/100/10 flex items-center justify-center shrink-0">
                              <Check className="h-4 w-4 text-emerald-500" />
                           </div>
                          <span className="font-semibold text-foreground text-sm">{item}</span>
@@ -329,7 +329,7 @@ export default function TripDetailsPage() {
                           whileInView={{ opacity: 1, y: 0 }}
                           viewport={{ once: true }}
                           transition={{ delay: idx * 0.05 }}
-                          className="flex items-center gap-3 p-4 bg-red-50/30 dark:bg-red-500/5 rounded-2xl border border-red-100/50 dark:border-red-500/10"
+                          className="flex items-center gap-3 p-4 bg-danger/10 rounded-2xl border border-danger/20"
                         >
                            <div className="h-8 w-8 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
                                <X className="h-4 w-4 text-red-500" />
@@ -389,7 +389,7 @@ export default function TripDetailsPage() {
                                className={`h-5 w-5 ${
                                  star <= Math.round(reviewStats.averageRating || 5)
                                    ? 'fill-sunset-orange text-sunset-orange'
-                                   : 'text-gray-300 dark:text-gray-600'
+                                   : 'text-muted-foreground/40'
                                }`}
                              />
                            ))}
@@ -407,7 +407,7 @@ export default function TripDetailsPage() {
                          const percentage = reviewStats.totalReviews > 0 ? (count / reviewStats.totalReviews * 100) : 0;
                          return (
                            <div key={rating} className="flex items-center gap-2">
-                             <span className="text-xs font-bold text-muted-foreground w-6">{rating}★</span>
+                             <span className="text-xs font-bold text-muted-foreground w-6">{rating}?</span>
                              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                                <div
                                  className="h-full bg-gradient-to-r from-sunset-orange to-orange-600"
@@ -438,7 +438,7 @@ export default function TripDetailsPage() {
                 <div className="bg-card/80 backdrop-blur-xl border border-border/50 shadow-xl rounded-[2.5rem] p-8 space-y-8 relative overflow-hidden">
                     
                     {/* Price Header */}
-                    <div className="space-y-1 text-center pb-6 border-b border-gray-100 dark:border-slate-800">
+                    <div className="space-y-1 text-center pb-6 border-b border-border">
                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{t('featured.from')}</span>
                         <div className="flex items-baseline justify-center gap-1">
                             <span className="text-4xl font-black text-foreground font-display">{minPrice}</span>
@@ -470,7 +470,7 @@ export default function TripDetailsPage() {
                                               {session.availableSeats} spots left
                                           </span>
                                       </div>
-                                      <div className="w-5 h-5 rounded-full border-2 border-gray-200 dark:border-slate-600 flex items-center justify-center group-hover:border-sunset-orange">
+                                      <div className="w-5 h-5 rounded-full border-2 border-border dark:border-slate-600 flex items-center justify-center group-hover:border-sunset-orange">
                                           {selectedSession === session.id && <div className="w-2.5 h-2.5 rounded-full bg-sunset-orange" />}
                                       </div>
                                     </div>
@@ -527,5 +527,6 @@ export default function TripDetailsPage() {
     </div>
   );
 }
+
 
 

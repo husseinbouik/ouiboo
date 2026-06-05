@@ -1,12 +1,8 @@
-import fs from 'fs';
-import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { z } from 'zod';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 // Load .env from root
 dotenv.config();
 
@@ -17,6 +13,7 @@ const envSchema = z.object({
   // Auth
   JWT_SECRET: z.string().min(16),
   JWT_REFRESH_SECRET: z.string().min(16),
+  CORS_ORIGINS: z.string().min(1),
   
   // Email (SMTP)
   SMTP_HOST: z.string(),
@@ -25,7 +22,13 @@ const envSchema = z.object({
   SMTP_PASS: z.string(),
   
   // App URLs
+  API_URL: z.string().url().optional(),
   NEXT_PUBLIC_API_URL: z.string().url().optional(),
+  TRAVELER_APP_URL: z.string().url().optional(),
+  AGENCY_APP_URL: z.string().url().optional(),
+  ADMIN_APP_URL: z.string().url().optional(),
+  REDIS_URL: z.string().url().optional(),
+  ENABLE_SWAGGER: z.enum(['true', 'false']).optional(),
   
   // Storage
   STORAGE_PROVIDER: z.enum(['local', 's3']).default('local'),

@@ -1,6 +1,7 @@
 // app/layout.tsx
 import React from "react";
 import { Metadata } from "next";
+import { cookies, headers } from "next/headers";
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 import Script from 'next/script';
@@ -24,26 +25,56 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic';
 
-// The signature of RootLayout now accepts `params` to get the locale
-// In Next.js 16, params is a Promise and needs to be awaited
+type SupportedLanguage = typeof i18n.locales[number];
+
+async function getInitialLanguage(): Promise<SupportedLanguage> {
+  const [headerStore, cookieStore] = await Promise.all([headers(), cookies()]);
+  const preferredLanguage =
+    headerStore.get('x-ouiboo-language') ||
+    cookieStore.get('i18nextLng')?.value ||
+    i18n.defaultLocale;
+  const language = preferredLanguage.split('-')[0].toLowerCase();
+
+  return i18n.locales.includes(language)
+    ? language
+    : i18n.defaultLocale;
+}
+
+const languageInitScript = `
+  (function () {
+    try {
+      var supported = ['en', 'fr', 'ar'];
+      var params = new URLSearchParams(window.location.search);
+      var queryLanguage = params.get('lang');
+      var storedLanguage = window.localStorage.getItem('i18nextLng');
+      var detectedLanguage = queryLanguage || storedLanguage || window.navigator.language || 'en';
+      var language = String(detectedLanguage).split('-')[0].toLowerCase();
+      if (supported.indexOf(language) === -1) language = 'en';
+      document.documentElement.lang = language;
+      document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+      if (queryLanguage) {
+        window.localStorage.setItem('i18nextLng', language);
+        document.cookie = 'i18nextLng=' + language + '; path=/; max-age=31536000; SameSite=Lax';
+      }
+    } catch (error) {}
+  })();
+`;
+
 export default async function RootLayout({ 
-  children, 
-  params 
+  children
 }: { 
   children: React.ReactNode;
-  params: Promise<{ locale?: string }>;
 }) {
-  // Await params in Next.js 16
-  const resolvedParams = await params;
-  const locale = resolvedParams?.locale;
-  
-  // Use the locale from the URL, or fall back to the default
-  const currentLocale = locale && i18n.locales.includes(locale) ? locale : i18n.defaultLocale;
+  const currentLocale = await getInitialLanguage();
 
   return (
-    // The `lang` attribute is now dynamic
-    <html lang={currentLocale} suppressHydrationWarning={true}>
+    <html lang={currentLocale} dir={currentLocale === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning={true}>
       <body className={`${GeistSans.variable} ${GeistMono.variable} antialiased`} suppressHydrationWarning>
+        <Script
+          id="language-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: languageInitScript }}
+        />
         {/* Pass the current locale to the provider */}
         <Providers locale={currentLocale}>
           {/* Use the new LoadingSpinner as the Suspense fallback */}

@@ -14,9 +14,9 @@ import {
 export const getTravelerBookingStatusTone = (status: BookingStatusType) => {
   switch (status) {
     case BookingStatus.Confirmed:
-      return 'bg-emerald-500 text-white';
+      return 'bg-success text-success-foreground';
     case BookingStatus.AwaitingValidation:
-      return 'bg-blue-500 text-white';
+      return 'bg-ocean-500 text-white';
     case BookingStatus.Pending:
       return 'bg-amber-500 text-white';
     case BookingStatus.Cancelled:
@@ -39,7 +39,7 @@ export const getTravelerProofStatus = (status?: VerificationStatusType | null) =
   }
 
   if (status === VerificationStatus.Verified) {
-    return { label: 'Verified', className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' };
+    return { label: 'Verified', className: 'bg-success/10 text-success border-success/20' };
   }
 
   if (status === VerificationStatus.Rejected) {
@@ -56,14 +56,14 @@ export const getTravelerPaymentStatusMeta = (
   if (paymentStatus === BookingPaymentStatus.Paid) {
     return {
       label: 'Paid',
-      className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+      className: 'bg-success/10 text-success border-success/20',
     };
   }
 
   if (paymentStatus === BookingPaymentStatus.Refunded) {
     return {
       label: refundStatus === RefundStatus.Processed ? 'Refunded' : 'Refund in Progress',
-      className: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+      className: 'bg-ocean-500/10 text-ocean-600 dark:text-ocean-300 border-blue-500/20',
     };
   }
 
@@ -106,3 +106,4 @@ export const canRetryTravelerPayment = (booking: TravelerRetryBooking) => {
     booking.paymentStatus === BookingPaymentStatus.Failed
   );
 };
+

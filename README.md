@@ -1,5 +1,12 @@
 This is the Ouiboo monorepo for a B2B & B2C Travel Marketplace.
 
+## Current Production Readiness
+
+The platform is in active hardening. The current API contract is `/api/v1`.
+Before any public production launch, review
+`docs/PRODUCTION_READINESS_EXECUTION_REPORT.md` for the latest verified fixes,
+remaining blockers, and deployment readiness status.
+
 ## 🚀 Production Readiness
 
 This project is configured for production-grade launches.

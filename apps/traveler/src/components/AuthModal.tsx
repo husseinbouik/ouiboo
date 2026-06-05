@@ -77,7 +77,7 @@ export function AuthModal() {
                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-white/20 dark:border-slate-800 overflow-hidden"
+                    className="relative w-full max-w-md bg-card rounded-[2.5rem] shadow-2xl border border-white/20 dark:border-border overflow-hidden"
                 >
                     <button 
                         onClick={() => setShowLoginModal(false)}
@@ -124,7 +124,7 @@ export function AuthModal() {
                             </div>
 
                             {error && (
-                                <div className="p-3 bg-red-50 dark:bg-red-900/10 text-red-500 text-xs font-bold rounded-xl border border-red-100 dark:border-red-900/20">
+                                <div className="p-3 bg-danger/10 text-danger text-xs font-bold rounded-xl border border-danger/20">
                                     {error}
                                 </div>
                             )}
@@ -161,3 +161,4 @@ export function AuthModal() {
         </AnimatePresence>
     );
 }
+

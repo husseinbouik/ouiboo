@@ -1,8 +1,9 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Inter', sans-serif;
-  --font-display: 'Outfit', sans-serif;
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Manrope', ui-sans-serif, system-ui, sans-serif;
   
   --color-deep-blue: #0A192F;
   --color-sunset-orange: #FF6B35;
@@ -23,39 +24,57 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
 }
 
 :root {
-  --background: #ffffff;
+  --background: #fffaf4;
   --foreground: #0A192F;
   --primary: #0A192F;
   --primary-foreground: #ffffff;
-  --card: #ffffff;
+  --card: rgba(255, 255, 255, 0.92);
   --card-foreground: #0A192F;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  --muted: #f5eadc;
+  --muted-foreground: #6b6175;
   --accent: #FF6B35;
   --accent-foreground: #ffffff;
-  --border: #e2e8f0;
-  --input: #f8fafc;
+  --success: #059669;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #0A192F;
+  --danger: #e11d48;
+  --danger-foreground: #ffffff;
+  --border: rgba(10, 25, 47, 0.12);
+  --input: rgba(255, 255, 255, 0.82);
   scroll-behavior: smooth;
 }
 
 .dark {
-  --background: #020617;
+  --background: #06101f;
   --foreground: #f8fafc;
   --primary: #FF6B35;
   --primary-foreground: #ffffff;
-  --card: #0f172a;
+  --card: rgba(13, 28, 52, 0.92);
   --card-foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
+  --muted: #13243d;
+  --muted-foreground: #a6b4c8;
   --accent: #FF6B35;
   --accent-foreground: #ffffff;
-  --border: #1e293b;
-  --input: #0f172a;
+  --success: #34d399;
+  --success-foreground: #052e1b;
+  --warning: #fbbf24;
+  --warning-foreground: #231a05;
+  --danger: #fb7185;
+  --danger-foreground: #3f0713;
+  --border: rgba(226, 232, 240, 0.14);
+  --input: rgba(15, 31, 55, 0.9);
 }
 
 body {
@@ -67,6 +86,10 @@ body {
 
 h1, h2, h3, h4, .font-display {
   font-family: var(--font-display);
+}
+
+::selection {
+  background: rgba(255, 107, 53, 0.32);
 }
 
 .glass {
@@ -100,3 +123,5 @@ h1, h2, h3, h4, .font-display {
   50% { transform: translateY(-20px); }
   100% { transform: translateY(0px); }
 }
+
+

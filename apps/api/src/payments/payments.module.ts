@@ -7,9 +7,11 @@ import { CMIPaymentProvider } from './providers/cmi-payment.provider';
 import { StripePaymentProvider } from './providers/stripe-payment.provider';
 import { CashPlusPaymentProvider } from './providers/cashplus-payment.provider';
 import { PaymentProviderFactory } from './providers/payment-provider.factory';
+import { CommonModule } from '../common/common.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [DatabaseModule, EmailModule],
+  imports: [CommonModule, DatabaseModule, EmailModule, AuthModule],
   providers: [
     PaymentsService,
     CMIPaymentProvider,

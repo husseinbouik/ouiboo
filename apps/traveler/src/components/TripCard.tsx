@@ -114,7 +114,7 @@ export function TripCard({ trip }: TripCardProps) {
           </Badge>
           <Badge className={cn(
             "text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none flex items-center gap-1",
-            nextSession ? "bg-emerald-500/15 text-emerald-700" : "bg-amber-500/20 text-amber-700"
+            nextSession ? "bg-success/100/15 text-success" : "bg-amber-500/20 text-amber-700"
           )}>
             <Zap className="h-3 w-3" />
             {nextSession ? `${nextSession.availableSeats} spots` : 'Sold out'}
@@ -137,7 +137,7 @@ export function TripCard({ trip }: TripCardProps) {
           <div className="flex flex-wrap items-center gap-2">
             <Badge className={cn(
               "border-none text-[10px] font-bold uppercase tracking-wider flex items-center gap-1",
-              isAgencyVerified ? "bg-emerald-500/15 text-emerald-700" : "bg-muted text-muted-foreground"
+              isAgencyVerified ? "bg-success/100/15 text-success" : "bg-muted text-muted-foreground"
             )}>
               <ShieldCheck className="h-3 w-3" />
               {isAgencyVerified ? 'Verified Agency' : 'Agency Pending'}
@@ -169,3 +169,4 @@ export function TripCard({ trip }: TripCardProps) {
     </Card>
   );
 }
+

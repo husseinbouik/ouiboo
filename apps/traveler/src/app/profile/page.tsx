@@ -138,7 +138,7 @@ export default function ProfilePage() {
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground transition-colors" />
                     <Input
                       {...register('name')}
-                      className="h-14 pl-12 bg-muted/50 dark:bg-slate-900 border-none rounded-2xl font-bold"
+                      className="h-14 pl-12 bg-muted/50 dark:bg-card border-none rounded-2xl font-bold"
                     />
                   </div>
                 </div>
@@ -147,7 +147,7 @@ export default function ProfilePage() {
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Account Role</Label>
                   <div className="relative group">
                     <Shield className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground transition-colors" />
-                    <Input value={user.role} className="h-14 pl-12 bg-muted/50 dark:bg-slate-900 border-none rounded-2xl font-bold cursor-not-allowed opacity-70" disabled />
+                    <Input value={user.role} className="h-14 pl-12 bg-muted/50 dark:bg-card border-none rounded-2xl font-bold cursor-not-allowed opacity-70" disabled />
                   </div>
                 </div>
               </div>
@@ -156,7 +156,7 @@ export default function ProfilePage() {
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Email Address</Label>
                 <div className="relative group">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground transition-colors" />
-                  <Input value={user.email} className="h-14 pl-12 bg-muted/50 dark:bg-slate-900 border-none rounded-2xl font-bold cursor-not-allowed opacity-70" disabled />
+                  <Input value={user.email} className="h-14 pl-12 bg-muted/50 dark:bg-card border-none rounded-2xl font-bold cursor-not-allowed opacity-70" disabled />
                 </div>
               </div>
 
@@ -167,14 +167,14 @@ export default function ProfilePage() {
                   <Input
                     {...register('avatar')}
                     placeholder="https://example.com/avatar.png"
-                    className="h-14 pl-12 bg-muted/50 dark:bg-slate-900 border-none rounded-2xl font-bold"
+                    className="h-14 pl-12 bg-muted/50 dark:bg-card border-none rounded-2xl font-bold"
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">Optional. Add a hosted image URL to personalize your traveler profile.</p>
               </div>
 
               {feedback && (
-                <div className={`rounded-2xl px-4 py-3 text-sm font-semibold ${feedback.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                <div className={`rounded-2xl px-4 py-3 text-sm font-semibold ${feedback.type === 'success' ? 'bg-success/10 text-success' : 'bg-rose-50 text-rose-700'}`}>
                   {feedback.message}
                 </div>
               )}
@@ -196,3 +196,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+

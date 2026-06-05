@@ -66,8 +66,8 @@ export default function WishlistPage() {
             ))}
           </div>
         ) : !user ? (
-          <div className="text-center py-28 bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-gray-200 dark:border-slate-800">
-            <div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="text-center py-28 bg-card/70 rounded-2xl border border-dashed border-border">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
               <Calendar className="h-8 w-8 text-muted-foreground" />
             </div>
             <h3 className="text-xl font-bold">Sign in to access your wishlist</h3>
@@ -84,8 +84,8 @@ export default function WishlistPage() {
             </div>
           </div>
         ) : wishlist.length === 0 ? (
-          <div className="text-center py-28 bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-gray-200 dark:border-slate-800">
-            <div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="text-center py-28 bg-card/70 rounded-2xl border border-dashed border-border">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
               <Calendar className="h-8 w-8 text-muted-foreground" />
             </div>
             <h3 className="text-xl font-bold">Your wishlist is empty</h3>
@@ -111,3 +111,4 @@ export default function WishlistPage() {
     </div>
   );
 }
+

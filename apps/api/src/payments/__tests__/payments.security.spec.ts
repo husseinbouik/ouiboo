@@ -134,7 +134,7 @@ describe('PaymentsService - Security Tests', () => {
 
       jest.spyOn(providerFactory, 'getProvider').mockReturnValue(mockProvider as any);
 
-      const result = await service.initiatePayment(dto);
+      const result = await service.initiatePayment(dto, 'traveler-123');
 
       expect(result.redirectUrl).toBe(mockPaymentSession.redirectUrl);
       expect(mockProvider.initiatePayment).toHaveBeenCalledWith(
@@ -152,6 +152,22 @@ describe('PaymentsService - Security Tests', () => {
       );
     });
 
+    it('should reject payment initiation for a booking owned by another traveler', async () => {
+      const dto: InitiatePaymentDto = {
+        bookingId: 'booking-123',
+        amount: 500,
+        provider: 'stripe',
+        travelerEmail: 'traveler@example.com',
+        travelerName: 'John Doe',
+      };
+
+      jest.spyOn(prismaService.booking, 'findUnique').mockResolvedValue(mockBooking as any);
+
+      await expect(service.initiatePayment(dto, 'traveler-999')).rejects.toThrow(
+        'Booking does not belong to the authenticated traveler',
+      );
+    });
+
     it('should reject payment with underpayment (amount < expected)', async () => {
       const expectedAmount = 250 * 2; // 500 MAD
       const underpaymentAmount = 400; // Only 400 MAD instead of 500
@@ -166,10 +182,10 @@ describe('PaymentsService - Security Tests', () => {
 
       jest.spyOn(prismaService.booking, 'findUnique').mockResolvedValue(mockBooking as any);
 
-      await expect(service.initiatePayment(dto)).rejects.toThrow(
+      await expect(service.initiatePayment(dto, 'traveler-123')).rejects.toThrow(
         BadRequestException,
       );
-      await expect(service.initiatePayment(dto)).rejects.toThrow(
+      await expect(service.initiatePayment(dto, 'traveler-123')).rejects.toThrow(
         new RegExp(`expected ${expectedAmount}.*got ${underpaymentAmount}`),
       );
     });
@@ -188,10 +204,10 @@ describe('PaymentsService - Security Tests', () => {
 
       jest.spyOn(prismaService.booking, 'findUnique').mockResolvedValue(mockBooking as any);
 
-      await expect(service.initiatePayment(dto)).rejects.toThrow(
+      await expect(service.initiatePayment(dto, 'traveler-123')).rejects.toThrow(
         BadRequestException,
       );
-      await expect(service.initiatePayment(dto)).rejects.toThrow(
+      await expect(service.initiatePayment(dto, 'traveler-123')).rejects.toThrow(
         new RegExp(`expected ${expectedAmount}.*got ${overpaymentAmount}`),
       );
     });
@@ -224,7 +240,7 @@ describe('PaymentsService - Security Tests', () => {
 
       jest.spyOn(providerFactory, 'getProvider').mockReturnValue(mockProvider as any);
 
-      const result = await service.initiatePayment(dto);
+      const result = await service.initiatePayment(dto, 'traveler-123');
 
       expect(result.redirectUrl).toBe(mockPaymentSession.redirectUrl);
       expect(mockProvider.initiatePayment).toHaveBeenCalledWith(
@@ -263,7 +279,7 @@ describe('PaymentsService - Security Tests', () => {
 
       jest.spyOn(providerFactory, 'getProvider').mockReturnValue(mockProvider as any);
 
-      await service.initiatePayment(dto);
+      await service.initiatePayment(dto, 'traveler-123');
 
       // Verify that the provider received the validated expectedAmount, not the client-provided dto.amount
       expect(mockProvider.initiatePayment).toHaveBeenCalledWith(
@@ -300,7 +316,7 @@ describe('PaymentsService - Security Tests', () => {
 
       jest.spyOn(providerFactory, 'getProvider').mockReturnValue(mockProvider as any);
 
-      await service.initiatePayment(dto);
+      await service.initiatePayment(dto, 'traveler-123');
 
       expect(prismaService.booking.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -365,7 +381,7 @@ describe('PaymentsService - Security Tests', () => {
         bookingId: 'booking-123',
         provider: 'CASHPLUS',
         transactionId: 'gateway-tx-1',
-      });
+      }, 'traveler-123');
 
       expect(prismaService.wallet.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -384,6 +400,32 @@ describe('PaymentsService - Security Tests', () => {
           }),
         }),
       );
+    });
+
+    it('rejects gateway verification for a booking owned by another traveler', async () => {
+      const providerResult = {
+        status: 'success' as const,
+        metadata: { provider: 'CASHPLUS', paid: true },
+      };
+
+      const provider = {
+        verifyPayment: jest.fn().mockResolvedValue(providerResult),
+        initiatePayment: jest.fn(),
+        validateWebhookSignature: jest.fn(),
+        processRefund: jest.fn(),
+      };
+
+      jest.spyOn(providerFactory, 'getProvider').mockReturnValue(provider as any);
+      jest.spyOn(prismaService.booking, 'findUnique').mockResolvedValue({
+        ...mockBooking,
+        session: { ...mockBooking.session, template: { id: 'template-1', agencyId: 'agency-123' } },
+      } as any);
+
+      await expect(service.verifyPayment({
+        bookingId: 'booking-123',
+        provider: 'CASHPLUS',
+        transactionId: 'gateway-tx-1',
+      }, 'traveler-999')).rejects.toThrow('Booking does not belong to the authenticated traveler');
     });
 
     it('debits the agency wallet when a refund succeeds', async () => {

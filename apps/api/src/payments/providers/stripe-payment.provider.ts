@@ -5,6 +5,7 @@ import {
   PaymentProvider,
 } from '../interfaces/payment-provider.interface';
 import Stripe from 'stripe';
+import { MoneyInput, toMinorUnits } from '../../common/money.util';
 
 /**
  * Stripe Payment Provider
@@ -26,7 +27,7 @@ export class StripePaymentProvider implements PaymentProvider {
   }
 
   async initiatePayment(
-    amount: number,
+    amount: MoneyInput,
     bookingId: string,
     travelerEmail: string,
     travelerName: string,
@@ -41,7 +42,7 @@ export class StripePaymentProvider implements PaymentProvider {
               product_data: {
                 name: `Trip Booking - ${bookingId}`,
               },
-              unit_amount: Math.round(amount * 100),
+              unit_amount: toMinorUnits(amount),
             },
             quantity: 1,
           },
@@ -106,12 +107,12 @@ export class StripePaymentProvider implements PaymentProvider {
 
   async processRefund(
     transactionId: string,
-    amount: number,
+    amount: MoneyInput,
   ): Promise<{ success: boolean; refundId?: string; error?: string }> {
     try {
       const refund = await this.stripe.refunds.create({
         payment_intent: transactionId,
-        amount: Math.round(amount * 100),
+        amount: toMinorUnits(amount),
       });
 
       return {

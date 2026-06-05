@@ -98,7 +98,7 @@ export default function AgencySignupPage() {
           className="w-full max-w-md space-y-8"
         >
           <div className="text-center lg:text-left">
-            <h2 className="text-3xl font-bold text-deep-blue">{t('signup.title')}</h2>
+            <h1 className="text-3xl font-bold text-deep-blue">{t('signup.title')}</h1>
             <p className="mt-2 text-gray-600">{t('signup.subtitle')}</p>
           </div>
 
@@ -205,11 +205,11 @@ export default function AgencySignupPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <button type="button" disabled aria-disabled="true" title={t('signup.socialComingSoon', 'Social signup coming soon')} className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg opacity-70 cursor-not-allowed">
                 <span className="mr-2 flex h-5 w-5 items-center justify-center rounded-full bg-white text-sm font-bold text-blue-600 shadow-sm ring-1 ring-gray-200">G</span>
                 <span className="text-sm font-medium text-gray-700">{t('signup.google')}</span>
               </button>
-              <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <button type="button" disabled aria-disabled="true" title={t('signup.socialComingSoon', 'Social signup coming soon')} className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg opacity-70 cursor-not-allowed">
                 <span className="mr-2 flex h-5 w-5 items-center justify-center rounded bg-[#0A66C2] text-xs font-bold text-white">in</span>
                 <span className="text-sm font-medium text-gray-700">{t('signup.linkedin')}</span>
               </button>

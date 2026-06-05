@@ -117,3 +117,4 @@ export function WishlistButton({ tripId, className }: WishlistButtonProps) {
     </motion.button>
   );
 }
+

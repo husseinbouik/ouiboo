@@ -1,11 +1,18 @@
-import { IsNumber, IsString, IsEmail, IsEnum } from 'class-validator';
+import { IsString, IsEmail, IsEnum } from 'class-validator';
+import { IsDecimalMoney } from '../../common/validators/is-decimal-money.decorator';
+
+export enum PaymentProviderDto {
+  CMI = 'CMI',
+  STRIPE = 'STRIPE',
+  CASHPLUS = 'CASHPLUS',
+}
 
 export class InitiatePaymentDto {
   @IsString()
   bookingId: string;
 
-  @IsNumber()
-  amount: number;
+  @IsDecimalMoney()
+  amount: string | number;
 
   @IsEmail()
   travelerEmail: string;
@@ -13,7 +20,7 @@ export class InitiatePaymentDto {
   @IsString()
   travelerName: string;
 
-  @IsEnum(['CMI', 'STRIPE', 'CASHPLUS'])
+  @IsEnum(PaymentProviderDto)
   provider: string;
 }
 
@@ -24,7 +31,7 @@ export class VerifyPaymentDto {
   @IsString()
   bookingId: string;
 
-  @IsEnum(['CMI', 'STRIPE', 'CASHPLUS'])
+  @IsEnum(PaymentProviderDto)
   provider: string;
 }
 
@@ -35,9 +42,9 @@ export class ProcessRefundDto {
   @IsString()
   transactionId: string;
 
-  @IsNumber()
-  amount: number;
+  @IsDecimalMoney()
+  amount: string | number;
 
-  @IsEnum(['CMI', 'STRIPE', 'CASHPLUS'])
+  @IsEnum(PaymentProviderDto)
   provider: string;
 }

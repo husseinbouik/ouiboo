@@ -93,8 +93,8 @@ export default function MyBookingsPage() {
         return (
             <div className="min-h-screen bg-background font-sans text-foreground overflow-hidden relative">
                 <div className="max-w-5xl mx-auto px-6 pt-32 pb-20">
-                    <div className="text-center py-20 bg-white/50 dark:bg-slate-900/50 rounded-[2rem] border border-dashed border-gray-200 dark:border-slate-800">
-                        <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className="text-center py-20 bg-card/70 rounded-[2rem] border border-dashed border-border">
+                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                             <Calendar className="h-8 w-8 text-muted-foreground" />
                         </div>
                         <h3 className="text-xl font-bold text-foreground">Sign in to view your bookings</h3>
@@ -140,10 +140,10 @@ export default function MyBookingsPage() {
                             const showRetryPayment = canRetryTravelerPayment(booking);
 
                             return (
-                                <Card key={booking.id} className="group border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all duration-300 rounded-[2rem] overflow-hidden bg-white dark:bg-slate-900">
+                                <Card key={booking.id} className="group border border-border shadow-sm hover:shadow-lg transition-all duration-300 rounded-[2rem] overflow-hidden bg-card">
                                     <div className="flex flex-col md:flex-row">
                                         <div className="w-full md:w-72 h-48 md:h-auto overflow-hidden relative">
-                                            <div className="absolute inset-0 bg-gray-200 dark:bg-slate-800 animate-pulse" />
+                                            <div className="absolute inset-0 bg-muted animate-pulse" />
                                             <Image
                                                 src={tripImage}
                                                 alt="Trip"
@@ -175,7 +175,7 @@ export default function MyBookingsPage() {
                                                 </div>
                                                 <div className="flex flex-wrap items-center gap-6">
                                                     <div className="flex items-center gap-2.5">
-                                                        <div className="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center">
+                                                        <div className="w-8 h-8 rounded-lg bg-sunset-orange/10 flex items-center justify-center">
                                                             <Calendar className="h-4 w-4 text-sunset-orange" />
                                                         </div>
                                                         <div className="flex flex-col">
@@ -184,7 +184,7 @@ export default function MyBookingsPage() {
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-2.5">
-                                                        <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                                                        <div className="w-8 h-8 rounded-lg bg-ocean-500/10 flex items-center justify-center">
                                                             <MapPin className="h-4 w-4 text-blue-500 dark:text-blue-400" />
                                                         </div>
                                                         <div className="flex flex-col">
@@ -225,7 +225,7 @@ export default function MyBookingsPage() {
                                                         </Button>
                                                     )}
                                                     {booking.review && (
-                                                        <Badge className="px-5 py-2.5 rounded-xl text-[10px] font-black bg-emerald-500/10 text-emerald-600 border-0">
+                                                        <Badge className="px-5 py-2.5 rounded-xl text-[10px] font-black bg-success/100/10 text-success border-0">
                                                             Review Submitted
                                                         </Badge>
                                                     )}
@@ -284,8 +284,8 @@ export default function MyBookingsPage() {
                             );
                         })
                     ) : (
-                        <div className="text-center py-20 bg-white/50 dark:bg-slate-900/50 rounded-[2rem] border border-dashed border-gray-200 dark:border-slate-800">
-                            <div className="w-16 h-16 bg-gray-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div className="text-center py-20 bg-card/70 rounded-[2rem] border border-dashed border-border">
+                            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Calendar className="h-8 w-8 text-muted-foreground" />
                             </div>
                             <h3 className="text-xl font-bold text-foreground">No bookings found</h3>
@@ -320,3 +320,4 @@ export default function MyBookingsPage() {
         </div>
     );
 }
+

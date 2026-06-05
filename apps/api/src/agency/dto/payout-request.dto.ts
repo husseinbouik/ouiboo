@@ -1,11 +1,9 @@
-import { Type } from 'class-transformer';
-import { IsNotEmpty, IsNumber, IsPositive, IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
+import { IsDecimalMoney } from '../../common/validators/is-decimal-money.decorator';
 
 export class RequestPayoutDto {
-    @Type(() => Number)
-    @IsNumber()
-    @IsPositive()
-    amount: number;
+    @IsDecimalMoney()
+    amount: string | number;
 
     @IsString()
     @IsNotEmpty()

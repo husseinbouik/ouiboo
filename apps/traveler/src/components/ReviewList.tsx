@@ -77,8 +77,8 @@ export function ReviewList({ tripId }: ReviewListProps) {
 
   if (reviews.length === 0) {
     return (
-      <div className="text-center py-12 bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-gray-200 dark:border-slate-800">
-        <div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="text-center py-12 bg-card/70 rounded-2xl border border-dashed border-border">
+        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
           <Star className="h-8 w-8 text-muted-foreground" />
         </div>
         <h3 className="text-lg font-bold text-foreground">No reviews yet</h3>
@@ -99,7 +99,7 @@ export function ReviewList({ tripId }: ReviewListProps) {
               setSortBy(e.target.value as SortBy);
               setPage(1);
             }}
-            className="h-10 px-4 rounded-lg border border-border/50 bg-background text-foreground font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sunset-orange dark:bg-slate-800 dark:border-slate-700"
+            className="h-10 px-4 rounded-lg border border-border/50 bg-background text-foreground font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sunset-orange dark:bg-muted dark:border-border"
           >
             <option value="recent">Most Recent</option>
             <option value="highest">Highest Rated</option>
@@ -140,7 +140,7 @@ export function ReviewList({ tripId }: ReviewListProps) {
                 {/* Badges */}
                 <div className="flex flex-wrap gap-2 justify-end">
                   {review.isVerifiedBooking && (
-                    <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 px-3 py-1 rounded-full text-[10px] font-bold">
+                    <Badge className="bg-success/100/10 text-success dark:text-emerald-400 border border-success/20 dark:border-emerald-500/30 px-3 py-1 rounded-full text-[10px] font-bold">
                       Verified Booking
                     </Badge>
                   )}
@@ -156,7 +156,7 @@ export function ReviewList({ tripId }: ReviewListProps) {
                       className={`h-5 w-5 ${
                         star <= review.rating
                           ? 'fill-sunset-orange text-sunset-orange'
-                          : 'text-gray-300 dark:text-gray-600'
+                          : 'text-muted-foreground/40'
                       }`}
                     />
                   ))}
@@ -195,14 +195,14 @@ export function ReviewList({ tripId }: ReviewListProps) {
                     className="pt-4 border-t border-border/50 space-y-3"
                   >
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0">
-                        <MessageCircle className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                      <div className="w-6 h-6 rounded-full bg-ocean-500/10 flex items-center justify-center shrink-0">
+                        <MessageCircle className="h-3.5 w-3.5 text-ocean-600 dark:text-ocean-300 dark:text-blue-400" />
                       </div>
                       <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                         Agency Response
                       </span>
                     </div>
-                    <p className="text-foreground text-sm leading-relaxed bg-blue-50/50 dark:bg-blue-900/10 rounded-xl p-3 border border-blue-200/50 dark:border-blue-500/20">
+                    <p className="text-foreground text-sm leading-relaxed bg-ocean-500/10 rounded-xl p-3 border border-ocean-500/20">
                       {review.response}
                     </p>
                   </motion.div>
@@ -242,3 +242,4 @@ export function ReviewList({ tripId }: ReviewListProps) {
     </div>
   );
 }
+

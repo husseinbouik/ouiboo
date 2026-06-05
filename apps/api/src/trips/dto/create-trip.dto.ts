@@ -2,6 +2,7 @@ import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { IsString, IsEnum, IsNumber, IsPositive, IsInt, Min, IsArray, MinLength, IsOptional, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TripCategory, TripStatus } from '@ouiboo/types';
+import { IsDecimalMoney } from '../../common/validators/is-decimal-money.decorator';
 
 export class ItineraryDayDto {
     @ApiProperty({ example: 1 })
@@ -99,15 +100,13 @@ export class CreateTripSessionDto {
     endDate: string;
 
     @ApiProperty({ example: 1200.00 })
-    @IsNumber()
-    @IsPositive()
-    price: number;
+    @IsDecimalMoney()
+    price: string | number;
 
     @ApiProperty({ example: 500.00 })
     @IsOptional()
-    @IsNumber()
-    @Min(0)
-    deposit: number;
+    @IsDecimalMoney({ allowZero: true })
+    deposit: string | number;
 
     @ApiProperty({ example: 20 })
     @IsInt()

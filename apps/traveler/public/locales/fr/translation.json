@@ -7,9 +7,13 @@
         "profile": "Profil",
         "bookings": "Mes réservations",
         "wishlist": "Favoris",
-        "logout": "Se déconnecter"
+        "logout": "Se déconnecter",
+        "agencyPanel": "Espace agence",
+        "joinNow": "Rejoindre",
+        "startStory": "Commencer l'aventure"
     },
     "hero": {
+        "tagline": "Découvrez l'inattendu",
         "title": "Découvrez les",
         "accent": "Trésors du Maroc",
         "subtitle": "Réservez des aventures uniques conçues par des experts locaux. Vivez la culture marocaine authentique.",
@@ -18,17 +22,33 @@
         "search": "Rechercher"
     },
     "featured": {
-        "title": "Choix de la rédaction",
-        "subtitle": "Des aventures spécialement sélectionnées pour des souvenirs inoubliables.",
+        "title": "Expériences en vedette",
+        "subtitle": "Des itinéraires sélectionnés par nos meilleures agences locales.",
         "viewAll": "Voir tous les voyages",
-        "from": "À partir de"
+        "from": "À partir de",
+        "emptyTitle": "Aucun voyage trouvé",
+        "emptySubtitle": "Revenez bientôt pour découvrir de nouvelles aventures."
     },
     "categories": {
-        "title": "Trouvez votre type d'aventure",
+        "title": "Voyagez à votre façon",
+        "subtitle": "Explorez les destinations selon votre style de voyage préféré.",
         "adventure": "Aventure",
         "cultural": "Culturel",
         "luxury": "Luxe",
-        "budget": "Économique"
+        "budget": "Économique",
+        "nature": "Nature",
+        "discoverTrips": "Découvrir les voyages"
+    },
+    "trust": {
+        "secureTitle": "Paiements sécurisés",
+        "secureDescription": "Vos paiements sont protégés par une sécurité de niveau professionnel.",
+        "verifiedTitle": "Experts vérifiés",
+        "verifiedDescription": "Chaque agence est vérifiée pour garantir des expériences de qualité.",
+        "instantTitle": "Réservation instantanée",
+        "instantDescription": "Réservez votre voyage sans frais cachés."
+    },
+    "footer": {
+        "rights": "Copyright {{year}} Ouiboo. Tous droits réservés."
     },
     "login": {
         "title": "Bon retour",

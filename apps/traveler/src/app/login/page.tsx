@@ -101,8 +101,8 @@ export default function TravelerLoginPage() {
       >
         <div className="text-center mb-10">
             <Link href="/" className="inline-flex items-center justify-center gap-2 mb-8 group">
-                <div className="w-10 h-10 rounded-xl bg-deep-blue dark:bg-white text-white dark:text-deep-blue flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">O</div>
-                <span className="text-2xl font-bold text-deep-blue dark:text-white">Ouiboo</span>
+                <div className="w-10 h-10 rounded-xl bg-deep-blue dark:bg-sunset-orange text-white flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">O</div>
+                <span className="text-2xl font-bold text-deep-blue dark:text-foreground">Ouiboo</span>
             </Link>
             <h2 className="text-3xl font-bold text-foreground mb-2">{t('login.title', 'Welcome Back')}</h2>
             <p className="text-muted-foreground font-medium text-sm">{t('login.subtitle', 'Enter your details to sign in')}</p>
@@ -124,53 +124,53 @@ export default function TravelerLoginPage() {
                             {...register('email', { required: 'Email is required' })} 
                         />
                     </div>
-                    {errors.email && <span className="text-red-500 text-xs font-semibold pl-1">{errors.email.message as string}</span>}
+                    {errors.email && <span className="text-danger text-xs font-semibold pl-1">{errors.email.message as string}</span>}
                 </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="text-sm font-medium text-gray-700">{t('login.password')}</label>
+                  <label htmlFor="password" className="text-sm font-medium text-foreground">{t('login.password')}</label>
                   <Link href={`/forgot-password?lang=${i18n.language}`} className="text-sm font-medium text-sunset-orange hover:text-orange-600">
                     {t('login.forgotPassword')}
                   </Link>
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input 
                     id="password" 
                     type={showPassword ? 'text' : 'password'}
                     placeholder={t('login.passwordPlaceholder', '********')}
-                    className="pl-10 pr-12 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
+                    className="pl-10 pr-12 h-12 bg-muted border-border focus:bg-background focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
                     {...register('password', { required: 'Password is required' })} 
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
-                {errors.password && <span className="text-red-500 text-xs font-semibold pl-1">{errors.password.message as string}</span>}
+                {errors.password && <span className="text-danger text-xs font-semibold pl-1">{errors.password.message as string}</span>}
               </div>
             </div>
 
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-gray-600">
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-sunset-orange focus:ring-sunset-orange"
+                  className="h-4 w-4 rounded border-border text-sunset-orange focus:ring-sunset-orange"
                   {...register('rememberMe')}
                 />
                 {t('login.rememberMe')}
               </label>
-              <span className="text-xs text-gray-500">{t('login.securityNote')}</span>
+              <span className="text-xs text-muted-foreground">{t('login.securityNote')}</span>
             </div>
 
             {error && (
-                <div className="p-4 bg-red-50 text-red-500 text-sm font-semibold rounded-2xl flex items-center gap-2 border border-red-100">
-                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                <div className="p-4 bg-danger/10 text-danger text-sm font-semibold rounded-2xl flex items-center gap-2 border border-danger/20">
+                    <div className="w-1.5 h-1.5 rounded-full bg-danger" />
                     {error}
                 </div>
             )}
@@ -186,21 +186,21 @@ export default function TravelerLoginPage() {
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-200" />
+                <span className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-2 text-gray-500">{t('login.orContinue')}</span>
+                <span className="bg-card px-2 text-muted-foreground">{t('login.orContinue')}</span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <button type="button" className="flex items-center justify-center px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors">
                 <Image src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-5 w-5 mr-2" alt="Google" width={20} height={20} unoptimized />
-                <span className="text-sm font-medium text-gray-700">{t('login.google')}</span>
+                <span className="text-sm font-medium text-foreground">{t('login.google')}</span>
               </button>
-              <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <button type="button" className="flex items-center justify-center px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors">
                 <Image src="https://www.svgrepo.com/show/475647/facebook-color.svg" className="h-5 w-5 mr-2" alt="Facebook" width={20} height={20} unoptimized />
-                <span className="text-sm font-medium text-gray-700">{t('login.facebook')}</span>
+                <span className="text-sm font-medium text-foreground">{t('login.facebook')}</span>
               </button>
             </div>
 
@@ -215,3 +215,5 @@ export default function TravelerLoginPage() {
     </div>
   );
 }
+
+

@@ -1,5 +1,6 @@
 export * from './Avatar';
 export * from './Badge';
+export * from './BrandPrimitives';
 export * from './Button';
 export * from './Card';
 export * from './Dialog';

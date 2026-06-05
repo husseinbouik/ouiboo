@@ -66,8 +66,8 @@ export default function TravelerResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-white">
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gray-900">
+    <div className="min-h-screen flex bg-background">
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-deep-blue">
         <motion.div
           initial={{ scale: 1.1, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -108,63 +108,63 @@ export default function TravelerResetPasswordPage() {
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   {t('resetPassword.backToLogin', 'Back to login')}
                 </Link>
-                <h2 className="text-3xl font-bold text-gray-900">{t('resetPassword.title', 'Reset your password')}</h2>
-                <p className="text-gray-600">{t('resetPassword.subtitle', 'Choose a new password to protect your traveler account.')}</p>
+                <h2 className="text-3xl font-bold text-foreground">{t('resetPassword.title', 'Reset your password')}</h2>
+                <p className="text-muted-foreground">{t('resetPassword.subtitle', 'Choose a new password to protect your traveler account.')}</p>
               </div>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium text-gray-700">{t('resetPassword.emailLabel', 'Email')}</label>
+                  <label htmlFor="email" className="text-sm font-medium text-foreground">{t('resetPassword.emailLabel', 'Email')}</label>
                   <Input
                     id="email"
                     type="email"
                     value={email}
                     disabled
-                    className="h-12 bg-gray-50 border-gray-200 text-gray-500"
+                    className="h-12 bg-muted border-border text-muted-foreground"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="password" className="text-sm font-medium text-gray-700">{t('resetPassword.passwordLabel', 'New password')}</label>
+                  <label htmlFor="password" className="text-sm font-medium text-foreground">{t('resetPassword.passwordLabel', 'New password')}</label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="password"
                       type="password"
                       placeholder={t('resetPassword.passwordPlaceholder', 'Enter a new password')}
-                      className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
+                      className="pl-10 h-12 bg-muted border-border focus:bg-background focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
                       {...register('password', { required: 'Password is required', minLength: 6 })}
                     />
                   </div>
-                  {errors.password && <span className="text-red-500 text-sm">{errors.password.message}</span>}
+                  {errors.password && <span className="text-danger text-sm">{errors.password.message}</span>}
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">{t('resetPassword.confirmPasswordLabel', 'Confirm password')}</label>
+                  <label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">{t('resetPassword.confirmPasswordLabel', 'Confirm password')}</label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="confirmPassword"
                       type="password"
                       placeholder={t('resetPassword.confirmPasswordPlaceholder', 'Re-enter the new password')}
-                      className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
+                      className="pl-10 h-12 bg-muted border-border focus:bg-background focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
                       {...register('confirmPassword', { required: 'Please confirm your password', minLength: 6 })}
                     />
                   </div>
-                  {errors.confirmPassword && <span className="text-red-500 text-sm">{errors.confirmPassword.message}</span>}
+                  {errors.confirmPassword && <span className="text-danger text-sm">{errors.confirmPassword.message}</span>}
                 </div>
 
                 <Button type="submit" disabled={isSubmitting} className="w-full h-12 bg-sunset-orange hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors duration-200">
                   {isSubmitting ? 'Saving...' : t('resetPassword.saveButton', 'Update password')}
                 </Button>
                 {errorMessage && (
-                  <p className="text-sm text-red-600 font-medium">{errorMessage}</p>
+                  <p className="text-sm text-danger font-medium">{errorMessage}</p>
                 )}
               </form>
             </>
           ) : (
-            <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+            <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
               <CheckCircle className="h-12 w-12 text-sunset-orange" />
-              <h2 className="mt-4 text-2xl font-bold text-gray-900">{t('resetPassword.successTitle', 'Password updated')}</h2>
-              <p className="mt-2 text-gray-600">{t('resetPassword.successMessage', 'Your password has been updated. You can now log in with your new credentials.')}</p>
+              <h2 className="mt-4 text-2xl font-bold text-foreground">{t('resetPassword.successTitle', 'Password updated')}</h2>
+              <p className="mt-2 text-muted-foreground">{t('resetPassword.successMessage', 'Your password has been updated. You can now log in with your new credentials.')}</p>
               <div className="mt-6 flex flex-col gap-3">
                 <Button asChild className="w-full h-12 bg-sunset-orange hover:bg-orange-600 text-white font-semibold rounded-lg">
                   <Link href={`/login?lang=${i18n.language}`}>{t('resetPassword.backToLogin', 'Back to login')}</Link>
@@ -177,3 +177,5 @@ export default function TravelerResetPasswordPage() {
     </div>
   );
 }
+
+

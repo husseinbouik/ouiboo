@@ -4,7 +4,7 @@ import { DatabaseService } from '../database/database.service';
 import { RegisterDto } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
 import { EmailService } from '../email/email.service';
-import { createHash, randomUUID } from 'crypto';
+import { createHash, randomInt, randomUUID } from 'crypto';
 import { UserRole } from '@ouiboo/types';
 
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -61,7 +61,7 @@ export class AuthService {
     async register(dto: RegisterDto) {
         const hashedPassword = await bcrypt.hash(dto.password, 10);
         // Generate 6-digit OTP (100000 to 999999)
-        const otp = Math.floor(100000 + Math.random() * 900000).toString().padStart(6, '0');
+        const otp = this.generateOtp();
         const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
         const otpLastSentAt = new Date();
 
@@ -184,7 +184,7 @@ export class AuthService {
         }
 
         // Generate 6-digit OTP (100000 to 999999)
-        const otp = Math.floor(100000 + Math.random() * 900000).toString().padStart(6, '0');
+        const otp = this.generateOtp();
         const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
         await this.db.user.update({
             where: { id: user.id },
@@ -356,6 +356,10 @@ export class AuthService {
 
     private hashToken(token: string) {
         return createHash('sha256').update(token).digest('hex');
+    }
+
+    private generateOtp() {
+        return randomInt(100000, 1000000).toString();
     }
 
     private async issueRefreshToken(

@@ -6,23 +6,44 @@ import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 export class UsersService {
     constructor(private db: DatabaseService) { }
 
+    private sanitizeUser(user: any) {
+        if (!user) {
+            return user;
+        }
+
+        const safeUser = { ...user };
+        delete safeUser.password;
+        delete safeUser.passwordResetTokenHash;
+        delete safeUser.passwordResetExpiresAt;
+        delete safeUser.passwordResetSentAt;
+        delete safeUser.otp;
+        delete safeUser.otpExpiresAt;
+        delete safeUser.otpLastSentAt;
+
+        return safeUser;
+    }
+
     async findOne(id: string) {
-        return this.db.user.findUnique({
+        const user = await this.db.user.findUnique({
             where: { id },
             include: {
                 agencyProfile: true,
             },
         });
+
+        return this.sanitizeUser(user);
     }
 
     async updateUserProfile(userId: string, data: UpdateUserProfileDto) {
-        return this.db.user.update({
+        const user = await this.db.user.update({
             where: { id: userId },
             data,
             include: {
                 agencyProfile: true,
             },
         });
+
+        return this.sanitizeUser(user);
     }
 
     async updateAgencyProfile(userId: string, data: any) {

@@ -20,22 +20,22 @@ export default function TravelerTermsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-4xl px-6 py-16">
         <div className="space-y-4">
           <Link href={`/signup?lang=${i18n.language}`} className="text-sm font-semibold text-sunset-orange hover:text-orange-600">
             {t('terms.backToSignup')}
           </Link>
-          <h1 className="text-4xl font-bold text-gray-900">{t('terms.title')}</h1>
-          <p className="text-sm text-gray-500">{t('terms.updated')}</p>
-          <p className="text-lg text-gray-600">{t('terms.intro')}</p>
+          <h1 className="text-4xl font-bold text-foreground">{t('terms.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('terms.updated')}</p>
+          <p className="text-lg text-muted-foreground">{t('terms.intro')}</p>
         </div>
 
         <div className="mt-10 grid gap-6">
           {sections.map((section) => (
-            <div key={section.title} className="rounded-2xl border border-gray-100 bg-gray-50 p-6">
-              <h2 className="text-xl font-semibold text-gray-900">{section.title}</h2>
-              <p className="mt-2 text-gray-600">{section.body}</p>
+            <div key={section.title} className="rounded-2xl border border-border bg-muted p-6">
+              <h2 className="text-xl font-semibold text-foreground">{section.title}</h2>
+              <p className="mt-2 text-muted-foreground">{section.body}</p>
             </div>
           ))}
         </div>
@@ -43,3 +43,5 @@ export default function TravelerTermsPage() {
     </div>
   );
 }
+
+

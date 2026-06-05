@@ -77,7 +77,7 @@ export function Navbar() {
         className={cn(
           "pointer-events-auto flex items-center justify-between transition-all duration-300 w-full px-6 lg:px-8 h-20",
           scrolled 
-            ? "bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm" 
+            ? "bg-card/80 backdrop-blur-md shadow-sm" 
             : "bg-transparent"
         )}
       >
@@ -86,7 +86,7 @@ export function Navbar() {
             <div className="w-8 h-8 rounded-lg bg-deep-blue text-white flex items-center justify-center font-bold text-lg">
                 O
             </div>
-            <span className="text-xl font-bold tracking-tight text-deep-blue dark:text-white">
+            <span className="text-xl font-bold tracking-tight text-deep-blue dark:text-foreground">
                 Ouiboo
             </span>
         </Link>
@@ -122,6 +122,9 @@ export function Navbar() {
                 <div className="relative">
                     <button 
                         onMouseEnter={() => setProfileOpen(true)}
+                        onFocus={() => setProfileOpen(true)}
+                        aria-label={t('nav.openProfileMenu', 'Open profile menu')}
+                        aria-expanded={profileOpen}
                         className="flex items-center gap-2 p-1.5 rounded-full hover:bg-muted/50 transition-colors"
                     >
                         <div className="w-8 h-8 rounded-full bg-deep-blue text-white flex items-center justify-center font-bold text-xs overflow-hidden">
@@ -146,32 +149,32 @@ export function Navbar() {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                                 onMouseLeave={() => setProfileOpen(false)}
-                                className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden z-[60]"
+                                className="absolute right-0 mt-2 w-64 bg-card rounded-xl shadow-lg border border-border overflow-hidden z-[60]"
                             >
-                                <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-                                    <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">{user.name}</p>
+                                <div className="p-4 border-b border-border">
+                                    <p className="font-semibold text-sm text-foreground truncate">{user.name}</p>
                                     <p className="text-xs text-muted-foreground truncate">{user.role}</p>
                                 </div>
                                 <div className="p-1">
-                                    <Link href="/profile" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
+                                    <Link href="/profile" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg">
                                         <User className="w-4 h-4" /> {t('nav.profile')}
                                     </Link>
-                                    <Link href="/wishlist" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
+                                    <Link href="/wishlist" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg">
                                         <Heart className="w-4 h-4" /> {t('nav.wishlist')}
                                     </Link>
-                                    <Link href="/bookings" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg">
+                                    <Link href="/bookings" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg">
                                         <CalendarIcon className="w-4 h-4" /> {t('nav.bookings')}
                                     </Link>
                                     {user.role === 'AGENCY' && (
-                                        <Link href="/dashboard" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-sunset-orange hover:bg-orange-50 dark:hover:bg-orange-950/20 rounded-lg">
-                                            <LayoutDashboard className="w-4 h-4" /> Agency Panel
+                                        <Link href="/dashboard" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-sunset-orange hover:bg-sunset-orange/10 rounded-lg">
+                                            <LayoutDashboard className="w-4 h-4" /> {t('nav.agencyPanel')}
                                         </Link>
                                     )}
                                 </div>
-                                <div className="p-1 border-t border-gray-100 dark:border-gray-800">
+                                <div className="p-1 border-t border-border">
                                     <button 
                                         onClick={logout}
-                                        className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg"
+                                        className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-danger hover:bg-danger/10 rounded-lg"
                                     >
                                         <LogOut className="w-4 h-4" /> {t('nav.logout')}
                                     </button>
@@ -182,12 +185,12 @@ export function Navbar() {
                 </div>
             ) : (
                 <div className="flex items-center gap-4">
-                    <Link href="/login" className="text-sm font-semibold text-gray-900 dark:text-white hover:text-sunset-orange transition-colors">
+                    <Link href="/login" className="text-sm font-semibold text-foreground hover:text-sunset-orange transition-colors">
                         {t('nav.login')}
                     </Link>
                     <Link href="/signup">
                         <Button className="rounded-md bg-sunset-orange hover:bg-orange-600 text-white font-semibold text-sm px-5 py-2.5 h-auto border-none shadow-sm transition-transform hover:scale-105">
-                            Join Now
+                            {t('nav.joinNow')}
                         </Button>
                     </Link>
                 </div>
@@ -196,6 +199,9 @@ export function Navbar() {
             {/* Mobile Menu Trigger */}
             <button 
                 onClick={() => setIsOpen(true)}
+                aria-label={t('nav.openMenu', 'Open navigation menu')}
+                aria-expanded={isOpen}
+                aria-controls="traveler-mobile-menu"
                 className={cn(
                     "md:hidden w-10 h-10 rounded-xl flex items-center justify-center transition-all",
                     isTransparent ? "bg-white/10 text-white" : "bg-muted text-foreground"
@@ -220,6 +226,7 @@ export function Navbar() {
                initial={{ x: "100%" }}
                animate={{ x: 0 }}
                transition={{ type: "spring", damping: 25 }}
+               id="traveler-mobile-menu"
                className="w-[80%] max-w-sm h-full bg-background p-8 space-y-12"
                onClick={(e) => e.stopPropagation()}
             >
@@ -228,20 +235,20 @@ export function Navbar() {
                      <div className="w-8 h-8 rounded-xl bg-sunset-orange text-white flex items-center justify-center font-black text-lg">O</div>
                      <span className="text-xl font-black">Ouiboo</span>
                   </div>
-                  <button onClick={() => setIsOpen(false)} className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                  <button onClick={() => setIsOpen(false)} aria-label={t('nav.closeMenu', 'Close navigation menu')} className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
                      <X className="h-5 w-5" />
                   </button>
                </div>
 
                <div className="space-y-6">
                         <Link onClick={() => setIsOpen(false)} href="/search" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
-                            Explore <Zap className="text-sunset-orange" />
+                            {t('nav.explore')} <Zap className="text-sunset-orange" />
                         </Link>
                         <Link onClick={() => setIsOpen(false)} href="/trips/featured" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
-                            Featured <Heart className="text-pink-500" />
+                            {t('nav.featured')} <Heart className="text-pink-500" />
                         </Link>
                         <Link onClick={() => setIsOpen(false)} href="/wishlist" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
-                            Wishlist <Heart className="text-red-500" />
+                            {t('nav.wishlist')} <Heart className="text-red-500" />
                             {wishlistCountData?.count > 0 && (
                               <span className="ml-2 inline-flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-[12px] font-bold">{wishlistCountData.count}</span>
                             )}
@@ -251,10 +258,10 @@ export function Navbar() {
                {!user && (
                  <div className="space-y-4 pt-10">
                     <Link onClick={() => setIsOpen(false)} href="/signup" className="block w-full py-5 rounded-2xl bg-sunset-orange text-white font-black text-center text-xl shadow-xl shadow-orange-900/20">
-                       Start Your Story
+                       {t('nav.startStory')}
                     </Link>
                     <Link onClick={() => setIsOpen(false)} href="/login" className="block w-full py-5 rounded-2xl bg-muted font-bold text-center text-xl">
-                       Sign In
+                       {t('nav.login')}
                     </Link>
                  </div>
                )}
@@ -265,3 +272,4 @@ export function Navbar() {
     </div>
   );
 }
+

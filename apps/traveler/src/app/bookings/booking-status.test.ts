@@ -10,8 +10,8 @@ import {
 
 describe('traveler booking status helpers', () => {
   it('maps canonical booking states to the expected badge tone', () => {
-    expect(getTravelerBookingStatusTone(BookingStatus.Confirmed)).toContain('emerald');
-    expect(getTravelerBookingStatusTone(BookingStatus.AwaitingValidation)).toContain('blue');
+    expect(getTravelerBookingStatusTone(BookingStatus.Confirmed)).toContain('success');
+    expect(getTravelerBookingStatusTone(BookingStatus.AwaitingValidation)).toContain('ocean');
     expect(getTravelerBookingStatusTone(BookingStatus.Pending)).toContain('amber');
     expect(getTravelerBookingStatusTone(BookingStatus.Cancelled)).toContain('rose');
   });
@@ -70,3 +70,4 @@ describe('traveler booking status helpers', () => {
     ).toBe(false);
   });
 });
+

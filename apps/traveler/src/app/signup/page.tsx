@@ -99,8 +99,8 @@ export default function TravelerSignupPage() {
       >
         <div className="text-center mb-10">
           <Link href="/" className="inline-flex items-center justify-center gap-2 mb-8 group">
-              <div className="w-10 h-10 rounded-xl bg-deep-blue dark:bg-white text-white dark:text-deep-blue flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">O</div>
-              <span className="text-2xl font-bold text-deep-blue dark:text-white">Ouiboo</span>
+              <div className="w-10 h-10 rounded-xl bg-deep-blue dark:bg-sunset-orange text-white flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">O</div>
+              <span className="text-2xl font-bold text-deep-blue dark:text-foreground">Ouiboo</span>
           </Link>
           <h2 className="text-3xl font-bold text-foreground mb-2">{t('signup.title', 'Create Account')}</h2>
           <p className="text-muted-foreground font-medium text-sm">{t('signup.subtitle', 'Start your journey with us')}</p>
@@ -122,7 +122,7 @@ export default function TravelerSignupPage() {
                             {...register('name', { required: 'Name is required' })}
                         />
                     </div>
-                    {errors.name && <span className="text-red-500 text-xs font-semibold pl-1">{errors.name.message as string}</span>}
+                    {errors.name && <span className="text-danger text-xs font-semibold pl-1">{errors.name.message as string}</span>}
                 </div>
 
                 <div className="space-y-1.5">
@@ -139,46 +139,46 @@ export default function TravelerSignupPage() {
                              {...register('email', { required: 'Email is required' })}
                         />
                     </div>
-                    {errors.email && <span className="text-red-500 text-xs font-semibold pl-1">{errors.email.message as string}</span>}
+                    {errors.email && <span className="text-danger text-xs font-semibold pl-1">{errors.email.message as string}</span>}
                 </div>
             </div>
 
 
               {/* Password Input */}
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-gray-700">{t('signup.password')}</label>
+                <label htmlFor="password" className="text-sm font-medium text-foreground">{t('signup.password')}</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder={t('signup.passwordPlaceholder', '********')}
-                    className="pl-10 pr-12 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
+                    className="pl-10 pr-12 h-12 bg-muted border-border focus:bg-background focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
                     {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Password must be at least 6 characters' } })}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     aria-label={showPassword ? t('signup.hidePassword') : t('signup.showPassword')}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
-                <p className="text-xs text-gray-500">{t('signup.passwordHint')}</p>
-                {errors.password && <span className="text-red-500 text-sm">{errors.password.message as string}</span>}
+                <p className="text-xs text-muted-foreground">{t('signup.passwordHint')}</p>
+                {errors.password && <span className="text-danger text-sm">{errors.password.message as string}</span>}
               </div>
 
               {error && (
-                <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+                <div className="rounded-2xl border border-danger/20 bg-danger/10 px-4 py-3 text-sm font-semibold text-danger">
                   {error}
                 </div>
               )}
 
-              <label className="flex items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-600">
+              <label className="flex items-start gap-2 rounded-lg border border-border bg-muted px-3 py-3 text-sm text-muted-foreground">
                 <input
                   type="checkbox"
-                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-sunset-orange focus:ring-sunset-orange"
+                  className="mt-0.5 h-4 w-4 rounded border-border text-sunset-orange focus:ring-sunset-orange"
                   {...register('acceptTerms', { required: 'Please accept the terms to continue.' })}
                 />
                 <span>
@@ -193,7 +193,7 @@ export default function TravelerSignupPage() {
                   .
                 </span>
               </label>
-              {errors.acceptTerms && <p className="text-xs text-red-500">{errors.acceptTerms.message as string}</p>}
+              {errors.acceptTerms && <p className="text-xs text-danger">{errors.acceptTerms.message as string}</p>}
 
               {/* Submit Button */}
               <Button
@@ -204,7 +204,7 @@ export default function TravelerSignupPage() {
                 {signupMutation.isPending ? 'Creating Account...' : t('signup.createAccount', 'Register')}
             </Button>
 
-            <p className="text-center text-sm text-gray-500 font-medium">
+            <p className="text-center text-sm text-muted-foreground font-medium">
                 {t('signup.hasAccount', 'Already have an account?')}{' '}
                 <Link href={`/login?lang=${i18n.language}`} className="text-deep-blue dark:text-sunset-orange font-bold hover:underline">
                     {t('signup.logInLink', 'Sign in')}
@@ -215,3 +215,5 @@ export default function TravelerSignupPage() {
     </div>
   );
 }
+
+

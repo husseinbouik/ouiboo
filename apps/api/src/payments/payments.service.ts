@@ -4,6 +4,7 @@ import { EmailService } from '../email/email.service';
 import { PaymentProviderFactory } from './providers/payment-provider.factory';
 import { InitiatePaymentDto, VerifyPaymentDto, ProcessRefundDto } from './dto/payment.dto';
 import { PaymentMethod, BookingStatus, BookingPaymentStatus, RefundStatus, TransactionType } from '@ouiboo/database';
+import { MoneyInput, decimalAbs, decimalEqualsMoney, multiplyMoney, toMoneyDecimal, toMoneyString } from '../common/money.util';
 
 @Injectable()
 export class PaymentsService {
@@ -19,7 +20,7 @@ export class PaymentsService {
    * Initiate a payment session
    * Security: Validates amount against booking session price to prevent underpayment tampering
    */
-  async initiatePayment(dto: InitiatePaymentDto) {
+  async initiatePayment(dto: InitiatePaymentDto, requesterId?: string) {
     // Verify booking exists and is in correct status
     const booking = await this.prisma.booking.findUnique({
       where: { id: dto.bookingId },
@@ -30,21 +31,24 @@ export class PaymentsService {
       throw new BadRequestException('Booking not found');
     }
 
+    if (!requesterId || booking.travelerId !== requesterId) {
+      throw new BadRequestException('Booking does not belong to the authenticated traveler');
+    }
+
     if (booking.status !== BookingStatus.PENDING) {
       throw new BadRequestException('Booking is not in pending status');
     }
 
     // SECURITY: Validate payment amount against booking total price
     // Calculate expected amount from authoritative sources (not client input)
-    const expectedAmount = booking.session.price * booking.guestsCount;
+    const expectedAmount = multiplyMoney(booking.session.price, booking.guestsCount);
 
-    // Allow small tolerance for floating point precision (0.01 currency units)
-    if (Math.abs(dto.amount - expectedAmount) > 0.01) {
+    if (!decimalEqualsMoney(dto.amount, expectedAmount)) {
       this.logger.warn(
-        `Payment amount mismatch for booking ${dto.bookingId}: expected ${expectedAmount}, got ${dto.amount}`,
+        `Payment amount mismatch for booking ${dto.bookingId}: expected ${toMoneyString(expectedAmount)}, got ${dto.amount}`,
       );
       throw new BadRequestException(
-        `Amount mismatch: expected ${expectedAmount}, got ${dto.amount}`,
+        `Amount mismatch: expected ${toMoneyString(expectedAmount)}, got ${dto.amount}`,
       );
     }
 
@@ -87,7 +91,7 @@ export class PaymentsService {
     });
 
     this.logger.log(
-      `Payment session initiated for booking ${dto.bookingId}: ${expectedAmount} ${booking.session.currency} via ${dto.provider}`,
+      `Payment session initiated for booking ${dto.bookingId}: ${toMoneyString(expectedAmount)} ${booking.session.currency} via ${dto.provider}`,
     );
 
     return {
@@ -100,7 +104,7 @@ export class PaymentsService {
   /**
    * Verify payment status
    */
-  async verifyPayment(dto: VerifyPaymentDto) {
+  async verifyPayment(dto: VerifyPaymentDto, requesterId?: string) {
     const provider = this.paymentProviderFactory.getProvider(
       dto.provider as any,
     );
@@ -120,6 +124,10 @@ export class PaymentsService {
 
     if (!booking) {
       throw new BadRequestException('Booking not found');
+    }
+
+    if (!requesterId || booking.travelerId !== requesterId) {
+      throw new BadRequestException('Booking does not belong to the authenticated traveler');
     }
 
     if (result.status === 'success') {
@@ -215,7 +223,7 @@ export class PaymentsService {
 
     const refundResult = await provider.processRefund(
       dto.transactionId,
-      dto.amount,
+      toMoneyDecimal(dto.amount),
     );
 
     if (refundResult.success) {
@@ -223,7 +231,7 @@ export class PaymentsService {
       await this.prisma.booking.update({
         where: { id: dto.bookingId },
         data: {
-          refundAmount: dto.amount,
+          refundAmount: toMoneyDecimal(dto.amount),
           refundStatus: RefundStatus.PROCESSED,
           refundProcessedAt: new Date(),
           paymentStatus: BookingPaymentStatus.REFUNDED,
@@ -247,7 +255,7 @@ export class PaymentsService {
           where: { id: agencyWallet.id },
           data: {
             availableBalance: {
-              decrement: Math.abs(dto.amount),
+              decrement: decimalAbs(dto.amount),
             },
           },
         });
@@ -256,7 +264,7 @@ export class PaymentsService {
         await this.prisma.walletTransaction.create({
           data: {
             walletId: agencyWallet.id,
-            amount: -Math.abs(dto.amount),
+            amount: decimalAbs(dto.amount).neg(),
             type: TransactionType.REFUND,
             reason: `Refund for booking ${dto.bookingId}`,
             referenceId: refundResult.refundId || null,
@@ -271,7 +279,7 @@ export class PaymentsService {
     return refundResult;
   }
 
-  async refundBookingById(bookingId: string, amount?: number) {
+  async refundBookingById(bookingId: string, amount?: MoneyInput) {
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
       include: {
@@ -434,7 +442,7 @@ export class PaymentsService {
       provider: 'STRIPE',
       sessionId: session.id,
       paymentIntentId: session.payment_intent,
-      amountReceived: session.amount_total / 100,
+        amountReceived: toMoneyString(toMoneyDecimal(session.amount_total).div(100)),
     });
   }
 
@@ -546,7 +554,7 @@ export class PaymentsService {
       where: { id: booking.id },
       data: {
         paymentStatus: BookingPaymentStatus.REFUNDED,
-        refundAmount: charge.amount_refunded / 100,
+        refundAmount: toMoneyDecimal(charge.amount_refunded).div(100).toDecimalPlaces(2),
         refundProcessedAt: new Date(),
       },
     });
@@ -579,7 +587,7 @@ export class PaymentsService {
       await this.transitionBookingToConfirmed(transaction.booking.id, {
         provider: 'STRIPE',
         paymentIntentId: paymentIntent.id,
-        amountReceived: paymentIntent.amount / 100,
+        amountReceived: toMoneyString(toMoneyDecimal(paymentIntent.amount).div(100)),
       });
     }
   }
@@ -757,7 +765,7 @@ export class PaymentsService {
       where: { id: bookingId },
       data: {
         paymentStatus: BookingPaymentStatus.REFUNDED,
-        refundAmount: event.amount,
+        refundAmount: toMoneyDecimal(event.amount),
         refundProcessedAt: new Date(),
       },
     });

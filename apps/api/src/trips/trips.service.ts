@@ -2,6 +2,7 @@ import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/commo
 import { DatabaseService } from '../database/database.service';
 import { CreateTripTemplateDto, CreateTripSessionDto } from './dto/create-trip.dto';
 import { SessionStatus, TripStatus } from '@ouiboo/database';
+import { toMoneyDecimal } from '../common/money.util';
 
 @Injectable()
 export class TripsService {
@@ -79,10 +80,14 @@ export class TripsService {
                 page = 1,
                 limit = 20,
             } = filters || {};
+            const safePage = Math.max(1, Number.isFinite(page) ? Math.floor(page) : 1);
+            const safeLimit = Math.min(Math.max(1, Number.isFinite(limit) ? Math.floor(limit) : 20), 50);
+            const allowedSortFields = new Set(['createdAt', 'updatedAt', 'durationDays', 'averageRating', 'price', 'rating', 'popularity']);
+            const safeSortBy = allowedSortFields.has(sortBy) ? sortBy : 'createdAt';
 
             // Build WHERE clause for trip templates
             const where: any = {
-                status: status || TripStatus.ACTIVE,
+                status: status === TripStatus.ACTIVE ? TripStatus.ACTIVE : TripStatus.ACTIVE,
             };
 
             if (featured) where.featured = true;
@@ -130,27 +135,27 @@ export class TripsService {
             // Price filter on sessions
             if (priceMin !== undefined || priceMax !== undefined) {
                 sessionWhere.price = {};
-                if (priceMin !== undefined) sessionWhere.price.gte = priceMin;
-                if (priceMax !== undefined) sessionWhere.price.lte = priceMax;
+                if (priceMin !== undefined) sessionWhere.price.gte = toMoneyDecimal(priceMin, 'priceMin');
+                if (priceMax !== undefined) sessionWhere.price.lte = toMoneyDecimal(priceMax, 'priceMax');
             }
 
             // Build sort order
             const orderBy: any = {};
-            if (sortBy === 'price') {
+            if (safeSortBy === 'price') {
                 // For price sorting, we'd need to sort by session price, default to sessions[0]
                 orderBy.sessions = { _count: sortOrder };
-            } else if (sortBy === 'rating') {
+            } else if (safeSortBy === 'rating') {
                 orderBy.averageRating = sortOrder;
-            } else if (sortBy === 'popularity') {
+            } else if (safeSortBy === 'popularity') {
                 // Sort by booking count or review count
                 orderBy._count = { sessions: sortOrder };
             } else {
                 // Default sort by createdAt
-                orderBy[sortBy] = sortOrder;
+                orderBy[safeSortBy] = sortOrder;
             }
 
             // Query with pagination
-            const skip = (page - 1) * limit;
+            const skip = (safePage - 1) * safeLimit;
 
             const [templates, total] = await Promise.all([
                 this.db.tripTemplate.findMany({
@@ -177,7 +182,7 @@ export class TripsService {
                     },
                     orderBy,
                     skip,
-                    take: limit,
+                    take: safeLimit,
                 }),
                 this.db.tripTemplate.count({ where }),
             ]);
@@ -187,7 +192,7 @@ export class TripsService {
             if (priceMin !== undefined || priceMax !== undefined) {
                 filtered = templates.filter(template => {
                     if (template.sessions.length === 0) return false;
-                    const minPrice = Math.min(...template.sessions.map(s => s.price));
+                    const minPrice = Math.min(...template.sessions.map(s => Number(s.price)));
                     if (priceMin !== undefined && minPrice < priceMin) return false;
                     if (priceMax !== undefined && minPrice > priceMax) return false;
                     return true;
@@ -198,9 +203,9 @@ export class TripsService {
                 data: filtered,
                 pagination: {
                     total,
-                    page,
-                    limit,
-                    totalPages: Math.ceil(total / limit),
+                    page: safePage,
+                    limit: safeLimit,
+                    totalPages: Math.ceil(total / safeLimit),
                 },
             };
         } catch (error) {
@@ -246,8 +251,10 @@ export class TripsService {
 
         return this.db.tripSession.create({
             data: {
-                ...dto,
                 templateId,
+                price: toMoneyDecimal(dto.price, 'price'),
+                deposit: toMoneyDecimal(dto.deposit ?? 0, 'deposit'),
+                totalSeats: dto.totalSeats,
                 availableSeats: dto.totalSeats,
                 startDate: new Date(dto.startDate),
                 endDate: new Date(dto.endDate),
