@@ -137,19 +137,21 @@ describe('PaymentsService - Security Tests', () => {
       const result = await service.initiatePayment(dto, 'traveler-123');
 
       expect(result.redirectUrl).toBe(mockPaymentSession.redirectUrl);
-      expect(mockProvider.initiatePayment).toHaveBeenCalledWith(
-        correctAmount,
+      const [providerAmount, providerBookingId, providerEmail, providerName] = mockProvider.initiatePayment.mock.calls[0];
+      expect(providerAmount.toString()).toBe('500');
+      expect([providerBookingId, providerEmail, providerName]).toEqual([
         'booking-123',
         'traveler@example.com',
         'John Doe',
-      );
+      ]);
       expect(prismaService.paymentTransaction.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            amount: correctAmount,
+            amount: expect.objectContaining({}),
           }),
         }),
       );
+      expect((prismaService.paymentTransaction.create as jest.Mock).mock.calls[0][0].data.amount.toString()).toBe('500');
     });
 
     it('should reject payment initiation for a booking owned by another traveler', async () => {
@@ -212,9 +214,8 @@ describe('PaymentsService - Security Tests', () => {
       );
     });
 
-    it('should allow small floating-point variance (< 0.01 tolerance)', async () => {
-      const expectedAmount = 250 * 2; // 500.00 MAD
-      const floatingPointVariance = 500.005; // Variance within 0.01 tolerance
+    it('should reject fractional-cent floating-point variance instead of tolerating JS float drift', async () => {
+      const floatingPointVariance = 500.005;
 
       const dto: InitiatePaymentDto = {
         bookingId: 'booking-123',
@@ -225,29 +226,8 @@ describe('PaymentsService - Security Tests', () => {
       };
 
       jest.spyOn(prismaService.booking, 'findUnique').mockResolvedValue(mockBooking as any);
-      jest.spyOn(prismaService.booking, 'update').mockResolvedValue(mockBooking as any);
-      jest.spyOn(prismaService.paymentTransaction, 'create').mockResolvedValue({
-        id: 'tx-123',
-        amount: floatingPointVariance,
-      } as any);
-
-      const mockProvider = {
-        initiatePayment: jest.fn().mockResolvedValue(mockPaymentSession),
-        validateWebhookSignature: jest.fn(),
-        verifyPayment: jest.fn(),
-        processRefund: jest.fn(),
-      };
-
-      jest.spyOn(providerFactory, 'getProvider').mockReturnValue(mockProvider as any);
-
-      const result = await service.initiatePayment(dto, 'traveler-123');
-
-      expect(result.redirectUrl).toBe(mockPaymentSession.redirectUrl);
-      expect(mockProvider.initiatePayment).toHaveBeenCalledWith(
-        expectedAmount,
-        'booking-123',
-        'traveler@example.com',
-        'John Doe',
+      await expect(service.initiatePayment(dto, 'traveler-123')).rejects.toThrow(
+        /expected 500.00.*got 500.005/,
       );
     });
 
@@ -282,12 +262,7 @@ describe('PaymentsService - Security Tests', () => {
       await service.initiatePayment(dto, 'traveler-123');
 
       // Verify that the provider received the validated expectedAmount, not the client-provided dto.amount
-      expect(mockProvider.initiatePayment).toHaveBeenCalledWith(
-        expectedAmount,
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-      );
+      expect(mockProvider.initiatePayment.mock.calls[0][0].toString()).toBe(String(expectedAmount));
     });
 
     it('should update booking totalAmount with validated amount', async () => {
@@ -318,14 +293,9 @@ describe('PaymentsService - Security Tests', () => {
 
       await service.initiatePayment(dto, 'traveler-123');
 
-      expect(prismaService.booking.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            totalAmount: expectedAmount,
-            paymentStatus: BookingPaymentStatus.UNPAID,
-          }),
-        }),
-      );
+      const updatePayload = (prismaService.booking.update as jest.Mock).mock.calls[0][0];
+      expect(updatePayload.data.totalAmount.toString()).toBe(String(expectedAmount));
+      expect(updatePayload.data.paymentStatus).toBe(BookingPaymentStatus.UNPAID);
     });
   });
 
@@ -463,23 +433,14 @@ describe('PaymentsService - Security Tests', () => {
         amount: 120,
       });
 
-      expect(prismaService.wallet.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'wallet-123' },
-          data: expect.objectContaining({
-            availableBalance: { decrement: 120 },
-          }),
-        }),
-      );
-      expect(prismaService.walletTransaction.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            walletId: 'wallet-123',
-            amount: -120,
-            type: TransactionType.REFUND,
-          }),
-        }),
-      );
+      const walletUpdate = (prismaService.wallet.update as jest.Mock).mock.calls[0][0];
+      expect(walletUpdate.where).toEqual({ id: 'wallet-123' });
+      expect(walletUpdate.data.availableBalance.decrement.toString()).toBe('120');
+
+      const walletTx = (prismaService.walletTransaction.create as jest.Mock).mock.calls[0][0];
+      expect(walletTx.data.walletId).toBe('wallet-123');
+      expect(walletTx.data.amount.toString()).toBe('-120');
+      expect(walletTx.data.type).toBe(TransactionType.REFUND);
     });
 
     it('derives the provider transaction when refunding by booking id', async () => {

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { MoneyInput, decimalZero, toMoneyDecimal, toMoneyString } from '../common/money.util';
 
 @Injectable()
 export class AnalyticsService {
@@ -139,9 +140,8 @@ export class AnalyticsService {
       );
       const totalRevenue = trip.sessions.reduce(
         (acc, session) =>
-          acc +
-          session.bookings.reduce((sum, booking) => sum + booking.totalAmount, 0),
-        0,
+          acc.add(session.bookings.reduce((sum, booking) => sum.add(toMoneyDecimal(booking.totalAmount)), decimalZero())),
+        decimalZero(),
       );
       const avgRating =
         trip.reviews.length > 0
@@ -153,7 +153,7 @@ export class AnalyticsService {
         id: trip.id,
         title: trip.title,
         bookings: totalBookings,
-        revenue: totalRevenue,
+        revenue: toMoneyString(totalRevenue) || '0.00',
         avgRating,
         reviewCount: trip.reviews.length,
       };
@@ -253,11 +253,11 @@ export class AnalyticsService {
     ]);
 
     return {
-      gmv: totalRevenue._sum.totalAmount || 0,
+      gmv: toMoneyString(totalRevenue._sum.totalAmount) || '0.00',
       totalBookings,
       totalAgencies,
       totalTravelers,
-      avgBookingValue: Math.round(avgBookingValue._avg.totalAmount || 0),
+      avgBookingValue: toMoneyString(avgBookingValue._avg.totalAmount) || '0.00',
     };
   }
 
@@ -265,10 +265,10 @@ export class AnalyticsService {
    * Group bookings by time period
    */
   private groupByPeriod(
-    bookings: Array<{ totalAmount: number; createdAt: Date }>,
+    bookings: Array<{ totalAmount: MoneyInput; createdAt: Date }>,
     period: 'daily' | 'weekly' | 'monthly',
   ) {
-    const grouped: Record<string, number> = {};
+    const grouped: Record<string, ReturnType<typeof decimalZero>> = {};
 
     bookings.forEach((booking) => {
       let key: string;
@@ -285,12 +285,12 @@ export class AnalyticsService {
         key = booking.createdAt.toISOString().slice(0, 7); // YYYY-MM
       }
 
-      grouped[key] = (grouped[key] || 0) + booking.totalAmount;
+      grouped[key] = (grouped[key] || decimalZero()).add(toMoneyDecimal(booking.totalAmount));
     });
 
     return Object.entries(grouped).map(([date, amount]) => ({
       date,
-      amount,
+      amount: toMoneyString(amount) || '0.00',
     }));
   }
 }

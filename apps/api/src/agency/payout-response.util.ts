@@ -1,11 +1,12 @@
 import { type PayoutDetails, type PayoutStatusType } from '@ouiboo/types';
+import { type MoneyInput, toMoneyString } from '../common/money.util';
 
 type NullableDate = Date | string | null | undefined;
 
 type PayoutMapperInput = {
   id: string;
   agencyId: string;
-  amount: number;
+  amount: MoneyInput;
   status: string;
   requestedAt: Date | string;
   processedAt?: NullableDate;
@@ -34,7 +35,7 @@ const toIsoString = (value: NullableDate) => {
 export const mapPayoutDetails = (payout: PayoutMapperInput): PayoutDetails => ({
   id: payout.id,
   agencyId: payout.agencyId,
-  amount: payout.amount,
+  amount: toMoneyString(payout.amount) || '0.00',
   status: payout.status as PayoutStatusType,
   requestedAt: toIsoString(payout.requestedAt) || new Date(0).toISOString(),
   processedAt: toIsoString(payout.processedAt),

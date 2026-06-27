@@ -1,5 +1,6 @@
 import { IsString, IsEmail, IsEnum } from 'class-validator';
 import { IsDecimalMoney } from '../../common/validators/is-decimal-money.decorator';
+import { type MoneyInput } from '../../common/money.util';
 
 export enum PaymentProviderDto {
   CMI = 'CMI',
@@ -12,7 +13,7 @@ export class InitiatePaymentDto {
   bookingId: string;
 
   @IsDecimalMoney()
-  amount: string | number;
+  amount: MoneyInput;
 
   @IsEmail()
   travelerEmail: string;
@@ -43,7 +44,7 @@ export class ProcessRefundDto {
   transactionId: string;
 
   @IsDecimalMoney()
-  amount: string | number;
+  amount: MoneyInput;
 
   @IsEnum(PaymentProviderDto)
   provider: string;

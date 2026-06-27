@@ -43,6 +43,7 @@ export enum PaymentProvider {
 }
 
 export type PaymentProviderType = PaymentProvider;
+export type DecimalString = string;
 
 export enum BookingPaymentStatus {
     Unpaid = "UNPAID",
@@ -145,8 +146,8 @@ export interface TripSession {
     templateId: string;
     startDate: string;
     endDate: string;
-    price: number;
-    deposit: number;
+    price: DecimalString;
+    deposit: DecimalString;
     totalSeats: number;
     availableSeats: number;
     status: SessionStatus;
@@ -169,14 +170,14 @@ export interface Booking {
     travelerId: string;
     bookingDate: string;
     status: BookingStatus;
-    totalAmount: number;
+    totalAmount: DecimalString;
     guestsCount: number;
     paymentMethod: PaymentMethod;
     paymentStatus: BookingPaymentStatus;
     paymentProofUrl?: string;
     paymentProofId?: string;
     cancelledAt?: string;
-    refundAmount?: number;
+    refundAmount?: DecimalString;
     refundStatus?: RefundStatus;
     confirmedAt?: string;
     paymentGatewayTransactionId?: string;
@@ -229,8 +230,8 @@ export interface PaymentProof {
 
 export interface Wallet {
     agencyId: string;
-    availableBalance: number; // Cleared money
-    pendingBalance: number;   // Money in Escrow
+    availableBalance: DecimalString; // Cleared money
+    pendingBalance: DecimalString;   // Money in Escrow
 }
 
 export enum PayoutStatus {
@@ -245,7 +246,7 @@ export type PayoutStatusType = PayoutStatus;
 export interface PayoutRequest {
     id: string;
     agencyId: string;
-    amount: number;
+    amount: DecimalString;
     status: PayoutStatus;
     requestedAt: string;
     processedAt?: string;

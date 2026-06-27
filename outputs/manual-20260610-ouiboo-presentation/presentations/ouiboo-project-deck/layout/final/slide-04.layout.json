@@ -1,0 +1,1092 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/h7iq59",
+    "id": "h7iq59",
+    "slide": 4,
+    "layoutId": "ec629243-cddc-4d29-bbe4-b1ff22cf1b82",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "f84ae8df-b132-4a5a-8f77-abaacf460124",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "+mn-lt"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "ec629243-cddc-4d29-bbe4-b1ff22cf1b82",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "f84ae8df-b132-4a5a-8f77-abaacf460124",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "f84ae8df-b132-4a5a-8f77-abaacf460124",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/94fu18jq",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#F7F3EA",
+      "lineColor": "#F7F3EA",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/2hwfyxob",
+      "id": "2",
+      "name": "kicker-04-marker",
+      "bbox": [
+        74,
+        54,
+        28,
+        10
+      ],
+      "geometry": "rect",
+      "fillColor": "#E76F51",
+      "lineColor": "#E76F51",
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/r2p8nqxs",
+      "id": "3",
+      "name": "kicker-04-label",
+      "bbox": [
+        114,
+        44,
+        420,
+        32
+      ],
+      "geometry": "rect",
+      "text": "RUNTIME ARCHITECTURE",
+      "textPreview": "RUNTIME ARCHITECTURE",
+      "resolvedFontSize": 12,
+      "resolvedTextStyle": {
+        "fontSize": 12,
+        "typeface": "+mn-lt",
+        "color": "#6C6A61",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "RUNTIME ARCHITECTURE"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "RUNTIME ARCHITECTURE",
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "color": "#6C6A61",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "RUNTIME ARCHITECTURE",
+              "fontSize": 12,
+              "color": "#6C6A61",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/gvy90je9",
+      "id": "4",
+      "bbox": [
+        74,
+        92,
+        930,
+        104
+      ],
+      "geometry": "rect",
+      "text": "The target runtime separates user traffic from scheduled work and shared state.",
+      "textPreview": "The target runtime separates user traffic from scheduled work and shared state.",
+      "resolvedFontSize": 40,
+      "resolvedTextStyle": {
+        "fontSize": 40,
+        "typeface": "+mn-lt",
+        "color": "#14213D",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The target runtime separates user traffic from"
+          },
+          {
+            "index": 2,
+            "text": "scheduled work and shared state."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The target runtime separates user traffic from scheduled work and shared state.",
+          "resolvedTextStyle": {
+            "fontSize": 40,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "The target runtime separates user traffic from scheduled work and shared state.",
+              "fontSize": 40,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9gr2p8nq",
+      "id": "5",
+      "bbox": [
+        76,
+        194,
+        760,
+        48
+      ],
+      "geometry": "rect",
+      "text": "API replicas now rely on Redis for rate limit state, while scheduled maintenance belongs to a worker queue rather than per-replica cron.",
+      "textPreview": "API replicas now rely on Redis for rate limit state, while scheduled maintenance belongs to a worker queue rather than per-replica cron.",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "fontSize": 17,
+        "typeface": "+mn-lt",
+        "color": "#6C6A61",
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "API replicas now rely on Redis for rate limit state, while scheduled maintenance belongs to a worker queue"
+          },
+          {
+            "index": 2,
+            "text": "rather than per-replica cron."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "API replicas now rely on Redis for rate limit state, while scheduled maintenance belongs to a worker queue rather than per-replica cron.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "API replicas now rely on Redis for rate limit state, while scheduled maintenance belongs to a worker queue rather than per-replica cron.",
+              "fontSize": 17,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/2p8nqxs7",
+      "id": "6",
+      "bbox": [
+        76,
+        318,
+        210,
+        86
+      ],
+      "geometry": "rect",
+      "fillColor": "#DAE5EA",
+      "lineColor": "#264653",
+      "lineWidth": 2
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ra5gbq1o",
+      "id": "7",
+      "bbox": [
+        94,
+        337,
+        174,
+        48
+      ],
+      "geometry": "rect",
+      "text": "Traveler\nAgency\nAdmin",
+      "textPreview": "Traveler | Agency | Admin",
+      "resolvedFontSize": 19,
+      "resolvedTextStyle": {
+        "fontSize": 19,
+        "typeface": "+mn-lt",
+        "color": "#14213D",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Traveler"
+          },
+          {
+            "index": 2,
+            "text": "Agency"
+          },
+          {
+            "index": 3,
+            "text": "Admin"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Traveler",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Traveler",
+              "fontSize": 19,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "Agency",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Agency",
+              "fontSize": 19,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "Admin",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Admin",
+              "fontSize": 19,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/kzupwb2h",
+      "id": "8",
+      "bbox": [
+        352,
+        318,
+        210,
+        86
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#264653",
+      "lineWidth": 2
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/9knih4by",
+      "id": "9",
+      "bbox": [
+        370,
+        337,
+        174,
+        48
+      ],
+      "geometry": "rect",
+      "text": "NestJS API\n/api/v1",
+      "textPreview": "NestJS API | /api/v1",
+      "resolvedFontSize": 19,
+      "resolvedTextStyle": {
+        "fontSize": 19,
+        "typeface": "+mn-lt",
+        "color": "#14213D",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "NestJS API"
+          },
+          {
+            "index": 2,
+            "text": "/api/v1"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "NestJS API",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "NestJS API",
+              "fontSize": 19,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "/api/v1",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "/api/v1",
+              "fontSize": 19,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/p8nqxs72",
+      "id": "10",
+      "bbox": [
+        642,
+        256,
+        210,
+        86
+      ],
+      "geometry": "rect",
+      "fillColor": "#DDEFE8",
+      "lineColor": "#264653",
+      "lineWidth": 2
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0nuxc3yl",
+      "id": "11",
+      "bbox": [
+        660,
+        275,
+        174,
+        48
+      ],
+      "geometry": "rect",
+      "text": "Postgres\nPrisma",
+      "textPreview": "Postgres | Prisma",
+      "resolvedFontSize": 19,
+      "resolvedTextStyle": {
+        "fontSize": 19,
+        "typeface": "+mn-lt",
+        "color": "#14213D",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Postgres"
+          },
+          {
+            "index": 2,
+            "text": "Prisma"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Postgres",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Postgres",
+              "fontSize": 19,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "Prisma",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Prisma",
+              "fontSize": 19,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/72x4nap4",
+      "id": "12",
+      "bbox": [
+        642,
+        386,
+        210,
+        86
+      ],
+      "geometry": "rect",
+      "fillColor": "#F5E7BF",
+      "lineColor": "#264653",
+      "lineWidth": 2
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ih4byhgn",
+      "id": "13",
+      "bbox": [
+        660,
+        405,
+        174,
+        48
+      ],
+      "geometry": "rect",
+      "text": "Redis\nrate limit + queue",
+      "textPreview": "Redis | rate limit + queue",
+      "resolvedFontSize": 19,
+      "resolvedTextStyle": {
+        "fontSize": 19,
+        "typeface": "+mn-lt",
+        "color": "#14213D",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Redis"
+          },
+          {
+            "index": 2,
+            "text": "rate limit + queue"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Redis",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Redis",
+              "fontSize": 19,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "rate limit + queue",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "rate limit + queue",
+              "fontSize": 19,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pkzupwb2",
+      "id": "14",
+      "bbox": [
+        936,
+        318,
+        210,
+        86
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#264653",
+      "lineWidth": 2
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0z61032l",
+      "id": "15",
+      "bbox": [
+        954,
+        337,
+        174,
+        48
+      ],
+      "geometry": "rect",
+      "text": "BullMQ Worker\nreminders + FX + cancels",
+      "textPreview": "BullMQ Worker | reminders + FX + cancels",
+      "resolvedFontSize": 19,
+      "resolvedTextStyle": {
+        "fontSize": 19,
+        "typeface": "+mn-lt",
+        "color": "#14213D",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "BullMQ Worker"
+          },
+          {
+            "index": 2,
+            "text": "reminders + FX +"
+          },
+          {
+            "index": 3,
+            "text": "cancels"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "BullMQ Worker",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "BullMQ Worker",
+              "fontSize": 19,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "reminders + FX + cancels",
+          "resolvedTextStyle": {
+            "fontSize": 19,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "reminders + FX + cancels",
+              "fontSize": 19,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7ed8bat4",
+      "id": "16",
+      "bbox": [
+        286,
+        361,
+        66,
+        0
+      ],
+      "geometry": "line",
+      "fillColor": "#E76F51",
+      "lineColor": "#E76F51",
+      "lineWidth": 3
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/itgfmlkj",
+      "id": "17",
+      "bbox": [
+        562,
+        320,
+        80,
+        -34
+      ],
+      "geometry": "line",
+      "fillColor": "#E76F51",
+      "lineColor": "#E76F51",
+      "lineWidth": 3
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pwb2hwfy",
+      "id": "18",
+      "bbox": [
+        562,
+        382,
+        80,
+        34
+      ],
+      "geometry": "line",
+      "fillColor": "#E76F51",
+      "lineColor": "#E76F51",
+      "lineWidth": 3
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/0bi9s36h",
+      "id": "19",
+      "bbox": [
+        852,
+        429,
+        84,
+        -68
+      ],
+      "geometry": "line",
+      "fillColor": "#E76F51",
+      "lineColor": "#E76F51",
+      "lineWidth": 3
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/sneloj2t",
+      "id": "20",
+      "bbox": [
+        76,
+        540,
+        1060,
+        1
+      ],
+      "geometry": "rect",
+      "fillColor": "#D8D1C3",
+      "lineColor": "#D8D1C3",
+      "lineWidth": 0
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/l87ed8ba",
+      "id": "21",
+      "bbox": [
+        100,
+        566,
+        1000,
+        42
+      ],
+      "geometry": "rect",
+      "text": "Production implication: horizontal API scaling becomes safer only when Redis, worker idempotency, migration discipline, and readiness checks are exercised together.",
+      "textPreview": "Production implication: horizontal API scaling becomes safer only when Redis, worker idempotency, migration discipline, and readiness che...",
+      "resolvedFontSize": 20,
+      "resolvedTextStyle": {
+        "fontSize": 20,
+        "typeface": "+mn-lt",
+        "color": "#14213D",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Production implication: horizontal API scaling becomes safer only when Redis, worker idempotency, migration discipline,"
+          },
+          {
+            "index": 2,
+            "text": "and readiness checks are exercised together."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Production implication: horizontal API scaling becomes safer only when Redis, worker idempotency, migration discipline, and readiness checks are exercised together.",
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Production implication: horizontal API scaling becomes safer only when Redis, worker idempotency, migration discipline, and readiness checks are exercised together.",
+              "fontSize": 20,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ahoza1gv",
+      "id": "22",
+      "bbox": [
+        74,
+        668,
+        1060,
+        1
+      ],
+      "geometry": "rect",
+      "fillColor": "#D8D1C3",
+      "lineColor": "#D8D1C3",
+      "lineWidth": 0
+    },
+    {
+      "order": 23,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/32lszqtc",
+      "id": "23",
+      "bbox": [
+        74,
+        676,
+        620,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Sources: repository docs and hardening execution report",
+      "textPreview": "Sources: repository docs and hardening execution report",
+      "resolvedFontSize": 10,
+      "resolvedTextStyle": {
+        "fontSize": 10,
+        "typeface": "+mn-lt",
+        "color": "#6C6A61",
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Sources: repository docs and hardening execution report"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Sources: repository docs and hardening execution report",
+          "resolvedTextStyle": {
+            "fontSize": 10,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Sources: repository docs and hardening execution report",
+              "fontSize": 10,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 24,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/szqtcj6t",
+      "id": "24",
+      "bbox": [
+        1160,
+        676,
+        45,
+        20
+      ],
+      "geometry": "rect",
+      "text": "04",
+      "textPreview": "04",
+      "resolvedFontSize": 10,
+      "resolvedTextStyle": {
+        "fontSize": 10,
+        "typeface": "+mn-lt",
+        "color": "#6C6A61",
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "04"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "04",
+          "resolvedTextStyle": {
+            "fontSize": 10,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "04",
+              "fontSize": 10,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    }
+  ],
+  "composeRuns": []
+}

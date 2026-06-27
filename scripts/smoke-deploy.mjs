@@ -1,8 +1,8 @@
 const services = [
-  { name: 'api', env: 'SMOKE_API_URL', path: '/api/health' },
-  { name: 'traveler', env: 'SMOKE_TRAVELER_URL', path: '/api/health' },
-  { name: 'agency', env: 'SMOKE_AGENCY_URL', path: '/api/health' },
-  { name: 'admin', env: 'SMOKE_ADMIN_URL', path: '/api/health' },
+  { name: 'api', env: 'SMOKE_API_URL', path: '/api/v1/health', defaultUrl: 'http://localhost:3000' },
+  { name: 'traveler', env: 'SMOKE_TRAVELER_URL', path: '/api/health', defaultUrl: 'http://localhost:3001' },
+  { name: 'agency', env: 'SMOKE_AGENCY_URL', path: '/api/health', defaultUrl: 'http://localhost:3002' },
+  { name: 'admin', env: 'SMOKE_ADMIN_URL', path: '/api/health', defaultUrl: 'http://localhost:3003' },
   { name: 'landing', env: 'SMOKE_LANDING_URL', path: '/api/health' },
 ];
 
@@ -18,7 +18,9 @@ const parseJson = async (response) => {
 };
 
 const run = async () => {
-  const configuredServices = services.filter((service) => process.env[service.env]);
+  const configuredServices = services
+    .map((service) => ({ ...service, baseUrl: process.env[service.env] || service.defaultUrl }))
+    .filter((service) => service.baseUrl);
 
   if (configuredServices.length === 0) {
     console.error('No smoke URLs were configured. Set at least one of SMOKE_API_URL, SMOKE_TRAVELER_URL, SMOKE_AGENCY_URL, SMOKE_ADMIN_URL, or SMOKE_LANDING_URL.');
@@ -28,7 +30,7 @@ const run = async () => {
   let hasFailure = false;
 
   for (const service of configuredServices) {
-    const url = normalizeUrl(process.env[service.env], service.path);
+    const url = normalizeUrl(service.baseUrl, service.path);
     const response = await fetch(url, {
       headers: {
         Accept: 'application/json',

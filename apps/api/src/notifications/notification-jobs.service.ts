@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
 import { NotificationType } from '@ouiboo/database';
@@ -26,7 +25,6 @@ export class NotificationJobsService {
   /**
    * Send payment proof reminders - every 12 hours for unpaid bookings
    */
-  @Cron(CronExpression.EVERY_12_HOURS)
   async sendPaymentProofReminders() {
     this.logger.log('Running payment proof reminder job');
     try {
@@ -91,7 +89,6 @@ export class NotificationJobsService {
   /**
    * Send trip reminders - 7 days before departure
    */
-  @Cron(CronExpression.EVERY_DAY_AT_9AM)
   async sendTripReminders7DaysBefore() {
     this.logger.log('Running 7-day trip reminder job');
     try {
@@ -170,7 +167,6 @@ export class NotificationJobsService {
   /**
    * Send trip reminders - 1 day before departure
    */
-  @Cron(CronExpression.EVERY_DAY_AT_8AM)
   async sendTripReminders1DayBefore() {
     this.logger.log('Running 1-day trip reminder job');
     try {
@@ -247,7 +243,6 @@ export class NotificationJobsService {
   /**
    * Auto-cancel unpaid bookings after 24 hours
    */
-  @Cron(CronExpression.EVERY_12_HOURS)
   async autoCancelUnpaidBookings() {
     this.logger.log('Running auto-cancel unpaid bookings job');
     try {

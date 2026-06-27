@@ -7,9 +7,14 @@ import {
 } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { TenantGuard } from '../auth/guards/tenant.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '@ouiboo/types';
 
 @Controller('analytics')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
+@Roles(UserRole.Agency)
 export class AnalyticsController {
   constructor(private analyticsService: AnalyticsService) {}
 
@@ -24,7 +29,7 @@ export class AnalyticsController {
     @Request() req: any,
   ) {
     return this.analyticsService.getRevenueTrends(
-      req.user.agencyId,
+      req.tenantId,
       new Date(startDate),
       new Date(endDate),
       period,
@@ -41,7 +46,7 @@ export class AnalyticsController {
     @Request() req: any,
   ) {
     return this.analyticsService.getConversionFunnel(
-      req.user.agencyId,
+      req.tenantId,
       new Date(startDate),
       new Date(endDate),
     );
@@ -55,7 +60,7 @@ export class AnalyticsController {
     @Query('limit') limit: string = '10',
     @Request() req: any,
   ) {
-    return this.analyticsService.getTopTrips(req.user.agencyId, parseInt(limit));
+    return this.analyticsService.getTopTrips(req.tenantId, parseInt(limit));
   }
 
   /**
@@ -63,7 +68,7 @@ export class AnalyticsController {
    */
   @Get('payment-methods')
   async getPaymentMethods(@Request() req: any) {
-    return this.analyticsService.getPaymentMethodDistribution(req.user.agencyId);
+    return this.analyticsService.getPaymentMethodDistribution(req.tenantId);
   }
 
   /**
@@ -71,12 +76,13 @@ export class AnalyticsController {
    */
   @Get('customer-demographics')
   async getCustomerDemographics(@Request() req: any) {
-    return this.analyticsService.getCustomerDemographics(req.user.agencyId);
+    return this.analyticsService.getCustomerDemographics(req.tenantId);
   }
 }
 
 @Controller('admin/analytics')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.Admin)
 export class AdminAnalyticsController {
   constructor(private analyticsService: AnalyticsService) {}
 

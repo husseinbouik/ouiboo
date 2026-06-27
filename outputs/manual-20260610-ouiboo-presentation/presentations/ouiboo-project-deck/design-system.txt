@@ -1,0 +1,12 @@
+slide size: 1280x720
+background: warm off-white with deep ink text and restrained accent bands
+typography: Aptos / Arial fallback; claim titles 36-46px, body 17-22px, labels 10-14px
+palette: ink #14213D, paper #F7F3EA, coral #E76F51, teal #2A9D8F, ochre #E9C46A, muted blue #264653, soft gray #E7E2D8
+chart grammar: direct labels, no legends where labels fit, sparse gridlines
+diagram grammar: named lanes and dependency direction left-to-right or top-to-bottom
+connector grammar: simple straight lines only where dependency/order matters
+container grammar: boxes imply role, stage, or readiness status; no decorative card grids
+footer grammar: source line left, slide number right, 10px muted text
+brand policy: no pseudo-logo; wordmark text only
+layout families: cover metric rail, platform map, status matrix, architecture map, security checklist, scorecard, launch timeline, decision board
+banned motifs: decorative blobs, generic feature cards, invented screenshots/logos

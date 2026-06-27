@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  api:
+    image: ${OUIBOO_API_IMAGE:?set OUIBOO_API_IMAGE}
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+    ports:
+      - "${API_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  worker:
+    image: ${OUIBOO_API_IMAGE:?set OUIBOO_API_IMAGE}
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+    command: ["node", "dist/apps/api/src/worker"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "process.exit(0)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  traveler:
+    image: ${OUIBOO_TRAVELER_IMAGE:?set OUIBOO_TRAVELER_IMAGE}
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    ports:
+      - "${TRAVELER_PORT:-3002}:3000"
+
+  agency:
+    image: ${OUIBOO_AGENCY_IMAGE:?set OUIBOO_AGENCY_IMAGE}
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    ports:
+      - "${AGENCY_PORT:-3001}:3000"
+
+  admin:
+    image: ${OUIBOO_ADMIN_IMAGE:?set OUIBOO_ADMIN_IMAGE}
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    ports:
+      - "${ADMIN_PORT:-3003}:3000"

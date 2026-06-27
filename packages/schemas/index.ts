@@ -14,6 +14,12 @@ import {
     VerificationStatus,
 } from "@ouiboo/types";
 
+export const DecimalStringSchema = z.string().regex(/^\d+(\.\d{1,2})?$/, "Must be a decimal amount string");
+export const DecimalInputSchema = z.union([
+    DecimalStringSchema,
+    z.number().finite().positive(),
+]);
+
 export const UserSchema = z.object({
     id: z.string(),
     name: z.string(),
@@ -83,8 +89,8 @@ export const TripSessionSchema = z.object({
     templateId: z.string(),
     startDate: z.string().datetime(),
     endDate: z.string().datetime(),
-    price: z.number().positive(),
-    deposit: z.number().nonnegative(),
+    price: DecimalStringSchema,
+    deposit: DecimalStringSchema,
     totalSeats: z.number().int().positive(),
     availableSeats: z.number().int().nonnegative(),
     status: z.nativeEnum(SessionStatus),
@@ -101,7 +107,7 @@ export const BookingSchema = z.object({
     travelerId: z.string(),
     bookingDate: z.string().datetime(),
     status: z.nativeEnum(BookingStatus),
-    totalAmount: z.number().positive(),
+    totalAmount: DecimalStringSchema,
     guestsCount: z.number().int().positive(),
     paymentMethod: z.nativeEnum(PaymentMethod).optional(),
     paymentStatus: z.nativeEnum(BookingPaymentStatus).optional(),
@@ -114,7 +120,7 @@ export const BookingSchema = z.object({
     paymentGatewayMetadata: z.record(z.string(), z.unknown()).optional(),
     cancelledAt: z.string().datetime().optional(),
     confirmedAt: z.string().datetime().optional(),
-    refundAmount: z.number().nonnegative().optional(),
+    refundAmount: DecimalStringSchema.optional(),
     refundStatus: z.nativeEnum(RefundStatus).optional(),
 });
 
@@ -130,7 +136,7 @@ export const PaymentProofSchema = z.object({
 export const PayoutRequestSchema = z.object({
     id: z.string(),
     agencyId: z.string(),
-    amount: z.number().positive(),
+    amount: DecimalStringSchema,
     status: z.nativeEnum(PayoutStatus),
     requestedAt: z.string().datetime(),
     processedAt: z.string().datetime().optional(),
@@ -172,7 +178,7 @@ export const BookingDetailsSchema = BookingSchema.extend({
 });
 
 export const InitiateGatewayPaymentSchema = z.object({
-    amount: z.number().positive(),
+    amount: DecimalInputSchema,
     bookingId: z.string(),
     provider: z.nativeEnum(PaymentProvider),
     travelerEmail: z.string().email(),

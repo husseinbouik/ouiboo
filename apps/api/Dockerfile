@@ -48,4 +48,4 @@ COPY --from=installer --chown=nestjs:nodejs /app/apps/api/dist ./dist
 COPY --from=installer --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=installer --chown=nestjs:nodejs /app/packages/database/prisma ./prisma
 
-CMD ["node", "dist/main"]
+CMD ["node", "dist/apps/api/src/main"]

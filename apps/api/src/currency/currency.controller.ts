@@ -33,11 +33,11 @@ export class CurrencyController {
     @Query('target') targetCurrency: string = 'USD',
   ) {
     const convertedAmount = await this.currencyService.convertCurrency(
-      parseFloat(amount),
+      amount,
       targetCurrency,
     );
     return {
-      amount: parseFloat(amount),
+      amount,
       baseCurrency: 'MAD',
       convertedAmount,
       targetCurrency,

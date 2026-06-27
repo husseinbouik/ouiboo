@@ -1,16 +1,30 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { MoneyInput, toMoneyDecimal } from '../common/money.util';
+import { MoneyInput, toMoneyDecimal, toMoneyString } from '../common/money.util';
 
 @Injectable()
 export class WalletsService {
     constructor(private db: DatabaseService) { }
 
     async getWallet(tenantId: string) {
-        return this.db.wallet.findUnique({
+        const wallet = await this.db.wallet.findUnique({
             where: { agencyId: tenantId },
             include: { transactions: { orderBy: { createdAt: 'desc' }, take: 20 } }
         });
+
+        if (!wallet) {
+            return null;
+        }
+
+        return {
+            ...wallet,
+            availableBalance: toMoneyString(wallet.availableBalance) || '0.00',
+            pendingBalance: toMoneyString(wallet.pendingBalance) || '0.00',
+            transactions: wallet.transactions.map((transaction) => ({
+                ...transaction,
+                amount: toMoneyString(transaction.amount) || '0.00',
+            })),
+        };
     }
 
     async creditWallet(tenantId: string, amount: MoneyInput, reason: string) {

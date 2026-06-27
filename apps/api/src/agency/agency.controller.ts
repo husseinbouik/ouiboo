@@ -10,6 +10,7 @@ import { WalletsService } from '../wallets/wallets.service';
 import { RequestPayoutDto } from './dto/payout-request.dto';
 import { mapBookingDetails } from '../bookings/booking-response.util';
 import { mapPayoutDetails } from './payout-response.util';
+import { toMoneyString } from '../common/money.util';
 
 const clampListLimit = (value?: string, fallback = 50, max = 200) => {
     const parsed = Number(value);
@@ -72,11 +73,17 @@ export class AgencyController {
         ]);
 
         return {
-            revenue: revenueAggregate._sum.totalAmount || 0,
+            revenue: toMoneyString(revenueAggregate._sum.totalAmount) || '0.00',
             activeTrips: tripsCount,
             totalBookings: bookingCount,
             totalCustomers: bookings.length,
-            wallet: wallet || { availableBalance: 0, pendingBalance: 0 }
+            wallet: wallet
+                ? {
+                    ...wallet,
+                    availableBalance: toMoneyString(wallet.availableBalance) || '0.00',
+                    pendingBalance: toMoneyString(wallet.pendingBalance) || '0.00',
+                }
+                : { availableBalance: '0.00', pendingBalance: '0.00' }
         };
     }
 

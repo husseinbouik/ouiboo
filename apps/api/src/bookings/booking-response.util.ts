@@ -7,6 +7,7 @@ import {
   type SessionStatusType,
   type VerificationStatusType,
 } from '@ouiboo/types';
+import { type MoneyInput, toMoneyString } from '../common/money.util';
 
 type NullableDate = Date | string | null | undefined;
 
@@ -16,13 +17,13 @@ type BookingMapperInput = {
   travelerId: string;
   bookingDate: Date | string;
   status: string;
-  totalAmount: number;
+  totalAmount: MoneyInput;
   guestsCount: number;
   paymentMethod: string;
   paymentStatus: string;
   paymentProofUrl?: string | null;
   paymentProofId?: string | null;
-  refundAmount?: number | null;
+  refundAmount?: MoneyInput | null;
   refundStatus?: string | null;
   confirmedAt?: NullableDate;
   cancelledAt?: NullableDate;
@@ -51,8 +52,8 @@ type BookingMapperInput = {
     templateId: string;
     startDate: Date | string;
     endDate: Date | string;
-    price: number;
-    deposit: number;
+    price: MoneyInput;
+    deposit: MoneyInput;
     totalSeats: number;
     availableSeats: number;
     status: string;
@@ -88,13 +89,13 @@ export const mapBookingDetails = (booking: BookingMapperInput): BookingDetails =
   travelerId: booking.travelerId,
   bookingDate: toIsoString(booking.bookingDate) || new Date(0).toISOString(),
   status: booking.status as BookingStatusType,
-  totalAmount: booking.totalAmount,
+  totalAmount: toMoneyString(booking.totalAmount) || '0.00',
   guestsCount: booking.guestsCount,
   paymentMethod: booking.paymentMethod as PaymentMethodType,
   paymentStatus: booking.paymentStatus as BookingPaymentStatusType,
   paymentProofUrl: booking.paymentProofUrl || undefined,
   paymentProofId: booking.paymentProofId || undefined,
-  refundAmount: booking.refundAmount ?? undefined,
+  refundAmount: toMoneyString(booking.refundAmount),
   refundStatus: (booking.refundStatus as RefundStatusType | null | undefined) ?? undefined,
   cancelledAt: toIsoString(booking.cancelledAt),
   confirmedAt: toIsoString(booking.confirmedAt),
@@ -132,8 +133,8 @@ export const mapBookingDetails = (booking: BookingMapperInput): BookingDetails =
     templateId: booking.session.templateId,
     startDate: toIsoString(booking.session.startDate) || new Date(0).toISOString(),
     endDate: toIsoString(booking.session.endDate) || new Date(0).toISOString(),
-    price: booking.session.price,
-    deposit: booking.session.deposit,
+    price: toMoneyString(booking.session.price) || '0.00',
+    deposit: toMoneyString(booking.session.deposit) || '0.00',
     totalSeats: booking.session.totalSeats,
     availableSeats: booking.session.availableSeats,
     status: booking.session.status as SessionStatusType,

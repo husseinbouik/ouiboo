@@ -12,6 +12,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { EmailService } from '../email/email.service';
 import { UploadService } from '../upload/upload.service';
 import { DatabaseService } from '../database/database.service';
+import { RedisService } from '../common/redis.service';
 
 describe('MVP smoke: auth + booking flow', () => {
     let app: INestApplication;
@@ -51,6 +52,7 @@ describe('MVP smoke: auth + booking flow', () => {
                 { provide: EmailService, useValue: emailService },
                 { provide: UploadService, useValue: uploadService },
                 { provide: DatabaseService, useValue: databaseService },
+                { provide: RedisService, useValue: { getClient: jest.fn(() => null) } },
             ],
         })
             .overrideGuard(JwtAuthGuard)
@@ -79,7 +81,7 @@ describe('MVP smoke: auth + booking flow', () => {
     });
 
     afterAll(async () => {
-        await app.close();
+        await app?.close();
     });
 
     it('registers, logs in, and creates a booking', async () => {

@@ -6,7 +6,7 @@ describe('mapPayoutDetails', () => {
     const mapped = mapPayoutDetails({
       id: 'payout-1',
       agencyId: 'agency-1',
-      amount: 900,
+      amount: '900.00',
       status: PayoutStatus.Pending,
       requestedAt: new Date('2026-03-01T00:00:00.000Z'),
       processedAt: null,
@@ -23,7 +23,7 @@ describe('mapPayoutDetails', () => {
     expect(mapped).toEqual({
       id: 'payout-1',
       agencyId: 'agency-1',
-      amount: 900,
+      amount: '900.00',
       status: PayoutStatus.Pending,
       requestedAt: '2026-03-01T00:00:00.000Z',
       processedAt: undefined,

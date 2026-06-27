@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { MoneyInput, toMoneyDecimal, toMoneyString, toRateDecimal, toRateString } from '../common/money.util';
 
 @Injectable()
 export class CurrencyService {
@@ -9,12 +9,12 @@ export class CurrencyService {
   private readonly supportedCurrencies = ['USD', 'EUR', 'GBP', 'AED', 'TND'];
   private readonly apiUrl = 'https://api.exchangerate-api.io/v4/latest';
   private readonly requestTimeoutMs = 2500;
-  private readonly fallbackRates: Record<string, number> = {
-    USD: 0.1,
-    EUR: 0.092,
-    GBP: 0.079,
-    AED: 0.37,
-    TND: 0.31,
+  private readonly fallbackRates: Record<string, string> = {
+    USD: '0.10000000',
+    EUR: '0.09200000',
+    GBP: '0.07900000',
+    AED: '0.37000000',
+    TND: '0.31000000',
   };
 
   constructor(private prisma: DatabaseService) {}
@@ -25,11 +25,11 @@ export class CurrencyService {
   async getExchangeRates(
     targetCurrency: string,
     forceRefresh: boolean = false,
-  ): Promise<number> {
+  ): Promise<string> {
     const normalizedTarget = targetCurrency.toUpperCase();
 
     if (normalizedTarget === this.baseCurrency) {
-      return 1;
+      return '1.00000000';
     }
 
     if (!this.supportedCurrencies.includes(normalizedTarget)) {
@@ -48,7 +48,7 @@ export class CurrencyService {
       });
 
       if (cached && cached.expiresAt > new Date()) {
-        return cached.rate;
+        return toRateString(cached.rate) || '1.00000000';
       }
     }
 
@@ -75,22 +75,22 @@ export class CurrencyService {
       },
     });
 
-    return rate;
+    return toRateString(rate) || '1.00000000';
   }
 
   /**
    * Convert amount from MAD to another currency
    */
   async convertCurrency(
-    amount: number,
+    amount: MoneyInput,
     targetCurrency: string,
-  ): Promise<number> {
+  ): Promise<string> {
     if (targetCurrency.toUpperCase() === this.baseCurrency) {
-      return amount;
+      return toMoneyString(amount) || '0.00';
     }
 
     const rate = await this.getExchangeRates(targetCurrency);
-    return Math.round((amount * rate) * 100) / 100;
+    return toMoneyString(toMoneyDecimal(amount).mul(toRateDecimal(rate)).toDecimalPlaces(2)) || '0.00';
   }
 
   /**
@@ -103,7 +103,6 @@ export class CurrencyService {
   /**
    * Update exchange rates daily
    */
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async updateExchangeRates() {
     this.logger.log('Updating exchange rates');
     try {
@@ -119,7 +118,7 @@ export class CurrencyService {
   /**
    * Fetch exchange rate from external API
    */
-  private async fetchExchangeRate(targetCurrency: string): Promise<number> {
+  private async fetchExchangeRate(targetCurrency: string): Promise<string> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.requestTimeoutMs);
 
@@ -139,13 +138,13 @@ export class CurrencyService {
       if (!rate) {
         throw new Error(`Currency ${targetCurrency} not supported`);
       }
-      return rate;
+      return toRateString(rate) || '1.00000000';
     } finally {
       clearTimeout(timeout);
     }
   }
 
-  private async getFreshOrFallbackRate(targetCurrency: string): Promise<number> {
+  private async getFreshOrFallbackRate(targetCurrency: string): Promise<string> {
     try {
       return await this.fetchExchangeRate(targetCurrency);
     } catch (error) {
