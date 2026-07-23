@@ -1,5 +1,5 @@
 const services = [
-  { name: 'api', env: 'SMOKE_API_URL', path: '/api/v1/health', defaultUrl: 'http://localhost:3000' },
+  { name: 'api', env: 'SMOKE_API_URL', path: '/api/v1/health', defaultUrl: 'http://localhost:3010' },
   { name: 'traveler', env: 'SMOKE_TRAVELER_URL', path: '/api/health', defaultUrl: 'http://localhost:3001' },
   { name: 'agency', env: 'SMOKE_AGENCY_URL', path: '/api/health', defaultUrl: 'http://localhost:3002' },
   { name: 'admin', env: 'SMOKE_ADMIN_URL', path: '/api/health', defaultUrl: 'http://localhost:3003' },

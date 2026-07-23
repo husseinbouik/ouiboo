@@ -3,12 +3,12 @@ import { IStorageProvider } from '../interfaces/storage-provider.interface';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
-import { ALLOWED_MIME_TYPES, MAX_UPLOAD_SIZE_BYTES } from '../upload.constants';
+import { ALLOWED_MIME_TYPES, AllowedMimeType, MAX_UPLOAD_SIZE_BYTES } from '../upload.constants';
 
 @Injectable()
 export class LocalStorageProvider implements IStorageProvider {
-    private readonly uploadDir = path.join(process.cwd(), 'uploads');
-    private readonly privateUploadDir = path.join(process.cwd(), 'private-uploads');
+    private readonly uploadDir = path.resolve(process.cwd(), 'uploads');
+    private readonly privateUploadDir = path.resolve(process.cwd(), 'private-uploads');
     private readonly allowedMimeTypes = ALLOWED_MIME_TYPES;
     private readonly maxFileSize = MAX_UPLOAD_SIZE_BYTES;
     private readonly privatePrefix = 'private';
@@ -24,8 +24,7 @@ export class LocalStorageProvider implements IStorageProvider {
     }
 
     async upload(file: Express.Multer.File, folder: string): Promise<{ url: string; key: string }> {
-        // Validation
-        if (!this.allowedMimeTypes.includes(file.mimetype)) {
+        if (!this.allowedMimeTypes.includes(file.mimetype as AllowedMimeType)) {
             throw new BadRequestException('Invalid file type. Allowed: JPG, PNG, WEBP, GIF, PDF');
         }
 
@@ -33,36 +32,25 @@ export class LocalStorageProvider implements IStorageProvider {
             throw new BadRequestException('File too large. Max size: 5MB');
         }
 
-        const sanitizedOriginal = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const extension = path.extname(sanitizedOriginal) || this.getExtensionForMimeType(file.mimetype);
+        const extension = this.getExtensionForMimeType(file.mimetype);
         const filename = `${randomUUID()}${extension}`;
-
-        // Create folder structure: uploads/{folder}
-        // folder usually passed as: agencyId/YYYY-MM-DD
         const { baseDir, isPrivate, relative } = this.resolveTarget(folder);
-        const relativePath = path.join(relative);
-        const fullPath = path.join(baseDir, relativePath);
+        const fullPath = this.resolveUnderBase(baseDir, relative);
 
         if (!fs.existsSync(fullPath)) {
             fs.mkdirSync(fullPath, { recursive: true });
         }
 
-        const filePath = path.join(fullPath, filename);
-
-        // Prevent path traversal
-        if (!filePath.startsWith(baseDir)) {
-            throw new BadRequestException('Invalid filename');
-        }
-
+        const filePath = this.resolveUnderBase(fullPath, filename);
         fs.writeFileSync(filePath, file.buffer);
 
-        const baseUrl = process.env.API_URL || 'http://localhost:3000/api/v1';
-        const url = isPrivate
-            ? ''
-            : `${baseUrl.replace('/api', '')}/${path.join('uploads', relativePath, filename).split(path.sep).join('/')}`;
+        const baseUrl = process.env.API_URL || 'http://localhost:3010/api/v1';
+        const publicPath = path.posix.join('uploads', relative.replace(/\\/g, '/'), filename);
+        const url = isPrivate ? '' : `${baseUrl.replace('/api', '')}/${publicPath}`;
+        const key = isPrivate
+            ? path.posix.join(this.privatePrefix, relative.replace(/\\/g, '/'), filename)
+            : path.posix.join(relative.replace(/\\/g, '/'), filename);
 
-        const keyPrefix = isPrivate ? this.privatePrefix : '';
-        const key = path.join(keyPrefix, relativePath, filename);
         return { url, key };
     }
 
@@ -75,11 +63,7 @@ export class LocalStorageProvider implements IStorageProvider {
 
     getFilePath(key: string): string {
         const { baseDir, relative } = this.resolveTarget(key);
-        const filePath = path.join(baseDir, relative);
-
-        if (!filePath.startsWith(baseDir)) {
-            throw new BadRequestException('Invalid file path');
-        }
+        const filePath = this.resolveUnderBase(baseDir, relative);
 
         if (!fs.existsSync(filePath)) {
             throw new NotFoundException('File not found');
@@ -89,15 +73,35 @@ export class LocalStorageProvider implements IStorageProvider {
     }
 
     private resolveTarget(value: string) {
-        const normalized = value.replace(/^[\\/]+/, '');
-        const isPrivate = normalized === this.privatePrefix
-            || normalized.startsWith(`${this.privatePrefix}/`)
-            || normalized.startsWith(`${this.privatePrefix}${path.sep}`);
-        const relative = isPrivate
-            ? normalized.replace(new RegExp(`^${this.privatePrefix}[\\\\/]?`), '')
-            : normalized;
+        const normalized = this.normalizeStorageKey(value);
+        const isPrivate = normalized === this.privatePrefix || normalized.startsWith(`${this.privatePrefix}/`);
+        const relative = isPrivate ? normalized.replace(new RegExp(`^${this.privatePrefix}/?`), '') : normalized;
         const baseDir = isPrivate ? this.privateUploadDir : this.uploadDir;
         return { baseDir, relative, isPrivate };
+    }
+
+    private normalizeStorageKey(value: string): string {
+        const normalized = (value || '').replace(/\\/g, '/').replace(/^\/+/, '');
+        const segments = normalized.split('/').filter(Boolean);
+
+        for (const segment of segments) {
+            if (segment === '.' || segment === '..' || path.isAbsolute(segment) || !/^[a-zA-Z0-9._-]+$/.test(segment)) {
+                throw new BadRequestException('Invalid upload path');
+            }
+        }
+
+        return segments.join('/');
+    }
+
+    private resolveUnderBase(baseDir: string, relativePath: string): string {
+        const fullPath = path.resolve(baseDir, relativePath);
+        const relativeFromBase = path.relative(baseDir, fullPath);
+
+        if (relativeFromBase.startsWith('..') || path.isAbsolute(relativeFromBase)) {
+            throw new BadRequestException('Invalid upload path');
+        }
+
+        return fullPath;
     }
 
     private getExtensionForMimeType(mimeType: string): string {

@@ -109,7 +109,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
         const traveler = await db.user.create({ data: { id: 'traveler-user-1', email: 'traveler@test.com', name: 'Traveler', password: 'x', role: UserRole.Traveler, isEmailVerified: true } as any });
         // agency user
         const agencyUser = await db.user.create({ data: { id: 'agency-user-1', email: 'agency@test.com', name: 'Agency', password: 'x', role: UserRole.Agency, isEmailVerified: true } as any });
-        const agencyProfile = await db.agencyProfile.create({ data: { id: 'agency-profile-1', userId: agencyUser.id, companyName: 'Agency Ltd' } as any });
+        const agencyProfile = await db.agencyProfile.create({ data: { id: 'agency-profile-1', userId: agencyUser.id, companyName: 'Agency Ltd', ice: 'ICE100006', patente: 'PAT100006', rib: 'RIB100006' } as any });
 
         // admin
         const adminUser = await db.user.create({ data: { id: 'admin-user', email: 'admin@test.com', name: 'Admin', password: 'x', role: UserRole.Admin, isEmailVerified: true } as any });
@@ -363,7 +363,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
     // ===== Agency profile tests =====
     it('Update agency profile (company info and bank details) and verification read-only', async () => {
         const { agencyProfile } = await seedTestData();
-        await request(app.getHttpServer()).patch('/agency/profile').set('Authorization', 'Bearer agency').send({ companyName: 'New Name', bio: 'Updated bio', logo: 'https://example.com/logo.png', bankDetails: 'IBAN: MA123' }).expect(200);
+        await request(app.getHttpServer()).patch('/agency/profile').set('Authorization', 'Bearer agency').send({ companyName: 'New Name', ice: 'ICE100007', patente: 'PAT100007', rib: 'RIB100007', bio: 'Updated bio', logo: 'https://example.com/logo.png', bankDetails: 'IBAN: MA123' }).expect(200);
         const updated = await db.agencyProfile.findUnique({ where: { id: agencyProfile.id } });
         expect(updated?.companyName).toBe('New Name');
         expect(updated?.rib || updated?.bankDetails || '').toBeDefined();
@@ -378,9 +378,9 @@ describe('User features E2E (user-features.e2e-spec)', () => {
         await seedTestData();
         // try to update another agency
         const other = await db.user.create({ data: { id: 'agency-2', email: 'a2@test.com', name: 'A2', password: 'x', role: UserRole.Agency } as any });
-        await db.agencyProfile.create({ data: { id: 'agency-profile-2', userId: other.id, companyName: 'Other' } as any });
+        await db.agencyProfile.create({ data: { id: 'agency-profile-2', userId: other.id, companyName: 'Other', ice: 'ICE100008', patente: 'PAT100008', rib: 'RIB100008' } as any });
 
-        await request(app.getHttpServer()).patch('/agency/profile').set('Authorization', 'Bearer agency-12345').send({ companyName: 'ShouldFail' }).expect(403);
+        await request(app.getHttpServer()).patch('/agency/profile').set('Authorization', 'Bearer agency-12345').send({ companyName: 'ShouldFail', ice: 'ICE100009', patente: 'PAT100009', rib: 'RIB100009' }).expect(403);
     });
 
     // ===== Authorization & validation tests =====

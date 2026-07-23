@@ -2,17 +2,20 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import * as path from 'path';
+import * as fs from 'fs';
 import { BookingsModule } from '../src/bookings/bookings.module';
 import { DatabaseModule } from '../src/database/database.module';
 import { EmailModule } from '../src/email/email.module';
 import { UploadModule } from '../src/upload/upload.module';
 import { AuthModule } from '../src/auth/auth.module';
+import { AgencyModule } from '../src/agency/agency.module';
 import { DatabaseService } from '../src/database/database.service';
 import { EmailService } from '../src/email/email.service';
 import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../src/auth/guards/roles.guard';
 import { TenantGuard } from '../src/auth/guards/tenant.guard';
 import { UserRole } from '@ouiboo/types';
+import { tripTemplateFixture } from './e2e-fixtures';
 
 jest.setTimeout(60_000);
 
@@ -32,7 +35,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
 
     beforeAll(async () => {
         const moduleFixture: TestingModule = await Test.createTestingModule({
-            imports: [BookingsModule, DatabaseModule, EmailModule, UploadModule, AuthModule],
+            imports: [BookingsModule, AgencyModule, DatabaseModule, EmailModule, UploadModule, AuthModule],
         })
             .overrideProvider(EmailService)
             .useValue(mockEmailService)
@@ -40,30 +43,41 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .useValue({
                 canActivate: (context: any) => {
                     const req = context.switchToHttp().getRequest();
-                    const url = req.url || '';
-                    const isAgency = url.includes('/agency/');
+                    const auth = String(req.headers.authorization || '');
 
-                    if (req.headers.authorization?.includes('admin')) {
+                    if (auth.includes('admin')) {
                         req.user = { userId: 'admin-123', email: 'admin@ouiboo.local', role: UserRole.Admin };
-                    } else if (isAgency || req.query.role === 'agency') {
+                    } else if (auth.includes('agency-2')) {
+                        req.user = { userId: 'agency-user-999', email: 'agency3@ouiboo.local', role: UserRole.Agency };
+                    } else if (auth.includes('agency') || req.query.role === 'agency') {
                         req.user = { userId: 'agency-user-456', email: 'agency@ouiboo.local', role: UserRole.Agency };
+                    } else if (auth.includes('traveler-2-token')) {
+                        req.user = { userId: 'traveler-user-999', email: 'traveler-other@example.com', role: UserRole.Traveler };
+                    } else if (auth.includes('traveler-1-token')) {
+                        req.user = { userId: 'traveler-user-123', email: 'traveler@example.com', role: UserRole.Traveler };
+                    } else if (auth.includes('traveler-1')) {
+                        req.user = { userId: 'traveler-user-1', email: 'traveler1@example.com', role: UserRole.Traveler };
+                    } else if (auth.includes('traveler-2')) {
+                        req.user = { userId: 'traveler-user-2', email: 'traveler2@example.com', role: UserRole.Traveler };
+                    } else if (auth.includes('traveler-3')) {
+                        req.user = { userId: 'traveler-user-3', email: 'traveler3@example.com', role: UserRole.Traveler };
                     } else {
                         req.user = { userId: 'traveler-user-123', email: 'traveler@example.com', role: UserRole.Traveler };
                     }
                     return true;
                 },
-            })
-            .overrideGuard(RolesGuard)
+            })            .overrideGuard(RolesGuard)
+
             .useValue({ canActivate: () => true })
             .overrideGuard(TenantGuard)
             .useValue({
                 canActivate: (context: any) => {
                     const req = context.switchToHttp().getRequest();
-                    req.tenantId = 'agency-profile-456';
+                    const auth = String(req.headers.authorization || '');
+                    req.tenantId = auth.includes('agency-2') ? 'agency-profile-999' : 'agency-profile-456';
                     return true;
                 },
-            })
-            .compile();
+            })            .compile();
 
         app = moduleFixture.createNestApplication();
         await app.init();
@@ -86,12 +100,12 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         await db.walletTransaction.deleteMany();
         await db.wallet.deleteMany();
         await db.payoutRequest.deleteMany();
+        await db.paymentProof.deleteMany();
+        await db.booking.deleteMany();
         await db.tripSession.deleteMany();
         await db.tripTemplate.deleteMany();
         await db.agencyProfile.deleteMany();
         await db.refreshToken.deleteMany();
-        await db.paymentProof.deleteMany();
-        await db.booking.deleteMany();
         await db.user.deleteMany();
     }
 
@@ -113,21 +127,18 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             data: {
                 id: 'agency-profile-456',
                 userId: agencyUser.id,
-                companyName: 'Test Agency Ltd',
+                companyName: 'Test Agency Ltd', ice: 'ICE100001', patente: 'PAT100001', rib: 'RIB100001',
             } as any,
         });
 
         // Create trip template
         const template = await db.tripTemplate.create({
-            data: {
+            data: tripTemplateFixture({
                 id: 'template-123',
                 agencyId: agency.id,
                 title: 'Mountain Adventure',
                 description: 'A thrilling mountain trek',
-                itinerary: 'Day 1: Trek start',
-                duration: 3,
-                difficulty: 'MEDIUM',
-            } as any,
+            }) as any,
         });
 
         // Create trip session
@@ -138,6 +149,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
                 endDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 days from now
                 price: 390,
+                totalSeats: 10,
                 availableSeats: 10,
             } as any,
         });
@@ -177,7 +189,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
 
         expect(createRes.body).toHaveProperty('id');
         expect(createRes.body.status).toBe('PENDING');
-        expect(createRes.body.totalAmount).toBe(780); // 390 * 2
+        expect(createRes.body.totalAmount).toBe('780.00'); // 390 * 2
 
         const bookingId = createRes.body.id;
 
@@ -316,6 +328,15 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
     it('Concurrent bookings handle seat availability correctly', async () => {
         const { session } = await seedTestData();
 
+        await db.user.createMany({
+            data: [
+                { id: 'traveler-user-1', email: 'traveler1@example.com', name: 'Traveler 1', password: 'hashed-password', role: UserRole.Traveler, isEmailVerified: true },
+                { id: 'traveler-user-2', email: 'traveler2@example.com', name: 'Traveler 2', password: 'hashed-password', role: UserRole.Traveler, isEmailVerified: true },
+                { id: 'traveler-user-3', email: 'traveler3@example.com', name: 'Traveler 3', password: 'hashed-password', role: UserRole.Traveler, isEmailVerified: true },
+            ],
+            skipDuplicates: true,
+        });
+
         // Update session to have exactly 5 seats
         await db.tripSession.update({
             where: { id: session.id },
@@ -443,6 +464,8 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 bookingDate: new Date(Date.now() - 25 * 60 * 60 * 1000), // 25 hours ago
             } as any,
         });
+
+        await db.tripSession.update({ where: { id: session.id }, data: { availableSeats: 8 } });
 
         const fixturePath = path.join(__dirname, 'fixtures', 'proof.png');
         await request(app.getHttpServer())
@@ -762,7 +785,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             data: {
                 id: 'agency-profile-789',
                 userId: agency2User.id,
-                companyName: 'Agency 2 Ltd',
+                companyName: 'Agency 2 Ltd', ice: 'ICE100002', patente: 'PAT100002', rib: 'RIB100002',
             } as any,
         });
 
@@ -770,15 +793,13 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
 
         // Create template for agency 2
         const template2 = await db.tripTemplate.create({
-            data: {
+            data: tripTemplateFixture({
                 id: 'template-789',
                 agencyId: agency2.id,
                 title: 'Beach Trip',
                 description: 'A relaxing beach trip',
-                itinerary: 'Day 1: Beach',
-                duration: 2,
-                difficulty: 'EASY',
-            } as any,
+                category: 'LUXURY',
+            }) as any,
         });
 
         // Create session for agency 2
@@ -789,6 +810,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
                 endDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
                 price: 200,
+                totalSeats: 10,
                 availableSeats: 10,
             } as any,
         });
@@ -847,7 +869,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             data: {
                 id: 'agency-profile-999',
                 userId: agency2User.id,
-                companyName: 'Agency 3 Ltd',
+                companyName: 'Agency 3 Ltd', ice: 'ICE100003', patente: 'PAT100003', rib: 'RIB100003',
             } as any,
         });
 
@@ -868,10 +890,15 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         });
 
         // Upload proof
+        const proofKey = `private/test-proofs/${booking.id}.png`;
+        const proofPath = path.resolve(process.cwd(), 'private-uploads', 'test-proofs', `${booking.id}.png`);
+        fs.mkdirSync(path.dirname(proofPath), { recursive: true });
+        fs.copyFileSync(path.join(__dirname, 'fixtures', 'proof.png'), proofPath);
+
         const proof = await db.paymentProof.create({
             data: {
                 bookingId: booking.id,
-                imageUrl: 'proof-file.pdf',
+                imageUrl: proofKey,
                 status: 'PENDING',
             },
         });
@@ -920,10 +947,15 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             },
         });
 
+        const proofKey = `private/test-proofs/${booking.id}.png`;
+        const proofPath = path.resolve(process.cwd(), 'private-uploads', 'test-proofs', `${booking.id}.png`);
+        fs.mkdirSync(path.dirname(proofPath), { recursive: true });
+        fs.copyFileSync(path.join(__dirname, 'fixtures', 'proof.png'), proofPath);
+
         const proof = await db.paymentProof.create({
             data: {
                 bookingId: booking.id,
-                imageUrl: 'proof-file.pdf',
+                imageUrl: proofKey,
                 status: 'PENDING',
             },
         });
@@ -1043,3 +1075,11 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         expect(validRes.body).toHaveProperty('id');
     });
 });
+
+
+
+
+
+
+
+

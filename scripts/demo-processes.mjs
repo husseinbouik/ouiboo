@@ -13,7 +13,7 @@ const logDir = path.join(runtimeRoot, 'logs');
 const stateFile = path.join(stateDir, 'processes.json');
 
 const services = [
-  { name: 'api', args: ['run', 'dev', '--workspace', 'apps/api'], url: 'http://localhost:3000/api/v1/health' },
+  { name: 'api', args: ['run', 'dev', '--workspace', 'apps/api'], url: 'http://localhost:3010/api/v1/health' },
   { name: 'worker', args: ['run', 'start:worker:dev', '--workspace', 'apps/api'], url: null },
   { name: 'traveler', args: ['run', 'dev', '--workspace', 'apps/traveler'], url: 'http://localhost:3001/api/health' },
   { name: 'agency', args: ['run', 'dev', '--workspace', 'apps/agency'], url: 'http://localhost:3002/api/health' },
@@ -69,12 +69,13 @@ const normalizedEnv = () => {
   env.Path = process.env.Path || process.env.PATH || '';
   env.PATH = env.Path;
   env.NODE_ENV = env.NODE_ENV || 'development';
+  env.PORT = process.env.DEMO_API_PORT || '3010';
   env.DATABASE_URL = env.DATABASE_URL || 'postgresql://postgres:admin@localhost:5432/ouiboo?schema=public';
   env.JWT_SECRET = env.JWT_SECRET || 'demo-jwt-secret';
   env.JWT_REFRESH_SECRET = env.JWT_REFRESH_SECRET || 'demo-refresh-secret';
   env.CORS_ORIGINS = env.CORS_ORIGINS || 'http://localhost:3001,http://localhost:3002,http://localhost:3003';
-  env.API_URL = env.API_URL || 'http://localhost:3000/api/v1';
-  env.NEXT_PUBLIC_API_URL = env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+  env.API_URL = env.API_URL || 'http://localhost:3010/api/v1';
+  env.NEXT_PUBLIC_API_URL = env.NEXT_PUBLIC_API_URL || 'http://localhost:3010/api/v1';
   env.TRAVELER_APP_URL = env.TRAVELER_APP_URL || 'http://localhost:3001';
   env.AGENCY_APP_URL = env.AGENCY_APP_URL || 'http://localhost:3002';
   env.ADMIN_APP_URL = env.ADMIN_APP_URL || 'http://localhost:3003';
@@ -174,6 +175,52 @@ const startProcess = (args, env, outPath, errPath) => {
   return startUnixProcess(args, env, outPath, errPath);
 };
 
+const portFromUrl = (url) => {
+  if (!url) return null;
+  const parsed = new URL(url);
+  const port = parsed.port || (parsed.protocol === 'https:' ? '443' : '80');
+  return Number(port);
+};
+
+const findListeningPid = (port) => {
+  if (!port || process.platform !== 'win32') return null;
+  const result = spawnSync('netstat', ['-ano'], { cwd: root, encoding: 'utf8' });
+  if (result.status !== 0) return null;
+
+  for (const line of result.stdout.split(/\r?\n/)) {
+    const columns = line.trim().split(/\s+/);
+    if (columns.length < 5 || columns[0] !== 'TCP' || columns[3] !== 'LISTENING') continue;
+    const localAddress = columns[1];
+    const pid = Number(columns[4]);
+    if (localAddress.endsWith(`:${port}`) && Number.isInteger(pid) && pid > 0) {
+      return pid;
+    }
+  }
+
+  return null;
+};
+
+const recoverUrlService = async (service) => {
+  if (!service.url) return null;
+
+  try {
+    const result = await checkUrl(service.url);
+    if (!result.ok) return null;
+    const pid = findListeningPid(portFromUrl(service.url));
+    return {
+      name: service.name,
+      pid,
+      url: service.url,
+      startedAt: new Date().toISOString(),
+      recovered: true,
+      stdout: path.join(logDir, `${service.name}.out.log`),
+      stderr: path.join(logDir, `${service.name}.err.log`),
+    };
+  } catch {
+    return null;
+  }
+};
+
 const start = async () => {
   ensureDirs();
   const redisUrl = localRedisUrl();
@@ -181,14 +228,29 @@ const start = async () => {
   const existing = readState();
   const live = existing.processes.filter((record) => isRunning(record.pid));
   const liveNames = new Set(live.map((record) => record.name));
+  const recovered = [];
   const started = [];
   const skipped = [];
 
   for (const service of services) {
+    if (!service.url || liveNames.has(service.name)) continue;
+    const record = await recoverUrlService(service);
+    if (!record) continue;
+    recovered.push(record);
+    liveNames.add(service.name);
+    console.log(`[demo] recovered ${service.name} from ${service.url}${record.pid ? ` pid=${record.pid}` : ''}`);
+  }
+
+  for (const service of services) {
+    const effectiveService = { ...service };
+    const env = normalizedEnv();
+
     if (service.name === 'worker' && !redisAvailable) {
-      console.log(`[demo] skipped worker: Redis is not reachable at ${redisUrl}`);
-      skipped.push({ name: service.name, reason: `Redis is not reachable at ${redisUrl}`, skippedAt: new Date().toISOString() });
-      continue;
+      effectiveService.args = ['run', 'start:worker:demo', '--workspace', 'apps/api'];
+      env.DEMO_WORKER_NO_REDIS = 'true';
+      console.log(`[demo] starting worker in local no-Redis mode; real BullMQ processing requires ${redisUrl}`);
+    } else if (service.name === 'worker') {
+      env.REDIS_URL = redisUrl;
     }
 
     if (liveNames.has(service.name)) {
@@ -196,12 +258,9 @@ const start = async () => {
       continue;
     }
 
-    const env = normalizedEnv();
-    if (redisAvailable) env.REDIS_URL = redisUrl;
-
     const outPath = path.join(logDir, `${service.name}.out.log`);
     const errPath = path.join(logDir, `${service.name}.err.log`);
-    const child = startProcess(service.args, env, outPath, errPath);
+    const child = startProcess(effectiveService.args, env, outPath, errPath);
     const record = {
       name: service.name,
       pid: child.pid,
@@ -214,7 +273,7 @@ const start = async () => {
     console.log(`[demo] started ${service.name} pid=${child.pid}`);
   }
 
-  writeState({ processes: [...live, ...started], skipped });
+  writeState({ processes: [...live, ...recovered, ...started], skipped });
 };
 
 const stop = () => {
@@ -290,12 +349,14 @@ const status = async () => {
           hasFailure = true;
           console.log(`[demo] ${service.name}: unhealthy ${service.url} status=${result.status}`);
         } else {
-          const pidInfo = record && isRunning(record.pid) ? ` pid=${record.pid}` : '';
+          const recoveredPid = record && isRunning(record.pid) ? record.pid : findListeningPid(portFromUrl(service.url));
+          const pidInfo = recoveredPid ? ` pid=${recoveredPid}` : '';
           console.log(`[demo] ${service.name}: ok ${service.url}${pidInfo}`);
         }
       } catch (error) {
         hasFailure = true;
-        const pidInfo = record && isRunning(record.pid) ? ` pid=${record.pid}` : '';
+        const recoveredPid = record && isRunning(record.pid) ? record.pid : findListeningPid(portFromUrl(service.url));
+        const pidInfo = recoveredPid ? ` pid=${recoveredPid}` : '';
         console.log(`[demo] ${service.name}: unreachable ${service.url}${pidInfo} (${error.message})`);
       }
       continue;
@@ -324,16 +385,3 @@ if (command === 'start') {
   console.error('Usage: node scripts/demo-processes.mjs <start|status|stop>');
   process.exit(1);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

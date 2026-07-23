@@ -1,0 +1,962 @@
+{
+  "ok": true,
+  "frames_root": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames",
+  "errors": [],
+  "warnings": [],
+  "rows": [
+    {
+      "state": "idle",
+      "expected_frames": 6,
+      "actual_frames": 6,
+      "extraction_method": "components",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "frames": [
+        {
+          "index": 0,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\idle\\00.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 26997,
+          "bbox": [
+            8,
+            5,
+            184,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 313
+        },
+        {
+          "index": 1,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\idle\\01.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 26844,
+          "bbox": [
+            8,
+            5,
+            183,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 337
+        },
+        {
+          "index": 2,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\idle\\02.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 26521,
+          "bbox": [
+            9,
+            5,
+            182,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 354
+        },
+        {
+          "index": 3,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\idle\\03.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 26174,
+          "bbox": [
+            12,
+            5,
+            179,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 304
+        },
+        {
+          "index": 4,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\idle\\04.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 26275,
+          "bbox": [
+            12,
+            5,
+            180,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 345
+        },
+        {
+          "index": 5,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\idle\\05.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 26499,
+          "bbox": [
+            11,
+            5,
+            181,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 344
+        }
+      ]
+    },
+    {
+      "state": "running-right",
+      "expected_frames": 8,
+      "actual_frames": 8,
+      "extraction_method": "components",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "frames": [
+        {
+          "index": 0,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running-right\\00.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 18325,
+          "bbox": [
+            21,
+            5,
+            170,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 330
+        },
+        {
+          "index": 1,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running-right\\01.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 18104,
+          "bbox": [
+            21,
+            5,
+            171,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 349
+        },
+        {
+          "index": 2,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running-right\\02.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 18160,
+          "bbox": [
+            21,
+            5,
+            171,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 309
+        },
+        {
+          "index": 3,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running-right\\03.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 16245,
+          "bbox": [
+            26,
+            5,
+            166,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 240
+        },
+        {
+          "index": 4,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running-right\\04.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 17437,
+          "bbox": [
+            23,
+            5,
+            168,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 353
+        },
+        {
+          "index": 5,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running-right\\05.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 17455,
+          "bbox": [
+            22,
+            5,
+            170,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 306
+        },
+        {
+          "index": 6,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running-right\\06.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 16730,
+          "bbox": [
+            22,
+            5,
+            170,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 295
+        },
+        {
+          "index": 7,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running-right\\07.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 16712,
+          "bbox": [
+            29,
+            5,
+            162,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 311
+        }
+      ]
+    },
+    {
+      "state": "running-left",
+      "expected_frames": 8,
+      "actual_frames": 8,
+      "extraction_method": "components",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "frames": [
+        {
+          "index": 0,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running-left\\00.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 18325,
+          "bbox": [
+            21,
+            5,
+            170,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 330
+        },
+        {
+          "index": 1,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running-left\\01.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 18104,
+          "bbox": [
+            21,
+            5,
+            171,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 349
+        },
+        {
+          "index": 2,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running-left\\02.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 18160,
+          "bbox": [
+            21,
+            5,
+            171,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 309
+        },
+        {
+          "index": 3,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running-left\\03.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 16245,
+          "bbox": [
+            26,
+            5,
+            166,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 240
+        },
+        {
+          "index": 4,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running-left\\04.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 17437,
+          "bbox": [
+            23,
+            5,
+            168,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 353
+        },
+        {
+          "index": 5,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running-left\\05.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 17455,
+          "bbox": [
+            22,
+            5,
+            170,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 306
+        },
+        {
+          "index": 6,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running-left\\06.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 16730,
+          "bbox": [
+            22,
+            5,
+            170,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 295
+        },
+        {
+          "index": 7,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running-left\\07.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 16712,
+          "bbox": [
+            29,
+            5,
+            162,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 311
+        }
+      ]
+    },
+    {
+      "state": "waving",
+      "expected_frames": 4,
+      "actual_frames": 4,
+      "extraction_method": "components",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "frames": [
+        {
+          "index": 0,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\waving\\00.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 19475,
+          "bbox": [
+            30,
+            5,
+            162,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 187
+        },
+        {
+          "index": 1,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\waving\\01.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 19785,
+          "bbox": [
+            22,
+            5,
+            170,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 161
+        },
+        {
+          "index": 2,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\waving\\02.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 20163,
+          "bbox": [
+            20,
+            5,
+            172,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 140
+        },
+        {
+          "index": 3,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\waving\\03.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 19254,
+          "bbox": [
+            31,
+            5,
+            161,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 151
+        }
+      ]
+    },
+    {
+      "state": "jumping",
+      "expected_frames": 5,
+      "actual_frames": 5,
+      "extraction_method": "components",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "frames": [
+        {
+          "index": 0,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\jumping\\00.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 21633,
+          "bbox": [
+            15,
+            5,
+            177,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 228
+        },
+        {
+          "index": 1,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\jumping\\01.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 19581,
+          "bbox": [
+            23,
+            5,
+            169,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 161
+        },
+        {
+          "index": 2,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\jumping\\02.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 19401,
+          "bbox": [
+            23,
+            5,
+            168,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 182
+        },
+        {
+          "index": 3,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\jumping\\03.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 20334,
+          "bbox": [
+            21,
+            5,
+            171,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 216
+        },
+        {
+          "index": 4,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\jumping\\04.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 21223,
+          "bbox": [
+            16,
+            5,
+            176,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 212
+        }
+      ]
+    },
+    {
+      "state": "failed",
+      "expected_frames": 8,
+      "actual_frames": 8,
+      "extraction_method": "components",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "frames": [
+        {
+          "index": 0,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\failed\\00.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 19961,
+          "bbox": [
+            24,
+            5,
+            168,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 271
+        },
+        {
+          "index": 1,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\failed\\01.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 22201,
+          "bbox": [
+            18,
+            5,
+            173,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 330
+        },
+        {
+          "index": 2,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\failed\\02.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 22948,
+          "bbox": [
+            15,
+            5,
+            177,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 336
+        },
+        {
+          "index": 3,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\failed\\03.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 23242,
+          "bbox": [
+            5,
+            22,
+            187,
+            186
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 333
+        },
+        {
+          "index": 4,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\failed\\04.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 18353,
+          "bbox": [
+            5,
+            42,
+            187,
+            165
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 300
+        },
+        {
+          "index": 5,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\failed\\05.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 22909,
+          "bbox": [
+            16,
+            5,
+            175,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 341
+        },
+        {
+          "index": 6,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\failed\\06.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 23020,
+          "bbox": [
+            17,
+            5,
+            175,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 321
+        },
+        {
+          "index": 7,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\failed\\07.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 22022,
+          "bbox": [
+            19,
+            5,
+            173,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 340
+        }
+      ]
+    },
+    {
+      "state": "waiting",
+      "expected_frames": 6,
+      "actual_frames": 6,
+      "extraction_method": "components",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "frames": [
+        {
+          "index": 0,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\waiting\\00.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 17840,
+          "bbox": [
+            26,
+            5,
+            166,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 223
+        },
+        {
+          "index": 1,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\waiting\\01.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 16998,
+          "bbox": [
+            28,
+            5,
+            164,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 227
+        },
+        {
+          "index": 2,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\waiting\\02.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 17129,
+          "bbox": [
+            31,
+            5,
+            160,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 252
+        },
+        {
+          "index": 3,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\waiting\\03.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 16716,
+          "bbox": [
+            40,
+            5,
+            152,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 207
+        },
+        {
+          "index": 4,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\waiting\\04.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 17230,
+          "bbox": [
+            34,
+            5,
+            158,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 194
+        },
+        {
+          "index": 5,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\waiting\\05.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 16442,
+          "bbox": [
+            42,
+            5,
+            150,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 205
+        }
+      ]
+    },
+    {
+      "state": "running",
+      "expected_frames": 6,
+      "actual_frames": 6,
+      "extraction_method": "components",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "frames": [
+        {
+          "index": 0,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running\\00.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 16739,
+          "bbox": [
+            34,
+            5,
+            157,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 172
+        },
+        {
+          "index": 1,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running\\01.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 16394,
+          "bbox": [
+            32,
+            5,
+            160,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 172
+        },
+        {
+          "index": 2,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running\\02.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 16432,
+          "bbox": [
+            35,
+            5,
+            156,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 162
+        },
+        {
+          "index": 3,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running\\03.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 16304,
+          "bbox": [
+            32,
+            5,
+            160,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 154
+        },
+        {
+          "index": 4,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running\\04.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 16279,
+          "bbox": [
+            34,
+            5,
+            158,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 155
+        },
+        {
+          "index": 5,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\running\\05.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 16459,
+          "bbox": [
+            34,
+            5,
+            157,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 163
+        }
+      ]
+    },
+    {
+      "state": "review",
+      "expected_frames": 6,
+      "actual_frames": 6,
+      "extraction_method": "components",
+      "ok": true,
+      "errors": [],
+      "warnings": [],
+      "frames": [
+        {
+          "index": 0,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\review\\00.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 21188,
+          "bbox": [
+            28,
+            5,
+            164,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 102
+        },
+        {
+          "index": 1,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\review\\01.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 23554,
+          "bbox": [
+            13,
+            5,
+            178,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 149
+        },
+        {
+          "index": 2,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\review\\02.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 21213,
+          "bbox": [
+            28,
+            5,
+            164,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 118
+        },
+        {
+          "index": 3,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\review\\03.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 21847,
+          "bbox": [
+            24,
+            5,
+            167,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 161
+        },
+        {
+          "index": 4,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\review\\04.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 22848,
+          "bbox": [
+            19,
+            5,
+            173,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 152
+        },
+        {
+          "index": 5,
+          "file": "C:\\Users\\husbouik\\OneDrive - NTT DATA EMEAL\\Documents\\GitHub\\ouiboo\\outputs\\hatch-pet-ouito\\frames\\review\\05.png",
+          "width": 192,
+          "height": 208,
+          "nontransparent_pixels": 21083,
+          "bbox": [
+            28,
+            5,
+            164,
+            203
+          ],
+          "edge_pixels": 0,
+          "chroma_adjacent_pixels": 124
+        }
+      ]
+    }
+  ]
+}

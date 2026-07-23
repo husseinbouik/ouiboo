@@ -1,12 +1,13 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { IStorageProvider } from './interfaces/storage-provider.interface';
+import { UploadSafetyService } from './upload-safety.service';
 
 @Injectable()
 export class UploadService {
     private storageProvider?: IStorageProvider;
     private initialization: Promise<void>;
 
-    constructor() {
+    constructor(private readonly uploadSafetyService: UploadSafetyService) {
         this.initialization = this.initializeProvider();
     }
 
@@ -25,6 +26,8 @@ export class UploadService {
     }
 
     async uploadFile(file: Express.Multer.File, folder: string) {
+        this.uploadSafetyService.validate(file);
+
         const provider = await this.getStorageProvider();
         const result = await provider.upload(file, folder);
 

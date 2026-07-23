@@ -15,7 +15,7 @@ Global prefix: `/api/v1`
 | Admin | `GET/POST/PATCH /admin/*` | Admin private | `JwtAuthGuard`, `RolesGuard(ADMIN)` | Several list endpoints have search filters; continue pagination rollout beyond audit logs. |
 | Analytics | `GET /analytics/*` | Agency private | `JwtAuthGuard`, `RolesGuard(AGENCY)`, `TenantGuard` | Fixed in this pass; uses `req.tenantId`. |
 | Admin analytics | `GET /admin/analytics/metrics` | Admin private | `JwtAuthGuard`, `RolesGuard(ADMIN)` | Fixed in this pass. |
-| Upload | `POST /upload` | Private/sensitive | `JwtAuthGuard`, Redis-backed `RateLimitGuard`, file validators | Needs malware scanning before high-risk production file upload. |
+| Upload | `POST /upload` | Private/sensitive | `JwtAuthGuard`, Redis-backed `RateLimitGuard`, MIME/size validators, file signature checks, EICAR blocking, active-PDF blocking, storage path sanitization | Managed malware/CDR scanner still needs production-provider selection and verification. |
 | Wishlist | `POST/DELETE/GET /users/wishlist*` | Traveler private | `JwtAuthGuard`; service scoped by authenticated user | Add E2E negative ownership tests. |
 | Reviews | `POST /bookings/:bookingId/review`, `POST/PATCH/DELETE /reviews/:reviewId*`, public trip review reads | Mixed | JWT on create/mutate; public reads | Needs admin moderation route guard inventory if exposed later. |
 | Messages | `POST /messages`, `GET /messages/*`, `DELETE /messages/:messageId` | Private | `JwtAuthGuard`; service participant checks needed | Needs verification tests for cross-conversation access. |
@@ -27,10 +27,11 @@ Global prefix: `/api/v1`
 - Admin analytics now requires `RolesGuard(ADMIN)`.
 - Agency analytics now requires `RolesGuard(AGENCY)` and `TenantGuard`.
 - Payment, auth, and upload rate limits now use Redis when configured and require Redis in production.
+- Uploads now validate file signatures, reject EICAR test payloads, reject active-content PDFs, sanitize local/S3 keys, and use S3 server-side encryption.
 
 ## Remaining Security Work
 
 - Add route-level authorization-failure tests for every row above.
 - Add pagination to booking/admin/agency list endpoints that still return unbounded results.
 - Add webhook idempotency/replay protection tests.
-- Add file upload malware scanning and content disarm strategy before broad production exposure.
+- Select and verify a managed malware/CDR scanner for broad production exposure; basic server-side signature/content checks are implemented.

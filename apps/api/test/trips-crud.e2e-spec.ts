@@ -119,7 +119,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             data: {
                 id: 'agency-profile-123',
                 userId: agencyUser1.id,
-                companyName: 'Test Agency',
+                companyName: 'Test Agency', ice: 'ICE100004', patente: 'PAT100004', rib: 'RIB100004',
             } as any,
         });
 
@@ -140,7 +140,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             data: {
                 id: 'agency-profile-456',
                 userId: agencyUser2.id,
-                companyName: 'Other Agency',
+                companyName: 'Other Agency', ice: 'ICE100005', patente: 'PAT100005', rib: 'RIB100005',
             } as any,
         });
 

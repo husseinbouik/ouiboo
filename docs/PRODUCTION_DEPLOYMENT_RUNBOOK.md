@@ -88,4 +88,4 @@ Alert on:
 
 - API-backed E2E must pass against a production-like test environment.
 - Payment provider webhooks need replay/idempotency tests.
-- File upload malware scanning is not yet implemented.
+- Managed malware/CDR scanning must be selected and verified for production uploads; built-in MIME/signature/EICAR/active-PDF/path-safety checks are implemented.

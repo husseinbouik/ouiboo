@@ -184,7 +184,7 @@ describe('Email Notifications - Complete E2E (email-notifications.e2e-spec)', ()
         it('Send booking notification to traveler and agency', async () => {
             // create agency and traveler
             const agencyUser = await db.user.create({ data: { id: 'a1', email: 'agency@test.com', name: 'Agency', role: UserRole.Agency, password: 'password' } as any });
-            const agencyProfile = await db.agencyProfile.create({ data: { id: 'ap1', userId: agencyUser.id, companyName: 'Agency' } as any });
+            const agencyProfile = await db.agencyProfile.create({ data: { id: 'ap1', userId: agencyUser.id, companyName: 'Agency', ice: 'ICE100010', patente: 'PAT100010', rib: 'RIB100010' } as any });
             const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'Trip Title', status: 'ACTIVE' } as any });
             await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 5, availableSeats: 5 } });
             const traveler = await db.user.create({ data: { id: 't1', email: 'traveler@test.com', name: 'T', role: UserRole.Traveler, password: 'password' } as any });
@@ -209,7 +209,7 @@ describe('Email Notifications - Complete E2E (email-notifications.e2e-spec)', ()
     describe('Payment Reminder Emails', () => {
         it('Send payment reminder for unpaid booking', async () => {
             const agencyUser = await db.user.create({ data: { id: 'a2', email: 'ag2@test.com', name: 'A2', role: UserRole.Agency, password: 'password' } as any });
-            const agencyProfile = await db.agencyProfile.create({ data: { id: 'ap2', userId: agencyUser.id, companyName: 'A2' } as any });
+            const agencyProfile = await db.agencyProfile.create({ data: { id: 'ap2', userId: agencyUser.id, companyName: 'A2', ice: 'ICE100011', patente: 'PAT100011', rib: 'RIB100011' } as any });
             const template = await db.tripTemplate.create({ data: { agencyId: agencyProfile.id, title: 'PayTrip', status: 'ACTIVE' } as any });
             const session = await db.tripSession.create({ data: { templateId: template.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 5, availableSeats: 5 } });
             const traveler = await db.user.create({ data: { id: 't2', email: 'trav2@test.com', name: 'T2', password: 'password' } as any });
@@ -409,7 +409,7 @@ describe('Email Notifications - Complete E2E (email-notifications.e2e-spec)', ()
             await emailService.sendWelcomeEmail(trav.email, trav.name);
 
             const agencyUser = await db.user.create({ data: { id: 'ag-int', email: 'agint@test.com', name: 'AG', role: UserRole.Agency, password: 'password' } as any });
-            const ap = await db.agencyProfile.create({ data: { id: 'ap-int', userId: agencyUser.id, companyName: 'AG' } as any });
+            const ap = await db.agencyProfile.create({ data: { id: 'ap-int', userId: agencyUser.id, companyName: 'AG', ice: 'ICE100012', patente: 'PAT100012', rib: 'RIB100012' } as any });
             const tpl = await db.tripTemplate.create({ data: { agencyId: ap.id, title: 'FlowTrip', status: 'ACTIVE' } as any });
             const sess = await db.tripSession.create({ data: { templateId: tpl.id, startDate: new Date(), endDate: new Date(), price: 100, totalSeats: 5, availableSeats: 5 } });
 

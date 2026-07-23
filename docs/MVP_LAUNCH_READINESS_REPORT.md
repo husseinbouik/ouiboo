@@ -1,6 +1,6 @@
 # MVP Launch Readiness Report
 
-Date: 2026-06-19
+Date: 2026-07-20
 
 ## What Was Fixed
 
@@ -11,14 +11,17 @@ Date: 2026-06-19
 - Added Redis-backed rate limiting with production `REDIS_URL` enforcement.
 - Added Redis health endpoint.
 - Moved scheduled notification/currency job logic out of API-local cron decorators and added a BullMQ worker entrypoint.
+- Added a local no-Redis demo worker so the MVP demo stack has an explicit worker process even when Redis is unavailable on the demo machine.
 - Hardened analytics RBAC with agency/admin role guards and tenant guard.
 - Added API route security inventory.
 - Added production Docker Compose example, deployment runbook, and MVP demo runbook.
 - Added idempotent demo seed script with admin, agency, traveler, active trip, session, confirmed booking, payment transaction, wallet, and wallet transaction.
 - Added local frontend health endpoints for Traveler, Agency, and Admin.
-- Fixed local demo process management on Windows by starting API/frontends through direct Node/npm process spawning and checking service health by URL.
+- Fixed local demo process management on Windows by starting API/frontends through direct Node/npm process spawning, checking service health by URL, and recovering stale state from listening ports.
+- Moved the local demo API to `http://localhost:3010/api/v1` to avoid port `3000` conflicts.
 - Added `npm run demo:smoke` for local API/frontend smoke validation.
 - Sanitized committed local env files and documented that real production secrets must not be committed.
+- Hardened uploads with file signature validation, EICAR test-payload blocking, active-PDF blocking, local/S3 path traversal protection, and S3 server-side encryption.
 
 ## Demo Data
 
@@ -42,36 +45,37 @@ Password123!
 
 ## Verification Completed
 
-Verified on 2026-06-19:
+Verified on 2026-07-20:
 
-- `npm run demo:prepare`: passed; schema synced for the local demo DB and demo data seeded.
-- `npm run demo:start`: started API, Traveler, Agency, and Admin locally.
-- `npm run demo:status`: passed for API, Traveler, Agency, and Admin; worker skipped because Redis was unavailable.
+- `npm run demo:start`: started API, worker, Traveler, Agency, and Admin locally.
+- `npm run demo:status`: passed for API, worker, Traveler, Agency, and Admin.
 - `npm run demo:smoke`: passed for API, Traveler, Agency, and Admin.
-- `npm test --workspace apps/api -- --runInBand`: passed, 10 suites / 34 tests.
-
-Previously verified in this hardening pass:
-
 - `npm run check:env`: passed.
+- `npm run lint`: passed.
 - `npm run build --workspace apps/api`: passed.
+- `npm test --workspace apps/api -- --runInBand`: passed, 12 suites / 41 tests.
 - `npm run build --workspace apps/traveler`: passed.
 - `npm run build --workspace apps/agency`: passed.
 - `npm run build --workspace apps/admin`: passed.
+- `npm audit --audit-level=high`: passed, 0 vulnerabilities.
+
+Previously verified in this hardening pass:
+
+- `npm run demo:prepare`: passed and seeded demo data against the local database.
 - `npm test --workspace apps/traveler -- --runInBand`: passed.
 - `npm test --workspace apps/agency -- --runInBand`: passed.
 - `npm test --workspace apps/admin -- --runInBand`: passed.
-- `npm audit --audit-level=high`: passed, 0 high vulnerabilities.
 
 ## Not Fully Verified
 
-- Redis is not running on this machine, so the BullMQ worker is not currently part of the live local demo.
+- Redis is not running on this machine. The live local demo worker is a no-Redis demo worker; real BullMQ reminder, unpaid-booking, and exchange-rate jobs still need validation with Redis.
 - Full root `npm run build` previously timed out in this local shell, but individual API, Traveler, Agency, and Admin builds passed.
 - Full API E2E suite previously timed out before completion after test env setup. Unit/smoke tests pass, but a full production-like E2E run remains a launch verification item.
 - Production deployment has not yet been exercised end-to-end against managed Postgres, Redis, object storage, monitoring, and rollback.
 
 ## Can This Be Used For A Real MVP Demo?
 
-Yes, for a controlled web/API MVP demo of the Traveler, Agency, Admin, and API surfaces after running:
+Yes, for a controlled local MVP demo of the Traveler, Agency, Admin, API, and visible worker process after running:
 
 ```bash
 npm run demo:prepare
@@ -80,7 +84,7 @@ npm run demo:status
 npm run demo:smoke
 ```
 
-Redis must be installed and reachable at `REDIS_URL` before claiming the worker/reminder/queue process is included in the demo.
+Use the local no-Redis worker only for controlled demo visibility. Install and configure Redis before claiming real distributed queue processing, reminders, and scheduled jobs are covered.
 
 ## Can This Be Deployed To Public Production Now?
 
@@ -88,16 +92,16 @@ No.
 
 Remaining public-production blockers:
 
-- Redis-backed worker must be verified with a real Redis instance.
+- Redis-backed BullMQ worker must be verified with a real Redis instance.
 - Full API-backed E2E suite must pass against a clean test database.
 - Payment webhook replay/idempotency tests must be completed.
-- File upload malware scanning/content safety needs implementation before broad production exposure.
+- Managed malware/CDR scanner integration still needs provider selection and production verification before broad public file uploads.
 - Remaining unbounded list endpoints need pagination rollout.
 - Production deployment must be exercised once using the migration and rollback runbook.
 - Any real secrets that were previously committed must be rotated outside the repo.
 
 ## Updated Readiness Score
 
-- Controlled MVP web/API demo readiness: 88%
-- Full demo including worker/queues: 80%
-- Public production readiness: 74%
+- Controlled MVP local demo readiness: 93%
+- Full demo including real Redis/BullMQ queues: 82%
+- Public production readiness: 78%

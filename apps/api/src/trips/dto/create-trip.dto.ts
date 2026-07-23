@@ -1,5 +1,5 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsString, IsEnum, IsNumber, IsPositive, IsInt, Min, IsArray, MinLength, IsOptional, ValidateNested } from 'class-validator';
+import { IsString, IsEnum, IsPositive, IsInt, Min, IsArray, MinLength, IsOptional, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TripCategory, TripStatus } from '@ouiboo/types';
 import { IsDecimalMoney } from '../../common/validators/is-decimal-money.decorator';

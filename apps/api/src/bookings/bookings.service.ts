@@ -19,6 +19,20 @@ export class BookingsService {
     ) { }
 
     async create(travelerId: string, dto: CreateBookingDto) {
+        if (!dto?.sessionId || typeof dto.sessionId !== 'string') {
+            throw new BadRequestException('sessionId is required');
+        }
+
+        if (!Number.isInteger(dto.guestsCount) || dto.guestsCount <= 0) {
+            throw new BadRequestException('guestsCount must be a positive integer');
+        }
+
+        for (const [field, value] of Object.entries({ fullName: dto.fullName, phoneNumber: dto.phoneNumber, documentNumber: dto.documentNumber })) {
+            if (typeof value !== 'string' || value.trim().length === 0) {
+                throw new BadRequestException(field + ' is required');
+            }
+        }
+
         const session = await this.db.tripSession.findUnique({
             where: { id: dto.sessionId },
             include: { template: { include: { agency: true } } }
@@ -91,6 +105,29 @@ export class BookingsService {
                     documentNumber: dto.documentNumber,
                     paymentMethod: persistedPaymentMethod,
                 },
+                include: {
+                    session: {
+                        include: {
+                            template: {
+                                include: {
+                                    agency: true,
+                                },
+                            },
+                        },
+                    },
+                    traveler: {
+                        select: {
+                            email: true,
+                            name: true,
+                        },
+                    },
+                    paymentProof: true,
+                    review: {
+                        select: {
+                            id: true,
+                        },
+                    },
+                },
             });
 
             console.log(`[BookingsService] Created booking ${booking.id} for session ${dto.sessionId}. Travelers: ${dto.guestsCount}`);
@@ -108,7 +145,7 @@ export class BookingsService {
                 ).catch(err => console.error('Failed to send booking email', err));
             }
 
-            return booking;
+            return mapBookingDetails(booking);
         });
     }
 
@@ -484,3 +521,7 @@ export class BookingsService {
         });
     }
 }
+
+
+
+
