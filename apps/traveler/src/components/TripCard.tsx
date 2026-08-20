@@ -7,16 +7,30 @@ import { Card, Badge, Button } from '@ouiboo/ui';
 import { MapPin, Star, ChevronLeft, ChevronRight, Zap, ShieldCheck, Ticket } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@ouiboo/ui/utils';
-import { SessionStatus, type TripSession, type TripTemplate, VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
+import { SessionStatus, type SessionStatusType, VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 import { WishlistButton } from './WishlistButton';
 
+export interface TripCardTrip {
+  id: string;
+  title: string;
+  category?: string;
+  startLocation?: string;
+  durationDays?: number;
+  images?: string[];
+  sessions?: Array<{
+    id: string;
+    status: SessionStatusType | string;
+    availableSeats: number;
+    price: number | string;
+    startDate: string;
+  }>;
+  agency?: {
+    verificationStatus?: VerificationStatusType;
+  } | null;
+}
+
 interface TripCardProps {
-  trip: TripTemplate & {
-    sessions?: TripSession[];
-    agency?: {
-      verificationStatus?: VerificationStatusType;
-    } | null;
-  };
+  trip: TripCardTrip;
 }
 
 export function TripCard({ trip }: TripCardProps) {

@@ -154,9 +154,9 @@ const generateEmailHtml = (name: string, userType: string, language: string = 'e
     : "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
   const emailSegment: UserSegment = userType === 'Agency' ? 'agency' : 'traveler';
-  const emailContent = content[lang][emailSegment];
 
-  if (userType === 'Agency') {
+  if (emailSegment === 'agency') {
+    const emailContent = content[lang].agency;
     subject = emailContent.subject;
     html = `
     <!DOCTYPE html>
@@ -240,6 +240,7 @@ const generateEmailHtml = (name: string, userType: string, language: string = 'e
     </html>
     `;
   } else {
+    const emailContent = content[lang].traveler;
     subject = emailContent.subject;
     html = `
     <!DOCTYPE html>

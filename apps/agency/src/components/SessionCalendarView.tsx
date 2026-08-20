@@ -13,24 +13,12 @@ import {
 import { Button, Card, CardContent } from '@ouiboo/ui';
 import { SessionStatusBadge } from './SessionStatusBadge';
 
-interface Session {
-  id: string;
-  startDate: string;
-  endDate: string;
-  price: number;
-  deposit: number;
-  totalSeats: number;
-  availableSeats: number;
-  status: 'OPEN' | 'FULL' | 'CANCELLED';
-  currency: string;
-  cancellationReason?: string | null;
-  bookings?: Array<{ id: string }>;
-}
+import type { AgencyTripSession } from './session-types';
 
 interface SessionCalendarViewProps {
-  sessions: Session[];
-  onEdit: (session: Session) => void;
-  onDelete: (session: Session) => void;
+  sessions: AgencyTripSession[];
+  onEdit: (session: AgencyTripSession) => void;
+  onDelete: (session: AgencyTripSession) => void;
   isLoading?: boolean;
   viewMode?: 'list' | 'calendar';
 }
@@ -57,7 +45,7 @@ export function SessionCalendarView({
     if (!acc[key]) acc[key] = [];
     acc[key].push(session);
     return acc;
-  }, {} as Record<string, Session[]>);
+  }, {} as Record<string, AgencyTripSession[]>);
 
   const currentMonthKey = `${currentMonth.getFullYear()}-${currentMonth.getMonth()}`;
   const monthSessions = sessionsByMonth[currentMonthKey] || [];
@@ -70,7 +58,7 @@ export function SessionCalendarView({
     });
   };
 
-  const calculateOccupancy = (session: Session) => {
+  const calculateOccupancy = (session: AgencyTripSession) => {
     const booked = session.totalSeats - session.availableSeats;
     return Math.floor((booked / session.totalSeats) * 100);
   };
@@ -161,12 +149,12 @@ export function SessionCalendarView({
 }
 
 interface SessionCardProps {
-  session: Session;
-  onEdit: (session: Session) => void;
-  onDelete: (session: Session) => void;
+  session: AgencyTripSession;
+  onEdit: (session: AgencyTripSession) => void;
+  onDelete: (session: AgencyTripSession) => void;
   isExpanded: boolean;
   onToggleExpand: () => void;
-  calculateOccupancy: (session: Session) => number;
+  calculateOccupancy: (session: AgencyTripSession) => number;
   formatDate: (date: string) => string;
   isLoading?: boolean;
 }

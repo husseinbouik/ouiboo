@@ -26,6 +26,7 @@ Create or verify the GitHub `staging` environment and load:
 ### Required secrets
 
 - `STAGING_DATABASE_URL`
+- `REDIS_URL`
 - `JWT_SECRET`
 - `JWT_REFRESH_SECRET`
 - `SMTP_HOST`
@@ -37,6 +38,13 @@ Create or verify the GitHub `staging` environment and load:
 - `S3_ACCESS_KEY_ID`
 - `S3_SECRET_ACCESS_KEY`
 - `S3_ENDPOINT`
+- `GMAIL_EMAIL`
+- `GMAIL_APP_PASSWORD`
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+- `GOOGLE_PRIVATE_KEY`
+- `GOOGLE_SHEET_ID`
+- `DEPLOY_HOOK_URL`
+- `DEPLOY_HOOK_TOKEN`
 
 ### Required vars
 
@@ -45,6 +53,7 @@ Create or verify the GitHub `staging` environment and load:
 - `STAGING_AGENCY_URL`
 - `STAGING_ADMIN_URL`
 - `STAGING_LANDING_URL`
+- `STAGING_CORS_ORIGINS`
 
 ## 3. Staging Service Validation
 
@@ -68,18 +77,21 @@ Expected workflow order:
 1. install dependencies
 2. validate env and placeholders
 3. build release candidate
-4. apply Prisma migrations
-5. run smoke checks against staging URLs
+4. publish immutable service images
+5. apply Prisma migrations
+6. invoke the deployment orchestrator
+7. run smoke checks against staging URLs
 
 ## 5. Required Smoke Outcomes
 
 These health checks must pass:
 
-- [ ] API `/api/health`
+- [ ] API `/api/v1/health/ready`
 - [ ] traveler `/api/health`
 - [ ] agency `/api/health`
 - [ ] admin `/api/health`
 - [ ] landing `/api/health`
+- [ ] worker heartbeat and Redis health command succeeds
 
 ## 6. Dress Rehearsal
 

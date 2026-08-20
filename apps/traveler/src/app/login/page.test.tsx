@@ -1,6 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import TravelerLoginPage from './page';
 
 const mutateMock = jest.fn();
@@ -33,7 +32,6 @@ jest.mock('@/components/AuthContext', () => ({
 
 describe('TravelerLoginPage', () => {
     it('renders login fields and submits credentials', async () => {
-        const user = userEvent.setup();
         render(<TravelerLoginPage />);
 
         expect(screen.getByText('Welcome Back')).not.toBeNull();
@@ -46,9 +44,9 @@ describe('TravelerLoginPage', () => {
         expect(passwordInput).not.toBeNull();
         expect(submitButton).not.toBeNull();
 
-        await user.type(emailInput, 'traveler@example.com');
-        await user.type(passwordInput, 'Password123!');
-        await user.click(submitButton);
+        fireEvent.change(emailInput, { target: { value: 'traveler@example.com' } });
+        fireEvent.change(passwordInput, { target: { value: 'Password123!' } });
+        fireEvent.click(submitButton);
 
         await waitFor(() => {
             expect(mutateMock).toHaveBeenCalledWith({

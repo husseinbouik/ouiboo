@@ -34,5 +34,8 @@
     "turbo": "latest",
     "zod": "^4.3.5"
   },
+  "overrides": {
+    "rxjs": "7.8.2"
+  },
   "packageManager": "npm@10.0.0"
 }

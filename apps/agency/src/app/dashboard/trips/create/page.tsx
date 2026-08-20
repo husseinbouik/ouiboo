@@ -22,7 +22,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
-import { TripStatus } from '@ouiboo/types';
+import { TripCategory, TripStatus } from '@ouiboo/types';
+import { useStringArrayField } from '@/hooks/useStringArrayField';
 
 type ApiError = {
   response?: {
@@ -48,7 +49,7 @@ export default function CreateTripPage() {
   const { register, handleSubmit, control, watch, setValue, trigger, formState: { errors } } = useForm<CreateTripInput>({
     resolver: zodResolver(CreateTripTemplateSchema),
     defaultValues: {
-      category: 'ADVENTURE',
+      category: TripCategory.Adventure,
       inclusions: [],
       exclusions: [],
       checklist: [],
@@ -59,20 +60,23 @@ export default function CreateTripPage() {
     }
   });
 
-  const { fields: inclusionFields, append: appendInclusion, remove: removeInclusion } = useFieldArray({
+  const { fields: inclusionFields, append: appendInclusion, remove: removeInclusion } = useStringArrayField(
     control,
-    name: 'inclusions'
-  });
+    setValue,
+    'inclusions'
+  );
 
-  const { fields: exclusionFields, append: appendExclusion, remove: removeExclusion } = useFieldArray({
+  const { fields: exclusionFields, append: appendExclusion, remove: removeExclusion } = useStringArrayField(
     control,
-    name: 'exclusions'
-  });
+    setValue,
+    'exclusions'
+  );
 
-  const { fields: checklistFields, append: appendChecklistItem, remove: removeChecklistItem } = useFieldArray({
+  const { fields: checklistFields, append: appendChecklistItem, remove: removeChecklistItem } = useStringArrayField(
     control,
-    name: 'checklist'
-  });
+    setValue,
+    'checklist'
+  );
 
   const { fields: itineraryFields, append: appendDay } = useFieldArray({
     control,

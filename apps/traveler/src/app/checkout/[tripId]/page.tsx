@@ -2,7 +2,7 @@
 
 import type { AxiosError } from 'axios';
 import Image from 'next/image';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -14,7 +14,7 @@ import {
   Button, 
   Input, 
   Label, 
-  RadioGroup, 
+  RadioGroup,
   RadioGroupItem,
   Badge
 } from '@ouiboo/ui';
@@ -63,8 +63,6 @@ type BookingResponse = {
   id: string;
 };
 
-type SupportedPaymentProvider = 'CMI' | 'CASHPLUS';
-
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (error && typeof error === 'object' && 'response' in error) {
     const axiosError = error as AxiosError<ApiErrorResponse>;
@@ -78,27 +76,24 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
-const getManualPaymentMethod = (method: string) =>
-  method === 'cash' ? 'WALLET' : 'BANK_TRANSFER';
-
 export default function CheckoutPage() {
   const { tripId } = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user, isLoading: isAuthLoading } = useAuth();
-  const [paymentMethod, setPaymentMethod] = useState('virement');
+  const { isLoading: isAuthLoading } = useAuth();
+  const sessionFromQuery = searchParams.get('session');
+  const parsedGuestsCount = Number(searchParams.get('guests'));
+  const guestsFromQuery = Number.isFinite(parsedGuestsCount) && parsedGuestsCount > 0
+    ? parsedGuestsCount
+    : null;
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
-  const [onlineProvider, setOnlineProvider] = useState<SupportedPaymentProvider | null>(null);
-  const [isInitiatingPayment, setIsInitiatingPayment] = useState(false);
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [guestCount, setGuestCount] = useState(1);
-  const [fullName, setFullName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [documentNumber, setDocumentNumber] = useState('');
+  const [selectedSessionOverride, setSelectedSessionId] = useState<string | null>(null);
+  const [guestCountOverride, setGuestCount] = useState<number | null>(null);
+  const [fullNameOverride, setFullName] = useState<string | null>(null);
+  const [phoneNumberOverride, setPhoneNumber] = useState<string | null>(null);
+  const [documentNumberOverride, setDocumentNumber] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const hasInitializedFromQuery = useRef(false);
-  const hasHydratedRetryBooking = useRef(false);
   const retryBookingId = searchParams.get('retryBooking');
 
   useEffect(() => {
@@ -130,56 +125,23 @@ export default function CheckoutPage() {
     },
   });
 
-  useEffect(() => {
-    if (hasInitializedFromQuery.current) return;
-
-    const sessionParam = searchParams.get('session');
-    const parsedGuestsCount = Number(searchParams.get('guests'));
-    const hasGuestsCount = Number.isFinite(parsedGuestsCount) && parsedGuestsCount > 0;
-
-    if (sessionParam) {
-      setSelectedSessionId(sessionParam);
-    } else if (trip?.sessions?.length) {
-      setSelectedSessionId(trip.sessions[0].id);
-    }
-
-    if (hasGuestsCount) {
-      setGuestCount(parsedGuestsCount);
-    }
-
-    if (sessionParam || hasGuestsCount || trip?.sessions?.length) {
-      hasInitializedFromQuery.current = true;
-    }
-  }, [searchParams, trip?.sessions]);
-
-  useEffect(() => {
-    const sessionFromQuery = searchParams.get('session');
-    if (sessionFromQuery) {
-      setSelectedSessionId(sessionFromQuery);
-    }
-
-    const parsedGuestsCount = Number(searchParams.get('guests'));
-    if (Number.isFinite(parsedGuestsCount) && parsedGuestsCount > 0) {
-      setGuestCount(parsedGuestsCount);
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
-    if (!retryBooking || hasHydratedRetryBooking.current) {
-      return;
-    }
-
-    setSelectedSessionId((current) => current || retryBooking.session.id);
-    setGuestCount((current) => current || retryBooking.guestsCount);
-    setFullName((current) => current || retryBooking.fullName || retryBooking.traveler?.name || '');
-    setPhoneNumber((current) => current || retryBooking.phoneNumber || '');
-    setDocumentNumber((current) => current || retryBooking.documentNumber || '');
-    hasHydratedRetryBooking.current = true;
-  }, [retryBooking]);
-
+  const selectedSessionId = selectedSessionOverride
+    ?? sessionFromQuery
+    ?? retryBooking?.session.id
+    ?? trip?.sessions?.[0]?.id
+    ?? null;
+  const guestCount = guestCountOverride ?? guestsFromQuery ?? retryBooking?.guestsCount ?? 1;
+  const fullName = fullNameOverride
+    ?? retryBooking?.fullName
+    ?? retryBooking?.traveler?.name
+    ?? '';
+  const phoneNumber = phoneNumberOverride ?? retryBooking?.phoneNumber ?? '';
+  const documentNumber = documentNumberOverride ?? retryBooking?.documentNumber ?? '';
   const selectedSession = trip?.sessions?.find((session) => session.id === selectedSessionId);
   const sessionPrice = selectedSession?.price ?? 0;
   const totalPrice = sessionPrice * guestCount;
+  const bankDetails = trip?.agency?.bankDetails?.trim() ?? '';
+  const hasBankDetails = bankDetails.length > 0;
   const sessionDateLabel = selectedSession
     ? `${new Date(selectedSession.startDate).toLocaleDateString()} - ${new Date(selectedSession.endDate).toLocaleDateString()}`
     : 'Select a session';
@@ -193,6 +155,9 @@ export default function CheckoutPage() {
       if (!fullName.trim() || !phoneNumber.trim() || !documentNumber.trim()) {
         throw new Error('Guest contact details are required');
       }
+      if (!hasBankDetails) {
+        throw new Error('This agency has not configured verified bank transfer instructions yet');
+      }
 
       const response = await apiClient.post('/bookings', {
         sessionId: selectedSessionId,
@@ -200,7 +165,7 @@ export default function CheckoutPage() {
         fullName: fullName.trim(),
         phoneNumber: phoneNumber.trim(),
         documentNumber: documentNumber.trim(),
-        paymentMethod: getManualPaymentMethod(paymentMethod),
+        paymentMethod: 'BANK_TRANSFER',
       });
       const booking = response.data;
 
@@ -222,53 +187,6 @@ export default function CheckoutPage() {
     }
   });
 
-  const initiateGatewayPayment = async (provider: SupportedPaymentProvider) => {
-    try {
-      setErrorMessage(null);
-      setIsInitiatingPayment(true);
-
-      if (!selectedSessionId) throw new Error('Session is required');
-      if (!fullName.trim() || !phoneNumber.trim() || !documentNumber.trim()) {
-        throw new Error('Guest contact details are required');
-      }
-
-      const travelerEmail = user?.email?.trim();
-      if (!travelerEmail) {
-        throw new Error('You must be logged in with a valid email before paying online');
-      }
-
-      const bookingRes = await apiClient.post<BookingResponse>('/bookings', {
-        sessionId: selectedSessionId,
-        guestsCount: guestCount,
-        fullName: fullName.trim(),
-        phoneNumber: phoneNumber.trim(),
-        documentNumber: documentNumber.trim(),
-        paymentMethod: provider === 'CMI' ? 'CARD' : 'MOBILE_MONEY',
-      });
-      const booking = bookingRes.data;
-
-      const initiateRes = await apiClient.post('/payments/initiate', {
-        bookingId: booking.id,
-        amount: totalPrice,
-        travelerEmail,
-        travelerName: fullName.trim(),
-        provider,
-      });
-
-      const payload = initiateRes.data as { paymentUrl?: string; redirectUrl?: string; url?: string };
-      const redirectUrl = payload?.redirectUrl || payload?.paymentUrl || payload?.url;
-      if (!redirectUrl) {
-        router.push(`/checkout/confirmation?bookingId=${booking.id}&proof=0`);
-        return;
-      }
-
-      window.location.href = redirectUrl;
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error, 'Unable to initiate payment'));
-      setIsInitiatingPayment(false);
-    }
-  };
-
   const clearProof = () => {
     if (proofPreview) {
       URL.revokeObjectURL(proofPreview);
@@ -289,6 +207,7 @@ export default function CheckoutPage() {
   };
 
   if (isLoading || isAuthLoading) return <div className="min-h-screen flex items-center justify-center font-black animate-pulse">Initializing Security...</div>;
+  if (!trip) return <div className="min-h-screen flex items-center justify-center font-black">Trip not found.</div>;
 
   return (
     <div className="min-h-screen bg-muted/20 pb-40">
@@ -404,99 +323,30 @@ export default function CheckoutPage() {
                     <div className="space-y-8 pt-10 border-t">
                         <div className="flex items-center gap-4">
                             <div className="h-10 w-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black">2</div>
-                            <h2 className="text-2xl font-black font-display">Online Payment</h2>
+                            <h2 className="text-2xl font-black font-display">Bank Transfer</h2>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className={cn(
-                                "p-6 rounded-[2rem] border-2 cursor-pointer transition-all flex flex-col gap-4",
-                                onlineProvider === 'CMI' ? "border-primary bg-primary/5" : "border-border/50 hover:bg-muted/50"
-                            )} onClick={() => setOnlineProvider('CMI')}>
-                                <div className="flex justify-between items-center">
-                                    <Lock className="h-8 w-8 text-primary" />
-                                </div>
+                        <div className={cn(
+                            "p-6 rounded-[2rem] border-2 space-y-4",
+                            hasBankDetails ? "border-primary/20 bg-primary/5" : "border-rose-200 bg-rose-50"
+                        )}>
+                            <div className="flex items-center gap-3">
+                                <Banknote className={cn("h-8 w-8", hasBankDetails ? "text-primary" : "text-rose-600")} />
                                 <div>
-                                    <h4 className="font-black text-lg">Pay by Card (CMI)</h4>
-                                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Secure card payments via CMI</p>
-                                </div>
-                                <div className="pt-4">
-                                    <Button onClick={() => initiateGatewayPayment('CMI')} disabled={isInitiatingPayment} className="w-full">{isInitiatingPayment && onlineProvider === 'CMI' ? 'Redirecting...' : 'Pay with CMI'}</Button>
+                                    <h4 className="font-black text-lg">Virement Bancaire</h4>
+                                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                                        {hasBankDetails ? 'Use the verified instructions below' : 'Payment instructions unavailable'}
+                                    </p>
                                 </div>
                             </div>
-
-                            <div className={cn(
-                                "p-6 rounded-[2rem] border-2 cursor-pointer transition-all flex flex-col gap-4",
-                                onlineProvider === 'CASHPLUS' ? "border-amber-500 bg-amber-50" : "border-border/50 hover:bg-muted/50"
-                            )} onClick={() => setOnlineProvider('CASHPLUS')}>
-                                <div className="flex justify-between items-center">
-                                    <Smartphone className="h-8 w-8 text-amber-500" />
-                                </div>
-                                <div>
-                                    <h4 className="font-black text-lg">CashPlus / Mobile (Online)</h4>
-                                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Initiate CashPlus payment flow</p>
-                                </div>
-                                <div className="pt-4">
-                                    <Button onClick={() => initiateGatewayPayment('CASHPLUS')} disabled={isInitiatingPayment} className="w-full">{isInitiatingPayment && onlineProvider === 'CASHPLUS' ? 'Redirecting...' : 'Pay with CashPlus'}</Button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="pt-6 border-t" />
-
-                        <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black">3</div>
-                            <h2 className="text-2xl font-black font-display">Manual Payment</h2>
-                        </div>
-
-                        <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div 
-                                onClick={() => setPaymentMethod('virement')}
-                                className={cn(
-                                    "p-6 rounded-[2rem] border-2 cursor-pointer transition-all flex flex-col gap-4",
-                                    paymentMethod === 'virement' ? "border-primary bg-primary/5" : "border-border/50 hover:bg-muted/50"
-                                )}
-                            >
-                                <div className="flex justify-between items-center">
-                                    <Banknote className="h-8 w-8 text-primary" />
-                                    <RadioGroupItem value="virement" />
-                                </div>
-                                <div>
-                                    <h4 className="font-black text-lg">Bank Transfer</h4>
-                                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Virement Bancaire (RIB)</p>
-                                </div>
-                            </div>
-                            <div 
-                                onClick={() => setPaymentMethod('cash')}
-                                className={cn(
-                                    "p-6 rounded-[2rem] border-2 cursor-pointer transition-all flex flex-col gap-4",
-                                    paymentMethod === 'cash' ? "border-amber-500 bg-amber-50" : "border-border/50 hover:bg-muted/50"
-                                )}
-                            >
-                                <div className="flex justify-between items-center">
-                                    <Smartphone className="h-8 w-8 text-amber-500" />
-                                    <RadioGroupItem value="cash" className="border-amber-500 text-amber-500" />
-                                </div>
-                                <div>
-                                    <h4 className="font-black text-lg">Cash / Agency Payment</h4>
-                                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">CashPlus / Wafacash</p>
-                                </div>
-                            </div>
-                        </RadioGroup>
-
-                            <AnimatePresence>
-                                {paymentMethod === 'virement' && (
-                                    <motion.div 
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        className="p-6 bg-primary/5 rounded-2xl border-2 border-primary/20 space-y-4"
-                                    >
+                            {hasBankDetails ? (
+                                <>
                                         <div className="flex items-center gap-2 text-primary">
                                             <Info className="h-4 w-4" />
                                             <span className="text-[10px] font-black uppercase tracking-widest">Official Bank Instructions</span>
                                         </div>
                                         <div className="bg-card/70 p-4 rounded-xl font-mono text-sm whitespace-pre-wrap break-all leading-relaxed">
-                                            {trip.agency?.bankDetails || 'Bank Name: Attijariwafa Bank\nRIB: 011 780 0000 1234 5678 9012 34\nAccount Name: Sun Travels Morocco'}
+                                            {bankDetails}
                                         </div>
                                         <div className="p-4 bg-amber-50 rounded-xl flex gap-3 items-center">
                                             <div className="h-8 w-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0">
@@ -506,24 +356,13 @@ export default function CheckoutPage() {
                                                 Payment proof is required within 24 hours of booking. Reservations without proof are canceled automatically.
                                             </p>
                                         </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-
-                            <AnimatePresence>
-                                {paymentMethod === 'cash' && (
-                                    <motion.div 
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        className="p-6 bg-amber-50 rounded-2xl border-2 border-amber-200 space-y-2"
-                                    >
-                                        <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1 text-center">Cash Payment Details</p>
-                                        <p className="text-center font-bold text-amber-900">{trip.agency?.companyName}</p>
-                                        <p className="text-center text-xs text-amber-700">Visit any Agency local point or use CashPlus/Wafacash with the details provided by the agency upon arrival.</p>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                                </>
+                            ) : (
+                                <p className="text-sm font-semibold text-rose-700">
+                                    Booking is temporarily unavailable. The agency must configure its bank details before accepting payments.
+                                </p>
+                            )}
+                        </div>
 
                             <div className="space-y-4 pt-4">
                                 <div className="flex justify-between items-end">
@@ -661,6 +500,7 @@ export default function CheckoutPage() {
                <Button 
                 disabled={
                   !selectedSessionId ||
+                  !hasBankDetails ||
                   !fullName.trim() ||
                   !phoneNumber.trim() ||
                   !documentNumber.trim() ||

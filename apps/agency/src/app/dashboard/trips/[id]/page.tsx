@@ -30,20 +30,10 @@ import { BulkSessionCreationModal } from '@/components/BulkSessionCreationModal'
 import { SessionCalendarView } from '@/components/SessionCalendarView';
 import { EditSessionModal } from '@/components/EditSessionModal';
 import { DeleteConfirmation } from '@/components/DeleteConfirmation';
-import { TripStatus, type SessionStatusType, type TripStatusType } from '@ouiboo/types';
+import { TripStatus, type TripStatusType } from '@ouiboo/types';
+import type { AgencyTripSession } from '@/components/session-types';
 
-type SessionItem = {
-  id: string;
-  startDate: string;
-  endDate: string;
-  price: number;
-  deposit: number;
-  totalSeats: number;
-  availableSeats: number;
-  status: SessionStatusType;
-  currency: string;
-  cancellationReason?: string | null;
-};
+type SessionItem = AgencyTripSession;
 
 type TripDetail = {
   id: string;
@@ -143,6 +133,9 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
   // Edit session
   const editSessionMutation = useMutation({
     mutationFn: async (data: Partial<SessionItem>) => {
+      if (!editingSession) {
+        throw new Error('No session selected for editing');
+      }
       await apiClient.patch(`/trips/${params.id}/sessions/${editingSession.id}`, data);
     },
     onSuccess: () => {
@@ -154,6 +147,9 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
   // Delete session
   const deleteSessionMutation = useMutation({
     mutationFn: async () => {
+      if (!deletingSession) {
+        throw new Error('No session selected for deletion');
+      }
       await apiClient.delete(`/trips/${params.id}/sessions/${deletingSession.id}`);
     },
     onSuccess: () => {
@@ -343,7 +339,7 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
       {/* Edit Session Modal */}
       <EditSessionModal
         isOpen={!!editingSession}
-        session={editingSession}
+        session={editingSession ?? undefined}
         onClose={() => setEditingSession(null)}
         onSubmit={handleEditSessionSubmit}
         isLoading={editSessionMutation.isPending}
@@ -352,7 +348,7 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
 
       {/* Delete Confirmation */}
       <DeleteConfirmation 
-        isOpen={deleteConfirmOpen && deletingSession}
+        isOpen={Boolean(deleteConfirmOpen && deletingSession)}
         onClose={() => {
           setDeleteConfirmOpen(false);
           setDeletingSession(null);
@@ -369,7 +365,7 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
 
       {/* Delete Trip Confirmation */}
       <DeleteConfirmation 
-        isOpen={deleteConfirmOpen && !deletingSession}
+        isOpen={Boolean(deleteConfirmOpen && !deletingSession)}
         onClose={() => {
           setDeleteConfirmOpen(false);
         }}

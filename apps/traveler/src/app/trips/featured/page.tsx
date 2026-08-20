@@ -1,12 +1,12 @@
 import { apiClient } from '@/lib/api-client';
-import { TripCard } from '@/components/TripCard';
+import { TripCard, type TripCardTrip } from '@/components/TripCard';
 import { Badge, Button } from '@ouiboo/ui';
 import Link from 'next/link';
 import { Compass, Sparkles } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
-async function getFeaturedTrips() {
+async function getFeaturedTrips(): Promise<TripCardTrip[]> {
   try {
     let response = await apiClient.get('/trips?featured=true&status=ACTIVE');
     const directFeatured = Array.isArray(response.data) ? response.data : response.data?.data;
@@ -49,7 +49,7 @@ export default async function FeaturedTripsPage() {
 
         {trips.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-            {trips.map((trip: { id: string }) => (
+            {trips.map((trip) => (
               <TripCard key={trip.id} trip={trip} />
             ))}
           </div>

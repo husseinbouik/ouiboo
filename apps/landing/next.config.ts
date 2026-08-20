@@ -1,10 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   transpilePackages: ["@ouiboo/ui"],
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   staticPageGenerationTimeout: 300,
 };
 

@@ -1,5 +1,11 @@
 # Production Readiness Execution Report
 
+> Historical snapshot from 2026-06-04. Several gaps recorded below—Decimal
+> money fields, Redis-backed throttling/cache, the queue worker, container
+> manifests, readiness checks, and API E2E CI wiring—have since been
+> implemented. Use `docs/launch-ops/DEPLOYMENT_START_HERE.md` and the current
+> production runbook as the launch source of truth.
+
 Date: 2026-06-04
 
 ## Scope

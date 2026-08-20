@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import type { VerificationStatusType } from '@ouiboo/types';
@@ -23,6 +24,7 @@ interface User {
         logo?: string;
         subscriptionStatus?: string;
         trialEndsAt?: string;
+        subscriptionEndsAt?: string;
     };
 }
 
@@ -36,6 +38,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+    const router = useRouter();
     const { data: user, isLoading, refetch } = useQuery({
         queryKey: ['me'],
         queryFn: async () => {
@@ -53,7 +56,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const logout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
+        router.replace('/login');
+        router.refresh();
     };
 
     return (

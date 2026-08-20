@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useCallback, useMemo, useState, useEffect } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { apiClient } from "@/lib/api-client";
 import {
   Search,
   Filter,
@@ -16,7 +15,8 @@ import { Button, Input, Badge } from "@ouiboo/ui";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@ouiboo/ui/utils";
 import { TripCard } from "@/components/TripCard";
-import { TripStatus, type SessionStatusType, type VerificationStatusType } from "@ouiboo/types";
+import { TripStatus } from "@ouiboo/types";
+import { useTripsQuery, type TripsQueryParams } from "@ouiboo/api-client";
 
 type SearchFilters = {
   category: string;
@@ -28,35 +28,6 @@ type SearchFilters = {
   priceMin: string;
   availabilityOnly: boolean;
   ratingMin: number;
-};
-
-type SearchTrip = {
-  id: string;
-  title: string;
-  category?: string;
-  startLocation?: string;
-  durationDays: number;
-  images?: string[];
-  agency?: {
-    verificationStatus?: VerificationStatusType;
-  };
-  sessions?: Array<{
-    id: string;
-    status: SessionStatusType;
-    availableSeats: number;
-    price: number;
-    startDate: string;
-  }>;
-};
-
-type TripsSearchResponse = {
-  data: SearchTrip[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
 };
 
 type FilterKey = keyof SearchFilters;
@@ -116,31 +87,26 @@ export default function SearchPage() {
     return () => clearTimeout(t);
   }, [searchQueryInput, updateFilter]);
 
-  const buildQueryParams = useCallback(() => {
-    const params = new URLSearchParams();
-    params.append("status", TripStatus.Active);
-    if (filters.searchQuery) params.append("q", filters.searchQuery);
-    if (filters.category) params.append("category", filters.category);
-    if (filters.priceMin) params.append("priceMin", filters.priceMin);
-    if (filters.priceMax) params.append("priceMax", filters.priceMax);
-    if (filters.dateFrom) params.append("startDateFrom", filters.dateFrom);
-    if (filters.dateTo) params.append("startDateTo", filters.dateTo);
-    if (filters.availabilityOnly) params.append("available", "true");
-    if (filters.ratingMin > 0) params.append("ratingMin", String(filters.ratingMin));
-    params.append("sortBy", sortBy);
-    params.append("sortOrder", sortOrder);
-    params.append("page", String(currentPage));
-    params.append("limit", "20");
+  const queryParams = useMemo<TripsQueryParams>(() => {
+    const params: TripsQueryParams = {
+      status: TripStatus.Active,
+      sortBy,
+      sortOrder,
+      page: currentPage,
+      limit: 20,
+    };
+    if (filters.searchQuery) params.q = filters.searchQuery;
+    if (filters.category) params.category = filters.category;
+    if (filters.priceMin) params.priceMin = Number(filters.priceMin);
+    if (filters.priceMax) params.priceMax = Number(filters.priceMax);
+    if (filters.dateFrom) params.startDateFrom = filters.dateFrom;
+    if (filters.dateTo) params.startDateTo = filters.dateTo;
+    if (filters.availabilityOnly) params.available = true;
+    if (filters.ratingMin > 0) params.ratingMin = filters.ratingMin;
     return params;
   }, [filters, sortBy, sortOrder, currentPage]);
 
-  const { data: response, isLoading, error, isError } = useQuery<TripsSearchResponse>({
-    queryKey: ["trips", filters, sortBy, sortOrder, currentPage],
-    queryFn: async () => {
-      const params = buildQueryParams();
-      const res = await apiClient.get(`/trips?${params.toString()}`);
-      return res.data;
-    },
+  const { data: response, isLoading, error, isError } = useTripsQuery(queryParams, {
     placeholderData: keepPreviousData,
   });
 

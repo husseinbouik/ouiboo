@@ -14,6 +14,7 @@ import { useMutation } from '@tanstack/react-query';
 import { type RegisterInput } from '@ouiboo/schemas';
 import { useAuth } from '@/components/AuthContext';
 
+import { UserRole } from '@ouiboo/types';
 type AgencySignupFormValues = Omit<RegisterInput, 'role'> & {
   acceptTerms: boolean;
 };
@@ -81,7 +82,7 @@ export default function AgencySignupPage() {
       email: data.email,
       name: data.name,
       password: data.password,
-      role: 'AGENCY',
+      role: UserRole.Agency,
     });
   };
 

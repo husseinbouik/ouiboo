@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   transpilePackages: ["@ouiboo/ui"],
   images: {
     unoptimized: true,
@@ -10,9 +11,6 @@ const nextConfig: NextConfig = {
         hostname: 'ui-avatars.com',
       },
     ],
-  },
-  typescript: {
-    ignoreBuildErrors: true,
   },
   staticPageGenerationTimeout: 300,
 };

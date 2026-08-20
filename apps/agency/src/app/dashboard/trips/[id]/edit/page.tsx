@@ -24,6 +24,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
 import { TripStatus, type TripStatusType } from '@ouiboo/types';
+import { useStringArrayField } from '@/hooks/useStringArrayField';
 
 type TripEditorData = CreateTripInput & {
   title: string;
@@ -79,20 +80,23 @@ export default function EditTripPage() {
     }
   }, [trip, reset]);
 
-  const { fields: inclusionFields, append: appendInclusion, remove: removeInclusion } = useFieldArray({
+  const { fields: inclusionFields, append: appendInclusion, remove: removeInclusion } = useStringArrayField(
     control,
-    name: 'inclusions'
-  });
+    setValue,
+    'inclusions'
+  );
 
-  const { fields: exclusionFields, append: appendExclusion, remove: removeExclusion } = useFieldArray({
+  const { fields: exclusionFields, append: appendExclusion, remove: removeExclusion } = useStringArrayField(
     control,
-    name: 'exclusions'
-  });
+    setValue,
+    'exclusions'
+  );
 
-  const { fields: checklistFields, append: appendChecklistItem, remove: removeChecklistItem } = useFieldArray({
+  const { fields: checklistFields, append: appendChecklistItem, remove: removeChecklistItem } = useStringArrayField(
     control,
-    name: 'checklist'
-  });
+    setValue,
+    'checklist'
+  );
 
   const { fields: itineraryFields, append: appendDay } = useFieldArray({
     control,

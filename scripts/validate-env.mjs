@@ -6,6 +6,9 @@ const __filename = fileURLToPath(import.meta.url);
 // Load .env from root
 dotenv.config();
 
+const optionalValue = (schema) =>
+  z.preprocess((value) => value === '' ? undefined : value, schema.optional());
+
 const envSchema = z.object({
   // Database
   DATABASE_URL: z.string().url(),
@@ -27,8 +30,19 @@ const envSchema = z.object({
   TRAVELER_APP_URL: z.string().url().optional(),
   AGENCY_APP_URL: z.string().url().optional(),
   ADMIN_APP_URL: z.string().url().optional(),
+  NEXT_PUBLIC_TRAVELER_URL: z.string().url().optional(),
+  NEXT_PUBLIC_AGENCY_URL: z.string().url().optional(),
   REDIS_URL: z.string().url().optional(),
   ENABLE_SWAGGER: z.enum(['true', 'false']).optional(),
+  WORKER_HEARTBEAT_INTERVAL_MS: optionalValue(z.coerce.number().int().positive()),
+  WORKER_HEARTBEAT_MAX_AGE_MS: optionalValue(z.coerce.number().int().positive()),
+
+  // Landing waitlist
+  GMAIL_EMAIL: optionalValue(z.string().email()),
+  GMAIL_APP_PASSWORD: optionalValue(z.string().min(1)),
+  GOOGLE_SERVICE_ACCOUNT_EMAIL: optionalValue(z.string().email()),
+  GOOGLE_PRIVATE_KEY: optionalValue(z.string().min(1)),
+  GOOGLE_SHEET_ID: optionalValue(z.string().min(1)),
   
   // Storage
   STORAGE_PROVIDER: z.enum(['local', 's3']).default('local'),
@@ -53,6 +67,44 @@ const envSchema = z.object({
 }, {
   message: "S3 credentials are required when STORAGE_PROVIDER is 's3'.",
   path: ['STORAGE_PROVIDER'],
+}).superRefine((data, ctx) => {
+  const heartbeatInterval = data.WORKER_HEARTBEAT_INTERVAL_MS ?? 15_000;
+  const heartbeatMaxAge = data.WORKER_HEARTBEAT_MAX_AGE_MS ?? 45_000;
+  if (heartbeatMaxAge <= heartbeatInterval * 2) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['WORKER_HEARTBEAT_MAX_AGE_MS'],
+      message: 'WORKER_HEARTBEAT_MAX_AGE_MS must be more than twice WORKER_HEARTBEAT_INTERVAL_MS.',
+    });
+  }
+
+  if (process.env.NODE_ENV !== 'production') return;
+
+  const productionRequired = [
+    'API_URL',
+    'NEXT_PUBLIC_API_URL',
+    'TRAVELER_APP_URL',
+    'AGENCY_APP_URL',
+    'ADMIN_APP_URL',
+    'NEXT_PUBLIC_TRAVELER_URL',
+    'NEXT_PUBLIC_AGENCY_URL',
+    'REDIS_URL',
+    'GMAIL_EMAIL',
+    'GMAIL_APP_PASSWORD',
+    'GOOGLE_SERVICE_ACCOUNT_EMAIL',
+    'GOOGLE_PRIVATE_KEY',
+    'GOOGLE_SHEET_ID',
+  ];
+
+  for (const name of productionRequired) {
+    if (!data[name]) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [name],
+        message: `${name} is required in production.`,
+      });
+    }
+  }
 });
 
 export function validateEnv() {

@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { type RegisterInput } from '@ouiboo/schemas';
 import { apiClient } from '@/lib/api-client';
+import { UserRole } from '@ouiboo/types';
 
 type TravelerSignupFormValues = Omit<RegisterInput, 'role'> & {
   acceptTerms: boolean;
@@ -79,7 +80,7 @@ export default function TravelerSignupPage() {
       email: data.email,
       name: data.name,
       password: data.password,
-      role: 'TRAVELER',
+      role: UserRole.Traveler,
     });
   };
 

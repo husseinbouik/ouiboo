@@ -35,7 +35,8 @@ Required values:
 4. Run `npm test`.
 5. Run `npm run build`.
 6. Run `npm audit --audit-level=high`.
-7. Build and publish immutable Docker images for API, worker, Traveler, Agency, and Admin.
+7. Build and publish immutable Docker images for API, worker, Traveler, Agency, Admin, and Landing.
+8. Confirm the deployment hook is configured and authenticated.
 
 ## Migration Procedure
 
@@ -54,8 +55,9 @@ Required values:
 5. Deploy API.
 6. Deploy worker.
 7. Deploy frontends.
-8. Check `/api/v1/health`, `/api/v1/health/db`, and `/api/v1/health/redis`.
-9. Disable maintenance mode.
+8. Check `/api/v1/health/ready`, `/api/v1/health/db`, and `/api/v1/health/redis`.
+9. Confirm `node dist/apps/api/src/worker-healthcheck` succeeds in the worker container.
+10. Disable maintenance mode.
 
 ## Rollback Procedure
 
@@ -70,7 +72,7 @@ Required values:
 Alert on:
 
 - API `/health` failure for 2 consecutive checks.
-- Worker process down.
+- Worker heartbeat stale or worker Redis probe failing.
 - Redis unavailable.
 - BullMQ failed job count above threshold.
 - Postgres connection saturation or slow queries.
@@ -86,6 +88,6 @@ Alert on:
 
 ## Production Blockers Still Requiring Verification
 
-- API-backed E2E must pass against a production-like test environment.
+- API-backed E2E is wired into CI with PostgreSQL and Redis and must be green on the release commit and repeated against staging.
 - Payment provider webhooks need replay/idempotency tests.
 - Managed malware/CDR scanning must be selected and verified for production uploads; built-in MIME/signature/EICAR/active-PDF/path-safety checks are implemented.

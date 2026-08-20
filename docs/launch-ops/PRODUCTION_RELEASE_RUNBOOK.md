@@ -22,6 +22,7 @@ Create or verify the GitHub `production` environment and load:
 ### Required secrets
 
 - `PRODUCTION_DATABASE_URL`
+- `REDIS_URL`
 - `JWT_SECRET`
 - `JWT_REFRESH_SECRET`
 - `SMTP_HOST`
@@ -33,6 +34,13 @@ Create or verify the GitHub `production` environment and load:
 - `S3_ACCESS_KEY_ID`
 - `S3_SECRET_ACCESS_KEY`
 - `S3_ENDPOINT`
+- `GMAIL_EMAIL`
+- `GMAIL_APP_PASSWORD`
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+- `GOOGLE_PRIVATE_KEY`
+- `GOOGLE_SHEET_ID`
+- `DEPLOY_HOOK_URL`
+- `DEPLOY_HOOK_TOKEN`
 
 ### Required vars
 
@@ -41,6 +49,7 @@ Create or verify the GitHub `production` environment and load:
 - `PRODUCTION_AGENCY_URL`
 - `PRODUCTION_ADMIN_URL`
 - `PRODUCTION_LANDING_URL`
+- `PRODUCTION_CORS_ORIGINS`
 
 ## 3. Release Ownership
 
@@ -73,10 +82,13 @@ The production workflow currently does:
 1. install dependencies
 2. validate env and placeholders
 3. build release candidate
-4. apply Prisma migrations
-5. smoke deployed production services
+4. publish immutable SHA-tagged images to GHCR
+5. apply Prisma migrations
+6. invoke the configured deployment orchestrator
+7. smoke deployed production services
 
-This means you must make sure the underlying hosting platform is already configured to serve the new release artifacts and URLs correctly.
+The deployment endpoint must follow
+[DEPLOYMENT_ORCHESTRATOR_CONTRACT.md](./DEPLOYMENT_ORCHESTRATOR_CONTRACT.md).
 
 ## 6. Payment-Specific Release Rules
 

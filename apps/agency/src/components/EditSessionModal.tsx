@@ -5,26 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar } from 'lucide-react';
 import { Button, CardContent, Input, Label } from '@ouiboo/ui';
 import { Card } from '@ouiboo/ui';
-import { SessionStatus, type SessionStatusType } from '@ouiboo/types';
-
-interface Session {
-  id: string;
-  startDate: string;
-  endDate: string;
-  price: number;
-  deposit: number;
-  totalSeats: number;
-  availableSeats: number;
-  status: SessionStatusType;
-  currency: string;
-  cancellationReason?: string | null;
-}
+import { SessionStatus } from '@ouiboo/types';
+import type { AgencyTripSession } from './session-types';
 
 interface EditSessionModalProps {
   isOpen: boolean;
-  session?: Session;
+  session?: AgencyTripSession;
   onClose: () => void;
-  onSubmit: (data: Partial<Session>) => void;
+  onSubmit: (data: Partial<AgencyTripSession>) => void;
   isLoading?: boolean;
   isDelete?: boolean;
   onDelete?: () => void;
@@ -57,13 +45,13 @@ export function EditSessionModal({
       session.cancellationReason ?? '',
     ].join('|');
   }, [session]);
-  const [draftState, setDraftState] = useState<{ key: string; value: Partial<Session> }>({
+  const [draftState, setDraftState] = useState<{ key: string; value: Partial<AgencyTripSession> }>({
     key: sessionKey,
     value: session || {},
   });
   const formData = draftState.key === sessionKey ? draftState.value : (session || {});
 
-  const updateFormData = (next: Partial<Session>) => {
+  const updateFormData = (next: Partial<AgencyTripSession>) => {
     setDraftState({ key: sessionKey, value: next });
   };
 
@@ -225,7 +213,7 @@ export function EditSessionModal({
                     <Label className="text-sm font-medium">Status</Label>
                     <select 
                       value={formData.status || SessionStatus.Open} 
-                      onChange={(e) => updateFormData({ ...formData, status: e.target.value as SessionStatusType })}
+                      onChange={(e) => updateFormData({ ...formData, status: e.target.value as AgencyTripSession['status'] })}
                       className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-950 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300"
                       disabled={isLoading}
                     >

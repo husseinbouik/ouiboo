@@ -26,7 +26,8 @@ These deployment assets already exist:
   - agency `/api/health`
   - admin `/api/health`
   - landing `/api/health`
-  - api `/api/health`
+  - api readiness `/api/v1/health/ready`
+- worker health command: `node dist/apps/api/src/worker-healthcheck`
 
 ## Where To Start
 

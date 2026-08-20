@@ -4,6 +4,15 @@ export enum UserRole {
     Admin = "ADMIN",
 }
 
+export interface Review {
+    id: string;
+    rating: number;
+    comment?: string | null;
+    response?: string | null;
+    isVerifiedBooking: boolean;
+    createdAt: string;
+}
+
 export interface User {
     id: string;
     name: string;

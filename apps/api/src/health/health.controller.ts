@@ -9,6 +9,27 @@ export class HealthController {
         private redisService: RedisService,
     ) { }
 
+    @Get('live')
+    getLiveness() {
+        return {
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+        };
+    }
+
+    @Get('ready')
+    async getReadiness() {
+        const health = await this.getHealth();
+        if (health.status !== 'ok' || health.redis !== 'ok') {
+            throw new ServiceUnavailableException({
+                ...health,
+                status: 'error',
+            });
+        }
+        return health;
+    }
+
     @Get()
     async getHealth() {
         let dbStatus = 'ok';

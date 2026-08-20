@@ -176,7 +176,7 @@ export default function TripDetailsPage() {
                 <div className="bg-muted/50 rounded-[1.5rem] flex items-center justify-center cursor-pointer hover:bg-muted transition-colors border border-border">
                     <div className="flex flex-col items-center gap-2">
                         <div className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground font-bold shadow-sm">
-                            +{trip.images?.length > 4 ? trip.images.length - 4 : 0}
+                            +{(trip.images?.length ?? 0) > 4 ? (trip.images?.length ?? 0) - 4 : 0}
                         </div>
                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">View Gallery</span>
                     </div>

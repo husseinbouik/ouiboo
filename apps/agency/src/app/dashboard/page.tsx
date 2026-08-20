@@ -364,7 +364,7 @@ export default function AgencyDashboard() {
                         <p className="text-sm font-medium text-muted-foreground">{new Date(booking.bookingDate).toLocaleDateString()}</p>
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className="font-black text-foreground">{formatCurrency(booking.totalAmount)}</span>
+                        <span className="font-black text-foreground">{formatCurrency(Number(booking.totalAmount))}</span>
                         <span className="text-[10px] ml-1 font-bold text-muted-foreground uppercase">MAD</span>
                       </TableCell>
                       <TableCell className="text-right">

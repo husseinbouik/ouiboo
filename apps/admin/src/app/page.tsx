@@ -251,6 +251,23 @@ export default function AdminDashboard() {
     }
   });
 
+  const updateAgencyStatusMutation = useMutation({
+    mutationFn: async ({
+      id,
+      verificationStatus,
+    }: {
+      id: string;
+      verificationStatus: VerificationStatusType;
+    }) => {
+      return apiClient.patch(`/admin/agencies/${id}/status`, {
+        verificationStatus,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
+      queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
+    },
+  });
   const { data: auditLogs = [] } = useQuery<AdminAuditLog[]>({
     queryKey: ['audit-logs', debouncedQuery],
     queryFn: async () => {
@@ -361,7 +378,10 @@ export default function AdminDashboard() {
       const response = await apiClient.get(`/bookings/${bookingId}/payment-proof/download`, {
         responseType: 'blob',
       });
-      const contentType = response.headers['content-type'] || 'application/octet-stream';
+      const contentTypeHeader = response.headers['content-type'];
+      const contentType = typeof contentTypeHeader === 'string'
+        ? contentTypeHeader
+        : 'application/octet-stream';
       const fileUrl = window.URL.createObjectURL(new Blob([response.data], { type: contentType }));
       window.open(fileUrl, '_blank', 'noopener,noreferrer');
       window.setTimeout(() => window.URL.revokeObjectURL(fileUrl), 60_000);
@@ -676,7 +696,7 @@ export default function AdminDashboard() {
                                    <div>
                                       <h3 className="text-lg font-bold text-deep-blue">{agency.companyName}</h3>
                                       <p className="text-sm text-gray-500">
-                                        {t('dashboard.labels.ice')}: {agency.ice} - {t('dashboard.labels.joined')} {new Date(agency.user.createdAt).toLocaleDateString()}
+                                        {t('dashboard.labels.ice')}: {agency.ice} - {t('dashboard.labels.joined')} {agency.user?.createdAt ? new Date(agency.user.createdAt).toLocaleDateString() : 'N/A'}
                                       </p>
                                    </div>
                                 </div>
@@ -864,7 +884,7 @@ export default function AdminDashboard() {
                                     }
                                     refundBookingMutation.mutate({
                                       id: booking.id,
-                                      amount: booking.totalAmount,
+                                      amount: Number(booking.totalAmount),
                                     });
                                   }}
                                 >

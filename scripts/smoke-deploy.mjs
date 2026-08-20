@@ -1,12 +1,27 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 const services = [
-  { name: 'api', env: 'SMOKE_API_URL', path: '/api/v1/health', defaultUrl: 'http://localhost:3010' },
+  { name: 'api', env: 'SMOKE_API_URL', path: '/api/v1/health/ready', defaultUrl: 'http://localhost:3010' },
   { name: 'traveler', env: 'SMOKE_TRAVELER_URL', path: '/api/health', defaultUrl: 'http://localhost:3001' },
   { name: 'agency', env: 'SMOKE_AGENCY_URL', path: '/api/health', defaultUrl: 'http://localhost:3002' },
   { name: 'admin', env: 'SMOKE_ADMIN_URL', path: '/api/health', defaultUrl: 'http://localhost:3003' },
   { name: 'landing', env: 'SMOKE_LANDING_URL', path: '/api/health' },
 ];
 
-const normalizeUrl = (baseUrl, path) => `${String(baseUrl).replace(/\/$/, '')}${path}`;
+export const normalizeUrl = (baseUrl, path) => {
+  const url = new URL(String(baseUrl));
+  const basePath = url.pathname.replace(/\/+$/, '');
+  const targetPath = path.startsWith('/') ? path : `/${path}`;
+
+  url.pathname =
+    basePath.endsWith('/api/v1') && targetPath.startsWith('/api/v1/')
+      ? `${basePath}${targetPath.slice('/api/v1'.length)}`
+      : `${basePath}${targetPath}`;
+  url.search = '';
+  url.hash = '';
+  return url.toString().replace(/\/$/, '');
+};
 
 const parseJson = async (response) => {
   const text = await response.text();
@@ -66,7 +81,12 @@ const run = async () => {
   }
 };
 
-run().catch((error) => {
-  console.error('[smoke] unhandled error', error);
-  process.exit(1);
-});
+const isMainModule =
+  Boolean(process.argv[1]) && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isMainModule) {
+  run().catch((error) => {
+    console.error('[smoke] unhandled error', error);
+    process.exit(1);
+  });
+}
