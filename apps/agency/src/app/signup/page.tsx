@@ -12,8 +12,6 @@ import { apiClient } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { type RegisterInput } from '@ouiboo/schemas';
-import { useAuth } from '@/components/AuthContext';
-
 import { UserRole } from '@ouiboo/types';
 type AgencySignupFormValues = Omit<RegisterInput, 'role'> & {
   acceptTerms: boolean;
@@ -30,7 +28,6 @@ type ApiError = {
 export default function AgencySignupPage() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const { refetch } = useAuth();
   const { register, handleSubmit, formState: { errors } } = useForm<AgencySignupFormValues>({
     defaultValues: {
       acceptTerms: true,
@@ -53,14 +50,8 @@ export default function AgencySignupPage() {
       const response = await apiClient.post('/auth/register', data);
       return response.data;
     },
-    onSuccess: async (data) => {
-      const { accessToken, refreshToken, user } = data;
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', accessToken);
-        localStorage.setItem('refresh_token', refreshToken);
-      }
-      await refetch();
-      router.push(`/verify?email=${user.email}`);
+    onSuccess: (data) => {
+      router.push(`/verify?email=${encodeURIComponent(data.email)}`);
     },
     onError: (err: ApiError) => {
       const message = err?.response?.data?.message;

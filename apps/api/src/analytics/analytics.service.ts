@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { MoneyInput, decimalZero, toMoneyDecimal, toMoneyString } from '../common/money.util';
 
@@ -15,6 +15,10 @@ export class AnalyticsService {
     endDate: Date,
     period: 'daily' | 'weekly' | 'monthly' = 'daily',
   ) {
+    this.validateDateRange(startDate, endDate);
+    if (!['daily', 'weekly', 'monthly'].includes(period)) {
+      throw new BadRequestException('Invalid analytics period');
+    }
     const bookings = await this.prisma.booking.findMany({
       where: {
         status: 'COMPLETED',
@@ -48,53 +52,42 @@ export class AnalyticsService {
     startDate: Date,
     endDate: Date,
   ) {
-    const sessions = await this.prisma.tripSession.count({
+    this.validateDateRange(startDate, endDate);
+    const dateFilter = { gte: startDate, lte: endDate };
+    const [sessions, bookings, confirmed, completed] = await Promise.all([
+      this.prisma.tripSession.count({
       where: {
         template: { agencyId },
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
+        createdAt: dateFilter,
       },
-    });
-
-    const bookings = await this.prisma.booking.count({
+      }),
+      this.prisma.booking.count({
       where: {
         session: {
           template: { agencyId },
         },
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
+        createdAt: dateFilter,
       },
-    });
-
-    const confirmed = await this.prisma.booking.count({
+      }),
+      this.prisma.booking.count({
       where: {
         status: 'CONFIRMED',
         session: {
           template: { agencyId },
         },
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
+        createdAt: dateFilter,
       },
-    });
-
-    const completed = await this.prisma.booking.count({
+      }),
+      this.prisma.booking.count({
       where: {
         status: 'COMPLETED',
         session: {
           template: { agencyId },
         },
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
+        createdAt: dateFilter,
       },
-    });
+      }),
+    ]);
 
     return {
       views: sessions,
@@ -109,6 +102,9 @@ export class AnalyticsService {
    * Get top performing trips
    */
   async getTopTrips(agencyId: string, limit: number = 10) {
+    const normalizedLimit = Number.isFinite(limit)
+      ? Math.min(50, Math.max(1, Math.floor(limit)))
+      : 10;
     const trips = await this.prisma.tripTemplate.findMany({
       where: { agencyId },
       include: {
@@ -121,16 +117,14 @@ export class AnalyticsService {
             },
           },
         },
-        reviews: {
-          select: { rating: true },
-        },
+        _count: { select: { reviews: true } },
       },
       orderBy: {
         reviews: {
           _count: 'desc',
         },
       },
-      take: limit,
+      take: normalizedLimit,
     });
 
     return trips.map((trip) => {
@@ -143,19 +137,13 @@ export class AnalyticsService {
           acc.add(session.bookings.reduce((sum, booking) => sum.add(toMoneyDecimal(booking.totalAmount)), decimalZero())),
         decimalZero(),
       );
-      const avgRating =
-        trip.reviews.length > 0
-          ? trip.reviews.reduce((sum, r) => sum + r.rating, 0) /
-            trip.reviews.length
-          : 0;
-
       return {
         id: trip.id,
         title: trip.title,
         bookings: totalBookings,
         revenue: toMoneyString(totalRevenue) || '0.00',
-        avgRating,
-        reviewCount: trip.reviews.length,
+        avgRating: trip.averageRating,
+        reviewCount: trip._count.reviews,
       };
     });
   }
@@ -164,13 +152,14 @@ export class AnalyticsService {
    * Get payment method distribution
    */
   async getPaymentMethodDistribution(agencyId: string) {
-    const payments = await this.prisma.booking.findMany({
+    const payments = await this.prisma.booking.groupBy({
+      by: ['paymentMethod'],
       where: {
         session: {
           template: { agencyId },
         },
       },
-      select: { paymentMethod: true },
+      _count: { _all: true },
     });
 
     const distribution = {
@@ -179,7 +168,7 @@ export class AnalyticsService {
     };
 
     payments.forEach((payment) => {
-      distribution[payment.paymentMethod]++;
+      distribution[payment.paymentMethod] = payment._count._all;
     });
 
     return distribution;
@@ -189,19 +178,7 @@ export class AnalyticsService {
    * Get customer demographics
    */
   async getCustomerDemographics(agencyId: string) {
-    const bookings = await this.prisma.booking.findMany({
-      where: {
-        session: {
-          template: { agencyId },
-        },
-      },
-      include: {
-        traveler: true,
-      },
-      distinct: ['travelerId'],
-    });
-
-    const repeatCustomers = await this.prisma.booking.groupBy({
+    const customers = await this.prisma.booking.groupBy({
       by: ['travelerId'],
       where: {
         session: {
@@ -211,21 +188,15 @@ export class AnalyticsService {
       _count: {
         id: true,
       },
-      having: {
-        id: {
-          _count: {
-            gt: 1,
-          },
-        },
-      },
     });
+    const repeatCustomers = customers.filter((customer) => customer._count.id > 1).length;
 
     return {
-      totalCustomers: bookings.length,
-      repeatCustomers: repeatCustomers.length,
+      totalCustomers: customers.length,
+      repeatCustomers,
       repeatCustomerRate:
-        bookings.length > 0
-          ? (repeatCustomers.length / bookings.length) * 100
+        customers.length > 0
+          ? (repeatCustomers / customers.length) * 100
           : 0,
     };
   }
@@ -292,5 +263,18 @@ export class AnalyticsService {
       date,
       amount: toMoneyString(amount) || '0.00',
     }));
+  }
+
+  private validateDateRange(startDate: Date, endDate: Date) {
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      throw new BadRequestException('Valid startDate and endDate are required');
+    }
+    if (startDate > endDate) {
+      throw new BadRequestException('startDate must be before endDate');
+    }
+    const maxRangeMs = 2 * 365 * 24 * 60 * 60 * 1000;
+    if (endDate.getTime() - startDate.getTime() > maxRangeMs) {
+      throw new BadRequestException('Analytics date range cannot exceed two years');
+    }
   }
 }

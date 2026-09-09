@@ -25,18 +25,14 @@ export class AuthController {
         }
         const tokens = await this.authService.login(user);
         this.setRefreshCookie(res, tokens.refreshToken);
-        return tokens;
+        return this.publicTokenResponse(tokens);
     }
 
     @Post('register')
     @RateLimit({ points: 5, windowMs: 60_000, keyPrefix: 'auth:register' })
     @ApiOperation({ summary: 'Register a new user' })
-    async register(@Body() registerDto: RegisterDto, @Res({ passthrough: true }) res: Response) {
-        const tokens = await this.authService.register(registerDto);
-        if (tokens?.refreshToken) {
-            this.setRefreshCookie(res, tokens.refreshToken);
-        }
-        return tokens;
+    async register(@Body() registerDto: RegisterDto) {
+        return this.authService.register(registerDto);
     }
 
     @Post('refresh')
@@ -53,7 +49,7 @@ export class AuthController {
         }
         const tokens = await this.authService.refreshToken(refreshToken);
         this.setRefreshCookie(res, tokens.refreshToken);
-        return tokens;
+        return this.publicTokenResponse(tokens);
     }
 
     @Post('logout')
@@ -77,8 +73,10 @@ export class AuthController {
     @Post('verify-email')
     @RateLimit({ points: 10, windowMs: 60_000, keyPrefix: 'auth:verify-email' })
     @ApiOperation({ summary: 'Verify email with OTP' })
-    async verifyEmail(@Body() dto: VerifyEmailDto) {
-        return this.authService.verifyEmail(dto.email, dto.otp);
+    async verifyEmail(@Body() dto: VerifyEmailDto, @Res({ passthrough: true }) res: Response) {
+        const tokens = await this.authService.verifyEmail(dto.email, dto.otp);
+        this.setRefreshCookie(res, tokens.refreshToken);
+        return this.publicTokenResponse(tokens);
     }
 
     @Post('resend-otp')
@@ -110,6 +108,12 @@ export class AuthController {
             maxAge: REFRESH_COOKIE_MAX_AGE_MS,
             path: '/api/v1/auth',
         });
+    }
+
+    private publicTokenResponse<T extends { refreshToken: string }>(tokens: T) {
+        const response = { ...tokens } as T & { refreshToken?: string };
+        delete response.refreshToken;
+        return response as Omit<T, 'refreshToken'>;
     }
 
     private getRefreshToken(req: ExpressRequest, dto?: RefreshTokenDto) {

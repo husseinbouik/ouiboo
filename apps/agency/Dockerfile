@@ -20,7 +20,9 @@ COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
 
 ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_MEDIA_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_MEDIA_URL=$NEXT_PUBLIC_MEDIA_URL
 RUN npx turbo run build --filter=@ouiboo/agency...
 
 FROM base AS runner

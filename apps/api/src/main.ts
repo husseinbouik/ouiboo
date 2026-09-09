@@ -7,6 +7,7 @@ import { GlobalExceptionFilter } from './common/global-exception.filter'
 import { RedisResponseCacheInterceptor } from './common/redis-response-cache.interceptor'
 import { ResponseInterceptor } from './common/response.interceptor'
 import { RequestLoggingInterceptor } from './monitoring/request-logging.interceptor'
+import type { NextFunction, Request, Response } from 'express'
 
 const REQUIRED_ENV_VARS = [
   'JWT_SECRET',
@@ -17,6 +18,7 @@ const REQUIRED_ENV_VARS = [
   'SMTP_PORT',
   'SMTP_USER',
   'SMTP_PASS',
+  'TRUST_PROXY_HOPS',
 ]
 
 const validateRequiredEnv = () => {
@@ -27,6 +29,17 @@ const validateRequiredEnv = () => {
     throw new Error(
       `Missing required environment variables: ${missing.join(', ')}`
     )
+  }
+
+  const jwtSecret = process.env.JWT_SECRET || ''
+  const refreshSecret = process.env.JWT_REFRESH_SECRET || ''
+  const placeholderPattern = /(?:demo|change|replace|secret|password)/i
+  if (jwtSecret.length < 32 || refreshSecret.length < 32
+    || placeholderPattern.test(jwtSecret) || placeholderPattern.test(refreshSecret)) {
+    throw new Error('JWT secrets must be at least 32 characters and non-placeholder values in production')
+  }
+  if (jwtSecret === refreshSecret) {
+    throw new Error('JWT_SECRET and JWT_REFRESH_SECRET must be different in production')
   }
 }
 
@@ -59,6 +72,25 @@ async function bootstrap() {
     validateRequiredEnv()
     const app = await NestFactory.create(AppModule, { rawBody: true })
     const corsOrigins = getCorsOrigins()
+    const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS)
+    if (Number.isInteger(trustProxyHops) && trustProxyHops > 0) {
+      app.getHttpAdapter().getInstance().set('trust proxy', trustProxyHops)
+    }
+
+    app.use((_req: Request, res: Response, next: NextFunction) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff')
+      res.setHeader('X-Frame-Options', 'DENY')
+      res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+      res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+      if (process.env.NODE_ENV === 'production') {
+        res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+        res.setHeader(
+          'Content-Security-Policy',
+          "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+        )
+      }
+      next()
+    })
 
     app.enableCors({
       origin:

@@ -31,6 +31,8 @@ export class MaintenanceProcessor extends WorkerHost {
         return this.notificationJobs.autoCancelUnpaidBookings();
       case MaintenanceJobName.ExchangeRateRefresh:
         return this.currencyService.updateExchangeRates();
+      case MaintenanceJobName.CompleteFinishedBookings:
+        return this.notificationJobs.completeFinishedBookings();
       default:
         throw new Error(`Unknown maintenance job: ${job.name}`);
     }

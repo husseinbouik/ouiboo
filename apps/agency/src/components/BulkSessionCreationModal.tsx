@@ -33,6 +33,7 @@ export function BulkSessionCreationModal({
   const [sessions, setSessions] = useState<BulkSessionInput[]>([
     { id: '1', startDate: '', endDate: '', price: 0, deposit: 0, totalSeats: 20, currency }
   ]);
+  const [validationError, setValidationError] = useState('');
 
   const addSession = () => {
     const newSession: BulkSessionInput = {
@@ -54,6 +55,7 @@ export function BulkSessionCreationModal({
   };
 
   const updateSession = (id: string, field: keyof BulkSessionInput, value: BulkSessionInput[keyof BulkSessionInput]) => {
+    setValidationError('');
     setSessions(sessions.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
@@ -61,7 +63,7 @@ export function BulkSessionCreationModal({
     // Validate sessions
     const isValid = sessions.every(s => s.startDate && s.endDate && s.price > 0 && s.totalSeats > 0);
     if (!isValid) {
-      alert('Please fill in all required fields');
+      setValidationError('Complete the dates, price, and seat count for every session.');
       return;
     }
     onSubmit(sessions);
@@ -69,6 +71,7 @@ export function BulkSessionCreationModal({
   };
 
   const handleClose = () => {
+    setValidationError('');
     setSessions([{ id: '1', startDate: '', endDate: '', price: 0, deposit: 0, totalSeats: 20, currency }]);
     onClose();
   };
@@ -231,6 +234,12 @@ export function BulkSessionCreationModal({
                 Add Another Session
               </button>
             </div>
+
+            {validationError ? (
+              <p role="alert" className="mx-6 rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:bg-red-950/30 dark:text-red-300">
+                {validationError}
+              </p>
+            ) : null}
 
             {/* Footer */}
             <div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 p-6 flex justify-end gap-3">

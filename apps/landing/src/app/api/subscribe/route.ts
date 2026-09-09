@@ -45,6 +45,37 @@ type SubscribeRequestBody = {
   userType?: string;
 };
 
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX_REQUESTS = 5;
+const rateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
+
+const escapeHtml = (value: string) => value.replace(/[&<>'"]/g, (character) => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  "'": '&#39;',
+  '"': '&quot;',
+})[character] || character);
+
+const normalizeText = (value: unknown, maxLength: number) =>
+  typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
+
+const isEmail = (value: string) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && !/[\r\n]/.test(value);
+
+const isRateLimited = (req: Request) => {
+  const forwardedFor = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+  const key = forwardedFor || req.headers.get('x-real-ip') || 'unknown';
+  const now = Date.now();
+  const current = rateLimitBuckets.get(key);
+  if (!current || current.resetAt <= now) {
+    rateLimitBuckets.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+  current.count += 1;
+  return current.count > RATE_LIMIT_MAX_REQUESTS;
+};
+
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
     return error.message;
@@ -336,12 +367,25 @@ const generateEmailHtml = (name: string, userType: string, language: string = 'e
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as SubscribeRequestBody;
-    const { name, email, userType, phoneNumber, agencyName, language } = body;
+    if (isRateLimited(req)) {
+      return NextResponse.json({ message: 'Too many requests' }, { status: 429 });
+    }
 
-    // 1. Basic Validation
-    if (!name || !email || !userType || !phoneNumber) {
-      return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
+    const body = (await req.json()) as SubscribeRequestBody;
+    const name = normalizeText(body.name, 100);
+    const email = normalizeText(body.email, 254).toLowerCase();
+    const phoneNumber = normalizeText(body.phoneNumber, 30);
+    const agencyName = normalizeText(body.agencyName, 150);
+    const userType = normalizeText(body.userType, 20);
+    const language = normalizeText(body.language, 2);
+
+    if (
+      !name || !isEmail(email) || !phoneNumber ||
+      !['Agency', 'Traveler'].includes(userType) ||
+      (language && !['en', 'fr', 'ar'].includes(language)) ||
+      (userType === 'Agency' && !agencyName)
+    ) {
+      return NextResponse.json({ message: 'Invalid subscription details' }, { status: 400 });
     }
 
     // 2. Environment Variable Validation
@@ -357,13 +401,12 @@ export async function POST(req: Request) {
     if (missingEnvVars.length > 0) {
       console.error('Missing Environment Variables:', missingEnvVars);
       return NextResponse.json({
-        message: 'Server configuration error',
-        details: `Missing: ${missingEnvVars.join(', ')}`
+        message: 'Server configuration error'
       }, { status: 500 });
     }
 
     // 3. Generate the customized email
-    const { subject, html } = generateEmailHtml(name, userType, language || 'en');
+    const { subject, html } = generateEmailHtml(escapeHtml(name), userType, language || 'en');
 
     // 4. Execute Tasks
     const results = await Promise.allSettled([
@@ -410,7 +453,7 @@ export async function POST(req: Request) {
           await sheets.spreadsheets.values.append({
             spreadsheetId: process.env.GOOGLE_SHEET_ID,
             range: 'Sheet1!A:G', // Explicit range with sheet name
-            valueInputOption: 'USER_ENTERED',
+            valueInputOption: 'RAW',
             requestBody: { values: [newRow] },
           });
           return { task: 'sheets', status: 'success' };
@@ -430,8 +473,7 @@ export async function POST(req: Request) {
       // We still return 200 if at least one succeeded, or 500 if critical ones failed?
       // Usually, if email fails, it's a "fallback" error.
       return NextResponse.json({
-        message: 'Partial success',
-        errors
+        message: 'Partial success'
       }, { status: 207 });
     }
 

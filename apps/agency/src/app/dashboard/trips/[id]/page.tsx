@@ -40,6 +40,7 @@ type TripDetail = {
   title: string;
   category: string;
   status: TripStatusType;
+  currency: string;
   startLocation: string;
   durationDays: number;
   durationNights: number;
@@ -82,7 +83,7 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
   const { data: trip, isLoading, error } = useQuery<TripDetail>({
     queryKey: ['trip', params.id],
     queryFn: async () => {
-      const response = await apiClient.get(`/trips/${params.id}`);
+      const response = await apiClient.get(`/agency/trips/${params.id}`);
       return response.data;
     }
   });
@@ -333,7 +334,7 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
         onClose={() => setShowBulkSessionModal(false)}
         onSubmit={(sessions) => bulkCreateSessionMutation.mutate(sessions)}
         isLoading={bulkCreateSessionMutation.isPending}
-        currency="MAD"
+        currency={trip?.currency ?? 'MAD'}
       />
 
       {/* Edit Session Modal */}

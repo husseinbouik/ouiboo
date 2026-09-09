@@ -43,9 +43,12 @@ export class NotificationsService {
    * Get notification logs for a user
    */
   async getNotificationHistory(userId: string, limit: number = 50) {
+    const safeLimit = Number.isFinite(limit)
+      ? Math.min(100, Math.max(1, Math.floor(limit)))
+      : 50;
     const logs = await this.prisma.notificationLog.findMany({
       where: { userId },
-      take: limit,
+      take: safeLimit,
       orderBy: { sentAt: 'desc' },
     });
 

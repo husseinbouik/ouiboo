@@ -13,6 +13,7 @@ CREATE INDEX IF NOT EXISTS "Booking_travelerId_bookingDate_idx" ON "Booking" ("t
 CREATE INDEX IF NOT EXISTS "Booking_status_bookingDate_idx" ON "Booking" ("status", "bookingDate");
 CREATE INDEX IF NOT EXISTS "Booking_paymentStatus_bookingDate_idx" ON "Booking" ("paymentStatus", "bookingDate");
 CREATE INDEX IF NOT EXISTS "Booking_cancelledAt_idx" ON "Booking" ("cancelledAt");
+CREATE INDEX IF NOT EXISTS "Booking_status_paymentStatus_createdAt_idx" ON "Booking" ("status", "paymentStatus", "createdAt");
 
 CREATE INDEX IF NOT EXISTS "WalletTransaction_walletId_createdAt_idx" ON "WalletTransaction" ("walletId", "createdAt");
 

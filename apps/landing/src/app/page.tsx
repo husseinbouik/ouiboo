@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
 import { Logo } from '@ouiboo/ui'
+import { CookiePreferencesButton } from '../components/AnalyticsConsent'
 
 // --- Helper Components & Types ---
 
@@ -56,6 +57,7 @@ export default function OuibooLanding() {
   })
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [formError, setFormError] = useState('')
   const [isScrolled, setIsScrolled] = useState(false)
 
   // --- Scroll detection for navbar ---
@@ -114,10 +116,10 @@ export default function OuibooLanding() {
       { name: t('agencies.feature3.title'), description: t('agencies.feature3.description'), icon: UserGroupIcon },
   ];
 
-  const testimonials = [
-      { quote: t('testimonials.quote1'), author: "Amina Belkadi", role: "Owner, Alpine Adventures" },
-      { quote: t('testimonials.quote2'), author: "Rayan Lahmidi", role: "Solo Traveler" },
-      { quote: t('testimonials.quote3'), author: "Nora Chen", role: "Co-Founder, Nomad Trails" },
+  const productPrinciples = [
+      { title: t('principles.item1.title'), description: t('principles.item1.description'), icon: CheckCircleIcon },
+      { title: t('principles.item2.title'), description: t('principles.item2.description'), icon: UserGroupIcon },
+      { title: t('principles.item3.title'), description: t('principles.item3.description'), icon: SparklesIcon },
   ];
 
   const highlights = [
@@ -127,9 +129,9 @@ export default function OuibooLanding() {
   ];
 
   const stats = [
-    { value: 120, suffix: '+', label: t('stats.items.agencies') },
-    { value: 1800, suffix: '+', label: t('stats.items.travelers') },
-    { value: 35, suffix: '%', label: t('stats.items.repeat') },
+    { value: 3, suffix: '', label: t('stats.items.languages') },
+    { value: 3, suffix: '', label: t('stats.items.workspaces') },
+    { value: 1, suffix: '', label: t('stats.items.bookingFlow') },
   ];
 
 
@@ -142,16 +144,10 @@ export default function OuibooLanding() {
     i18n.changeLanguage(lng);
   };
 
-  const getInitials = (name: string) => name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('');
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    setFormError('');
     try {
       // Include the current language in the form submission
       await axios.post('/api/subscribe', { ...formData, language: currentLang });
@@ -159,7 +155,7 @@ export default function OuibooLanding() {
       setFormData({ name: '', email: '', userType: 'Traveler', phoneNumber: '', agencyName: '' });
     } catch (err) {
       console.error('Subscribe error:', err);
-      alert('Could not submit your request. Please try again later.');
+      setFormError(t('waitlist.form.error', 'Could not submit your request. Please try again later.'));
     } finally {
       setLoading(false);
     }
@@ -461,9 +457,9 @@ export default function OuibooLanding() {
             <p className="mt-3 text-2xl font-bold text-deep-blue sm:text-3xl">{t('trusted.subtitle')}</p>
           </motion.div>
           <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} className="mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-4 text-center sm:grid-cols-4">
-            {['Atlas Adventures', 'Rif Escapes', 'Sahara Trails', 'City Nomads'].map((brand) => (
-              <motion.div key={brand} variants={scaleIn} className="rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-500 shadow-sm">
-                {brand}
+            {[t('trusted.item1'), t('trusted.item2'), t('trusted.item3'), t('trusted.item4')].map((capability) => (
+              <motion.div key={capability} variants={scaleIn} className="rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-semibold text-gray-500 shadow-sm">
+                {capability}
               </motion.div>
             ))}
           </motion.div>
@@ -647,8 +643,8 @@ export default function OuibooLanding() {
           </div>
         </section>
         
-        {/* Testimonials Section */}
-        <section id="testimonials" className="bg-white py-24 sm:py-32">
+        {/* Product principles — factual launch commitments, not unverified testimonials. */}
+        <section id="principles" className="bg-white py-24 sm:py-32">
             <div className="mx-auto max-w-7xl px-6 lg:px-8">
                 <motion.div
                     variants={fadeInUp}
@@ -657,8 +653,8 @@ export default function OuibooLanding() {
                     viewport={{ once: true, amount: 0.5 }}
                     className="mx-auto max-w-2xl lg:text-center"
                 >
-                    <h2 className="text-base font-semibold leading-7 text-sunset-orange uppercase tracking-wide">{t('testimonials.preTitle')}</h2>
-                    <p className="mt-2 text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('testimonials.title')}</p>
+                    <h2 className="text-base font-semibold leading-7 text-sunset-orange uppercase tracking-wide">{t('principles.preTitle')}</h2>
+                    <p className="mt-2 text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('principles.title')}</p>
                 </motion.div>
                 <motion.div
                     variants={staggerContainer}
@@ -667,26 +663,17 @@ export default function OuibooLanding() {
                     viewport={{ once: true, amount: 0.2 }}
                     className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 lg:max-w-5xl lg:grid-cols-3"
                 >
-                    {testimonials.map((testimonial, index) => (
-                        <motion.figure
-                            key={index}
+                    {productPrinciples.map((principle) => (
+                        <motion.article
+                            key={principle.title}
                             variants={scaleIn}
                             whileHover={{ scale: 1.03, y: -5 }}
                             className="flex flex-col justify-between rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200 transition-all duration-300 hover:shadow-lg hover:ring-sunset-orange/20"
                         >
-                            <blockquote className="text-lg leading-7 text-gray-700">
-                                <p>“{testimonial.quote}”</p>
-                            </blockquote>
-                            <figcaption className="mt-6 flex items-center gap-x-4">
-                                <span className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-deep-blue text-sm font-bold text-white shadow-sm" aria-hidden="true">
-                                  {getInitials(testimonial.author)}
-                                </span>
-                                <div>
-                                    <div className="font-semibold text-deep-blue">{testimonial.author}</div>
-                                    <div className="text-sm text-gray-600">{testimonial.role}</div>
-                                </div>
-                            </figcaption>
-                        </motion.figure>
+                            <principle.icon className="h-10 w-10 text-sunset-orange" aria-hidden="true" />
+                            <h3 className="mt-6 text-lg font-semibold text-deep-blue">{principle.title}</h3>
+                            <p className="mt-3 text-base leading-7 text-gray-600">{principle.description}</p>
+                        </motion.article>
                     ))}
                 </motion.div>
             </div>
@@ -999,6 +986,11 @@ export default function OuibooLanding() {
                   </motion.div>
                 )}
               </motion.form>
+              {formError ? (
+                <p role="alert" className="mx-auto mt-4 max-w-md rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+                  {formError}
+                </p>
+              ) : null}
 
               <Transition appear show={isSuccessModalOpen} as={Fragment}>
                 <Dialog as="div" className="relative z-50" onClose={() => setIsSuccessModalOpen(false)}>
@@ -1055,6 +1047,10 @@ export default function OuibooLanding() {
                       {item.name}
                     </a>
                 ))}
+                <a href="/privacy" className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300">
+                  Privacy
+                </a>
+                <CookiePreferencesButton className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300" />
             </div>
             <p className="mt-10 text-center text-xs leading-5 text-gray-500">&copy; {new Date().getFullYear()} Ouiboo. {t('footer.rights')}</p>
         </div>

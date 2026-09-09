@@ -6,7 +6,7 @@
         "password": "Password",
         "authenticate": "Authenticate",
         "authenticating": "Authenticating...",
-        "helper": "Default credentials: admin / admin",
+        "helper": "Use the administrator credentials configured for this environment.",
         "brand": "Ouiboo Admin",
         "heroTitle": "Admin command center",
         "heroSubtitle": "Approve agencies, confirm payments, and keep the marketplace healthy.",

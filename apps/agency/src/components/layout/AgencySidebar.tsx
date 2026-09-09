@@ -37,12 +37,12 @@ export function AgencySidebar() {
 
   const navigation = [
     { name: t('sidebar.dashboard'), href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+    { name: t('sidebar.analytics', 'Analytics'), href: '/dashboard/analytics', icon: BarChart3 },
     { name: t('sidebar.myTrips'), href: '/dashboard/trips', icon: Map },
     { name: t('sidebar.bookings'), href: '/dashboard/bookings', icon: Calendar },
-    { name: 'Reviews', href: '/dashboard/reviews', icon: Star },
-    { name: 'Wallet & Payouts', href: '/dashboard/wallet', icon: CreditCard },
-    { name: 'Compliance', href: '/dashboard/onboarding', icon: ShieldCheck },
+    { name: t('sidebar.reviews', 'Reviews'), href: '/dashboard/reviews', icon: Star },
+    { name: t('sidebar.wallet', 'Wallet & Payouts'), href: '/dashboard/wallet', icon: CreditCard },
+    { name: t('sidebar.compliance', 'Compliance'), href: '/dashboard/onboarding', icon: ShieldCheck },
     { name: t('sidebar.settings'), href: '/dashboard/settings', icon: Settings },
   ];
 

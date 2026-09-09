@@ -1,8 +1,9 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
+import * as request from 'supertest';
 import { AuthController } from '../src/auth/auth.controller';
 import { AuthService } from '../src/auth/auth.service';
+import { RateLimitGuard } from '../src/common/rate-limit.guard';
 
 describe('E2E: auth login + password reset', () => {
     let app: INestApplication;
@@ -18,7 +19,10 @@ describe('E2E: auth login + password reset', () => {
         const moduleRef = await Test.createTestingModule({
             controllers: [AuthController],
             providers: [{ provide: AuthService, useValue: authService }],
-        }).compile();
+        })
+            .overrideGuard(RateLimitGuard)
+            .useValue({ canActivate: () => true })
+            .compile();
 
         app = moduleRef.createNestApplication();
         await app.init();
@@ -29,7 +33,7 @@ describe('E2E: auth login + password reset', () => {
     });
 
     afterAll(async () => {
-        await app.close();
+        if (app) await app.close();
     });
 
     it('logs in and returns tokens', async () => {
@@ -43,16 +47,18 @@ describe('E2E: auth login + password reset', () => {
             refreshToken: 'refresh-token',
         });
 
-        await request(app.getHttpServer())
+        const response = await request(app.getHttpServer())
             .post('/auth/login')
             .send({ email: 'traveler@example.com', password: 'Password123!' })
             .expect(201)
             .expect(({ body }) => {
                 expect(body).toEqual({
                     accessToken: 'access-token',
-                    refreshToken: 'refresh-token',
                 });
             });
+
+        expect(response.headers['set-cookie']?.[0]).toContain('refresh_token=refresh-token');
+        expect(response.headers['set-cookie']?.[0]).toContain('HttpOnly');
     });
 
     it('requests a password reset', async () => {

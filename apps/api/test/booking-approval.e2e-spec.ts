@@ -11,6 +11,8 @@ import { EmailService } from '../src/email/email.service';
 import { AuditLogService } from '../src/admin/audit-log.service';
 import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../src/auth/guards/roles.guard';
+import { RateLimitGuard } from '../src/common/rate-limit.guard';
+import { PaymentsService } from '../src/payments/payments.service';
 
 describe('E2E: booking + payment approval flow', () => {
     let app: INestApplication;
@@ -24,23 +26,29 @@ describe('E2E: booking + payment approval flow', () => {
         paymentProof: {
             findUnique: jest.fn(),
             update: jest.fn(),
+            upsert: jest.fn(),
         },
         booking: {
+            findUnique: jest.fn(),
             update: jest.fn(),
         },
         $transaction: jest.fn((cb: any) => cb(dbMock)),
     };
 
     const walletsService = {
-        creditWallet: jest.fn(),
+        creditWalletInTransaction: jest.fn(),
     };
 
     const emailService = {
-        sendPaymentConfirmation: jest.fn(),
+        sendPaymentConfirmation: jest.fn().mockResolvedValue(true),
     };
 
     const auditLogService = {
         log: jest.fn().mockResolvedValue(null),
+    };
+
+    const paymentsService = {
+        refundBookingById: jest.fn(),
     };
 
     beforeAll(async () => {
@@ -52,6 +60,7 @@ describe('E2E: booking + payment approval flow', () => {
                 { provide: WalletsService, useValue: walletsService },
                 { provide: EmailService, useValue: emailService },
                 { provide: AuditLogService, useValue: auditLogService },
+                { provide: PaymentsService, useValue: paymentsService },
             ],
         })
             .overrideGuard(JwtAuthGuard)
@@ -67,6 +76,8 @@ describe('E2E: booking + payment approval flow', () => {
             })
             .overrideGuard(RolesGuard)
             .useValue({ canActivate: () => true })
+            .overrideGuard(RateLimitGuard)
+            .useValue({ canActivate: () => true })
             .compile();
 
         app = moduleRef.createNestApplication();
@@ -78,7 +89,7 @@ describe('E2E: booking + payment approval flow', () => {
     });
 
     afterAll(async () => {
-        await app.close();
+        if (app) await app.close();
     });
 
     it('creates a booking and uploads a payment proof', async () => {
@@ -141,7 +152,7 @@ describe('E2E: booking + payment approval flow', () => {
                 expect(body).toMatchObject({ id: 'proof-123', status: 'VERIFIED' });
             });
 
-        expect(walletsService.creditWallet).toHaveBeenCalled();
+        expect(walletsService.creditWalletInTransaction).toHaveBeenCalled();
         expect(emailService.sendPaymentConfirmation).toHaveBeenCalled();
         expect(auditLogService.log).toHaveBeenCalled();
     });
@@ -153,23 +164,10 @@ describe('E2E: booking + payment approval flow', () => {
             .expect(400);
     });
 
-    it('Payment proof can be re-uploaded after rejection', async () => {
-        dbMock.booking.findUnique.mockResolvedValue({
-            id: 'booking-123',
-            travelerId: 'traveler-123',
-            status: 'REJECTED',
-            paymentProofId: 'proof-123',
-            bookingDate: new Date(),
-            sessionId: 'session-abc',
-            session: { templateId: 'template-123' },
-        });
-        dbMock.paymentProof.upsert.mockResolvedValue({
+    it('forwards a payment proof re-upload request', async () => {
+        bookingsService.uploadPaymentProof.mockResolvedValue({
             id: 'proof-456',
             status: 'PENDING',
-        });
-        dbMock.booking.update.mockResolvedValue({
-            id: 'booking-123',
-            status: 'AWAITING_VALIDATION',
         });
 
         const fixturePath = path.join(__dirname, 'fixtures', 'proof.png');
@@ -181,7 +179,11 @@ describe('E2E: booking + payment approval flow', () => {
                 expect(body).toMatchObject({ status: 'PENDING' });
             });
 
-        expect(dbMock.paymentProof.upsert).toHaveBeenCalled();
+        expect(bookingsService.uploadPaymentProof).toHaveBeenCalledWith(
+            'booking-123',
+            'traveler-123',
+            expect.objectContaining({ mimetype: 'image/png' }),
+        );
     });
 
     it('Cannot approve payment proof twice', async () => {

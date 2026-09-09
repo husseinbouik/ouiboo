@@ -45,8 +45,9 @@ export class LocalStorageProvider implements IStorageProvider {
         fs.writeFileSync(filePath, file.buffer);
 
         const baseUrl = process.env.API_URL || 'http://localhost:3010/api/v1';
+        const publicOrigin = new URL(baseUrl).origin;
         const publicPath = path.posix.join('uploads', relative.replace(/\\/g, '/'), filename);
-        const url = isPrivate ? '' : `${baseUrl.replace('/api', '')}/${publicPath}`;
+        const url = isPrivate ? '' : `${publicOrigin}/${publicPath}`;
         const key = isPrivate
             ? path.posix.join(this.privatePrefix, relative.replace(/\\/g, '/'), filename)
             : path.posix.join(relative.replace(/\\/g, '/'), filename);

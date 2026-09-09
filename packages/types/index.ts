@@ -115,6 +115,7 @@ export enum TripCategory {
     Cultural = "CULTURAL",
     Luxury = "LUXURY",
     Budget = "BUDGET",
+    Nature = "NATURE",
 }
 
 export interface ItineraryDay {
@@ -136,6 +137,7 @@ export interface TripTemplate {
     description: string;
     category: TripCategory;
     startLocation: string;
+    endLocation?: string;
     durationDays: number;
     durationNights: number;
     inclusions: string[];
@@ -143,6 +145,8 @@ export interface TripTemplate {
     checklist: string[];
     images: string[];
     status: TripStatus;
+    currency: string;
+    startingPrice?: DecimalString | null;
     itinerary: ItineraryDay[];
     createdAt: string;
 }
@@ -160,6 +164,7 @@ export interface TripSession {
     totalSeats: number;
     availableSeats: number;
     status: SessionStatus;
+    currency: string;
 }
 
 export enum BookingStatus {

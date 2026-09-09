@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -12,8 +12,7 @@ import { AgencyModule } from '../src/agency/agency.module';
 import { DatabaseService } from '../src/database/database.service';
 import { EmailService } from '../src/email/email.service';
 import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../src/auth/guards/roles.guard';
-import { TenantGuard } from '../src/auth/guards/tenant.guard';
+import { RateLimitGuard } from '../src/common/rate-limit.guard';
 import { UserRole } from '@ouiboo/types';
 import { tripTemplateFixture } from './e2e-fixtures';
 
@@ -66,20 +65,13 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                     }
                     return true;
                 },
-            })            .overrideGuard(RolesGuard)
-
+            })
+            .overrideGuard(RateLimitGuard)
             .useValue({ canActivate: () => true })
-            .overrideGuard(TenantGuard)
-            .useValue({
-                canActivate: (context: any) => {
-                    const req = context.switchToHttp().getRequest();
-                    const auth = String(req.headers.authorization || '');
-                    req.tenantId = auth.includes('agency-2') ? 'agency-profile-999' : 'agency-profile-456';
-                    return true;
-                },
-            })            .compile();
+            .compile();
 
         app = moduleFixture.createNestApplication();
+        app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
         await app.init();
 
         db = app.get(DatabaseService);
@@ -128,6 +120,8 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 id: 'agency-profile-456',
                 userId: agencyUser.id,
                 companyName: 'Test Agency Ltd', ice: 'ICE100001', patente: 'PAT100001', rib: 'RIB100001',
+                verificationStatus: 'VERIFIED',
+                trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             } as any,
         });
 
@@ -253,6 +247,51 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         expect(updatedProof?.status).toBe('VERIFIED');
     });
 
+    it('Credits the agency wallet exactly once under concurrent manual payment approval', async () => {
+        const { session, traveler, agency } = await seedTestData();
+        const booking = await db.booking.create({
+            data: {
+                sessionId: session.id,
+                travelerId: traveler.id,
+                guestsCount: 2,
+                totalAmount: 780,
+                fullName: 'Concurrent Traveler',
+                phoneNumber: '+1234567890',
+                documentNumber: 'ID-CONCURRENT',
+                status: 'AWAITING_VALIDATION',
+            },
+        });
+        const proof = await db.paymentProof.create({
+            data: {
+                bookingId: booking.id,
+                imageUrl: 'private/test-proofs/concurrent.png',
+                status: 'PENDING',
+            },
+        });
+        await db.booking.update({
+            where: { id: booking.id },
+            data: { paymentProofId: proof.id },
+        });
+
+        const approve = () => request(app.getHttpServer())
+            .patch(`/bookings/${booking.id}/verify-payment`)
+            .set('Authorization', 'Bearer agency-token')
+            .send({ approved: true });
+        const responses = await Promise.all([approve(), approve()]);
+
+        expect(responses.map((response) => response.status).sort()).toEqual([200, 400]);
+        const wallet = await db.wallet.findUniqueOrThrow({
+            where: { agencyId: agency.id },
+            include: { transactions: true },
+        });
+        expect(wallet.availableBalance.toNumber()).toBe(780);
+        expect(wallet.transactions).toHaveLength(1);
+        expect(wallet.transactions[0].idempotencyKey).toBe(
+            `booking:${booking.id}:manual-payment-credit`,
+        );
+        expect(mockEmailService.sendPaymentConfirmation).toHaveBeenCalledTimes(1);
+    });
+
     // ===== Section 3: Booking Cancellation and Seat Restoration =====
     it('Booking cancellation by traveler restores seats', async () => {
         const { session } = await seedTestData();
@@ -267,7 +306,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
                 documentNumber: 'ID123456',
-                status: 'CONFIRMED',
+                status: 'PENDING',
             } as any,
         });
 

@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const supportedLanguages = ['en', 'fr', 'ar'];
+const privatePathPrefixes = [
+  '/booking',
+  '/bookings',
+  '/checkout',
+  '/forgot-password',
+  '/login',
+  '/profile',
+  '/reset-password',
+  '/signup',
+  '/verify',
+  '/wishlist',
+];
 
 function normalizeLanguage(value?: string | null) {
   const language = value?.split('-')[0]?.toLowerCase();
@@ -30,6 +42,13 @@ export function proxy(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 365,
       sameSite: 'lax',
     });
+  }
+
+  const isPrivatePath = privatePathPrefixes.some(
+    (prefix) => request.nextUrl.pathname === prefix || request.nextUrl.pathname.startsWith(`${prefix}/`),
+  );
+  if (isPrivatePath) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
   }
 
   return response;

@@ -1,313 +1,217 @@
-import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+import { Injectable, Logger } from '@nestjs/common'
+import * as nodemailer from 'nodemailer'
+import {
+  emailButton,
+  emailHeading,
+  emailPanel,
+  emailParagraph,
+  emailStrong,
+  emailToPlainText,
+  escapeHtml,
+  maskEmail,
+  renderEmail,
+  sanitizeEmailSubject,
+} from './email-template'
 
 @Injectable()
 export class EmailService {
-    private transporter: nodemailer.Transporter;
-    private readonly logger = new Logger(EmailService.name);
+  private transporter?: nodemailer.Transporter
+  private readonly logger = new Logger(EmailService.name)
 
-    constructor() {
-        // Initialize transporter with environment variables
-        // If no credentials provided, it will log to console (useful for dev/zero-cost)
-        const host = process.env.SMTP_HOST;
-        const port = parseInt(process.env.SMTP_PORT || '587');
-        const user = process.env.SMTP_USER;
-        const pass = process.env.SMTP_PASS;
+  constructor() {
+    const host = process.env.SMTP_HOST
+    const port = Number.parseInt(process.env.SMTP_PORT || '587', 10)
+    const user = process.env.SMTP_USER
+    const pass = process.env.SMTP_PASS
 
-        if (host && user && pass) {
-            try {
-                this.transporter = nodemailer.createTransport({
-                    host,
-                    port,
-                    secure: port === 465,
-                    auth: { user, pass },
-                    // Add connection timeout and other options
-                    connectionTimeout: 5000,
-                    greetingTimeout: 5000,
-                    socketTimeout: 5000,
-                });
-                this.logger.log(`EmailService initialized with SMTP (${host}:${port})`);
-            } catch (error) {
-                this.logger.error('Failed to initialize SMTP transporter:', error);
-                this.transporter = undefined;
-            }
-        } else {
-            const missing = [];
-            if (!host) missing.push('SMTP_HOST');
-            if (!user) missing.push('SMTP_USER');
-            if (!pass) missing.push('SMTP_PASS');
-            this.logger.warn(`EmailService: SMTP not configured. Missing: ${missing.join(', ')}`);
-            this.logger.warn('Emails will be logged to console instead of being sent.');
-            this.transporter = undefined;
-        }
+    if (host && user && pass) {
+      try {
+        this.transporter = nodemailer.createTransport({
+          host,
+          port,
+          secure: port === 465,
+          auth: { user, pass },
+          connectionTimeout: 5000,
+          greetingTimeout: 5000,
+          socketTimeout: 5000,
+        })
+        this.logger.log(`Email delivery initialized (${host}:${port})`)
+      } catch (error) {
+        this.logger.error('Failed to initialize email delivery', error)
+      }
+    } else {
+      const missing = [
+        !host && 'SMTP_HOST',
+        !user && 'SMTP_USER',
+        !pass && 'SMTP_PASS',
+      ].filter(Boolean)
+      this.logger.warn(`Email delivery is not configured. Missing: ${missing.join(', ')}`)
+    }
+  }
+
+  isConfigured(): boolean {
+    return Boolean(this.transporter)
+  }
+
+  async sendEmail(to: string, subject: string, html: string) {
+    const safeSubject = sanitizeEmailSubject(subject)
+    const maskedRecipient = maskEmail(to)
+
+    if (!this.transporter) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('Email delivery is unavailable')
+      }
+      this.logger.warn(`[EMAIL NOT SENT] To: ${maskedRecipient} | Subject: ${safeSubject}`)
+      if (process.env.LOG_EMAIL_BODIES === 'true') {
+        this.logger.debug(`[LOCAL EMAIL BODY] ${html}`)
+      }
+      return
     }
 
-    isConfigured(): boolean {
-        return !!this.transporter;
+    try {
+      const result = await this.transporter.sendMail({
+        from: `"Ouiboo" <${process.env.SMTP_USER}>`,
+        to,
+        subject: safeSubject,
+        html,
+        text: emailToPlainText(html),
+      })
+      this.logger.log(`Email sent to ${maskedRecipient}. MessageId: ${result.messageId}`)
+      return result
+    } catch (error) {
+      this.logger.error(`Email delivery failed for ${maskedRecipient}`, error)
+      throw new Error(`Email delivery failed: ${error instanceof Error ? error.message : String(error)}`)
     }
+  }
 
-    async sendEmail(to: string, subject: string, html: string) {
-        if (this.transporter) {
-            try {
-                const result = await this.transporter.sendMail({
-                    from: `"OUIBOO" <${process.env.SMTP_USER}>`,
-                    to,
-                    subject,
-                    html,
-                });
-                this.logger.log(`Email sent successfully to ${to}. MessageId: ${result.messageId}`);
-                return result;
-            } catch (error) {
-                this.logger.error(`Failed to send email to ${to}`, error);
-                // Re-throw the error so callers know email failed
-                throw new Error(`Failed to send email to ${to}: ${error instanceof Error ? error.message : String(error)}`);
-            }
-        } else {
-            // Log prominently when SMTP is not configured
-            this.logger.warn(`[MOCK EMAIL - SMTP NOT CONFIGURED] To: ${to} | Subject: ${subject}`);
-            this.logger.warn(`[MOCK EMAIL BODY] ${html}`);
-            this.logger.warn(`To enable email sending, configure SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS environment variables.`);
-            // In development, we might want to allow this, but log it prominently
-            // In production, you might want to throw an error instead
-            // For now, we'll allow it but log prominently
-        }
-    }
+  async sendMail(to: string, subject: string, html: string) {
+    return this.sendEmail(to, subject, html)
+  }
 
-    async sendMail(to: string, subject: string, html: string) {
-        return this.sendEmail(to, subject, html);
-    }
+  getOTPTemplate(otp: string) {
+    const content = `
+      ${emailHeading('Verify your email address')}
+      ${emailParagraph('Use the verification code below to complete your signup and secure your account.')}
+      <div style="margin:26px 0;text-align:center;">
+        <div style="display:inline-block;padding:15px 24px;border-radius:14px;background:#071B33;color:#FFFFFF;font-size:24px;font-weight:800;letter-spacing:0.36em;">${escapeHtml(otp)}</div>
+      </div>
+      ${emailPanel('This code expires in <strong>10 minutes</strong>. If it expires, request a new code from the app.')}
+      ${emailParagraph('If you did not create an Ouiboo account, you can safely ignore this email.')}`
+    return renderEmail({ title: 'Verify your email address', preheader: 'Your Ouiboo verification code expires in 10 minutes.', content })
+  }
 
-    getOTPTemplate(otp: string) {
-        return `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #F3F4F6; padding: 24px;">
-                <div style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; padding: 32px 28px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);">
-                    <div style="text-align: center; margin-bottom: 24px;">
-                        <div style="display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 999px; background: linear-gradient(135deg,#0F172A,#1D4ED8); color: #ffffff; font-weight: 700; font-size: 18px; margin-bottom: 8px;">
-                            O
-                        </div>
-                        <div style="font-size: 20px; font-weight: 700; color: #0F172A;">Ouiboo</div>
-                    </div>
+  getWelcomeTemplate(name?: string | null) {
+    const greeting = name?.trim() ? `Welcome to Ouiboo, ${name.trim()}!` : 'Welcome to Ouiboo!'
+    const content = `
+      ${emailHeading(greeting)}
+      ${emailParagraph('Your email is verified and your account is ready.')}
+      ${emailParagraph('You can now explore trips, save favorites, and manage your bookings from one place.')}`
+    return renderEmail({ title: 'Welcome to Ouiboo', preheader: 'Your Ouiboo account is ready.', content })
+  }
 
-                    <h1 style="font-size: 22px; line-height: 1.3; font-weight: 700; color: #0F172A; margin: 0 0 12px;">
-                        Verify your email address
-                    </h1>
-                    <p style="font-size: 14px; line-height: 1.6; color: #4B5563; margin: 0 0 20px;">
-                        Use the verification code below to complete your signup and secure your account.
-                    </p>
+  async sendOTP(to: string, otp: string) {
+    await this.sendEmail(to, this.generateOTPSubject(), this.getOTPTemplate(otp))
+  }
 
-                    <div style="text-align: center; margin: 24px 0;">
-                        <div style="display: inline-block; padding: 14px 26px; border-radius: 999px; background: #0F172A; color: #F9FAFB; letter-spacing: 0.4em; font-size: 22px; font-weight: 700;">
-                            ${otp}
-                        </div>
-                    </div>
+  generateOTPSubject() {
+    return 'Ouiboo: Verify your email address'
+  }
 
-                    <p style="font-size: 13px; line-height: 1.6; color: #6B7280; margin: 0 0 8px;">
-                        This code expires in <strong>10 minutes</strong>. If it expires, you can request a new code from the app.
-                    </p>
-                    <p style="font-size: 12px; line-height: 1.6; color: #9CA3AF; margin: 0;">
-                        If you didn’t create an account on Ouiboo, you can safely ignore this email.
-                    </p>
+  async sendWelcomeEmail(to: string, name?: string | null) {
+    await this.sendEmail(to, 'Welcome to Ouiboo', this.getWelcomeTemplate(name))
+  }
 
-                    <div style="border-top: 1px solid #E5E7EB; margin-top: 24px; padding-top: 16px; text-align: center;">
-                        <p style="font-size: 11px; color: #9CA3AF; margin: 0;">
-                            © ${new Date().getFullYear()} Ouiboo. All rights reserved.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
+  getPasswordResetTemplate(resetUrl: string) {
+    const content = `
+      ${emailHeading('Reset your password')}
+      ${emailParagraph('We received a request to reset your Ouiboo password.')}
+      ${emailButton('Set a new password', resetUrl)}
+      ${emailPanel('This secure link expires in 60 minutes. If you did not request a password reset, ignore this email.')}`
+    return renderEmail({ title: 'Reset your password', preheader: 'Use this secure link to reset your Ouiboo password.', content })
+  }
 
-    getWelcomeTemplate(name?: string | null) {
-        const safeName = name ? ` ${name}` : '';
-        return `
-            <h1>Welcome to Ouiboo${safeName}!</h1>
-            <p>Your email is verified and your account is ready to go.</p>
-            <p>Start exploring trips and managing bookings from your dashboard.</p>
-        `;
-    }
+  async sendPasswordResetEmail(to: string, resetUrl: string) {
+    await this.sendEmail(to, 'Ouiboo: Reset your password', this.getPasswordResetTemplate(resetUrl))
+  }
 
-    async sendOTP(to: string, otp: string) {
-        const html = this.getOTPTemplate(otp);
-        await this.sendEmail(to, this.generateOTPSubject(), html);
-    }
+  async sendBookingNotification(travelerEmail: string, agencyEmail: string, bookingId: string, tripTitle: string) {
+    const travelerContent = `
+      ${emailHeading('We received your booking')}
+      ${emailParagraph(`Your booking for ${tripTitle} has been received.`)}
+      ${emailPanel(`Booking reference: ${emailStrong(bookingId)}<br>Next step: upload your payment proof from the booking dashboard so the agency can review it.`)}`
+    const agencyContent = `
+      ${emailHeading('A new booking needs your attention')}
+      ${emailParagraph(`A traveler submitted a booking for ${tripTitle}.`)}
+      ${emailPanel(`Booking reference: ${emailStrong(bookingId)}<br>Traveler: ${emailStrong(travelerEmail)}<br>Review the booking and payment proof in your agency workspace.`)}`
 
-    generateOTPSubject() {
-        return 'OUIBOO: Verify your email address';
-    }
+    await Promise.all([
+      this.sendEmail(travelerEmail, `Ouiboo: Booking received — ${tripTitle}`, renderEmail({ title: 'Booking received', preheader: `We received your booking for ${tripTitle}.`, content: travelerContent })),
+      this.sendEmail(agencyEmail, 'Ouiboo: New booking received', renderEmail({ title: 'New booking received', preheader: `A new booking was submitted for ${tripTitle}.`, content: agencyContent })),
+    ])
+  }
 
-    async sendWelcomeEmail(to: string, name?: string | null) {
-        const html = this.getWelcomeTemplate(name);
-        await this.sendEmail(to, 'Welcome to OUIBOO!', html);
-    }
+  async sendPaymentConfirmation(travelerEmail: string, tripTitle: string) {
+    const content = `
+      ${emailHeading('Your booking is confirmed')}
+      ${emailParagraph(`The agency verified your payment for ${tripTitle}. Your reserved seats are now confirmed.`)}
+      ${emailPanel('Keep your booking details available and review the itinerary before departure.')}`
+    await this.sendEmail(travelerEmail, `Ouiboo: Booking confirmed — ${tripTitle}`, renderEmail({ title: 'Booking confirmed', preheader: `Your booking for ${tripTitle} is confirmed.`, content }))
+  }
 
-    getPasswordResetTemplate(resetUrl: string) {
-        return `
-            <h1>Reset your password</h1>
-            <p>We received a request to reset your Ouiboo password.</p>
-            <p><a href="${resetUrl}" target="_blank" rel="noopener noreferrer">Click here to set a new password</a></p>
-            <p>This link expires in 60 minutes. If you did not request this, you can ignore this email.</p>
-        `;
-    }
+  getPaymentReminderTemplate(tripTitle: string, hoursUntilPaymentDue: number, bookingDashboardUrl: string) {
+    const hours = Math.max(0, Math.floor(hoursUntilPaymentDue))
+    const content = `
+      ${emailHeading('Your payment deadline is approaching')}
+      ${emailParagraph(`Payment for ${tripTitle} is due in ${hours} hour${hours === 1 ? '' : 's'}. Complete the payment step to keep your booking moving.`)}
+      ${emailPanel('Uploading payment proof lets the agency review the transfer and confirm your seats.')}
+      ${emailButton('Open booking dashboard', bookingDashboardUrl)}
+      ${emailParagraph('Already uploaded your proof? No action is needed while the agency reviews it.')}`
+    return renderEmail({ title: 'Payment reminder', preheader: `Payment for ${tripTitle} is due soon.`, content })
+  }
 
-    async sendPasswordResetEmail(to: string, resetUrl: string) {
-        const html = this.getPasswordResetTemplate(resetUrl);
-        await this.sendEmail(to, 'OUIBOO: Reset your password', html);
-    }
+  async sendPaymentReminder(travelerEmail: string, tripTitle: string, hoursUntilPaymentDue: number, bookingDashboardUrl: string) {
+    await this.sendEmail(travelerEmail, `Ouiboo: Payment reminder — ${tripTitle}`, this.getPaymentReminderTemplate(tripTitle, hoursUntilPaymentDue, bookingDashboardUrl))
+  }
 
-    async sendBookingNotification(travelerEmail: string, agencyEmail: string, bookingId: string, tripTitle: string) {
-        const travelerHtml = `
-            <h1>Booking Received!</h1>
-            <p>Your booking for <b>${tripTitle}</b> (ID: ${bookingId}) has been received successfully.</p>
-            <p>Please upload your payment proof in the dashboard to confirm your seats.</p>
-        `;
-        const agencyHtml = `
-            <h1>New Booking Alert</h1>
-            <p>A new booking has been made for <b>${tripTitle}</b>.</p>
-            <p>Traveler: ${travelerEmail}</p>
-            <p>Go to your dashboard to review and verify payment.</p>
-        `;
+  getTripReminderTemplate(tripTitle: string, daysUntilTrip: number, agencyName: string, tripDetailsUrl: string) {
+    const timing = daysUntilTrip === 7 ? 'one week' : daysUntilTrip === 1 ? 'tomorrow' : `in ${Math.max(0, Math.floor(daysUntilTrip))} days`
+    const content = `
+      ${emailHeading(`Your trip starts ${timing}`)}
+      ${emailParagraph(`${tripTitle}, organized by ${agencyName}, is almost here.`)}
+      ${emailPanel('<strong>Before you go</strong><br>• Check your travel documents<br>• Review the weather and packing list<br>• Confirm the itinerary and meeting point<br>• Save the agency contact details')}
+      ${emailButton('View trip details', tripDetailsUrl)}
+      ${emailParagraph('If you have questions, contact the agency through your Ouiboo booking dashboard.')}`
+    return renderEmail({ title: 'Upcoming trip reminder', preheader: `${tripTitle} starts ${timing}.`, content })
+  }
 
-        await Promise.all([
-            this.sendEmail(travelerEmail, `OUIBOO: Booking Received - ${tripTitle}`, travelerHtml),
-            this.sendEmail(agencyEmail, `OUIBOO: New Booking Received!`, agencyHtml)
-        ]);
-    }
+  async sendTripReminder(travelerEmail: string, tripTitle: string, daysUntilTrip: number, agencyName: string, tripDetailsUrl: string) {
+    await this.sendEmail(travelerEmail, `Ouiboo: Your trip starts soon — ${tripTitle}`, this.getTripReminderTemplate(tripTitle, daysUntilTrip, agencyName, tripDetailsUrl))
+  }
 
-    async sendPaymentConfirmation(travelerEmail: string, tripTitle: string) {
-        const html = `
-            <h1>Payment Verified!</h1>
-            <p>Great news! Your payment for <b>${tripTitle}</b> has been verified by the agency.</p>
-            <p>Your seats are now officially confirmed. Get ready for your adventure!</p>
-        `;
-        await this.sendEmail(travelerEmail, `OUIBOO: Booking Confirmed - ${tripTitle}`, html);
-    }
+  getReviewRequestTemplate(tripTitle: string, agencyName: string, reviewUrl: string) {
+    const content = `
+      ${emailHeading(`How was your trip with ${agencyName}?`)}
+      ${emailParagraph(`We hope you enjoyed ${tripTitle}. Your feedback helps travelers make informed choices and helps agencies improve.`)}
+      ${emailPanel('<strong>What to include</strong><br>Share useful details about the guides, activities, organization, and overall experience.', 'warning')}
+      ${emailButton('Write a review', reviewUrl)}
+      ${emailParagraph('Your review will appear on the trip page after any required moderation.')}`
+    return renderEmail({ title: 'Share your trip feedback', preheader: `Tell other travelers about ${tripTitle}.`, content })
+  }
 
-    getPaymentReminderTemplate(tripTitle: string, daysUntilPaymentDue: number, bookingDashboardUrl: string) {
-        return `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #1E3A8A; margin-bottom: 20px;">Payment Reminder for ${tripTitle}</h2>
-                <p style="font-size: 16px; color: #374151;">
-                    Your payment is due in <strong>${daysUntilPaymentDue} hour${daysUntilPaymentDue === 1 ? '' : 's'}</strong>. 
-                    Please complete your payment to confirm your booking.
-                </p>
-                <div style="margin: 30px 0; padding: 20px; background: #F3F4F6; border-left: 4px solid #F97316; border-radius: 4px;">
-                    <p style="margin: 0; color: #374151;">
-                        <strong>Why upload payment proof?</strong> It helps us confirm your booking quickly and ensures your seats are reserved for the trip.
-                    </p>
-                </div>
-                <p style="text-align: center; margin-top: 30px;">
-                    <a href="${bookingDashboardUrl}" 
-                       style="background: #0EA5E9; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-                        Upload Payment Proof
-                    </a>
-                </p>
-                <p style="font-size: 13px; color: #6B7280; text-align: center; margin-top: 20px;">
-                    If you have already uploaded your payment proof, ignore this email. Your booking will be confirmed shortly.
-                </p>
-            </div>
-        `;
-    }
+  async sendReviewRequest(travelerEmail: string, tripTitle: string, agencyName: string, reviewUrl: string) {
+    await this.sendEmail(travelerEmail, `Ouiboo: Share your review — ${tripTitle}`, this.getReviewRequestTemplate(tripTitle, agencyName, reviewUrl))
+  }
 
-    async sendPaymentReminder(travelerEmail: string, tripTitle: string, daysUntilPaymentDue: number, bookingDashboardUrl: string) {
-        const html = this.getPaymentReminderTemplate(tripTitle, daysUntilPaymentDue, bookingDashboardUrl);
-        await this.sendEmail(travelerEmail, `⏰ OUIBOO: Payment Reminder - ${tripTitle}`, html);
-    }
+  getAutoUnpaidCancellationTemplate(tripTitle: string, bookingId: string) {
+    const content = `
+      ${emailHeading('Your booking was cancelled')}
+      ${emailParagraph(`The booking for ${tripTitle} was automatically cancelled because payment was not completed within the required timeframe.`)}
+      ${emailPanel(`Booking reference: ${emailStrong(bookingId)}<br>No payment proof was received before the deadline.`, 'danger')}
+      ${emailParagraph('If seats remain available, you can create a new booking. Contact support if you believe this cancellation is incorrect.')}`
+    return renderEmail({ title: 'Booking cancelled', preheader: `Your booking for ${tripTitle} was cancelled.`, content })
+  }
 
-    getTripReminderTemplate(tripTitle: string, daysUntilTrip: number, agencyName: string, tripDetailsUrl: string) {
-        const reminderType = daysUntilTrip === 7 ? 'one week' : 'one day';
-        return `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #1E3A8A; margin-bottom: 20px;">🎉 Your Adventure Starts ${reminderType.charAt(0).toUpperCase() + reminderType.slice(1)}!</h2>
-                <p style="font-size: 16px; color: #374151;">
-                    Get ready! Your trip <strong>${tripTitle}</strong> with <strong>${agencyName}</strong> 
-                    starts in ${reminderType}. Pack your bags and prepare for an unforgettable experience!
-                </p>
-                <div style="margin: 30px 0;">
-                    <h3 style="color: #1E3A8A; margin-bottom: 15px;">Last-minute checklist:</h3>
-                    <ul style="color: #374151; line-height: 1.8;">
-                        <li>✅ Confirm your travel documents are valid</li>
-                        <li>✅ Check the weather forecast for your destination</li>
-                        <li>✅ Review the itinerary and meeting points</li>
-                        <li>✅ Pack essentials and comfortable clothing</li>
-                        <li>✅ Save the agency contact number</li>
-                    </ul>
-                </div>
-                <p style="text-align: center; margin-top: 30px;">
-                    <a href="${tripDetailsUrl}" 
-                       style="background: #F97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-                        View Trip Details
-                    </a>
-                </p>
-                <p style="font-size: 13px; color: #6B7280; text-align: center; margin-top: 20px;">
-                    Have questions? Contact the agency directly through your Ouiboo dashboard.
-                </p>
-            </div>
-        `;
-    }
-
-    async sendTripReminder(travelerEmail: string, tripTitle: string, daysUntilTrip: number, agencyName: string, tripDetailsUrl: string) {
-        const html = this.getTripReminderTemplate(tripTitle, daysUntilTrip, agencyName, tripDetailsUrl);
-        const reminderLabel = daysUntilTrip === 7 ? 'Week Before' : 'Day Before';
-        await this.sendEmail(travelerEmail, `🎒 OUIBOO: ${reminderLabel} Your Trip - ${tripTitle}`, html);
-    }
-
-    getReviewRequestTemplate(tripTitle: string, agencyName: string, reviewUrl: string) {
-        return `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #1E3A8A; margin-bottom: 20px;">How was your trip with ${agencyName}?</h2>
-                <p style="font-size: 16px; color: #374151;">
-                    We hope you had an amazing time on <strong>${tripTitle}</strong>! 
-                    Your feedback helps other travelers find great agencies and helps agencies improve their services.
-                </p>
-                <div style="margin: 30px 0; padding: 20px; background: #FEF3C7; border-left: 4px solid #FBBF24; border-radius: 4px;">
-                    <p style="margin: 0; color: #92400E;">
-                        <strong>Share your experience:</strong> Tell us about the accommodations, guides, activities, and overall experience.
-                    </p>
-                </div>
-                <p style="text-align: center; margin-top: 30px;">
-                    <a href="${reviewUrl}" 
-                       style="background: #10B981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-                        Write a Review
-                    </a>
-                </p>
-                <p style="font-size: 13px; color: #6B7280; text-align: center; margin-top: 20px;">
-                    Your review will be published on the trip page to help future travelers make informed decisions.
-                </p>
-            </div>
-        `;
-    }
-
-    async sendReviewRequest(travelerEmail: string, tripTitle: string, agencyName: string, reviewUrl: string) {
-        const html = this.getReviewRequestTemplate(tripTitle, agencyName, reviewUrl);
-        await this.sendEmail(travelerEmail, `⭐ OUIBOO: Share Your Review - ${tripTitle}`, html);
-    }
-
-    getAutoUnpaidCancellationTemplate(tripTitle: string, bookingId: string) {
-        return `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #DC2626; margin-bottom: 20px;">⚠️ Your booking has been cancelled</h2>
-                <p style="font-size: 16px; color: #374151;">
-                    Your booking for <strong>${tripTitle}</strong> (ID: ${bookingId}) has been automatically cancelled 
-                    because payment was not received within the required timeframe.
-                </p>
-                <div style="margin: 30px 0; padding: 20px; background: #FEE2E2; border-left: 4px solid #DC2626; border-radius: 4px;">
-                    <p style="margin: 0; color: #991B1B;">
-                        <strong>What happened?</strong> Payment reminders were sent, but no payment proof was uploaded.
-                    </p>
-                </div>
-                <p style="font-size: 16px; color: #374151; margin-top: 20px;">
-                    <strong>Want to rebook?</strong> This trip may still have available seats. Visit your dashboard to make a new booking.
-                </p>
-                <p style="font-size: 13px; color: #6B7280; text-align: center; margin-top: 30px;">
-                    If you believe this was a mistake or have questions, please contact our support team.
-                </p>
-            </div>
-        `;
-    }
-
-    async sendAutoUnpaidCancellationNotice(travelerEmail: string, tripTitle: string, bookingId: string) {
-        const html = this.getAutoUnpaidCancellationTemplate(tripTitle, bookingId);
-        await this.sendEmail(travelerEmail, `❌ OUIBOO: Booking Cancelled - ${tripTitle}`, html);
-    }
+  async sendAutoUnpaidCancellationNotice(travelerEmail: string, tripTitle: string, bookingId: string) {
+    await this.sendEmail(travelerEmail, `Ouiboo: Booking cancelled — ${tripTitle}`, this.getAutoUnpaidCancellationTemplate(tripTitle, bookingId))
+  }
 }

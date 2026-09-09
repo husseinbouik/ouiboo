@@ -1,7 +1,7 @@
-import { BadRequestException, Controller, HttpCode, Post, Get, Body, UseGuards, Request, Param, Patch, UploadedFile, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Res } from '@nestjs/common';
+import { Controller, HttpCode, Post, Get, Body, UseGuards, Request, Param, Patch, UploadedFile, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
-import { CreateBookingDto } from './dto/create-booking.dto';
+import { CreateBookingDto, VerifyManualPaymentDto } from './dto/create-booking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
@@ -10,6 +10,7 @@ import { UserRole } from '@ouiboo/types';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { ALLOWED_MIME_TYPES_REGEX, MAX_UPLOAD_SIZE_BYTES } from '../upload/upload.constants';
+import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
 
 @ApiTags('Bookings')
 @Controller('bookings')
@@ -42,7 +43,8 @@ export class BookingsController {
 
     @Post(':id/payment-proof')
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RateLimitGuard)
+    @RateLimit({ points: 6, windowMs: 10 * 60_000, keyPrefix: 'bookings:payment-proof' })
     @ApiOperation({ summary: 'Upload payment proof for a booking' })
     @ApiConsumes('multipart/form-data')
     @ApiBody({
@@ -77,6 +79,20 @@ export class BookingsController {
         return this.bookingsService.uploadPaymentProof(id, req.user.userId, file);
     }
 
+    @Patch(':id/verify-payment')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, RateLimitGuard)
+    @Roles(UserRole.Agency)
+    @RateLimit({ points: 30, windowMs: 60_000, keyPrefix: 'bookings:verify-payment' })
+    @ApiOperation({ summary: 'Approve or reject a manual payment proof for an agency-owned booking' })
+    verifyPayment(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() dto: VerifyManualPaymentDto,
+    ) {
+        return this.bookingsService.verifyPayment(id, req.tenantId, dto.approved, dto.rejectionReason);
+    }
+
     @Get(':id/payment-proof/download')
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
@@ -93,23 +109,6 @@ export class BookingsController {
         }
 
         return res.sendFile(filePath);
-    }
-
-    @Patch(':id/verify-payment')
-    @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
-    @Roles(UserRole.Agency)
-    @ApiOperation({ summary: 'Approve or reject a booking payment proof' })
-    verifyPayment(
-        @Request() req,
-        @Param('id') id: string,
-        @Body() body: { approved?: boolean; rejectionReason?: string },
-    ) {
-        if (typeof body.approved !== 'boolean') {
-            throw new BadRequestException('approved must be a boolean');
-        }
-
-        return this.bookingsService.verifyPayment(id, req.tenantId, body.approved, body.rejectionReason);
     }
 
     @Patch(':id/cancel')

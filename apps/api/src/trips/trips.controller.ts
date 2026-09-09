@@ -1,12 +1,40 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request, Query, Patch, Delete } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Post, Body, Param, UseGuards, Request, Query, Patch, Delete } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { TripsService } from './trips.service';
-import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripTemplateDto } from './dto/create-trip.dto';
+import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripTemplateDto, UpdateTripSessionDto } from './dto/create-trip.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@ouiboo/types';
+import { SubscriptionGuard } from '../auth/subscription.guard';
+
+const parseOptionalNumber = (value: string | undefined, name: string) => {
+    if (value === undefined) return undefined;
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+        throw new BadRequestException(`${name} must be a valid number`);
+    }
+    return parsed;
+};
+
+const parseOptionalDate = (value: string | undefined, name: string) => {
+    if (value === undefined) return undefined;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        throw new BadRequestException(`${name} must be a valid ISO date`);
+    }
+    return parsed;
+};
+
+const parsePositiveInteger = (value: string | undefined, fallback: number, name: string) => {
+    if (value === undefined) return fallback;
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed) || parsed < 1) {
+        throw new BadRequestException(`${name} must be a positive integer`);
+    }
+    return parsed;
+};
 
 @ApiTags('Trips')
 @Controller('trips')
@@ -16,10 +44,9 @@ export class TripsController {
     @Post()
     @ApiOperation({ summary: 'Create a new trip template' })
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
     @Roles(UserRole.Agency)
     create(@Request() req, @Body() createTripDto: CreateTripTemplateDto) {
-        console.log('Creating trip template with data:', JSON.stringify(createTripDto, null, 2));
         return this.tripsService.createTemplate(req.tenantId, createTripDto);
     }
 
@@ -29,8 +56,10 @@ export class TripsController {
         @Query('featured') featured?: string,
         @Query('status') status?: string,
         @Query('q') q?: string,
+        @Query('search') search?: string,
         @Query('category') category?: string,
         @Query('agencyId') agencyId?: string,
+        @Query('currency') currency?: string,
         @Query('priceMin') priceMin?: string,
         @Query('priceMax') priceMax?: string,
         @Query('durationMin') durationMin?: string,
@@ -47,35 +76,35 @@ export class TripsController {
         return this.tripsService.findAllTemplates({
             featured: featured === 'true',
             status,
-            q,
+            q: q || search,
             category,
             agencyId,
-            priceMin: priceMin ? parseFloat(priceMin) : undefined,
-            priceMax: priceMax ? parseFloat(priceMax) : undefined,
-            durationMin: durationMin ? parseInt(durationMin) : undefined,
-            durationMax: durationMax ? parseInt(durationMax) : undefined,
-            startDateFrom: startDateFrom ? new Date(startDateFrom) : undefined,
-            startDateTo: startDateTo ? new Date(startDateTo) : undefined,
-            ratingMin: ratingMin ? parseFloat(ratingMin) : undefined,
+            currency,
+            priceMin: parseOptionalNumber(priceMin, 'priceMin'),
+            priceMax: parseOptionalNumber(priceMax, 'priceMax'),
+            durationMin: parseOptionalNumber(durationMin, 'durationMin'),
+            durationMax: parseOptionalNumber(durationMax, 'durationMax'),
+            startDateFrom: parseOptionalDate(startDateFrom, 'startDateFrom'),
+            startDateTo: parseOptionalDate(startDateTo, 'startDateTo'),
+            ratingMin: parseOptionalNumber(ratingMin, 'ratingMin'),
             available: available === 'true',
             sortBy: sortBy || 'createdAt',
-            sortOrder: (sortOrder || 'desc').toLowerCase() as 'asc' | 'desc',
-            page: page ? parseInt(page) : 1,
-            limit: limit ? parseInt(limit) : 20,
+            sortOrder: sortOrder?.toLowerCase() === 'asc' ? 'asc' : 'desc',
+            page: parsePositiveInteger(page, 1, 'page'),
+            limit: parsePositiveInteger(limit, 20, 'limit'),
         });
     }
 
     @Get(':id')
     @ApiOperation({ summary: 'Get trip template by ID' })
     findOne(@Param('id') id: string) {
-        console.log('[TripsController] Finding trip with ID:', id);
         return this.tripsService.findOneTemplate(id);
     }
 
     @Post(':id/sessions')
     @ApiOperation({ summary: 'Add a session to a trip template' })
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
     @Roles(UserRole.Agency)
     createSession(
         @Request() req,
@@ -83,6 +112,33 @@ export class TripsController {
         @Body() createSessionDto: CreateTripSessionDto,
     ) {
         return this.tripsService.createSession(req.tenantId, id, createSessionDto);
+    }
+
+    @Patch(':id/sessions/:sessionId')
+    @ApiOperation({ summary: 'Update a trip session without bookings' })
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
+    @Roles(UserRole.Agency)
+    updateSession(
+        @Request() req,
+        @Param('id') id: string,
+        @Param('sessionId') sessionId: string,
+        @Body() dto: UpdateTripSessionDto,
+    ) {
+        return this.tripsService.updateSession(req.tenantId, id, sessionId, dto);
+    }
+
+    @Delete(':id/sessions/:sessionId')
+    @ApiOperation({ summary: 'Delete a trip session without bookings' })
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
+    @Roles(UserRole.Agency)
+    deleteSession(
+        @Request() req,
+        @Param('id') id: string,
+        @Param('sessionId') sessionId: string,
+    ) {
+        return this.tripsService.deleteSession(req.tenantId, id, sessionId);
     }
 
     @Get(':id/sessions')
@@ -94,17 +150,16 @@ export class TripsController {
     @Patch(':id')
     @ApiOperation({ summary: 'Update a trip template' })
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
     @Roles(UserRole.Agency)
     update(@Request() req, @Param('id') id: string, @Body() updateTripDto: UpdateTripTemplateDto) {
-        console.log('Updating trip template', id, 'with data:', JSON.stringify(updateTripDto, null, 2));
         return this.tripsService.updateTemplate(id, req.tenantId, updateTripDto);
     }
 
     @Delete(':id')
     @ApiOperation({ summary: 'Delete a trip template' })
     @ApiBearerAuth()
-    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
     @Roles(UserRole.Agency)
     remove(@Request() req, @Param('id') id: string) {
         return this.tripsService.deleteTemplate(id, req.tenantId);

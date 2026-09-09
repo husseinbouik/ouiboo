@@ -53,12 +53,7 @@ export default function TravelerSignupPage() {
       return response.data;
     },
     onSuccess: (data) => {
-      const { accessToken, refreshToken, user } = data;
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', accessToken);
-        localStorage.setItem('refresh_token', refreshToken);
-      }
-      router.push(`/verify?email=${user.email}`);
+      router.push(`/verify?email=${encodeURIComponent(data.email)}`);
     },
     onError: (err: ApiError) => {
       const message = err?.response?.data?.message;

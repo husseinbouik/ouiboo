@@ -31,6 +31,7 @@ export function PaymentProofReviewModal({
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [rejectionError, setRejectionError] = useState('');
 
   if (!booking) return null;
 
@@ -46,6 +47,7 @@ export function PaymentProofReviewModal({
     setImageError(false);
     setImageLoading(true);
     setShowRejectConfirm(false);
+    setRejectionError('');
     onClose();
   };
 
@@ -62,11 +64,11 @@ export function PaymentProofReviewModal({
 
   const handleRejectConfirm = () => {
     if (!rejectionReason.trim()) {
-      alert('Please enter a rejection reason');
+      setRejectionError('Enter a rejection reason.');
       return;
     }
     if (rejectionReason.trim().length < 10) {
-      alert('Rejection reason must be at least 10 characters');
+      setRejectionError('The rejection reason must be at least 10 characters.');
       return;
     }
     if (!onReject) {
@@ -294,7 +296,10 @@ export function PaymentProofReviewModal({
                     </label>
                     <textarea
                       value={rejectionReason}
-                      onChange={(e) => setRejectionReason(e.target.value.slice(0, 500))}
+                      onChange={(e) => {
+                        setRejectionReason(e.target.value.slice(0, 500));
+                        setRejectionError('');
+                      }}
                       placeholder="Explain why this payment proof is being rejected..."
                       className="mt-2 w-full h-24 p-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sunset-orange"
                       disabled={isLoading}
@@ -302,6 +307,11 @@ export function PaymentProofReviewModal({
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Minimum 10 characters required
                     </p>
+                    {rejectionError ? (
+                      <p role="alert" className="mt-2 text-sm font-medium text-red-600 dark:text-red-400">
+                        {rejectionError}
+                      </p>
+                    ) : null}
                   </div>
 
                   {!showRejectConfirm ? (

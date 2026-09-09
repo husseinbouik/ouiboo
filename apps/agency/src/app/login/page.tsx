@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { type LoginInput } from '@ouiboo/schemas';
 import { useAuth } from '@/components/AuthContext';
+import { setBrowserAccessToken } from '@ouiboo/api-client';
 
 type AgencyLoginFormValues = LoginInput & {
   rememberMe?: boolean;
@@ -50,11 +51,7 @@ export default function AgencyLoginPage() {
       return response.data;
     },
     onSuccess: async (data) => {
-      const { accessToken, refreshToken } = data;
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', accessToken);
-        localStorage.setItem('refresh_token', refreshToken);
-      }
+      setBrowserAccessToken(data.accessToken);
       await refetch();
       router.push('/dashboard');
     },
@@ -168,25 +165,6 @@ export default function AgencyLoginPage() {
               {!loginMutation.isPending && <ArrowRight className="ml-2 h-5 w-5 inline" />}
             </Button>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-2 text-gray-500">{t('login.orContinue')}</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <Image src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-5 w-5 mr-2" alt="Google" width={20} height={20} />
-                <span className="text-sm font-medium text-gray-700">{t('login.google')}</span>
-              </button>
-              <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <Image src="https://www.svgrepo.com/show/448234/linkedin.svg" className="h-5 w-5 mr-2" alt="LinkedIn" width={20} height={20} />
-                <span className="text-sm font-medium text-gray-700">{t('login.linkedin')}</span>
-              </button>
-            </div>
           </form>
 
           <p className="text-center text-sm text-gray-600">

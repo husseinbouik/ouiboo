@@ -13,20 +13,32 @@ jobs:
       DATABASE_URL: postgresql://test:test@localhost:5433/ouiboo_test?schema=public
       E2E_DATABASE_URL: postgresql://test:test@localhost:5433/ouiboo_test?schema=public
       REDIS_URL: redis://localhost:6379
-      JWT_SECRET: replace-with-a-long-jwt-secret
-      JWT_REFRESH_SECRET: replace-with-a-long-refresh-secret
-      CORS_ORIGINS: http://localhost:3001,http://localhost:3002,http://localhost:3003
+      JWT_SECRET: ci-jwt-signing-7c1f0b74d195493e8a62bf38
+      JWT_REFRESH_SECRET: ci-jwt-refresh-a95e42dc6b704cb18f327d60
+      CORS_ORIGINS: https://agency.ci.example.com,https://traveler.ci.example.com,https://admin.ci.example.com
+      TRUST_PROXY_HOPS: 1
       SMTP_HOST: smtp.example.com
       SMTP_PORT: 587
       SMTP_USER: mailer@example.com
-      SMTP_PASS: replace-with-smtp-password
-      API_URL: http://localhost:3000/api/v1
-      NEXT_PUBLIC_API_URL: http://localhost:3000/api/v1
+      SMTP_PASS: ci-mail-auth-7c1f0b74d195493e
+      API_URL: https://api.ci.example.com/api/v1
+      NEXT_PUBLIC_API_URL: https://api.ci.example.com/api/v1
+      TRAVELER_APP_URL: https://traveler.ci.example.com
+      AGENCY_APP_URL: https://agency.ci.example.com
+      ADMIN_APP_URL: https://admin.ci.example.com
+      NEXT_PUBLIC_TRAVELER_URL: https://traveler.ci.example.com
+      NEXT_PUBLIC_AGENCY_URL: https://agency.ci.example.com
+      NEXT_PUBLIC_LANDING_URL: https://www.ci.example.com
+      GMAIL_EMAIL: waitlist@example.com
+      GMAIL_APP_PASSWORD: ci-gmail-auth-6f2084ea9314
+      GOOGLE_SERVICE_ACCOUNT_EMAIL: sheets-ci@example.com
+      GOOGLE_PRIVATE_KEY: ci-google-key-material
+      GOOGLE_SHEET_ID: ci-sheet-id
       STORAGE_PROVIDER: s3
       S3_BUCKET: ouiboo-production
       S3_REGION: eu-west-3
-      S3_ACCESS_KEY_ID: example-access-key
-      S3_SECRET_ACCESS_KEY: example-secret-key
+      S3_ACCESS_KEY_ID: ci-access-7c1f0b74
+      S3_SECRET_ACCESS_KEY: ci-storage-auth-a95e42dc6b70
       S3_ENDPOINT: https://s3.example.com
       ENABLE_SWAGGER: false
 
@@ -47,7 +59,10 @@ jobs:
         run: npm ci
 
       - name: Validate launch environment contract
-        run: npm run check:env
+        run: npm run check:env:prod
+
+      - name: Reject tracked environment files
+        run: npm run check:tracked-env
 
       - name: Check for launch placeholders
         run: npm run check:placeholders

@@ -1,7 +1,7 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { CreateTripTemplateDto, CreateTripSessionDto } from './dto/create-trip.dto';
-import { SessionStatus, TripStatus } from '@ouiboo/database';
+import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripSessionDto } from './dto/create-trip.dto';
+import { BookingStatus, SessionStatus, TripStatus } from '@ouiboo/database';
 import { toMoneyDecimal } from '../common/money.util';
 
 @Injectable()
@@ -18,17 +18,16 @@ export class TripsService {
         }
 
         const { itinerary, ...tripData } = dto;
-        console.log(`[TripsService] Creating template. Itinerary count: ${itinerary?.length || 0}`);
 
         const data = {
             ...tripData,
             agencyId: agencyId,
+            status: TripStatus.DRAFT,
             itinerary: itinerary && itinerary.length > 0 ? {
                 create: itinerary
             } : undefined
         };
 
-        console.log(`[TripsService] Prisma Create Data:`, JSON.stringify(data, null, 2));
 
         const result = await this.db.tripTemplate.create({
             data,
@@ -37,7 +36,6 @@ export class TripsService {
             }
         });
 
-        console.log(`[TripsService] Created template ${result.id} for agency ${agencyId}. Status: ${result.status}`);
         return result;
     }
 
@@ -47,6 +45,7 @@ export class TripsService {
         q?: string;
         category?: string;
         agencyId?: string;
+        currency?: string;
         priceMin?: number;
         priceMax?: number;
         durationMin?: number;
@@ -63,10 +62,10 @@ export class TripsService {
         try {
             const {
                 featured,
-                status,
                 q,
                 category,
                 agencyId,
+                currency,
                 priceMin,
                 priceMax,
                 durationMin,
@@ -87,11 +86,12 @@ export class TripsService {
 
             // Build WHERE clause for trip templates
             const where: any = {
-                status: status === TripStatus.ACTIVE ? TripStatus.ACTIVE : TripStatus.ACTIVE,
+                status: TripStatus.ACTIVE,
             };
 
             if (featured) where.featured = true;
             if (agencyId) where.agencyId = agencyId;
+            if (currency) where.currency = currency;
             if (category) where.category = category;
             if (q?.trim()) {
                 const search = q.trim();
@@ -102,7 +102,6 @@ export class TripsService {
                 ];
             }
 
-            // Price filter: applied to sessions, so we'll filter after query
             // Duration filter
             if (durationMin !== undefined || durationMax !== undefined) {
                 where.durationDays = {};
@@ -139,11 +138,20 @@ export class TripsService {
                 if (priceMax !== undefined) sessionWhere.price.lte = toMoneyDecimal(priceMax, 'priceMax');
             }
 
+            const requiresMatchingSession =
+                available === true ||
+                startDateFrom !== undefined ||
+                startDateTo !== undefined ||
+                priceMin !== undefined ||
+                priceMax !== undefined;
+            if (requiresMatchingSession) {
+                where.sessions = { some: sessionWhere };
+            }
+
             // Build sort order
             const orderBy: any = {};
             if (safeSortBy === 'price') {
-                // For price sorting, we'd need to sort by session price, default to sessions[0]
-                orderBy.sessions = { _count: sortOrder };
+                orderBy.startingPrice = { sort: sortOrder, nulls: 'last' };
             } else if (safeSortBy === 'rating') {
                 orderBy.averageRating = sortOrder;
             } else if (safeSortBy === 'popularity') {
@@ -187,20 +195,8 @@ export class TripsService {
                 this.db.tripTemplate.count({ where }),
             ]);
 
-            // Post-process: filter by price if needed (in case DB index doesn't support it)
-            let filtered = templates;
-            if (priceMin !== undefined || priceMax !== undefined) {
-                filtered = templates.filter(template => {
-                    if (template.sessions.length === 0) return false;
-                    const minPrice = Math.min(...template.sessions.map(s => Number(s.price)));
-                    if (priceMin !== undefined && minPrice < priceMin) return false;
-                    if (priceMax !== undefined && minPrice > priceMax) return false;
-                    return true;
-                });
-            }
-
             return {
-                data: filtered,
+                data: templates,
                 pagination: {
                     total,
                     page: safePage,
@@ -215,18 +211,54 @@ export class TripsService {
     }
 
     async findOneTemplate(id: string) {
-        console.log('[TripsService] findOneTemplate called with ID:', id);
-        const result = await this.db.tripTemplate.findUnique({
-            where: { id },
-            include: {
-                sessions: true,
-                agency: true,
+        const result = await this.db.tripTemplate.findFirst({
+            where: { id, status: TripStatus.ACTIVE },
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                category: true,
+                startLocation: true,
+                endLocation: true,
+                durationDays: true,
+                durationNights: true,
+                inclusions: true,
+                exclusions: true,
+                checklist: true,
+                images: true,
+                status: true,
+                featured: true,
+                currency: true,
+                averageRating: true,
+                reviewCount: true,
+                cancellationPolicy: true,
+                minBookings: true,
+                createdAt: true,
+                updatedAt: true,
+                sessions: {
+                    where: {
+                        status: SessionStatus.OPEN,
+                        startDate: { gte: new Date() },
+                    },
+                    orderBy: { startDate: 'asc' },
+                },
+                agency: {
+                    select: {
+                        id: true,
+                        companyName: true,
+                        logo: true,
+                        verificationStatus: true,
+                    },
+                },
                 itinerary: {
-                    orderBy: { dayNumber: 'asc' }
+                    orderBy: { dayNumber: 'asc' },
+                },
+                _count: {
+                    select: { reviews: true, wishlists: true },
                 },
             },
         });
-        console.log('[TripsService] Result found:', !!result);
+        if (!result) throw new NotFoundException('Trip template not found');
         return result;
     }
 
@@ -243,28 +275,118 @@ export class TripsService {
                 id: templateId,
                 agencyId: agencyId,
             },
+            select: { id: true, currency: true },
         });
 
-        if (!template) {
-            throw new ForbiddenException('Trip template not found or access denied');
+        if (!template) throw new NotFoundException('Trip template not found');
+
+        const startDate = new Date(dto.startDate);
+        const endDate = new Date(dto.endDate);
+        if (startDate <= new Date()) {
+            throw new BadRequestException('Session start date must be in the future');
+        }
+        if (endDate <= startDate) {
+            throw new BadRequestException('Session end date must be after its start date');
+        }
+        const price = toMoneyDecimal(dto.price, 'price');
+        const deposit = toMoneyDecimal(dto.deposit ?? 0, 'deposit');
+        if (deposit.greaterThan(price)) {
+            throw new BadRequestException('Deposit cannot exceed the session price');
         }
 
-        return this.db.tripSession.create({
+        const requestedCurrency = dto.currency ?? template.currency;
+        this.assertTripCurrency(template.currency, requestedCurrency);
+
+        const session = await this.db.tripSession.create({
             data: {
                 templateId,
-                price: toMoneyDecimal(dto.price, 'price'),
-                deposit: toMoneyDecimal(dto.deposit ?? 0, 'deposit'),
+                price,
+                deposit,
                 totalSeats: dto.totalSeats,
                 availableSeats: dto.totalSeats,
-                startDate: new Date(dto.startDate),
-                endDate: new Date(dto.endDate),
+                startDate,
+                endDate,
+                currency: requestedCurrency,
             },
         });
+        await this.refreshStartingPrice(templateId);
+        return session;
+    }
+
+    async updateSession(agencyId: string, templateId: string, sessionId: string, dto: UpdateTripSessionDto) {
+        const session = await this.db.tripSession.findFirst({
+            where: { id: sessionId, templateId, template: { agencyId } },
+            include: {
+                _count: { select: { bookings: true } },
+                template: { select: { currency: true } },
+            },
+        });
+        if (!session) throw new NotFoundException('Trip session not found');
+        if (session._count.bookings > 0) {
+            throw new ConflictException('Sessions with bookings cannot be edited');
+        }
+
+        const startDate = dto.startDate ? new Date(dto.startDate) : session.startDate;
+        const endDate = dto.endDate ? new Date(dto.endDate) : session.endDate;
+        if (startDate <= new Date()) {
+            throw new BadRequestException('Session start date must be in the future');
+        }
+        if (endDate <= startDate) {
+            throw new BadRequestException('Session end date must be after its start date');
+        }
+        const price = dto.price !== undefined ? toMoneyDecimal(dto.price, 'price') : session.price;
+        const deposit = dto.deposit !== undefined ? toMoneyDecimal(dto.deposit, 'deposit') : session.deposit;
+        if (deposit.greaterThan(price)) {
+            throw new BadRequestException('Deposit cannot exceed the session price');
+        }
+
+        const currency = dto.currency ?? session.currency;
+        this.assertTripCurrency(session.template.currency, currency);
+
+        const updated = await this.db.tripSession.update({
+            where: { id: sessionId },
+            data: {
+                startDate,
+                endDate,
+                price,
+                deposit,
+                currency,
+                totalSeats: dto.totalSeats,
+                availableSeats: dto.totalSeats,
+            },
+        });
+        await this.refreshStartingPrice(templateId);
+        return updated;
+    }
+
+    async deleteSession(agencyId: string, templateId: string, sessionId: string) {
+        const session = await this.db.tripSession.findFirst({
+            where: { id: sessionId, templateId, template: { agencyId } },
+            include: { _count: { select: { bookings: true } } },
+        });
+        if (!session) throw new NotFoundException('Trip session not found');
+        if (session._count.bookings > 0) {
+            throw new ConflictException('Sessions with bookings cannot be deleted');
+        }
+        const deleted = await this.db.tripSession.delete({ where: { id: sessionId } });
+        await this.refreshStartingPrice(templateId);
+        return deleted;
     }
 
     async findSessionsByTemplate(templateId: string) {
+        const template = await this.db.tripTemplate.findFirst({
+            where: { id: templateId, status: TripStatus.ACTIVE },
+            select: { id: true },
+        });
+        if (!template) throw new NotFoundException('Trip template not found');
+
         return this.db.tripSession.findMany({
-            where: { templateId },
+            where: {
+                templateId,
+                status: SessionStatus.OPEN,
+                startDate: { gte: new Date() },
+            },
+            orderBy: { startDate: 'asc' },
         });
     }
 
@@ -272,19 +394,26 @@ export class TripsService {
         const agency = await this.db.agencyProfile.findUnique({ where: { id: agencyId } });
         if (!agency) throw new NotFoundException('Agency profile not found');
 
-        const { itinerary, ...tripData } = dto;
-        console.log(`[TripsService] Updating template ${id} for agency ${agencyId}`);
+        const { itinerary, status: requestedStatus, ...tripData } = dto;
 
         // Verify ownership
         const existing = await this.db.tripTemplate.findFirst({
-            where: { id, agencyId: agencyId }
+            where: { id, agencyId: agencyId },
+            include: { _count: { select: { sessions: true } } },
         });
         if (!existing) throw new NotFoundException('Trip template not found');
+
+        if (dto.currency && dto.currency !== existing.currency && existing._count.sessions > 0) {
+            throw new ConflictException('Trip currency cannot change after sessions have been created');
+        }
+
+        const status = requestedStatus ?? existing.status;
 
         return this.db.tripTemplate.update({
             where: { id },
             data: {
                 ...tripData,
+                status,
                 itinerary: itinerary ? {
                     deleteMany: {},
                     create: itinerary
@@ -305,8 +434,48 @@ export class TripsService {
         });
         if (!existing) throw new NotFoundException('Trip template not found');
 
-        return this.db.tripTemplate.delete({
-            where: { id },
+        const activeBookings = await this.db.booking.count({
+            where: {
+                session: { templateId: id },
+                status: {
+                    in: [
+                        BookingStatus.PENDING,
+                        BookingStatus.AWAITING_VALIDATION,
+                        BookingStatus.CONFIRMED,
+                    ],
+                },
+            },
         });
+        if (activeBookings > 0) {
+            throw new ConflictException('Trips with active bookings cannot be archived');
+        }
+
+        return this.db.tripTemplate.update({
+            where: { id },
+            data: { status: TripStatus.ARCHIVED },
+        });
+    }
+
+    private async refreshStartingPrice(templateId: string) {
+        const aggregate = await this.db.tripSession.aggregate({
+            where: {
+                templateId,
+                status: SessionStatus.OPEN,
+                startDate: { gte: new Date() },
+            },
+            _min: { price: true },
+        });
+        await this.db.tripTemplate.update({
+            where: { id: templateId },
+            data: { startingPrice: aggregate._min.price },
+        });
+    }
+
+    private assertTripCurrency(tripCurrency: string, currency: string) {
+        if (tripCurrency !== currency) {
+            throw new BadRequestException(
+                `Session currency must match the trip currency (${tripCurrency})`,
+            );
+        }
     }
 }

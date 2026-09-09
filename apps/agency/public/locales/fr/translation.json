@@ -7,6 +7,18 @@
         "error": "Une erreur est survenue",
         "submitting": "Envoi en cours..."
     },
+    "sidebar": {
+        "dashboard": "Tableau de bord",
+        "analytics": "Analytique",
+        "myTrips": "Mes voyages",
+        "bookings": "Réservations",
+        "reviews": "Avis",
+        "wallet": "Portefeuille et paiements",
+        "compliance": "Conformité",
+        "settings": "Paramètres",
+        "createNew": "Créer nouveau",
+        "signOut": "Se déconnecter"
+    },
     "login": {
         "title": "Portail agence",
         "subtitle": "Bon retour. Gérez vos réservations et développez votre activité.",

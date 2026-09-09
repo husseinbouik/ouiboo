@@ -17,6 +17,8 @@ export interface TripCardTrip {
   startLocation?: string;
   durationDays?: number;
   images?: string[];
+  averageRating?: number | null;
+  reviewCount?: number;
   sessions?: Array<{
     id: string;
     status: SessionStatusType | string;
@@ -143,8 +145,10 @@ export function TripCard({ trip }: TripCardProps) {
           <div className="flex justify-between items-start gap-3">
             <h3 className="text-lg font-bold text-foreground group-hover:text-sunset-orange transition-colors line-clamp-2 leading-tight">{trip.title}</h3>
             <div className="flex items-center gap-1 shrink-0 bg-yellow-500/10 px-2 py-0.5 rounded-md">
-              <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-500" />
-              <span className="text-xs font-bold text-yellow-600 dark:text-yellow-400">5.0</span>
+              <Star className={cn("h-3.5 w-3.5 text-yellow-500", trip.reviewCount ? "fill-yellow-400" : "fill-none")} />
+              <span className="text-xs font-bold text-yellow-600 dark:text-yellow-400">
+                {trip.reviewCount ? Number(trip.averageRating || 0).toFixed(1) : 'New'}
+              </span>
             </div>
           </div>
 

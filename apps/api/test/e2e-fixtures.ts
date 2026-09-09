@@ -1,20 +1,11 @@
-type TripTemplateFixtureInput = {
-    agencyId: string;
-    title?: string;
-    description?: string;
-    category?: 'ADVENTURE' | 'CULTURAL' | 'LUXURY' | 'BUDGET';
-    startLocation?: string;
-    durationDays?: number;
-    durationNights?: number;
-    inclusions?: string[];
-    exclusions?: string[];
-    checklist?: string[];
-    images?: string[];
-    status?: 'ACTIVE' | 'DRAFT' | 'ARCHIVED';
-    [key: string]: unknown;
-};
+import type { Prisma } from '@ouiboo/database';
 
-export function tripTemplateFixture(overrides: TripTemplateFixtureInput) {
+type TripTemplateFixtureInput = Pick<Prisma.TripTemplateUncheckedCreateInput, 'agencyId'>
+    & Partial<Prisma.TripTemplateUncheckedCreateInput>;
+
+export function tripTemplateFixture(
+    overrides: TripTemplateFixtureInput,
+): Prisma.TripTemplateUncheckedCreateInput {
     return {
         title: 'Demo Trip',
         description: 'A production-shaped test trip',

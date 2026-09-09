@@ -6,4 +6,5 @@ export const MaintenanceJobName = {
   TripReminders1Day: 'trip-reminders-1-day',
   AutoCancelUnpaidBookings: 'auto-cancel-unpaid-bookings',
   ExchangeRateRefresh: 'exchange-rate-refresh',
+  CompleteFinishedBookings: 'complete-finished-bookings',
 } as const;

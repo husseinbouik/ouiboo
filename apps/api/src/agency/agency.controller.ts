@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request, Patch, Body, Post, Query } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request, Patch, Body, Post, Query, Param, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -11,6 +11,7 @@ import { RequestPayoutDto } from './dto/payout-request.dto';
 import { mapBookingDetails } from '../bookings/booking-response.util';
 import { mapPayoutDetails } from './payout-response.util';
 import { toMoneyString } from '../common/money.util';
+import { UpdateAgencyProfileDto } from './dto/update-profile.dto';
 
 const clampListLimit = (value?: string, fallback = 50, max = 200) => {
     const parsed = Number(value);
@@ -111,6 +112,27 @@ export class AgencyController {
         });
     }
 
+    @Get('trips/:id')
+    @ApiOperation({ summary: 'Get one agency-owned trip' })
+    async getTrip(@Request() req, @Param('id') id: string) {
+        const trip = await this.prisma.tripTemplate.findFirst({
+            where: { id, agencyId: req.tenantId },
+            include: {
+                sessions: {
+                    include: {
+                        _count: { select: { bookings: true } },
+                    },
+                    orderBy: { startDate: 'asc' },
+                },
+                itinerary: { orderBy: { dayNumber: 'asc' } },
+            },
+        });
+        if (!trip) {
+            throw new NotFoundException('Trip template not found');
+        }
+        return trip;
+    }
+
     @Get('bookings')
     @ApiOperation({ summary: 'Get agency bookings' })
     async getBookings(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
@@ -181,37 +203,44 @@ export class AgencyController {
         const agencyId = req.tenantId;
         const take = clampListLimit(limit);
         const skip = (parsePage(page) - 1) * take;
+        const where = {
+            tripTemplate: { agencyId }
+        };
 
-        const reviews = await this.prisma.review.findMany({
-            where: {
-                booking: {
-                    session: {
-                        template: { agencyId }
-                    }
-                }
-            },
-            include: {
-                traveler: {
-                    select: {
-                        id: true,
-                        name: true,
-                        avatar: true
-                    }
-                },
-                booking: {
-                    include: {
-                        session: {
-                            include: {
-                                template: true
+        const [reviews, aggregate, pendingResponses] = await Promise.all([
+            this.prisma.review.findMany({
+                where,
+                include: {
+                    traveler: {
+                        select: {
+                            id: true,
+                            name: true,
+                            avatar: true
+                        }
+                    },
+                    booking: {
+                        include: {
+                            session: {
+                                include: {
+                                    template: true
+                                }
                             }
                         }
                     }
-                }
-            },
-            orderBy: { createdAt: 'desc' },
-            skip,
-            take,
-        });
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take,
+            }),
+            this.prisma.review.aggregate({
+                where,
+                _avg: { rating: true },
+                _count: { _all: true },
+            }),
+            this.prisma.review.count({
+                where: { ...where, response: null },
+            }),
+        ]);
 
         // Transform to match frontend expectations
         const transformedReviews = reviews.map(r => ({
@@ -228,12 +257,8 @@ export class AgencyController {
             }
         }));
 
-        // Calculate stats
-        const totalReviews = transformedReviews.length;
-        const averageRating = totalReviews > 0
-            ? transformedReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
-            : 0;
-        const pendingResponses = transformedReviews.filter(r => !r.response).length;
+        const totalReviews = aggregate._count._all;
+        const averageRating = aggregate._avg.rating || 0;
         const respondedCount = totalReviews - pendingResponses;
         const responseRate = totalReviews > 0 ? Math.round((respondedCount / totalReviews) * 100) : 0;
 
@@ -252,26 +277,22 @@ export class AgencyController {
     @ApiOperation({ summary: 'Get agency review statistics' })
     async getReviewStats(@Request() req) {
         const agencyId = req.tenantId;
+        const where = {
+            tripTemplate: { agencyId }
+        };
+        const [aggregate, pendingResponses] = await Promise.all([
+            this.prisma.review.aggregate({
+                where,
+                _avg: { rating: true },
+                _count: { _all: true },
+            }),
+            this.prisma.review.count({
+                where: { ...where, response: null },
+            }),
+        ]);
 
-        const reviews = await this.prisma.review.findMany({
-            where: {
-                booking: {
-                    session: {
-                        template: { agencyId }
-                    }
-                }
-            },
-            select: {
-                rating: true,
-                response: true
-            }
-        });
-
-        const totalReviews = reviews.length;
-        const averageRating = totalReviews > 0
-            ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
-            : 0;
-        const pendingResponses = reviews.filter(r => !r.response).length;
+        const totalReviews = aggregate._count._all;
+        const averageRating = aggregate._avg.rating || 0;
         const respondedCount = totalReviews - pendingResponses;
         const responseRate = totalReviews > 0 ? Math.round((respondedCount / totalReviews) * 100) : 0;
 
@@ -290,15 +311,26 @@ export class AgencyController {
 
     @Patch('profile') // Use Patch/Put, no ID param needed as we use req.user
     @ApiOperation({ summary: 'Update agency profile' })
-    async updateProfile(@Request() req, @Body() data: { companyName?: string; bio?: string; logo?: string; bankDetails?: string; }) {
-        // Validation could be added here or via DTO
+    async updateProfile(@Request() req, @Body() data: UpdateAgencyProfileDto) {
+        const existing = await this.prisma.agencyProfile.findUnique({
+            where: { id: req.tenantId },
+            select: { bankDetails: true, verificationStatus: true },
+        });
+        if (!existing) throw new NotFoundException('Agency profile not found');
+        const bankDetails = data.bankDetails?.trim();
+        const bankDetailsChanged = data.bankDetails !== undefined
+            && bankDetails !== (existing.bankDetails || '');
+
         return this.prisma.agencyProfile.update({
             where: { id: req.tenantId },
             data: {
-                companyName: data.companyName,
-                bio: data.bio,
-                logo: data.logo,
-                bankDetails: data.bankDetails
+                companyName: data.companyName?.trim(),
+                bio: data.bio?.trim(),
+                logo: data.logo?.trim(),
+                bankDetails,
+                verificationStatus: bankDetailsChanged && existing.verificationStatus === 'VERIFIED'
+                    ? 'PENDING'
+                    : undefined,
             }
         });
     }

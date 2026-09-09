@@ -113,7 +113,11 @@ export class AuthService {
         // Do not block signup on SMTP. If sending fails, users can request a resend.
         void this.sendRegistrationOtp(dto.email, otp);
 
-        return this.login(user); // Still return tokens so they can stay logged in during verification
+        return {
+            email: user.email,
+            requiresEmailVerification: true,
+            message: 'Verification code sent',
+        };
     }
 
     private async sendRegistrationOtp(email: string, otp: string) {
@@ -150,7 +154,7 @@ export class AuthService {
             throw new UnauthorizedException('INVALID_OTP');
         }
 
-        await this.db.user.update({
+        const verifiedUser = await this.db.user.update({
             where: { id: user.id },
             data: {
                 isEmailVerified: true,
@@ -168,7 +172,11 @@ export class AuthService {
             console.error(`Failed to send welcome email to ${user.email}:`, error);
         }
 
-        return { message: 'Email verified successfully' };
+        const tokens = await this.login(verifiedUser);
+        return {
+            ...tokens,
+            message: 'Email verified successfully',
+        };
     }
 
     async resendOTP(email: string) {
@@ -274,39 +282,55 @@ export class AuthService {
     async refreshToken(token: string) {
         try {
             const refreshSecret = process.env.JWT_REFRESH_SECRET;
-            if (!refreshSecret) {
+            const accessSecret = process.env.JWT_SECRET;
+            if (!refreshSecret || !accessSecret) {
                 throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
             }
             const payload = this.jwtService.verify(token, {
                 secret: refreshSecret,
             });
-            const tokenRecord = await this.db.refreshToken.findFirst({
-                where: {
-                    tokenHash: this.hashToken(token),
-                    userId: payload.sub,
-                    revokedAt: null,
-                    expiresAt: { gt: new Date() },
-                },
-            });
-            if (!tokenRecord) {
-                throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
-            }
+            const tokenHash = this.hashToken(token);
+            const rotation = await this.db.$transaction(async (tx) => {
+                const tokenRecord = await tx.refreshToken.findFirst({
+                    where: {
+                        tokenHash,
+                        userId: payload.sub,
+                        revokedAt: null,
+                        expiresAt: { gt: new Date() },
+                    },
+                });
+                if (!tokenRecord) throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
 
-            const user = await this.db.user.findUnique({ where: { id: payload.sub } });
-            if (!user) throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+                const claimed = await tx.refreshToken.updateMany({
+                    where: { id: tokenRecord.id, revokedAt: null },
+                    data: { revokedAt: new Date() },
+                });
+                if (claimed.count !== 1) throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
 
-            const accessSecret = process.env.JWT_SECRET;
-            if (!accessSecret) {
-                throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
-            }
-            const { token: rotatedRefreshToken, id: newTokenId } = await this.issueRefreshToken(
-                { email: user.email, sub: user.id, role: user.role },
-                refreshSecret,
-            );
-            await this.db.refreshToken.update({
-                where: { id: tokenRecord.id },
-                data: { revokedAt: new Date(), replacedByTokenId: newTokenId },
+                const user = await tx.user.findUnique({ where: { id: payload.sub } });
+                if (!user?.isEmailVerified) throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+
+                const tokenId = randomUUID();
+                const rotatedRefreshToken = this.jwtService.sign(
+                    { email: user.email, sub: user.id, role: user.role, jti: tokenId },
+                    { secret: refreshSecret, expiresIn: '7d' },
+                );
+                const newToken = await tx.refreshToken.create({
+                    data: {
+                        tokenHash: this.hashToken(rotatedRefreshToken),
+                        userId: user.id,
+                        expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+                    },
+                });
+                await tx.refreshToken.update({
+                    where: { id: tokenRecord.id },
+                    data: { replacedByTokenId: newToken.id },
+                });
+
+                return { user, rotatedRefreshToken };
             });
+
+            const { user, rotatedRefreshToken } = rotation;
 
             const accessToken = this.jwtService.sign(
                 { email: user.email, sub: user.id, role: user.role },

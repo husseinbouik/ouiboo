@@ -5,8 +5,12 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
-  title: "Ouiboo Admin",
-  description: "Admin portal for Ouiboo",
+  title: {
+    default: "Platform administration",
+    template: "%s | Ouiboo Admin",
+  },
+  description: "Private Ouiboo platform administration workspace.",
+  robots: { index: false, follow: false, noarchive: true },
 };
 
 export const dynamic = 'force-dynamic';

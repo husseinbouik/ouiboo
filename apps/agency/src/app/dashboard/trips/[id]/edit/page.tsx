@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import React, { useState, useEffect, useSyncExternalStore } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, 
   Image as ImageIcon,
@@ -43,16 +43,10 @@ export default function EditTripPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
-  const isMounted = useSyncExternalStore(
-    () => () => undefined,
-    () => true,
-    () => false,
-  );
-
   const { data: trip, isLoading: isLoadingTrip } = useQuery<TripEditorData>({
     queryKey: ['trip', id],
     queryFn: async () => {
-      const response = await apiClient.get(`/trips/${id}`);
+      const response = await apiClient.get(`/agency/trips/${id}`);
       return response.data;
     }
   });
@@ -68,6 +62,7 @@ export default function EditTripPage() {
         description: trip.description,
         category: trip.category,
         startLocation: trip.startLocation,
+        endLocation: trip.endLocation,
         durationDays: trip.durationDays,
         durationNights: trip.durationNights,
         inclusions: trip.inclusions || [],
@@ -76,6 +71,7 @@ export default function EditTripPage() {
         images: trip.images || [],
         itinerary: trip.itinerary || [],
         status: trip.status,
+        currency: trip.currency || 'MAD',
       });
     }
   }, [trip, reset]);
@@ -182,7 +178,7 @@ export default function EditTripPage() {
     updateTripMutation.mutate(cleanedData);
   };
 
-  if (!isMounted || isLoadingTrip) return (
+  if (isLoadingTrip) return (
     <div className="flex items-center justify-center py-20">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sunset-orange"></div>
     </div>
@@ -246,7 +242,7 @@ export default function EditTripPage() {
                       ></textarea>
                       {errors.description && <p className="text-red-500 text-xs font-medium">{errors.description.message}</p>}
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Category</label>
                         <select {...register('category')} className="w-full h-12 px-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none dark:text-gray-100">
@@ -254,14 +250,19 @@ export default function EditTripPage() {
                           <option value="CULTURAL">Cultural</option>
                           <option value="LUXURY">Luxury</option>
                           <option value="BUDGET">Budget</option>
+                          <option value="NATURE">Nature</option>
                         </select>
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Starting Location</label>
                         <Input {...register('startLocation')} placeholder="City, Country" className="h-12 dark:bg-slate-800 dark:border-slate-700" />
                       </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">End Location</label>
+                        <Input {...register('endLocation')} placeholder="City, Country (optional)" className="h-12 dark:bg-slate-800 dark:border-slate-700" />
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Days</label>
                         <Input type="number" {...register('durationDays', { valueAsNumber: true })} className="h-12 dark:bg-slate-800 dark:border-slate-700" />
@@ -269,6 +270,16 @@ export default function EditTripPage() {
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Nights</label>
                         <Input type="number" {...register('durationNights', { valueAsNumber: true })} className="h-12 dark:bg-slate-800 dark:border-slate-700" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Currency</label>
+                        <Input
+                          maxLength={3}
+                          {...register('currency', { setValueAs: (value) => String(value).trim().toUpperCase() })}
+                          placeholder="MAD"
+                          className="h-12 uppercase dark:bg-slate-800 dark:border-slate-700"
+                        />
+                        {errors.currency && <p className="text-red-500 text-xs font-medium">{errors.currency.message}</p>}
                       </div>
                     </div>
                   </CardContent>

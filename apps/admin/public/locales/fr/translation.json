@@ -6,7 +6,7 @@
         "password": "Mot de passe",
         "authenticate": "S'authentifier",
         "authenticating": "Authentification...",
-        "helper": "Identifiants par défaut : admin / admin",
+        "helper": "Utilisez les identifiants administrateur configurés pour cet environnement.",
         "brand": "Ouiboo Admin",
         "heroTitle": "Centre de commandement admin",
         "heroSubtitle": "Approuvez les agences, confirmez les paiements et maintenez la place de marché saine.",

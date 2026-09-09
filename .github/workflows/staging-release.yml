@@ -66,7 +66,10 @@ jobs:
             NEXT_PUBLIC_API_URL=${{ vars.STAGING_API_URL }}
             NEXT_PUBLIC_TRAVELER_URL=${{ vars.STAGING_TRAVELER_URL }}
             NEXT_PUBLIC_AGENCY_URL=${{ vars.STAGING_AGENCY_URL }}
+            NEXT_PUBLIC_LANDING_URL=${{ vars.STAGING_LANDING_URL }}
+            NEXT_PUBLIC_MEDIA_URL=${{ vars.STAGING_MEDIA_URL }}
             NEXT_PUBLIC_CLARITY_PROJECT_ID=${{ vars.CLARITY_PROJECT_ID }}
+            NEXT_PUBLIC_GA_MEASUREMENT_ID=${{ vars.GA_MEASUREMENT_ID }}
 
   verify-and-migrate:
     needs: publish-images
@@ -90,6 +93,8 @@ jobs:
       ADMIN_APP_URL: ${{ vars.STAGING_ADMIN_URL }}
       NEXT_PUBLIC_TRAVELER_URL: ${{ vars.STAGING_TRAVELER_URL }}
       NEXT_PUBLIC_AGENCY_URL: ${{ vars.STAGING_AGENCY_URL }}
+      NEXT_PUBLIC_LANDING_URL: ${{ vars.STAGING_LANDING_URL }}
+      NEXT_PUBLIC_MEDIA_URL: ${{ vars.STAGING_MEDIA_URL }}
       GMAIL_EMAIL: ${{ secrets.GMAIL_EMAIL }}
       GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
       GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
@@ -101,6 +106,7 @@ jobs:
       S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
       S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
       S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+      S3_PUBLIC_URL: ${{ vars.STAGING_MEDIA_URL }}
 
     steps:
       - uses: actions/checkout@v4

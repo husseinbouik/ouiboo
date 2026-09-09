@@ -9,18 +9,40 @@ import "./globals.css";
 
 import Providers from "../components/Providers";
 import LoadingSpinner from "../components/LoadingSpinner"; // Import the spinner
+import AnalyticsConsent from "../components/AnalyticsConsent";
 import { Suspense } from "react";
 
 // This is a placeholder for your i18n configuration
 // You would typically have a file that exports your supported locales.
-export const i18n = {
+const i18n = {
   defaultLocale: 'en',
   locales: ['en', 'fr', 'ar'],
 };
 
 export const metadata: Metadata = {
-  title: "Ouiboo",
-  description: "The future of travel planning.", // A more descriptive default
+  metadataBase: new URL(process.env.NEXT_PUBLIC_LANDING_URL || 'http://localhost:3004'),
+  applicationName: "Ouiboo",
+  title: {
+    default: "Ouiboo — Travel experiences, made personal",
+    template: "%s | Ouiboo",
+  },
+  description: "Discover memorable trips from local travel experts and manage every booking with confidence.",
+  keywords: ["Ouiboo", "travel marketplace", "travel experiences", "travel agencies", "Morocco travel"],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "Ouiboo",
+    title: "Ouiboo — Travel experiences, made personal",
+    description: "Discover memorable trips from local travel experts and manage every booking with confidence.",
+    url: "/",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ouiboo — Travel experiences, made personal",
+    description: "Discover memorable trips from local travel experts and manage every booking with confidence.",
+  },
+  robots: { index: true, follow: true },
 };
 
 export const dynamic = 'force-dynamic';
@@ -82,23 +104,7 @@ export default async function RootLayout({
             {children}
           </Suspense>
         </Providers>
-        
-        <Script
-          strategy="afterInteractive"
-          src="https://www.googletagmanager.com/gtag/js?id=G-NGNWG1877Q"
-        />
-        <Script
-          id="google-analytics"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-NGNWG1877Q');
-            `,
-          }}
-        />
+        <AnalyticsConsent />
       </body>
     </html>
   );

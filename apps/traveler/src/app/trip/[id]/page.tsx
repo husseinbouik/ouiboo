@@ -12,7 +12,6 @@ import {
   Check, 
   ChevronLeft, 
   ShieldCheck,
-  TrendingUp,
   Star,
   X,
   ClipboardList
@@ -25,6 +24,7 @@ import { cn } from '@ouiboo/ui/utils';
 import { useAuth } from '@/components/AuthContext';
 import { ReviewList } from '@/components/ReviewList';
 import { SessionStatus, type SessionStatusType } from '@ouiboo/types';
+import { formatCurrency } from '@ouiboo/utils';
 
 type TripDay = {
   dayNumber: number;
@@ -37,8 +37,9 @@ type TripSession = {
   id: string;
   startDate: string;
   endDate: string;
-  price: number;
-  deposit: number;
+  price: number | string;
+  deposit: number | string;
+  currency: string;
   availableSeats: number;
   status: SessionStatusType;
 };
@@ -74,7 +75,7 @@ export default function TripDetailsPage() {
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [activeImage, setActiveImage] = useState(0);
 
-  const { data: trip, isLoading } = useQuery<TripDetails>({
+  const { data: trip, isLoading, isError, refetch } = useQuery<TripDetails>({
     queryKey: ['trip', tripId],
     enabled: !!tripId,
     queryFn: async () => {
@@ -98,6 +99,22 @@ export default function TripDetailsPage() {
       <p className="text-xl font-bold text-foreground animate-pulse font-display">Preparing your adventure...</p>
     </div>
   );
+
+  if (isError) return (
+    <div className="min-h-screen flex flex-col items-center justify-center space-y-5 bg-background px-6 text-center">
+      <div className="w-20 h-20 bg-danger/10 rounded-full flex items-center justify-center">
+        <X className="h-8 w-8 text-danger" />
+      </div>
+      <div className="space-y-2">
+        <h1 className="text-2xl font-black text-foreground font-display">We could not load this trip</h1>
+        <p className="text-muted-foreground">Check your connection and try again.</p>
+      </div>
+      <div className="flex flex-wrap justify-center gap-3">
+        <Button type="button" onClick={() => void refetch()}>Try again</Button>
+        <Button type="button" variant="outline" onClick={() => router.push('/search')}>Browse other trips</Button>
+      </div>
+    </div>
+  );
   
   if (!trip) return (
     <div className="min-h-screen flex flex-col items-center justify-center space-y-6 bg-background">
@@ -114,7 +131,13 @@ export default function TripDetailsPage() {
   const openSessions = trip.sessions?.filter(
     (session) => session.status === SessionStatus.Open && new Date(session.startDate) > new Date(),
   ) || [];
-  const minPrice = openSessions.length > 0 ? Math.min(...openSessions.map((session) => session.price)) : '---';
+  const lowestPricedSession = openSessions.reduce<TripSession | null>((lowest, session) => {
+    if (!Number.isFinite(Number(session.price))) return lowest;
+    return !lowest || Number(session.price) < Number(lowest.price) ? session : lowest;
+  }, null);
+  const minPriceLabel = lowestPricedSession
+    ? formatCurrency(lowestPricedSession.price, lowestPricedSession.currency, i18n.language)
+    : 'On request';
 
   return (
     <div className="min-h-screen bg-background pb-32 font-sans text-foreground overflow-hidden relative">
@@ -126,18 +149,21 @@ export default function TripDetailsPage() {
           <div style={{ clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)' }} className="relative right-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] translate-x-1/2 rotate-[120deg] bg-blue-400 sm:right-[calc(50%-30rem)] sm:w-[72.1875rem]"/>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 pt-32">
-        <Link href="/search" className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-all mb-8 group bg-card/50 backdrop-blur-sm px-5 py-2.5 rounded-xl border border-border/50 hover:bg-card shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32">
+        <Link href="/search" className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-all mb-5 sm:mb-8 group bg-card/50 backdrop-blur-sm px-4 sm:px-5 py-2.5 rounded-xl border border-border/50 hover:bg-card shadow-sm">
             <ChevronLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
             Back to Catalog
         </Link>
 
         {/* Dynamic Photo Gallery */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 h-auto lg:h-[600px] mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 h-auto lg:h-[600px] mb-8 sm:mb-12">
             <motion.div 
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="lg:col-span-7 relative h-[400px] lg:h-full rounded-[2rem] overflow-hidden shadow-2xl shadow-black/5 dark:shadow-black/20 group border border-border/50"
+                className={cn(
+                  "relative h-[280px] sm:h-[400px] lg:h-full rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden shadow-2xl shadow-black/5 dark:shadow-black/20 group border border-border/50",
+                  (trip.images?.length ?? 0) > 1 ? "lg:col-span-7" : "lg:col-span-12",
+                )}
             >
                 <Image 
                     src={trip.images?.[activeImage] || 'https://images.unsplash.com/photo-1489749798305-4fea3ae63d43'} 
@@ -161,27 +187,30 @@ export default function TripDetailsPage() {
                 </div>
             </motion.div>
             
-            <motion.div 
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="lg:col-span-5 grid grid-cols-2 grid-rows-2 gap-4 md:gap-6"
-            >
-                {trip.images?.slice(1, 4).map((img: string, idx: number) => (
-                    <div key={idx} className="relative rounded-[1.5rem] overflow-hidden shadow-lg border border-border/50 group cursor-pointer" onClick={() => setActiveImage(idx + 1)}>
-                        <Image src={img} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" fill sizes="(min-width: 1024px) 20vw, 50vw" />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                    </div>
-                ))}
-                {/* View All / Fallback */}
-                <div className="bg-muted/50 rounded-[1.5rem] flex items-center justify-center cursor-pointer hover:bg-muted transition-colors border border-border">
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground font-bold shadow-sm">
-                            +{(trip.images?.length ?? 0) > 4 ? (trip.images?.length ?? 0) - 4 : 0}
-                        </div>
-                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">View Gallery</span>
-                    </div>
-                </div>
-            </motion.div>
+            {(trip.images?.length ?? 0) > 1 ? (
+              <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="hidden sm:grid lg:col-span-5 grid-cols-2 auto-rows-fr gap-4 md:gap-6"
+              >
+                  {trip.images?.slice(1, 4).map((img: string, idx: number) => (
+                      <button key={idx} type="button" className="relative min-h-36 rounded-[1.5rem] overflow-hidden shadow-lg border border-border/50 group" onClick={() => setActiveImage(idx + 1)} aria-label={`View image ${idx + 2}`}>
+                          <Image src={img} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" fill sizes="(min-width: 1024px) 20vw, 50vw" />
+                          <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                      </button>
+                  ))}
+                  {(trip.images?.length ?? 0) > 4 ? (
+                    <button type="button" onClick={() => setActiveImage(4)} className="bg-muted/50 rounded-[1.5rem] flex items-center justify-center hover:bg-muted transition-colors border border-border" aria-label={`View ${(trip.images?.length ?? 0) - 4} more images`}>
+                        <span className="flex flex-col items-center gap-2">
+                            <span className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground font-bold shadow-sm">
+                                +{(trip.images?.length ?? 0) - 4}
+                            </span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">View Gallery</span>
+                        </span>
+                    </button>
+                  ) : null}
+              </motion.div>
+            ) : null}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16 relative">
@@ -206,19 +235,18 @@ export default function TripDetailsPage() {
                     <div className="flex items-center gap-6">
                         <div className="flex items-center gap-1.5 bg-yellow-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span className="font-bold text-sm text-yellow-600 dark:text-yellow-400">{reviewStats?.averageRating?.toFixed(1) || '5.0'}</span>
-                            <span className="text-xs text-yellow-600/70 dark:text-yellow-400/70 font-medium">({reviewStats?.totalReviews || 128} reviews)</span>
+                            <span className="font-bold text-sm text-yellow-600 dark:text-yellow-400">{reviewStats?.totalReviews ? (reviewStats.averageRating ?? 0).toFixed(1) : 'New'}</span>
+                            <span className="text-xs text-yellow-600/70 dark:text-yellow-400/70 font-medium">({reviewStats?.totalReviews || 0} reviews)</span>
                         </div>
                     </div>
                 </motion.div>
 
                 {/* Quick Stats Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {[
                         { label: 'Duration', value: `${trip.durationDays}D / ${trip.durationNights}N`, icon: Clock },
-                        { label: 'Group Size', value: '6 - 15', icon: Users },
-                        { label: 'Level', value: 'Moderate', icon: TrendingUp },
-                        { label: 'Verified', value: 'Certified', icon: ShieldCheck },
+                        { label: 'Available dates', value: openSessions.length > 0 ? `${openSessions.length} open` : 'On request', icon: Users },
+                        { label: 'Booking', value: 'Secure checkout', icon: ShieldCheck },
                     ].map((stat, i) => (
                         <div key={i} className="p-5 bg-card rounded-2xl border border-border shadow-sm flex flex-col gap-3">
                             <stat.icon className="h-5 w-5 text-sunset-orange" />
@@ -381,13 +409,13 @@ export default function TripDetailsPage() {
                      <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Average Rating</p>
                      <div className="flex items-center gap-4">
                        <div className="flex flex-col">
-                         <span className="text-5xl font-black text-foreground font-display">{reviewStats.averageRating?.toFixed(1) || '5.0'}</span>
+                         <span className="text-5xl font-black text-foreground font-display">{reviewStats.totalReviews ? (reviewStats.averageRating ?? 0).toFixed(1) : '—'}</span>
                          <div className="flex gap-1 mt-2">
                            {[1, 2, 3, 4, 5].map((star) => (
                              <Star
                                key={star}
                                className={`h-5 w-5 ${
-                                 star <= Math.round(reviewStats.averageRating || 5)
+                                 star <= Math.round(reviewStats.averageRating || 0)
                                    ? 'fill-sunset-orange text-sunset-orange'
                                    : 'text-muted-foreground/40'
                                }`}
@@ -429,7 +457,7 @@ export default function TripDetailsPage() {
            </div>
 
           {/* Right Side: Booking Card */}
-          <div className="relative h-full">
+          <div id="booking-options" className="relative h-full scroll-mt-24">
             <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -441,8 +469,7 @@ export default function TripDetailsPage() {
                     <div className="space-y-1 text-center pb-6 border-b border-border">
                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{t('featured.from')}</span>
                         <div className="flex items-baseline justify-center gap-1">
-                            <span className="text-4xl font-black text-foreground font-display">{minPrice}</span>
-                            <span className="text-sm font-bold text-muted-foreground">MAD</span>
+                            <span className="text-4xl font-black text-foreground font-display">{minPriceLabel}</span>
                         </div>
                     </div>
 
@@ -475,20 +502,15 @@ export default function TripDetailsPage() {
                                       </div>
                                     </div>
                                     
-                                    {selectedSession === session.id && session.deposit > 0 && (
+                                    {selectedSession === session.id && (
                                       <div className="pt-3 border-t border-sunset-orange/20 flex flex-col gap-1.5">
                                         <div className="flex justify-between text-[11px] font-bold">
-                                          <span className="text-muted-foreground uppercase tracking-tighter">Total Price</span>
-                                          <span className="text-foreground">{session.price} MAD</span>
+                                          <span className="text-sunset-orange uppercase tracking-tighter">Total due at checkout</span>
+                                          <span className="text-foreground">{formatCurrency(session.price, session.currency, i18n.language)}</span>
                                         </div>
-                                        <div className="flex justify-between text-[11px] font-bold">
-                                          <span className="text-sunset-orange uppercase tracking-tighter">Due Now (Avance)</span>
-                                          <span className="text-sunset-orange">{session.deposit} MAD</span>
-                                        </div>
-                                        <div className="flex justify-between text-[11px] font-bold">
-                                          <span className="text-muted-foreground uppercase tracking-tighter">Remaining (Reliquat)</span>
-                                          <span className="text-foreground">{session.price - session.deposit} MAD</span>
-                                        </div>
+                                        <p className="text-[10px] text-muted-foreground">
+                                          Split-deposit payments are not enabled; the full amount is required.
+                                        </p>
                                       </div>
                                     )}
                                 </div>
@@ -516,12 +538,23 @@ export default function TripDetailsPage() {
                             Book Now
                         </Button>
                         <p className="text-center text-xs text-muted-foreground mt-4 font-medium flex items-center justify-center gap-1">
-                            <ShieldCheck className="h-3 w-3" /> Secure Payment & Verified Agency
+                            <ShieldCheck className="h-3 w-3" /> Secure payment through Ouiboo
                         </p>
                     </div>
                 </div>
             </motion.div>
           </div>
+        </div>
+      </div>
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-2xl backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">From</p>
+            <p className="truncate text-xl font-black text-foreground">{minPriceLabel}</p>
+          </div>
+          <Button asChild className="shrink-0 px-6">
+            <a href="#booking-options">{openSessions.length > 0 ? 'Choose a date' : 'View availability'}</a>
+          </Button>
         </div>
       </div>
     </div>

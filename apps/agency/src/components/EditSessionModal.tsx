@@ -49,15 +49,17 @@ export function EditSessionModal({
     key: sessionKey,
     value: session || {},
   });
+  const [validationError, setValidationError] = useState('');
   const formData = draftState.key === sessionKey ? draftState.value : (session || {});
 
   const updateFormData = (next: Partial<AgencyTripSession>) => {
+    setValidationError('');
     setDraftState({ key: sessionKey, value: next });
   };
 
   const handleSubmit = () => {
     if (!formData.startDate || !formData.endDate || !formData.price) {
-      alert('Please fill in all required fields');
+      setValidationError('Start date, end date, and a price greater than zero are required.');
       return;
     }
     onSubmit(formData);
@@ -250,6 +252,12 @@ export function EditSessionModal({
                     </p>
                   </div>
                 </div>
+
+                {validationError ? (
+                  <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:bg-red-950/30 dark:text-red-300">
+                    {validationError}
+                  </p>
+                ) : null}
 
                 <div className="flex justify-end gap-3 border-t border-gray-100 dark:border-slate-800 pt-6">
                   <Button variant="outline" onClick={onClose} disabled={isLoading}>

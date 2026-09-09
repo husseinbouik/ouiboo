@@ -66,7 +66,11 @@ export class ReviewsService {
    * Get reviews for a trip
    */
   async getReviewsByTrip(tripId: string, page: number = 1, limit: number = 10, sortBy: string = 'recent') {
-    const skip = (page - 1) * limit;
+    const normalizedPage = Number.isFinite(page) ? Math.max(1, Math.floor(page)) : 1;
+    const normalizedLimit = Number.isFinite(limit)
+      ? Math.min(50, Math.max(1, Math.floor(limit)))
+      : 10;
+    const skip = (normalizedPage - 1) * normalizedLimit;
 
     // Determine sort order based on sortBy parameter
     let orderBy: any = { createdAt: 'desc' };
@@ -82,7 +86,7 @@ export class ReviewsService {
         include: { traveler: { select: { id: true, name: true, avatar: true } } },
         orderBy,
         skip,
-        take: limit,
+        take: normalizedLimit,
       }),
       this.prisma.review.count({
         where: { tripTemplateId: tripId },
@@ -92,8 +96,8 @@ export class ReviewsService {
     return {
       reviews,
       total,
-      page,
-      pages: Math.ceil(total / limit),
+      page: normalizedPage,
+      pages: Math.ceil(total / normalizedLimit),
     };
   }
 
@@ -101,36 +105,30 @@ export class ReviewsService {
    * Get review statistics for a trip
    */
   async getReviewStats(tripId: string) {
-    const reviews = await this.prisma.review.findMany({
-      where: { tripTemplateId: tripId },
-      select: { rating: true },
-    });
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    const where = { tripTemplateId: tripId };
+    const [aggregate, groupedRatings] = await Promise.all([
+      this.prisma.review.aggregate({
+        where,
+        _avg: { rating: true },
+        _count: { _all: true },
+      }),
+      this.prisma.review.groupBy({
+        by: ['rating'],
+        where,
+        _count: { _all: true },
+      }),
+    ]);
 
-    if (reviews.length === 0) {
-      return {
-        averageRating: 0,
-        totalReviews: 0,
-        distribution: {
-          1: 0,
-          2: 0,
-          3: 0,
-          4: 0,
-          5: 0,
-        },
-      };
+    for (const group of groupedRatings) {
+      if (group.rating >= 1 && group.rating <= 5) {
+        distribution[group.rating] = group._count._all;
+      }
     }
 
-    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    let sum = 0;
-
-    reviews.forEach((review) => {
-      sum += review.rating;
-      distribution[review.rating]++;
-    });
-
     return {
-      averageRating: Math.round((sum / reviews.length) * 10) / 10,
-      totalReviews: reviews.length,
+      averageRating: Math.round((aggregate._avg.rating || 0) * 10) / 10,
+      totalReviews: aggregate._count._all,
       distribution,
     };
   }

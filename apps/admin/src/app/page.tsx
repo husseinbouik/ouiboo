@@ -22,7 +22,7 @@ import {
   Download,
   Trash2,
 } from 'lucide-react';
-import { Button, Card, CardContent, CardHeader, CardTitle, Badge } from '@ouiboo/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle, Badge, ConfirmDialog } from '@ouiboo/ui';
 import {
   BookingPaymentStatus,
   type BookingDetails,
@@ -103,10 +103,25 @@ type AdminAuditLog = {
   metadata?: Record<string, unknown> | null;
 };
 
+type AdminOverviewCounts = {
+  pendingAgencies: number;
+  pendingTrips: number;
+  agencies: number;
+  bookings: number;
+  bookingsToday: number;
+  pendingPaymentProofs: number;
+  pendingPayouts: number;
+  auditLogs: number;
+};
+
 type FeedbackState = {
   type: 'success' | 'error';
   message: string;
 };
+
+type PendingConfirmation =
+  | { kind: 'prune-audits'; days: number }
+  | { kind: 'refund-booking'; booking: AdminBooking };
 
 const ADMIN_TABS: AdminTab[] = ['PENDING', 'AGENCIES', 'BOOKINGS', 'PAYMENT_PROOFS', 'PAYOUTS', 'AUDIT'];
 
@@ -139,9 +154,13 @@ export default function AdminDashboard() {
   const [auditFeedback, setAuditFeedback] = useState<FeedbackState | null>(null);
   const [retentionDays, setRetentionDays] = useState('90');
   const [isExportingAuditLogs, setIsExportingAuditLogs] = useState(false);
+  const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation | null>(null);
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const searchParams = useSearchParams();
+  const invalidateOverviewCounts = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin-overview-counts'] });
+  };
 
   useEffect(() => {
     const requestedTab = searchParams.get('tab');
@@ -169,6 +188,15 @@ export default function AdminDashboard() {
     return () => window.clearTimeout(handle);
   }, [searchQuery]);
 
+  const { data: overviewCounts } = useQuery<AdminOverviewCounts>({
+    queryKey: ['admin-overview-counts'],
+    queryFn: async () => {
+      const response = await apiClient.get('/admin/overview-counts');
+      return response.data;
+    },
+    staleTime: 30_000,
+  });
+
   const { data: pendingAgencies = [] } = useQuery<AdminAgency[]>({
     queryKey: ['pending-agencies', debouncedQuery],
     queryFn: async () => {
@@ -176,7 +204,8 @@ export default function AdminDashboard() {
         params: debouncedQuery ? { q: debouncedQuery } : undefined,
       });
       return resp.data;
-    }
+    },
+    enabled: activeTab === 'PENDING',
   });
 
   const { data: pendingTrips = [] } = useQuery<AdminTrip[]>({
@@ -186,7 +215,8 @@ export default function AdminDashboard() {
         params: debouncedQuery ? { q: debouncedQuery } : undefined,
       });
       return resp.data;
-    }
+    },
+    enabled: activeTab === 'PENDING',
   });
 
   const { data: allAgencies = [] } = useQuery<AdminAgency[]>({
@@ -196,7 +226,8 @@ export default function AdminDashboard() {
         params: debouncedQuery ? { q: debouncedQuery } : undefined,
       });
       return resp.data;
-    }
+    },
+    enabled: activeTab === 'AGENCIES',
   });
 
   const { data: allBookings = [] } = useQuery<AdminBooking[]>({
@@ -206,7 +237,8 @@ export default function AdminDashboard() {
         params: debouncedQuery ? { q: debouncedQuery } : undefined,
       });
       return resp.data;
-    }
+    },
+    enabled: activeTab === 'BOOKINGS',
   });
 
   const { data: pendingPaymentProofs = [] } = useQuery<AdminPaymentProof[]>({
@@ -216,7 +248,8 @@ export default function AdminDashboard() {
         params: debouncedQuery ? { q: debouncedQuery } : undefined,
       });
       return resp.data;
-    }
+    },
+    enabled: activeTab === 'PAYMENT_PROOFS',
   });
 
   const { data: payoutRequests = [] } = useQuery<AdminPayoutRequest[]>({
@@ -226,7 +259,8 @@ export default function AdminDashboard() {
         params: debouncedQuery ? { q: debouncedQuery } : undefined,
       });
       return resp.data;
-    }
+    },
+    enabled: activeTab === 'PAYOUTS',
   });
 
   const verifyAgencyMutation = useMutation({
@@ -234,6 +268,7 @@ export default function AdminDashboard() {
       return apiClient.post(`/admin/agencies/${id}/verify`, { status });
     },
     onSuccess: (_data, variables) => {
+      invalidateOverviewCounts();
       queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
       queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
       setAgencyFeedback({
@@ -264,6 +299,7 @@ export default function AdminDashboard() {
       });
     },
     onSuccess: () => {
+      invalidateOverviewCounts();
       queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
       queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
     },
@@ -286,7 +322,10 @@ export default function AdminDashboard() {
     mutationFn: async ({ id, status }: { id: string, status: string }) => {
       return apiClient.post(`/admin/trips/${id}/verify`, { status });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pending-trips'] })
+    onSuccess: () => {
+      invalidateOverviewCounts();
+      queryClient.invalidateQueries({ queryKey: ['pending-trips'] });
+    }
   });
 
   const verifyPaymentMutation = useMutation({
@@ -294,6 +333,7 @@ export default function AdminDashboard() {
       return apiClient.post(`/admin/payments/${id}/verify`, { status, rejectionReason });
     },
     onSuccess: (_data, variables) => {
+      invalidateOverviewCounts();
       queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
       setPaymentProofFeedback({
         type: 'success',
@@ -315,6 +355,7 @@ export default function AdminDashboard() {
       return apiClient.post(`/admin/payouts/${id}/process`, { status });
     },
     onSuccess: (_data, variables) => {
+      invalidateOverviewCounts();
       queryClient.invalidateQueries({ queryKey: ['payout-requests'] });
       setPayoutFeedback({
         type: 'success',
@@ -355,6 +396,7 @@ export default function AdminDashboard() {
       return apiClient.post('/admin/audit-logs/retention', { days });
     },
     onSuccess: (response, variables) => {
+      invalidateOverviewCounts();
       queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
       setAuditFeedback({
         type: 'success',
@@ -438,35 +480,51 @@ export default function AdminDashboard() {
       return;
     }
 
-    if (!window.confirm(`Delete audit logs older than ${parsedDays} days? This cannot be undone.`)) {
+    setPendingConfirmation({ kind: 'prune-audits', days: parsedDays });
+  };
+
+  const handleConfirmAction = () => {
+    if (!pendingConfirmation) return;
+
+    if (pendingConfirmation.kind === 'prune-audits') {
+      pruneAuditLogsMutation.mutate(
+        { days: pendingConfirmation.days },
+        { onSettled: () => setPendingConfirmation(null) },
+      );
       return;
     }
 
-    pruneAuditLogsMutation.mutate({ days: parsedDays });
+    refundBookingMutation.mutate(
+      {
+        id: pendingConfirmation.booking.id,
+        amount: Number(pendingConfirmation.booking.totalAmount),
+      },
+      { onSettled: () => setPendingConfirmation(null) },
+    );
   };
 
   const summaryCards = [
     {
       label: t('dashboard.summary.pendingAgencies'),
-      value: pendingAgencies.length,
+      value: overviewCounts?.pendingAgencies ?? pendingAgencies.length,
       icon: ShieldCheck,
       tone: 'bg-sunset-orange/10 text-sunset-orange'
     },
     {
       label: t('dashboard.summary.tripsInReview'),
-      value: pendingTrips.length,
+      value: overviewCounts?.pendingTrips ?? pendingTrips.length,
       icon: MapPin,
       tone: 'bg-blue-50 text-blue-700'
     },
     {
       label: t('dashboard.summary.bookingsToday'),
-      value: allBookings.length,
+      value: overviewCounts?.bookingsToday ?? 0,
       icon: TrendingUp,
       tone: 'bg-emerald-50 text-emerald-700'
     },
     {
       label: t('dashboard.summary.paymentProofs'),
-      value: pendingPaymentProofs.length,
+      value: overviewCounts?.pendingPaymentProofs ?? pendingPaymentProofs.length,
       icon: CalendarClock,
       tone: 'bg-slate-100 text-slate-700'
     }
@@ -510,37 +568,39 @@ export default function AdminDashboard() {
       key: 'PENDING',
       label: t('dashboard.tabs.pending'),
       icon: ShieldCheck,
-      count: pendingAgencies.length + pendingTrips.length,
+      count: overviewCounts
+        ? overviewCounts.pendingAgencies + overviewCounts.pendingTrips
+        : pendingAgencies.length + pendingTrips.length,
     },
     {
       key: 'AGENCIES',
       label: t('dashboard.tabs.agencies'),
       icon: Users,
-      count: allAgencies.length,
+      count: overviewCounts?.agencies ?? allAgencies.length,
     },
     {
       key: 'BOOKINGS',
       label: t('dashboard.tabs.bookings'),
       icon: LayoutDashboard,
-      count: allBookings.length,
+      count: overviewCounts?.bookings ?? allBookings.length,
     },
     {
       key: 'PAYMENT_PROOFS',
       label: t('dashboard.tabs.paymentProofs'),
       icon: CreditCard,
-      count: pendingPaymentProofs.length,
+      count: overviewCounts?.pendingPaymentProofs ?? pendingPaymentProofs.length,
     },
     {
       key: 'PAYOUTS',
       label: t('dashboard.tabs.payouts'),
       icon: CalendarClock,
-      count: payoutRequests.length,
+      count: overviewCounts?.pendingPayouts ?? payoutRequests.length,
     },
     {
       key: 'AUDIT',
       label: 'Audit Log',
       icon: FileText,
-      count: auditLogs.length,
+      count: overviewCounts?.auditLogs ?? auditLogs.length,
     },
   ] as const;
 
@@ -869,7 +929,7 @@ export default function AdminDashboard() {
                                   </Badge>
                                 </div>
                                </td>
-                               <td className="px-6 py-4 text-right font-black">{booking.totalAmount} MAD</td>
+                               <td className="px-6 py-4 text-right font-black">{booking.totalAmount} {booking.session.currency}</td>
                                <td className="px-6 py-4 text-right">
                                 <Button
                                   size="sm"
@@ -878,14 +938,7 @@ export default function AdminDashboard() {
                                   disabled={!canRefund || refundBookingMutation.isPending}
                                   onClick={() => {
                                     setBookingFeedback(null);
-                                    const confirmed = window.confirm(`Refund booking ${booking.id.substring(0, 8)} for ${booking.totalAmount} MAD?`);
-                                    if (!confirmed) {
-                                      return;
-                                    }
-                                    refundBookingMutation.mutate({
-                                      id: booking.id,
-                                      amount: Number(booking.totalAmount),
-                                    });
+                                    setPendingConfirmation({ kind: 'refund-booking', booking });
                                   }}
                                 >
                                   Refund
@@ -936,7 +989,9 @@ export default function AdminDashboard() {
                                  <td className="px-6 py-4 text-sm font-medium">
                                     {payment.booking?.traveler?.name || t('dashboard.labels.traveler')}
                                  </td>
-                                 <td className="px-6 py-4 text-sm font-semibold">{payment.booking?.totalAmount ?? payment.amount} MAD</td>
+                                 <td className="px-6 py-4 text-sm font-semibold">
+                                   {payment.booking?.totalAmount ?? payment.amount} {payment.booking?.session.currency ?? 'MAD'}
+                                 </td>
                                  <td className="px-6 py-4 text-sm text-gray-500">
                                     {payment.uploadedAt ? new Date(payment.uploadedAt).toLocaleDateString() : t('dashboard.labels.na')}
                                  </td>
@@ -1261,6 +1316,19 @@ export default function AdminDashboard() {
             )}
          </div>
       </main>
+
+      <ConfirmDialog
+        open={Boolean(pendingConfirmation)}
+        destructive
+        pending={refundBookingMutation.isPending || pruneAuditLogsMutation.isPending}
+        title={pendingConfirmation?.kind === 'refund-booking' ? 'Confirm refund' : 'Prune audit logs'}
+        description={pendingConfirmation?.kind === 'refund-booking'
+          ? `Refund booking ${pendingConfirmation.booking.id.substring(0, 8)} for ${pendingConfirmation.booking.totalAmount} ${pendingConfirmation.booking.session.currency}? The payment provider may not allow this action to be reversed.`
+          : `Delete audit logs older than ${pendingConfirmation?.days ?? retentionDays} days? This cannot be undone.`}
+        confirmLabel={pendingConfirmation?.kind === 'refund-booking' ? 'Process refund' : 'Delete old logs'}
+        onConfirm={handleConfirmAction}
+        onOpenChange={(open) => !open && setPendingConfirmation(null)}
+      />
 
       {selectedAgency && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">

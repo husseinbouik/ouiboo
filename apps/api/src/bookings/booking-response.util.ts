@@ -57,6 +57,7 @@ type BookingMapperInput = {
     totalSeats: number;
     availableSeats: number;
     status: string;
+    currency?: string;
     template: {
       agencyId?: string;
       id: string;
@@ -138,6 +139,7 @@ export const mapBookingDetails = (booking: BookingMapperInput): BookingDetails =
     totalSeats: booking.session.totalSeats,
     availableSeats: booking.session.availableSeats,
     status: booking.session.status as SessionStatusType,
+    currency: booking.session.currency || 'MAD',
     template: {
       id: booking.session.template.id,
       title: booking.session.template.title,

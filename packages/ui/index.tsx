@@ -12,6 +12,7 @@ export {
 } from './BrandPrimitives';
 export * from './Button';
 export * from './Card';
+export * from './ConfirmDialog';
 export * from './Dialog';
 export * from './ValidatedDynamicForm';
 export * from './DropdownMenu';

@@ -7,6 +7,7 @@ import { Mail, ArrowRight, ShieldCheck, RefreshCw } from 'lucide-react';
 import { Button } from '@ouiboo/ui';
 import { apiClient } from '@/lib/api-client';
 import { useMutation } from '@tanstack/react-query';
+import { setBrowserAccessToken } from '@ouiboo/api-client';
 
 const RESEND_COOLDOWN_SECONDS = 30;
 
@@ -79,7 +80,8 @@ export default function VerifyEmailPage() {
       });
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setBrowserAccessToken(data.accessToken);
       setSuccess(true);
       setTimeout(() => {
         router.push('/dashboard');

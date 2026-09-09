@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Lock, ShieldCheck, User } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { setBrowserAccessToken } from '@ouiboo/api-client';
 
 type AdminLoginForm = {
   username: string;
@@ -39,11 +40,7 @@ export default function AdminLoginPage() {
       return response.data;
     },
     onSuccess: (data) => {
-      const { accessToken, refreshToken } = data;
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', accessToken);
-        localStorage.setItem('refresh_token', refreshToken);
-      }
+      setBrowserAccessToken(data.accessToken);
       router.push('/');
     },
     onError: (err: AxiosError<ApiErrorResponse>) => {
@@ -134,7 +131,7 @@ export default function AdminLoginPage() {
             </div>
 
             <div className="rounded-2xl border border-ocean-500/20 bg-ocean-500/10 px-4 py-3 text-xs text-ocean-700 dark:text-ocean-300">
-              {t('login.helper', 'Default credentials: admin / admin')}
+              {t('login.helper', 'Use the administrator credentials configured for this environment.')}
             </div>
 
             {error && (

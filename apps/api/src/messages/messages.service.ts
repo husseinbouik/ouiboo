@@ -1,6 +1,12 @@
 import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { SendMessageDto } from './dto/send-message.dto';
+import { UserRole } from '@ouiboo/types';
+
+const normalizePagination = (page: number, limit: number, max: number) => ({
+  page: Number.isFinite(page) ? Math.max(1, Math.floor(page)) : 1,
+  limit: Number.isFinite(limit) ? Math.min(max, Math.max(1, Math.floor(limit))) : Math.min(20, max),
+});
 
 @Injectable()
 export class MessagesService {
@@ -14,30 +20,42 @@ export class MessagesService {
     senderRole: string,
     dto: SendMessageDto,
   ) {
-    // Determine IDs based on role
-    const travelerId =
-      senderRole === 'TRAVELER' ? senderId : dto.recipientId;
-    const agencyId =
-      senderRole === 'AGENCY' ? senderId : dto.recipientId;
+    let travelerId: string;
+    let agencyId: string;
+    if (senderRole === UserRole.Agency) {
+      const [agency, traveler] = await Promise.all([
+        this.prisma.agencyProfile.findUnique({ where: { userId: senderId }, select: { id: true } }),
+        this.prisma.user.findFirst({
+          where: { id: dto.recipientId, role: UserRole.Traveler, isEmailVerified: true },
+          select: { id: true },
+        }),
+      ]);
+      if (!agency || !traveler) throw new BadRequestException('Message recipient not found');
+      agencyId = agency.id;
+      travelerId = traveler.id;
+    } else if (senderRole === UserRole.Traveler) {
+      const agency = await this.prisma.agencyProfile.findUnique({
+        where: { id: dto.recipientId },
+        select: { id: true },
+      });
+      if (!agency) throw new BadRequestException('Message recipient not found');
+      agencyId = agency.id;
+      travelerId = senderId;
+    } else {
+      throw new ForbiddenException('This account cannot start conversations');
+    }
 
     // Get or create conversation
-    let conversation = await this.prisma.conversation.findUnique({
+    const conversation = await this.prisma.conversation.upsert({
       where: {
         travelerId_agencyId: {
           travelerId,
           agencyId,
         },
       },
+      update: {},
+      create: { travelerId, agencyId },
     });
-
-    if (!conversation) {
-      conversation = await this.prisma.conversation.create({
-        data: {
-          travelerId,
-          agencyId,
-        },
-      });
-    }
 
     // Create message
     const message = await this.prisma.message.create({
@@ -70,7 +88,8 @@ export class MessagesService {
     page: number = 1,
     limit: number = 50,
   ) {
-    const skip = (page - 1) * limit;
+    const pagination = normalizePagination(page, limit, 100);
+    const skip = (pagination.page - 1) * pagination.limit;
 
     // Verify user has access to conversation
     const conversation = await this.prisma.conversation.findUnique({
@@ -99,7 +118,7 @@ export class MessagesService {
         where: { conversationId },
         orderBy: { createdAt: 'asc' },
         skip,
-        take: limit,
+        take: pagination.limit,
       }),
       this.prisma.message.count({
         where: { conversationId },
@@ -122,8 +141,8 @@ export class MessagesService {
     return {
       messages,
       total,
-      page,
-      pages: Math.ceil(total / limit),
+      page: pagination.page,
+      pages: Math.ceil(total / pagination.limit),
     };
   }
 
@@ -131,7 +150,8 @@ export class MessagesService {
    * Get conversations for a user
    */
   async getConversations(userId: string, page: number = 1, limit: number = 20) {
-    const skip = (page - 1) * limit;
+    const pagination = normalizePagination(page, limit, 50);
+    const skip = (pagination.page - 1) * pagination.limit;
 
     // Get agency ID if user is agency
     const agency = await this.prisma.agencyProfile.findUnique({
@@ -154,7 +174,7 @@ export class MessagesService {
         },
         orderBy: { lastMessageAt: 'desc' },
         skip,
-        take: limit,
+        take: pagination.limit,
       }),
       this.prisma.conversation.count({ where }),
     ]);
@@ -162,8 +182,8 @@ export class MessagesService {
     return {
       conversations,
       total,
-      page,
-      pages: Math.ceil(total / limit),
+      page: pagination.page,
+      pages: Math.ceil(total / pagination.limit),
     };
   }
 
@@ -209,7 +229,10 @@ export class MessagesService {
     page: number = 1,
     limit: number = 20,
   ) {
-    const skip = (page - 1) * limit;
+    const normalizedQuery = query?.trim();
+    if (!normalizedQuery) throw new BadRequestException('Search query is required');
+    const pagination = normalizePagination(page, limit, 50);
+    const skip = (pagination.page - 1) * pagination.limit;
 
     const agency = await this.prisma.agencyProfile.findUnique({
       where: { userId },
@@ -219,11 +242,11 @@ export class MessagesService {
       agency
         ? {
             conversation: { agencyId: agency.id },
-            content: { contains: query, mode: 'insensitive' as const },
+            content: { contains: normalizedQuery, mode: 'insensitive' as const },
           }
         : {
             conversation: { travelerId: userId },
-            content: { contains: query, mode: 'insensitive' as const },
+            content: { contains: normalizedQuery, mode: 'insensitive' as const },
           };
 
     const [messages, total] = await Promise.all([
@@ -231,7 +254,7 @@ export class MessagesService {
         where,
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take: pagination.limit,
       }),
       this.prisma.message.count({ where }),
     ]);
@@ -239,8 +262,8 @@ export class MessagesService {
     return {
       messages,
       total,
-      page,
-      pages: Math.ceil(total / limit),
+      page: pagination.page,
+      pages: Math.ceil(total / pagination.limit),
     };
   }
 

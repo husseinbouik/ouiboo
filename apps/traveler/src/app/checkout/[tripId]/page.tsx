@@ -35,6 +35,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
+import { formatCurrency } from '@ouiboo/utils';
+import { useTranslation } from 'react-i18next';
 
 type ApiErrorResponse = {
   message?: string;
@@ -44,7 +46,8 @@ type CheckoutTripSession = {
   availableSeats: number;
   endDate: string;
   id: string;
-  price: number;
+  price: number | string;
+  currency: string;
   startDate: string;
 };
 
@@ -81,6 +84,7 @@ export default function CheckoutPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { isLoading: isAuthLoading } = useAuth();
+  const { i18n } = useTranslation();
   const sessionFromQuery = searchParams.get('session');
   const parsedGuestsCount = Number(searchParams.get('guests'));
   const guestsFromQuery = Number.isFinite(parsedGuestsCount) && parsedGuestsCount > 0
@@ -138,8 +142,9 @@ export default function CheckoutPage() {
   const phoneNumber = phoneNumberOverride ?? retryBooking?.phoneNumber ?? '';
   const documentNumber = documentNumberOverride ?? retryBooking?.documentNumber ?? '';
   const selectedSession = trip?.sessions?.find((session) => session.id === selectedSessionId);
-  const sessionPrice = selectedSession?.price ?? 0;
+  const sessionPrice = Number(selectedSession?.price ?? 0);
   const totalPrice = sessionPrice * guestCount;
+  const selectedCurrency = selectedSession?.currency;
   const bankDetails = trip?.agency?.bankDetails?.trim() ?? '';
   const hasBankDetails = bankDetails.length > 0;
   const sessionDateLabel = selectedSession
@@ -264,7 +269,7 @@ export default function CheckoutPage() {
                                                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{session.availableSeats} seats left</p>
                                             </div>
                                             <div className="flex items-center gap-3">
-                                                <Badge variant="outline" className="text-[10px] font-black">{session.price} MAD</Badge>
+                                                <Badge variant="outline" className="text-[10px] font-black">{formatCurrency(session.price, session.currency, i18n.language)}</Badge>
                                                 <RadioGroupItem value={session.id} />
                                             </div>
                                         </div>
@@ -301,7 +306,7 @@ export default function CheckoutPage() {
                                 <div className="relative">
                                     <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                     <Input
-                                        placeholder="+212 ..."
+                                        placeholder="Include country code"
                                         className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold text-lg"
                                         value={phoneNumber}
                                         onChange={(e) => setPhoneNumber(e.target.value)}
@@ -475,7 +480,7 @@ export default function CheckoutPage() {
                   <div className="space-y-4 pt-6 border-t border-border/50">
                       <div className="flex justify-between items-center">
                           <span className="text-muted-foreground font-medium">Subtotal</span>
-                          <span className="font-bold">{totalPrice.toFixed(2)} MAD</span>
+                          <span className="font-bold">{formatCurrency(totalPrice, selectedCurrency, i18n.language)}</span>
                       </div>
                       <div className="flex justify-between items-center">
                           <span className="text-muted-foreground font-medium">Service Fee</span>
@@ -484,8 +489,7 @@ export default function CheckoutPage() {
                       <div className="flex justify-between items-end pt-4 border-t border-border/50">
                           <span className="text-lg font-black font-display tracking-tight text-foreground">Total to pay</span>
                           <div className="text-right">
-                              <span className="text-4xl font-black font-display text-primary tracking-tighter leading-none block">{totalPrice.toFixed(2)}</span>
-                              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Dirhams</span>
+                              <span className="text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatCurrency(totalPrice, selectedCurrency, i18n.language)}</span>
                           </div>
                       </div>
                   </div>

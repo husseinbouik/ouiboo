@@ -46,6 +46,6 @@ COPY --from=installer /app/apps/api/package.json .
 # Copy built artifacts
 COPY --from=installer --chown=nestjs:nodejs /app/apps/api/dist ./dist
 COPY --from=installer --chown=nestjs:nodejs /app/node_modules ./node_modules
-COPY --from=installer --chown=nestjs:nodejs /app/packages/database/prisma ./prisma
+COPY --from=installer --chown=nestjs:nodejs /app/packages/database ./packages/database
 
 CMD ["node", "dist/apps/api/src/main"]

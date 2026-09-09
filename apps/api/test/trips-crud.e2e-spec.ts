@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import * as path from 'path';
 import { TripsModule } from '../src/trips/trips.module';
@@ -12,6 +12,7 @@ import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../src/auth/guards/roles.guard';
 import { TenantGuard } from '../src/auth/guards/tenant.guard';
 import { UserRole } from '@ouiboo/types';
+import { AgencyModule } from '../src/agency/agency.module';
 
 jest.setTimeout(60_000);
 
@@ -31,7 +32,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
 
     beforeAll(async () => {
         const moduleFixture: TestingModule = await Test.createTestingModule({
-            imports: [TripsModule, DatabaseModule, EmailModule, UploadModule],
+            imports: [TripsModule, AgencyModule, DatabaseModule, EmailModule, UploadModule],
         })
             .overrideProvider(EmailService)
             .useValue(mockEmailService)
@@ -54,7 +55,12 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
                 },
             })
             .overrideGuard(RolesGuard)
-            .useValue({ canActivate: () => true })
+            .useValue({
+                canActivate: (context: any) => {
+                    const req = context.switchToHttp().getRequest();
+                    return req.user?.role === UserRole.Agency || req.user?.role === UserRole.Admin;
+                },
+            })
             .overrideGuard(TenantGuard)
             .useValue({
                 canActivate: (context: any) => {
@@ -72,6 +78,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             .compile();
 
         app = moduleFixture.createNestApplication();
+        app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
         await app.init();
 
         db = app.get(DatabaseService);
@@ -193,9 +200,18 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             status: 'OPEN',
         };
 
-        return db.tripSession.create({
+        const session = await db.tripSession.create({
             data: { ...defaultData, ...overrides } as any,
         });
+        const minimum = await db.tripSession.aggregate({
+            where: { templateId, status: 'OPEN' },
+            _min: { price: true },
+        });
+        await db.tripTemplate.update({
+            where: { id: templateId },
+            data: { startingPrice: minimum._min.price },
+        });
+        return session;
     }
 
     // ===== Section 3: Trip Template Creation Tests =====
@@ -418,8 +434,8 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             .set('Authorization', 'Bearer agency-123')
             .expect(200);
 
-        const deleted = await db.tripTemplate.findUnique({ where: { id: template.id } });
-        expect(deleted).toBeNull();
+        const archived = await db.tripTemplate.findUnique({ where: { id: template.id } });
+        expect(archived?.status).toBe('ARCHIVED');
     });
 
     it('Agency cannot delete another agency trip template', async () => {
@@ -453,7 +469,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         await request(app.getHttpServer())
             .delete(`/trips/${template.id}`)
             .set('Authorization', 'Bearer agency-123')
-            .expect(400);
+            .expect(409);
     });
 
     // ===== Section 6: Trip Session Creation Tests =====
@@ -533,7 +549,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
                 deposit: 300,
                 totalSeats: 20,
             })
-            .expect(403);
+            .expect(404);
     });
 
     // ===== Section 7: Trip Listing and Filtering Tests =====
@@ -664,7 +680,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             .get('/trips?sortBy=price&sortOrder=asc')
             .expect(200);
 
-        const prices = res.body.data.map((t: any) => t.sessions?.[0]?.price || 0);
+        const prices = res.body.data.map((t: any) => Number(t.sessions?.[0]?.price || 0));
         for (let i = 1; i < prices.length; i++) {
             expect(prices[i]).toBeGreaterThanOrEqual(prices[i - 1]);
         }
@@ -729,7 +745,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         const template = await createTripTemplate(agency1.id);
 
         await request(app.getHttpServer())
-            .get(`/trips/${template.id}`)
+            .get(`/agency/trips/${template.id}`)
             .set('Authorization', 'Bearer agency-456')
             .expect(404);
     });
@@ -909,14 +925,21 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         const { agency1, traveler } = await seedTestData();
         const template = await createTripTemplate(agency1.id, { status: 'ACTIVE' });
 
-        // Create reviews
-        await db.review.createMany({
-            data: [
-                { tripTemplateId: template.id, travelerId: traveler.id, rating: 4, comment: 'Good trip' },
-                { tripTemplateId: template.id, travelerId: traveler.id, rating: 5, comment: 'Excellent' },
-                { tripTemplateId: template.id, travelerId: traveler.id, rating: 5, comment: 'Amazing' },
-                { tripTemplateId: template.id, travelerId: traveler.id, rating: 3, comment: 'OK' },
-            ] as any,
+        const session = await createTripSession(template.id);
+        const booking = await db.booking.create({
+            data: {
+                sessionId: session.id,
+                travelerId: traveler.id,
+                guestsCount: 1,
+                totalAmount: session.price,
+                fullName: 'Test Traveler',
+                phoneNumber: '+12025550123',
+                documentNumber: 'DOC-1',
+                status: 'COMPLETED',
+            } as any,
+        });
+        await db.review.create({
+            data: { bookingId: booking.id, tripTemplateId: template.id, travelerId: traveler.id, rating: 5, comment: 'Excellent' },
         });
 
         const res = await request(app.getHttpServer())
@@ -931,11 +954,8 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         const { agency1, traveler } = await seedTestData();
         const template = await createTripTemplate(agency1.id, { status: 'ACTIVE' });
 
-        await db.wishlist.createMany({
-            data: [
-                { tripTemplateId: template.id, userId: traveler.id },
-                { tripTemplateId: template.id, userId: traveler.id },
-            ],
+        await db.wishlist.create({
+            data: { tripTemplateId: template.id, userId: traveler.id },
         });
 
         const res = await request(app.getHttpServer())

@@ -3,16 +3,22 @@
  * Seed minimal test data for E2E runs.
  * Requires DATABASE_URL env var pointing to test database.
  */
-const { PrismaClient } = require('@prisma/client');
+const path = require('node:path');
+const bcrypt = require('bcrypt');
+const { PrismaClient } = require(path.resolve(
+  __dirname,
+  '../../../../packages/database/generated-client',
+));
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('Seeding test data...');
+  const password = await bcrypt.hash('e2e-test-password', 10);
   try {
     await prisma.user.createMany({ data: [
-      { email: 'admin@test.local', name: 'Admin', role: 'ADMIN' },
-      { email: 'agency@test.local', name: 'Agency', role: 'AGENCY' },
-      { email: 'traveler@test.local', name: 'Traveler', role: 'TRAVELER' }
+      { email: 'admin@test.local', name: 'Admin', password, role: 'ADMIN', isEmailVerified: true },
+      { email: 'agency@test.local', name: 'Agency', password, role: 'AGENCY', isEmailVerified: true },
+      { email: 'traveler@test.local', name: 'Traveler', password, role: 'TRAVELER', isEmailVerified: true }
     ] });
   } catch (e) {
     console.warn('Seed warning:', e.message);
@@ -22,4 +28,4 @@ async function main() {
 
 main()
   .catch((e) => { console.error(e); process.exit(1); })
-  .finally(() => process.exit(0));
+  .finally(() => prisma.$disconnect());

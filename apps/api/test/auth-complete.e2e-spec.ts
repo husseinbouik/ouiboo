@@ -67,9 +67,12 @@ describe('Auth - Complete E2E (auth-complete.e2e-spec)', () => {
             .send({ email, password: 'Password123!', name: 'Traveler', role: 'TRAVELER' })
             .expect(201);
 
-        expect(res.body).toHaveProperty('accessToken');
-        expect(res.body).toHaveProperty('refreshToken');
-        expect(res.body).toHaveProperty('user');
+        expect(res.body).toMatchObject({
+            email,
+            requiresEmailVerification: true,
+        });
+        expect(res.body).not.toHaveProperty('accessToken');
+        expect(res.body).not.toHaveProperty('refreshToken');
         expect(mockEmailService.sendMail).toHaveBeenCalled();
 
         const userInDb = await db.user.findUnique({ where: { email } });
@@ -80,13 +83,14 @@ describe('Auth - Complete E2E (auth-complete.e2e-spec)', () => {
 
         // Verify email with correct OTP
         const otp = userInDb!.otp!;
-        await request(app.getHttpServer())
+        const verificationResponse = await request(app.getHttpServer())
             .post('/auth/verify-email')
             .send({ email, otp })
-            .expect(201)
-            .expect(res => {
-                expect(res.body).toMatchObject({ message: 'Email verified successfully' });
-            });
+            .expect(201);
+
+        expect(verificationResponse.body).toHaveProperty('accessToken');
+        expect(verificationResponse.body).not.toHaveProperty('refreshToken');
+        expect(verificationResponse.headers['set-cookie']?.[0]).toContain('refresh_token=');
 
         const verified = await db.user.findUnique({ where: { email } });
         expect(verified?.isEmailVerified).toBe(true);
@@ -129,14 +133,18 @@ describe('Auth - Complete E2E (auth-complete.e2e-spec)', () => {
 
         const loginRes = await request(app.getHttpServer()).post('/auth/login').send({ email, password }).expect(201);
         expect(loginRes.body).toHaveProperty('accessToken');
-        expect(loginRes.body).toHaveProperty('refreshToken');
+        expect(loginRes.body).not.toHaveProperty('refreshToken');
+        const refreshCookie = loginRes.headers['set-cookie']?.[0]?.split(';')[0];
+        expect(refreshCookie).toContain('refresh_token=');
+        if (!refreshCookie) throw new Error('Login response did not set the refresh cookie');
 
-        const refreshRes = await request(app.getHttpServer()).post('/auth/refresh').send({ refresh_token: loginRes.body.refreshToken }).expect(201);
+        const refreshRes = await request(app.getHttpServer()).post('/auth/refresh').set('Cookie', refreshCookie).send({}).expect(201);
         expect(refreshRes.body).toHaveProperty('accessToken');
-        expect(refreshRes.body).toHaveProperty('refreshToken');
+        expect(refreshRes.body).not.toHaveProperty('refreshToken');
+        expect(refreshRes.headers['set-cookie']?.[0]).toContain('refresh_token=');
 
         // old token should be revoked
-        await request(app.getHttpServer()).post('/auth/refresh').send({ refresh_token: loginRes.body.refreshToken }).expect(401);
+        await request(app.getHttpServer()).post('/auth/refresh').set('Cookie', refreshCookie).send({}).expect(401);
     });
 
     it('Password reset flow: request and reset', async () => {

@@ -64,6 +64,7 @@ export const TripTemplateSchema = z.object({
     description: z.string().min(10, "Description must be at least 10 characters"),
     category: z.nativeEnum(TripCategory),
     startLocation: z.string(),
+    endLocation: z.string().optional(),
     durationDays: z.number().int().positive(),
     durationNights: z.number().int().nonnegative(),
     inclusions: z.array(z.string()),
@@ -72,6 +73,8 @@ export const TripTemplateSchema = z.object({
     images: z.array(z.string()).min(1, "At least one image is required"),
     itinerary: z.array(ItineraryDaySchema).optional(),
     status: z.nativeEnum(TripStatus),
+    currency: z.string().regex(/^[A-Z]{3}$/, "Currency must be an ISO 4217 code"),
+    startingPrice: DecimalStringSchema.nullable().optional(),
     createdAt: z.string().datetime(),
 });
 
@@ -79,6 +82,7 @@ export const CreateTripTemplateSchema = TripTemplateSchema.omit({
     id: true,
     agencyId: true,
     createdAt: true,
+    startingPrice: true,
     itinerary: true,
 }).extend({
     itinerary: z.array(CreateItineraryDaySchema).optional(),
@@ -94,6 +98,7 @@ export const TripSessionSchema = z.object({
     totalSeats: z.number().int().positive(),
     availableSeats: z.number().int().nonnegative(),
     status: z.nativeEnum(SessionStatus),
+    currency: z.string().regex(/^[A-Z]{3}$/, "Currency must be an ISO 4217 code"),
 });
 
 export const CreateTripSessionSchema = TripSessionSchema.omit({

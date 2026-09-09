@@ -7,6 +7,8 @@ const mockTripTemplate = {
     id: 'trip-123',
     agencyId: 'agency-123',
     title: 'Test Trip',
+    currency: 'MAD',
+    _count: { sessions: 0 },
 };
 
 const mockDatabaseService = {
@@ -21,7 +23,14 @@ const mockDatabaseService = {
     },
     tripSession: {
         create: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+        findFirst: jest.fn(),
         findMany: jest.fn(),
+        aggregate: jest.fn(),
+    },
+    booking: {
+        count: jest.fn().mockResolvedValue(0),
     },
     agencyProfile: {
         findUnique: jest.fn(),
@@ -60,6 +69,7 @@ describe('TripsService', () => {
 
             expect(db.tripTemplate.findFirst).toHaveBeenCalledWith({
                 where: { id: 'trip-123', agencyId: 'agency-123' },
+                include: { _count: { select: { sessions: true } } },
             });
             expect(db.tripTemplate.update).toHaveBeenCalled();
         });
@@ -83,14 +93,17 @@ describe('TripsService', () => {
         it('should delete a template if owned by user', async () => {
             db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
             db.tripTemplate.findFirst.mockResolvedValue(mockTripTemplate);
-            db.tripTemplate.delete.mockResolvedValue(mockTripTemplate);
+            db.tripTemplate.update.mockResolvedValue({ ...mockTripTemplate, status: 'ARCHIVED' });
 
             await service.deleteTemplate('trip-123', 'agency-123');
 
             expect(db.tripTemplate.findFirst).toHaveBeenCalledWith({
                 where: { id: 'trip-123', agencyId: 'agency-123' },
             });
-            expect(db.tripTemplate.delete).toHaveBeenCalledWith({ where: { id: 'trip-123' } });
+            expect(db.tripTemplate.update).toHaveBeenCalledWith({
+                where: { id: 'trip-123' },
+                data: { status: 'ARCHIVED' },
+            });
         });
 
         it('should throw error if unauthorized', async () => {

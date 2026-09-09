@@ -7,6 +7,7 @@ import { UploadService } from '../upload/upload.service';
 import { BookingPaymentStatus, PaymentMethod, TransactionType } from '@ouiboo/database';
 import { mapBookingDetails } from './booking-response.util';
 import { multiplyMoney } from '../common/money.util';
+import { WalletsService } from '../wallets/wallets.service';
 
 const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
 
@@ -16,6 +17,7 @@ export class BookingsService {
         private db: DatabaseService,
         private emailService: EmailService,
         private uploadService: UploadService,
+        private walletsService: WalletsService,
     ) { }
 
     async create(travelerId: string, dto: CreateBookingDto) {
@@ -42,25 +44,35 @@ export class BookingsService {
             throw new BadRequestException('Session not found');
         }
 
-        return this.db.$transaction(async (tx) => {
-            // 1. Check for duplicates
-            const existing = await tx.booking.findFirst({
-                where: {
-                    sessionId: dto.sessionId,
-                    travelerId,
-                    status: { not: 'CANCELLED' }
-                }
-            });
+        const now = new Date();
+        const agency = session.template.agency;
+        const subscriptionValid = agency.subscriptionStatus === 'ACTIVE'
+            ? !agency.subscriptionEndsAt || agency.subscriptionEndsAt > now
+            : agency.subscriptionStatus === 'TRIAL'
+                && !!agency.trialEndsAt
+                && agency.trialEndsAt > now;
 
-            if (existing) {
-                throw new BadRequestException('You already have a booking for this session');
-            }
+        if (session.template.status !== 'ACTIVE'
+            || session.status !== 'OPEN'
+            || session.startDate <= now) {
+            throw new BadRequestException('This trip session is not available for booking');
+        }
+        if (agency.verificationStatus !== 'VERIFIED' || !subscriptionValid) {
+            throw new BadRequestException('This agency is not currently accepting bookings');
+        }
+        if (dto.paymentMethod === PaymentMethodEnum.WALLET) {
+            throw new BadRequestException('Traveler wallet payments are not available');
+        }
+
+        const transactionResult = await this.db.$transaction(async (tx) => {
 
             // 2. Atomic update to reserve seats (Concurrent Safe)
             // returning count helps know if it succeeded
             const result = await tx.tripSession.updateMany({
                 where: {
                     id: dto.sessionId,
+                    status: 'OPEN',
+                    startDate: { gt: now },
                     availableSeats: { gte: dto.guestsCount }
                 },
                 data: {
@@ -72,6 +84,20 @@ export class BookingsService {
 
             if (result.count === 0) {
                 throw new BadRequestException('Not enough seats available');
+            }
+
+            // Check only after acquiring the session row through the update above.
+            // This prevents two concurrent requests from the same traveler booking twice.
+            const existing = await tx.booking.findFirst({
+                where: {
+                    sessionId: dto.sessionId,
+                    travelerId,
+                    status: { not: 'CANCELLED' }
+                }
+            });
+
+            if (existing) {
+                throw new BadRequestException('You already have a booking for this session');
             }
 
             // Re-fetch session with template/agency info for email notifications
@@ -130,23 +156,33 @@ export class BookingsService {
                 },
             });
 
-            console.log(`[BookingsService] Created booking ${booking.id} for session ${dto.sessionId}. Travelers: ${dto.guestsCount}`);
-
-            // Send Email Notifications (Async)
             const traveler = await tx.user.findUnique({ where: { id: travelerId } });
             const agencyUser = await tx.user.findUnique({ where: { id: sessionWithInfo.template.agency.userId } });
 
-            if (traveler && agencyUser) {
-                this.emailService.sendBookingNotification(
-                    traveler.email,
-                    agencyUser.email,
-                    booking.id,
-                    sessionWithInfo.template.title
-                ).catch(err => console.error('Failed to send booking email', err));
-            }
-
-            return mapBookingDetails(booking);
+            return {
+                booking: mapBookingDetails(booking),
+                notification: traveler && agencyUser
+                    ? {
+                        travelerEmail: traveler.email,
+                        agencyEmail: agencyUser.email,
+                        bookingId: booking.id,
+                        tripTitle: sessionWithInfo.template.title,
+                    }
+                    : null,
+            };
         });
+
+        if (transactionResult.notification) {
+            const notification = transactionResult.notification;
+            this.emailService.sendBookingNotification(
+                notification.travelerEmail,
+                notification.agencyEmail,
+                notification.bookingId,
+                notification.tripTitle,
+            ).catch(() => undefined);
+        }
+
+        return transactionResult.booking;
     }
 
     async findAllByTraveler(travelerId: string) {
@@ -386,12 +422,17 @@ export class BookingsService {
     }
 
     async verifyPayment(bookingId: string, tenantId: string, approved: boolean, rejectionReason?: string) {
+        if (typeof approved !== 'boolean') {
+            throw new BadRequestException('approved must be a boolean');
+        }
+
         // 1. Get Booking and verify Agency ownership
         const booking = await this.db.booking.findUnique({
             where: { id: bookingId },
             include: {
                 session: { include: { template: true } },
-                paymentProof: true
+                paymentProof: true,
+                traveler: { select: { email: true } },
             }
         });
 
@@ -420,66 +461,58 @@ export class BookingsService {
             throw new BadRequestException('Rejection reason is required when rejecting a payment');
         }
 
-        return this.db.$transaction(async (tx) => {
-            // Update Proof Status
-            await tx.paymentProof.update({
-                where: { id: booking.paymentProofId },
+        const updatedBooking = await this.db.$transaction(async (tx) => {
+            const claimedProof = await tx.paymentProof.updateMany({
+                where: { id: booking.paymentProofId, status: 'PENDING' },
                 data: {
                     status: approved ? 'VERIFIED' : 'REJECTED',
                     rejectionReason: approved ? null : rejectionReason,
                 }
             });
+            if (claimedProof.count !== 1) {
+                throw new BadRequestException('Payment proof has already been reviewed');
+            }
 
-            // Update Booking Status
             const newStatus = approved ? 'CONFIRMED' : 'REJECTED';
             const confirmedAt = approved ? new Date() : null;
 
-            console.log(`[BookingsService] Payment verification for booking ${bookingId}: ${approved ? 'APPROVED' : 'REJECTED'}`);
-
             if (approved) {
-                const wallet = await tx.wallet.upsert({
-                    where: { agencyId: booking.session.template.agencyId },
-                    update: {
-                        availableBalance: {
-                            increment: booking.totalAmount,
-                        },
-                    },
-                    create: {
-                        agencyId: booking.session.template.agencyId,
-                    availableBalance: booking.totalAmount,
-                        pendingBalance: 0,
-                    },
-                });
-
-                await tx.walletTransaction.create({
-                    data: {
-                        walletId: wallet.id,
-                        amount: booking.totalAmount,
-                        type: TransactionType.BOOKING,
-                        reason: `Manual payment confirmed for booking ${bookingId}`,
+                await this.walletsService.creditWalletInTransaction(
+                    tx,
+                    booking.session.template.agencyId,
+                    booking.totalAmount,
+                    `Manual payment confirmed for booking ${bookingId}`,
+                    {
+                        idempotencyKey: `booking:${bookingId}:manual-payment-credit`,
                         referenceId: bookingId,
+                        type: TransactionType.BOOKING,
                     },
-                });
-
-                // Send Payment Confirmation Email (Async)
-                const traveler = await tx.user.findUnique({ where: { id: booking.travelerId } });
-                if (traveler) {
-                    this.emailService.sendPaymentConfirmation(
-                        traveler.email,
-                        booking.session.template.title
-                    ).catch(err => console.error('Failed to send payment confirmation email', err));
-                }
+                );
             }
 
-            return tx.booking.update({
-                where: { id: bookingId },
+            const claimedBooking = await tx.booking.updateMany({
+                where: { id: bookingId, status: 'AWAITING_VALIDATION' },
                 data: {
                     status: newStatus,
                     paymentStatus: approved ? BookingPaymentStatus.PAID : BookingPaymentStatus.FAILED,
                     confirmedAt,
                 }
             });
+            if (claimedBooking.count !== 1) {
+                throw new BadRequestException('Booking is not awaiting payment validation');
+            }
+
+            return tx.booking.findUniqueOrThrow({ where: { id: bookingId } });
         });
+
+        if (approved && booking.traveler?.email) {
+            this.emailService.sendPaymentConfirmation(
+                booking.traveler.email,
+                booking.session.template.title,
+            ).catch(() => undefined);
+        }
+
+        return updatedBooking;
     }
 
     async cancelBooking(bookingId: string, travelerId: string) {
@@ -496,12 +529,30 @@ export class BookingsService {
             throw new ForbiddenException('Forbidden');
         }
 
-        const cancellableStatuses = new Set(['PENDING', 'AWAITING_VALIDATION', 'CONFIRMED']);
+        // Paid bookings require the admin refund workflow so the wallet and
+        // payment provider remain consistent.
+        const cancellableStatuses = new Set(['PENDING', 'AWAITING_VALIDATION', 'REJECTED']);
         if (!cancellableStatuses.has(booking.status)) {
             throw new BadRequestException('Booking cannot be cancelled');
         }
 
         return this.db.$transaction(async (tx) => {
+            const cancelled = await tx.booking.updateMany({
+                where: {
+                    id: bookingId,
+                    travelerId,
+                    status: { in: ['PENDING', 'AWAITING_VALIDATION', 'REJECTED'] },
+                },
+                data: {
+                    status: 'CANCELLED',
+                    cancelledAt: new Date(),
+                    cancelledBy: travelerId,
+                },
+            });
+            if (cancelled.count !== 1) {
+                throw new BadRequestException('Booking cannot be cancelled');
+            }
+
             await tx.tripSession.update({
                 where: { id: booking.sessionId },
                 data: {
@@ -511,13 +562,7 @@ export class BookingsService {
                 }
             });
 
-            return tx.booking.update({
-                where: { id: bookingId },
-                data: {
-                    status: 'CANCELLED',
-                    cancelledAt: new Date(),
-                }
-            });
+            return tx.booking.findUniqueOrThrow({ where: { id: bookingId } });
         });
     }
 }

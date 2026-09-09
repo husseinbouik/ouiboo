@@ -4,10 +4,30 @@ import Script from "next/script";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import { Navbar } from "@/components/Navbar";
+import { SITE_DESCRIPTION, SITE_NAME, TRAVELER_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Ouiboo Traveler",
-  description: "Traveler portal for Ouiboo",
+  metadataBase: new URL(TRAVELER_URL),
+  applicationName: SITE_NAME,
+  title: {
+    default: "Ouiboo — Find trips worth remembering",
+    template: "%s | Ouiboo",
+  },
+  description: SITE_DESCRIPTION,
+  keywords: ["travel marketplace", "travel experiences", "local travel agencies", "Morocco trips", "Ouiboo"],
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: "Ouiboo — Find trips worth remembering",
+    description: SITE_DESCRIPTION,
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ouiboo — Find trips worth remembering",
+    description: SITE_DESCRIPTION,
+  },
+  robots: { index: true, follow: true },
 };
 
 export const dynamic = 'force-dynamic';

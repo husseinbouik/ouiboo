@@ -13,6 +13,7 @@ export interface MobileFilterDrawerProps {
   trigger?: React.ReactNode
   footer?: React.ReactNode
   side?: 'left' | 'right'
+  hideAt?: 'md' | 'lg'
   open?: boolean
   defaultOpen?: boolean
   onOpenChange?: (open: boolean) => void
@@ -27,6 +28,7 @@ export function MobileFilterDrawer({
   trigger,
   footer,
   side = 'right',
+  hideAt = 'md',
   open: controlledOpen,
   defaultOpen = false,
   onOpenChange,
@@ -37,6 +39,8 @@ export function MobileFilterDrawer({
   const titleId = React.useId()
   const descriptionId = React.useId()
   const closeButtonRef = React.useRef<HTMLButtonElement>(null)
+  const triggerButtonRef = React.useRef<HTMLButtonElement>(null)
+  const responsiveClass = hideAt === 'lg' ? 'lg:hidden' : 'md:hidden'
 
   const setOpen = React.useCallback(
     (nextOpen: boolean) => {
@@ -50,17 +54,23 @@ export function MobileFilterDrawer({
 
   React.useEffect(() => {
     if (!open) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false)
     }
     window.addEventListener('keydown', handleKeyDown)
     closeButtonRef.current?.focus()
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = previousOverflow
+      triggerButtonRef.current?.focus()
+    }
   }, [open, setOpen])
 
   return (
     <>
-      <div className="md:hidden">
+      <div className={responsiveClass}>
         {trigger ? (
           <span
             role="button"
@@ -74,6 +84,7 @@ export function MobileFilterDrawer({
           </span>
         ) : (
           <Button
+            ref={triggerButtonRef}
             type="button"
             variant="outline"
             size="sm"
@@ -88,7 +99,7 @@ export function MobileFilterDrawer({
       </div>
 
       {open ? (
-        <div className="fixed inset-0 z-50 md:hidden">
+        <div className={cn('fixed inset-0 z-50', responsiveClass)}>
           <button
             type="button"
             className="absolute inset-0 bg-black/50"

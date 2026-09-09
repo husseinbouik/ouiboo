@@ -17,8 +17,12 @@
     "ctaTertiary": "Learn more"
   },
   "trusted": {
-    "title": "Trusted by early partners",
-    "subtitle": "Independent agencies building unforgettable journeys."
+    "title": "A marketplace designed for trust",
+    "subtitle": "Clear foundations for every side of the journey.",
+    "item1": "Curated trip details",
+    "item2": "Agency review workflows",
+    "item3": "Traceable payments",
+    "item4": "Responsive support"
   },
   "highlights": {
     "title": "Built for real-world travel businesses",
@@ -38,9 +42,9 @@
   },
   "stats": {
     "items": {
-      "agencies": "Agencies onboarding",
-      "travelers": "Travelers on waitlist",
-      "repeat": "Repeat booking intent"
+      "languages": "Interface languages",
+      "workspaces": "Connected experiences",
+      "bookingFlow": "Booking journey"
     }
   },
   "howItWorks": {
@@ -102,12 +106,21 @@
       "alreadyPartner": "Already a partner? Log in"
     }
   },
-  "testimonials": {
-    "preTitle": "Testimonials",
-    "title": "Loved by Travelers and Agencies",
-    "quote1": "Finally, a platform that understands the needs of independent travel agencies. The dashboard is a game-changer.",
-    "quote2": "As a traveler, finding unique trips was always a challenge. Ouiboo's marketplace is beautifully curated. I can't wait!",
-    "quote3": "The ability to reach a global audience without a huge marketing budget is incredible. Ouiboo is set to be essential."
+  "principles": {
+    "preTitle": "Our product principles",
+    "title": "Confidence at every step",
+    "item1": {
+      "title": "Clear before clever",
+      "description": "Trip details, prices, availability, and next steps are presented plainly so travelers can decide with confidence."
+    },
+    "item2": {
+      "title": "Built for responsible agencies",
+      "description": "Publishing, customer, booking, and payment workflows stay connected without hiding who is accountable."
+    },
+    "item3": {
+      "title": "Ready to grow thoughtfully",
+      "description": "Shared foundations for languages, currencies, and locations let Ouiboo expand without making the experience feel generic."
+    }
   },
   "pricing": {
     "preTitle": "Pricing",
@@ -183,7 +196,8 @@
       },
       "agencyName": "Enter your agency name",
       "submit": "Join Waitlist",
-      "submitting": "Joining..."
+      "submitting": "Joining...",
+      "error": "Could not submit your request. Please try again later."
     }
   },
   "modal": {

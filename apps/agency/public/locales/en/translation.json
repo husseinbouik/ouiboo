@@ -7,6 +7,18 @@
         "error": "Something went wrong",
         "submitting": "Submitting..."
     },
+    "sidebar": {
+        "dashboard": "Dashboard",
+        "analytics": "Analytics",
+        "myTrips": "My Trips",
+        "bookings": "Bookings",
+        "reviews": "Reviews",
+        "wallet": "Wallet & Payouts",
+        "compliance": "Compliance",
+        "settings": "Settings",
+        "createNew": "Create New",
+        "signOut": "Sign Out"
+    },
     "login": {
         "title": "Agency Portal",
         "subtitle": "Welcome back. Manage your bookings and grow your business.",

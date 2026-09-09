@@ -5,13 +5,19 @@ import axios, {
 
 const DEFAULT_API_URL = 'http://localhost:3000/api/v1'
 const DEFAULT_LOGIN_PATH = '/login'
-const DEFAULT_TOKEN_KEY = 'token'
-const DEFAULT_REFRESH_TOKEN_KEY = 'refresh_token'
+
+let browserAccessToken: string | null = null
 
 export interface BrowserAuthOptions {
   loginPath?: string
-  tokenKey?: string
-  refreshTokenKey?: string
+}
+
+export function setBrowserAccessToken(token: string | null) {
+  browserAccessToken = token
+}
+
+export function clearBrowserAccessToken() {
+  browserAccessToken = null
 }
 
 type ApiEnvelopeBody = {
@@ -91,8 +97,6 @@ export function attachBrowserAuth(
 ) {
   const {
     loginPath = DEFAULT_LOGIN_PATH,
-    tokenKey = DEFAULT_TOKEN_KEY,
-    refreshTokenKey = DEFAULT_REFRESH_TOKEN_KEY,
   } = options
 
   let refreshPromise: Promise<string | null> | null = null
@@ -101,19 +105,17 @@ export function attachBrowserAuth(
   const refreshAccessToken = async () => {
     if (typeof window === 'undefined') return null
 
-    const refreshToken = window.localStorage.getItem(refreshTokenKey)
-    if (!refreshToken) return null
+    const response = await axios.post(
+      `${apiBaseUrl}/auth/refresh`,
+      {},
+      { withCredentials: true },
+    )
+    const payload = isApiEnvelope(response.data)
+      ? response.data.data as { accessToken?: string }
+      : response.data as { accessToken?: string }
+    const { accessToken } = payload || {}
 
-    const response = await axios.post(`${apiBaseUrl}/auth/refresh`, {
-      refresh_token: refreshToken,
-    })
-    const { accessToken, refreshToken: rotatedRefreshToken } =
-      response.data || {}
-
-    if (accessToken) window.localStorage.setItem(tokenKey, accessToken)
-    if (rotatedRefreshToken) {
-      window.localStorage.setItem(refreshTokenKey, rotatedRefreshToken)
-    }
+    setBrowserAccessToken(accessToken || null)
 
     return accessToken || null
   }
@@ -128,11 +130,9 @@ export function attachBrowserAuth(
   }
 
   client.interceptors.request.use((config) => {
-    const token =
-      typeof window !== 'undefined'
-        ? window.localStorage.getItem(tokenKey)
-        : null
-    if (token) config.headers.Authorization = `Bearer ${token}`
+    if (browserAccessToken) {
+      config.headers.Authorization = `Bearer ${browserAccessToken}`
+    }
     return config
   })
 
@@ -141,7 +141,12 @@ export function attachBrowserAuth(
     async (error) => {
       const originalRequest = error.config
 
-      if (error.response?.status === 401 && !originalRequest?._retry) {
+      if (
+        error.response?.status === 401 &&
+        !originalRequest?._retry &&
+        !String(originalRequest?.url || '').includes('/auth/refresh')
+      ) {
+        const hadAccessToken = Boolean(browserAccessToken)
         originalRequest._retry = true
 
         try {
@@ -158,9 +163,13 @@ export function attachBrowserAuth(
         }
 
         if (typeof window !== 'undefined') {
-          window.localStorage.removeItem(tokenKey)
-          window.localStorage.removeItem(refreshTokenKey)
-          window.location.href = loginPath
+          clearBrowserAccessToken()
+          const isAnonymousProfileProbe =
+            !hadAccessToken &&
+            String(originalRequest?.url || '').includes('/users/me')
+          if (!isAnonymousProfileProbe) {
+            window.location.href = loginPath
+          }
         }
       }
 
@@ -175,8 +184,10 @@ export function createBrowserApiClient(
   explicitBaseUrl?: string,
   options: BrowserAuthOptions = {}
 ) {
+  const client = createApiClient(explicitBaseUrl)
+  client.defaults.withCredentials = true
   return attachBrowserAuth(
-    createApiClient(explicitBaseUrl),
+    client,
     explicitBaseUrl,
     options
   )

@@ -17,8 +17,12 @@
     "ctaTertiary": "En savoir plus"
   },
   "trusted": {
-    "title": "Approuvé par nos premiers partenaires",
-    "subtitle": "Des agences indépendantes qui créent des expériences inoubliables."
+    "title": "Une marketplace conçue pour la confiance",
+    "subtitle": "Des fondations claires pour chaque étape du voyage.",
+    "item1": "Détails de voyage structurés",
+    "item2": "Vérification des agences",
+    "item3": "Paiements traçables",
+    "item4": "Support réactif"
   },
   "highlights": {
     "title": "Pensé pour les agences de voyage",
@@ -38,9 +42,9 @@
   },
   "stats": {
     "items": {
-      "agencies": "Agences en onboarding",
-      "travelers": "Voyageurs sur liste d'attente",
-      "repeat": "Intentions de re-réservation"
+      "languages": "Langues d'interface",
+      "workspaces": "Expériences connectées",
+      "bookingFlow": "Parcours de réservation"
     }
   },
   "howItWorks": {
@@ -102,12 +106,21 @@
       "alreadyPartner": "Déjà partenaire ? Se connecter"
     }
   },
-  "testimonials": {
-    "preTitle": "Témoignages",
-    "title": "Apprécié par les Voyageurs et les Agences",
-    "quote1": "Enfin une plateforme qui comprend les besoins des agences de voyages indépendantes. Le tableau de bord change la donne.",
-    "quote2": "En tant que voyageur, trouver des voyages uniques a toujours été un défi. La place de marché de Ouiboo est magnifiquement organisée. J'ai hâte !",
-    "quote3": "La capacité d'atteindre un public mondial sans un énorme budget marketing est incroyable. Ouiboo est en passe de devenir essentiel."
+  "principles": {
+    "preTitle": "Nos principes produit",
+    "title": "La confiance à chaque étape",
+    "item1": {
+      "title": "La clarté avant la complexité",
+      "description": "Les détails, prix, disponibilités et prochaines étapes sont présentés clairement pour décider en confiance."
+    },
+    "item2": {
+      "title": "Pensé pour les agences responsables",
+      "description": "Publication, clients, réservations et paiements restent connectés sans masquer les responsabilités."
+    },
+    "item3": {
+      "title": "Prêt à grandir avec méthode",
+      "description": "Des fondations partagées pour les langues, devises et lieux permettent à Ouiboo de s'étendre sans devenir générique."
+    }
   },
   "pricing": {
     "preTitle": "Tarifs",
@@ -183,7 +196,8 @@
       },
       "agencyName": "Entrez le nom de votre agence",
       "submit": "Rejoindre la liste d'attente",
-      "submitting": "Inscription..."
+      "submitting": "Inscription...",
+      "error": "Impossible d'envoyer votre demande. Veuillez réessayer plus tard."
     }
   },
   "modal": {

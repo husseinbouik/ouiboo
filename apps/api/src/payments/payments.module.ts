@@ -9,9 +9,10 @@ import { CashPlusPaymentProvider } from './providers/cashplus-payment.provider';
 import { PaymentProviderFactory } from './providers/payment-provider.factory';
 import { CommonModule } from '../common/common.module';
 import { AuthModule } from '../auth/auth.module';
+import { WalletsModule } from '../wallets/wallets.module';
 
 @Module({
-  imports: [CommonModule, DatabaseModule, EmailModule, AuthModule],
+  imports: [CommonModule, DatabaseModule, EmailModule, AuthModule, WalletsModule],
   providers: [
     PaymentsService,
     CMIPaymentProvider,

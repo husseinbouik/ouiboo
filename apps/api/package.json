@@ -44,7 +44,6 @@
     "@ouiboo/database": "^0.0.0",
     "@ouiboo/schemas": "*",
     "@ouiboo/types": "*",
-    "@prisma/client": "^7.4.0",
     "axios": "^1.5.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.78.0",
@@ -92,7 +91,7 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.ts$": "ts-jest"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"

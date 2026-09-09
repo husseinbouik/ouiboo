@@ -1,10 +1,11 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { DatabaseService } from '../../database/database.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-    constructor() {
+    constructor(private readonly db: DatabaseService) {
         const secret = process.env.JWT_SECRET;
         if (!secret) {
             throw new Error('JWT_SECRET is required');
@@ -16,12 +17,36 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         });
     }
 
-    async validate(payload: any) {
+    async validate(payload: { sub?: string }) {
+        if (!payload?.sub) {
+            throw new UnauthorizedException('Unauthorized');
+        }
+
+        const user = await this.db.user.findUnique({
+            where: { id: payload.sub },
+            select: {
+                id: true,
+                email: true,
+                role: true,
+                isEmailVerified: true,
+                agencyProfile: { select: { id: true } },
+            },
+        });
+
+        if (!user || !user.isEmailVerified) {
+            throw new UnauthorizedException(
+                user ? 'EMAIL_NOT_VERIFIED' : 'Unauthorized',
+            );
+        }
+
+        const tenantId = user.agencyProfile?.id;
         return {
-            userId: payload.sub,
-            email: payload.email,
-            role: payload.role,
-            tenantId: payload.agencyId,
+            id: user.id,
+            userId: user.id,
+            email: user.email,
+            role: user.role,
+            agencyId: tenantId,
+            tenantId,
         };
     }
 }

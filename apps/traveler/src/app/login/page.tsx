@@ -11,6 +11,7 @@ import { apiClient } from '@/lib/api-client';
 import { Button, Input } from '@ouiboo/ui';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/components/AuthContext';
+import { setBrowserAccessToken } from '@ouiboo/api-client';
 import '../../lib/i18n';
 
 type LoginFormValues = {
@@ -21,7 +22,6 @@ type LoginFormValues = {
 
 type LoginResponse = {
   accessToken: string;
-  refreshToken: string;
 };
 
 type ApiError = {
@@ -55,11 +55,7 @@ export default function TravelerLoginPage() {
       return response.data;
     },
     onSuccess: async (data) => {
-      const { accessToken, refreshToken } = data;
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', accessToken);
-        localStorage.setItem('refresh_token', refreshToken);
-      }
+      setBrowserAccessToken(data.accessToken);
       // Force update user state
       await refetch();
       router.push('/');

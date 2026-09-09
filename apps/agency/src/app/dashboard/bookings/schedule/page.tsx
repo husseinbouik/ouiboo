@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { Button, Card, CardContent } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import { apiClient } from '@/lib/api-client';
+import { formatCurrency } from '@ouiboo/utils';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = [
@@ -26,6 +27,7 @@ type ScheduleSession = {
   startDate: string;
   endDate: string;
   price: number;
+  currency: string;
   availableSeats: number;
 };
 
@@ -179,7 +181,7 @@ export default function TripSchedulePage() {
                           'block px-2 py-1.5 rounded-lg border text-[10px] font-bold truncate transition-all hover:scale-[1.02]',
                           session.color,
                         )}
-                        title={`${session.tripTitle} - ${session.price} MAD`}
+                        title={`${session.tripTitle} - ${formatCurrency(session.price, session.currency)}`}
                       >
                         {session.tripTitle}
                       </Link>
@@ -225,7 +227,7 @@ export default function TripSchedulePage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-deep-blue dark:text-gray-200">{session.price} MAD</p>
+                    <p className="text-sm font-bold text-deep-blue dark:text-gray-200">{formatCurrency(session.price, session.currency)}</p>
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-bold uppercase">Open</span>
                   </div>
                 </div>

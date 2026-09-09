@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUrl, MaxLength, MinLength } from 'class-validator';
+import { IsOptional, IsString, IsUrl, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class UpdateUserProfileDto {
   @ApiProperty({ example: 'Amina Benali', required: false })
@@ -13,4 +13,11 @@ export class UpdateUserProfileDto {
   @IsOptional()
   @IsUrl()
   avatar?: string;
+
+  @ApiProperty({ example: 'MAD', required: false })
+  @IsOptional()
+  @Matches(/^[A-Z]{3}$/, {
+    message: 'displayCurrency must be a three-letter uppercase currency code',
+  })
+  displayCurrency?: string;
 }

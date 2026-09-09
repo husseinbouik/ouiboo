@@ -40,13 +40,18 @@ export class NotificationJobsService {
           lastReminderSentAt: null,
         },
         include: {
-          traveler: true,
+          traveler: { include: { notificationPreferences: true } },
           session: { include: { template: true } },
         },
+        take: 500,
       });
 
       for (const booking of bookings) {
         try {
+          const preferences = booking.traveler.notificationPreferences;
+          if (preferences && (!preferences.emailNotifications || !preferences.paymentReminder)) {
+            continue;
+          }
           const bookingDashboardUrl = `${process.env.TRAVELER_APP_URL}/bookings/${booking.id}`;
           const hoursRemaining = 12;
           
@@ -108,7 +113,7 @@ export class NotificationJobsService {
           },
         },
         include: {
-          traveler: true,
+          traveler: { include: { notificationPreferences: true } },
           session: {
             include: {
               template: {
@@ -119,10 +124,15 @@ export class NotificationJobsService {
             },
           },
         },
+        take: 500,
       });
 
       for (const booking of bookings) {
         try {
+          const preferences = booking.traveler.notificationPreferences;
+          if (preferences && (!preferences.emailNotifications || !preferences.tripReminder)) {
+            continue;
+          }
           const notificationsSent = getNotificationState(booking.notificationsSent);
           if (!notificationsSent.tripReminder7Days) {
             const tripDetailsUrl = `${process.env.TRAVELER_APP_URL}/trip/${booking.session.template.id}`;
@@ -184,7 +194,7 @@ export class NotificationJobsService {
           },
         },
         include: {
-          traveler: true,
+          traveler: { include: { notificationPreferences: true } },
           session: {
             include: {
               template: {
@@ -195,10 +205,15 @@ export class NotificationJobsService {
             },
           },
         },
+        take: 500,
       });
 
       for (const booking of bookings) {
         try {
+          const preferences = booking.traveler.notificationPreferences;
+          if (preferences && (!preferences.emailNotifications || !preferences.tripReminder)) {
+            continue;
+          }
           const notificationsSent = getNotificationState(booking.notificationsSent);
           if (!notificationsSent.tripReminder1Day) {
             const tripDetailsUrl = `${process.env.TRAVELER_APP_URL}/trip/${booking.session.template.id}`;
@@ -257,44 +272,62 @@ export class NotificationJobsService {
           },
         },
         include: {
-          traveler: true,
+          traveler: { include: { notificationPreferences: true } },
           session: { include: { template: true } },
         },
+        take: 500,
       });
 
       for (const booking of bookings) {
         try {
-          await this.prisma.booking.update({
-            where: { id: booking.id },
-            data: {
-              status: 'CANCELLED',
-              cancelledAt: new Date(),
-              cancellationReason: 'AUTO_CANCELLED_UNPAID',
-            },
-          });
-
-          // Return seats to session
-          await this.prisma.tripSession.update({
-            where: { id: booking.sessionId },
-            data: {
-              availableSeats: {
-                increment: booking.guestsCount,
+          const cancelled = await this.prisma.$transaction(async (tx) => {
+            const claimed = await tx.booking.updateMany({
+              where: {
+                id: booking.id,
+                status: 'PENDING',
+                paymentStatus: 'UNPAID',
               },
-            },
+              data: {
+                status: 'CANCELLED',
+                cancelledAt: new Date(),
+                cancellationReason: 'AUTO_CANCELLED_UNPAID',
+              },
+            });
+
+            if (claimed.count !== 1) return false;
+
+            await tx.tripSession.update({
+              where: { id: booking.sessionId },
+              data: {
+                availableSeats: {
+                  increment: booking.guestsCount,
+                },
+              },
+            });
+
+            return true;
           });
 
-          await this.emailService.sendAutoUnpaidCancellationNotice(
-            booking.traveler.email,
-            booking.session.template.title,
-            booking.id,
-          );
+          if (!cancelled) continue;
 
-          await this.createNotificationLog(
-            booking.travelerId,
-            'CANCELLATION',
-            booking.traveler.email,
-            `Booking ${booking.id} auto-cancelled due to non-payment`,
-          );
+          const preferences = booking.traveler.notificationPreferences;
+          const emailEnabled = !preferences
+            || (preferences.emailNotifications && preferences.cancellationAlert);
+
+          if (emailEnabled) {
+            await this.emailService.sendAutoUnpaidCancellationNotice(
+              booking.traveler.email,
+              booking.session.template.title,
+              booking.id,
+            );
+
+            await this.createNotificationLog(
+              booking.travelerId,
+              'CANCELLATION',
+              booking.traveler.email,
+              `Booking ${booking.id} auto-cancelled due to non-payment`,
+            );
+          }
         } catch (error) {
           this.logger.error(
             `Failed to auto-cancel booking ${booking.id}`,
@@ -305,6 +338,32 @@ export class NotificationJobsService {
     } catch (error) {
       this.logger.error('Auto-cancel unpaid bookings job failed', error);
     }
+  }
+
+  async completeFinishedBookings() {
+    const now = new Date();
+    const result = await this.prisma.booking.updateMany({
+      where: {
+        status: 'CONFIRMED',
+        session: { endDate: { lt: now } },
+      },
+      data: { status: 'COMPLETED' },
+    });
+
+    // Keep the denormalized marketplace sort key aligned as sessions expire.
+    await this.prisma.$executeRaw`
+      UPDATE "TripTemplate" AS trip
+      SET "startingPrice" = (
+        SELECT MIN(session."price")
+        FROM "TripSession" AS session
+        WHERE session."templateId" = trip."id"
+          AND session."status" = 'OPEN'
+          AND session."startDate" >= ${now}
+      )
+    `;
+
+    this.logger.log(`Marked ${result.count} finished bookings as completed`);
+    return result;
   }
 
   private async createNotificationLog(

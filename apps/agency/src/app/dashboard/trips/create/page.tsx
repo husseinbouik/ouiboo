@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import React, { useState, useSyncExternalStore } from 'react';
+import React, { useState } from 'react';
 import { 
   MapPin, 
   Clock, 
@@ -40,12 +40,8 @@ export default function CreateTripPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
-  const isMounted = useSyncExternalStore(
-    () => () => undefined,
-    () => true,
-    () => false,
-  );
-
+  const [uploadError, setUploadError] = useState('');
+  const [submissionError, setSubmissionError] = useState('');
   const { register, handleSubmit, control, watch, setValue, trigger, formState: { errors } } = useForm<CreateTripInput>({
     resolver: zodResolver(CreateTripTemplateSchema),
     defaultValues: {
@@ -55,6 +51,7 @@ export default function CreateTripPage() {
       checklist: [],
       images: [],
       status: TripStatus.Draft,
+      currency: 'MAD',
       durationDays: 1,
       durationNights: 0,
     }
@@ -93,16 +90,21 @@ export default function CreateTripPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['agency-trips'] });
       router.push('/dashboard/trips');
-    }
+    },
+    onError: (error: ApiError) => {
+      const message = error.response?.data?.message || error.message || 'Unable to create this trip right now.';
+      setSubmissionError(Array.isArray(message) ? message.join(', ') : message);
+    },
   });
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setUploadError('');
 
     // Check file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
-      alert('File is too large. Max size is 5MB.');
+      setUploadError('This image is too large. Choose a file of 5 MB or less.');
       return;
     }
 
@@ -127,7 +129,7 @@ export default function CreateTripPage() {
       const apiError = error as ApiError;
       console.error('Upload failed:', error);
       const message = apiError.response?.data?.message || apiError.message || 'Upload failed';
-      alert(`Upload failed: ${Array.isArray(message) ? message.join(', ') : message}`);
+      setUploadError(`Upload failed: ${Array.isArray(message) ? message.join(', ') : message}`);
     } finally {
       setUploading(false);
     }
@@ -155,6 +157,7 @@ export default function CreateTripPage() {
   const prevStep = () => setStep(s => Math.max(s - 1, 1));
 
   const onSubmit = (data: CreateTripInput) => {
+    setSubmissionError('');
     // Safety check: only allow submission from the final step
     if (step < 4) {
       nextStep();
@@ -175,8 +178,6 @@ export default function CreateTripPage() {
     console.log('Finalizing trip submission:', cleanedData);
     createTripMutation.mutate(cleanedData);
   };
-
-  if (!isMounted) return null;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in slide-in-from-bottom duration-500 pb-12">
@@ -234,7 +235,7 @@ export default function CreateTripPage() {
                       ></textarea>
                       {errors.description && <p className="text-red-500 text-xs font-medium">{errors.description.message}</p>}
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Category</label>
                         <select {...register('category')} className="w-full h-12 px-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none dark:text-gray-100">
@@ -242,14 +243,19 @@ export default function CreateTripPage() {
                           <option value="CULTURAL">Cultural</option>
                           <option value="LUXURY">Luxury</option>
                           <option value="BUDGET">Budget</option>
+                          <option value="NATURE">Nature</option>
                         </select>
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Starting Location</label>
                         <Input {...register('startLocation')} placeholder="City, Country" className="h-12 dark:bg-slate-800 dark:border-slate-700" />
                       </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">End Location</label>
+                        <Input {...register('endLocation')} placeholder="City, Country (optional)" className="h-12 dark:bg-slate-800 dark:border-slate-700" />
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Days</label>
                         <Input type="number" {...register('durationDays', { valueAsNumber: true })} className="h-12 dark:bg-slate-800 dark:border-slate-700" />
@@ -257,6 +263,16 @@ export default function CreateTripPage() {
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Nights</label>
                         <Input type="number" {...register('durationNights', { valueAsNumber: true })} className="h-12 dark:bg-slate-800 dark:border-slate-700" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Currency</label>
+                        <Input
+                          maxLength={3}
+                          {...register('currency', { setValueAs: (value) => String(value).trim().toUpperCase() })}
+                          placeholder="MAD"
+                          className="h-12 uppercase dark:bg-slate-800 dark:border-slate-700"
+                        />
+                        {errors.currency && <p className="text-red-500 text-xs font-medium">{errors.currency.message}</p>}
                       </div>
                     </div>
                   </CardContent>

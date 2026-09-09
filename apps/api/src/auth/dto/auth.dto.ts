@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength, MaxLength, Matches, IsEnum, IsOptional } from 'class-validator';
+import { IsEmail, IsString, MinLength, MaxLength, Matches, IsIn, IsOptional } from 'class-validator';
 import { UserRole } from '@ouiboo/types';
 
 export class LoginDto {
@@ -7,8 +7,10 @@ export class LoginDto {
     @IsEmail()
     email: string;
 
-    @ApiProperty({ example: 'admin' })
+    @ApiProperty({ example: 'strong-password' })
     @IsString()
+    @MinLength(1)
+    @MaxLength(72)
     password: string;
 }
 
@@ -19,7 +21,8 @@ export class RegisterDto {
 
     @ApiProperty({ example: 'password123' })
     @IsString()
-    @MinLength(6)
+    @MinLength(8)
+    @MaxLength(72)
     password: string;
 
     @ApiProperty({ example: 'Atlas Voyages' })
@@ -27,9 +30,9 @@ export class RegisterDto {
     @MinLength(2)
     name: string;
 
-    @ApiProperty({ enum: UserRole, example: UserRole.Agency })
-    @IsEnum(UserRole)
-    role: UserRole;
+    @ApiProperty({ enum: [UserRole.Agency, UserRole.Traveler], example: UserRole.Agency })
+    @IsIn([UserRole.Agency, UserRole.Traveler])
+    role: UserRole.Agency | UserRole.Traveler;
 }
 
 export class RefreshTokenDto {
@@ -76,6 +79,7 @@ export class ResetPasswordDto {
 
     @ApiProperty({ example: 'newPassword123' })
     @IsString()
-    @MinLength(6)
+    @MinLength(8)
+    @MaxLength(72)
     newPassword: string;
 }

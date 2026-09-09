@@ -10,13 +10,27 @@ export class AdminSeedService implements OnModuleInit {
   constructor(private readonly db: DatabaseService) {}
 
   async onModuleInit() {
-    if (process.env.ADMIN_SEED === 'false') {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const seedEnabled = process.env.ADMIN_SEED === 'true'
+      || (!isProduction && process.env.ADMIN_SEED !== 'false');
+
+    if (!seedEnabled) {
       return;
     }
 
-    const username = process.env.ADMIN_USERNAME || 'admin';
-    const password = process.env.ADMIN_PASSWORD || 'admin';
-    const email = process.env.ADMIN_EMAIL || `${username}@ouiboo.local`;
+    const username = process.env.ADMIN_USERNAME?.trim() || 'admin';
+    const password = process.env.ADMIN_PASSWORD || (isProduction ? '' : 'admin1234');
+    const email = process.env.ADMIN_EMAIL?.trim() || (isProduction ? '' : `${username}@ouiboo.local`);
+
+    if (isProduction) {
+      const weakPasswordPattern = /^(?:admin|password|(?:change|replace)-me)$/i;
+      if (!email || !password || password.length < 15 || weakPasswordPattern.test(password)) {
+        throw new Error(
+          'Production admin seeding requires ADMIN_EMAIL and a strong ADMIN_PASSWORD of at least 15 characters.',
+        );
+      }
+    }
+
     const rotateOnBoot = process.env.ADMIN_SEED_ROTATE === 'true';
     const hasPasswordOverride = typeof process.env.ADMIN_PASSWORD === 'string' && process.env.ADMIN_PASSWORD.length > 0;
     const shouldRotatePassword = rotateOnBoot && hasPasswordOverride;

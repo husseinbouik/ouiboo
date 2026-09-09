@@ -4,6 +4,7 @@ import { DatabaseService } from '../database/database.service';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { UploadService } from '../upload/upload.service';
 import { EmailService } from '../email/email.service';
+import { WalletsService } from '../wallets/wallets.service';
 
 const mockBooking = {
     id: 'booking-123',
@@ -20,17 +21,25 @@ const mockBooking = {
 
 const mockDatabaseService = {
     booking: {
+        findFirst: jest.fn(),
         findUnique: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn(),
         findMany: jest.fn(),
+        findUniqueOrThrow: jest.fn(),
     },
     tripSession: {
         findUnique: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn(),
+    },
+    user: {
+        findUnique: jest.fn(),
     },
     paymentProof: {
         upsert: jest.fn(),
+        updateMany: jest.fn(),
     },
     agencyProfile: {
         findUnique: jest.fn(),
@@ -45,6 +54,10 @@ const mockUploadService = {
 const mockEmailService = {
     sendBookingNotification: jest.fn(),
     sendPaymentConfirmation: jest.fn(),
+};
+
+const mockWalletsService = {
+    creditWalletInTransaction: jest.fn(),
 };
 
 describe('BookingsService', () => {
@@ -68,6 +81,10 @@ describe('BookingsService', () => {
                     provide: UploadService,
                     useValue: mockUploadService,
                 },
+                {
+                    provide: WalletsService,
+                    useValue: mockWalletsService,
+                },
             ],
         }).compile();
 
@@ -76,6 +93,59 @@ describe('BookingsService', () => {
         uploadService = module.get(UploadService);
 
         jest.clearAllMocks();
+    });
+
+    describe('create', () => {
+        const createDto = {
+            sessionId: 'session-123',
+            guestsCount: 2,
+            fullName: 'Test Traveler',
+            phoneNumber: '+212600000000',
+            documentNumber: 'AA123456',
+        };
+        const availableSession = {
+            id: 'session-123',
+            status: 'OPEN',
+            startDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            price: 250,
+            template: {
+                status: 'ACTIVE',
+                title: 'Atlas Escape',
+                agency: {
+                    userId: 'agency-user-123',
+                    verificationStatus: 'VERIFIED',
+                    subscriptionStatus: 'TRIAL',
+                    trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                    subscriptionEndsAt: null,
+                },
+            },
+        };
+
+        it('rejects a direct API booking for an inactive trip', async () => {
+            db.tripSession.findUnique.mockResolvedValue({
+                ...availableSession,
+                template: { ...availableSession.template, status: 'DRAFT' },
+            });
+
+            await expect(service.create('user-123', createDto)).rejects.toThrow(
+                'This trip session is not available for booking',
+            );
+            expect(db.$transaction).not.toHaveBeenCalled();
+        });
+
+        it('checks for duplicate bookings after acquiring the session row', async () => {
+            db.tripSession.findUnique.mockResolvedValue(availableSession);
+            db.tripSession.updateMany.mockResolvedValue({ count: 1 });
+            db.booking.findFirst.mockResolvedValue({ id: 'existing-booking' });
+
+            await expect(service.create('user-123', createDto)).rejects.toThrow(
+                'You already have a booking for this session',
+            );
+
+            expect(db.tripSession.updateMany.mock.invocationCallOrder[0]).toBeLessThan(
+                db.booking.findFirst.mock.invocationCallOrder[0],
+            );
+        });
     });
 
     describe('uploadPaymentProof', () => {

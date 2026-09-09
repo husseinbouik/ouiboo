@@ -115,7 +115,7 @@ describe('MVP smoke: auth + booking flow', () => {
             })
             .expect(201)
             .expect(({ body }) => {
-                expect(body).toEqual({ accessToken: 'token', refreshToken: 'refresh' });
+                expect(body).toEqual({ accessToken: 'token' });
             });
 
         await request(app.getHttpServer())

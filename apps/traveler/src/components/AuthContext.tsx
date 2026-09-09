@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
+import { clearBrowserAccessToken } from '@ouiboo/api-client';
 
 interface User {
     id: string;
@@ -17,7 +18,7 @@ interface User {
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
-    logout: () => void;
+    logout: () => Promise<void>;
     refetch: () => void;
     showLoginModal: boolean;
     setShowLoginModal: (show: boolean) => void;
@@ -31,10 +32,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         queryKey: ['me-traveler'],
         queryFn: async () => {
             try {
-                const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-                if (!token) {
-                    return null;
-                }
                 const response = await apiClient.get('/users/me');
                 return response.data;
             } catch {
@@ -46,11 +43,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const [showLoginModal, setShowLoginModal] = useState(false);
 
-    const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refresh_token');
+    const logout = async () => {
+        try {
+            await apiClient.post('/auth/logout');
+        } finally {
+            clearBrowserAccessToken();
+        }
         router.push('/login');
-        refetch(); // Ensure state is cleared
+        await refetch();
     };
 
     return (

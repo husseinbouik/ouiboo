@@ -8,8 +8,12 @@ import { AgencyShell } from "@/components/AgencyShell";
 import { TrialBanner } from "@/components/TrialBanner";
 
 export const metadata: Metadata = {
-  title: "Ouiboo Agency",
-  description: "Agency portal for Ouiboo",
+  title: {
+    default: "Agency workspace",
+    template: "%s | Ouiboo Agency",
+  },
+  description: "Manage your Ouiboo trips, bookings, customers, and agency profile.",
+  robots: { index: false, follow: false, noarchive: true },
 };
 
 // Force dynamic rendering for all pages - prevents i18n HTTP backend

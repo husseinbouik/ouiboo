@@ -9,9 +9,8 @@ export class WishlistService {
    * Add trip to wishlist
    */
   async addToWishlist(userId: string, tripId: string) {
-    // Verify trip exists
-    const trip = await this.prisma.tripTemplate.findUnique({
-      where: { id: tripId },
+    const trip = await this.prisma.tripTemplate.findFirst({
+      where: { id: tripId, status: 'ACTIVE' },
     });
 
     if (!trip) {
@@ -69,11 +68,14 @@ export class WishlistService {
    * Get user's wishlist
    */
   async getUserWishlist(userId: string, page: number = 1, limit: number = 20) {
-    const skip = (page - 1) * limit;
+    const safePage = Number.isFinite(page) ? Math.max(1, Math.floor(page)) : 1;
+    const safeLimit = Number.isFinite(limit) ? Math.min(50, Math.max(1, Math.floor(limit))) : 20;
+    const skip = (safePage - 1) * safeLimit;
+    const where = { userId, tripTemplate: { status: 'ACTIVE' as const } };
 
     const [wishlists, total] = await Promise.all([
       this.prisma.wishlist.findMany({
-        where: { userId },
+        where,
         include: {
           tripTemplate: {
             include: {
@@ -81,8 +83,17 @@ export class WishlistService {
               sessions: {
                 where: {
                   status: 'OPEN',
+                  startDate: { gte: new Date() },
                 },
-                select: { id: true, startDate: true, endDate: true, price: true },
+                select: {
+                  id: true,
+                  startDate: true,
+                  endDate: true,
+                  price: true,
+                  availableSeats: true,
+                  status: true,
+                  currency: true,
+                },
                 orderBy: { startDate: 'asc' },
                 take: 3,
               },
@@ -91,18 +102,18 @@ export class WishlistService {
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take: safeLimit,
       }),
       this.prisma.wishlist.count({
-        where: { userId },
+        where,
       }),
     ]);
 
     return {
-      wishlists,
+      items: wishlists.map((wishlist) => wishlist.tripTemplate),
       total,
-      page,
-      pages: Math.ceil(total / limit),
+      page: safePage,
+      pages: Math.ceil(total / safeLimit),
     };
   }
 

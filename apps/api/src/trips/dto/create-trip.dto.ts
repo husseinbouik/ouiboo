@@ -1,5 +1,5 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsString, IsEnum, IsPositive, IsInt, Min, IsArray, MinLength, IsOptional, ValidateNested } from 'class-validator';
+import { IsString, IsEnum, IsPositive, IsInt, Min, IsArray, MinLength, IsOptional, ValidateNested, IsDateString, Matches } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TripCategory, TripStatus } from '@ouiboo/types';
 import { IsDecimalMoney } from '../../common/validators/is-decimal-money.decorator';
@@ -43,6 +43,16 @@ export class CreateTripTemplateDto {
     @ApiProperty({ example: 'Marrakech, Morocco' })
     @IsString()
     startLocation: string;
+
+    @ApiProperty({ example: 'Merzouga, Morocco', required: false })
+    @IsOptional()
+    @IsString()
+    endLocation?: string;
+
+    @ApiProperty({ example: 'MAD', required: false })
+    @IsOptional()
+    @Matches(/^[A-Z]{3}$/)
+    currency?: string;
 
     @ApiProperty({ example: 5 })
     @IsInt()
@@ -92,11 +102,11 @@ export class UpdateTripTemplateDto extends PartialType(CreateTripTemplateDto) { 
 
 export class CreateTripSessionDto {
     @ApiProperty({ example: '2025-01-01T00:00:00Z' })
-    @IsString()
+    @IsDateString()
     startDate: string;
 
     @ApiProperty({ example: '2025-01-05T00:00:00Z' })
-    @IsString()
+    @IsDateString()
     endDate: string;
 
     @ApiProperty({ example: 1200.00 })
@@ -112,4 +122,11 @@ export class CreateTripSessionDto {
     @IsInt()
     @IsPositive()
     totalSeats: number;
+
+    @ApiProperty({ example: 'MAD', required: false })
+    @IsOptional()
+    @Matches(/^[A-Z]{3}$/)
+    currency?: string;
 }
+
+export class UpdateTripSessionDto extends PartialType(CreateTripSessionDto) { }

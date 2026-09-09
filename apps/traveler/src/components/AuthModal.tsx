@@ -9,6 +9,7 @@ import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
+import { setBrowserAccessToken } from '@ouiboo/api-client';
 
 type AuthModalFormValues = {
     email: string;
@@ -17,7 +18,6 @@ type AuthModalFormValues = {
 
 type LoginResponse = {
     accessToken: string;
-    refreshToken: string;
 };
 
 type ApiError = {
@@ -39,11 +39,7 @@ export function AuthModal() {
             return response.data as LoginResponse;
         },
         onSuccess: async (data) => {
-            const { accessToken, refreshToken } = data;
-            if (typeof window !== 'undefined') {
-                localStorage.setItem('token', accessToken);
-                localStorage.setItem('refresh_token', refreshToken);
-            }
+            setBrowserAccessToken(data.accessToken);
             await refetch();
             setShowLoginModal(false);
             reset();

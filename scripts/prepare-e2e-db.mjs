@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { PrismaClient } from '../packages/database/generated-client/index.js';
 
 const DEFAULT_E2E_DATABASE_URL = 'postgresql://postgres:admin@localhost:5432/ouiboo_test?schema=public';
 const __filename = fileURLToPath(import.meta.url);
@@ -55,23 +54,16 @@ const e2eDatabaseUrl = process.env.E2E_DATABASE_URL || DEFAULT_E2E_DATABASE_URL;
 const { parsed, databaseName } = parseDatabaseName(e2eDatabaseUrl);
 const adminDatabaseUrl = adminUrlFor(parsed);
 
-process.env.DATABASE_URL = adminDatabaseUrl;
-const admin = new PrismaClient();
-
-try {
-  console.log(`[e2e-db] ensuring database ${databaseName}`);
-  await admin.$executeRawUnsafe(`CREATE DATABASE "${databaseName}"`);
-  console.log(`[e2e-db] created database ${databaseName}`);
-} catch (error) {
-  const message = String(error?.message || error);
-  if (message.includes('already exists') || message.includes('42P04')) {
-    console.log(`[e2e-db] database ${databaseName} already exists`);
-  } else {
-    throw error;
-  }
-} finally {
-  await admin.$disconnect();
-}
+console.log(`[e2e-db] ensuring database ${databaseName}`);
+run(
+  process.execPath,
+  [path.join(root, 'scripts', 'ensure-e2e-database.mjs')],
+  {
+    ...process.env,
+    E2E_DATABASE_URL: e2eDatabaseUrl,
+    E2E_ADMIN_DATABASE_URL: adminDatabaseUrl,
+  },
+);
 
 const env = {
   ...process.env,
@@ -80,7 +72,14 @@ const env = {
   NODE_ENV: 'test',
 };
 
-console.log('[e2e-db] pushing Prisma schema to test database');
-const npm = npmCommand(['run', 'db:push', '--workspace', 'packages/database']);
+console.log('[e2e-db] resetting the isolated test database and applying the Prisma schema');
+const npm = npmCommand([
+  'run',
+  'db:push',
+  '--workspace',
+  'packages/database',
+  '--',
+  '--force-reset',
+]);
 run(npm.command, npm.args, env);
 console.log(`[e2e-db] ready: ${e2eDatabaseUrl}`);

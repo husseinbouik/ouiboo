@@ -149,11 +149,14 @@ export class AdminController {
         @Body('status') status: 'VERIFIED' | 'REJECTED',
         @Body('rejectionReason') rejectionReason?: string
     ) {
+        if (!['VERIFIED', 'REJECTED'].includes(status)) {
+            throw new BadRequestException('Invalid payment proof status');
+        }
         if (status === 'REJECTED' && !rejectionReason) {
             throw new BadRequestException('Rejection reason is required when rejecting a payment');
         }
 
-        return this.db.$transaction(async (tx) => {
+        const result = await this.db.$transaction(async (tx) => {
             const proof = await tx.paymentProof.findUnique({
                 where: { id },
                 include: { booking: { include: { session: { include: { template: true } }, traveler: true } } }
@@ -190,35 +193,85 @@ export class AdminController {
             });
 
             if (status === 'VERIFIED') {
-                await this.walletsService.creditWallet(
+                await this.walletsService.creditWalletInTransaction(
+                    tx,
                     updatedBooking.session.template.agencyId,
                     updatedBooking.totalAmount,
-                    `Booking #${updatedBooking.id} confirmed`
+                    `Booking #${updatedBooking.id} confirmed`,
+                    {
+                        idempotencyKey: `booking:${updatedBooking.id}:payment-credit`,
+                        referenceId: updatedBooking.id,
+                        type: 'BOOKING',
+                    },
                 );
-
-                const travelerEmail = proof.booking?.traveler?.email;
-                if (travelerEmail) {
-                    await this.emailService.sendPaymentConfirmation(
-                        travelerEmail,
-                        updatedBooking.session.template.title
-                    );
-                }
             }
 
-            this.auditLogService.log({
-                actorId: req?.user?.userId,
-                actorEmail: req?.user?.email,
-                action: 'PAYMENT_PROOF_VERIFIED',
-                targetType: 'PaymentProof',
-                targetId: proof.id,
-                metadata: {
-                    status,
-                    bookingId: proof.bookingId,
-                },
-            }).catch((err) => console.error('Audit log failed', err));
-
-            return updatedProof;
+            return {
+                updatedProof,
+                bookingId: proof.bookingId,
+                travelerEmail: proof.booking.traveler?.email,
+                tripTitle: updatedBooking.session.template.title,
+            };
         });
+
+        if (status === 'VERIFIED' && result.travelerEmail) {
+            this.emailService.sendPaymentConfirmation(
+                result.travelerEmail,
+                result.tripTitle,
+            ).catch((err) => console.error('Failed to send payment confirmation email', err));
+        }
+
+        this.auditLogService.log({
+            actorId: req?.user?.userId,
+            actorEmail: req?.user?.email,
+            action: 'PAYMENT_PROOF_VERIFIED',
+            targetType: 'PaymentProof',
+            targetId: result.updatedProof.id,
+            metadata: {
+                status,
+                bookingId: result.bookingId,
+            },
+        }).catch((err) => console.error('Audit log failed', err));
+
+        return result.updatedProof;
+    }
+
+    @Get('overview-counts')
+    @ApiOperation({ summary: 'Get lightweight counts for the admin dashboard' })
+    async getOverviewCounts() {
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const [
+            pendingAgencies,
+            pendingTrips,
+            agencies,
+            bookings,
+            bookingsToday,
+            pendingPaymentProofs,
+            pendingPayouts,
+            auditLogs,
+        ] = await Promise.all([
+            this.db.agencyProfile.count({ where: { verificationStatus: 'PENDING' } }),
+            this.db.tripTemplate.count({ where: { status: 'DRAFT' } }),
+            this.db.agencyProfile.count(),
+            this.db.booking.count(),
+            this.db.booking.count({ where: { bookingDate: { gte: startOfToday } } }),
+            this.db.paymentProof.count({ where: { status: 'PENDING' } }),
+            this.db.payoutRequest.count({ where: { status: 'PENDING' } }),
+            this.db.auditLog.count(),
+        ]);
+
+        return {
+            pendingAgencies,
+            pendingTrips,
+            agencies,
+            bookings,
+            bookingsToday,
+            pendingPaymentProofs,
+            pendingPayouts,
+            auditLogs,
+        };
     }
 
     @Get('pending-agencies')
@@ -244,6 +297,9 @@ export class AdminController {
     @Post('agencies/:id/verify')
     @ApiOperation({ summary: 'Approve or reject agency' })
     async verifyAgency(@Request() req, @Param('id') id: string, @Body('status') status: 'VERIFIED' | 'REJECTED') {
+        if (!['VERIFIED', 'REJECTED'].includes(status)) {
+            throw new BadRequestException('Invalid agency verification status');
+        }
         const updated = await this.db.agencyProfile.update({
             where: { id },
             data: { verificationStatus: status }
@@ -280,6 +336,25 @@ export class AdminController {
     @Post('trips/:id/verify')
     @ApiOperation({ summary: 'Approve or reject trip' })
     async verifyTrip(@Request() req, @Param('id') id: string, @Body('status') status: 'ACTIVE' | 'ARCHIVED') {
+        if (!['ACTIVE', 'ARCHIVED'].includes(status)) {
+            throw new BadRequestException('Invalid trip status');
+        }
+        const trip = await this.db.tripTemplate.findUnique({
+            where: { id },
+            include: { agency: true },
+        });
+        if (!trip) throw new BadRequestException('Trip not found');
+        if (status === 'ACTIVE') {
+            const now = new Date();
+            const subscriptionValid = trip.agency.subscriptionStatus === 'ACTIVE'
+                ? !trip.agency.subscriptionEndsAt || trip.agency.subscriptionEndsAt > now
+                : trip.agency.subscriptionStatus === 'TRIAL'
+                    && !!trip.agency.trialEndsAt
+                    && trip.agency.trialEndsAt > now;
+            if (trip.agency.verificationStatus !== 'VERIFIED' || !subscriptionValid) {
+                throw new BadRequestException('Agency must be verified with an active subscription or trial');
+            }
+        }
         const updated = await this.db.tripTemplate.update({
             where: { id },
             data: { status: status }
@@ -329,6 +404,15 @@ export class AdminController {
         @Param('id') id: string,
         @Body() data: { verificationStatus?: VerificationStatusType; subscriptionStatus?: SubscriptionStatusType },
     ) {
+        if (!data.verificationStatus && !data.subscriptionStatus) {
+            throw new BadRequestException('At least one agency status is required');
+        }
+        if (data.verificationStatus && !VERIFICATION_STATUSES.includes(data.verificationStatus)) {
+            throw new BadRequestException('Invalid agency verification status');
+        }
+        if (data.subscriptionStatus && !SUBSCRIPTION_STATUSES.includes(data.subscriptionStatus)) {
+            throw new BadRequestException('Invalid agency subscription status');
+        }
         const updated = await this.db.agencyProfile.update({
             where: { id },
             data: {
@@ -440,6 +524,9 @@ export class AdminController {
     @Post('payouts/:id/process')
     @ApiOperation({ summary: 'Mark payout as paid or rejected' })
     async processPayout(@Request() req, @Param('id') id: string, @Body('status') status: 'PAID' | 'REJECTED') {
+        if (!['PAID', 'REJECTED'].includes(status)) {
+            throw new BadRequestException('Invalid payout status');
+        }
         const updated = await this.db.$transaction(async (tx) => {
             const payout = await tx.payoutRequest.findUnique({
                 where: { id },
@@ -460,41 +547,31 @@ export class AdminController {
                 throw new BadRequestException('Payout request has already been processed');
             }
 
-            const processedPayout = await tx.payoutRequest.update({
-                where: { id },
+            const claimed = await tx.payoutRequest.updateMany({
+                where: { id, status: PayoutStatus.Pending },
                 data: {
                     status,
                     processedAt: new Date(),
                 },
             });
+            if (claimed.count !== 1) {
+                throw new BadRequestException('Payout request has already been processed');
+            }
+
+            const processedPayout = await tx.payoutRequest.findUniqueOrThrow({ where: { id } });
 
             if (status === 'REJECTED') {
-                const wallet = payout.agency.wallet ?? await tx.wallet.create({
-                    data: {
-                        agencyId: payout.agencyId,
-                        availableBalance: 0,
-                        pendingBalance: 0,
-                    },
-                });
-
-                await tx.wallet.update({
-                    where: { id: wallet.id },
-                    data: {
-                        availableBalance: {
-                            increment: payout.amount,
-                        },
-                    },
-                });
-
-                await tx.walletTransaction.create({
-                    data: {
-                        walletId: wallet.id,
-                        amount: payout.amount,
-                        type: 'CREDIT',
-                        reason: `Payout request ${payout.id} rejected and funds restored`,
+                await this.walletsService.creditWalletInTransaction(
+                    tx,
+                    payout.agencyId,
+                    payout.amount,
+                    `Payout request ${payout.id} rejected and funds restored`,
+                    {
+                        idempotencyKey: `payout:${payout.id}:rejection-credit`,
                         referenceId: payout.id,
+                        type: 'CREDIT',
                     },
-                });
+                );
             }
 
             return processedPayout;

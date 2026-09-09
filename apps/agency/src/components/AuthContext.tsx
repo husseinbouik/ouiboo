@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import type { VerificationStatusType } from '@ouiboo/types';
+import { clearBrowserAccessToken } from '@ouiboo/api-client';
 
 interface User {
     id: string;
@@ -31,7 +32,7 @@ interface User {
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
-    logout: () => void;
+    logout: () => Promise<void>;
     refetch: () => void;
 }
 
@@ -49,13 +50,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return null;
             }
         },
-        // Only fetch if we have a token
-        enabled: typeof window !== 'undefined' && !!localStorage.getItem('token'),
+        retry: false,
     });
 
-    const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refresh_token');
+    const logout = async () => {
+        try {
+            await apiClient.post('/auth/logout');
+        } finally {
+            clearBrowserAccessToken();
+        }
         router.replace('/login');
         router.refresh();
     };
