@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { BookingStatus, type BookingDetails } from '@ouiboo/types';
-import { Button, Badge, Card } from '@ouiboo/ui';
+import { Button, Badge, Card, Pagination } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
+import { toPaginatedList } from '@ouiboo/utils';
 import { Calendar, MapPin, Loader2, Upload, Check, Trash2, Clock, Users, Star } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -19,7 +20,7 @@ import {
     getTravelerPaymentStatusMeta,
     getTravelerProofStatus,
     shouldShowUploadAction,
-} from './booking-status';
+} from '@ouiboo/utils';
 
 export default function MyBookingsPage() {
     const { user } = useAuth();
@@ -27,15 +28,21 @@ export default function MyBookingsPage() {
     const [uploadingId, setUploadingId] = useState<string | null>(null);
     const [cancellingId, setCancellingId] = useState<string | null>(null);
     const [reviewModalOpen, setReviewModalOpen] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const BOOKINGS_PAGE_LIMIT = 5;
 
-    const { data: bookings = [], isLoading } = useQuery<BookingDetails[]>({
-        queryKey: ['my-bookings'],
+    const { data: rawBookings, isLoading } = useQuery<unknown>({
+        queryKey: ['my-bookings', currentPage],
         queryFn: async () => {
-            const response = await apiClient.get('/bookings/my-bookings');
+            const response = await apiClient.get('/bookings/my-bookings', {
+                params: { page: currentPage, limit: BOOKINGS_PAGE_LIMIT },
+            });
             return response.data;
         },
         enabled: !!user,
+        placeholderData: (prev: unknown) => prev,
     });
+    const { data: bookings = [], pagination: bookingsPagination } = toPaginatedList<BookingDetails>(rawBookings);
 
     const uploadProofMutation = useMutation({
         mutationFn: async ({ bookingId, file }: { bookingId: string; file: File }) => {
@@ -284,7 +291,7 @@ export default function MyBookingsPage() {
                             );
                         })
                     ) : (
-                        <div className="text-center py-20 bg-card/70 rounded-[2rem] border border-dashed border-border">
+<div className="text-center py-20 bg-card/70 rounded-[2rem] border border-dashed border-border">
                             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Calendar className="h-8 w-8 text-muted-foreground" />
                             </div>
@@ -293,6 +300,7 @@ export default function MyBookingsPage() {
                         </div>
                     )}
                 </div>
+                <Pagination pagination={bookingsPagination} onPageChange={setCurrentPage} className="mt-8" />
             </div>
 
             {reviewModalOpen && (

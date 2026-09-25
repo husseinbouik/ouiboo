@@ -43,6 +43,11 @@ export class UploadService {
         return provider.getFilePath(key);
     }
 
+    async readFile(key: string) {
+        const provider = await this.getStorageProvider();
+        return provider.read(key);
+    }
+
     async isLocal() {
         const provider = await this.getStorageProvider();
         return provider.isLocal();

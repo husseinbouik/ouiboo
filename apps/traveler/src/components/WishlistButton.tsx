@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthContext';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
 
 interface WishlistButtonProps {
@@ -14,6 +15,7 @@ interface WishlistButtonProps {
 }
 
 export function WishlistButton({ tripId, className }: WishlistButtonProps) {
+  const { t } = useTranslation();
   const { user, setShowLoginModal } = useAuth();
   const queryClient = useQueryClient();
   const [isOptimistic, setIsOptimistic] = useState(false);
@@ -91,12 +93,14 @@ export function WishlistButton({ tripId, className }: WishlistButtonProps) {
     <motion.button
       onClick={handleClick}
       disabled={isLoading_}
+      aria-label={isWishlisted ? t('tripCard.wishlistRemove') : t('tripCard.wishlistAdd')}
+      aria-pressed={isWishlisted}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
       className={cn(
         'inline-flex items-center justify-center p-2.5 rounded-full backdrop-blur-md transition-all duration-300',
-        'bg-white/20 dark:bg-black/20 hover:bg-white/30 dark:hover:bg-black/30',
-        'border border-white/30 dark:border-white/10',
+        'bg-white/20 hover:bg-white/30',
+        'border border-white/30',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         className
       )}
@@ -109,8 +113,8 @@ export function WishlistButton({ tripId, className }: WishlistButtonProps) {
           className={cn(
             'w-5 h-5 transition-all duration-300',
             isWishlisted
-              ? 'fill-red-500 text-red-500'
-              : 'text-white dark:text-gray-300'
+              ? 'fill-danger text-danger'
+              : 'text-white'
           )}
         />
       </motion.div>

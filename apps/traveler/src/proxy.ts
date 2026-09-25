@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const supportedLanguages = ['en', 'fr', 'ar'];
+
 const privatePathPrefixes = [
   '/booking',
   '/bookings',

@@ -1,9 +1,15 @@
+'use client'
+
+import { useTranslation } from 'react-i18next'
+
 export default function AgencyLoading() {
+  const { t } = useTranslation()
+
   return (
     <div
       className="animate-pulse space-y-8 p-6 lg:p-8"
       role="status"
-      aria-label="Loading dashboard"
+      aria-label={t('common.loading')}
     >
       <div className="flex items-center justify-between gap-6">
         <div className="space-y-3">
@@ -24,7 +30,7 @@ export default function AgencyLoading() {
         <div className="h-96 rounded-3xl border border-border bg-card" />
         <div className="h-96 rounded-3xl border border-border bg-card" />
       </div>
-      <span className="sr-only">Loading…</span>
+      <span className="sr-only">{t('common.loading')}</span>
     </div>
   )
 }

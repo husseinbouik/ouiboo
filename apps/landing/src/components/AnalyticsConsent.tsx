@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Script from 'next/script';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const STORAGE_KEY = 'ouiboo_analytics_consent';
 const PREFERENCES_EVENT = 'ouiboo:open-cookie-preferences';
@@ -10,6 +11,7 @@ const PREFERENCES_EVENT = 'ouiboo:open-cookie-preferences';
 type Consent = 'accepted' | 'declined' | null;
 
 export function CookiePreferencesButton({ className = '' }: { className?: string }) {
+  const { t } = useTranslation();
   const analyticsConfigured = Boolean(
     process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID,
   );
@@ -22,12 +24,13 @@ export function CookiePreferencesButton({ className = '' }: { className?: string
       className={className}
       onClick={() => window.dispatchEvent(new Event(PREFERENCES_EVENT))}
     >
-      Cookie settings
+      {t('analyticsConsent.cookieSettings')}
     </button>
   );
 }
 
 export default function AnalyticsConsent() {
+  const { t } = useTranslation();
   const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
   const clarityProjectId = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
   const analyticsConfigured = Boolean(gaMeasurementId || clarityProjectId);
@@ -91,32 +94,32 @@ export default function AnalyticsConsent() {
 
       {showPrompt ? (
         <section
-          aria-label="Analytics preferences"
-          className="fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 shadow-2xl sm:flex sm:items-center sm:gap-6"
+          aria-label={t('analyticsConsent.preferencesLabel')}
+          className="fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-3xl rounded-2xl border border-border bg-card p-5 text-foreground shadow-2xl sm:flex sm:items-center sm:gap-6"
         >
           <div className="flex-1">
-            <h2 className="text-base font-bold">Your privacy, your choice</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              We use optional analytics only with your permission to understand how Ouiboo is used. Essential language preferences work without analytics. Read our{' '}
+            <h2 className="text-base font-bold">{t('analyticsConsent.title')}</h2>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              {t('analyticsConsent.intro')}{' '}
               <Link className="font-semibold text-orange-700 underline" href="/privacy">
-                privacy notice
+                {t('analyticsConsent.privacyNotice')}
               </Link>.
             </p>
           </div>
           <div className="mt-4 flex flex-col-reverse gap-2 sm:mt-0 sm:flex-row">
             <button
               type="button"
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold hover:bg-slate-50"
+              className="rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-muted"
               onClick={() => saveConsent('declined')}
             >
-              Continue without analytics
+              {t('analyticsConsent.continueWithoutAnalytics')}
             </button>
             <button
               type="button"
-              className="rounded-lg bg-[#07152f] px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+              className="rounded-lg bg-deep-blue px-4 py-2 text-sm font-semibold text-white hover:opacity-90 dark:bg-sunset-orange"
               onClick={() => saveConsent('accepted')}
             >
-              Allow analytics
+              {t('analyticsConsent.allowAnalytics')}
             </button>
           </div>
         </section>

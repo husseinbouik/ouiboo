@@ -8,6 +8,7 @@ import { useAuth } from './AuthContext';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { setBrowserAccessToken } from '@ouiboo/api-client';
 
@@ -29,6 +30,7 @@ type ApiError = {
 };
 
 export function AuthModal() {
+    const { t } = useTranslation();
     const { showLoginModal, setShowLoginModal, refetch } = useAuth();
     const [error, setError] = useState<string | null>(null);
     const { register, handleSubmit, reset } = useForm<AuthModalFormValues>();
@@ -46,7 +48,7 @@ export function AuthModal() {
             setError(null);
         },
         onError: (err: ApiError) => {
-            setError(err?.response?.data?.message || 'Login failed. Please try again.');
+            setError(err?.response?.data?.message || t('authModal.error'));
         },
     });
 
@@ -77,42 +79,43 @@ export function AuthModal() {
                 >
                     <button 
                         onClick={() => setShowLoginModal(false)}
-                        className="absolute top-6 right-6 p-2 rounded-full hover:bg-muted transition-colors z-10"
+                        aria-label={t('authModal.close')}
+                        className="absolute top-6 end-6 p-2 rounded-full hover:bg-muted transition-colors z-10"
                     >
                         <X className="h-5 w-5 text-muted-foreground" />
                     </button>
 
                     <div className="p-8 md:p-10">
                         <div className="text-center mb-8">
-                            <div className="w-12 h-12 rounded-2xl bg-sunset-orange/10 text-sunset-orange flex items-center justify-center font-bold text-2xl mx-auto mb-4">
+                            <div className="w-12 h-12 rounded-2xl bg-accent/10 text-accent flex items-center justify-center font-bold text-2xl mx-auto mb-4">
                                 O
                             </div>
-                            <h2 className="text-2xl font-bold text-foreground">Login to Continue</h2>
-                            <p className="text-sm text-muted-foreground mt-2 font-medium">Please sign in to book your adventure.</p>
+                            <h2 className="text-2xl font-bold text-foreground">{t('authModal.title')}</h2>
+                            <p className="text-sm text-muted-foreground mt-2 font-medium">{t('authModal.subtitle')}</p>
                         </div>
 
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                             <div className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Email</label>
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest ms-1">{t('authModal.email')}</label>
                                     <div className="relative">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Mail className="absolute start-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                         <Input 
-                                            placeholder="hello@ouiboo.com"
-                                            className="pl-11 h-12 bg-muted/50 border-border rounded-xl focus:bg-background transition-all"
+                                            placeholder={t('authModal.emailPlaceholder')}
+                                            className="ps-11 h-12 bg-muted/50 border-border rounded-xl focus:bg-background transition-all"
                                             {...register('email', { required: true })}
                                         />
                                     </div>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Password</label>
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest ms-1">{t('authModal.password')}</label>
                                     <div className="relative">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Lock className="absolute start-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                         <Input 
                                             type="password"
-                                            placeholder="••••••••"
-                                            className="pl-11 h-12 bg-muted/50 border-border rounded-xl focus:bg-background transition-all"
+                                            placeholder={t('authModal.passwordPlaceholder')}
+                                            className="ps-11 h-12 bg-muted/50 border-border rounded-xl focus:bg-background transition-all"
                                             {...register('password', { required: true })}
                                         />
                                     </div>
@@ -128,25 +131,25 @@ export function AuthModal() {
                             <Button 
                                 type="submit" 
                                 disabled={loginMutation.isPending}
-                                className="w-full h-12 bg-sunset-orange hover:bg-orange-600 text-white font-bold rounded-xl shadow-lg shadow-orange-900/20 transition-all active:scale-[0.98]"
+                                className="w-full h-12 bg-accent hover:bg-accent/90 text-accent-foreground font-bold rounded-xl shadow-lg shadow-accent/20 transition-all active:scale-[0.98]"
                             >
-                                {loginMutation.isPending ? 'Logging in...' : 'Sign In'}
+                                {loginMutation.isPending ? t('authModal.submitting') : t('authModal.signIn')}
                             </Button>
 
                             <div className="text-center space-y-4">
                                 <div className="flex items-center gap-4 py-2">
                                     <div className="h-px flex-1 bg-border" />
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Or</span>
+                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('authModal.or')}</span>
                                     <div className="h-px flex-1 bg-border" />
                                 </div>
                                 <p className="text-sm font-medium text-muted-foreground">
-                                    Do not have an account?{' '}
+                                    {t('authModal.noAccount')}{' '}
                                     <Link
                                         href="/signup"
                                         onClick={() => setShowLoginModal(false)}
-                                        className="text-sunset-orange font-bold hover:underline"
+                                        className="text-accent font-bold hover:underline"
                                     >
-                                        Sign Up
+                                        {t('authModal.signUp')}
                                     </Link>
                                 </p>
                             </div>

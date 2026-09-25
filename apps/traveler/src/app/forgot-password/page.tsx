@@ -7,13 +7,11 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowLeft, CheckCircle, Mail } from 'lucide-react';
 import { Button, Input } from '@ouiboo/ui';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { ForgotPasswordSchema, type ForgotPasswordInput } from '@ouiboo/schemas';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
 import { apiClient } from '@/lib/api-client';
-
-type ForgotPasswordForm = {
-  email: string;
-};
 
 type ApiError = {
   response?: {
@@ -25,7 +23,9 @@ type ApiError = {
 
 export default function TravelerForgotPasswordPage() {
   const { t, i18n } = useTranslation();
-  const { register, handleSubmit, formState: { errors } } = useForm<ForgotPasswordForm>();
+  const { register, handleSubmit, formState: { errors } } = useForm<ForgotPasswordInput>({
+    resolver: zodResolver(ForgotPasswordSchema),
+  });
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -34,7 +34,7 @@ export default function TravelerForgotPasswordPage() {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
-  const onSubmit = async (data: ForgotPasswordForm) => {
+  const onSubmit = async (data: ForgotPasswordInput) => {
     setErrorMessage(null);
     setIsSubmitting(true);
     try {
@@ -105,7 +105,7 @@ export default function TravelerForgotPasswordPage() {
                       type="email"
                       placeholder={t('forgotPassword.emailPlaceholder')}
                       className="pl-10 h-12 bg-muted border-border focus:bg-background focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
-                      {...register('email', { required: 'Email is required' })}
+                      {...register('email')}
                     />
                   </div>
                   {errors.email && <span className="text-danger text-sm">{errors.email.message}</span>}

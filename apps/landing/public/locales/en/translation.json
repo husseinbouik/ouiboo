@@ -191,6 +191,7 @@
       "email": "Enter your email",
       "phone": "Enter your phone number",
       "userType": {
+        "label": "User type",
         "traveler": "Traveler",
         "agency": "Agency"
       },
@@ -206,7 +207,61 @@
     "button": "Awesome!"
   },
   "footer": {
-    "rights": "All rights reserved."
+    "rights": "All rights reserved.",
+    "privacy": "Privacy",
+    "copyright": "© {{year}} Ouiboo."
+  },
+  "common": {
+    "globalNavigationLabel": "Global",
+    "openMainMenu": "Open main menu",
+    "closeMenu": "Close menu",
+    "dashboardImageAlt": "Ouiboo Dashboard",
+    "travelerImageAlt": "Traveler enjoying a mountainous view",
+    "agencyImageAlt": "Agency dashboard on a laptop"
+  },
+  "error": {
+    "title": "We hit an unexpected detour",
+    "description": "Please try this page again. Your request has not been submitted twice.",
+    "tryAgain": "Try again"
+  },
+  "notFound": {
+    "title": "This page is off the itinerary",
+    "description": "The address may have changed or the page may no longer be available.",
+    "returnHome": "Return home"
+  },
+  "privacy": {
+    "back": "← Back to Ouiboo",
+    "title": "Privacy notice",
+    "updated": "Last updated: {{date}}",
+    "section1": {
+      "title": "Information we process",
+      "body": "Ouiboo processes information you provide when joining the waitlist, creating an account, managing an agency, publishing a trip, making a booking, contacting support, or completing a payment workflow. This can include identity and contact details, agency information, booking records, and transaction references."
+    },
+    "section2": {
+      "title": "Why we use it",
+      "body": "We use this information to provide and secure the marketplace, fulfill bookings, communicate service updates, prevent abuse, meet legal obligations, and improve the product. We do not sell personal information."
+    },
+    "section3": {
+      "title": "Optional analytics",
+      "body": "Website analytics are disabled unless you choose to allow them. You can change that choice at any time. Language and security-related storage may still be used because it is necessary to provide the site."
+    },
+    "section4": {
+      "title": "Sharing and retention",
+      "body": "Information is shared only with service providers and marketplace participants when needed to operate the requested service, or when required by law. Records are retained only as long as needed for service, security, accounting, dispute resolution, and legal purposes."
+    },
+    "section5": {
+      "title": "Your choices",
+      "body": "Depending on applicable law, you may ask to access, correct, delete, restrict, or export your personal information, or object to certain processing. Use the contact channel shown in your Ouiboo account or service emails to submit a privacy request."
+    }
+  },
+  "analyticsConsent": {
+    "cookieSettings": "Cookie settings",
+    "preferencesLabel": "Analytics preferences",
+    "title": "Your privacy, your choice",
+    "intro": "We use optional analytics only with your permission to understand how Ouiboo is used. Essential language preferences work without analytics. Read our",
+    "privacyNotice": "privacy notice",
+    "continueWithoutAnalytics": "Continue without analytics",
+    "allowAnalytics": "Allow analytics"
   }
 }
 

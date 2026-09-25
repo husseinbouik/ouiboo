@@ -70,6 +70,13 @@ const initTranslations = (i18n, lng = 'en') => {
         
         // Lookup localStorage key
         lookupLocalStorage: 'i18nextLng',
+        // The server reads the `i18nextLng` cookie (see @ouiboo/i18n/server), so the
+        // detector must read/write that same cookie name. The default is `i18next`,
+        // which meant a language chosen here was never seen by SSR and produced an
+        // LTR flash on Arabic reloads.
+        lookupCookie: 'i18nextLng',
+        cookieMinutes: 525600,
+        cookieOptions: { path: '/', sameSite: 'lax' },
         lookupQuerystring: 'lang',
         convertDetectedLanguage: normalizeLanguage,
       },

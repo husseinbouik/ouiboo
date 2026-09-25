@@ -6,7 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card, Badge, Button } from '@ouiboo/ui';
 import { MapPin, Star, ChevronLeft, ChevronRight, Zap, ShieldCheck, Ticket } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
+import { formatCurrency } from '@ouiboo/utils';
 import { SessionStatus, type SessionStatusType, VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 import { WishlistButton } from './WishlistButton';
 
@@ -36,6 +38,7 @@ interface TripCardProps {
 }
 
 export function TripCard({ trip }: TripCardProps) {
+  const { t, i18n } = useTranslation();
   const [currentImage, setCurrentImage] = useState(0);
   const images = trip.images && trip.images.length > 0 
     ? trip.images 
@@ -91,15 +94,17 @@ export function TripCard({ trip }: TripCardProps) {
           <>
             <button 
               onClick={prevImage}
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 dark:bg-black/50 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+              aria-label={t('tripCard.previousImage')}
+              className="absolute start-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
             </button>
             <button 
               onClick={nextImage}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 dark:bg-black/50 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+              aria-label={t('tripCard.nextImage')}
+              className="absolute end-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4 rtl:rotate-180" />
             </button>
           </>
         )}
@@ -117,37 +122,37 @@ export function TripCard({ trip }: TripCardProps) {
           ))}
         </div>
 
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-3 start-3">
           <Badge className="bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none">
-            {trip.category || 'Adventure'}
+            {trip.category || t('tripCard.defaultCategory')}
           </Badge>
         </div>
 
-        <div className="absolute top-3 right-14 flex flex-col items-end gap-2">
+        <div className="absolute top-3 end-14 flex flex-col items-end gap-2">
           <Badge className="bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none flex items-center gap-1">
             <Ticket className="h-3 w-3" />
-            {minPrice !== null ? `${minPrice} MAD` : 'Price TBA'}
+            {minPrice !== null ? formatCurrency(minPrice, undefined, i18n.language) : t('tripCard.priceTba')}
           </Badge>
           <Badge className={cn(
             "text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none flex items-center gap-1",
-            nextSession ? "bg-success/100/15 text-success" : "bg-amber-500/20 text-amber-700"
+            nextSession ? "bg-success/15 text-success" : "bg-warning/15 text-warning"
           )}>
             <Zap className="h-3 w-3" />
-            {nextSession ? `${nextSession.availableSeats} spots` : 'Sold out'}
+            {nextSession ? t('tripCard.spots', { count: nextSession.availableSeats }) : t('tripCard.soldOut')}
           </Badge>
         </div>
 
-          <WishlistButton tripId={trip.id} className="absolute top-3 right-3" />
+          <WishlistButton tripId={trip.id} className="absolute top-3 end-3" />
       </div>
 
       <Link href={`/trip/${trip.id}`} className="flex-1 flex flex-col p-6">
         <div className="space-y-3 flex-1">
           <div className="flex justify-between items-start gap-3">
-            <h3 className="text-lg font-bold text-foreground group-hover:text-sunset-orange transition-colors line-clamp-2 leading-tight">{trip.title}</h3>
-            <div className="flex items-center gap-1 shrink-0 bg-yellow-500/10 px-2 py-0.5 rounded-md">
-              <Star className={cn("h-3.5 w-3.5 text-yellow-500", trip.reviewCount ? "fill-yellow-400" : "fill-none")} />
-              <span className="text-xs font-bold text-yellow-600 dark:text-yellow-400">
-                {trip.reviewCount ? Number(trip.averageRating || 0).toFixed(1) : 'New'}
+            <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-tight">{trip.title}</h3>
+            <div className="flex items-center gap-1 shrink-0 bg-warning/10 px-2 py-0.5 rounded-md">
+              <Star className={cn("h-3.5 w-3.5 text-warning", trip.reviewCount ? "fill-warning" : "fill-none")} />
+              <span className="text-xs font-bold text-warning">
+                {trip.reviewCount ? Number(trip.averageRating || 0).toFixed(1) : t('tripCard.new')}
               </span>
             </div>
           </div>
@@ -155,32 +160,31 @@ export function TripCard({ trip }: TripCardProps) {
           <div className="flex flex-wrap items-center gap-2">
             <Badge className={cn(
               "border-none text-[10px] font-bold uppercase tracking-wider flex items-center gap-1",
-              isAgencyVerified ? "bg-success/100/15 text-success" : "bg-muted text-muted-foreground"
+              isAgencyVerified ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"
             )}>
               <ShieldCheck className="h-3 w-3" />
-              {isAgencyVerified ? 'Verified Agency' : 'Agency Pending'}
+              {isAgencyVerified ? t('tripCard.verifiedAgency') : t('tripCard.agencyPending')}
             </Badge>
           </div>
           
           <div className="flex items-center gap-3 text-muted-foreground text-xs font-medium">
             <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {trip.startLocation}</span>
             <span>•</span>
-            <span className="flex items-center gap-1"><Zap className="h-3.5 w-3.5" /> {trip.durationDays} Days</span>
+            <span className="flex items-center gap-1"><Zap className="h-3.5 w-3.5" /> {trip.durationDays ? t('tripCard.days', { count: trip.durationDays }) : ''}</span>
           </div>
         </div>
 
         <div className="mt-6 pt-4 border-t border-border flex items-center justify-between">
           <div className="flex flex-col">
-            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">From</span>
+            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{t('tripCard.from')}</span>
             <div className="flex items-baseline gap-1">
                 <span className="text-xl font-bold text-foreground">
-                   {minPrice ?? '---'}
+                   {minPrice !== null ? formatCurrency(minPrice, undefined, i18n.language) : '---'}
                 </span>
-                <span className="text-[10px] font-medium text-muted-foreground">MAD</span>
             </div>
           </div>
           <Button size="sm" className="rounded-xl px-4 py-2 h-auto text-sm font-semibold bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition-all shadow-none hover:shadow-md">
-            View Details
+            {t('tripCard.viewDetails')}
           </Button>
         </div>
       </Link>

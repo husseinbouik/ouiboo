@@ -13,9 +13,9 @@ describe('admin status mappers', () => {
   });
 
   it('maps verification status to badge classes', () => {
-    expect(getAdminVerificationBadgeClass(VerificationStatus.Verified)).toContain('green');
-    expect(getAdminVerificationBadgeClass(VerificationStatus.Rejected)).toContain('red');
-    expect(getAdminVerificationBadgeClass(VerificationStatus.Pending)).toContain('amber');
+    expect(getAdminVerificationBadgeClass(VerificationStatus.Verified)).toContain('success');
+    expect(getAdminVerificationBadgeClass(VerificationStatus.Rejected)).toContain('danger');
+    expect(getAdminVerificationBadgeClass(VerificationStatus.Pending)).toContain('warning');
   });
 
   it('identifies rejected payouts using the canonical payout enum', () => {
@@ -26,6 +26,6 @@ describe('admin status mappers', () => {
   it('maps payout statuses to consistent badge metadata', () => {
     expect(getAdminPayoutBadgeMeta(PayoutStatus.Pending).label).toBe('Pending');
     expect(getAdminPayoutBadgeMeta(PayoutStatus.Rejected).helperText).toContain('returned');
-    expect(getAdminPayoutBadgeMeta(PayoutStatus.Paid).className).toContain('emerald');
+    expect(getAdminPayoutBadgeMeta(PayoutStatus.Paid).className).toContain('success');
   });
 });

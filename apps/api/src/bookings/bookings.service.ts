@@ -125,6 +125,7 @@ export class BookingsService {
                     travelerId,
                     guestsCount: dto.guestsCount,
                     totalAmount,
+                    currency: sessionWithInfo.currency || 'MAD',
                     status: 'PENDING',
                     fullName: dto.fullName,
                     phoneNumber: dto.phoneNumber,
@@ -185,35 +186,54 @@ export class BookingsService {
         return transactionResult.booking;
     }
 
-    async findAllByTraveler(travelerId: string) {
-        const bookings = await this.db.booking.findMany({
-            where: { travelerId },
-            include: {
-                session: {
-                    include: {
-                        template: {
-                            include: {
-                                agency: true,
+    async findAllByTraveler(travelerId: string, page = 1, limit = 10) {
+        const safeLimit = Number.isFinite(limit)
+            ? Math.min(50, Math.max(1, Math.floor(limit)))
+            : 10;
+        const safePage = Math.max(1, Number.isFinite(page) ? Math.floor(page) : 1);
+        const where = { travelerId };
+        const [bookings, total] = await Promise.all([
+            this.db.booking.findMany({
+                where,
+                include: {
+                    session: {
+                        include: {
+                            template: {
+                                include: {
+                                    agency: true,
+                                },
                             },
                         },
                     },
-                },
-                paymentProof: true,
-                review: {
-                    select: {
-                        id: true,
+                    paymentProof: true,
+                    review: {
+                        select: {
+                            id: true,
+                        },
+                    },
+                    traveler: {
+                        select: {
+                            email: true,
+                            name: true,
+                        },
                     },
                 },
-                traveler: {
-                    select: {
-                        email: true,
-                        name: true,
-                    },
-                },
-            },
-        });
+                orderBy: { bookingDate: 'desc' },
+                skip: (safePage - 1) * safeLimit,
+                take: safeLimit,
+            }),
+            this.db.booking.count({ where }),
+        ]);
 
-        return bookings.map(mapBookingDetails);
+        return {
+            data: bookings.map(mapBookingDetails),
+            pagination: {
+                total,
+                page: safePage,
+                limit: safeLimit,
+                totalPages: Math.ceil(total / safeLimit),
+            },
+        };
     }
 
     async findOneForUser(bookingId: string, userId: string, role?: string) {
@@ -258,43 +278,6 @@ export class BookingsService {
         }
 
         return mapBookingDetails(booking);
-    }
-
-    async findAllByAgency(tenantId: string) {
-        const bookings = await this.db.booking.findMany({
-            where: {
-                session: {
-                    template: {
-                        agencyId: tenantId,
-                    },
-                },
-            },
-            include: {
-                session: {
-                    include: {
-                        template: {
-                            include: {
-                                agency: true,
-                            },
-                        },
-                    },
-                },
-                traveler: {
-                    select: {
-                        name: true,
-                        email: true,
-                    },
-                },
-                paymentProof: true,
-                review: {
-                    select: {
-                        id: true,
-                    },
-                },
-            },
-        });
-
-        return bookings.map(mapBookingDetails);
     }
 
     async uploadPaymentProof(bookingId: string, userId: string, file: Express.Multer.File) {
@@ -397,9 +380,13 @@ export class BookingsService {
             throw new BadRequestException('No payment proof uploaded');
         }
 
-        const filePath = await this.uploadService.getFilePath(booking.paymentProof.imageUrl);
+        if (await this.uploadService.isLocal()) {
+            const filePath = await this.uploadService.getFilePath(booking.paymentProof.imageUrl);
+            return { kind: 'local' as const, filePath };
+        }
 
-        return { filePath };
+        const { data, contentType } = await this.uploadService.readFile(booking.paymentProof.imageUrl);
+        return { kind: 'remote' as const, buffer: data, contentType };
     }
 
     isLocal() {

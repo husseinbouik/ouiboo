@@ -195,7 +195,7 @@ export default function TripDetailsPage() {
               >
                   {trip.images?.slice(1, 4).map((img: string, idx: number) => (
                       <button key={idx} type="button" className="relative min-h-36 rounded-[1.5rem] overflow-hidden shadow-lg border border-border/50 group" onClick={() => setActiveImage(idx + 1)} aria-label={`View image ${idx + 2}`}>
-                          <Image src={img} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" fill sizes="(min-width: 1024px) 20vw, 50vw" />
+                          <Image src={img} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={`${trip.title} - image ${idx + 2}`} fill sizes="(min-width: 1024px) 20vw, 50vw" />
                           <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                       </button>
                   ))}
@@ -474,15 +474,28 @@ export default function TripDetailsPage() {
                     </div>
 
                     <div className="space-y-4">
-                        <label className="text-xs font-bold text-foreground uppercase tracking-wider ml-1">Select Date</label>
-                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                        <label id="session-select-label" className="text-xs font-bold text-foreground uppercase tracking-wider ml-1">Select Date</label>
+                        <div
+                            role="radiogroup"
+                            aria-labelledby="session-select-label"
+                            className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar"
+                        >
                            {openSessions.length > 0 ? (
                                 openSessions.map((session) => (
                                 <div 
                                     key={session.id}
+                                    role="radio"
+                                    aria-checked={selectedSession === session.id}
+                                    tabIndex={0}
                                     onClick={() => setSelectedSession(session.id)}
+                                    onKeyDown={(event) => {
+                                        if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+                                            event.preventDefault();
+                                            setSelectedSession(session.id);
+                                        }
+                                    }}
                                     className={cn(
-                                        "p-4 rounded-xl border-2 transition-all cursor-pointer group space-y-3",
+                                        "p-4 rounded-xl border-2 transition-all cursor-pointer group space-y-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset-orange focus-visible:ring-offset-2",
                                         selectedSession === session.id 
                                             ? "border-sunset-orange bg-sunset-orange/5" 
                                             : "border-border hover:border-sunset-orange/50 hover:bg-muted"

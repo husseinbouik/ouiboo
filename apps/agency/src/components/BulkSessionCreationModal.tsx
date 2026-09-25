@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Trash2, Calendar } from 'lucide-react';
 import { Button, Card, CardContent, Input, Label } from '@ouiboo/ui';
@@ -30,6 +31,7 @@ export function BulkSessionCreationModal({
   isLoading = false,
   currency = 'MAD'
 }: BulkSessionCreationModalProps) {
+  const { t } = useTranslation();
   const [sessions, setSessions] = useState<BulkSessionInput[]>([
     { id: '1', startDate: '', endDate: '', price: 0, deposit: 0, totalSeats: 20, currency }
   ]);
@@ -63,7 +65,7 @@ export function BulkSessionCreationModal({
     // Validate sessions
     const isValid = sessions.every(s => s.startDate && s.endDate && s.price > 0 && s.totalSeats > 0);
     if (!isValid) {
-      setValidationError('Complete the dates, price, and seat count for every session.');
+      setValidationError(t('bulkSession.helper'));
       return;
     }
     onSubmit(sessions);
@@ -91,21 +93,25 @@ export function BulkSessionCreationModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl z-[101] overflow-hidden border border-gray-100 dark:border-slate-800 max-h-[90vh] overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="bulk-session-title"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-card rounded-2xl shadow-2xl z-[101] overflow-hidden border border-border max-h-[90vh] overflow-y-auto"
           >
-            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 p-6 flex justify-between items-center">
+            <div className="sticky top-0 bg-card border-b border-border p-6 flex justify-between items-center gap-4">
               <div>
-                <h2 className="text-xl font-bold text-deep-blue dark:text-gray-100 flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-sunset-orange" />
-                  Bulk Session Creation
+                <h2 id="bulk-session-title" className="text-xl font-bold text-foreground flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-accent" />
+                  {t('bulkSession.title')}
                 </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Create multiple sessions at once with date ranges and pricing</p>
+                <p className="text-sm text-muted-foreground mt-1">{t('bulkSession.subtitle')}</p>
               </div>
               <button
                 onClick={handleClose}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                aria-label={t('common.close')}
+                className="p-2 hover:bg-muted rounded-xl transition-colors"
               >
-                <X className="h-5 w-5 text-gray-400" />
+                <X className="h-5 w-5 text-muted-foreground" />
               </button>
             </div>
 
@@ -113,14 +119,15 @@ export function BulkSessionCreationModal({
               {/* Sessions List */}
               <div className="space-y-4 max-h-[50vh] overflow-y-auto">
                 {sessions.map((session, index) => (
-                  <Card key={session.id} className="border-2 border-gray-100 dark:border-slate-800">
+                  <Card key={session.id} className="border-2 border-border">
                     <CardContent className="p-6">
                       <div className="flex justify-between items-start mb-4">
-                        <h3 className="font-semibold text-deep-blue dark:text-gray-100">Session {index + 1}</h3>
+                        <h3 className="font-semibold text-foreground">{t('bulkSession.sessionN', { index: index + 1 })}</h3>
                         {sessions.length > 1 && (
                           <button
                             onClick={() => removeSession(session.id)}
-                            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors"
+                            aria-label={t('common.delete')}
+                            className="p-2 text-danger hover:bg-danger/10 rounded-lg transition-colors"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -132,27 +139,27 @@ export function BulkSessionCreationModal({
                         <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label htmlFor={`start-${session.id}`} className="text-sm font-medium">
-                              Start Date *
+                              {t('bulkSession.startDate')}
                             </Label>
                             <Input
                               id={`start-${session.id}`}
                               type="date"
                               value={session.startDate}
                               onChange={(e) => updateSession(session.id, 'startDate', e.target.value)}
-                              className="h-10 dark:bg-slate-800 dark:border-slate-700"
+                              className="h-10"
                               disabled={isLoading}
                             />
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor={`end-${session.id}`} className="text-sm font-medium">
-                              End Date *
+                              {t('bulkSession.endDate')}
                             </Label>
                             <Input
                               id={`end-${session.id}`}
                               type="date"
                               value={session.endDate}
                               onChange={(e) => updateSession(session.id, 'endDate', e.target.value)}
-                              className="h-10 dark:bg-slate-800 dark:border-slate-700"
+                              className="h-10"
                               disabled={isLoading}
                             />
                           </div>
@@ -161,7 +168,7 @@ export function BulkSessionCreationModal({
                         {/* Pricing & Capacity */}
                         <div className="space-y-2">
                           <Label htmlFor={`price-${session.id}`} className="text-sm font-medium">
-                            Price (per person) *
+                            {t('bulkSession.pricePerPerson')}
                           </Label>
                           <div className="relative">
                             <Input
@@ -170,12 +177,12 @@ export function BulkSessionCreationModal({
                               value={session.price || ''}
                               onChange={(e) => updateSession(session.id, 'price', parseFloat(e.target.value) || 0)}
                               placeholder="0.00"
-                              className="h-10 pr-12 dark:bg-slate-800 dark:border-slate-700"
+                              className="h-10 pe-12"
                               disabled={isLoading}
                               step="0.01"
                               min="0"
                             />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
+                            <span className="absolute end-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
                               {currency}
                             </span>
                           </div>
@@ -183,7 +190,7 @@ export function BulkSessionCreationModal({
 
                         <div className="space-y-2">
                           <Label htmlFor={`deposit-${session.id}`} className="text-sm font-medium">
-                            Deposit (optional)
+                            {t('bulkSession.depositOptional')}
                           </Label>
                           <div className="relative">
                             <Input
@@ -192,12 +199,12 @@ export function BulkSessionCreationModal({
                               value={session.deposit || ''}
                               onChange={(e) => updateSession(session.id, 'deposit', parseFloat(e.target.value) || 0)}
                               placeholder="0.00"
-                              className="h-10 pr-12 dark:bg-slate-800 dark:border-slate-700"
+                              className="h-10 pe-12"
                               disabled={isLoading}
                               step="0.01"
                               min="0"
                             />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
+                            <span className="absolute end-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
                               {currency}
                             </span>
                           </div>
@@ -205,7 +212,7 @@ export function BulkSessionCreationModal({
 
                         <div className="space-y-2">
                           <Label htmlFor={`seats-${session.id}`} className="text-sm font-medium">
-                            Total Seats *
+                            {t('bulkSession.totalSeats')}
                           </Label>
                           <Input
                             id={`seats-${session.id}`}
@@ -213,7 +220,7 @@ export function BulkSessionCreationModal({
                             value={session.totalSeats || ''}
                             onChange={(e) => updateSession(session.id, 'totalSeats', parseInt(e.target.value) || 0)}
                             placeholder="20"
-                            className="h-10 dark:bg-slate-800 dark:border-slate-700"
+                            className="h-10"
                             disabled={isLoading}
                             min="1"
                           />
@@ -228,34 +235,34 @@ export function BulkSessionCreationModal({
               <button
                 onClick={addSession}
                 disabled={isLoading}
-                className="w-full p-3 border-2 border-dashed border-gray-300 dark:border-slate-700 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors flex items-center justify-center gap-2 font-medium"
+                className="w-full p-3 border-2 border-dashed border-border text-muted-foreground rounded-lg hover:bg-muted/50 transition-colors flex items-center justify-center gap-2 font-medium"
               >
                 <Plus className="h-4 w-4" />
-                Add Another Session
+                {t('bulkSession.addAnother')}
               </button>
             </div>
 
             {validationError ? (
-              <p role="alert" className="mx-6 rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:bg-red-950/30 dark:text-red-300">
+              <p role="alert" className="mx-6 rounded-lg bg-danger/10 px-4 py-3 text-sm font-medium text-danger">
                 {validationError}
               </p>
             ) : null}
 
             {/* Footer */}
-            <div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 p-6 flex justify-end gap-3">
+            <div className="sticky bottom-0 bg-card border-t border-border p-6 flex justify-end gap-3">
               <Button
                 variant="outline"
                 onClick={handleClose}
                 disabled={isLoading}
               >
-                Cancel
+                {t('bulkSession.cancel')}
               </Button>
               <Button
                 onClick={handleSubmit}
                 disabled={isLoading}
-                className="bg-sunset-orange hover:bg-orange-600 px-6"
+                className="bg-accent text-accent-foreground hover:bg-accent/90 px-6"
               >
-                {isLoading ? 'Creating Sessions...' : `Create ${sessions.length} Session${sessions.length > 1 ? 's' : ''}`}
+                {isLoading ? t('bulkSession.creating') : t('bulkSession.createCount', { count: sessions.length })}
               </Button>
             </div>
           </motion.div>

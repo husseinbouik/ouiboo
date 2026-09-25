@@ -26,7 +26,7 @@ import {
   getTravelerPaymentStatusMeta,
   getTravelerProofStatus,
   shouldShowUploadAction,
-} from '../../bookings/booking-status';
+} from '@ouiboo/utils';
 import { ReviewForm } from '@/components/ReviewForm';
 
 export default function BookingDetailsPage() {

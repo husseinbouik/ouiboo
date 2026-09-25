@@ -11,8 +11,11 @@
     },
     "dependencies": {
         "@hookform/resolvers": "^5.2.2",
-        "@ouiboo/api-client": "*",
-        "@ouiboo/schemas": "*",
+"@ouiboo/api-client": "*",
+        "@ouiboo/auth": "*",
+        "@ouiboo/i18n": "*",
+"@ouiboo/schemas": "*",
+        "@ouiboo/tokens": "*",
         "@ouiboo/types": "*",
         "@ouiboo/ui": "*",
         "@ouiboo/utils": "*",

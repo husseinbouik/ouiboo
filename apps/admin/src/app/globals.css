@@ -1,73 +1,13 @@
-@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
 @import "tailwindcss";
+@import "@ouiboo/tokens/tokens.css";
+@source "../../../../packages/ui";
+
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: 'Manrope', var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Space Grotesk', 'Manrope', var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-manrope), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), var(--font-manrope), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-deep-blue: #1E3A8A;
-  --color-sunset-orange: #F97316;
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-success: var(--success);
-  --color-success-foreground: var(--success-foreground);
-  --color-warning: var(--warning);
-  --color-warning-foreground: var(--warning-foreground);
-  --color-danger: var(--danger);
-  --color-danger-foreground: var(--danger-foreground);
-}
-
-:root {
-  --background: #fffaf4;
-  --foreground: #07152f;
-  --primary: #07152f;
-  --primary-foreground: #ffffff;
-  --card: rgba(255, 255, 255, 0.94);
-  --card-foreground: #07152f;
-  --muted: #f5eadc;
-  --muted-foreground: #6b6175;
-  --border: rgba(7, 21, 47, 0.12);
-  --input: rgba(255, 255, 255, 0.86);
-  --accent: #FF6B35;
-  --accent-foreground: #ffffff;
-  --success: #059669;
-  --success-foreground: #ffffff;
-  --warning: #d97706;
-  --warning-foreground: #07152f;
-  --danger: #e11d48;
-  --danger-foreground: #ffffff;
-}
-
-.dark {
-  --background: #06101f;
-  --foreground: #f8fafc;
-  --primary: #FF6B35;
-  --primary-foreground: #ffffff;
-  --card: rgba(13, 28, 52, 0.94);
-  --card-foreground: #f9fafb;
-  --muted: #13243d;
-  --muted-foreground: #a6b4c8;
-  --border: rgba(226, 232, 240, 0.14);
-  --input: rgba(15, 31, 55, 0.9);
-  --accent: #FF6B35;
-  --accent-foreground: #ffffff;
-  --success: #34d399;
-  --success-foreground: #052e1b;
-  --warning: #fbbf24;
-  --warning-foreground: #231a05;
-  --danger: #fb7185;
-  --danger-foreground: #3f0713;
 }
 
 body {
@@ -79,81 +19,3 @@ body {
 h1, h2, h3, h4, .font-display {
   font-family: var(--font-display);
 }
-
-.dark .text-deep-blue {
-  color: #f8fafc;
-}
-
-.dark .bg-white {
-  background-color: var(--card);
-}
-
-.dark .bg-gray-50 {
-  background-color: var(--muted);
-}
-
-.dark .bg-gray-100 {
-  background-color: #1f2937;
-}
-
-.dark .bg-gray-200 {
-  background-color: #334155;
-}
-
-.dark .bg-gray-50\/50 {
-  background-color: rgba(15, 23, 42, 0.6);
-}
-
-.dark .hover\:bg-gray-50\/50:hover {
-  background-color: rgba(15, 23, 42, 0.6);
-}
-
-.dark .bg-slate-50 {
-  background-color: #0f172a;
-}
-
-.dark .bg-slate-100 {
-  background-color: #1f2937;
-}
-
-.dark .text-gray-900 {
-  color: var(--foreground);
-}
-
-.dark .text-gray-700 {
-  color: #e2e8f0;
-}
-
-.dark .text-gray-600 {
-  color: #cbd5e1;
-}
-
-.dark .text-gray-500 {
-  color: #94a3b8;
-}
-
-.dark .text-gray-400 {
-  color: #94a3b8;
-}
-
-.dark .text-slate-700 {
-  color: #e2e8f0;
-}
-
-.dark .border-gray-100 {
-  border-color: #1f2937;
-}
-
-.dark .border-gray-200 {
-  border-color: #334155;
-}
-
-.dark .border-gray-300 {
-  border-color: #475569;
-}
-
-.dark .divide-gray-50 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #1f2937;
-}
-
-

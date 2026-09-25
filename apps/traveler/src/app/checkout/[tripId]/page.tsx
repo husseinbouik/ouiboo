@@ -164,30 +164,49 @@ export default function CheckoutPage() {
         throw new Error('This agency has not configured verified bank transfer instructions yet');
       }
 
-      const response = await apiClient.post('/bookings', {
-        sessionId: selectedSessionId,
-        guestsCount: guestCount,
-        fullName: fullName.trim(),
-        phoneNumber: phoneNumber.trim(),
-        documentNumber: documentNumber.trim(),
-        paymentMethod: 'BANK_TRANSFER',
-      });
-      const booking = response.data;
+      // Retry path: a booking already exists (created by a previous attempt whose proof
+      // upload failed). Re-creating it would be rejected by the API's duplicate-booking
+      // guard, so only (re)upload the proof against the existing booking.
+      let bookingId = retryBookingId ?? null;
 
-      if (proofFile) {
-        const formData = new FormData();
-        formData.append('file', proofFile);
-        await apiClient.post(`/bookings/${booking.id}/payment-proof`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+      if (!bookingId) {
+        const response = await apiClient.post('/bookings', {
+          sessionId: selectedSessionId,
+          guestsCount: guestCount,
+          fullName: fullName.trim(),
+          phoneNumber: phoneNumber.trim(),
+          documentNumber: documentNumber.trim(),
+          paymentMethod: 'BANK_TRANSFER',
         });
+        bookingId = response.data?.id ?? null;
       }
 
-      return booking;
+      if (proofFile && bookingId) {
+        try {
+          const formData = new FormData();
+          formData.append('file', proofFile);
+          await apiClient.post(`/bookings/${bookingId}/payment-proof`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+        } catch {
+          // The booking was created but the proof upload failed. Route the traveler to
+          // the existing retry flow rather than letting them re-submit and create a
+          // second booking for the same session.
+          throw Object.assign(new Error('PROOF_UPLOAD_FAILED'), { bookingId });
+        }
+      }
+
+      return { id: bookingId } as BookingResponse;
     },
     onSuccess: (data) => {
       router.push(`/checkout/confirmation?bookingId=${data?.id ?? ''}&proof=${proofFile ? '1' : '0'}`);
     },
     onError: (error) => {
+      const failedBookingId = (error as Error & { bookingId?: string }).bookingId;
+      if (failedBookingId) {
+        router.push(`/checkout/${tripId}?retryBooking=${failedBookingId}`);
+        return;
+      }
       setErrorMessage(getErrorMessage(error, 'Unable to complete booking'));
     }
   });
@@ -456,7 +475,7 @@ export default function CheckoutPage() {
                    <div className="space-y-6">
                       <div className="flex gap-4">
                          <div className="h-20 w-20 rounded-2xl overflow-hidden shrink-0 shadow-lg">
-                            <Image src={trip.images?.[0] || 'https://images.unsplash.com/photo-1489749798305-4fea3ae63d43?q=80&w=1200&auto=format&fit=crop'} className="w-full h-full object-cover" alt="" width={80} height={80} />
+                            <Image src={trip.images?.[0] || 'https://images.unsplash.com/photo-1489749798305-4fea3ae63d43?q=80&w=1200&auto=format&fit=crop'} className="w-full h-full object-cover" alt={trip.title} width={80} height={80} />
                          </div>
                      <div className="space-y-1">
                         <h3 className="font-black text-lg leading-tight line-clamp-2">{trip.title}</h3>

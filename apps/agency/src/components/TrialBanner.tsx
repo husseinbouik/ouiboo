@@ -6,9 +6,11 @@ import { X, Clock, AlertTriangle } from 'lucide-react';
 import { Button } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 
 export function TrialBanner() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
   const dismissed = useSyncExternalStore(
     () => () => undefined,
@@ -45,33 +47,33 @@ export function TrialBanner() {
 
   return (
     <div className={cn(
-      "fixed bottom-4 right-4 left-4 md:left-auto md:w-[400px] z-50 transition-all duration-300 transform translate-y-0",
-      isUrgent ? "bg-red-50 border-red-200" : "bg-blue-50 border-blue-200",
+      "fixed bottom-4 end-4 start-4 md:start-auto md:w-[400px] z-50 transition-all duration-300 transform translate-y-0",
+      isUrgent ? "bg-danger/10 border-danger/30" : "bg-accent/10 border-accent/30",
       "border rounded-xl shadow-lg p-4"
     )}>
       <div className="flex items-start gap-3">
         {isUrgent ? (
-          <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
+          <AlertTriangle className="h-5 w-5 text-danger mt-0.5" />
         ) : (
-          <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
+          <Clock className="h-5 w-5 text-accent mt-0.5" />
         )}
         <div className="flex-1">
-          <h4 className={cn("font-semibold text-sm", isUrgent ? "text-red-900" : "text-blue-900")}>
-            Free Trial Ending Soon
+          <h4 className={cn("font-semibold text-sm", isUrgent ? "text-danger" : "text-accent")}>
+            {t('trialBanner.title')}
           </h4>
-          <p className={cn("text-xs mt-1 leading-relaxed", isUrgent ? "text-red-700" : "text-blue-700")}>
-            You have <span className="font-bold">{Math.max(0, daysLeft)} days</span> remaining in your free trial. 
-            {isUrgent ? ' Upgrade now to avoid interruption.' : ' meaningful features await.'}
+          <p className={cn("text-xs mt-1 leading-relaxed", isUrgent ? "text-danger" : "text-accent")}>
+            {t('trialBanner.body', { daysLeft })}
+            {isUrgent ? ` ${t('trialBanner.upgradeNow')}` : ` ${t('trialBanner.meaningfulFeatures')}`}
           </p>
           <Button 
             size="sm" 
-            className={cn("mt-3 w-full h-8 text-xs", isUrgent ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700")}
+            className={cn("mt-3 w-full h-8 text-xs", isUrgent ? "bg-danger text-danger-foreground hover:bg-danger/90" : "bg-accent text-accent-foreground hover:bg-accent/90")}
             onClick={() => router.push('/dashboard/settings/billing')}
           >
-            Upgrade Plan
+            {t('trialBanner.upgrade')}
           </Button>
         </div>
-        <button onClick={handleDismiss} className="text-gray-400 hover:text-gray-600">
+        <button onClick={handleDismiss} className="text-muted-foreground hover:text-foreground">
           <X className="h-4 w-4" />
         </button>
       </div>

@@ -185,6 +185,7 @@ export interface Booking {
     bookingDate: string;
     status: BookingStatus;
     totalAmount: DecimalString;
+    currency: string;
     guestsCount: number;
     paymentMethod: PaymentMethod;
     paymentStatus: BookingPaymentStatus;

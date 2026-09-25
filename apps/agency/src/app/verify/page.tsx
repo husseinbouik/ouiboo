@@ -8,6 +8,8 @@ import { Button } from '@ouiboo/ui';
 import { apiClient } from '@/lib/api-client';
 import { useMutation } from '@tanstack/react-query';
 import { setBrowserAccessToken } from '@ouiboo/api-client';
+import { useTranslation } from 'react-i18next';
+import '../../lib/i18n';
 
 const RESEND_COOLDOWN_SECONDS = 30;
 
@@ -19,44 +21,49 @@ type ApiError = {
   };
 };
 
-const getFriendlyError = (message?: string) => {
-  if (!message) {
-    return 'Verification failed. Please check the code.';
-  }
-
-  switch (message) {
-    case 'EMAIL_NOT_VERIFIED':
-      return 'Your account is not verified yet. Enter the code or request a new one.';
-    case 'EMAIL_NOT_FOUND':
-      return 'We could not find an account for this email. Please sign up again.';
-    case 'OTP_NOT_FOUND':
-      return 'We could not find an active verification code. Request a new code and try again.';
-    case 'OTP_EXPIRED':
-      return 'That code expired. Request a new one and try again.';
-    case 'INVALID_OTP':
-      return 'That code is incorrect. Double-check and try again.';
-    case 'OTP_RESEND_COOLDOWN':
-      return 'You requested a new code recently. Please wait a moment before trying again.';
-    default:
-      if (message.toLowerCase().includes('expired')) {
-        return 'That code expired. Request a new one and try again.';
-      }
-      return message;
-  }
-};
-
 export default function VerifyEmailPage() {
+  const { t, i18n } = useTranslation();
   const searchParams = useSearchParams();
   const router = useRouter();
   const email = searchParams.get('email');
   const reason = searchParams.get('reason');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const initialError = reason === 'unverified'
-    ? 'Your account is not verified yet. Enter the code we emailed you to continue.'
+    ? t('verify.accountNotVerified')
     : null;
   const [error, setError] = useState<string | null>(initialError);
   const [success, setSuccess] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+  }, [i18n.language]);
+
+  const getFriendlyError = (message?: string) => {
+    if (!message) {
+      return t('verify.failedGeneric');
+    }
+
+    switch (message) {
+      case 'EMAIL_NOT_VERIFIED':
+        return t('verify.emailNotVerified');
+      case 'EMAIL_NOT_FOUND':
+        return t('verify.emailNotFound');
+      case 'OTP_NOT_FOUND':
+        return t('verify.otpNotFound');
+      case 'OTP_EXPIRED':
+        return t('verify.otpExpired');
+      case 'INVALID_OTP':
+        return t('verify.invalidOtp');
+      case 'OTP_RESEND_COOLDOWN':
+        return t('verify.otpResendCooldown');
+      default:
+        if (message.toLowerCase().includes('expired')) {
+          return t('verify.otpExpired');
+        }
+        return message;
+    }
+  };
 
   useEffect(() => {
     if (!email) {
@@ -135,54 +142,54 @@ export default function VerifyEmailPage() {
       setError(null);
       verifyMutation.mutate(otpString);
     } else {
-      setError('Please enter all 6 digits.');
+      setError(t('verify.enterAllDigits'));
     }
   };
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+      <div className="min-h-screen flex items-center justify-center bg-muted p-6">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white p-12 rounded-3xl shadow-xl text-center max-w-md w-full space-y-6"
+          className="bg-card p-12 rounded-3xl shadow-xl text-center max-w-md w-full space-y-6"
         >
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-            <ShieldCheck className="h-10 w-10 text-green-600" />
+          <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto">
+            <ShieldCheck className="h-10 w-10 text-success" />
           </div>
-          <h2 className="text-3xl font-bold text-deep-blue">Verified Successfully!</h2>
-          <p className="text-gray-500">Welcome to Ouiboo. You are being redirected to your dashboard...</p>
+          <h2 className="text-3xl font-bold text-foreground">{t('verify.verifiedSuccess')}</h2>
+          <p className="text-muted-foreground">{t('verify.redirecting')}</p>
         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+    <div className="min-h-screen flex items-center justify-center bg-muted p-6">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white p-8 lg:p-12 rounded-3xl shadow-xl max-w-md w-full space-y-8"
+        className="bg-card p-8 lg:p-12 rounded-3xl shadow-xl max-w-md w-full space-y-8"
       >
         <div className="text-center space-y-2">
-          <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Mail className="h-8 w-8 text-deep-blue" />
+          <div className="w-16 h-16 bg-primary/10 dark:bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Mail className="h-8 w-8 text-primary dark:text-accent" />
           </div>
-          <h2 className="text-3xl font-bold text-deep-blue">Check your email</h2>
-          <p className="text-gray-500">We sent a 6-digit code to <span className="font-semibold text-gray-700">{email}</span></p>
+          <h2 className="text-3xl font-bold text-foreground">{t('verify.checkEmail')}</h2>
+          <p className="text-muted-foreground">{t('verify.codeSent')} <span className="font-semibold text-foreground">{email}</span></p>
         </div>
 
-        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 text-sm text-gray-600 space-y-2">
-          <p className="font-semibold text-deep-blue">Verify in 3 easy steps</p>
+        <div className="bg-primary/10 dark:bg-primary/20 border border-primary/30 rounded-2xl p-4 text-sm text-muted-foreground space-y-2">
+          <p className="font-semibold text-primary dark:text-accent">{t('verify.stepsTitle')}</p>
           <ol className="list-decimal list-inside space-y-1">
-            <li>Check your inbox for the 6-digit code.</li>
-            <li>Enter the code below.</li>
-            <li>We will finish setting up your agency.</li>
+            <li>{t('verify.step1')}</li>
+            <li>{t('verify.step2')}</li>
+            <li>{t('verify.step3')}</li>
           </ol>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="flex justify-between gap-2">
+          <div className="flex justify-between gap-2" dir="ltr">
             {otp.map((digit, idx) => (
               <input
                 key={idx}
@@ -191,14 +198,15 @@ export default function VerifyEmailPage() {
                 value={digit}
                 onChange={(e) => handleChange(idx, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(idx, e)}
-                className="w-12 h-14 text-center text-2xl font-bold bg-gray-50 border-2 border-gray-100 rounded-xl focus:border-deep-blue focus:bg-white outline-none transition-all"
+                className="w-12 h-14 text-center text-2xl font-bold bg-muted border-2 border-border rounded-xl focus:border-primary focus:bg-background outline-none transition-all"
                 maxLength={1}
+                aria-label={t('verify.otpDigit', { index: idx + 1 })}
               />
             ))}
           </div>
 
           {error && (
-            <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-100 rounded-xl text-center">
+            <div className="p-3 text-sm text-danger bg-danger/10 border border-danger/30 rounded-xl text-center">
               {error}
             </div>
           )}
@@ -206,28 +214,28 @@ export default function VerifyEmailPage() {
           <Button 
             type="submit" 
             disabled={verifyMutation.isPending}
-            className="w-full h-14 bg-deep-blue hover:bg-blue-900 text-white font-bold rounded-xl shadow-lg shadow-blue-900/20"
+            className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl shadow-lg shadow-primary/20"
           >
-            {verifyMutation.isPending ? 'Verifying...' : 'Verify Account'}
-            {!verifyMutation.isPending && <ArrowRight className="ml-2 h-5 w-5 inline" />}
+            {verifyMutation.isPending ? t('verify.verifying') : t('verify.verifyAccount')}
+            {!verifyMutation.isPending && <ArrowRight className="ms-2 h-5 w-5 inline rtl:rotate-180" />}
           </Button>
         </form>
 
         <div className="text-center space-y-4">
-          <p className="text-sm text-gray-500">
-            Did not receive the code?
+          <p className="text-sm text-muted-foreground">
+            {t('verify.didNotReceive')}
           </p>
           <button 
             type="button" 
             onClick={() => resendMutation.mutate()}
             disabled={resendMutation.isPending || cooldown > 0}
-            className="flex items-center gap-2 mx-auto text-deep-blue font-bold hover:underline disabled:opacity-50"
+            className="flex items-center gap-2 mx-auto text-primary dark:text-accent font-bold hover:underline disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${resendMutation.isPending ? 'animate-spin' : ''}`} />
-            {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend Code'}
+            {cooldown > 0 ? t('verify.resendIn', { seconds: cooldown }) : t('verify.resendCode')}
           </button>
           {cooldown > 0 && (
-            <p className="text-xs text-gray-500">We limit resends to once every {RESEND_COOLDOWN_SECONDS} seconds.</p>
+            <p className="text-xs text-muted-foreground">{t('verify.resendLimit', { seconds: RESEND_COOLDOWN_SECONDS })}</p>
           )}
         </div>
       </motion.div>

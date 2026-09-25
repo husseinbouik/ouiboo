@@ -4,7 +4,7 @@ import { DatabaseService } from '../database/database.service';
 import { RegisterDto } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
 import { EmailService } from '../email/email.service';
-import { createHash, randomInt, randomUUID } from 'crypto';
+import { createHash, randomInt, randomUUID, timingSafeEqual } from 'crypto';
 import { UserRole } from '@ouiboo/types';
 
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -62,6 +62,7 @@ export class AuthService {
         const hashedPassword = await bcrypt.hash(dto.password, 10);
         // Generate 6-digit OTP (100000 to 999999)
         const otp = this.generateOtp();
+        const otpHash = await this.hashOtp(otp);
         const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
         const otpLastSentAt = new Date();
 
@@ -74,7 +75,7 @@ export class AuthService {
                         email: dto.email,
                         password: hashedPassword,
                         role: dto.role as any,
-                        otp, // Store OTP
+                        otp: otpHash,
                         otpExpiresAt,
                         otpLastSentAt,
                     },
@@ -146,11 +147,8 @@ export class AuthService {
             throw new UnauthorizedException('OTP_EXPIRED');
         }
 
-        // Normalize and compare OTPs (trim whitespace and ensure string comparison)
-        const normalizedOtp = otp.trim();
-        const normalizedStoredOtp = user.otp.trim();
-
-        if (normalizedStoredOtp !== normalizedOtp) {
+        const isOtpValid = await this.verifyOtp(otp.trim(), user.otp);
+        if (!isOtpValid) {
             throw new UnauthorizedException('INVALID_OTP');
         }
 
@@ -162,7 +160,6 @@ export class AuthService {
                 otpExpiresAt: null,
             }
         });
-
         // Send welcome email now that they are verified
         try {
             const welcomeHtml = this.emailService.getWelcomeTemplate(user.name);
@@ -193,10 +190,11 @@ export class AuthService {
 
         // Generate 6-digit OTP (100000 to 999999)
         const otp = this.generateOtp();
+        const otpHash = await this.hashOtp(otp);
         const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
         await this.db.user.update({
             where: { id: user.id },
-            data: { otp, otpExpiresAt, otpLastSentAt: new Date() }
+            data: { otp: otpHash, otpExpiresAt, otpLastSentAt: new Date() }
         });
 
         try {
@@ -253,7 +251,11 @@ export class AuthService {
         }
 
         const isExpired = user.passwordResetExpiresAt < new Date();
-        const tokenMatches = user.passwordResetTokenHash === this.hashToken(token);
+        const expectedHash = Buffer.from(user.passwordResetTokenHash, 'hex');
+        const actualHash = Buffer.from(this.hashToken(token), 'hex');
+        const tokenMatches =
+          expectedHash.length === actualHash.length &&
+          timingSafeEqual(expectedHash, actualHash);
         if (isExpired || !tokenMatches) {
             throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
         }
@@ -380,6 +382,24 @@ export class AuthService {
 
     private hashToken(token: string) {
         return createHash('sha256').update(token).digest('hex');
+    }
+
+    private async hashOtp(otp: string) {
+        return bcrypt.hash(otp, 10);
+    }
+
+    private async verifyOtp(candidate: string, storedOtp: string) {
+        if (storedOtp.startsWith('$2')) {
+            return bcrypt.compare(candidate, storedOtp);
+        }
+
+        // Deployment compatibility for OTPs issued before hashing was enabled.
+        // Successful verification clears this value; resending replaces it with
+        // a bcrypt hash, so plaintext OTPs naturally age out within their TTL.
+        const candidateBuffer = Buffer.from(candidate);
+        const storedBuffer = Buffer.from(storedOtp.trim());
+        return candidateBuffer.length === storedBuffer.length
+            && timingSafeEqual(candidateBuffer, storedBuffer);
     }
 
     private generateOtp() {

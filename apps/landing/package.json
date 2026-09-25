@@ -9,6 +9,10 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@ouiboo/i18n": "*",
+    "@ouiboo/schemas": "*",
+    "@ouiboo/tokens": "*",
+    "@ouiboo/ui": "*",
     "@microsoft/clarity": "^1.0.2",
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",

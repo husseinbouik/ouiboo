@@ -138,64 +138,93 @@ export class AgencyController {
     async getBookings(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
         const agencyId = req.tenantId;
         const take = clampListLimit(limit);
-        const skip = (parsePage(page) - 1) * take;
+        const currentPage = parsePage(page);
+        const skip = (currentPage - 1) * take;
 
-        const bookings = await this.prisma.booking.findMany({
-            where: {
-                session: {
-                    template: { agencyId }
-                },
+        const bookingsWhere = {
+            session: {
+                template: { agencyId }
             },
-            include: {
-                session: {
-                    include: {
-                        template: {
-                            include: {
-                                agency: true,
+        };
+
+        const [bookings, total] = await Promise.all([
+            this.prisma.booking.findMany({
+                where: bookingsWhere,
+                include: {
+                    session: {
+                        include: {
+                            template: {
+                                include: {
+                                    agency: true,
+                                },
                             },
-                        },
-                    }
+                        }
+                    },
+                    traveler: {
+                        select: {
+                            name: true,
+                            email: true,
+                        }
+                    },
+                    paymentProof: true
                 },
-                traveler: {
-                    select: {
-                        name: true,
-                        email: true,
-                    }
+                orderBy: {
+                    bookingDate: 'desc'
                 },
-                paymentProof: true
-            },
-            orderBy: {
-                bookingDate: 'desc'
-            },
-            skip,
-            take,
-        });
+                skip,
+                take,
+            }),
+            this.prisma.booking.count({ where: bookingsWhere }),
+        ]);
 
-        return bookings.map(mapBookingDetails);
+        return {
+            data: bookings.map(mapBookingDetails),
+            pagination: {
+                total,
+                page: currentPage,
+                limit: take,
+                totalPages: Math.ceil(total / take),
+            },
+        };
     }
     @Get('payouts')
     @ApiOperation({ summary: 'Get agency payout history' })
-    async getPayouts(@Request() req) {
+    async getPayouts(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
         const agencyId = req.tenantId;
+        const take = clampListLimit(limit, 20);
+        const currentPage = parsePage(page);
+        const skip = (currentPage - 1) * take;
 
-        const payouts = await this.prisma.payoutRequest.findMany({
-            where: { agencyId },
-            include: {
-                agency: {
-                    include: {
-                        user: {
-                            select: {
-                                email: true,
+        const [payouts, total] = await Promise.all([
+            this.prisma.payoutRequest.findMany({
+                where: { agencyId },
+                include: {
+                    agency: {
+                        include: {
+                            user: {
+                                select: {
+                                    email: true,
+                                },
                             },
                         },
                     },
                 },
-            },
-            orderBy: { requestedAt: 'desc' },
-            take: 20
-        });
+                orderBy: { requestedAt: 'desc' },
+                skip,
+                take,
+            }),
+            this.prisma.payoutRequest.count({ where: { agencyId } }),
+        ]);
 
-        return payouts.map(mapPayoutDetails);
+        return {
+            data: payouts.map(mapPayoutDetails),
+            pagination: {
+                total,
+                page: currentPage,
+                limit: take,
+                totalPages: Math.ceil(total / take),
+            },
+        };
     }
     @Get('reviews')
     @ApiOperation({ summary: 'Get agency reviews' })

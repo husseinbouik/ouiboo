@@ -10,7 +10,13 @@
     "brand": "إدارة Ouiboo",
     "heroTitle": "مركز تحكم الإدارة",
     "heroSubtitle": "اعتمد الوكالات، أكد المدفوعات، وحافظ على سلامة السوق.",
-    "heroNote": "سجل التدقيق والتحكم بالأدوار مفعلان."
+    "heroNote": "سجل التدقيق والتحكم بالأدوار مفعلان.",
+    "loginFailed": "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.",
+    "usernamePlaceholder": "admin",
+    "usernameRequired": "اسم المستخدم مطلوب",
+    "passwordRequired": "كلمة المرور مطلوبة",
+    "showPassword": "إظهار كلمة المرور",
+    "hidePassword": "إخفاء كلمة المرور"
   },
   "dashboard": {
     "brand": "إدارة OUIBOO",
@@ -25,7 +31,8 @@
       "agencies": "إدارة الوكالات",
       "bookings": "حجوزات النظام",
       "paymentProofs": "إثباتات الدفع",
-      "payouts": "طلبات السحب"
+      "payouts": "طلبات السحب",
+      "audit": "سجل التدقيق"
     },
     "meta": {
       "pending": {
@@ -52,6 +59,11 @@
         "title": "طلبات السحب",
         "description": "راجع طلبات سحب الوكالات قبل تحويل الأموال.",
         "searchPlaceholder": "ابحث عن طلبات السحب باسم الوكالة..."
+      },
+      "audit": {
+        "title": "سجل التدقيق",
+        "description": "ابحث في نشاط المشغلين، وصدّر السجلات، وطبّق تنظيف الاحتفاظ.",
+        "searchPlaceholder": "ابحث بالإجراء أو بريد المنفذ أو نوع الهدف أو معرف الهدف"
       }
     },
     "sections": {
@@ -60,7 +72,8 @@
       "allAgencies": "إدارة جميع الوكالات",
       "bookingMonitor": "مراقبة الحجوزات العامة",
       "pendingPaymentProofs": "إثباتات الدفع المنتظرة",
-      "payoutRequests": "طلبات السحب"
+      "payoutRequests": "طلبات السحب",
+      "auditTrail": "مسار التدقيق"
     },
     "table": {
       "booking": "الحجز",
@@ -68,7 +81,11 @@
       "status": "الحالة",
       "amount": "المبلغ",
       "submitted": "تاريخ الإرسال",
-      "action": "الإجراء"
+      "action": "الإجراء",
+      "when": "الوقت",
+      "actor": "المنفذ",
+      "target": "الهدف",
+      "metadata": "البيانات الوصفية"
     },
     "actions": {
       "review": "مراجعة",
@@ -81,7 +98,8 @@
       "approvePayout": "الموافقة على السحب",
       "rejectPayout": "رفض السحب",
       "approveAgency": "الموافقة على الوكالة",
-      "rejectAgency": "رفض الوكالة"
+      "rejectAgency": "رفض الوكالة",
+      "refund": "استرداد"
     },
     "labels": {
       "ice": "ICE",
@@ -92,6 +110,7 @@
       "agency": "الوكالة",
       "requested": "مطلوب",
       "amount": "المبلغ",
+      "currency": "MAD",
       "bankDetails": "بيانات بنك الوكالة",
       "payoutDetails": "تفاصيل السحب",
       "selected": "المحدد",
@@ -100,7 +119,11 @@
       "agencyAddress": "عنوان الوكالة",
       "booking": "الحجز",
       "traveler": "المسافر",
-      "na": "غير متوفر"
+      "na": "غير متوفر",
+      "system": "النظام",
+      "noActorId": "لا يوجد معرف منفذ",
+      "noTargetId": "لا يوجد معرف هدف",
+      "agencyLogo": "شعار {{name}}"
     },
     "messages": {
       "noBankDetails": "لا توجد بيانات بنكية محفوظة.",
@@ -129,10 +152,103 @@
       "paymentProofLoadError": "تعذر تحميل إثبات الدفع.",
       "payoutPaid": "تم تعليم السحب كمدفوع بنجاح.",
       "payoutRejected": "تم رفض طلب السحب بنجاح.",
-      "payoutUpdateError": "تعذر تحديث طلب السحب. حاول مرة أخرى."
+      "payoutUpdateError": "تعذر تحديث طلب السحب. حاول مرة أخرى.",
+      "refundProcessed": "تمت معالجة الاسترداد بنجاح.",
+      "refundError": "تعذر معالجة الاسترداد الآن.",
+      "auditPruneError": "تعذر تقليم سجلات التدقيق الآن.",
+      "auditExportSuccess": "تم تنزيل تصدير سجل التدقيق بنجاح.",
+      "auditExportError": "تعذر تصدير سجلات التدقيق الآن.",
+      "retentionDaysInvalid": "يجب أن يكون عدد أيام الاحتفاظ رقمًا موجبًا."
+    },
+    "aria": {
+      "mainNavigation": "التنقل الرئيسي",
+      "adminAvatar": "صورة المسؤول"
+    },
+    "audit": {
+      "trail": "مسار التدقيق ({{total}})",
+      "noMetadata": "لا توجد بيانات وصفية",
+      "noResults": "لا توجد سجلات تدقيق تطابق الفلاتر الحالية.",
+      "retentionAndExport": "الاحتفاظ والتصدير",
+      "retentionHint": "استخدم مربع البحث المشترك للتصفية حسب الإجراء أو بريد المنفذ أو نوع الهدف أو معرف الهدف قبل التصدير.",
+      "currentWindow": "النافذة الحالية",
+      "showingEvents": "عرض {{total}} من أحداث التدقيق المطابقة، صفحة {{page}} من {{totalPages}}.",
+      "retentionDays": "أيام الاحتفاظ",
+      "pruneHint": "التقليم يحذف فقط السجلات الأقدم من هذا الحد. تبقى إجراءات المشغل الأحدث دون تغيير.",
+      "exporting": "جار التصدير...",
+      "exportCsv": "تصدير CSV",
+      "downloadCsv": "تنزيل CSV",
+      "pruning": "جار التقليم...",
+      "pruneOldLogs": "تقليم السجلات القديمة",
+      "auditPruned_one": "تم حذف {{count}} سجل تدقيق أقدم من {{days}} يوم.",
+      "auditPruned_other": "تم حذف {{count}} سجلات تدقيق أقدم من {{days}} يوماً."
+    },
+    "confirm": {
+      "confirmRefund": "تأكيد الاسترداد",
+      "pruneAuditLogs": "تقليم سجلات التدقيق",
+      "refundDescription": "استرداد الحجز {{id}} بمبلغ {{amount}} {{currency}}؟ قد لا يسمح مزود الدفع بالتراجع عن هذا الإجراء.",
+      "pruneDescription": "حذف سجلات التدقيق الأقدم من {{days}} يوماً؟ لا يمكن التراجع عن هذا.",
+      "processRefund": "معالجة الاسترداد",
+      "deleteOldLogs": "حذف السجلات القديمة"
+    },
+    "status": {
+      "bookingAwaitingValidation": "بانتظار التحقق",
+      "bookingPending": "قيد الانتظار",
+      "bookingConfirmed": "مؤكد",
+      "bookingRejected": "مرفوض",
+      "bookingCancelled": "ملغي",
+      "bookingCompleted": "مكتمل",
+      "verificationPending": "قيد الانتظار",
+      "verificationVerified": "تم التحقق",
+      "verificationRejected": "مرفوض",
+      "subscriptionTrial": "تجريبي",
+      "subscriptionActive": "نشط",
+      "subscriptionCancelled": "ملغي",
+      "subscriptionExpired": "منتهي",
+      "paymentUnpaid": "غير مدفوع",
+      "paymentPaid": "مدفوع",
+      "paymentRefunded": "مسترد",
+      "paymentFailed": "فشل",
+      "payoutPaidLabel": "مدفوع",
+      "payoutPaidHelper": "تم التحويل",
+      "payoutRejectedLabel": "مرفوض",
+      "payoutRejectedHelper": "أُعيدت الأموال إلى محفظة الوكالة",
+      "payoutApprovedLabel": "موافق عليه",
+      "payoutApprovedHelper": "تمت الموافقة وبانتظار معالجة السحب",
+      "payoutPendingLabel": "قيد الانتظار",
+      "payoutPendingHelper": "بانتظار مراجعة المسؤول"
     },
     "modal": {
       "agencyReview": "مراجعة الوكالة"
     }
+  },
+  "meta": {
+    "titleDefault": "إدارة المنصة",
+    "titleTemplate": "%s | إدارة Ouiboo",
+    "description": "مساحة إدارة خاصة لمنصة Ouiboo."
+  },
+  "common": {
+    "skipToContent": "تخطى إلى المحتوى"
+  },
+  "pagination": {
+    "showing": "عرض",
+    "of": "من",
+    "nav": "ترقيم الصفحات",
+    "previousPage": "الصفحة السابقة",
+    "nextPage": "الصفحة التالية",
+    "goToPage": "الانتقال إلى الصفحة {{page}}"
+  },
+  "error": {
+    "title": "صفحة الإدارة غير متاحة",
+    "description": "حاول مرة أخرى. لم يتم إرسال أي تغييرات على الإشراف أو الحساب بسبب هذا الخطأ.",
+    "retry": "حاول مرة أخرى"
+  },
+  "notFound": {
+    "title": "صفحة الإدارة غير موجودة",
+    "description": "الأداة المطلوبة غير موجودة أو لم تعد متاحة.",
+    "back": "العودة إلى الإدارة"
+  },
+  "loading": {
+    "label": "جار تحميل الإدارة",
+    "text": "جار التحميل…"
   }
 }

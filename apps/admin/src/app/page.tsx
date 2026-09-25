@@ -22,7 +22,8 @@ import {
   Download,
   Trash2,
 } from 'lucide-react';
-import { Button, Card, CardContent, CardHeader, CardTitle, Badge, ConfirmDialog } from '@ouiboo/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle, Badge, ConfirmDialog, ThemeToggle, LanguageSwitcher, Pagination } from '@ouiboo/ui';
+import { toPaginatedList, type PaginationMeta } from '@ouiboo/utils';
 import {
   BookingPaymentStatus,
   type BookingDetails,
@@ -35,9 +36,7 @@ import {
   type VerificationStatusType,
 } from '@ouiboo/types';
 import { useTranslation } from 'react-i18next';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { getAdminBookingBadgeLabel, getAdminPayoutBadgeMeta, getAdminVerificationBadgeClass } from './status-mappers';
+import { getAdminBookingBadgeLabel, getAdminPayoutBadgeMeta, getAdminVerificationBadgeClass, getAdminVerificationBadgeLabel, getAdminSubscriptionBadgeLabel, getAdminBookingPaymentBadgeLabel } from './status-mappers';
 
 type AdminTab = 'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'PAYMENT_PROOFS' | 'PAYOUTS' | 'AUDIT';
 
@@ -124,6 +123,7 @@ type PendingConfirmation =
   | { kind: 'refund-booking'; booking: AdminBooking };
 
 const ADMIN_TABS: AdminTab[] = ['PENDING', 'AGENCIES', 'BOOKINGS', 'PAYMENT_PROOFS', 'PAYOUTS', 'AUDIT'];
+const ADMIN_PAGE_LIMIT = 25;
 
 const isAdminTab = (value: string | null): value is AdminTab => {
   return value !== null && ADMIN_TABS.includes(value as AdminTab);
@@ -140,6 +140,11 @@ const getErrorMessage = (
   return error?.message || fallback;
 };
 
+type AdminListResponse = {
+  data: unknown;
+  pagination: PaginationMeta | null;
+};
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>('PENDING');
   const [selectedAgency, setSelectedAgency] = useState<AdminAgency | null>(null);
@@ -147,6 +152,7 @@ export default function AdminDashboard() {
   const [viewingProofId, setViewingProofId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [agencyFeedback, setAgencyFeedback] = useState<FeedbackState | null>(null);
   const [paymentProofFeedback, setPaymentProofFeedback] = useState<FeedbackState | null>(null);
   const [payoutFeedback, setPayoutFeedback] = useState<FeedbackState | null>(null);
@@ -162,12 +168,16 @@ export default function AdminDashboard() {
     queryClient.invalidateQueries({ queryKey: ['admin-overview-counts'] });
   };
 
-  useEffect(() => {
+useEffect(() => {
     const requestedTab = searchParams.get('tab');
     if (isAdminTab(requestedTab) && requestedTab !== activeTab) {
       setActiveTab(requestedTab);
     }
   }, [activeTab, searchParams]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, debouncedQuery]);
 
   const handleTabChange = (nextTab: AdminTab) => {
     setActiveTab(nextTab);
@@ -197,71 +207,48 @@ export default function AdminDashboard() {
     staleTime: 30_000,
   });
 
-  const { data: pendingAgencies = [] } = useQuery<AdminAgency[]>({
-    queryKey: ['pending-agencies', debouncedQuery],
-    queryFn: async () => {
-      const resp = await apiClient.get('/admin/pending-agencies', {
-        params: debouncedQuery ? { q: debouncedQuery } : undefined,
-      });
-      return resp.data;
-    },
-    enabled: activeTab === 'PENDING',
-  });
+const useAdminListQuery = <T,>(path: string, queryKeyKey: string, enabled: boolean) => {
+    const { data: raw } = useQuery<unknown>({
+      queryKey: [queryKeyKey, activeTab, debouncedQuery, currentPage],
+      queryFn: async () => {
+        const resp = await apiClient.get(path, {
+          params: {
+            page: currentPage,
+            limit: ADMIN_PAGE_LIMIT,
+            ...(debouncedQuery ? { q: debouncedQuery } : {}),
+          },
+        });
+        return resp.data as AdminListResponse;
+      },
+      enabled,
+      placeholderData: (prev: unknown) => prev,
+    });
+    return toPaginatedList<T>(raw);
+  };
 
-  const { data: pendingTrips = [] } = useQuery<AdminTrip[]>({
-    queryKey: ['pending-trips', debouncedQuery],
-    queryFn: async () => {
-      const resp = await apiClient.get('/admin/pending-trips', {
-        params: debouncedQuery ? { q: debouncedQuery } : undefined,
-      });
-      return resp.data;
-    },
-    enabled: activeTab === 'PENDING',
-  });
+  const pendingAgenciesList = useAdminListQuery<AdminAgency>('/admin/pending-agencies', 'pending-agencies', activeTab === 'PENDING');
+  const pendingAgencies = pendingAgenciesList.data;
+  const pendingAgenciesPagination = pendingAgenciesList.pagination;
 
-  const { data: allAgencies = [] } = useQuery<AdminAgency[]>({
-    queryKey: ['all-agencies', debouncedQuery],
-    queryFn: async () => {
-      const resp = await apiClient.get('/admin/agencies', {
-        params: debouncedQuery ? { q: debouncedQuery } : undefined,
-      });
-      return resp.data;
-    },
-    enabled: activeTab === 'AGENCIES',
-  });
+  const pendingTripsList = useAdminListQuery<AdminTrip>('/admin/pending-trips', 'pending-trips', activeTab === 'PENDING');
+  const pendingTrips = pendingTripsList.data;
+  const pendingTripsPagination = pendingTripsList.pagination;
 
-  const { data: allBookings = [] } = useQuery<AdminBooking[]>({
-    queryKey: ['all-bookings', debouncedQuery],
-    queryFn: async () => {
-      const resp = await apiClient.get('/admin/bookings', {
-        params: debouncedQuery ? { q: debouncedQuery } : undefined,
-      });
-      return resp.data;
-    },
-    enabled: activeTab === 'BOOKINGS',
-  });
+  const allAgenciesList = useAdminListQuery<AdminAgency>('/admin/agencies', 'all-agencies', activeTab === 'AGENCIES');
+  const allAgencies = allAgenciesList.data;
+  const allAgenciesPagination = allAgenciesList.pagination;
 
-  const { data: pendingPaymentProofs = [] } = useQuery<AdminPaymentProof[]>({
-    queryKey: ['pending-payments', debouncedQuery],
-    queryFn: async () => {
-      const resp = await apiClient.get('/admin/pending-payments', {
-        params: debouncedQuery ? { q: debouncedQuery } : undefined,
-      });
-      return resp.data;
-    },
-    enabled: activeTab === 'PAYMENT_PROOFS',
-  });
+  const allBookingsList = useAdminListQuery<AdminBooking>('/admin/bookings', 'all-bookings', activeTab === 'BOOKINGS');
+  const allBookings = allBookingsList.data;
+  const allBookingsPagination = allBookingsList.pagination;
 
-  const { data: payoutRequests = [] } = useQuery<AdminPayoutRequest[]>({
-    queryKey: ['payout-requests', debouncedQuery],
-    queryFn: async () => {
-      const resp = await apiClient.get('/admin/payout-requests', {
-        params: debouncedQuery ? { q: debouncedQuery } : undefined,
-      });
-      return resp.data;
-    },
-    enabled: activeTab === 'PAYOUTS',
-  });
+  const pendingPaymentProofsList = useAdminListQuery<AdminPaymentProof>('/admin/pending-payments', 'pending-payments', activeTab === 'PAYMENT_PROOFS');
+  const pendingPaymentProofs = pendingPaymentProofsList.data;
+  const pendingPaymentProofsPagination = pendingPaymentProofsList.pagination;
+
+  const payoutRequestsList = useAdminListQuery<AdminPayoutRequest>('/admin/payout-requests', 'payout-requests', activeTab === 'PAYOUTS');
+  const payoutRequests = payoutRequestsList.data;
+  const payoutRequestsPagination = payoutRequestsList.pagination;
 
   const verifyAgencyMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string, status: VerificationStatusType }) => {
@@ -304,19 +291,22 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
     },
   });
-  const { data: auditLogs = [] } = useQuery<AdminAuditLog[]>({
-    queryKey: ['audit-logs', debouncedQuery],
+  const { data: auditLogsRaw } = useQuery<unknown>({
+    queryKey: ['audit-logs', debouncedQuery, currentPage],
     queryFn: async () => {
       const resp = await apiClient.get('/admin/audit-logs', {
         params: {
           ...(debouncedQuery ? { q: debouncedQuery } : {}),
-          limit: 100,
+          page: currentPage,
+          limit: 50,
         },
       });
       return resp.data;
     },
     enabled: activeTab === 'AUDIT',
+    placeholderData: (prev: unknown) => prev,
   });
+  const { data: auditLogs = [], pagination: auditLogsPagination } = toPaginatedList<AdminAuditLog>(auditLogsRaw);
 
   const verifyTripMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string, status: string }) => {
@@ -380,13 +370,13 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ['all-bookings'] });
       setBookingFeedback({
         type: 'success',
-        message: 'Refund processed successfully.',
+        message: t('dashboard.feedback.refundProcessed'),
       });
     },
     onError: (error: AxiosError<ApiErrorResponse>) => {
       setBookingFeedback({
         type: 'error',
-        message: getErrorMessage(error, 'Unable to process refund right now.'),
+        message: getErrorMessage(error, t('dashboard.feedback.refundError')),
       });
     },
   });
@@ -400,13 +390,13 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
       setAuditFeedback({
         type: 'success',
-        message: `Deleted ${response.data.deleted} audit logs older than ${variables.days} days.`,
+        message: t('dashboard.audit.auditPruned', { count: response.data.deleted, days: variables.days }),
       });
     },
     onError: (error: AxiosError<ApiErrorResponse>) => {
       setAuditFeedback({
         type: 'error',
-        message: getErrorMessage(error, 'Unable to prune audit logs right now.'),
+        message: getErrorMessage(error, t('dashboard.feedback.auditPruneError')),
       });
     },
   });
@@ -458,12 +448,12 @@ export default function AdminDashboard() {
       window.setTimeout(() => window.URL.revokeObjectURL(fileUrl), 60_000);
       setAuditFeedback({
         type: 'success',
-        message: 'Audit log export downloaded successfully.',
+        message: t('dashboard.feedback.auditExportSuccess'),
       });
     } catch (error) {
       setAuditFeedback({
         type: 'error',
-        message: getErrorMessage(error as AxiosError<ApiErrorResponse>, 'Unable to export audit logs right now.'),
+        message: getErrorMessage(error as AxiosError<ApiErrorResponse>, t('dashboard.feedback.auditExportError')),
       });
     } finally {
       setIsExportingAuditLogs(false);
@@ -475,7 +465,7 @@ export default function AdminDashboard() {
     if (!Number.isFinite(parsedDays) || parsedDays < 1) {
       setAuditFeedback({
         type: 'error',
-        message: 'Retention days must be a positive number.',
+        message: t('dashboard.feedback.retentionDaysInvalid'),
       });
       return;
     }
@@ -514,19 +504,19 @@ export default function AdminDashboard() {
       label: t('dashboard.summary.tripsInReview'),
       value: overviewCounts?.pendingTrips ?? pendingTrips.length,
       icon: MapPin,
-      tone: 'bg-blue-50 text-blue-700'
+      tone: 'bg-secondary text-secondary-foreground'
     },
     {
       label: t('dashboard.summary.bookingsToday'),
       value: overviewCounts?.bookingsToday ?? 0,
       icon: TrendingUp,
-      tone: 'bg-emerald-50 text-emerald-700'
+      tone: 'bg-success/10 text-success'
     },
     {
       label: t('dashboard.summary.paymentProofs'),
       value: overviewCounts?.pendingPaymentProofs ?? pendingPaymentProofs.length,
       icon: CalendarClock,
-      tone: 'bg-slate-100 text-slate-700'
+      tone: 'bg-muted text-muted-foreground'
     }
   ];
 
@@ -557,9 +547,9 @@ export default function AdminDashboard() {
       searchPlaceholder: t('dashboard.meta.payouts.searchPlaceholder')
     },
     AUDIT: {
-      title: 'Audit Log',
-      description: 'Search operator activity, export records, and apply retention cleanup.',
-      searchPlaceholder: 'Search by action, actor email, target type, or target id'
+      title: t('dashboard.meta.audit.title'),
+      description: t('dashboard.meta.audit.description'),
+      searchPlaceholder: t('dashboard.meta.audit.searchPlaceholder')
     }
   } as const;
 
@@ -598,7 +588,7 @@ export default function AdminDashboard() {
     },
     {
       key: 'AUDIT',
-      label: 'Audit Log',
+      label: t('dashboard.tabs.audit'),
       icon: FileText,
       count: overviewCounts?.auditLogs ?? auditLogs.length,
     },
@@ -606,9 +596,18 @@ export default function AdminDashboard() {
 
   const currentTab = tabMeta[activeTab];
 
+  const paginationLabels = {
+    showing: t('pagination.showing'),
+    of: t('pagination.of'),
+    pagination: t('pagination.nav'),
+    previousPage: t('pagination.previousPage'),
+    nextPage: t('pagination.nextPage'),
+    goToPage: (page: number) => t('pagination.goToPage', { page }),
+  };
+
   const renderBankDetails = (bankDetails?: string) => {
     if (!bankDetails) {
-      return <p className="text-gray-500">{t('dashboard.messages.noBankDetails')}</p>;
+      return <p className="text-muted-foreground">{t('dashboard.messages.noBankDetails')}</p>;
     }
 
     let details: string | BankDetailsMap = bankDetails;
@@ -619,15 +618,15 @@ export default function AdminDashboard() {
     }
 
     if (typeof details === 'string') {
-      return <p className="text-sm text-gray-600 whitespace-pre-line">{details}</p>;
+      return <p className="text-sm text-muted-foreground whitespace-pre-line">{details}</p>;
     }
 
     return (
-      <div className="bg-gray-50 rounded-xl p-3 space-y-1 text-sm">
+      <div className="bg-muted rounded-xl p-3 space-y-1 text-sm">
         {Object.entries(details).map(([key, value]) => (
           <div key={key} className="flex justify-between gap-4">
-            <span className="text-gray-500 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-            <span className="font-medium text-deep-blue">{String(value ?? t('dashboard.labels.na'))}</span>
+            <span className="text-muted-foreground capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+            <span className="font-medium text-foreground">{String(value ?? t('dashboard.labels.na'))}</span>
           </div>
         ))}
       </div>
@@ -644,11 +643,11 @@ export default function AdminDashboard() {
 
   const renderAuditMetadata = (metadata?: Record<string, unknown> | null) => {
     if (!metadata || Object.keys(metadata).length === 0) {
-      return <span className="text-gray-400">No metadata</span>;
+      return <span className="text-muted-foreground">{t('dashboard.audit.noMetadata')}</span>;
     }
 
     return (
-      <pre className="max-w-full overflow-x-auto whitespace-pre-wrap text-[11px] leading-5 text-gray-500">
+      <pre className="max-w-full overflow-x-auto whitespace-pre-wrap text-[11px] leading-5 text-muted-foreground">
         {JSON.stringify(metadata, null, 2)}
       </pre>
     );
@@ -662,15 +661,15 @@ export default function AdminDashboard() {
   const canRejectPaymentProof = (status?: VerificationStatusType) => status !== VerificationStatus.Rejected;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-deep-blue text-white p-6 space-y-8">
+    <div className="min-h-screen bg-background flex">
+      {/* Sidebar - desktop only */}
+      <aside className="hidden md:flex w-64 bg-deep-blue text-white p-6 space-y-8 flex-col">
          <div className="flex items-center gap-3 px-2">
             <div className="h-8 w-8 bg-sunset-orange rounded-lg"></div>
             <span className="text-xl font-black tracking-tight">{t('dashboard.brand')}</span>
          </div>
          
-         <nav className="space-y-2">
+         <nav aria-label={t('dashboard.aria.mainNavigation')} className="space-y-2 flex-1">
             {navItems.map((item) => {
               const isActive = activeTab === item.key;
               return (
@@ -680,8 +679,8 @@ export default function AdminDashboard() {
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive ? "bg-white/10 text-white" : "text-white/60 hover:text-white"}`}
                 >
                   <item.icon className="h-5 w-5" />
-                  <span className="font-bold text-sm text-left">{item.label}</span>
-                  <span className={`ml-auto text-[10px] font-black px-2 py-0.5 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-white/10 text-white/70"}`}>
+                  <span className="font-bold text-sm text-start">{item.label}</span>
+                  <span className={`ms-auto text-[10px] font-black px-2 py-0.5 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-white/10 text-white/70"}`}>
                     {item.count}
                   </span>
                 </button>
@@ -691,27 +690,44 @@ export default function AdminDashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-10 space-y-10">
-         <header className="flex justify-between items-center">
+      <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 p-4 md:p-10 space-y-6 md:space-y-10">
+         {/* Mobile nav - horizontal scrollable tabs */}
+         <nav aria-label={t('dashboard.aria.mainNavigation')} className="md:hidden flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+            {navItems.map((item) => {
+              const isActive = activeTab === item.key;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => handleTabChange(item.key)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl whitespace-nowrap text-xs font-bold transition-all ${isActive ? "bg-deep-blue text-white shadow-sm" : "bg-card text-muted-foreground border border-border"}`}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </button>
+              );
+            })}
+         </nav>
+
+         <header className="flex flex-wrap justify-between items-center gap-4">
             <div>
-               <h1 className="text-3xl font-black text-deep-blue">{currentTab.title}</h1>
-               <p className="text-gray-500 font-medium">{currentTab.description}</p>
+               <h1 className="text-2xl md:text-3xl font-black text-foreground">{currentTab.title}</h1>
+               <p className="text-muted-foreground font-medium text-sm md:text-base">{currentTab.description}</p>
             </div>
             <div className="flex items-center gap-3">
-               <LanguageSwitcher />
-               <ThemeToggle />
-               <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+               <div className="hidden sm:block relative">
+                  <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder={currentTab.searchPlaceholder}
-                    className="pl-10 pr-4 py-2 bg-white rounded-xl border-none shadow-sm text-sm focus:ring-2 focus:ring-sunset-orange/20"
+                    className="ps-10 pe-4 py-2 bg-card rounded-xl border-none shadow-sm text-sm focus:ring-2 focus:ring-sunset-orange/20"
                   />
                </div>
-               <div className="h-10 w-10 bg-gray-200 rounded-full border-2 border-white shadow-sm overflow-hidden">
-                  <Image src="https://ui-avatars.com/api/?name=Admin&background=1E3A8A&color=fff" alt="" width={40} height={40} />
+               <LanguageSwitcher />
+               <ThemeToggle />
+               <div className="h-10 w-10 bg-muted rounded-full border-2 border-border shadow-sm overflow-hidden">
+                  <Image src="https://ui-avatars.com/api/?name=Admin&background=0A192F&color=fff" alt={t('dashboard.aria.adminAvatar')} width={40} height={40} />
                </div>
             </div>
          </header>
@@ -721,8 +737,8 @@ export default function AdminDashboard() {
               <Card key={card.label} className="border-none shadow-sm rounded-2xl">
                 <CardContent className="p-6 flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">{card.label}</p>
-                    <p className="text-3xl font-black text-deep-blue mt-2">{card.value}</p>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{card.label}</p>
+                    <p className="text-3xl font-black text-foreground mt-2">{card.value}</p>
                   </div>
                   <div className={`h-12 w-12 rounded-2xl flex items-center justify-center ${card.tone}`}>
                     <card.icon className="h-6 w-6" />
@@ -737,50 +753,50 @@ export default function AdminDashboard() {
             {activeTab === 'PENDING' && (
               <div className="space-y-12">
                  <section className="space-y-6">
-                    <h2 className="text-xl font-bold text-deep-blue flex items-center gap-2">
-                       <ShieldCheck className="h-5 w-5 text-sunset-orange" />
-                       {t('dashboard.sections.pendingAgencies')} ({pendingAgencies.length})
-                    </h2>
+<h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                        <ShieldCheck className="h-5 w-5 text-sunset-orange" />
+                        {t('dashboard.sections.pendingAgencies')} ({pendingAgenciesPagination?.total ?? pendingAgencies.length})
+                     </h2>
                     <div className="grid grid-cols-1 gap-4">
                        {pendingAgencies.map((agency) => (
                       (() => {
                         const canApprove = canApproveAgency(agency.verificationStatus);
                         const canReject = canRejectAgency(agency.verificationStatus);
                         return (
-                      <Card key={agency.id} className="border-none shadow-sm rounded-2xl p-6 bg-white overflow-hidden">
+                      <Card key={agency.id} className="border-none shadow-sm rounded-2xl p-6 bg-card overflow-hidden">
                              <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-6">
-                                   <div className="h-16 w-16 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
-                                      <Image src={agency.logo || `https://ui-avatars.com/api/?name=${agency.companyName}&background=F3F4F6&color=1E3A8A`} alt="" width={64} height={64} className="h-full w-full object-cover" />
+                                   <div className="h-16 w-16 bg-muted rounded-2xl flex items-center justify-center overflow-hidden">
+                                      <Image src={agency.logo || `https://ui-avatars.com/api/?name=${agency.companyName}&background=F3F4F6&color=0A192F`} alt={t('dashboard.labels.agencyLogo', { name: agency.companyName })} width={64} height={64} className="h-full w-full object-cover" />
                                    </div>
                                    <div>
-                                      <h3 className="text-lg font-bold text-deep-blue">{agency.companyName}</h3>
-                                      <p className="text-sm text-gray-500">
-                                        {t('dashboard.labels.ice')}: {agency.ice} - {t('dashboard.labels.joined')} {agency.user?.createdAt ? new Date(agency.user.createdAt).toLocaleDateString() : 'N/A'}
+                                      <h3 className="text-lg font-bold text-foreground">{agency.companyName}</h3>
+                                      <p className="text-sm text-muted-foreground">
+                                        {t('dashboard.labels.ice')}: {agency.ice} - {t('dashboard.labels.joined')} {agency.user?.createdAt ? new Date(agency.user.createdAt).toLocaleDateString() : t('dashboard.labels.na')}
                                       </p>
                                    </div>
                                 </div>
                                 <div className="flex items-center gap-3">
                                    <Button
                                      variant="outline"
-                                     className="border-gray-200"
+                                     className="border-border"
                                      onClick={() => {
                                        setSelectedAgency(agency);
                                        setAgencyFeedback(null);
                                      }}
                                    >
-                                     <Eye className="h-4 w-4 mr-2" />
+                                     <Eye className="h-4 w-4 ms-2" />
                                      {t('dashboard.actions.review')}
                                    </Button>
                                    <Button
-                                     className="bg-red-50 text-red-600 hover:bg-red-100 border-none px-6 font-bold"
+                                     className="bg-danger/10 text-danger hover:bg-danger/15 border-none px-6 font-bold"
                                      onClick={() => verifyAgencyMutation.mutate({ id: agency.id, status: VerificationStatus.Rejected })}
                                      disabled={!canReject || verifyAgencyMutation.isPending}
                                    >
                                      {t('dashboard.actions.reject')}
                                    </Button>
                                    <Button
-                                     className="bg-green-600 hover:bg-green-700 text-white border-none px-6 font-bold"
+                                     className="bg-success text-success-foreground hover:bg-success/90 border-none px-6 font-bold"
                                      onClick={() => verifyAgencyMutation.mutate({ id: agency.id, status: VerificationStatus.Verified })}
                                      disabled={!canApprove || verifyAgencyMutation.isPending}
                                    >
@@ -789,35 +805,36 @@ export default function AdminDashboard() {
                                 </div>
                              </div>
                           </Card>
-                        );
+);
                       })()
                        ))}
                     </div>
+                    <Pagination pagination={pendingAgenciesPagination} onPageChange={setCurrentPage} labels={paginationLabels} className="mt-2" />
                  </section>
 
                  <section className="space-y-6">
-                    <h2 className="text-xl font-bold text-deep-blue flex items-center gap-2">
-                       <MapPin className="h-5 w-5 text-sunset-orange" />
-                       {t('dashboard.sections.tripQualityReview')} ({pendingTrips.length})
-                    </h2>
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                        <MapPin className="h-5 w-5 text-sunset-orange" />
+                        {t('dashboard.sections.tripQualityReview')} ({pendingTripsPagination?.total ?? pendingTrips.length})
+                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                        {pendingTrips.map((trip) => {
                          const canApprove = canApproveTrip(trip.status);
                          const canReject = canRejectTrip(trip.status);
                          return (
-                            <Card key={trip.id} className="border-none shadow-sm rounded-3xl overflow-hidden bg-white">
+                            <Card key={trip.id} className="border-none shadow-sm rounded-3xl overflow-hidden bg-card">
                                <div className="h-32 relative">
-                                  <Image src={trip.images?.[0] || 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop'} className="w-full h-full object-cover" alt="" fill sizes="(min-width: 1024px) 25vw, 100vw" />
+                                  <Image src={trip.images?.[0] || 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop'} className="w-full h-full object-cover" alt={trip.title} fill sizes="(min-width: 1024px) 25vw, 100vw" />
                                </div>
                                <CardContent className="p-4 flex items-center justify-between gap-3">
                                   <div>
-                                     <h3 className="font-bold text-deep-blue line-clamp-1">{trip.title}</h3>
-                                     <p className="text-xs text-gray-500">{trip.agency.companyName}</p>
+                                     <h3 className="font-bold text-foreground line-clamp-1">{trip.title}</h3>
+                                     <p className="text-xs text-muted-foreground">{trip.agency.companyName}</p>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <Button
                                       size="sm"
-                                      className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
+                                      className="bg-danger/10 text-danger hover:bg-danger/15 border-none"
                                       onClick={() => verifyTripMutation.mutate({ id: trip.id, status: TripStatus.Archived })}
                                       disabled={!canReject || verifyTripMutation.isPending}
                                     >
@@ -825,7 +842,7 @@ export default function AdminDashboard() {
                                     </Button>
                                     <Button
                                       size="sm"
-                                      className="bg-green-600"
+                                      className="bg-success text-success-foreground hover:bg-success/90"
                                       onClick={() => verifyTripMutation.mutate({ id: trip.id, status: TripStatus.Active })}
                                       disabled={!canApprove || verifyTripMutation.isPending}
                                     >
@@ -837,29 +854,30 @@ export default function AdminDashboard() {
                          );
                        })}
                     </div>
+                    <Pagination pagination={pendingTripsPagination} onPageChange={setCurrentPage} labels={paginationLabels} className="mt-2" />
                  </section>
               </div>
             )}
 
             {activeTab === 'AGENCIES' && (
               <div className="space-y-6 animate-in fade-in duration-500">
-                <h2 className="text-xl font-bold text-deep-blue flex items-center gap-2">
+                <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                    <Users className="h-5 w-5 text-sunset-orange" />
-                   {t('dashboard.sections.allAgencies')} ({allAgencies?.length || 0})
+                   {t('dashboard.sections.allAgencies')} ({allAgenciesPagination?.total ?? allAgencies.length})
                 </h2>
                 <div className="grid grid-cols-1 gap-4">
                    {allAgencies.map((agency) => (
-                      <Card key={agency.id} className="border-none shadow-sm p-6 bg-white overflow-hidden">
+                      <Card key={agency.id} className="border-none shadow-sm p-6 bg-card overflow-hidden">
                          <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                               <div className="h-12 w-12 bg-gray-100 rounded-xl overflow-hidden">
-                                  <Image src={agency.logo || `https://ui-avatars.com/api/?name=${agency.companyName}`} alt="" width={48} height={48} className="h-full w-full object-cover" />
+                               <div className="h-12 w-12 bg-muted rounded-xl overflow-hidden">
+                                  <Image src={agency.logo || `https://ui-avatars.com/api/?name=${agency.companyName}`} alt={t('dashboard.labels.agencyLogo', { name: agency.companyName })} width={48} height={48} className="h-full w-full object-cover" />
                                </div>
                                <div>
-                                  <h3 className="font-bold text-deep-blue">{agency.companyName}</h3>
+                                  <h3 className="font-bold text-foreground">{agency.companyName}</h3>
                                   <div className="flex gap-2">
-                                     <Badge className={getAdminVerificationBadgeClass(agency.verificationStatus)}>{agency.verificationStatus}</Badge>
-                                     <Badge variant="outline">{agency.subscriptionStatus || 'TRIAL'}</Badge>
+                                     <Badge className={getAdminVerificationBadgeClass(agency.verificationStatus)}>{getAdminVerificationBadgeLabel(agency.verificationStatus, t)}</Badge>
+                                     <Badge variant="outline">{getAdminSubscriptionBadgeLabel(agency.subscriptionStatus, t)}</Badge>
                                   </div>
                                </div>
                             </div>
@@ -872,7 +890,7 @@ export default function AdminDashboard() {
                                    setAgencyFeedback(null);
                                  }}
                                >
-                                 <Eye className="h-4 w-4 mr-2" />
+                                 <Eye className="h-4 w-4 ms-2" />
                                  {t('dashboard.actions.view')}
                                </Button>
                                <Button variant="outline" size="sm" onClick={() => updateAgencyStatusMutation.mutate({ id: agency.id, verificationStatus: agency.verificationStatus === VerificationStatus.Verified ? VerificationStatus.Rejected : VerificationStatus.Verified })}>
@@ -880,135 +898,140 @@ export default function AdminDashboard() {
                                </Button>
                             </div>
                          </div>
-                      </Card>
-                   ))}
+</Card>
+                    ))}
                 </div>
+                <Pagination pagination={allAgenciesPagination} onPageChange={setCurrentPage} labels={paginationLabels} className="mt-2" />
               </div>
             )}
 
             {activeTab === 'BOOKINGS' && (
               <div className="space-y-6 animate-in fade-in duration-500">
-                <h2 className="text-xl font-bold text-deep-blue flex items-center gap-2">
+                <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                    <LayoutDashboard className="h-5 w-5 text-sunset-orange" />
-                   {t('dashboard.sections.bookingMonitor')} ({allBookings.length})
+                   {t('dashboard.sections.bookingMonitor')} ({allBookingsPagination?.total ?? allBookings.length})
                 </h2>
                 {bookingFeedback && (
-                  <div className={`text-sm font-medium ${bookingFeedback.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className={`text-sm font-medium ${bookingFeedback.type === 'success' ? 'text-success' : 'text-danger'}`}>
                     {bookingFeedback.message}
                   </div>
                 )}
-                <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100">
-                   <table className="w-full text-left">
-                      <thead className="bg-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-400 border-b">
+                <div className="bg-card rounded-3xl overflow-hidden shadow-sm border border-border">
+                   <div className="overflow-x-auto">
+                   <table className="w-full text-start">
+                      <thead className="bg-muted text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
                          <tr>
                             <th className="px-6 py-4">{t('dashboard.table.booking')}</th>
                             <th className="px-6 py-4">{t('dashboard.table.traveler')}</th>
                             <th className="px-6 py-4">{t('dashboard.table.status')}</th>
-                            <th className="px-6 py-4 text-right">{t('dashboard.table.amount')}</th>
-                            <th className="px-6 py-4 text-right">{t('dashboard.table.action')}</th>
+                            <th className="px-6 py-4 text-end">{t('dashboard.table.amount')}</th>
+                            <th className="px-6 py-4 text-end">{t('dashboard.table.action')}</th>
                          </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-50">
+                      <tbody className="divide-y divide-border">
                          {allBookings.map((booking) => {
                             const canRefund = booking.paymentMethod === PaymentMethod.Gateway
                               && booking.paymentStatus === BookingPaymentStatus.Paid
                               && Boolean(booking.paymentGatewayTransactionId);
 
                             return (
-                            <tr key={booking.id} className="hover:bg-gray-50/50 transition-colors">
+                            <tr key={booking.id} className="hover:bg-muted/50 transition-colors">
                                <td className="px-6 py-4">
                                   <p className="font-bold text-sm line-clamp-1">{booking.session.template.title}</p>
-                                  <p className="text-[10px] text-gray-400 font-mono italic">#{booking.id.substring(0, 8)}</p>
+                                  <p className="text-[10px] text-muted-foreground font-mono italic">#{booking.id.substring(0, 8)}</p>
                                </td>
                                <td className="px-6 py-4 text-sm font-medium">{booking.traveler.name}</td>
                                <td className="px-6 py-4">
                                 <div className="flex flex-col items-start gap-2">
-                                  <Badge className="font-black text-[8px] uppercase">{getAdminBookingBadgeLabel(booking.status)}</Badge>
+                                  <Badge className="font-black text-[8px] uppercase">{getAdminBookingBadgeLabel(booking.status, t)}</Badge>
                                   <Badge variant="outline" className="text-[8px] font-black uppercase">
-                                    {booking.paymentStatus}
+                                    {getAdminBookingPaymentBadgeLabel(booking.paymentStatus, t)}
                                   </Badge>
                                 </div>
                                </td>
-                               <td className="px-6 py-4 text-right font-black">{booking.totalAmount} {booking.session.currency}</td>
-                               <td className="px-6 py-4 text-right">
+                               <td className="px-6 py-4 text-end font-black">{booking.totalAmount} {booking.session.currency}</td>
+                               <td className="px-6 py-4 text-end">
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="border-gray-200"
+                                  className="border-border"
                                   disabled={!canRefund || refundBookingMutation.isPending}
                                   onClick={() => {
                                     setBookingFeedback(null);
                                     setPendingConfirmation({ kind: 'refund-booking', booking });
                                   }}
                                 >
-                                  Refund
+                                  {t('dashboard.actions.refund')}
                                 </Button>
                                </td>
-                            </tr>
-                         )})}
-                      </tbody>
-                   </table>
-                </div>
+</tr>
+                          )})}
+                       </tbody>
+                    </table>
+                    </div>
+                 </div>
+                 <Pagination pagination={allBookingsPagination} onPageChange={setCurrentPage} labels={paginationLabels} className="mt-2" />
               </div>
             )}
 
             {activeTab === 'PAYMENT_PROOFS' && (
               <div className="space-y-6 animate-in fade-in duration-500">
-                  <h2 className="text-xl font-bold text-deep-blue flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                     <CreditCard className="h-5 w-5 text-sunset-orange" />
-                    {t('dashboard.sections.pendingPaymentProofs')} ({pendingPaymentProofs.length})
+                    {t('dashboard.sections.pendingPaymentProofs')} ({pendingPaymentProofsPagination?.total ?? pendingPaymentProofs.length})
                  </h2>
                  {paymentProofFeedback && (
-                   <div className={`text-sm font-medium ${paymentProofFeedback.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                   <div className={`text-sm font-medium ${paymentProofFeedback.type === 'success' ? 'text-success' : 'text-danger'}`}>
                      {paymentProofFeedback.message}
                    </div>
                  )}
-                 <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100">
+                 <div className="bg-card rounded-3xl overflow-hidden shadow-sm border border-border">
                     {pendingPaymentProofs.length ? (
-                      <table className="w-full text-left">
-                        <thead className="bg-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-400 border-b">
+                      <div className="overflow-x-auto">
+                      <table className="w-full text-start">
+                        <thead className="bg-muted text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
                            <tr>
                               <th className="px-6 py-4">{t('dashboard.table.booking')}</th>
                               <th className="px-6 py-4">{t('dashboard.table.traveler')}</th>
                               <th className="px-6 py-4">{t('dashboard.table.amount')}</th>
                               <th className="px-6 py-4">{t('dashboard.table.submitted')}</th>
-                              <th className="px-6 py-4 text-right">{t('dashboard.table.action')}</th>
+                              <th className="px-6 py-4 text-end">{t('dashboard.table.action')}</th>
                            </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50">
+                        <tbody className="divide-y divide-border">
                            {pendingPaymentProofs.map((payment) => {
                              const proofStatus = payment.booking?.paymentProof?.status;
                              const canApprove = canApprovePaymentProof(proofStatus);
                              const canReject = canRejectPaymentProof(proofStatus);
                              return (
-                                <tr key={payment.id} className="hover:bg-gray-50/50 transition-colors">
+                                <tr key={payment.id} className="hover:bg-muted/50 transition-colors">
                                  <td className="px-6 py-4">
                                     <p className="font-bold text-sm">{payment.booking?.session?.template?.title || t('dashboard.labels.booking')}</p>
-                                    <p className="text-[10px] text-gray-400 font-mono italic">#{payment.booking?.id?.substring(0, 8)}</p>
+                                    <p className="text-[10px] text-muted-foreground font-mono italic">#{payment.booking?.id?.substring(0, 8)}</p>
                                  </td>
                                  <td className="px-6 py-4 text-sm font-medium">
                                     {payment.booking?.traveler?.name || t('dashboard.labels.traveler')}
                                  </td>
                                  <td className="px-6 py-4 text-sm font-semibold">
-                                   {payment.booking?.totalAmount ?? payment.amount} {payment.booking?.session.currency ?? 'MAD'}
+                                   {payment.booking?.totalAmount ?? payment.amount} {payment.booking?.session.currency ?? t('dashboard.labels.currency')}
                                  </td>
-                                 <td className="px-6 py-4 text-sm text-gray-500">
+                                 <td className="px-6 py-4 text-sm text-muted-foreground">
                                     {payment.uploadedAt ? new Date(payment.uploadedAt).toLocaleDateString() : t('dashboard.labels.na')}
                                  </td>
-                                 <td className="px-6 py-4 text-right space-x-2">
+                                 <td className="px-6 py-4 text-end flex gap-2">
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      className="border-gray-200"
+                                      className="border-border"
                                       onClick={() => handleViewPaymentProof(payment.booking?.id || payment.bookingId)}
                                       disabled={viewingProofId === (payment.booking?.id || payment.bookingId)}
                                     >
-                                      <Eye className="h-4 w-4 mr-2" />
+                                      <Eye className="h-4 w-4 ms-2" />
                                       {viewingProofId === (payment.booking?.id || payment.bookingId) ? t('dashboard.messages.loading') : t('dashboard.actions.view')}
                                     </Button>
                                       <Button
                                         size="sm"
-                                        className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
+                                        className="bg-danger/10 text-danger hover:bg-danger/15 border-none"
                                         disabled={!canReject || verifyPaymentMutation.isPending}
                                         onClick={() => {
                                           const reason = window.prompt(t('dashboard.prompts.paymentProofRejection'));
@@ -1026,7 +1049,7 @@ export default function AdminDashboard() {
                                     </Button>
                                       <Button
                                         size="sm"
-                                        className="bg-green-600 hover:bg-green-700 text-white border-none"
+                                        className="bg-success text-success-foreground hover:bg-success/90 border-none"
                                         disabled={!canApprove || verifyPaymentMutation.isPending}
                                         onClick={() => verifyPaymentMutation.mutate({ id: payment.id, status: VerificationStatus.Verified })}
                                       >
@@ -1035,40 +1058,42 @@ export default function AdminDashboard() {
                                    </td>
                                 </tr>
                              );
-                           })}
-                        </tbody>
-                      </table>
+})}
+                         </tbody>
+                       </table>
+                      </div>
                     ) : (
-                      <div className="p-10 text-center text-sm text-gray-500">
+                      <div className="p-10 text-center text-sm text-muted-foreground">
                         {t('dashboard.messages.noPaymentProofs')}
                       </div>
-                    )}
-                 </div>
-              </div>
+)}
+                  </div>
+                  <Pagination pagination={pendingPaymentProofsPagination} onPageChange={setCurrentPage} labels={paginationLabels} className="mt-2" />
+               </div>
             )}
 
             {activeTab === 'PAYOUTS' && (
               <div className="space-y-6 animate-in fade-in duration-500">
-                 <h2 className="text-xl font-bold text-deep-blue flex items-center gap-2">
+                 <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                     <CalendarClock className="h-5 w-5 text-sunset-orange" />
-                    {t('dashboard.sections.payoutRequests')} ({payoutRequests.length})
+                    {t('dashboard.sections.payoutRequests')} ({payoutRequestsPagination?.total ?? payoutRequests.length})
                  </h2>
                  <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6">
                     <div className="space-y-4">
                        {payoutRequests.length ? (
                          payoutRequests.map((payout) => {
-                          const payoutMeta = getAdminPayoutBadgeMeta(payout.status);
+                          const payoutMeta = getAdminPayoutBadgeMeta(payout.status, t);
                           const isPendingPayout = payout.status === PayoutStatus.Pending;
                           return (
-                          <Card key={payout.id} className="border-none shadow-sm p-5 bg-white">
+                          <Card key={payout.id} className="border-none shadow-sm p-5 bg-card">
                              <div className="flex items-center justify-between gap-4">
                                 <div className="space-y-1">
-                                   <p className="text-sm text-gray-500">{t('dashboard.labels.requestId', { id: payout.id?.slice(0, 8) ?? '' })}</p>
-                                   <h3 className="font-bold text-deep-blue">{payout.agency?.companyName || t('dashboard.labels.agencyPayout')}</h3>
-                                   <p className="text-xs text-gray-400">
-                                     {payout.requestedAt ? new Date(payout.requestedAt).toLocaleDateString() : t('dashboard.labels.na')} - {payout.amount} MAD
+                                   <p className="text-sm text-muted-foreground">{t('dashboard.labels.requestId', { id: payout.id?.slice(0, 8) ?? '' })}</p>
+                                   <h3 className="font-bold text-foreground">{payout.agency?.companyName || t('dashboard.labels.agencyPayout')}</h3>
+                                   <p className="text-xs text-muted-foreground">
+                                     {payout.requestedAt ? new Date(payout.requestedAt).toLocaleDateString() : t('dashboard.labels.na')} - {payout.amount} {t('dashboard.labels.currency')}
                                    </p>
-                                   <p className="text-[11px] font-medium text-gray-500">{payoutMeta.helperText}</p>
+                                   <p className="text-[11px] font-medium text-muted-foreground">{payoutMeta.helperText}</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                    <Badge className={payoutMeta.className}>{payoutMeta.label}</Badge>
@@ -1080,12 +1105,12 @@ export default function AdminDashboard() {
                                        setPayoutFeedback(null);
                                      }}
                                    >
-                                     <Eye className="h-4 w-4 mr-2" />
+                                     <Eye className="h-4 w-4 ms-2" />
                                      {t('dashboard.actions.details')}
                                    </Button>
                                    <Button
                                      size="sm"
-                                     className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
+                                     className="bg-danger/10 text-danger hover:bg-danger/15 border-none"
                                      onClick={() => processPayoutMutation.mutate({ id: payout.id, status: PayoutStatus.Rejected })}
                                      disabled={!isPendingPayout || processPayoutMutation.isPending}
                                    >
@@ -1093,7 +1118,7 @@ export default function AdminDashboard() {
                                    </Button>
                                    <Button
                                      size="sm"
-                                     className="bg-green-600 hover:bg-green-700 text-white border-none"
+                                     className="bg-success text-success-foreground hover:bg-success/90 border-none"
                                      onClick={() => processPayoutMutation.mutate({ id: payout.id, status: PayoutStatus.Paid })}
                                      disabled={!isPendingPayout || processPayoutMutation.isPending}
                                    >
@@ -1104,74 +1129,75 @@ export default function AdminDashboard() {
                           </Card>
                        )})
                        ) : (
-                         <Card className="border-none shadow-sm p-6 bg-white text-sm text-gray-500">
+                         <Card className="border-none shadow-sm p-6 bg-card text-sm text-muted-foreground">
                            {t('dashboard.messages.noPayoutRequests')}
                          </Card>
                        )}
-                    </div>
-                    <Card className="border-none shadow-sm p-6 bg-white h-fit">
+</div>
+                     <Pagination pagination={payoutRequestsPagination} onPageChange={setCurrentPage} labels={paginationLabels} className="pt-2" />
+                     <Card className="border-none shadow-sm p-6 bg-card h-fit">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-deep-blue">{t('dashboard.labels.payoutDetails')}</h3>
+                        <h3 className="text-lg font-bold text-foreground">{t('dashboard.labels.payoutDetails')}</h3>
                         {selectedPayout && (
                           <Badge className="bg-sunset-orange/10 text-sunset-orange">{t('dashboard.labels.selected')}</Badge>
                         )}
                       </div>
                       {!selectedPayout && (
-                        <p className="text-sm text-gray-500 mt-4">{t('dashboard.messages.selectPayoutPrompt')}</p>
+                        <p className="text-sm text-muted-foreground mt-4">{t('dashboard.messages.selectPayoutPrompt')}</p>
                       )}
                       {selectedPayout && (
                         <div className="mt-4 space-y-5">
                           {(() => {
-                            const payoutMeta = getAdminPayoutBadgeMeta(selectedPayout.status);
+                            const payoutMeta = getAdminPayoutBadgeMeta(selectedPayout.status, t);
                             const isPendingPayout = selectedPayout.status === PayoutStatus.Pending;
                             return (
                               <>
                           <div>
-                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{t('dashboard.labels.agency')}</p>
-                            <p className="text-base font-bold text-deep-blue">{selectedPayout.agency?.companyName || t('dashboard.labels.agencyPayout')}</p>
-                            <p className="text-sm text-gray-500">{selectedPayout.agency?.user?.email}</p>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('dashboard.labels.agency')}</p>
+                            <p className="text-base font-bold text-foreground">{selectedPayout.agency?.companyName || t('dashboard.labels.agencyPayout')}</p>
+                            <p className="text-sm text-muted-foreground">{selectedPayout.agency?.user?.email}</p>
                           </div>
                           <div className="flex items-center gap-3">
                             <Badge className={payoutMeta.className}>{payoutMeta.label}</Badge>
-                            <p className="text-xs font-medium text-gray-500">{payoutMeta.helperText}</p>
+                            <p className="text-xs font-medium text-muted-foreground">{payoutMeta.helperText}</p>
                           </div>
                           <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
-                              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{t('dashboard.labels.requested')}</p>
-                              <p className="font-medium text-deep-blue">{selectedPayout.requestedAt ? new Date(selectedPayout.requestedAt).toLocaleDateString() : t('dashboard.labels.na')}</p>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('dashboard.labels.requested')}</p>
+                              <p className="font-medium text-foreground">{selectedPayout.requestedAt ? new Date(selectedPayout.requestedAt).toLocaleDateString() : t('dashboard.labels.na')}</p>
                             </div>
                             <div>
-                              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{t('dashboard.labels.amount')}</p>
-                              <p className="font-medium text-deep-blue">{selectedPayout.amount} MAD</p>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('dashboard.labels.amount')}</p>
+                              <p className="font-medium text-foreground">{selectedPayout.amount} {t('dashboard.labels.currency')}</p>
                             </div>
                           </div>
                           {selectedPayout.processedAt && (
                             <div>
-                              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{t('dashboard.labels.status')}</p>
-                              <p className="font-medium text-deep-blue">{new Date(selectedPayout.processedAt).toLocaleDateString()}</p>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('dashboard.labels.status')}</p>
+                              <p className="font-medium text-foreground">{new Date(selectedPayout.processedAt).toLocaleDateString()}</p>
                             </div>
                           )}
                           <div>
-                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t('dashboard.labels.bankDetails')}</p>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{t('dashboard.labels.bankDetails')}</p>
                             <div className="space-y-2 text-sm">
                               {renderBankDetails(selectedPayout.bankDetails)}
                             </div>
                           </div>
                           {payoutFeedback && (
-                            <div className={`text-sm font-medium ${payoutFeedback.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                            <div className={`text-sm font-medium ${payoutFeedback.type === 'success' ? 'text-success' : 'text-danger'}`}>
                               {payoutFeedback.message}
                             </div>
                           )}
                           <div className="flex flex-wrap gap-2">
                             <Button
-                              className="bg-green-600 hover:bg-green-700 text-white border-none"
+                              className="bg-success text-success-foreground hover:bg-success/90 border-none"
                               onClick={() => processPayoutMutation.mutate({ id: selectedPayout.id, status: PayoutStatus.Paid })}
                               disabled={!isPendingPayout || processPayoutMutation.isPending}
                             >
                               {t('dashboard.actions.approvePayout')}
                             </Button>
                             <Button
-                              className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
+                              className="bg-danger/10 text-danger hover:bg-danger/15 border-none"
                               onClick={() => processPayoutMutation.mutate({ id: selectedPayout.id, status: PayoutStatus.Rejected })}
                               disabled={!isPendingPayout || processPayoutMutation.isPending}
                             >
@@ -1191,59 +1217,60 @@ export default function AdminDashboard() {
             {activeTab === 'AUDIT' && (
               <div className="space-y-6 animate-in fade-in duration-500">
                 <div className="flex items-center justify-between gap-4">
-                  <h2 className="text-xl font-bold text-deep-blue flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                     <FileText className="h-5 w-5 text-sunset-orange" />
-                    Audit trail ({auditLogs.length})
+                    {t('dashboard.audit.trail', { total: auditLogsPagination?.total ?? auditLogs.length })}
                   </h2>
                   <div className="flex flex-wrap items-center gap-2">
                     <Button
                       variant="outline"
-                      className="border-gray-200"
+                      className="border-border"
                       onClick={handleExportAuditLogs}
                       disabled={isExportingAuditLogs}
                     >
-                      <Download className="h-4 w-4 mr-2" />
-                      {isExportingAuditLogs ? 'Exporting...' : 'Export CSV'}
+                      <Download className="h-4 w-4 ms-2" />
+                      {isExportingAuditLogs ? t('dashboard.audit.exporting') : t('dashboard.audit.exportCsv')}
                     </Button>
                   </div>
                 </div>
 
                 {auditFeedback && (
-                  <div className={`text-sm font-medium ${auditFeedback.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className={`text-sm font-medium ${auditFeedback.type === 'success' ? 'text-success' : 'text-danger'}`}>
                     {auditFeedback.message}
                   </div>
                 )}
 
                 <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr_0.8fr]">
-                  <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100">
+                  <div className="bg-card rounded-3xl overflow-hidden shadow-sm border border-border">
                     {auditLogs.length ? (
-                      <table className="w-full text-left">
-                        <thead className="bg-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-400 border-b">
+                      <div className="overflow-x-auto">
+                      <table className="w-full text-start">
+                        <thead className="bg-muted text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
                           <tr>
-                            <th className="px-6 py-4">When</th>
-                            <th className="px-6 py-4">Actor</th>
-                            <th className="px-6 py-4">Action</th>
-                            <th className="px-6 py-4">Target</th>
-                            <th className="px-6 py-4">Metadata</th>
+                            <th className="px-6 py-4">{t('dashboard.table.when')}</th>
+                            <th className="px-6 py-4">{t('dashboard.table.actor')}</th>
+                            <th className="px-6 py-4">{t('dashboard.table.action')}</th>
+                            <th className="px-6 py-4">{t('dashboard.table.target')}</th>
+                            <th className="px-6 py-4">{t('dashboard.table.metadata')}</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50">
+                        <tbody className="divide-y divide-border">
                           {auditLogs.map((log) => (
-                            <tr key={log.id} className="align-top hover:bg-gray-50/50 transition-colors">
-                              <td className="px-6 py-4 text-sm text-gray-500">
-                                <p className="font-medium text-deep-blue">{formatDateTime(log.createdAt)}</p>
-                                <p className="text-[10px] font-mono text-gray-400">#{log.id.slice(0, 8)}</p>
+                            <tr key={log.id} className="align-top hover:bg-muted/50 transition-colors">
+                              <td className="px-6 py-4 text-sm text-muted-foreground">
+                                <p className="font-medium text-foreground">{formatDateTime(log.createdAt)}</p>
+                                <p className="text-[10px] font-mono text-muted-foreground">#{log.id.slice(0, 8)}</p>
                               </td>
                               <td className="px-6 py-4 text-sm">
-                                <p className="font-medium text-deep-blue">{log.actorEmail || 'System'}</p>
-                                <p className="text-gray-400">{log.actorId || 'No actor id'}</p>
+                                <p className="font-medium text-foreground">{log.actorEmail || t('dashboard.labels.system')}</p>
+                                <p className="text-muted-foreground">{log.actorId || t('dashboard.labels.noActorId')}</p>
                               </td>
-                              <td className="px-6 py-4 text-sm font-semibold text-deep-blue">
+                              <td className="px-6 py-4 text-sm font-semibold text-foreground">
                                 {log.action}
                               </td>
-                              <td className="px-6 py-4 text-sm text-gray-500">
-                                <p className="font-medium text-deep-blue">{log.targetType}</p>
-                                <p>{log.targetId || 'No target id'}</p>
+                              <td className="px-6 py-4 text-sm text-muted-foreground">
+                                <p className="font-medium text-foreground">{log.targetType}</p>
+                                <p>{log.targetId || t('dashboard.labels.noTargetId')}</p>
                               </td>
                               <td className="px-6 py-4">
                                 {renderAuditMetadata(log.metadata)}
@@ -1252,42 +1279,47 @@ export default function AdminDashboard() {
                           ))}
                         </tbody>
                       </table>
+                      </div>
                     ) : (
-                      <div className="p-10 text-center text-sm text-gray-500">
-                        No audit logs matched the current filters.
+                      <div className="p-10 text-center text-sm text-muted-foreground">
+                        {t('dashboard.audit.noResults')}
                       </div>
                     )}
                   </div>
 
-                  <Card className="border-none shadow-sm p-6 bg-white h-fit">
+                  <Card className="border-none shadow-sm p-6 bg-card h-fit">
                     <div className="space-y-6">
                       <div>
-                        <h3 className="text-lg font-bold text-deep-blue">Retention and export</h3>
-                        <p className="mt-2 text-sm text-gray-500">
-                          Use the shared search box to filter by action, actor email, target type, or target id before exporting.
+                        <h3 className="text-lg font-bold text-foreground">{t('dashboard.audit.retentionAndExport')}</h3>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          {t('dashboard.audit.retentionHint')}
                         </p>
                       </div>
 
-                      <div className="rounded-2xl bg-gray-50 p-4 space-y-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Current window</p>
-                        <p className="text-sm text-deep-blue">
-                          Showing the most recent {auditLogs.length} matching audit events.
+                      <div className="rounded-2xl bg-muted p-4 space-y-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('dashboard.audit.currentWindow')}</p>
+                        <p className="text-sm text-foreground">
+                          {t('dashboard.audit.showingEvents', {
+                            total: auditLogsPagination?.total ?? auditLogs.length,
+                            page: auditLogsPagination?.page ?? 1,
+                            totalPages: auditLogsPagination?.totalPages ?? 1,
+                          })}
                         </p>
                       </div>
 
                       <div className="space-y-3">
-                        <label className="block text-xs font-semibold uppercase tracking-wide text-gray-400">
-                          Retention days
+                        <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          {t('dashboard.audit.retentionDays')}
                         </label>
                         <input
                           type="number"
                           min={1}
                           value={retentionDays}
                           onChange={(event) => setRetentionDays(event.target.value)}
-                          className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sunset-orange/20"
+                          className="w-full rounded-xl border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sunset-orange/20"
                         />
-                        <p className="text-sm text-gray-500">
-                          Pruning only deletes logs older than this cutoff. Newer operator actions stay untouched.
+                        <p className="text-sm text-muted-foreground">
+                          {t('dashboard.audit.pruneHint')}
                         </p>
                       </div>
 
@@ -1297,21 +1329,22 @@ export default function AdminDashboard() {
                           onClick={handleExportAuditLogs}
                           disabled={isExportingAuditLogs}
                         >
-                          <Download className="h-4 w-4 mr-2" />
-                          {isExportingAuditLogs ? 'Exporting...' : 'Download CSV'}
+                          <Download className="h-4 w-4 ms-2" />
+                          {isExportingAuditLogs ? t('dashboard.audit.exporting') : t('dashboard.audit.downloadCsv')}
                         </Button>
                         <Button
-                          className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
+                          className="bg-danger/10 text-danger hover:bg-danger/15 border-none"
                           onClick={handlePruneAuditLogs}
                           disabled={pruneAuditLogsMutation.isPending}
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          {pruneAuditLogsMutation.isPending ? 'Pruning...' : 'Prune old logs'}
+                          <Trash2 className="h-4 w-4 ms-2" />
+                          {pruneAuditLogsMutation.isPending ? t('dashboard.audit.pruning') : t('dashboard.audit.pruneOldLogs')}
                         </Button>
                       </div>
                     </div>
                   </Card>
                 </div>
+                <Pagination pagination={auditLogsPagination} onPageChange={setCurrentPage} labels={paginationLabels} className="mt-2" />
               </div>
             )}
          </div>
@@ -1321,11 +1354,15 @@ export default function AdminDashboard() {
         open={Boolean(pendingConfirmation)}
         destructive
         pending={refundBookingMutation.isPending || pruneAuditLogsMutation.isPending}
-        title={pendingConfirmation?.kind === 'refund-booking' ? 'Confirm refund' : 'Prune audit logs'}
+title={pendingConfirmation?.kind === 'refund-booking' ? t('dashboard.confirm.confirmRefund') : t('dashboard.confirm.pruneAuditLogs')}
         description={pendingConfirmation?.kind === 'refund-booking'
-          ? `Refund booking ${pendingConfirmation.booking.id.substring(0, 8)} for ${pendingConfirmation.booking.totalAmount} ${pendingConfirmation.booking.session.currency}? The payment provider may not allow this action to be reversed.`
-          : `Delete audit logs older than ${pendingConfirmation?.days ?? retentionDays} days? This cannot be undone.`}
-        confirmLabel={pendingConfirmation?.kind === 'refund-booking' ? 'Process refund' : 'Delete old logs'}
+          ? t('dashboard.confirm.refundDescription', {
+              id: pendingConfirmation.booking.id.substring(0, 8),
+              amount: pendingConfirmation.booking.totalAmount,
+              currency: pendingConfirmation.booking.session.currency,
+            })
+          : t('dashboard.confirm.pruneDescription', { days: pendingConfirmation?.days ?? retentionDays })}
+        confirmLabel={pendingConfirmation?.kind === 'refund-booking' ? t('dashboard.confirm.processRefund') : t('dashboard.confirm.deleteOldLogs')}
         onConfirm={handleConfirmAction}
         onOpenChange={(open) => !open && setPendingConfirmation(null)}
       />
@@ -1335,8 +1372,8 @@ export default function AdminDashboard() {
           <Card className="max-w-2xl w-full border-none shadow-2xl rounded-3xl overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between">
               <div className="space-y-1">
-                <CardTitle className="text-deep-blue">{t('dashboard.modal.agencyReview')}</CardTitle>
-                <p className="text-sm text-gray-500">{t('dashboard.messages.reviewVerification')}</p>
+                <CardTitle className="text-foreground">{t('dashboard.modal.agencyReview')}</CardTitle>
+                <p className="text-sm text-muted-foreground">{t('dashboard.messages.reviewVerification')}</p>
               </div>
               <Button variant="ghost" onClick={() => setSelectedAgency(null)}>
                 <XCircle className="h-5 w-5" />
@@ -1344,40 +1381,40 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center gap-4">
-                <div className="h-14 w-14 bg-gray-100 rounded-2xl overflow-hidden">
-                  <Image src={selectedAgency.logo || `https://ui-avatars.com/api/?name=${selectedAgency.companyName}`} alt="" width={56} height={56} className="h-full w-full object-cover" />
+                <div className="h-14 w-14 bg-muted rounded-2xl overflow-hidden">
+                  <Image src={selectedAgency.logo || `https://ui-avatars.com/api/?name=${selectedAgency.companyName}`} alt={t('dashboard.labels.agencyLogo', { name: selectedAgency.companyName })} width={56} height={56} className="h-full w-full object-cover" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-deep-blue">{selectedAgency.companyName}</h3>
-                  <p className="text-sm text-gray-500">{t('dashboard.labels.ice')}: {selectedAgency.ice || t('dashboard.labels.na')}</p>
+                  <h3 className="text-lg font-bold text-foreground">{selectedAgency.companyName}</h3>
+                  <p className="text-sm text-muted-foreground">{t('dashboard.labels.ice')}: {selectedAgency.ice || t('dashboard.labels.na')}</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{t('dashboard.labels.contact')}</p>
-                  <p className="font-medium text-deep-blue">{selectedAgency.user?.name || t('dashboard.messages.notProvided')}</p>
-                  <p className="text-gray-500">{selectedAgency.user?.email || t('dashboard.messages.noEmail')}</p>
-                  <p className="text-gray-500">{selectedAgency.user?.phone || t('dashboard.messages.noPhone')}</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('dashboard.labels.contact')}</p>
+                  <p className="font-medium text-foreground">{selectedAgency.user?.name || t('dashboard.messages.notProvided')}</p>
+                  <p className="text-muted-foreground">{selectedAgency.user?.email || t('dashboard.messages.noEmail')}</p>
+                  <p className="text-muted-foreground">{selectedAgency.user?.phone || t('dashboard.messages.noPhone')}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{t('dashboard.labels.status')}</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('dashboard.labels.status')}</p>
                   <div className="flex gap-2">
                     <Badge className={getAdminVerificationBadgeClass(selectedAgency.verificationStatus)}>
-                      {selectedAgency.verificationStatus || VerificationStatus.Pending}
+                      {getAdminVerificationBadgeLabel(selectedAgency.verificationStatus, t)}
                     </Badge>
-                    <Badge variant="outline">{selectedAgency.subscriptionStatus || 'TRIAL'}</Badge>
+                    <Badge variant="outline">{getAdminSubscriptionBadgeLabel(selectedAgency.subscriptionStatus, t)}</Badge>
                   </div>
-                  <p className="text-gray-500 text-xs">
+                  <p className="text-muted-foreground text-xs">
                     {t('dashboard.labels.joined')} {selectedAgency.user?.createdAt ? new Date(selectedAgency.user.createdAt).toLocaleDateString() : t('dashboard.messages.unknown')}
                   </p>
                 </div>
                 <div className="md:col-span-2 space-y-1">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{t('dashboard.labels.agencyAddress')}</p>
-                  <p className="text-gray-500">{selectedAgency.address || selectedAgency.profile?.address || t('dashboard.messages.noAddress')}</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('dashboard.labels.agencyAddress')}</p>
+                  <p className="text-muted-foreground">{selectedAgency.address || selectedAgency.profile?.address || t('dashboard.messages.noAddress')}</p>
                 </div>
               </div>
               {agencyFeedback && (
-                <div className={`text-sm font-medium ${agencyFeedback.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                <div className={`text-sm font-medium ${agencyFeedback.type === 'success' ? 'text-success' : 'text-danger'}`}>
                   {agencyFeedback.message}
                 </div>
               )}
@@ -1387,19 +1424,19 @@ export default function AdminDashboard() {
                 return (
               <div className="flex flex-wrap gap-3">
                 <Button
-                  className="bg-green-600 hover:bg-green-700 text-white border-none"
+                  className="bg-success text-success-foreground hover:bg-success/90 border-none"
                   onClick={() => verifyAgencyMutation.mutate({ id: selectedAgency.id, status: VerificationStatus.Verified })}
                   disabled={!canApprove || verifyAgencyMutation.isPending}
                 >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  <CheckCircle2 className="h-4 w-4 ms-2" />
                   {t('dashboard.actions.approveAgency')}
                 </Button>
                 <Button
-                  className="bg-red-50 text-red-600 hover:bg-red-100 border-none"
+                  className="bg-danger/10 text-danger hover:bg-danger/15 border-none"
                   onClick={() => verifyAgencyMutation.mutate({ id: selectedAgency.id, status: VerificationStatus.Rejected })}
                   disabled={!canReject || verifyAgencyMutation.isPending}
                 >
-                  <XCircle className="h-4 w-4 mr-2" />
+                  <XCircle className="h-4 w-4 ms-2" />
                   {t('dashboard.actions.rejectAgency')}
                 </Button>
               </div>

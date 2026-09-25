@@ -3,10 +3,15 @@ import { NotificationGateway } from './websocket.gateway';
 import { WebSocketService } from './websocket.service';
 import { JwtModule } from '@nestjs/jwt';
 
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret) {
+    throw new Error('JWT_SECRET is required');
+}
+
 @Module({
   imports: [
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secret',
+      secret: jwtSecret,
     }),
   ],
   providers: [NotificationGateway, WebSocketService],

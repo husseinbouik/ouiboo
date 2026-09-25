@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { mockTravelerApi, seedLocalStorage } from './helpers';
+import { mockTravelerApi } from './helpers';
 
 test.describe('traveler launch flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -14,7 +14,9 @@ test.describe('traveler launch flow', () => {
     await page.locator('#password').fill('Password123!');
     await page.getByRole('button', { name: /register|create account/i }).click();
 
-    await page.waitForURL(/\/verify\?email=traveler@example\.com/);
+    await page.waitForURL((url) => (
+      url.pathname === '/verify' && url.searchParams.get('email') === 'traveler@example.com'
+    ));
 
     const otpInputs = page.locator('input[id^="otp-"]');
     await expect(otpInputs).toHaveCount(6);
@@ -27,11 +29,6 @@ test.describe('traveler launch flow', () => {
   });
 
   test('traveler can go from trip detail to checkout confirmation', async ({ page }) => {
-    await seedLocalStorage(page, {
-      token: 'traveler-token',
-      refresh_token: 'traveler-refresh',
-    });
-
     await page.goto('/search', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: 'Atlas Weekend Escape' })).toBeVisible();
     await page.getByRole('button', { name: /view details/i }).click();
@@ -43,7 +40,7 @@ test.describe('traveler launch flow', () => {
     await page.waitForURL(/\/checkout\/trip-1/);
     await expect(page.getByRole('heading', { name: /checkout/i })).toBeVisible();
     await page.getByPlaceholder(/abderrahmane/i).fill('Launch Traveler');
-    await page.getByPlaceholder(/\+212/i).fill('+212600000000');
+    await page.getByPlaceholder(/include country code/i).fill('+212600000000');
     await page.getByPlaceholder(/enter document number/i).fill('AB123456');
     await page.getByRole('button', { name: /complete booking/i }).click();
 

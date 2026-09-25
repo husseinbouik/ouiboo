@@ -49,6 +49,9 @@ const mockDatabaseService = {
 
 const mockUploadService = {
     uploadFile: jest.fn(),
+    getFilePath: jest.fn(),
+    readFile: jest.fn(),
+    isLocal: jest.fn(),
 };
 
 const mockEmailService = {
@@ -188,6 +191,48 @@ describe('BookingsService', () => {
             db.agencyProfile.findUnique.mockResolvedValue(null);
 
             await expect(service.uploadPaymentProof('booking-123', 'user-999', {} as any)).rejects.toThrow(ForbiddenException);
+        });
+    });
+
+    describe('getPaymentProofFile', () => {
+        const proofBooking = {
+            id: 'booking-123',
+            travelerId: 'user-123',
+            paymentProof: { imageUrl: 'private/payment-proofs/booking-123/proof.png' },
+            session: { template: { agencyId: 'agency-123' } },
+        };
+
+        beforeEach(() => {
+            db.booking.findUnique.mockResolvedValue(proofBooking);
+            db.agencyProfile.findUnique.mockResolvedValue(null);
+            uploadService.isLocal.mockResolvedValue(false);
+        });
+
+        it('streams remote private files through the authorized endpoint', async () => {
+            uploadService.readFile.mockResolvedValue({
+                data: Buffer.from([1, 2, 3]),
+                contentType: 'image/png',
+            });
+
+            const result = await service.getPaymentProofFile('booking-123', 'user-123', 'TRAVELER');
+
+            expect(result).toEqual({ kind: 'remote', buffer: Buffer.from([1, 2, 3]), contentType: 'image/png' });
+            expect(uploadService.readFile).toHaveBeenCalledWith('private/payment-proofs/booking-123/proof.png');
+            expect(uploadService.getFilePath).not.toHaveBeenCalled();
+        });
+
+        it('keeps serving local private files by path', async () => {
+            uploadService.isLocal.mockResolvedValue(true);
+            uploadService.getFilePath.mockResolvedValue('/app/private-uploads/payment-proofs/booking-123/proof.png');
+
+            const result = await service.getPaymentProofFile('booking-123', 'user-123', 'TRAVELER');
+
+            expect(result).toEqual({ kind: 'local', filePath: '/app/private-uploads/payment-proofs/booking-123/proof.png' });
+            expect(uploadService.readFile).not.toHaveBeenCalled();
+        });
+
+        it('rejects a user who is not owner, agency, or admin', async () => {
+            await expect(service.getPaymentProofFile('booking-123', 'user-999')).rejects.toThrow('Unauthorized');
         });
     });
 });

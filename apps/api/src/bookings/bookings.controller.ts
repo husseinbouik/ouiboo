@@ -1,4 +1,4 @@
-import { Controller, HttpCode, Post, Get, Body, UseGuards, Request, Param, Patch, UploadedFile, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Res } from '@nestjs/common';
+import { Controller, HttpCode, Post, Get, Body, UseGuards, Request, Param, Patch, UploadedFile, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Res, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto, VerifyManualPaymentDto } from './dto/create-booking.dto';
@@ -29,8 +29,12 @@ export class BookingsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Get current user bookings' })
-    findMyBookings(@Request() req) {
-        return this.bookingsService.findAllByTraveler(req.user.userId);
+    findMyBookings(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
+        return this.bookingsService.findAllByTraveler(
+            req.user.userId,
+            page ? Number(page) : 1,
+            limit ? Number(limit) : 10,
+        );
     }
 
     @Get(':id')
@@ -102,13 +106,15 @@ export class BookingsController {
         @Param('id') id: string,
         @Res() res: Response,
     ) {
-        const { filePath } = await this.bookingsService.getPaymentProofFile(id, req.user.userId, req.user?.role);
+        const result = await this.bookingsService.getPaymentProofFile(id, req.user.userId, req.user?.role);
 
-        if (!(await this.bookingsService.isLocal())) {
-            return res.redirect(filePath);
+        if (result.kind === 'remote') {
+            res.setHeader('Content-Type', result.contentType);
+            res.setHeader('Content-Disposition', 'inline');
+            return res.send(result.buffer);
         }
 
-        return res.sendFile(filePath);
+        return res.sendFile(result.filePath);
     }
 
     @Patch(':id/cancel')

@@ -181,9 +181,6 @@ export class TripsService {
                                 id: true,
                             },
                         },
-                        reviews: {
-                            select: { rating: true },
-                        },
                         _count: {
                             select: { sessions: true, reviews: true, wishlists: true },
                         },

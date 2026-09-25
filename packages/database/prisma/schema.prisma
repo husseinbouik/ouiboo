@@ -97,6 +97,19 @@ enum SessionStatus {
   CANCELLED
 }
 
+enum NotificationDeliveryStatus {
+  SENT
+  FAILED
+  BOUNCED
+}
+
+enum PaymentTransactionStatus {
+  INITIATED
+  SUCCESS
+  FAILED
+  PENDING
+}
+
 model User {
   id                      String                  @id @default(cuid())
   name                    String?
@@ -108,7 +121,7 @@ model User {
   otp                     String?
   otpExpiresAt            DateTime?
   otpLastSentAt           DateTime?
-  passwordResetTokenHash  String?
+  passwordResetTokenHash  String?                 @unique
   passwordResetExpiresAt  DateTime?
   passwordResetSentAt     DateTime?
   refreshTokens           RefreshToken[]
@@ -243,6 +256,7 @@ model Booking {
   bookingDate                 DateTime             @default(now())
   status                      BookingStatus        @default(PENDING)
   totalAmount                 Decimal              @db.Decimal(18, 2)
+  currency                    String               @default("MAD")
   guestsCount                 Int
   fullName                    String?
   phoneNumber                 String?
@@ -270,6 +284,7 @@ model Booking {
 
   @@index([travelerId])
   @@index([sessionId])
+  @@index([sessionId, status])
   @@index([status])
   @@index([travelerId, bookingDate])
   @@index([status, bookingDate])
@@ -294,6 +309,7 @@ model Wallet {
   agency           AgencyProfile       @relation(fields: [agencyId], references: [id])
   availableBalance Decimal             @default(0) @db.Decimal(18, 2)
   pendingBalance   Decimal             @default(0) @db.Decimal(18, 2)
+  currency         String              @default("MAD")
   transactions     WalletTransaction[]
 }
 
@@ -316,6 +332,7 @@ model PayoutRequest {
   agencyId    String
   agency      AgencyProfile @relation(fields: [agencyId], references: [id])
   amount      Decimal       @db.Decimal(18, 2)
+  currency    String        @default("MAD")
   status      PayoutStatus  @default(PENDING)
   requestedAt DateTime      @default(now())
   processedAt DateTime?
@@ -359,6 +376,7 @@ model Review {
 
   @@index([tripTemplateId])
   @@index([travelerId])
+  @@index([tripTemplateId, rating])
 }
 
 // Wishlist
@@ -397,9 +415,9 @@ model NotificationLog {
   notificationType NotificationType
   recipientEmail   String
   subject          String?
-  message          String           @db.Text
-  status           String // SENT, FAILED, BOUNCED
-  sentAt           DateTime         @default(now())
+  message          String                       @db.Text
+  status           NotificationDeliveryStatus
+  sentAt           DateTime                     @default(now())
   failureReason    String?
   metadata         Json?
 
@@ -416,7 +434,7 @@ model PaymentTransaction {
   amount        Decimal       @db.Decimal(18, 2)
   method        PaymentMethod
   transactionId String?
-  status        String // INITIATED, SUCCESS, FAILED, PENDING
+  status        PaymentTransactionStatus
   provider      String? // CMI, STRIPE, PAYPAL, etc
   providerData  Json?
   metadata      Json?

@@ -12,9 +12,12 @@ import CustomerDemographicsCard from '../../../components/charts/CustomerDemogra
 import { LineChartSkeleton, PieChartSkeleton, TableSkeleton } from '../../../components/charts/ChartSkeleton';
 import { motion } from 'framer-motion';
 import { Card, Button } from '@ouiboo/ui';
-import { format } from 'date-fns';
+import { formatLocalDate } from '@ouiboo/utils';
+import { useTranslation } from 'react-i18next';
+import '../../../lib/i18n';
 
 export default function AnalyticsPage() {
+  const { t, i18n } = useTranslation();
   const [startDate, setStartDate] = useState(() => {
     const d = new Date(); d.setDate(d.getDate() - 6); return d;
   });
@@ -22,7 +25,10 @@ export default function AnalyticsPage() {
   const [period] = useState<'daily'|'weekly'|'monthly'>('daily');
   const [limit, setLimit] = useState(5);
 
-  const rangeLabel = useMemo(() => `${format(startDate, 'MMM d, yyyy')} — ${format(endDate, 'MMM d, yyyy')}`, [startDate, endDate]);
+  const rangeLabel = useMemo(
+    () => `${formatLocalDate(startDate, i18n.language)} — ${formatLocalDate(endDate, i18n.language)}`,
+    [startDate, endDate, i18n.language],
+  );
 
   const qRevenue = useQuery({
     queryKey: ['analytics-revenue-trends', startDate.toISOString(), endDate.toISOString(), period],
@@ -73,15 +79,15 @@ export default function AnalyticsPage() {
   const onRangeChange = useCallback((s: Date, e: Date) => { setStartDate(s); setEndDate(e); }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50">
-      <div className="p-8 max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="p-4 md:p-8 max-w-6xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="font-display font-black text-2xl">Analytics Dashboard</h1>
-            <p className="text-slate-400 text-sm">
-              Overview of revenue, conversions and customers for your agency
+            <h1 className="font-display font-black text-2xl">{t('analytics.dashboardTitle')}</h1>
+            <p className="text-muted-foreground text-sm">
+              {t('analytics.dashboardSubtitle')}
             </p>
-            <p className="text-[11px] uppercase tracking-wide text-slate-500 mt-2">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground mt-2">
               {rangeLabel}
             </p>
           </div>
@@ -100,9 +106,9 @@ export default function AnalyticsPage() {
               <LineChartSkeleton />
             ) : qRevenue.isError ? (
               <Card className="p-6">
-                <p className="text-sm mb-2">Error loading revenue trends.</p>
+                <p className="text-sm mb-2">{t('analytics.errorRevenue')}</p>
                 <Button size="sm" onClick={() => qRevenue.refetch()}>
-                  Retry
+                  {t('common.retry')}
                 </Button>
               </Card>
             ) : (
@@ -119,9 +125,9 @@ export default function AnalyticsPage() {
               <LineChartSkeleton />
             ) : qFunnel.isError ? (
               <Card className="p-6">
-                <p className="text-sm mb-2">Error loading conversion funnel.</p>
+                <p className="text-sm mb-2">{t('analytics.errorFunnel')}</p>
                 <Button size="sm" onClick={() => qFunnel.refetch()}>
-                  Retry
+                  {t('common.retry')}
                 </Button>
               </Card>
             ) : (
@@ -134,9 +140,9 @@ export default function AnalyticsPage() {
               <TableSkeleton />
             ) : qTopTrips.isError ? (
               <Card className="p-6">
-                <p className="text-sm mb-2">Error loading top trips.</p>
+                <p className="text-sm mb-2">{t('analytics.errorTopTrips')}</p>
                 <Button size="sm" onClick={() => qTopTrips.refetch()}>
-                  Retry
+                  {t('common.retry')}
                 </Button>
               </Card>
             ) : (
@@ -153,9 +159,9 @@ export default function AnalyticsPage() {
               <PieChartSkeleton />
             ) : qPayment.isError ? (
               <Card className="p-6">
-                <p className="text-sm mb-2">Error loading payment methods.</p>
+                <p className="text-sm mb-2">{t('analytics.errorPayment')}</p>
                 <Button size="sm" onClick={() => qPayment.refetch()}>
-                  Retry
+                  {t('common.retry')}
                 </Button>
               </Card>
             ) : (
@@ -168,9 +174,9 @@ export default function AnalyticsPage() {
               <LineChartSkeleton />
             ) : qCustomers.isError ? (
               <Card className="p-6">
-                <p className="text-sm mb-2">Error loading customer demographics.</p>
+                <p className="text-sm mb-2">{t('analytics.errorCustomers')}</p>
                 <Button size="sm" onClick={() => qCustomers.refetch()}>
-                  Retry
+                  {t('common.retry')}
                 </Button>
               </Card>
             ) : (

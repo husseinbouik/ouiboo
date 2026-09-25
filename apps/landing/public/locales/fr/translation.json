@@ -191,6 +191,7 @@
       "email": "Entrez votre email",
       "phone": "Entrez votre numéro de téléphone",
       "userType": {
+        "label": "Type d'utilisateur",
         "traveler": "Voyageur",
         "agency": "Agence"
       },
@@ -206,6 +207,60 @@
     "button": "Génial !"
   },
   "footer": {
-    "rights": "Tous droits réservés."
+    "rights": "Tous droits réservés.",
+    "privacy": "Confidentialité",
+    "copyright": "© {{year}} Ouiboo."
+  },
+  "common": {
+    "globalNavigationLabel": "Navigation principale",
+    "openMainMenu": "Ouvrir le menu principal",
+    "closeMenu": "Fermer le menu",
+    "dashboardImageAlt": "Tableau de bord Ouiboo",
+    "travelerImageAlt": "Voyageur admirant une vue montagneuse",
+    "agencyImageAlt": "Tableau de bord d'agence sur un ordinateur portable"
+  },
+  "error": {
+    "title": "Nous avons rencontré un imprévu",
+    "description": "Veuillez réessayer cette page. Votre demande n'a pas été soumise deux fois.",
+    "tryAgain": "Réessayer"
+  },
+  "notFound": {
+    "title": "Cette page est hors de l'itinéraire",
+    "description": "L'adresse a peut-être changé ou la page n'est peut-être plus disponible.",
+    "returnHome": "Retour à l'accueil"
+  },
+  "privacy": {
+    "back": "← Retour à Ouiboo",
+    "title": "Avis de confidentialité",
+    "updated": "Dernière mise à jour : {{date}}",
+    "section1": {
+      "title": "Informations que nous traitons",
+      "body": "Ouiboo traite les informations que vous fournissez lors de l'inscription à la liste d'attente, de la création d'un compte, de la gestion d'une agence, de la publication d'un voyage, de la réservation, de la prise de contact avec le support ou de l'exécution d'un paiement. Cela peut inclure vos informations d'identité et de contact, les informations de l'agence, les dossiers de réservation et les références de transaction."
+    },
+    "section2": {
+      "title": "Pourquoi nous les utilisons",
+      "body": "Nous utilisons ces informations pour fournir et sécuriser la place de marché, honorer les réservations, communiquer les mises à jour du service, prévenir les abus, respecter nos obligations légales et améliorer le produit. Nous ne vendons pas vos informations personnelles."
+    },
+    "section3": {
+      "title": "Analytics facultatifs",
+      "body": "Les analytics du site sont désactivés sauf si vous choisissez de les autoriser. Vous pouvez modifier ce choix à tout moment. Le stockage lié à la langue et à la sécurité peut rester utilisé car il est nécessaire au fonctionnement du site."
+    },
+    "section4": {
+      "title": "Partage et conservation",
+      "body": "Les informations ne sont partagées qu'avec les prestataires de services et les participants de la place de marché lorsque c'est nécessaire au fonctionnement du service demandé, ou lorsque la loi l'exige. Les enregistrements ne sont conservés que le temps nécessaire au service, à la sécurité, à la comptabilité, au règlement des litiges et à des fins juridiques."
+    },
+    "section5": {
+      "title": "Vos choix",
+      "body": "Selon la loi applicable, vous pouvez demander à accéder à vos informations personnelles, à les corriger, à les supprimer, à en restreindre ou à en exporter le traitement, ou à vous y opposer. Utilisez le canal de contact indiqué dans votre compte Ouiboo ou dans les e-mails de service pour soumettre une demande de confidentialité."
+    }
+  },
+  "analyticsConsent": {
+    "cookieSettings": "Paramètres des cookies",
+    "preferencesLabel": "Préférences d'analytics",
+    "title": "À vous de choisir",
+    "intro": "Nous n'utilisons les analytics facultatifs qu'avec votre permission pour comprendre comment Ouiboo est utilisé. Les préférences de langue essentielles fonctionnent sans analytics. Lisez notre",
+    "privacyNotice": "avis de confidentialité",
+    "continueWithoutAnalytics": "Continuer sans analytics",
+    "allowAnalytics": "Autoriser les analytics"
   }
 }

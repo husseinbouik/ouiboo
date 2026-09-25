@@ -1,7 +1,9 @@
 import { apiClient } from '@/lib/api-client';
-import HomeClient from './HomeClient';
+import dynamic from 'next/dynamic';
 import type { Metadata } from 'next';
 import type { TripSession, TripTemplate, VerificationStatusType } from '@ouiboo/types';
+
+const HomeClient = dynamic(() => import('./HomeClient'));
 
 type FeaturedTrip = TripTemplate & {
   sessions?: TripSession[];
@@ -12,8 +14,6 @@ export const metadata: Metadata = {
   alternates: { canonical: '/' },
   openGraph: { url: '/' },
 };
-
-export const dynamic = 'force-dynamic';
 
 async function getFeaturedTrips() {
   try {
@@ -33,7 +33,8 @@ async function getFeaturedTrips() {
     }
     return trips;
   } catch (error) {
-    console.error('Failed to fetch featured trips:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.warn(`Failed to fetch featured trips: ${message}`);
     return [];
   }
 }

@@ -8,14 +8,11 @@ import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ArrowLeft, CheckCircle, Lock } from 'lucide-react';
 import { Button, Input } from '@ouiboo/ui';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { ResetPasswordSchema, type ResetPasswordInput } from '@ouiboo/schemas';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
 import { apiClient } from '@/lib/api-client';
-
-type ResetPasswordForm = {
-  password: string;
-  confirmPassword: string;
-};
 
 type ApiError = {
   response?: {
@@ -30,7 +27,9 @@ export default function TravelerResetPasswordPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token') || '';
   const email = searchParams.get('email') || '';
-  const { register, handleSubmit, formState: { errors } } = useForm<ResetPasswordForm>();
+  const { register, handleSubmit, formState: { errors } } = useForm<ResetPasswordInput>({
+    resolver: zodResolver(ResetPasswordSchema),
+  });
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -39,14 +38,10 @@ export default function TravelerResetPasswordPage() {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
-  const onSubmit = async (data: ResetPasswordForm) => {
+  const onSubmit = async (data: ResetPasswordInput) => {
     setErrorMessage(null);
     if (!token || !email) {
       setErrorMessage('This reset link is invalid or expired.');
-      return;
-    }
-    if (data.password !== data.confirmPassword) {
-      setErrorMessage('Passwords do not match.');
       return;
     }
     setIsSubmitting(true);
@@ -132,7 +127,7 @@ export default function TravelerResetPasswordPage() {
                       type="password"
                       placeholder={t('resetPassword.passwordPlaceholder', 'Enter a new password')}
                       className="pl-10 h-12 bg-muted border-border focus:bg-background focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
-                      {...register('password', { required: 'Password is required', minLength: 6 })}
+                      {...register('password')}
                     />
                   </div>
                   {errors.password && <span className="text-danger text-sm">{errors.password.message}</span>}
@@ -146,7 +141,7 @@ export default function TravelerResetPasswordPage() {
                       type="password"
                       placeholder={t('resetPassword.confirmPasswordPlaceholder', 'Re-enter the new password')}
                       className="pl-10 h-12 bg-muted border-border focus:bg-background focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
-                      {...register('confirmPassword', { required: 'Please confirm your password', minLength: 6 })}
+                      {...register('confirmPassword')}
                     />
                   </div>
                   {errors.confirmPassword && <span className="text-danger text-sm">{errors.confirmPassword.message}</span>}

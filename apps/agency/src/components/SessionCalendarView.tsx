@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Trash2,
   Edit2,
@@ -11,6 +12,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Button, Card, CardContent } from '@ouiboo/ui';
+import { formatCurrency, formatLocalDate } from '@ouiboo/utils';
 import { SessionStatusBadge } from './SessionStatusBadge';
 
 import type { AgencyTripSession } from './session-types';
@@ -30,6 +32,7 @@ export function SessionCalendarView({
   isLoading = false,
   viewMode = 'list'
 }: SessionCalendarViewProps) {
+  const { t, i18n } = useTranslation();
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
@@ -50,13 +53,10 @@ export function SessionCalendarView({
   const currentMonthKey = `${currentMonth.getFullYear()}-${currentMonth.getMonth()}`;
   const monthSessions = sessionsByMonth[currentMonthKey] || [];
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
+  const monthLabel = useMemo(
+    () => new Intl.DateTimeFormat(i18n.language, { month: 'long', year: 'numeric' }).format(currentMonth),
+    [i18n.language, currentMonth],
+  );
 
   const calculateOccupancy = (session: AgencyTripSession) => {
     const booked = session.totalSeats - session.availableSeats;
@@ -75,21 +75,23 @@ export function SessionCalendarView({
     return (
       <div className="space-y-6">
         {/* Month Navigation */}
-        <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-950 p-6 rounded-xl border border-blue-100 dark:border-slate-800">
+        <div className="flex items-center justify-between bg-muted p-6 rounded-xl border border-border">
           <button
             onClick={handlePrevMonth}
-            className="p-2 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors"
+            aria-label={t('common.previousMonth')}
+            className="p-2 hover:bg-card rounded-lg transition-colors"
           >
-            <ChevronLeft className="h-5 w-5 text-deep-blue dark:text-gray-300" />
+            <ChevronLeft className="h-5 w-5 text-foreground rtl:rotate-180" />
           </button>
-          <h3 className="text-lg font-bold text-deep-blue dark:text-gray-100">
-            {currentMonth.toLocaleString('en-US', { month: 'long', year: 'numeric' })}
+          <h3 className="text-lg font-bold text-foreground">
+            {monthLabel}
           </h3>
           <button
             onClick={handleNextMonth}
-            className="p-2 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors"
+            aria-label={t('common.nextMonth')}
+            className="p-2 hover:bg-card rounded-lg transition-colors"
           >
-            <ChevronRight className="h-5 w-5 text-deep-blue dark:text-gray-300" />
+            <ChevronRight className="h-5 w-5 text-foreground rtl:rotate-180" />
           </button>
         </div>
 
@@ -105,15 +107,14 @@ export function SessionCalendarView({
                 isExpanded={expandedSession === session.id}
                 onToggleExpand={() => setExpandedSession(expandedSession === session.id ? null : session.id)}
                 calculateOccupancy={calculateOccupancy}
-                formatDate={formatDate}
                 isLoading={isLoading}
               />
             ))}
           </div>
         ) : (
-          <div className="py-12 text-center text-gray-500 dark:text-gray-400">
+          <div className="py-12 text-center text-muted-foreground">
             <CalendarIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="font-medium">No sessions scheduled for this month</p>
+            <p className="font-medium">{t('calendar.noSessionsThisMonth')}</p>
           </div>
         )}
       </div>
@@ -133,15 +134,14 @@ export function SessionCalendarView({
             isExpanded={expandedSession === session.id}
             onToggleExpand={() => setExpandedSession(expandedSession === session.id ? null : session.id)}
             calculateOccupancy={calculateOccupancy}
-            formatDate={formatDate}
             isLoading={isLoading}
           />
         ))
       ) : (
-        <div className="py-12 text-center text-gray-500 dark:text-gray-400">
+        <div className="py-12 text-center text-muted-foreground">
           <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p className="font-medium">No sessions scheduled yet</p>
-          <p className="text-sm">Create your first session to get started</p>
+          <p className="font-medium">{t('calendar.noSessionsYet')}</p>
+          <p className="text-sm">{t('calendar.createFirstSession')}</p>
         </div>
       )}
     </div>
@@ -155,7 +155,6 @@ interface SessionCardProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   calculateOccupancy: (session: AgencyTripSession) => number;
-  formatDate: (date: string) => string;
   isLoading?: boolean;
 }
 
@@ -166,13 +165,16 @@ function SessionCard({
   isExpanded,
   onToggleExpand,
   calculateOccupancy,
-  formatDate,
   isLoading
 }: SessionCardProps) {
+  const { t, i18n } = useTranslation();
   const occupancy = calculateOccupancy(session);
 
+  const formatDate = (dateString: string) =>
+    formatLocalDate(dateString, i18n.language, { dateStyle: 'medium' });
+
   return (
-    <Card className="border-none shadow-sm hover:shadow-md transition-all duration-300 group dark:bg-slate-900 border dark:border-slate-800 overflow-hidden">
+    <Card className="border-none shadow-sm hover:shadow-md transition-all duration-300 group bg-card border border-border overflow-hidden">
       <CardContent className="p-0">
         <div
           onClick={onToggleExpand}
@@ -182,7 +184,7 @@ function SessionCard({
             {/* Date & Status */}
             <div className="flex-1 space-y-2">
               <div className="flex items-center gap-3 flex-wrap">
-                <h3 className="font-bold text-lg text-deep-blue dark:text-gray-100">
+                <h3 className="font-bold text-lg text-foreground">
                   {formatDate(session.startDate)} - {formatDate(session.endDate)}
                 </h3>
                 <SessionStatusBadge status={session.status} size="sm" />
@@ -191,26 +193,26 @@ function SessionCard({
               {/* Occupancy and Seats */}
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-gray-400" />
-                  <span className="text-gray-600 dark:text-gray-400">
-                    <span className="font-semibold text-emerald-600 dark:text-emerald-500">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">
+                    <span className="font-semibold text-success">
                       {session.availableSeats}
                     </span>
                     {' / '}
-                    {session.totalSeats} seats
+                    {t('calendar.seatsCount', { count: session.totalSeats })}
                   </span>
                 </div>
 
                 {/* Occupancy Bar */}
-                <div className="flex-1 max-w-xs h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="flex-1 max-w-xs h-2 bg-border rounded-full overflow-hidden">
                   <div
                     className={`h-full transition-all duration-300 ${
-                      occupancy > 80 ? 'bg-red-500' : occupancy > 50 ? 'bg-amber-500' : 'bg-emerald-500'
+                      occupancy > 80 ? 'bg-danger' : occupancy > 50 ? 'bg-warning' : 'bg-success'
                     }`}
                     style={{ width: `${occupancy}%` }}
                   />
                 </div>
-                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium w-12 text-right">
+                <span className="text-xs text-muted-foreground font-medium w-12 text-end">
                   {occupancy}%
                 </span>
               </div>
@@ -218,14 +220,14 @@ function SessionCard({
 
             {/* Price and Actions */}
             <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-xs text-gray-400 font-medium uppercase tracking-tighter">Price</p>
-                <p className="font-bold text-lg text-deep-blue dark:text-blue-400">
-                  {session.price.toLocaleString()} <span className="text-xs font-normal">{session.currency}</span>
+              <div className="text-end">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-tighter">{t('calendar.price')}</p>
+                <p className="font-bold text-lg text-primary">
+                  {formatCurrency(session.price, session.currency, i18n.language)}
                 </p>
                 {session.deposit > 0 && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Deposit: {session.deposit} {session.currency}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t('calendar.deposit')} {formatCurrency(session.deposit, session.currency, i18n.language)}
                   </p>
                 )}
               </div>
@@ -235,24 +237,26 @@ function SessionCard({
                 <Button
                   variant="outline"
                   size="icon"
+                  aria-label={t('common.edit')}
                   onClick={(e) => {
                     e.stopPropagation();
                     onEdit(session);
                   }}
                   disabled={isLoading}
-                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/20 border-blue-200 dark:border-blue-900/30"
+                  className="text-primary hover:text-primary hover:bg-primary/10 border-primary/20"
                 >
                   <Edit2 className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="outline"
                   size="icon"
+                  aria-label={t('common.delete')}
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(session);
                   }}
                   disabled={isLoading}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 border-red-200 dark:border-red-900/30"
+                  className="text-danger hover:text-danger hover:bg-danger/10 border-danger/20"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -262,57 +266,49 @@ function SessionCard({
 
           {/* Expanded Details */}
           {isExpanded && (
-            <div className="border-t border-gray-100 dark:border-slate-800 pt-4 mt-4 space-y-4">
+            <div className="border-t border-border pt-4 mt-4 space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-widest mb-2">
-                    Start Date
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest mb-2">
+                    {t('calendar.startDate')}
                   </p>
-                  <p className="font-semibold text-deep-blue dark:text-gray-100">
-                    {new Date(session.startDate).toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric'
-                    })}
+                  <p className="font-semibold text-foreground">
+                    {formatLocalDate(session.startDate, i18n.language, { weekday: 'short', month: 'short', day: 'numeric' })}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-widest mb-2">
-                    End Date
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest mb-2">
+                    {t('calendar.endDate')}
                   </p>
-                  <p className="font-semibold text-deep-blue dark:text-gray-100">
-                    {new Date(session.endDate).toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric'
-                    })}
+                  <p className="font-semibold text-foreground">
+                    {formatLocalDate(session.endDate, i18n.language, { weekday: 'short', month: 'short', day: 'numeric' })}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-widest mb-2">
-                    Duration
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest mb-2">
+                    {t('calendar.duration')}
                   </p>
-                  <p className="font-semibold text-deep-blue dark:text-gray-100">
-                    {Math.ceil((new Date(session.endDate).getTime() - new Date(session.startDate).getTime()) / (1000 * 60 * 60 * 24))} days
+                  <p className="font-semibold text-foreground">
+                    {t('calendar.daysCount', { count: Math.ceil((new Date(session.endDate).getTime() - new Date(session.startDate).getTime()) / (1000 * 60 * 60 * 24)) })}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-widest mb-2">
-                    Bookings
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest mb-2">
+                    {t('calendar.bookings')}
                   </p>
-                  <p className="font-semibold text-deep-blue dark:text-gray-100">
-                    {session.bookings?.length || 0} bookings
+                  <p className="font-semibold text-foreground">
+                    {t('calendar.bookingsCount', { count: session.bookings?.length || 0 })}
                   </p>
                 </div>
               </div>
 
               {session.cancellationReason && (
-                <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 rounded-lg p-3">
-                  <p className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">Cancellation Reason</p>
-                  <p className="text-sm text-red-700 dark:text-red-300">{session.cancellationReason}</p>
+                <div className="bg-danger/10 border border-danger/20 rounded-lg p-3">
+                  <p className="text-xs text-danger font-medium mb-1">{t('calendar.cancellationReason')}</p>
+                  <p className="text-sm text-danger/80">{session.cancellationReason}</p>
                 </div>
               )}
             </div>

@@ -1,20 +1,48 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { DatabaseService } from '../database/database.service';
+
+export interface WebSocketUser {
+  userId: string;
+  role: string;
+  agencyId?: string | null;
+}
 
 @Injectable()
 export class WebSocketService {
   private readonly logger = new Logger(WebSocketService.name);
   private connectedUsers: Map<string, Set<string>> = new Map();
 
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private jwtService: JwtService,
+    private db: DatabaseService,
+  ) {}
 
   /**
-   * Authenticate user from token
+   * Authenticate user from token and confirm they still exist in the database
    */
-  authenticateUser(token: string): { userId: string; role: string } | null {
+  async authenticateUser(token: string): Promise<WebSocketUser | null> {
     try {
-      const decoded = this.jwtService.verify(token);
-      return { userId: decoded.sub, role: decoded.role };
+      const decoded = this.jwtService.verify<{ sub: string }>(token);
+      const user = await this.db.user.findUnique({
+        where: { id: decoded.sub },
+        select: {
+          id: true,
+          role: true,
+          isEmailVerified: true,
+          agencyProfile: { select: { id: true } },
+        },
+      });
+
+      if (!user || !user.isEmailVerified) {
+        return null;
+      }
+
+      return {
+        userId: user.id,
+        role: user.role,
+        agencyId: user.agencyProfile?.id ?? null,
+      };
     } catch (error) {
       this.logger.error('WebSocket authentication failed', error);
       return null;

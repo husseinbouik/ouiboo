@@ -32,5 +32,8 @@ export * from './Textarea';
 export * from './Toast';
 export * from './Logo';
 export * from './MobileFilterDrawer';
+export * from './Pagination';
 export * from './StatusBadge';
+export * from './src/ThemeToggle';
+export * from './src/LanguageSwitcher';
 export * from './utils';

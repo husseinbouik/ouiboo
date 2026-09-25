@@ -10,7 +10,12 @@
         "logout": "Sign Out",
         "agencyPanel": "Agency Panel",
         "joinNow": "Join Now",
-        "startStory": "Start Your Story"
+"startStory": "Start Your Story",
+        "mainNavigation": "Main navigation",
+        "openProfileMenu": "Open profile menu",
+        "openMenu": "Open navigation menu",
+        "mobileMenu": "Navigation menu",
+        "closeMenu": "Close navigation menu"
     },
     "hero": {
         "tagline": "Discover the Uncharted",
@@ -131,5 +136,92 @@
         "highlightFour": "You can request data deletion at any time.",
         "contactTitle": "Questions?",
         "contactBody": "Reach out to privacy@ouiboo.com and we'll respond quickly."
+    },
+    "resetPassword": {
+        "backToLogin": "Back to login",
+        "title": "Reset your password",
+        "subtitle": "Choose a new password to protect your traveler account.",
+        "emailLabel": "Email",
+        "passwordLabel": "New password",
+        "passwordPlaceholder": "Enter a new password",
+        "confirmPasswordLabel": "Confirm password",
+        "confirmPasswordPlaceholder": "Re-enter the new password",
+        "saveButton": "Update password",
+        "successTitle": "Password updated",
+        "successMessage": "Your password has been updated. You can now log in with your new credentials.",
+        "sideTitle": "Get back to planning",
+        "sideSubtitle": "Update your password and return to your travel dashboard in minutes."
+    },
+    "common": {
+        "skipToContent": "Skip to content",
+        "loading": "Loading...",
+        "errorTitle": "Something went wrong",
+        "errorDescription": "Your trip search is safe. Try this page again, or return to the catalog.",
+        "tryAgain": "Try again",
+        "browseTrips": "Browse trips",
+        "notFoundTitle": "This route is not on the map",
+        "notFoundDescription": "The page may have moved or the trip may no longer be available.",
+        "exploreTrips": "Explore available trips",
+        "closeDialog": "Close dialog"
+    },
+    "tripCard": {
+        "previousImage": "Previous image",
+        "nextImage": "Next image",
+        "defaultCategory": "Adventure",
+        "priceTba": "Price TBA",
+        "spots_one": "{{count}} spot",
+        "spots_other": "{{count}} spots",
+        "soldOut": "Sold out",
+        "verifiedAgency": "Verified Agency",
+        "agencyPending": "Agency Pending",
+        "days_one": "{{count}} Day",
+        "days_other": "{{count}} Days",
+        "from": "From",
+        "viewDetails": "View Details",
+        "new": "New",
+        "wishlistAdd": "Add to wishlist",
+        "wishlistRemove": "Remove from wishlist"
+    },
+    "authModal": {
+        "title": "Login to Continue",
+        "subtitle": "Please sign in to book your adventure.",
+        "email": "Email",
+        "emailPlaceholder": "hello@ouiboo.com",
+        "password": "Password",
+        "passwordPlaceholder": "********",
+        "error": "Login failed. Please try again.",
+        "submitting": "Logging in...",
+        "signIn": "Sign In",
+        "or": "Or",
+        "noAccount": "Do not have an account?",
+        "signUp": "Sign Up",
+        "close": "Close dialog"
+    },
+    "agency": {
+        "notFoundTitle": "Agency not found",
+        "verifiedTitle": "Verified Agency",
+        "noTrips": "No active trips found for this agency."
+    },
+    "featuredPage": {
+        "badge": "Featured Collection",
+        "title": "Handpicked Experiences",
+        "subtitle": "A launch-MVP shortlist of the strongest active trips across discovery, demand, and agency quality.",
+        "browseAll": "Browse all trips",
+        "emptyTitle": "Featured trips are being refreshed",
+        "emptySubtitle": "Explore the full catalog while the team curates the next launch-ready list.",
+        "explore": "Explore trips"
+    },
+    "wishlist": {
+        "title": "My Wishlist",
+        "subtitle": "Your saved trips",
+        "signInTitle": "Sign in to access your wishlist",
+        "signInSubtitle": "Save your favorite trips and come back to them any time from your account.",
+        "signIn": "Sign In",
+        "explore": "Explore Trips",
+        "emptyTitle": "Your wishlist is empty",
+        "emptySubtitle": "Start adding trips to your wishlist to see them here",
+        "previous": "Previous",
+        "next": "Next",
+        "pageOf": "Page {{page}} of {{pages}}"
     }
 }

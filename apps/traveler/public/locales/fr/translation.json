@@ -10,7 +10,12 @@
         "logout": "Se déconnecter",
         "agencyPanel": "Espace agence",
         "joinNow": "Rejoindre",
-        "startStory": "Commencer l'aventure"
+"startStory": "Commencer l'aventure",
+        "mainNavigation": "Navigation principale",
+        "openProfileMenu": "Ouvrir le menu du profil",
+        "openMenu": "Ouvrir le menu de navigation",
+        "mobileMenu": "Menu de navigation",
+        "closeMenu": "Fermer le menu de navigation"
     },
     "hero": {
         "tagline": "Découvrez l'inattendu",
@@ -131,5 +136,92 @@
         "highlightFour": "Vous pouvez demander la suppression de vos données à tout moment.",
         "contactTitle": "Des questions ?",
         "contactBody": "Écrivez à privacy@ouiboo.com et nous répondrons rapidement."
+    },
+    "resetPassword": {
+        "backToLogin": "Retour à la connexion",
+        "title": "Réinitialiser votre mot de passe",
+        "subtitle": "Choisissez un nouveau mot de passe pour protéger votre compte voyageur.",
+        "emailLabel": "E-mail",
+        "passwordLabel": "Nouveau mot de passe",
+        "passwordPlaceholder": "Saisissez un nouveau mot de passe",
+        "confirmPasswordLabel": "Confirmer le mot de passe",
+        "confirmPasswordPlaceholder": "Ressaisissez le nouveau mot de passe",
+        "saveButton": "Mettre à jour le mot de passe",
+        "successTitle": "Mot de passe mis à jour",
+        "successMessage": "Votre mot de passe a été mis à jour. Vous pouvez maintenant vous connecter avec vos nouveaux identifiants.",
+        "sideTitle": "Reprenez vos préparatifs",
+        "sideSubtitle": "Mettez à jour votre mot de passe et revenez à votre tableau de bord de voyage en quelques minutes."
+    },
+    "common": {
+        "skipToContent": "Aller au contenu",
+        "loading": "Chargement...",
+        "errorTitle": "Une erreur est survenue",
+        "errorDescription": "Votre recherche de voyage est en sécurité. Réessayez cette page ou revenez au catalogue.",
+        "tryAgain": "Réessayer",
+        "browseTrips": "Parcourir les voyages",
+        "notFoundTitle": "Cette page n'est pas sur la carte",
+        "notFoundDescription": "La page a peut-être été déplacée ou le voyage n'est plus disponible.",
+        "exploreTrips": "Explorer les voyages disponibles",
+        "closeDialog": "Fermer la boîte de dialogue"
+    },
+    "tripCard": {
+        "previousImage": "Image précédente",
+        "nextImage": "Image suivante",
+        "defaultCategory": "Aventure",
+        "priceTba": "Prix à venir",
+        "spots_one": "{{count}} place",
+        "spots_other": "{{count}} places",
+        "soldOut": "Complet",
+        "verifiedAgency": "Agence vérifiée",
+        "agencyPending": "Agence en attente",
+        "days_one": "{{count}} jour",
+        "days_other": "{{count}} jours",
+        "from": "À partir de",
+        "viewDetails": "Voir les détails",
+        "new": "Nouveau",
+        "wishlistAdd": "Ajouter aux favoris",
+        "wishlistRemove": "Retirer des favoris"
+    },
+    "authModal": {
+        "title": "Connectez-vous pour continuer",
+        "subtitle": "Veuillez vous connecter pour réserver votre aventure.",
+        "email": "E-mail",
+        "emailPlaceholder": "hello@ouiboo.com",
+        "password": "Mot de passe",
+        "passwordPlaceholder": "********",
+        "error": "Échec de la connexion. Veuillez réessayer.",
+        "submitting": "Connexion...",
+        "signIn": "Se connecter",
+        "or": "Ou",
+        "noAccount": "Vous n'avez pas de compte ?",
+        "signUp": "S'inscrire",
+        "close": "Fermer la boîte de dialogue"
+    },
+    "agency": {
+        "notFoundTitle": "Agence introuvable",
+        "verifiedTitle": "Agence vérifiée",
+        "noTrips": "Aucun voyage actif trouvé pour cette agence."
+    },
+    "featuredPage": {
+        "badge": "Collection en vedette",
+        "title": "Expériences sélectionnées",
+        "subtitle": "Une sélection de lancement des voyages actifs les plus pertinents en termes de découverte, de demande et de qualité d'agence.",
+        "browseAll": "Parcourir tous les voyages",
+        "emptyTitle": "Les voyages en vedette sont en cours de renouvellement",
+        "emptySubtitle": "Explorez tout le catalogue pendant que l'équipe prépare la prochaine sélection.",
+        "explore": "Explorer les voyages"
+    },
+    "wishlist": {
+        "title": "Mes favoris",
+        "subtitle": "Vos voyages enregistrés",
+        "signInTitle": "Connectez-vous pour accéder à vos favoris",
+        "signInSubtitle": "Enregistrez vos voyages préférés et retrouvez-les à tout moment depuis votre compte.",
+        "signIn": "Se connecter",
+        "explore": "Explorer les voyages",
+        "emptyTitle": "Votre liste de favoris est vide",
+        "emptySubtitle": "Ajoutez des voyages à vos favoris pour les voir ici",
+        "previous": "Précédent",
+        "next": "Suivant",
+        "pageOf": "Page {{page}} sur {{pages}}"
     }
 }

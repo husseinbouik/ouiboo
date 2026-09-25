@@ -12,18 +12,18 @@ export function AgencyShell({ children }: { children: React.ReactNode }) {
   const isAuthPage = authRoutes.some((route) => pathname.startsWith(route));
 
   if (isAuthPage) {
-    return <main className="min-h-screen">{children}</main>;
+    return <main id="main-content" tabIndex={-1} className="min-h-screen">{children}</main>;
   }
 
   return (
-    <div className="flex h-screen bg-off-white dark:bg-slate-950 overflow-hidden transition-colors duration-200" suppressHydrationWarning>
+    <div className="flex h-screen bg-background overflow-hidden transition-colors duration-200" suppressHydrationWarning>
       <aside className="hidden md:flex flex-shrink-0">
         <AgencySidebar />
       </aside>
       
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden" suppressHydrationWarning>
-        <header className="flex items-center bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800">
-            <div className="pl-4 md:hidden">
+        <header className="flex items-center bg-background border-b border-border">
+            <div className="ps-4 md:hidden">
                 <AgencyMobileNav />
             </div>
             <div className="flex-1">
@@ -31,7 +31,7 @@ export function AgencyShell({ children }: { children: React.ReactNode }) {
             </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-7xl mx-auto" suppressHydrationWarning>
             {children}
           </div>

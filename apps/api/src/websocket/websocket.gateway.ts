@@ -9,7 +9,10 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
+import { UserRole } from '@ouiboo/types';
 import { WebSocketService } from './websocket.service';
+
+const ADMIN_ROOM = 'admin';
 
 @WebSocketGateway({
   cors: {
@@ -26,10 +29,10 @@ export class NotificationGateway
 
   constructor(private webSocketService: WebSocketService) { }
 
-  handleConnection(socket: Socket) {
+  async handleConnection(socket: Socket) {
     try {
       const token = socket.handshake.auth.token;
-      const user = this.webSocketService.authenticateUser(token);
+      const user = await this.webSocketService.authenticateUser(token);
 
       if (!user) {
         socket.disconnect();
@@ -39,6 +42,15 @@ export class NotificationGateway
       this.webSocketService.addConnectedUser(user.userId, socket.id);
       socket.data.userId = user.userId;
       socket.data.role = user.role;
+      socket.data.agencyId = user.agencyId ?? null;
+
+      socket.join(this.userRoom(user.userId));
+      if (user.agencyId) {
+        socket.join(this.agencyRoom(user.agencyId));
+      }
+      if (user.role === UserRole.Admin) {
+        socket.join(ADMIN_ROOM);
+      }
 
       this.logger.log(`User ${user.userId} connected via ${socket.id}`);
 
@@ -79,12 +91,27 @@ export class NotificationGateway
     @ConnectedSocket() socket: Socket,
     @MessageBody() data: any,
   ) {
-    // Emit to agency
-    this.server.emit('booking:notification', {
+    const targetAgencyId = data?.agencyId as string | undefined;
+    const payload = {
       type: 'NEW_BOOKING',
       data,
       timestamp: new Date(),
-    });
+    };
+
+    // Only deliver to the affected agency (their own booking or an admin).
+    // Never broadcast to every connected socket.
+    const allowed =
+      typeof targetAgencyId === 'string' &&
+      (socket.data.role === UserRole.Admin ||
+        (socket.data.role === UserRole.Agency &&
+          socket.data.agencyId === targetAgencyId));
+
+    if (allowed) {
+      this.server.to(this.agencyRoom(targetAgencyId)).emit('booking:notification', payload);
+      return;
+    }
+
+    socket.emit('booking:notification', payload);
   }
 
   /**
@@ -96,8 +123,8 @@ export class NotificationGateway
     @MessageBody() data: any,
   ) {
     const userId = socket.data.userId;
-    // Emit to specific user
-    this.server.to(userId).emit('payment:status', {
+    // Emit to the user's own room only
+    this.server.to(this.userRoom(userId)).emit('payment:status', {
       status: 'VERIFIED',
       data,
       timestamp: new Date(),
@@ -112,8 +139,13 @@ export class NotificationGateway
     @ConnectedSocket() socket: Socket,
     @MessageBody() data: any,
   ) {
-    // Emit to relevant parties
-    this.server.emit('approval:notification', {
+    // Only admins may trigger approval notifications
+    if (socket.data.role !== UserRole.Admin) {
+      this.logger.warn(`Denied admin:approval from socket ${socket.id}`);
+      return;
+    }
+
+    this.server.to(ADMIN_ROOM).emit('approval:notification', {
       action: data.action,
       targetType: data.targetType,
       targetId: data.targetId,
@@ -122,13 +154,20 @@ export class NotificationGateway
   }
 
   /**
-   * Join room for user-specific messages
+   * Join room for user-specific messages. Only rooms the connecting user is
+   * authorized for (own user room, their agency room, admin room) are allowed.
    */
   @SubscribeMessage('room:join')
   joinRoom(
     @ConnectedSocket() socket: Socket,
     @MessageBody() room: string,
   ) {
+    const allowedRooms = this.authorizedRooms(socket);
+    if (typeof room !== 'string' || !allowedRooms.includes(room)) {
+      this.logger.warn(`Socket ${socket.id} denied join for room ${room}`);
+      return;
+    }
+
     socket.join(room);
     this.logger.log(`Socket ${socket.id} joined room ${room}`);
   }
@@ -143,5 +182,24 @@ export class NotificationGateway
   ) {
     socket.leave(room);
     this.logger.log(`Socket ${socket.id} left room ${room}`);
+  }
+
+  private userRoom(userId: string) {
+    return `user:${userId}`;
+  }
+
+  private agencyRoom(agencyId: string) {
+    return `agency:${agencyId}`;
+  }
+
+  private authorizedRooms(socket: Socket): string[] {
+    const rooms = [this.userRoom(socket.data.userId)];
+    if (socket.data.agencyId) {
+      rooms.push(this.agencyRoom(socket.data.agencyId));
+    }
+    if (socket.data.role === UserRole.Admin) {
+      rooms.push(ADMIN_ROOM);
+    }
+    return rooms;
   }
 }

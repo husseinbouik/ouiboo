@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Calendar as CalendarIcon, 
   Plus, 
@@ -61,10 +62,10 @@ type BulkSessionInput = {
 function TripDetailSkeleton() {
   return (
     <div className="space-y-8 animate-pulse">
-      <div className="h-8 w-48 bg-gray-200 dark:bg-slate-800 rounded"></div>
+      <div className="h-8 w-48 bg-muted rounded"></div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="h-96 bg-gray-200 dark:bg-slate-800 rounded-xl"></div>
-        <div className="lg:col-span-2 h-96 bg-gray-200 dark:bg-slate-800 rounded-xl"></div>
+        <div className="h-96 bg-muted rounded-xl"></div>
+        <div className="lg:col-span-2 h-96 bg-muted rounded-xl"></div>
       </div>
     </div>
   );
@@ -72,6 +73,7 @@ function TripDetailSkeleton() {
 
 export default function TripDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = React.use(paramsPromise);
+  const { t } = useTranslation();
   const [showBulkSessionModal, setShowBulkSessionModal] = useState(false);
   const [editingSession, setEditingSession] = useState<SessionItem | null>(null);
   const [deletingSession, setDeletingSession] = useState<SessionItem | null>(null);
@@ -184,44 +186,44 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
   };
 
   if (isLoading) return <TripDetailSkeleton />;
-  if (error || !trip) return <div className="py-12 text-center text-red-500">Error loading trip.</div>;
+  if (error || !trip) return <div className="py-12 text-center text-danger">{t('trips.detail.errorLoading')}</div>;
 
   const sessions = trip.sessions || [];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
-        <Link href="/dashboard/trips" className="flex items-center gap-2 text-sm text-gray-500 hover:text-deep-blue transition-colors">
-          <ChevronLeft className="h-4 w-4" />
-          Back to Trips
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <Link href="/dashboard/trips" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
+          {t('trips.detail.backToTrips')}
         </Link>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button 
             variant="outline" 
             size="sm" 
             className={cn(
                 "gap-2",
-                trip.status === TripStatus.Active ? "text-emerald-600 border-emerald-100 bg-emerald-50/50" : "text-slate-600 border-slate-100 bg-slate-50/50"
+                trip.status === TripStatus.Active ? "text-success border-success/30 bg-success/10" : "text-muted-foreground border-border bg-muted/50"
             )}
             onClick={handleToggleStatus}
             disabled={updateStatusMutation.isPending}
           >
             <CheckCircle2 className="h-4 w-4" /> 
-            {updateStatusMutation.isPending ? 'Updating...' : (trip.status === TripStatus.Active ? 'Set to Draft' : 'Activate Trip')}
+            {updateStatusMutation.isPending ? t('trips.detail.updating') : (trip.status === TripStatus.Active ? t('trips.detail.setDraft') : t('trips.detail.activateTrip'))}
           </Button>
           <Link href={`/dashboard/trips/${params.id}/edit`}>
             <Button variant="outline" size="sm" className="gap-2">
-              <Settings className="h-4 w-4" /> Edit Template
+              <Settings className="h-4 w-4" /> {t('trips.detail.editTemplate')}
             </Button>
           </Link>
           <Button 
             variant="outline" 
             size="sm" 
-            className="gap-2 text-red-600 hover:bg-red-50 hover:text-red-700 border-red-100"
+            className="gap-2 text-danger hover:bg-danger/10 hover:text-danger border-danger/30"
             onClick={handleDelete}
             disabled={deleteTripMutation.isPending}
           >
-            <Trash className="h-4 w-4" /> {deleteTripMutation.isPending ? 'Deleting...' : 'Delete'}
+            <Trash className="h-4 w-4" /> {deleteTripMutation.isPending ? t('trips.detail.deleting') : t('trips.detail.delete')}
           </Button>
         </div>
       </div>
@@ -229,41 +231,41 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Trip Template Overview */}
         <div className="lg:col-span-1 space-y-6">
-          <Card className="border-none shadow-sm overflow-hidden dark:bg-slate-900 border dark:border-slate-800">
-             <div className="h-48 bg-gray-200 dark:bg-slate-800">
-                <Image src={trip.images?.[0] || "https://images.unsplash.com/photo-1539650116574-8efeb43e2750?q=80&w=2070&auto=format&fit=crop"} alt="Trip" className="w-full h-full object-cover" width={800} height={400} />
+          <Card className="border border-border shadow-sm overflow-hidden bg-card">
+             <div className="h-48 bg-muted">
+                <Image src={trip.images?.[0] || "https://images.unsplash.com/photo-1539650116574-8efeb43e2750?q=80&w=2070&auto=format&fit=crop"} alt={t('trips.detail.altTrip')} className="w-full h-full object-cover" width={800} height={400} />
              </div>
              <CardContent className="p-6 space-y-4">
                 <div>
-                   <Badge variant="outline" className="text-[10px] uppercase tracking-widest text-sunset-orange border-sunset-orange/20 mb-2">{trip.category}</Badge>
-                   <h1 className="text-2xl font-bold text-deep-blue dark:text-gray-100">{trip.title}</h1>
+                   <Badge variant="outline" className="text-[10px] uppercase tracking-widest text-accent border-accent/20 mb-2">{trip.category}</Badge>
+                   <h1 className="text-2xl font-bold text-foreground">{trip.title}</h1>
                 </div>
                 <div className="space-y-3">
-                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <MapPin className="h-4 w-4 text-gray-400" /> {trip.startLocation}
+                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4 text-muted-foreground" /> {trip.startLocation}
                    </div>
-                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <Clock className="h-4 w-4 text-gray-400" /> {trip.durationDays} Days / {trip.durationNights} Nights
+                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4 text-muted-foreground" /> {t('trips.detail.duration', { days: trip.durationDays, nights: trip.durationNights })}
                    </div>
                 </div>
-                <div className="pt-4 border-t border-gray-50 dark:border-slate-800">
-                   <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed italic line-clamp-3">
+                <div className="pt-4 border-t border-border">
+                   <p className="text-sm text-muted-foreground leading-relaxed italic line-clamp-3">
                       {trip.description}
                    </p>
                 </div>
              </CardContent>
           </Card>
           
-          <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-2xl p-6 space-y-2">
-             <div className="flex items-center gap-2 text-blue-900 dark:text-blue-400 font-bold">
+          <div className="bg-primary/10 border border-primary/30 rounded-2xl p-6 space-y-2">
+             <div className="flex items-center gap-2 text-primary font-bold">
                 <AlertCircle className="h-5 w-5" />
-                <span>Verification Required</span>
+                <span>{t('trips.detail.verificationRequired')}</span>
              </div>
-             <p className="text-sm text-blue-700 dark:text-blue-300 leading-relaxed">
-                Your agency verification is pending. You can create templates and sessions, but they will not be visible to travelers until your profile is verified.
+             <p className="text-sm text-muted-foreground leading-relaxed">
+                {t('trips.detail.verificationRequiredBody')}
              </p>
-             <Link href="/dashboard/onboarding" className="inline-block text-sm font-bold text-blue-900 dark:text-blue-400 underline mt-2">
-                Check Verification Status
+             <Link href="/dashboard/onboarding" className="inline-block text-sm font-bold text-primary underline mt-2">
+                {t('trips.detail.checkVerificationStatus')}
              </Link>
           </div>
         </div>
@@ -272,11 +274,11 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <h2 className="text-xl font-bold text-deep-blue dark:text-gray-100 flex items-center gap-2">
-                 <CalendarIcon className="h-5 w-5 text-sunset-orange" />
-                 Trip Sessions
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                 <CalendarIcon className="h-5 w-5 text-accent" />
+                 {t('trips.detail.sessionsTitle')}
               </h2>
-              <p className="text-sm text-gray-500 mt-1">Manage dates, prices, and capacity for your trip.</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('trips.detail.sessionsSubtitle')}</p>
             </div>
           </div>
 
@@ -284,32 +286,38 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
           <div className="flex items-center gap-3">
             <Button 
               onClick={() => setShowBulkSessionModal(true)} 
-              className="bg-deep-blue hover:bg-blue-900 dark:bg-blue-600 dark:hover:bg-blue-700 gap-2 shadow-lg shadow-blue-900/10 flex-1"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shadow-lg shadow-primary/20 flex-1"
               disabled={bulkCreateSessionMutation.isPending}
             >
-              <Plus className="h-4 w-4" /> Bulk Create Sessions
+              <Plus className="h-4 w-4" /> {t('trips.detail.bulkCreateSessions')}
             </Button>
 
             {/* View Mode Toggle */}
-            <div className="flex items-center gap-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-lg">
+            <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
               <button
+                type="button"
                 onClick={() => setViewMode('list')}
+                aria-label={t('trips.detail.listView')}
+                aria-pressed={viewMode === 'list'}
                 className={cn(
                   'p-2 rounded transition-colors',
                   viewMode === 'list'
-                    ? 'bg-white dark:bg-slate-900 text-deep-blue dark:text-blue-400 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 <List className="h-4 w-4" />
               </button>
               <button
+                type="button"
                 onClick={() => setViewMode('calendar')}
+                aria-label={t('trips.detail.calendarView')}
+                aria-pressed={viewMode === 'calendar'}
                 className={cn(
                   'p-2 rounded transition-colors',
                   viewMode === 'calendar'
-                    ? 'bg-white dark:bg-slate-900 text-deep-blue dark:text-blue-400 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 <Grid3x3 className="h-4 w-4" />
@@ -360,8 +368,8 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
           }
         }}
         isLoading={deleteSessionMutation.isPending}
-        title="Delete Session"
-        description="Are you sure you want to delete this session? This action cannot be undone."
+        title={t('trips.detail.deleteSessionTitle')}
+        description={t('trips.detail.deleteSessionBody')}
       />
 
       {/* Delete Trip Confirmation */}
@@ -374,8 +382,8 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
           deleteTripMutation.mutate();
         }}
         isLoading={deleteTripMutation.isPending}
-        title="Delete Trip Template"
-        description="Are you sure you want to delete this trip template? All associated sessions and bookings will be permanently removed. This action cannot be undone."
+        title={t('trips.detail.deleteTripTitle')}
+        description={t('trips.detail.deleteTripBody')}
       />
     </div>
   );

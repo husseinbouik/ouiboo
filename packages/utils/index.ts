@@ -1,3 +1,6 @@
+export * from './src/booking-status'
+export * from './src/pagination'
+
 export const DEFAULT_CURRENCY = 'MAD'
 export const DEFAULT_LOCALE = 'en-MA'
 

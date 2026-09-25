@@ -53,7 +53,7 @@ export class WalletsService {
         const wallet = await tx.wallet.upsert({
             where: { agencyId: tenantId },
             update: {},
-            create: { agencyId: tenantId, availableBalance: 0, pendingBalance: 0 },
+            create: { agencyId: tenantId, availableBalance: 0, pendingBalance: 0, currency: 'MAD' },
         });
 
         if (options.idempotencyKey) {
@@ -138,6 +138,7 @@ export class WalletsService {
                 data: {
                     agencyId: tenantId,
                     amount: decimalAmount,
+                    currency: wallet.currency,
                     bankDetails: verifiedBankDetails,
                     status: 'PENDING'
                 }

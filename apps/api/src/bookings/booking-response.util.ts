@@ -18,6 +18,7 @@ type BookingMapperInput = {
   bookingDate: Date | string;
   status: string;
   totalAmount: MoneyInput;
+  currency?: string;
   guestsCount: number;
   paymentMethod: string;
   paymentStatus: string;
@@ -91,6 +92,7 @@ export const mapBookingDetails = (booking: BookingMapperInput): BookingDetails =
   bookingDate: toIsoString(booking.bookingDate) || new Date(0).toISOString(),
   status: booking.status as BookingStatusType,
   totalAmount: toMoneyString(booking.totalAmount) || '0.00',
+  currency: booking.currency || 'MAD',
   guestsCount: booking.guestsCount,
   paymentMethod: booking.paymentMethod as PaymentMethodType,
   paymentStatus: booking.paymentStatus as BookingPaymentStatusType,

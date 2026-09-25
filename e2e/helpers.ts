@@ -26,9 +26,9 @@ export const mockTravelerApi = async (page: Page) => {
 
     if (pathname === '/api/auth/register' && method === 'POST') {
       return jsonResponse(route, 201, {
-        accessToken: 'traveler-token',
-        refreshToken: 'traveler-refresh',
-        user: { email: 'traveler@example.com' },
+        email: 'traveler@example.com',
+        requiresEmailVerification: true,
+        message: 'Verification code sent',
       });
     }
 
@@ -75,7 +75,7 @@ export const mockTravelerApi = async (page: Page) => {
       const q = (searchParams.get('q') || '').toLowerCase();
       const category = searchParams.get('category');
       const matchesSearch = !q || 'atlas weekend escape'.includes(q) || 'marrakech'.includes(q);
-      const matchesCategory = !category || category === 'Adventure';
+      const matchesCategory = !category || category.toLowerCase() === 'adventure';
       const matchesAgency = !agencyId || agencyId === 'agency-1';
       const tripData = matchesSearch && matchesCategory && matchesAgency
         ? [
@@ -96,7 +96,7 @@ export const mockTravelerApi = async (page: Page) => {
                 status: 'OPEN',
                 availableSeats: 8,
                 price: 1800,
-                startDate: '2026-05-10T00:00:00.000Z',
+                startDate: '2027-05-10T00:00:00.000Z',
               },
             ],
           },
@@ -141,8 +141,8 @@ export const mockTravelerApi = async (page: Page) => {
             availableSeats: 8,
             price: 1800,
             deposit: 400,
-            startDate: '2026-05-10T00:00:00.000Z',
-            endDate: '2026-05-12T00:00:00.000Z',
+            startDate: '2027-05-10T00:00:00.000Z',
+            endDate: '2027-05-12T00:00:00.000Z',
           },
         ],
       });
@@ -189,8 +189,8 @@ export const mockTravelerApi = async (page: Page) => {
         },
         session: {
           id: 'session-1',
-          startDate: '2026-05-10T00:00:00.000Z',
-          endDate: '2026-05-12T00:00:00.000Z',
+          startDate: '2027-05-10T00:00:00.000Z',
+          endDate: '2027-05-12T00:00:00.000Z',
           template: {
             id: 'trip-1',
             title: 'Atlas Weekend Escape',
@@ -256,7 +256,10 @@ export const mockAgencyApi = async (page: Page) => {
     }
 
     if (pathname === '/api/agency/payouts' && method === 'GET') {
-      return jsonResponse(route, 200, []);
+      return jsonResponse(route, 200, {
+        data: [],
+        pagination: { total: 0, page: 1, limit: 10, totalPages: 0 },
+      });
     }
 
     if (pathname === '/api/agency/payouts' && method === 'POST') {
@@ -326,71 +329,89 @@ export const mockAdminApi = async (page: Page) => {
     }
 
     if (pathname === '/api/admin/pending-agencies' && method === 'GET') {
-      return jsonResponse(route, 200, []);
+      return jsonResponse(route, 200, {
+        data: [],
+        pagination: { total: 0, page: 1, limit: 25, totalPages: 0 },
+      });
     }
 
     if (pathname === '/api/admin/pending-trips' && method === 'GET') {
-      return jsonResponse(route, 200, []);
+      return jsonResponse(route, 200, {
+        data: [],
+        pagination: { total: 0, page: 1, limit: 25, totalPages: 0 },
+      });
     }
 
     if (pathname === '/api/admin/agencies' && method === 'GET') {
-      return jsonResponse(route, 200, []);
+      return jsonResponse(route, 200, {
+        data: [],
+        pagination: { total: 0, page: 1, limit: 25, totalPages: 0 },
+      });
     }
 
     if (pathname === '/api/admin/bookings' && method === 'GET') {
-      return jsonResponse(route, 200, [
-        {
-          id: 'booking-1',
-          status: 'CONFIRMED',
-          paymentStatus: bookingPaymentStatus,
-          paymentMethod: 'GATEWAY',
-          paymentGatewayTransactionId: 'txn-1',
-          totalAmount: 1800,
-          guestsCount: 1,
-          traveler: {
-            id: 'traveler-1',
-            name: 'Launch Traveler',
-            email: 'traveler@example.com',
-          },
-          session: {
-            id: 'session-1',
-            startDate: '2026-05-10T00:00:00.000Z',
-            endDate: '2026-05-12T00:00:00.000Z',
-            template: {
-              id: 'trip-1',
-              title: 'Atlas Weekend Escape',
-              agency: {
-                id: 'agency-1',
-                companyName: 'Atlas Agency',
+      return jsonResponse(route, 200, {
+        data: [
+          {
+            id: 'booking-1',
+            status: 'CONFIRMED',
+            paymentStatus: bookingPaymentStatus,
+            paymentMethod: 'GATEWAY',
+            paymentGatewayTransactionId: 'txn-1',
+            totalAmount: 1800,
+            guestsCount: 1,
+            traveler: {
+              id: 'traveler-1',
+              name: 'Launch Traveler',
+              email: 'traveler@example.com',
+            },
+            session: {
+              id: 'session-1',
+              startDate: '2026-05-10T00:00:00.000Z',
+              endDate: '2026-05-12T00:00:00.000Z',
+              template: {
+                id: 'trip-1',
+                title: 'Atlas Weekend Escape',
+                agency: {
+                  id: 'agency-1',
+                  companyName: 'Atlas Agency',
+                },
               },
             },
           },
-        },
-      ]);
+        ],
+        pagination: { total: 1, page: 1, limit: 25, totalPages: 1 },
+      });
     }
 
     if (pathname === '/api/admin/pending-payments' && method === 'GET') {
-      return jsonResponse(route, 200, []);
+      return jsonResponse(route, 200, {
+        data: [],
+        pagination: { total: 0, page: 1, limit: 25, totalPages: 0 },
+      });
     }
 
     if (pathname === '/api/admin/payout-requests' && method === 'GET') {
-      return jsonResponse(route, 200, [
-        {
-          id: 'payout-1',
-          amount: 900,
-          status: payoutStatus,
-          requestedAt: '2026-04-22T10:00:00.000Z',
-          processedAt: payoutStatus === 'PENDING' ? null : '2026-04-22T10:05:00.000Z',
-          bankDetails: '{"rib":"1234567890"}',
-          agency: {
-            id: 'agency-1',
-            companyName: 'Atlas Agency',
-            user: {
-              email: 'agency@example.com',
+      return jsonResponse(route, 200, {
+        data: [
+          {
+            id: 'payout-1',
+            amount: 900,
+            status: payoutStatus,
+            requestedAt: '2026-04-22T10:00:00.000Z',
+            processedAt: payoutStatus === 'PENDING' ? null : '2026-04-22T10:05:00.000Z',
+            bankDetails: '{"rib":"1234567890"}',
+            agency: {
+              id: 'agency-1',
+              companyName: 'Atlas Agency',
+              user: {
+                email: 'agency@example.com',
+              },
             },
           },
-        },
-      ]);
+        ],
+        pagination: { total: 1, page: 1, limit: 25, totalPages: 1 },
+      });
     }
 
     if (pathname === '/api/admin/bookings/booking-1/refund' && method === 'POST') {
@@ -404,18 +425,21 @@ export const mockAdminApi = async (page: Page) => {
     }
 
     if (pathname === '/api/admin/audit-logs' && method === 'GET') {
-      return jsonResponse(route, 200, [
-        {
-          id: 'audit-1',
-          createdAt: '2026-04-22T10:10:00.000Z',
-          actorId: 'admin-1',
-          actorEmail: 'admin@example.com',
-          action: 'PAYOUT_PROCESSED',
-          targetType: 'PayoutRequest',
-          targetId: 'payout-1',
-          metadata: { status: 'PAID' },
-        },
-      ]);
+      return jsonResponse(route, 200, {
+        data: [
+          {
+            id: 'audit-1',
+            createdAt: '2026-04-22T10:10:00.000Z',
+            actorId: 'admin-1',
+            actorEmail: 'admin@example.com',
+            action: 'PAYOUT_PROCESSED',
+            targetType: 'PayoutRequest',
+            targetId: 'payout-1',
+            metadata: { status: 'PAID' },
+          },
+        ],
+        pagination: { total: 1, page: 1, limit: 50, totalPages: 1 },
+      });
     }
 
     if (pathname === '/api/admin/audit-logs/export' && method === 'GET') {

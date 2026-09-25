@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { Button, Input } from '@ouiboo/ui';
 
 export default function DateRangeSelector({ onRangeChange, defaultRange = '7' }: { onRangeChange: (start: Date, end: Date) => void; defaultRange?: string }) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<string>(defaultRange);
   const [customStart, setCustomStart] = useState<string>('');
   const [customEnd, setCustomEnd] = useState<string>('');
@@ -64,16 +66,17 @@ export default function DateRangeSelector({ onRangeChange, defaultRange = '7' }:
   return (
     <div className="flex flex-col md:flex-row md:items-center gap-3">
       <div className="flex gap-2 flex-wrap">
-        <Button variant={selected === '7' ? 'orange' : 'ghost'} onClick={() => handlePresetSelect('7')}>Last 7 days</Button>
-        <Button variant={selected === '30' ? 'orange' : 'ghost'} onClick={() => handlePresetSelect('30')}>Last 30 days</Button>
-        <Button variant={selected === '90' ? 'orange' : 'ghost'} onClick={() => handlePresetSelect('90')}>Last 90 days</Button>
-        <Button variant={selected === 'thisMonth' ? 'orange' : 'ghost'} onClick={() => handlePresetSelect('thisMonth')}>This Month</Button>
-        <Button variant={selected === 'lastMonth' ? 'orange' : 'ghost'} onClick={() => handlePresetSelect('lastMonth')}>Last Month</Button>
+        <Button variant={selected === '7' ? 'orange' : 'ghost'} onClick={() => handlePresetSelect('7')}>{t('charts.dateRange.last7')}</Button>
+        <Button variant={selected === '30' ? 'orange' : 'ghost'} onClick={() => handlePresetSelect('30')}>{t('charts.dateRange.last30')}</Button>
+        <Button variant={selected === '90' ? 'orange' : 'ghost'} onClick={() => handlePresetSelect('90')}>{t('charts.dateRange.last90')}</Button>
+        <Button variant={selected === 'thisMonth' ? 'orange' : 'ghost'} onClick={() => handlePresetSelect('thisMonth')}>{t('charts.dateRange.thisMonth')}</Button>
+        <Button variant={selected === 'lastMonth' ? 'orange' : 'ghost'} onClick={() => handlePresetSelect('lastMonth')}>{t('charts.dateRange.lastMonth')}</Button>
       </div>
 
       <div className="flex items-center gap-2">
         <Input
           type="date"
+          aria-label={t('calendar.startDate')}
           value={start}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             setSelected('custom');
@@ -82,13 +85,14 @@ export default function DateRangeSelector({ onRangeChange, defaultRange = '7' }:
         />
         <Input
           type="date"
+          aria-label={t('calendar.endDate')}
           value={end}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             setSelected('custom');
             setCustomEnd(e.target.value);
           }}
         />
-        <Button onClick={handleCustomApply}>Apply</Button>
+        <Button onClick={handleCustomApply}>{t('charts.dateRange.apply')}</Button>
       </div>
     </div>
   );

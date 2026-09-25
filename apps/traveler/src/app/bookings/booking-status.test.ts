@@ -6,7 +6,7 @@ import {
   getTravelerPaymentStatusMeta,
   getTravelerProofStatus,
   shouldShowUploadAction,
-} from './booking-status';
+} from '@ouiboo/utils';
 
 describe('traveler booking status helpers', () => {
   it('maps canonical booking states to the expected badge tone', () => {

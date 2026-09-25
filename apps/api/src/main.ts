@@ -2,6 +2,7 @@ import 'dotenv/config'
 import { ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
+import helmet from 'helmet'
 import { AppModule } from './app.module'
 import { GlobalExceptionFilter } from './common/global-exception.filter'
 import { RedisResponseCacheInterceptor } from './common/redis-response-cache.interceptor'
@@ -77,18 +78,34 @@ async function bootstrap() {
       app.getHttpAdapter().getInstance().set('trust proxy', trustProxyHops)
     }
 
+    app.use(
+      helmet({
+        contentSecurityPolicy:
+          process.env.NODE_ENV === 'production'
+            ? {
+                useDefaults: false,
+                directives: {
+                  defaultSrc: ["'none'"],
+                  frameAncestors: ["'none'"],
+                  baseUri: ["'none'"],
+                  formAction: ["'none'"],
+                },
+              }
+            : false,
+        crossOriginEmbedderPolicy: false,
+        crossOriginOpenerPolicy: { policy: 'same-origin' },
+        crossOriginResourcePolicy: { policy: 'cross-origin' },
+        frameguard: { action: 'deny' },
+        referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+        hsts:
+          process.env.NODE_ENV === 'production'
+            ? { maxAge: 31536000, includeSubDomains: true }
+            : false,
+      }),
+    )
+
     app.use((_req: Request, res: Response, next: NextFunction) => {
-      res.setHeader('X-Content-Type-Options', 'nosniff')
-      res.setHeader('X-Frame-Options', 'DENY')
-      res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
       res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
-      if (process.env.NODE_ENV === 'production') {
-        res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
-        res.setHeader(
-          'Content-Security-Policy',
-          "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
-        )
-      }
       next()
     })
 

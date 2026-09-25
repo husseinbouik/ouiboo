@@ -32,9 +32,10 @@ const nextConfig: NextConfig = {
         hostname: 'ui-avatars.com',
       },
       ...mediaRemotePatterns,
-      ...(process.env.NODE_ENV !== 'production' ? [
+...(process.env.NODE_ENV !== 'production' ? [
         { protocol: 'https' as const, hostname: 'example.com' },
-        { protocol: 'http' as const, hostname: 'localhost', port: '3000', pathname: '/**' },
+        { protocol: 'http' as const, hostname: 'localhost' },
+        { protocol: 'http' as const, hostname: '127.0.0.1' },
       ] : []),
     ],
   },

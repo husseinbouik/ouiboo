@@ -73,6 +73,32 @@ export class LocalStorageProvider implements IStorageProvider {
         return filePath;
     }
 
+    async read(key: string): Promise<{ data: Buffer; contentType: string }> {
+        const filePath = this.getFilePath(key);
+        return {
+            data: fs.readFileSync(filePath),
+            contentType: this.contentTypeForExtension(filePath),
+        };
+    }
+
+    private contentTypeForExtension(filePath: string): string {
+        switch (path.extname(filePath).toLowerCase()) {
+            case '.jpg':
+            case '.jpeg':
+                return 'image/jpeg';
+            case '.png':
+                return 'image/png';
+            case '.webp':
+                return 'image/webp';
+            case '.gif':
+                return 'image/gif';
+            case '.pdf':
+                return 'application/pdf';
+            default:
+                return 'application/octet-stream';
+        }
+    }
+
     private resolveTarget(value: string) {
         const normalized = this.normalizeStorageKey(value);
         const isPrivate = normalized === this.privatePrefix || normalized.startsWith(`${this.privatePrefix}/`);

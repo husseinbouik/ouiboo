@@ -42,17 +42,31 @@ export class NotificationsService {
   /**
    * Get notification logs for a user
    */
-  async getNotificationHistory(userId: string, limit: number = 50) {
+  async getNotificationHistory(userId: string, limit: number = 50, page: number = 1) {
     const safeLimit = Number.isFinite(limit)
       ? Math.min(100, Math.max(1, Math.floor(limit)))
       : 50;
-    const logs = await this.prisma.notificationLog.findMany({
-      where: { userId },
-      take: safeLimit,
-      orderBy: { sentAt: 'desc' },
-    });
+    const safePage = Math.max(1, Number.isFinite(page) ? Math.floor(page) : 1);
+    const where = { userId };
+    const [logs, total] = await Promise.all([
+      this.prisma.notificationLog.findMany({
+        where,
+        skip: (safePage - 1) * safeLimit,
+        take: safeLimit,
+        orderBy: { sentAt: 'desc' },
+      }),
+      this.prisma.notificationLog.count({ where }),
+    ]);
 
-    return logs;
+    return {
+      data: logs,
+      pagination: {
+        total,
+        page: safePage,
+        limit: safeLimit,
+        totalPages: Math.ceil(total / safeLimit),
+      },
+    };
   }
 
   /**

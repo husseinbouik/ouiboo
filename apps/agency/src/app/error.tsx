@@ -2,9 +2,12 @@
 
 import { useEffect } from 'react'
 import { AlertTriangle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button, EmptyState } from '@ouiboo/ui'
 
 export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const { t } = useTranslation()
+
   useEffect(() => {
     console.error('Unhandled agency route error', error)
   }, [error])
@@ -14,9 +17,9 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
       <EmptyState
         className="w-full border-solid bg-card py-14"
         icon={<AlertTriangle className="h-6 w-6 text-danger" aria-hidden="true" />}
-        title="This workspace could not load"
-        description="Try the page again. Your saved agency data has not been changed."
-        action={<Button type="button" onClick={reset}>Try again</Button>}
+        title={t('routeError.title')}
+        description={t('routeError.description')}
+        action={<Button type="button" onClick={reset}>{t('routeError.retry')}</Button>}
       />
     </main>
   )

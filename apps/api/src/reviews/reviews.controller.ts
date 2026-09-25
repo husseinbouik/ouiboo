@@ -15,6 +15,9 @@ import {
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto, UpdateReviewDto, ReviewResponseDto } from './dto/create-review.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '@ouiboo/types';
 
 @Controller('bookings')
 @UseGuards(JwtAuthGuard)
@@ -76,6 +79,8 @@ export class ReviewDetailController {
    */
   @Post(':reviewId/response')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.Agency)
   async respondToReview(
     @Param('reviewId') reviewId: string,
     @Body() dto: ReviewResponseDto,

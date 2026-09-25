@@ -86,6 +86,8 @@ export interface GenericDataTableLabels {
   page?: string
   previousPage?: string
   nextPage?: string
+  selectAllRows?: string
+  selectRow?: string
 }
 
 export interface GenericDataTableProps<TData> {
@@ -135,7 +137,7 @@ export function GenericDataTable<TData>({
           checked={table.getIsAllPageRowsSelected()}
           indeterminate={table.getIsSomePageRowsSelected()}
           onChange={table.getToggleAllPageRowsSelectedHandler()}
-          aria-label="Select all rows on this page"
+          aria-label={labels.selectAllRows || 'Select all rows on this page'}
         />
       ),
       cell: ({ row }) => (
@@ -143,11 +145,11 @@ export function GenericDataTable<TData>({
           checked={row.getIsSelected()}
           disabled={!row.getCanSelect()}
           onChange={row.getToggleSelectedHandler()}
-          aria-label="Select row"
+          aria-label={labels.selectRow || 'Select row'}
         />
       ),
     }),
-    []
+    [labels.selectAllRows, labels.selectRow]
   )
 
   const resolvedColumns = React.useMemo(

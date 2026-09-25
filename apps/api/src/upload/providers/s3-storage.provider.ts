@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { IStorageProvider } from '../interfaces/storage-provider.interface';
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, GetObjectCommandOutput } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import * as path from 'path';
 import { ALLOWED_MIME_TYPES, AllowedMimeType, MAX_UPLOAD_SIZE_BYTES } from '../upload.constants';
@@ -55,9 +55,11 @@ export class S3StorageProvider implements IStorageProvider {
             }),
         );
 
-        const url = process.env.S3_PUBLIC_URL
-            ? `${process.env.S3_PUBLIC_URL}/${key}`
-            : `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
+        const url = this.isPrivateKey(key)
+            ? ''
+            : process.env.S3_PUBLIC_URL
+                ? `${process.env.S3_PUBLIC_URL}/${key}`
+                : `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
 
         return { url, key };
     }
@@ -73,9 +75,50 @@ export class S3StorageProvider implements IStorageProvider {
 
     getFilePath(key: string): string {
         const safeKey = this.normalizeStorageKey(key);
+        if (this.isPrivateKey(safeKey)) {
+            throw new BadRequestException('Private files must be served through the authorized API endpoint');
+        }
         return process.env.S3_PUBLIC_URL
             ? `${process.env.S3_PUBLIC_URL}/${safeKey}`
             : `https://${this.bucket}.s3.${this.region}.amazonaws.com/${safeKey}`;
+    }
+
+    async read(key: string): Promise<{ data: Buffer; contentType: string }> {
+        const safeKey = this.normalizeStorageKey(key);
+        const command = new GetObjectCommand({ Bucket: this.bucket, Key: safeKey });
+        const output: GetObjectCommandOutput = await this.s3Client.send(command);
+        const body = output.Body;
+        if (!body) {
+            throw new BadRequestException('File has no readable content');
+        }
+        const bytes = await body.transformToByteArray();
+        return {
+            data: Buffer.from(bytes),
+            contentType: output.ContentType || this.contentTypeForExtension(safeKey),
+        };
+    }
+
+    private contentTypeForExtension(key: string): string {
+        switch (path.extname(key).toLowerCase()) {
+            case '.jpg':
+            case '.jpeg':
+                return 'image/jpeg';
+            case '.png':
+                return 'image/png';
+            case '.webp':
+                return 'image/webp';
+            case '.gif':
+                return 'image/gif';
+            case '.pdf':
+                return 'application/pdf';
+            default:
+                return 'application/octet-stream';
+        }
+    }
+
+    private isPrivateKey(key: string): boolean {
+        const firstSegment = key.split('/')[0];
+        return firstSegment === 'private';
     }
 
     private normalizeStorageKey(value: string): string {

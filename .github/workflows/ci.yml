@@ -29,6 +29,7 @@ jobs:
       NEXT_PUBLIC_TRAVELER_URL: https://traveler.ci.example.com
       NEXT_PUBLIC_AGENCY_URL: https://agency.ci.example.com
       NEXT_PUBLIC_LANDING_URL: https://www.ci.example.com
+      NEXT_PUBLIC_MEDIA_URL: https://media.ci.example.com
       GMAIL_EMAIL: waitlist@example.com
       GMAIL_APP_PASSWORD: ci-gmail-auth-6f2084ea9314
       GOOGLE_SERVICE_ACCOUNT_EMAIL: sheets-ci@example.com
@@ -40,6 +41,7 @@ jobs:
       S3_ACCESS_KEY_ID: ci-access-7c1f0b74
       S3_SECRET_ACCESS_KEY: ci-storage-auth-a95e42dc6b70
       S3_ENDPOINT: https://s3.example.com
+      S3_PUBLIC_URL: https://media.ci.example.com
       ENABLE_SWAGGER: false
 
     strategy:

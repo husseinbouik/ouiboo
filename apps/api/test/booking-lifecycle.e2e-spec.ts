@@ -803,8 +803,8 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .set('Authorization', `Bearer traveler-1-token`)
             .expect(200);
 
-        expect(res.body).toHaveLength(1);
-        expect(res.body[0].id).toBe(booking1.id);
+        expect(res.body.data).toHaveLength(1);
+        expect(res.body.data[0].id).toBe(booking1.id);
     });
 
     it('Agency can only see bookings for their trips', async () => {
@@ -887,8 +887,9 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .set('Authorization', `Bearer agency-1-token`)
             .expect(200);
 
-        expect(res.body.some((b: any) => b.session.templateId === template.id)).toBe(true);
-        expect(res.body.some((b: any) => b.session.templateId === template2.id)).toBe(false);
+        const items = Array.isArray(res.body) ? res.body : res.body.data;
+        expect(items.some((b: any) => b.session.templateId === template.id)).toBe(true);
+        expect(items.some((b: any) => b.session.templateId === template2.id)).toBe(false);
     });
 
     it('Agency cannot verify payment for other agency bookings', async () => {

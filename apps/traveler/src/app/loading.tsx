@@ -1,9 +1,15 @@
+'use client'
+
+import { useTranslation } from 'react-i18next'
+
 export default function TravelerLoading() {
+  const { t } = useTranslation()
+
   return (
     <div
       className="mx-auto min-h-[70vh] max-w-7xl animate-pulse space-y-8 px-4 py-10 sm:px-6 lg:px-8"
       role="status"
-      aria-label="Loading page"
+      aria-label={t('common.loading')}
     >
       <div className="space-y-3">
         <div className="h-4 w-28 rounded-full bg-muted" />
@@ -26,7 +32,7 @@ export default function TravelerLoading() {
           </div>
         ))}
       </div>
-      <span className="sr-only">Loading…</span>
+      <span className="sr-only">{t('common.loading')}</span>
     </div>
   )
 }

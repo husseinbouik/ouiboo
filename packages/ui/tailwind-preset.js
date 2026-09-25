@@ -33,7 +33,7 @@ module.exports = {
           800: '#9a3412',
           900: '#7c2d12',
         },
-        ocean: {
+ocean: {
           50: '#ecfeff',
           100: '#cffafe',
           300: '#67e8f9',
@@ -43,7 +43,7 @@ module.exports = {
         },
         navy: {
           50: '#eff6ff',
-          500: '#1e3a8a',
+          500: '#0a192f',
           700: '#0f245f',
           900: '#07152f',
         }

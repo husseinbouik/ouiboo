@@ -17,6 +17,7 @@ import {
 } from '@ouiboo/types';
 import { WalletsService } from '../wallets/wallets.service';
 import { EmailService } from '../email/email.service';
+import { Prisma } from '@ouiboo/database';
 import { AuditLogService } from './audit-log.service';
 import { Response } from 'express';
 import { mapBookingDetails } from '../bookings/booking-response.util';
@@ -41,6 +42,26 @@ const parseDateQuery = (value?: string) => {
 };
 
 const clampNumber = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+const parsePaginationQuery = (
+    pageValue?: string,
+    limitValue?: string,
+    defaultLimit = 25,
+    maxLimit = 100,
+) => {
+    const parsedLimit = Number(limitValue);
+    const limit = clampNumber(Number.isFinite(parsedLimit) ? Math.floor(parsedLimit) : defaultLimit, 1, maxLimit);
+    const parsedPage = Number(pageValue);
+    const page = clampNumber(Number.isFinite(parsedPage) ? Math.floor(parsedPage) : 1, 1, 1_000_000);
+    return { page, limit };
+};
+
+const buildPaginationMeta = (total: number, page: number, limit: number) => ({
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+});
 
 const buildAuditLogWhere = ({
     fromDate,
@@ -116,29 +137,49 @@ export class AdminController {
 
     @Get('pending-payments')
     @ApiOperation({ summary: 'Get payment proofs pending verification' })
-    async getPendingPayments(@Query('q') q?: string) {
+    async getPendingPayments(
+        @Query('q') q?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
         const search = q?.trim();
-        const proofs = await this.db.paymentProof.findMany({
-            where: {
-                status: 'PENDING',
-                ...(search ? {
-                    OR: [
-                        { booking: { id: { contains: search, mode: 'insensitive' } } },
-                        { booking: { traveler: { name: { contains: search, mode: 'insensitive' } } } },
-                        { booking: { traveler: { email: { contains: search, mode: 'insensitive' } } } },
-                        { booking: { session: { template: { title: { contains: search, mode: 'insensitive' } } } } },
-                    ],
-                } : {}),
-            },
-            include: { booking: { include: { traveler: true, session: { include: { template: true } } } } }
-        });
+        const { page: safePage, limit: safeLimit } = parsePaginationQuery(page, limit);
+        const where: Prisma.PaymentProofWhereInput = {
+            status: 'PENDING',
+            ...(search ? {
+                OR: [
+                    { booking: { id: { contains: search, mode: 'insensitive' } } },
+                    { booking: { traveler: { name: { contains: search, mode: 'insensitive' } } } },
+                    { booking: { traveler: { email: { contains: search, mode: 'insensitive' } } } },
+                    { booking: { session: { template: { title: { contains: search, mode: 'insensitive' } } } } },
+                ],
+            } : {}),
+        };
+        const [proofs, total] = await Promise.all([
+            this.db.paymentProof.findMany({
+                where,
+                include: {
+                    booking: {
+                        include: {
+                            traveler: { select: { email: true, name: true } },
+                            session: { include: { template: true } },
+                        },
+                    },
+                },
+                orderBy: { uploadedAt: 'desc' },
+                skip: (safePage - 1) * safeLimit,
+                take: safeLimit,
+            }),
+            this.db.paymentProof.count({ where }),
+        ]);
         const apiUrl = (process.env.API_URL || 'http://localhost:3000/api/v1').replace(/\/$/, '');
 
-        return proofs.map((proof) => ({
+        const data = proofs.map((proof) => ({
             ...proof,
             booking: mapBookingDetails(proof.booking),
             downloadUrl: `${apiUrl}/bookings/${proof.bookingId}/payment-proof/download`,
         }));
+        return { data, pagination: buildPaginationMeta(total, safePage, safeLimit) };
     }
 
     @Post('payments/:id/verify')
@@ -276,22 +317,35 @@ export class AdminController {
 
     @Get('pending-agencies')
     @ApiOperation({ summary: 'Get agencies pending verification' })
-    getPendingAgencies(@Query('q') q?: string) {
+    async getPendingAgencies(
+        @Query('q') q?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
         const search = q?.trim();
-        return this.db.agencyProfile.findMany({
-            where: {
-                verificationStatus: 'PENDING',
-                ...(search ? {
-                    OR: [
-                        { companyName: { contains: search, mode: 'insensitive' } },
-                        { ice: { contains: search, mode: 'insensitive' } },
-                        { user: { email: { contains: search, mode: 'insensitive' } } },
-                        { user: { name: { contains: search, mode: 'insensitive' } } },
-                    ],
-                } : {}),
-            },
-            include: { user: true }
-        });
+        const { page: safePage, limit: safeLimit } = parsePaginationQuery(page, limit);
+        const where: Prisma.AgencyProfileWhereInput = {
+            verificationStatus: 'PENDING',
+            ...(search ? {
+                OR: [
+                    { companyName: { contains: search, mode: 'insensitive' } },
+                    { ice: { contains: search, mode: 'insensitive' } },
+                    { user: { email: { contains: search, mode: 'insensitive' } } },
+                    { user: { name: { contains: search, mode: 'insensitive' } } },
+                ],
+            } : {}),
+        };
+        const [agencies, total] = await Promise.all([
+            this.db.agencyProfile.findMany({
+                where,
+                include: { user: true },
+                orderBy: { id: 'asc' },
+                skip: (safePage - 1) * safeLimit,
+                take: safeLimit,
+            }),
+            this.db.agencyProfile.count({ where }),
+        ]);
+        return { data: agencies, pagination: buildPaginationMeta(total, safePage, safeLimit) };
     }
 
     @Post('agencies/:id/verify')
@@ -317,20 +371,33 @@ export class AdminController {
 
     @Get('pending-trips')
     @ApiOperation({ summary: 'Get trips pending verification' })
-    getPendingTrips(@Query('q') q?: string) {
+    async getPendingTrips(
+        @Query('q') q?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
         const search = q?.trim();
-        return this.db.tripTemplate.findMany({
-            where: {
-                status: 'DRAFT',
-                ...(search ? {
-                    OR: [
-                        { title: { contains: search, mode: 'insensitive' } },
-                        { agency: { companyName: { contains: search, mode: 'insensitive' } } },
-                    ],
-                } : {}),
-            }, // Assuming Draft is what they start as
-            include: { agency: true }
-        });
+        const { page: safePage, limit: safeLimit } = parsePaginationQuery(page, limit);
+        const where: Prisma.TripTemplateWhereInput = {
+            status: 'DRAFT',
+            ...(search ? {
+                OR: [
+                    { title: { contains: search, mode: 'insensitive' } },
+                    { agency: { companyName: { contains: search, mode: 'insensitive' } } },
+                ],
+            } : {}),
+        }; // Assuming Draft is what they start as
+        const [trips, total] = await Promise.all([
+            this.db.tripTemplate.findMany({
+                where,
+                include: { agency: true },
+                orderBy: { createdAt: 'desc' },
+                skip: (safePage - 1) * safeLimit,
+                take: safeLimit,
+            }),
+            this.db.tripTemplate.count({ where }),
+        ]);
+        return { data: trips, pagination: buildPaginationMeta(total, safePage, safeLimit) };
     }
 
     @Post('trips/:id/verify')
@@ -372,29 +439,40 @@ export class AdminController {
 
     @Get('agencies')
     @ApiOperation({ summary: 'Get all agencies' })
-    getAgencies(
+    async getAgencies(
         @Query('q') q?: string,
         @Query('verificationStatus') verificationStatus?: string,
         @Query('subscriptionStatus') subscriptionStatus?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
     ) {
         const search = q?.trim();
         const verificationFilter = parseEnumQuery(verificationStatus, VERIFICATION_STATUSES);
         const subscriptionFilter = parseEnumQuery(subscriptionStatus, SUBSCRIPTION_STATUSES);
-        return this.db.agencyProfile.findMany({
-            where: {
-                ...(verificationFilter ? { verificationStatus: verificationFilter } : {}),
-                ...(subscriptionFilter ? { subscriptionStatus: subscriptionFilter } : {}),
-                ...(search ? {
-                    OR: [
-                        { companyName: { contains: search, mode: 'insensitive' } },
-                        { ice: { contains: search, mode: 'insensitive' } },
-                        { user: { email: { contains: search, mode: 'insensitive' } } },
-                        { user: { name: { contains: search, mode: 'insensitive' } } },
-                    ],
-                } : {}),
-            },
-            include: { user: true },
-        });
+        const { page: safePage, limit: safeLimit } = parsePaginationQuery(page, limit);
+        const where: Prisma.AgencyProfileWhereInput = {
+            ...(verificationFilter ? { verificationStatus: verificationFilter } : {}),
+            ...(subscriptionFilter ? { subscriptionStatus: subscriptionFilter } : {}),
+            ...(search ? {
+                OR: [
+                    { companyName: { contains: search, mode: 'insensitive' } },
+                    { ice: { contains: search, mode: 'insensitive' } },
+                    { user: { email: { contains: search, mode: 'insensitive' } } },
+                    { user: { name: { contains: search, mode: 'insensitive' } } },
+                ],
+            } : {}),
+        };
+        const [agencies, total] = await Promise.all([
+            this.db.agencyProfile.findMany({
+                where,
+                include: { user: true },
+                orderBy: { id: 'asc' },
+                skip: (safePage - 1) * safeLimit,
+                take: safeLimit,
+            }),
+            this.db.agencyProfile.count({ where }),
+        ]);
+        return { data: agencies, pagination: buildPaginationMeta(total, safePage, safeLimit) };
     }
 
     @Patch('agencies/:id/status')
@@ -436,43 +514,58 @@ export class AdminController {
 
     @Get('bookings')
     @ApiOperation({ summary: 'Get all bookings in the system' })
-    async getBookings(@Query('q') q?: string, @Query('status') status?: string) {
+    async getBookings(
+        @Query('q') q?: string,
+        @Query('status') status?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
         const search = q?.trim();
         const statusFilter = parseEnumQuery(status, BOOKING_STATUSES);
-        const bookings = await this.db.booking.findMany({
-            where: {
-                ...(statusFilter ? { status: statusFilter } : {}),
-                ...(search ? {
-                    OR: [
-                        { id: { contains: search, mode: 'insensitive' } },
-                        { traveler: { name: { contains: search, mode: 'insensitive' } } },
-                        { traveler: { email: { contains: search, mode: 'insensitive' } } },
-                        { session: { template: { title: { contains: search, mode: 'insensitive' } } } },
-                    ],
-                } : {}),
-            },
-            include: {
-                traveler: {
-                    select: {
-                        email: true,
-                        name: true,
+        const { page: safePage, limit: safeLimit } = parsePaginationQuery(page, limit);
+        const where: Prisma.BookingWhereInput = {
+            ...(statusFilter ? { status: statusFilter } : {}),
+            ...(search ? {
+                OR: [
+                    { id: { contains: search, mode: 'insensitive' } },
+                    { traveler: { name: { contains: search, mode: 'insensitive' } } },
+                    { traveler: { email: { contains: search, mode: 'insensitive' } } },
+                    { session: { template: { title: { contains: search, mode: 'insensitive' } } } },
+                ],
+            } : {}),
+        };
+        const [bookings, total] = await Promise.all([
+            this.db.booking.findMany({
+                where,
+                include: {
+                    traveler: {
+                        select: {
+                            email: true,
+                            name: true,
+                        },
                     },
-                },
-                session: {
-                    include: {
-                        template: {
-                            include: {
-                                agency: true,
+                    session: {
+                        include: {
+                            template: {
+                                include: {
+                                    agency: true,
+                                },
                             },
                         },
                     },
+                    paymentProof: true
                 },
-                paymentProof: true
-            },
-            orderBy: { bookingDate: 'desc' }
-        });
+                orderBy: { bookingDate: 'desc' },
+                skip: (safePage - 1) * safeLimit,
+                take: safeLimit,
+            }),
+            this.db.booking.count({ where }),
+        ]);
 
-        return bookings.map(mapBookingDetails);
+        return {
+            data: bookings.map(mapBookingDetails),
+            pagination: buildPaginationMeta(total, safePage, safeLimit),
+        };
     }
 
     @Post('bookings/:id/refund')
@@ -501,24 +594,40 @@ export class AdminController {
 
     @Get('payout-requests')
     @ApiOperation({ summary: 'Get all payout requests' })
-    async getPayoutRequests(@Query('q') q?: string, @Query('status') status?: string) {
+    async getPayoutRequests(
+        @Query('q') q?: string,
+        @Query('status') status?: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
         const search = q?.trim();
         const statusFilter = parseEnumQuery(status, PAYOUT_STATUSES);
-        const payouts = await this.db.payoutRequest.findMany({
-            where: {
-                ...(statusFilter ? { status: statusFilter } : {}),
-                ...(search ? {
-                    OR: [
-                        { id: { contains: search, mode: 'insensitive' } },
-                        { agency: { companyName: { contains: search, mode: 'insensitive' } } },
-                        { agency: { user: { email: { contains: search, mode: 'insensitive' } } } },
-                    ],
-                } : {}),
-            },
-            include: { agency: { include: { user: true } } }
-        });
+        const { page: safePage, limit: safeLimit } = parsePaginationQuery(page, limit);
+        const where: Prisma.PayoutRequestWhereInput = {
+            ...(statusFilter ? { status: statusFilter } : {}),
+            ...(search ? {
+                OR: [
+                    { id: { contains: search, mode: 'insensitive' } },
+                    { agency: { companyName: { contains: search, mode: 'insensitive' } } },
+                    { agency: { user: { email: { contains: search, mode: 'insensitive' } } } },
+                ],
+            } : {}),
+        };
+        const [payouts, total] = await Promise.all([
+            this.db.payoutRequest.findMany({
+                where,
+                include: { agency: { include: { user: true } } },
+                orderBy: { requestedAt: 'desc' },
+                skip: (safePage - 1) * safeLimit,
+                take: safeLimit,
+            }),
+            this.db.payoutRequest.count({ where }),
+        ]);
 
-        return payouts.map(mapPayoutDetails);
+        return {
+            data: payouts.map(mapPayoutDetails),
+            pagination: buildPaginationMeta(total, safePage, safeLimit),
+        };
     }
 
     @Post('payouts/:id/process')
@@ -597,11 +706,11 @@ export class AdminController {
         @Query('targetType') targetType?: string,
         @Query('q') q?: string,
         @Query('limit') limit?: string,
+        @Query('page') page?: string,
     ) {
         const fromDate = parseDateQuery(from);
         const toDate = parseDateQuery(to);
-        const parsedLimit = Number(limit);
-        const take = clampNumber(Number.isFinite(parsedLimit) ? parsedLimit : 100, 1, 200);
+        const { page: safePage, limit: safeLimit } = parsePaginationQuery(page, limit, 100, 200);
         const where = buildAuditLogWhere({
             fromDate,
             toDate,
@@ -611,11 +720,17 @@ export class AdminController {
             search: q?.trim(),
         });
 
-        return this.db.auditLog.findMany({
-            where,
-            orderBy: { createdAt: 'desc' },
-            take,
-        });
+        const [logs, total] = await Promise.all([
+            this.db.auditLog.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                skip: (safePage - 1) * safeLimit,
+                take: safeLimit,
+            }),
+            this.db.auditLog.count({ where }),
+        ]);
+
+        return { data: logs, pagination: buildPaginationMeta(total, safePage, safeLimit) };
     }
 
     @Get('audit-logs/export')
@@ -634,7 +749,7 @@ export class AdminController {
         const fromDate = parseDateQuery(from);
         const toDate = parseDateQuery(to);
         const parsedLimit = Number(limit);
-        const take = clampNumber(Number.isFinite(parsedLimit) ? parsedLimit : 1000, 1, 5000);
+        const take = clampNumber(Number.isFinite(parsedLimit) ? Math.floor(parsedLimit) : 1000, 1, 5000);
         const where = buildAuditLogWhere({
             fromDate,
             toDate,

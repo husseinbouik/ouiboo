@@ -6,12 +6,17 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { CommonModule } from '../common/common.module';
 
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret) {
+    throw new Error('JWT_SECRET is required');
+}
+
 @Module({
     imports: [
         CommonModule,
         PassportModule,
         JwtModule.register({
-            secret: process.env.JWT_SECRET || 'super-secret-key',
+            secret: jwtSecret,
             signOptions: { expiresIn: '1d' },
         }),
     ],

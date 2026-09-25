@@ -81,8 +81,12 @@ describe('Auth - Complete E2E (auth-complete.e2e-spec)', () => {
         expect(userInDb?.otp).toBeTruthy();
         expect(userInDb?.otpExpiresAt).toBeTruthy();
 
+        // OTP is stored hashed at rest, so extract the plaintext OTP from the mocked email
+        const otpEmail = (mockEmailService.sendMail as jest.Mock).mock.calls[0]?.[2] as string | undefined;
+        const otp = otpEmail?.match(/\d{6}/)?.[0];
+        expect(otp).toBeTruthy();
+
         // Verify email with correct OTP
-        const otp = userInDb!.otp!;
         const verificationResponse = await request(app.getHttpServer())
             .post('/auth/verify-email')
             .send({ email, otp })
@@ -96,6 +100,33 @@ describe('Auth - Complete E2E (auth-complete.e2e-spec)', () => {
         expect(verified?.isEmailVerified).toBe(true);
         expect(verified?.otp).toBeNull();
         expect(mockEmailService.sendMail).toHaveBeenCalled();
+    });
+
+    it('accepts an unexpired OTP issued before OTP hashing was enabled', async () => {
+        const email = 'legacy-otp@example.com';
+        const legacyOtp = '654321';
+
+        await request(app.getHttpServer())
+            .post('/auth/register')
+            .send({ email, password: 'Password123!', name: 'Legacy OTP', role: 'TRAVELER' })
+            .expect(201);
+
+        await db.user.update({
+            where: { email },
+            data: {
+                otp: legacyOtp,
+                otpExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
+            },
+        });
+
+        await request(app.getHttpServer())
+            .post('/auth/verify-email')
+            .send({ email, otp: legacyOtp })
+            .expect(201);
+
+        const verified = await db.user.findUnique({ where: { email } });
+        expect(verified?.isEmailVerified).toBe(true);
+        expect(verified?.otp).toBeNull();
     });
 
     it('Resend OTP respects cooldown', async () => {

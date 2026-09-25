@@ -2,10 +2,11 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { 
-  Plus, 
-  Clock, 
-  Users, 
+import { useTranslation } from 'react-i18next';
+import {
+  Plus,
+  Clock,
+  Users,
   Edit,
   Trash,
   Search,
@@ -17,7 +18,7 @@ import { cn } from '@ouiboo/ui/utils';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '@ouiboo/utils';
 
 import { DeleteConfirmation } from '@/components/DeleteConfirmation';
 
@@ -45,13 +46,13 @@ type AgencyTripSummary = {
 type TripSortOption = 'recent' | 'price' | 'sales';
 
 export default function AgencyTripsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const [deleteTripId, setDeleteTripId] = React.useState<string | null>(null);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<'ALL' | AgencyTripSummary['status']>('ALL');
   const [sortBy, setSortBy] = React.useState<TripSortOption>('recent');
-  
+
   const { data: trips = [], isLoading } = useQuery<AgencyTripSummary[]>({
     queryKey: ['agency-trips'],
     queryFn: async () => {
@@ -78,6 +79,17 @@ export default function AgencyTripsPage() {
       queryClient.invalidateQueries({ queryKey: ['agency-trips'] });
     }
   });
+
+  const tripStatusLabel = (status: AgencyTripSummary['status']) => {
+    switch (status) {
+      case 'ACTIVE':
+        return t('trips.filterActive');
+      case 'DRAFT':
+        return t('trips.filterDraft');
+      default:
+        return t('trips.filterArchived');
+    }
+  };
 
   const handleDelete = (id: string) => {
     setDeleteTripId(id);
@@ -121,53 +133,56 @@ export default function AgencyTripsPage() {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-deep-blue dark:text-gray-100">{t('sidebar.myTrips')}</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Manage and monitor your travel packages.</p>
+          <h1 className="text-3xl font-bold text-foreground">{t('sidebar.myTrips')}</h1>
+          <p className="text-muted-foreground mt-1">{t('trips.manageTitle')}</p>
         </div>
         <Link href="/dashboard/trips/create">
-          <Button className="h-12 px-6 bg-sunset-orange hover:bg-orange-600 border-none shadow-lg shadow-orange-900/20 gap-2 font-bold">
+          <Button className="h-12 px-6 bg-accent text-accent-foreground hover:bg-accent/90 border-none shadow-lg shadow-accent/20 gap-2 font-bold">
             <Plus className="h-5 w-5" />
             {t('sidebar.createNew')}
           </Button>
         </Link>
       </div>
 
-      <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
+      <Card className="border-none shadow-sm bg-card border border-border">
         <CardContent className="p-4">
            <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
-                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                 <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                  <Input
-                   placeholder="Search trips by name or location..."
-                   className="pl-10 h-11 dark:bg-slate-800 dark:border-slate-700"
+                   placeholder={t('trips.searchPlaceholder')}
+                   aria-label={t('trips.searchPlaceholder')}
+                   className="ps-10 h-11"
                    value={searchTerm}
                    onChange={(event) => setSearchTerm(event.target.value)}
                  />
               </div>
               <div className="flex gap-2">
                  <div className="relative group">
-                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    <Filter className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                     <select
                       value={statusFilter}
+                      aria-label={t('trips.filterAll')}
                       onChange={(event) => setStatusFilter(event.target.value as 'ALL' | AgencyTripSummary['status'])}
-                      className="h-11 pl-10 pr-4 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-deep-blue/5 dark:text-gray-300 appearance-none min-w-[140px]"
+                      className="h-11 ps-10 pe-4 bg-card border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none min-w-[140px]"
                     >
-                       <option value="ALL">All Status</option>
-                       <option value="ACTIVE">Active</option>
-                       <option value="DRAFT">Draft</option>
-                       <option value="ARCHIVED">Archived</option>
+                       <option value="ALL">{t('trips.filterAll')}</option>
+                       <option value="ACTIVE">{t('trips.filterActive')}</option>
+                       <option value="DRAFT">{t('trips.filterDraft')}</option>
+                       <option value="ARCHIVED">{t('trips.filterArchived')}</option>
                     </select>
                  </div>
                  <div className="relative group">
-                    <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    <ArrowUpDown className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                     <select
                       value={sortBy}
+                      aria-label={t('trips.sortRecent')}
                       onChange={(event) => setSortBy(event.target.value as TripSortOption)}
-                      className="h-11 pl-10 pr-4 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-deep-blue/5 dark:text-gray-300 appearance-none min-w-[140px]"
+                      className="h-11 ps-10 pe-4 bg-card border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none min-w-[140px]"
                     >
-                       <option value="recent">Most Recent</option>
-                       <option value="price">Highest Price</option>
-                       <option value="sales">Most Booked</option>
+                       <option value="recent">{t('trips.sortRecent')}</option>
+                       <option value="price">{t('trips.sortPrice')}</option>
+                       <option value="sales">{t('trips.sortSales')}</option>
                     </select>
                  </div>
               </div>
@@ -177,68 +192,70 @@ export default function AgencyTripsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
-          <div className="col-span-full py-12 flex justify-center text-gray-500">Loading trips...</div>
+          <div className="col-span-full py-12 flex justify-center text-muted-foreground">{t('trips.loading')}</div>
         ) : filteredTrips.length > 0 ? (
           filteredTrips.map((trip) => (
-            <Card key={trip.id} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden bg-white dark:bg-slate-900 border dark:border-slate-800 flex flex-col">
+            <Card key={trip.id} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden bg-card border border-border flex flex-col">
               <div className="relative h-48 overflow-hidden">
                  <Image
-                   src={trip.images?.[0] || `https://ui-avatars.com/api/?name=${encodeURIComponent(trip.title)}&background=1E3A8A&color=fff`}
+                   src={trip.images?.[0] || `https://ui-avatars.com/api/?name=${encodeURIComponent(trip.title)}&background=0A192F&color=fff`}
                    alt={trip.title}
                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                    fill
                    sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                  />
-                 <div className="absolute top-4 right-4">
-                    <button 
+                 <div className="absolute top-4 end-4">
+                    <button
                       onClick={(e) => {
                         e.preventDefault();
                         handleToggleStatus(trip.id, trip.status);
                       }}
                       disabled={updateStatusMutation.isPending}
+                      aria-label={tripStatusLabel(trip.status)}
                       className={cn(
                         "text-[10px] px-2.5 py-1.5 rounded-lg font-bold shadow-sm backdrop-blur-md uppercase tracking-wider transition-all hover:scale-105 active:scale-95",
-                        trip.status === 'ACTIVE' ? "bg-green-500/90 text-white" : "bg-slate-500/90 text-white"
+                        trip.status === 'ACTIVE' ? "bg-success/90 text-success-foreground" : "bg-slate-500/90 text-white"
                       )}
                     >
-                      {updateStatusMutation.isPending && updateStatusMutation.variables?.id === trip.id ? '...' : trip.status}
+                      {updateStatusMutation.isPending && updateStatusMutation.variables?.id === trip.id ? '...' : tripStatusLabel(trip.status)}
                     </button>
                  </div>
               </div>
               <CardContent className="p-6 flex-1 flex flex-col">
                 <div className="mb-2">
-                   <span className="text-[10px] font-bold text-sunset-orange dark:text-orange-400 uppercase tracking-widest">{trip.category}</span>
+                   <span className="text-[10px] font-bold text-accent uppercase tracking-widest">{trip.category}</span>
                    <Link href={`/dashboard/trips/${trip.id}`} className="block">
-                    <h3 className="text-xl font-bold text-deep-blue dark:text-gray-100 mt-1 line-clamp-1 hover:text-sunset-orange transition-colors">{trip.title}</h3>
+                    <h3 className="text-xl font-bold text-foreground mt-1 line-clamp-1 hover:text-accent transition-colors">{trip.title}</h3>
                    </Link>
                 </div>
-                
-                <div className="flex items-center gap-4 my-4 py-4 border-y border-gray-50 dark:border-slate-800 text-gray-500 dark:text-gray-400 text-sm">
+
+                <div className="flex items-center gap-4 my-4 py-4 border-y border-border text-muted-foreground text-sm">
                    <div className="flex items-center gap-1.5 font-medium">
-                      <Clock className="h-4 w-4 text-gray-400" />
-                      {trip.durationDays}D / {trip.durationNights}N
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      {t('trips.durationShort', { days: trip.durationDays, nights: trip.durationNights })}
                    </div>
                    <div className="flex items-center gap-1.5 font-medium">
-                      <Users className="h-4 w-4 text-gray-400" />
-                      {trip.sessions?.reduce((acc, session) => acc + (session._count?.bookings || 0), 0) || 0} sales
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      {t('trips.salesCount', { count: trip.sessions?.reduce((acc, session) => acc + (session._count?.bookings || 0), 0) || 0 })}
                    </div>
                 </div>
 
                 <div className="mt-auto flex items-center justify-between">
                    <div>
-                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">From</p>
-                      <p className="text-lg font-bold text-deep-blue dark:text-blue-400">{trip.sessions?.[0]?.price?.toLocaleString() || 0} MAD</p>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight">{t('trips.from')}</p>
+                      <p className="text-lg font-bold text-primary">{formatCurrency(trip.sessions?.[0]?.price || 0, undefined, i18n.language)}</p>
                    </div>
                    <div className="flex gap-1">
-                      <Link href={`/dashboard/trips/${trip.id}`}>
-                        <button className="p-2 text-gray-400 hover:text-deep-blue dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                      <Link href={`/dashboard/trips/${trip.id}`} aria-label={t('common.edit')}>
+                        <button className="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors">
                            <Edit className="h-5 w-5" />
                         </button>
                       </Link>
-                      <button 
+                      <button
                         onClick={() => handleDelete(trip.id)}
                         disabled={deleteTripMutation.isPending}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors disabled:opacity-50"
+                        aria-label={t('common.delete')}
+                        className="p-2 text-muted-foreground hover:text-danger hover:bg-danger/10 rounded-lg transition-colors disabled:opacity-50"
                       >
                          <Trash className="h-5 w-5" />
                       </button>
@@ -249,18 +266,18 @@ export default function AgencyTripsPage() {
           ))
         ) : (
           <div className="col-span-full">
-            <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
+            <Card className="border-none shadow-sm bg-card border border-border">
               <CardContent className="py-16 text-center">
-                <p className="text-lg font-bold text-deep-blue dark:text-gray-100">No trips match these filters</p>
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  Try a different search term, clear the status filter, or create a new trip.
+                <p className="text-lg font-bold text-foreground">{t('trips.emptyTitle')}</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {t('trips.emptyBody')}
                 </p>
                 <div className="mt-6 flex items-center justify-center gap-3">
                   <Button variant="outline" onClick={() => { setSearchTerm(''); setStatusFilter('ALL'); setSortBy('recent'); }}>
-                    Clear filters
+                    {t('trips.clearFilters')}
                   </Button>
                   <Link href="/dashboard/trips/create">
-                    <Button className="bg-sunset-orange hover:bg-orange-600 border-none">Create trip</Button>
+                    <Button className="bg-accent text-accent-foreground hover:bg-accent/90 border-none">{t('trips.createCta')}</Button>
                   </Link>
                 </div>
               </CardContent>
@@ -270,25 +287,25 @@ export default function AgencyTripsPage() {
 
         {/* Add New Card */}
         <Link href="/dashboard/trips/create" className="group">
-           <div className="h-full min-h-[380px] border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-2xl flex flex-col items-center justify-center gap-4 hover:border-sunset-orange/50 hover:bg-orange-50/10 dark:hover:bg-orange-950/10 transition-all duration-300">
-              <div className="w-16 h-16 rounded-full bg-gray-50 dark:bg-slate-800 flex items-center justify-center text-gray-400 group-hover:bg-sunset-orange group-hover:text-white transition-all duration-300 shadow-sm">
+           <div className="h-full min-h-[380px] border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center gap-4 hover:border-accent/50 hover:bg-accent/5 transition-all duration-300">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center text-muted-foreground group-hover:bg-accent group-hover:text-accent-foreground transition-all duration-300 shadow-sm">
                  <Plus className="h-8 w-8" />
               </div>
               <div className="text-center">
-                 <p className="font-bold text-gray-600 dark:text-gray-400 group-hover:text-deep-blue dark:group-hover:text-blue-400 transition-colors uppercase text-sm tracking-wide">Create Trip</p>
-                 <p className="text-xs text-gray-400">Expand your travel catalog</p>
+                 <p className="font-bold text-muted-foreground group-hover:text-foreground transition-colors uppercase text-sm tracking-wide">{t('trips.createTitle')}</p>
+                 <p className="text-xs text-muted-foreground">{t('trips.expandCatalog')}</p>
               </div>
            </div>
         </Link>
       </div>
 
-      <DeleteConfirmation 
+      <DeleteConfirmation
         isOpen={!!deleteTripId}
         onClose={() => setDeleteTripId(null)}
         onConfirm={() => deleteTripId && deleteTripMutation.mutate(deleteTripId)}
         isLoading={deleteTripMutation.isPending}
-        title="Delete Trip Template"
-        description="Are you sure you want to delete this trip? All associated sessions and bookings will be permanently removed. This action cannot be undone."
+        title={t('trips.deleteTitle')}
+        description={t('trips.deleteBody')}
       />
     </div>
   );

@@ -2,14 +2,16 @@
 
 import React from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { 
   MapPin, Calendar, Star, ArrowRight, Compass, Shield, Zap, Heart, Mountain, Palmtree
 } from 'lucide-react';
 import { Button } from '@ouiboo/ui';
 import { motion, Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { TripCard } from "@/components/TripCard";
 import type { TripSession, TripTemplate, VerificationStatusType } from '@ouiboo/types';
+
+const TripCard = dynamic(() => import('@/components/TripCard').then((m) => m.TripCard));
 
 interface HomeClientProps {
   featuredTrips: Array<TripTemplate & {

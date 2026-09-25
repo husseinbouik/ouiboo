@@ -1,10 +1,22 @@
 import type { Metadata } from "next";
-import { cookies, headers } from "next/headers";
 import Script from "next/script";
+import { Manrope, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import { Navbar } from "@/components/Navbar";
 import { SITE_DESCRIPTION, SITE_NAME, TRAVELER_URL } from "@/lib/site";
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(TRAVELER_URL),
@@ -30,43 +42,16 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export const dynamic = 'force-dynamic';
+import { getInitialLanguage, languageInitScript, type SupportedLanguage } from '@ouiboo/i18n/server';
+import travelerEn from '../../public/locales/en/translation.json';
+import travelerFr from '../../public/locales/fr/translation.json';
+import travelerAr from '../../public/locales/ar/translation.json';
 
-const supportedLanguages = ['en', 'fr', 'ar'] as const;
-type SupportedLanguage = typeof supportedLanguages[number];
-
-async function getInitialLanguage(): Promise<SupportedLanguage> {
-  const [headerStore, cookieStore] = await Promise.all([headers(), cookies()]);
-  const preferredLanguage =
-    headerStore.get('x-ouiboo-language') ||
-    cookieStore.get('i18nextLng')?.value ||
-    'en';
-  const language = preferredLanguage.split('-')[0].toLowerCase();
-
-  return supportedLanguages.includes(language as SupportedLanguage)
-    ? (language as SupportedLanguage)
-    : 'en';
-}
-
-const languageInitScript = `
-  (function () {
-    try {
-      var supported = ['en', 'fr', 'ar'];
-      var params = new URLSearchParams(window.location.search);
-      var queryLanguage = params.get('lang');
-      var storedLanguage = window.localStorage.getItem('i18nextLng');
-      var detectedLanguage = queryLanguage || storedLanguage || window.navigator.language || 'en';
-      var language = String(detectedLanguage).split('-')[0].toLowerCase();
-      if (supported.indexOf(language) === -1) language = 'en';
-      document.documentElement.lang = language;
-      document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
-      if (queryLanguage) {
-        window.localStorage.setItem('i18nextLng', language);
-        document.cookie = 'i18nextLng=' + language + '; path=/; max-age=31536000; SameSite=Lax';
-      }
-    } catch (error) {}
-  })();
-`;
+const SKIP_LINK_BY_LANGUAGE: Record<SupportedLanguage, string> = {
+  en: travelerEn.common.skipToContent,
+  fr: travelerFr.common.skipToContent,
+  ar: travelerAr.common.skipToContent,
+};
 
 export default async function RootLayout({
   children,
@@ -74,18 +59,22 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const initialLanguage = await getInitialLanguage();
+  const skipToContent = SKIP_LINK_BY_LANGUAGE[initialLanguage];
 
   return (
     <html lang={initialLanguage} dir={initialLanguage === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning>
-      <body className="antialiased selection:bg-sunset-orange selection:text-white" suppressHydrationWarning>
+      <body className={`${manrope.variable} ${spaceGrotesk.variable} antialiased selection:bg-accent selection:text-accent-foreground`} suppressHydrationWarning>
         <Script
           id="language-init"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: languageInitScript }}
         />
+<a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-card focus:px-4 focus:py-2 focus:font-semibold focus:text-foreground focus:shadow-lg">
+          {skipToContent}
+        </a>
         <Providers>
           <Navbar />
-          <main className="min-h-screen">
+          <main id="main-content" className="min-h-screen" tabIndex={-1}>
             {children}
           </main>
         </Providers>

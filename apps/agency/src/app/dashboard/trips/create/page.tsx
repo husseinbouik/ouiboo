@@ -92,7 +92,7 @@ export default function CreateTripPage() {
       router.push('/dashboard/trips');
     },
     onError: (error: ApiError) => {
-      const message = error.response?.data?.message || error.message || 'Unable to create this trip right now.';
+      const message = error.response?.data?.message || error.message || t('trips.create.createError');
       setSubmissionError(Array.isArray(message) ? message.join(', ') : message);
     },
   });
@@ -104,7 +104,7 @@ export default function CreateTripPage() {
 
     // Check file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
-      setUploadError('This image is too large. Choose a file of 5 MB or less.');
+      setUploadError(t('trips.create.imageTooLarge'));
       return;
     }
 
@@ -112,8 +112,7 @@ export default function CreateTripPage() {
     const formData = new FormData();
     formData.append('file', file);
 
-    try {
-      console.log('[CreateTrip] Uploading file:', file.name, file.type);
+try {
       const response = await apiClient.post('/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -121,15 +120,13 @@ export default function CreateTripPage() {
       });
       
       const imageUrl = response.data.url;
-      console.log('[CreateTrip] Upload successful:', imageUrl);
       
       const currentImages = watch('images') || [];
       setValue('images', [...currentImages, imageUrl], { shouldValidate: true });
     } catch (error: unknown) {
       const apiError = error as ApiError;
-      console.error('Upload failed:', error);
-      const message = apiError.response?.data?.message || apiError.message || 'Upload failed';
-      setUploadError(`Upload failed: ${Array.isArray(message) ? message.join(', ') : message}`);
+      const message = apiError.response?.data?.message || apiError.message || '';
+      setUploadError(t('trips.create.uploadFailed', { message: Array.isArray(message) ? message.join(', ') : message }));
     } finally {
       setUploading(false);
     }
@@ -175,22 +172,21 @@ export default function CreateTripPage() {
       }))
     };
 
-    console.log('Finalizing trip submission:', cleanedData);
     createTripMutation.mutate(cleanedData);
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in slide-in-from-bottom duration-500 pb-12">
       <div className="flex items-center justify-between">
-        <Link href="/dashboard/trips" className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-deep-blue dark:hover:text-blue-400 transition-colors">
-          <ChevronLeft className="h-4 w-4" />
-          {t('common.back', 'Back to Trips')}
+        <Link href="/dashboard/trips" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
+          {t('trips.detail.backToTrips')}
         </Link>
         <div className="flex gap-2">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className={cn(
                 "h-1.5 w-8 rounded-full transition-all duration-300",
-                i <= step ? "bg-deep-blue dark:bg-blue-600" : "bg-gray-200 dark:bg-slate-800"
+                i <= step ? "bg-primary" : "bg-muted"
               )}></div>
             ))}
         </div>
@@ -206,73 +202,73 @@ export default function CreateTripPage() {
         className="space-y-8"
       >
         <div>
-          <h1 className="text-3xl font-bold text-deep-blue dark:text-gray-100">
-            {step === 1 && t('trips.create.steps.basic', 'Basic Information')}
-            {step === 2 && t('trips.create.steps.itinerary', 'Day-by-Day Itinerary')}
-            {step === 3 && t('trips.create.steps.media', 'Media & Gallery')}
-            {step === 4 && t('trips.create.steps.pricing', 'Settings & Details')}
+          <h1 className="text-3xl font-bold text-foreground">
+            {step === 1 && t('trips.create.steps.basic')}
+            {step === 2 && t('trips.create.steps.itinerary')}
+            {step === 3 && t('trips.create.steps.media')}
+            {step === 4 && t('trips.create.steps.pricing')}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">{t('trips.create.subtitle', 'Fill in the details to create your travel package.')}</p>
+          <p className="text-muted-foreground mt-2">{t('trips.create.subtitle')}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             {step === 1 && (
               <section className="space-y-6 animate-in fade-in duration-300">
-                <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
+                <Card className="border border-border shadow-sm bg-card">
                   <CardContent className="p-6 space-y-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Trip Title</label>
-                      <Input {...register('title')} placeholder="e.g. 5 Days in the Sahara Desert" className="h-12 dark:bg-slate-800 dark:border-slate-700" />
-                      {errors.title && <p className="text-red-500 text-xs font-medium">{errors.title.message}</p>}
+                      <label className="text-sm font-semibold text-foreground">{t('trips.create.title')}</label>
+                      <Input {...register('title')} placeholder={t('trips.create.titlePlaceholder')} className="h-12" />
+                      {errors.title && <p className="text-danger text-xs font-medium">{errors.title.message}</p>}
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Description</label>
+                      <label className="text-sm font-semibold text-foreground">{t('trips.create.description')}</label>
                       <textarea 
                         {...register('description')}
-                        className="w-full h-32 p-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-deep-blue/5 focus:border-deep-blue dark:focus:border-blue-500 transition-all text-gray-900 dark:text-gray-100"
-                        placeholder="Describe the unique experience..."
+                        className="w-full h-32 p-4 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
+                        placeholder={t('trips.create.descriptionPlaceholder')}
                       ></textarea>
-                      {errors.description && <p className="text-red-500 text-xs font-medium">{errors.description.message}</p>}
+                      {errors.description && <p className="text-danger text-xs font-medium">{errors.description.message}</p>}
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Category</label>
-                        <select {...register('category')} className="w-full h-12 px-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none dark:text-gray-100">
-                          <option value="ADVENTURE">Adventure</option>
-                          <option value="CULTURAL">Cultural</option>
-                          <option value="LUXURY">Luxury</option>
-                          <option value="BUDGET">Budget</option>
-                          <option value="NATURE">Nature</option>
+                        <label className="text-sm font-semibold text-foreground">{t('trips.create.category')}</label>
+                        <select {...register('category')} className="w-full h-12 px-4 bg-background border border-border rounded-xl text-sm focus:outline-none text-foreground">
+                          <option value="ADVENTURE">{t('trips.create.categoryAdventure')}</option>
+                          <option value="CULTURAL">{t('trips.create.categoryCultural')}</option>
+                          <option value="LUXURY">{t('trips.create.categoryLuxury')}</option>
+                          <option value="BUDGET">{t('trips.create.categoryBudget')}</option>
+                          <option value="NATURE">{t('trips.create.categoryNature')}</option>
                         </select>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Starting Location</label>
-                        <Input {...register('startLocation')} placeholder="City, Country" className="h-12 dark:bg-slate-800 dark:border-slate-700" />
+                        <label className="text-sm font-semibold text-foreground">{t('trips.create.startingLocation')}</label>
+                        <Input {...register('startLocation')} placeholder={t('trips.create.startingLocationPlaceholder')} className="h-12" />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">End Location</label>
-                        <Input {...register('endLocation')} placeholder="City, Country (optional)" className="h-12 dark:bg-slate-800 dark:border-slate-700" />
+                        <label className="text-sm font-semibold text-foreground">{t('trips.create.endLocation')}</label>
+                        <Input {...register('endLocation')} placeholder={t('trips.create.endLocationPlaceholder')} className="h-12" />
                       </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Days</label>
-                        <Input type="number" {...register('durationDays', { valueAsNumber: true })} className="h-12 dark:bg-slate-800 dark:border-slate-700" />
+                        <label className="text-sm font-semibold text-foreground">{t('trips.create.days')}</label>
+                        <Input type="number" {...register('durationDays', { valueAsNumber: true })} className="h-12" />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Nights</label>
-                        <Input type="number" {...register('durationNights', { valueAsNumber: true })} className="h-12 dark:bg-slate-800 dark:border-slate-700" />
+                        <label className="text-sm font-semibold text-foreground">{t('trips.create.nights')}</label>
+                        <Input type="number" {...register('durationNights', { valueAsNumber: true })} className="h-12" />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Currency</label>
+                        <label className="text-sm font-semibold text-foreground">{t('trips.create.currency')}</label>
                         <Input
                           maxLength={3}
                           {...register('currency', { setValueAs: (value) => String(value).trim().toUpperCase() })}
-                          placeholder="MAD"
-                          className="h-12 uppercase dark:bg-slate-800 dark:border-slate-700"
+                          placeholder={t('trips.create.currencyPlaceholder')}
+                          className="h-12 uppercase"
                         />
-                        {errors.currency && <p className="text-red-500 text-xs font-medium">{errors.currency.message}</p>}
+                        {errors.currency && <p className="text-danger text-xs font-medium">{errors.currency.message}</p>}
                       </div>
                     </div>
                   </CardContent>
@@ -284,25 +280,25 @@ export default function CreateTripPage() {
               <section className="space-y-6 animate-in fade-in duration-300">
                 <div className="flex flex-col gap-6">
                   {itineraryFields.map((field, index) => (
-                    <Card key={field.id} className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
+                    <Card key={field.id} className="border border-border shadow-sm bg-card">
                       <CardContent className="p-6 space-y-4">
                         <div className="flex items-center justify-between">
                           <h3 className="font-bold text-lg flex items-center gap-2">
-                            <span className="w-8 h-8 rounded-lg bg-sunset-orange/10 text-sunset-orange flex items-center justify-center text-sm">{index + 1}</span>
-                            Day {index + 1}
+                            <span className="w-8 h-8 rounded-lg bg-accent/10 text-accent flex items-center justify-center text-sm">{index + 1}</span>
+                            {t('trips.create.dayN', { index: index + 1 })}
                           </h3>
                         </div>
                         <div className="grid grid-cols-1 gap-4">
                           <div className="space-y-2">
-                            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Title</label>
-                            <Input {...register(`itinerary.${index}.title`)} placeholder="e.g. Arrival and City Tour" className="h-12 dark:bg-slate-800 dark:border-slate-700" />
+                            <label className="text-sm font-semibold text-foreground">{t('trips.create.dayTitle')}</label>
+                            <Input {...register(`itinerary.${index}.title`)} placeholder={t('trips.create.dayTitlePlaceholder')} className="h-12" />
                           </div>
                           <div className="space-y-2">
-                            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">What happens on this day?</label>
+                            <label className="text-sm font-semibold text-foreground">{t('trips.create.dayDescription')}</label>
                             <textarea 
                               {...register(`itinerary.${index}.description`)}
-                              className="w-full h-24 p-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-deep-blue/5 focus:border-deep-blue dark:focus:border-blue-500 transition-all text-gray-900 dark:text-gray-100"
-                              placeholder="Describe the plan for the day..."
+                              className="w-full h-24 p-4 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
+                              placeholder={t('trips.create.dayDescriptionPlaceholder')}
                             ></textarea>
                             <input type="hidden" {...register(`itinerary.${index}.dayNumber`, { valueAsNumber: true })} />
                           </div>
@@ -311,12 +307,12 @@ export default function CreateTripPage() {
                     </Card>
                   ))}
                   {errors.itinerary && (
-                    <p className="text-red-500 text-sm font-medium p-4 bg-red-50 dark:bg-red-900/10 rounded-xl">
-                      Please fill in all itinerary days. All descriptions are required.
+                    <p className="text-danger text-sm font-medium p-4 bg-danger/10 border border-danger/30 rounded-xl">
+                      {t('trips.create.itineraryIncomplete')}
                     </p>
                   )}
                   <Button type="button" variant="outline" onClick={() => appendDay({ dayNumber: itineraryFields.length + 1, title: '', description: '', activities: [] })} className="h-14 rounded-2xl border-dashed">
-                    <Plus className="h-5 w-5 mr-2" /> Add Another Day
+                    <Plus className="h-5 w-5 me-2" /> {t('trips.create.addAnotherDay')}
                   </Button>
                 </div>
               </section>
@@ -324,43 +320,49 @@ export default function CreateTripPage() {
 
             {step === 3 && (
               <section className="space-y-6 animate-in fade-in duration-300">
-                <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
+                <Card className="border border-border shadow-sm bg-card">
                   <CardContent className="p-6 space-y-6">
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       {watchedImages.map((img, idx) => (
-                        <div key={idx} className="relative aspect-video bg-gray-100 dark:bg-slate-800 rounded-xl overflow-hidden group border dark:border-slate-700">
-                          <Image src={img} className="w-full h-full object-cover" alt="" fill sizes="(min-width: 768px) 33vw, 50vw" />
+                        <div key={idx} className="relative aspect-video bg-muted rounded-xl overflow-hidden group border border-border">
+                          <Image src={img} className="w-full h-full object-cover" alt={t('trips.create.imageAlt', { name: watch('title') || t('trips.create.untitledAdventure'), index: idx + 1 })} fill sizes="(min-width: 768px) 33vw, 50vw" />
                           <button 
                             type="button"
+                            aria-label={t('common.delete')}
                             onClick={() => {
                               const newImages = [...watchedImages];
                               newImages.splice(idx, 1);
                               setValue('images', newImages, { shouldValidate: true });
                             }}
-                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:scale-110 transition-transform"
+                            className="absolute top-2 end-2 p-1 bg-danger text-danger-foreground rounded-full hover:scale-110 transition-transform"
                           >
                             <X className="h-3 w-3" />
                           </button>
                         </div>
                       ))}
-                      <label className="aspect-video border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-sunset-orange dark:hover:border-orange-500 bg-gray-50 dark:bg-slate-800 transition-colors">
+                      <label className="aspect-video border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-accent bg-muted/50 transition-colors">
                         <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} accept="image/*" />
                         {uploading ? (
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-sunset-orange"></div>
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent"></div>
                         ) : (
                           <>
-                            <Plus className="h-6 w-6 text-gray-400" />
-                            <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">Add Image</span>
+                            <Plus className="h-6 w-6 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground mt-1">{t('trips.create.addImage')}</span>
                           </>
                         )}
                       </label>
                     </div>
-                    {errors.images && <p className="text-red-500 text-xs font-medium">{errors.images.message}</p>}
+                    {errors.images && <p className="text-danger text-xs font-medium">{errors.images.message}</p>}
+                    {uploadError ? (
+                      <p role="alert" className="rounded-xl bg-danger/10 border border-danger/30 p-4 text-sm font-medium text-danger">
+                        {uploadError}
+                      </p>
+                    ) : null}
                     
-                    <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-xl flex gap-3 border border-blue-100 dark:border-blue-900/20">
-                       <Info className="h-5 w-5 text-blue-600 shrink-0" />
-                       <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed font-medium">
-                         Upload clear, high-resolution pictures to attract more travelers. At least one image is required to publish.
+                    <div className="p-4 bg-primary/10 rounded-xl flex gap-3 border border-primary/30">
+                       <Info className="h-5 w-5 text-primary shrink-0" />
+                       <p className="text-xs text-muted-foreground leading-relaxed font-medium">
+                         {t('trips.create.imageHint')}
                        </p>
                     </div>
                   </CardContent>
@@ -370,94 +372,94 @@ export default function CreateTripPage() {
 
             {step === 4 && (
               <section className="space-y-8 animate-in fade-in duration-300">
-                <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
-                  <header className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                      <Check className="h-5 w-5 text-emerald-500" />
+                <Card className="border border-border shadow-sm bg-card">
+                  <header className="p-6 border-b border-border flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-success/10 flex items-center justify-center">
+                      <Check className="h-5 w-5 text-success" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-gray-900 dark:text-gray-100">Included in the trip</h3>
-                      <p className="text-xs text-gray-500">List everything the traveler gets</p>
+                      <h3 className="font-bold text-foreground">{t('trips.create.includedTitle')}</h3>
+                      <p className="text-xs text-muted-foreground">{t('trips.create.includedSubtitle')}</p>
                     </div>
                   </header>
                   <CardContent className="p-6 space-y-4">
                     <div className="space-y-4">
                       {inclusionFields.map((field, index) => (
                         <div key={field.id} className="flex gap-2">
-                          <Input {...register(`inclusions.${index}`)} placeholder="e.g. Comfy transport" className="dark:bg-slate-800" />
-                          <Button type="button" variant="ghost" size="icon" onClick={() => removeInclusion(index)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                          <Input {...register(`inclusions.${index}`)} placeholder={t('trips.create.includedPlaceholder')} />
+                          <Button type="button" variant="ghost" size="icon" aria-label={t('common.delete')} onClick={() => removeInclusion(index)} className="text-danger hover:bg-danger/10">
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
                       ))}
                       <Button type="button" variant="outline" size="sm" onClick={() => appendInclusion('')} className="w-full border-dashed">
-                        <Plus className="h-4 w-4 mr-2" /> Add Included Item
+                        <Plus className="h-4 w-4 me-2" /> {t('trips.create.addIncluded')}
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
-                  <header className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-                      <X className="h-5 w-5 text-red-500" />
+                <Card className="border border-border shadow-sm bg-card">
+                  <header className="p-6 border-b border-border flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-danger/10 flex items-center justify-center">
+                      <X className="h-5 w-5 text-danger" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-gray-900 dark:text-gray-100">Excluded / Optional</h3>
-                      <p className="text-xs text-gray-500">Extras that travelers pay separately</p>
+                      <h3 className="font-bold text-foreground">{t('trips.create.excludedTitle')}</h3>
+                      <p className="text-xs text-muted-foreground">{t('trips.create.excludedSubtitle')}</p>
                     </div>
                   </header>
                   <CardContent className="p-6 space-y-4">
                     <div className="space-y-4">
                       {exclusionFields.map((field, index) => (
                         <div key={field.id} className="flex gap-2">
-                          <Input {...register(`exclusions.${index}`)} placeholder="e.g. Safari Nature (150 Dhs)" className="dark:bg-slate-800" />
-                          <Button type="button" variant="ghost" size="icon" onClick={() => removeExclusion(index)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                          <Input {...register(`exclusions.${index}`)} placeholder={t('trips.create.excludedPlaceholder')} />
+                          <Button type="button" variant="ghost" size="icon" aria-label={t('common.delete')} onClick={() => removeExclusion(index)} className="text-danger hover:bg-danger/10">
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
                       ))}
                       <Button type="button" variant="outline" size="sm" onClick={() => appendExclusion('')} className="w-full border-dashed">
-                        <Plus className="h-4 w-4 mr-2" /> Add Excluded Item
+                        <Plus className="h-4 w-4 me-2" /> {t('trips.create.addExcluded')}
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
-                  <header className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                      <Info className="h-5 w-5 text-amber-500" />
+                <Card className="border border-border shadow-sm bg-card">
+                  <header className="p-6 border-b border-border flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-warning/10 flex items-center justify-center">
+                      <Info className="h-5 w-5 text-warning" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-gray-900 dark:text-gray-100">Traveler Checklist</h3>
-                      <p className="text-xs text-gray-500">What should they pack? (e.g. Hiking shoes)</p>
+                      <h3 className="font-bold text-foreground">{t('trips.create.checklistTitle')}</h3>
+                      <p className="text-xs text-muted-foreground">{t('trips.create.checklistSubtitle')}</p>
                     </div>
                   </header>
                   <CardContent className="p-6 space-y-4">
                     <div className="space-y-4">
                       {checklistFields.map((field, index) => (
                         <div key={field.id} className="flex gap-2">
-                          <Input {...register(`checklist.${index}`)} placeholder="e.g. Your smile" className="dark:bg-slate-800" />
-                          <Button type="button" variant="ghost" size="icon" onClick={() => removeChecklistItem(index)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                          <Input {...register(`checklist.${index}`)} placeholder={t('trips.create.checklistPlaceholder')} />
+                          <Button type="button" variant="ghost" size="icon" aria-label={t('common.delete')} onClick={() => removeChecklistItem(index)} className="text-danger hover:bg-danger/10">
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
                       ))}
                       <Button type="button" variant="outline" size="sm" onClick={() => appendChecklistItem('')} className="w-full border-dashed">
-                        <Plus className="h-4 w-4 mr-2" /> Add Checklist Item
+                        <Plus className="h-4 w-4 me-2" /> {t('trips.create.addChecklist')}
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
-                <div className="space-y-4 pt-4 border-t dark:border-slate-800">
-                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Publish Status</label>
+                <div className="space-y-4 pt-4 border-t border-border">
+                      <label className="text-sm font-semibold text-foreground">{t('trips.create.publishStatus')}</label>
                       <div className="flex gap-6">
                         {['DRAFT', 'ACTIVE'].map((s) => (
                           <label key={s} className="flex items-center gap-3 cursor-pointer group">
-                            <input type="radio" value={s} {...register('status')} className="h-4 w-4 text-deep-blue bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 focus:ring-deep-blue" />
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-deep-blue transition-colors">
-                              {s === 'DRAFT' ? 'Draft' : 'Active'}
+                            <input type="radio" value={s} {...register('status')} className="h-4 w-4 text-primary bg-background border-border focus:ring-primary" />
+                            <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                              {s === 'DRAFT' ? t('trips.create.draft') : t('trips.create.active')}
                             </span>
                           </label>
                         ))}
@@ -466,15 +468,21 @@ export default function CreateTripPage() {
               </section>
             )}
 
-            <div className="pt-8 border-t border-gray-100 dark:border-slate-800 flex items-center justify-between">
+            {submissionError ? (
+              <p role="alert" className="rounded-xl bg-danger/10 border border-danger/30 p-4 text-sm font-medium text-danger">
+                {submissionError}
+              </p>
+            ) : null}
+
+            <div className="pt-8 border-t border-border flex items-center justify-between">
               <Button 
                 type="button"
                 variant="outline" 
                 onClick={prevStep}
                 disabled={step === 1}
-                className="px-8 h-12 dark:border-slate-700 dark:text-gray-300"
+                className="px-8 h-12"
               >
-                Previous
+                {t('trips.create.previous')}
               </Button>
               {step < 4 ? (
                 <Button 
@@ -485,18 +493,18 @@ export default function CreateTripPage() {
                     e.stopPropagation();
                     nextStep();
                   }}
-                  className="px-10 h-12 bg-deep-blue hover:bg-blue-900 text-white border-none shadow-lg shadow-blue-900/20"
+                  className="px-10 h-12 bg-primary hover:bg-primary/90 text-primary-foreground border-none shadow-lg shadow-primary/20"
                 >
-                  {t('common.continue', 'Continue')}
+                  {t('common.continue')}
                 </Button>
               ) : (
                 <Button 
                   key="submit-btn"
                   type="submit"
                   disabled={createTripMutation.isPending}
-                  className="px-10 h-12 bg-sunset-orange hover:bg-orange-600 text-white border-none shadow-lg shadow-orange-900/20 font-bold"
+                  className="px-10 h-12 bg-accent hover:bg-accent/90 text-accent-foreground border-none shadow-lg shadow-accent/20 font-bold"
                 >
-                  {createTripMutation.isPending ? t('common.publishing', 'Publishing...') : t('common.publish', 'Publish Trip')}
+                  {createTripMutation.isPending ? t('common.publishing') : t('common.publish')}
                 </Button>
               )}
             </div>
@@ -505,44 +513,44 @@ export default function CreateTripPage() {
           {/* Preview Sidebar */}
           <div className="hidden lg:block">
              <div className="sticky top-24 space-y-4">
-                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest px-1">Live Preview</p>
-                <Card className="border-none shadow-2xl overflow-hidden rounded-2xl dark:bg-slate-900 dark:border-slate-800 group">
-                   <div className="relative h-48 bg-gray-200 dark:bg-slate-800">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">{t('trips.create.livePreview')}</p>
+                <Card className="border border-border shadow-2xl overflow-hidden rounded-2xl bg-card group">
+                   <div className="relative h-48 bg-muted">
                       {watchedImages[0] ? (
-                        <Image src={watchedImages[0]} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="" fill sizes="(min-width: 1024px) 20vw, 100vw" />
+                        <Image src={watchedImages[0]} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={watch('title') || t('trips.create.untitledAdventure')} fill sizes="(min-width: 1024px) 20vw, 100vw" />
                       ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-gray-400 dark:text-slate-600">
+                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                            <ImageIcon className="h-12 w-12" />
                         </div>
                       )}
-                      <div className="absolute top-4 left-4">
-                         <span className="text-[10px] px-2 py-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur rounded-md font-bold text-deep-blue dark:text-blue-400 uppercase tracking-wider shadow-sm">
+                      <div className="absolute top-4 start-4">
+                         <span className="text-[10px] px-2 py-1 bg-card/90 backdrop-blur rounded-md font-bold text-foreground uppercase tracking-wider shadow-sm">
                             {watch('category')}
                          </span>
                       </div>
                    </div>
                    <CardContent className="p-6 space-y-4">
                       <div className="space-y-1">
-                         <h3 className="font-bold text-deep-blue dark:text-gray-100 text-lg leading-tight line-clamp-2 min-h-[3.5rem]">
-                            {watch('title') || 'Untitled Adventure'}
+                         <h3 className="font-bold text-foreground text-lg leading-tight line-clamp-2 min-h-[3.5rem]">
+                            {watch('title') || t('trips.create.untitledAdventure')}
                          </h3>
-                         <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-                           {watch('description') || 'No description provided yet.'}
+                         <p className="text-xs text-muted-foreground line-clamp-2">
+                           {watch('description') || t('trips.create.noDescription')}
                          </p>
                       </div>
-                      <div className="flex items-center gap-4 py-4 border-y border-gray-50 dark:border-slate-800">
+                      <div className="flex items-center gap-4 py-4 border-y border-border">
                          <div className="flex items-center gap-1.5 min-w-0">
-                            <Clock className="h-4 w-4 text-sunset-orange" />
-                            <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{watch('durationDays')}D/{watch('durationNights')}N</span>
+                            <Clock className="h-4 w-4 text-accent" />
+                            <span className="text-xs font-bold text-foreground">{watch('durationDays')}D/{watch('durationNights')}N</span>
                          </div>
                          <div className="flex items-center gap-1.5 min-w-0">
-                            <MapPin className="h-4 w-4 text-sunset-orange" />
-                            <span className="text-xs font-bold text-gray-700 dark:text-gray-300 truncate">{watch('startLocation') || 'TBD'}</span>
+                            <MapPin className="h-4 w-4 text-accent" />
+                            <span className="text-xs font-bold text-foreground truncate">{watch('startLocation') || t('trips.create.tbd')}</span>
                          </div>
                       </div>
                       <div className="flex items-center justify-between">
-                         <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Base Pkg</span>
-                         <span className="text-lg font-black text-deep-blue dark:text-blue-400">--- MAD</span>
+                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('trips.create.basePackage')}</span>
+                         <span className="text-lg font-black text-foreground">{t('trips.create.pricePreview', { currency: watch('currency') || 'MAD' })}</span>
                       </div>
                    </CardContent>
                 </Card>

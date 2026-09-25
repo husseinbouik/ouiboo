@@ -1,6 +1,7 @@
 'use client';
 
 import { ThemeProvider } from 'next-themes';
+import { MotionConfig } from 'framer-motion';
 import TranslationsProvider from './TranslationsProvider';
 
 export default function Providers({
@@ -12,7 +13,9 @@ export default function Providers({
 }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <TranslationsProvider locale={locale}>{children}</TranslationsProvider>
+      <MotionConfig reducedMotion="user">
+        <TranslationsProvider locale={locale}>{children}</TranslationsProvider>
+      </MotionConfig>
     </ThemeProvider>
   );
 }

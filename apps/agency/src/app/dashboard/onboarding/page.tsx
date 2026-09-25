@@ -4,11 +4,11 @@ import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AgencyProfileSchema } from '@ouiboo/schemas';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
   CardDescription,
   Button,
   Input,
@@ -77,7 +77,7 @@ export default function OnboardingPage() {
     onSuccess: () => {
       setFeedback({
         type: 'success',
-        text: t('common.success', 'Compliance documents submitted for verification!'),
+        text: t('onboarding.success'),
       });
       refetch();
     },
@@ -85,7 +85,7 @@ export default function OnboardingPage() {
       console.error('Update failed:', err);
       setFeedback({
         type: 'error',
-        text: err?.response?.data?.message || t('common.error', 'Update failed. Please check your data.'),
+        text: err?.response?.data?.message || t('onboarding.error'),
       });
     }
   });
@@ -103,19 +103,20 @@ export default function OnboardingPage() {
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-deep-blue dark:text-gray-100 italic">
-            {t('onboarding.title', 'Compliance & Onboarding')}
+          <h1 className="text-3xl font-bold text-foreground italic">
+            {t('onboarding.title')}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            {t('onboarding.subtitle', 'Complete your profile to start publishing trips.')}
+          <p className="text-muted-foreground mt-1">
+            {t('onboarding.subtitle')}
           </p>
           {feedback && (
             <div
+              role="status"
               className={cn(
                 'mt-4 rounded-xl border px-4 py-3 text-sm font-medium',
                 feedback.type === 'success'
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200'
-                  : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200',
+                  ? 'border-success/30 bg-success/10 text-success'
+                  : 'border-danger/30 bg-danger/10 text-danger',
               )}
             >
               {feedback.text}
@@ -124,107 +125,107 @@ export default function OnboardingPage() {
         </div>
         <div className={cn(
           "flex items-center gap-2 px-4 py-2 rounded-xl border transition-colors",
-          isVerified 
-            ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/10 dark:text-emerald-400 dark:border-emerald-900/20" 
-            : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/10 dark:text-amber-400 dark:border-amber-900/20"
+          isVerified
+            ? "bg-success/10 text-success border-success/30"
+            : "bg-warning/10 text-warning border-warning/30"
         )}>
           {isVerified ? <CheckCircle2 className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
           <span className="text-sm font-bold uppercase tracking-wide">
-            {isVerified ? t('onboarding.status.verified', "Account Verified") : t('onboarding.status.pending', "Verification Pending")}
+            {isVerified ? t('onboarding.status.verified') : t('onboarding.status.pending')}
           </span>
         </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
+        <Card className="border border-border bg-card shadow-sm">
           <CardHeader>
-            <div className="flex items-center gap-2 text-deep-blue dark:text-blue-400 mb-2 font-bold">
+            <div className="flex items-center gap-2 text-primary mb-2 font-bold">
               <Building2 className="h-5 w-5" />
-              <CardTitle>{t('onboarding.sections.agency', 'Agency Details')}</CardTitle>
+              <CardTitle>{t('onboarding.sections.agency')}</CardTitle>
             </div>
-            <CardDescription className="dark:text-gray-400">Basic information about your travel agency.</CardDescription>
+            <CardDescription>{t('onboarding.agencySectionSubtitle')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="companyName" className="font-semibold dark:text-gray-300">Legal Company Name</Label>
-              <Input 
-                id="companyName" 
-                placeholder="e.g. Atlas Voyages SARL" 
+              <Label htmlFor="companyName" className="font-semibold">{t('onboarding.legalCompanyName')}</Label>
+              <Input
+                id="companyName"
+                placeholder={t('onboarding.companyNamePlaceholder')}
                 {...register('companyName')}
-                className={cn("h-12 dark:bg-slate-800 dark:border-slate-700", errors.companyName && "border-red-500")}
+                className={cn("h-12", errors.companyName && "border-danger")}
                 disabled={isVerified}
               />
-              {errors.companyName && <p className="text-xs text-red-500 font-medium">{errors.companyName.message as string}</p>}
+              {errors.companyName && <p className="text-xs text-danger font-medium">{errors.companyName.message as string}</p>}
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="bio" className="font-semibold dark:text-gray-300">Agency Bio</Label>
-              <Textarea 
-                id="bio" 
-                placeholder="Tell travelers about your agency's mission and expertise..." 
+              <Label htmlFor="bio" className="font-semibold">{t('onboarding.agencyBio')}</Label>
+              <Textarea
+                id="bio"
+                placeholder={t('onboarding.agencyBioPlaceholder')}
                 {...register('bio')}
-                className="min-h-[120px] dark:bg-slate-800 dark:border-slate-700"
+                className="min-h-[120px]"
                 disabled={isVerified}
               />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
+        <Card className="border border-border bg-card shadow-sm">
           <CardHeader>
-            <div className="flex items-center gap-2 text-deep-blue dark:text-blue-400 mb-2 font-bold">
+            <div className="flex items-center gap-2 text-primary mb-2 font-bold">
               <FileText className="h-5 w-5" />
-              <CardTitle>{t('onboarding.sections.legal', 'Legal Documents')}</CardTitle>
+              <CardTitle>{t('onboarding.sections.legal')}</CardTitle>
             </div>
-            <CardDescription className="dark:text-gray-400">Required documents for B2B compliance in Morocco.</CardDescription>
+            <CardDescription>{t('onboarding.documentsRequired')}</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="ice" className="font-semibold dark:text-gray-300">ICE (15 digits)</Label>
-              <Input 
-                id="ice" 
-                placeholder="000000000000000" 
+              <Label htmlFor="ice" className="font-semibold">{t('onboarding.iceLabel')}</Label>
+              <Input
+                id="ice"
+                placeholder={t('onboarding.icePlaceholder')}
                 {...register('ice')}
-                className={cn("h-12 dark:bg-slate-800 dark:border-slate-700", errors.ice && "border-red-500")}
+                className={cn("h-12", errors.ice && "border-danger")}
                 disabled={isVerified}
               />
-              {errors.ice && <p className="text-xs text-red-500 font-medium">{errors.ice.message as string}</p>}
+              {errors.ice && <p className="text-xs text-danger font-medium">{errors.ice.message as string}</p>}
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="patente" className="font-semibold dark:text-gray-300">Patente Number</Label>
-              <Input 
-                id="patente" 
-                placeholder="Enter your patente number" 
+              <Label htmlFor="patente" className="font-semibold">{t('onboarding.patenteLabel')}</Label>
+              <Input
+                id="patente"
+                placeholder={t('onboarding.patentePlaceholder')}
                 {...register('patente')}
-                className={cn("h-12 dark:bg-slate-800 dark:border-slate-700", errors.patente && "border-red-500")}
+                className={cn("h-12", errors.patente && "border-danger")}
                 disabled={isVerified}
               />
-              {errors.patente && <p className="text-xs text-red-500 font-medium">{errors.patente.message as string}</p>}
+              {errors.patente && <p className="text-xs text-danger font-medium">{errors.patente.message as string}</p>}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm dark:bg-slate-900 border dark:border-slate-800">
+        <Card className="border border-border bg-card shadow-sm">
           <CardHeader>
-            <div className="flex items-center gap-2 text-deep-blue dark:text-blue-400 mb-2 font-bold">
+            <div className="flex items-center gap-2 text-primary mb-2 font-bold">
               <CreditCard className="h-5 w-5" />
-              <CardTitle>{t('onboarding.sections.payment', 'Payment Details')}</CardTitle>
+              <CardTitle>{t('onboarding.sections.payment')}</CardTitle>
             </div>
-            <CardDescription className="dark:text-gray-400">Your bank account details for payouts.</CardDescription>
+            <CardDescription>{t('onboarding.paymentSectionSubtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <Label htmlFor="rib" className="font-semibold dark:text-gray-300">RIB (24 digits)</Label>
-              <Input 
-                id="rib" 
-                placeholder="Enter your 24-digit RIB" 
+              <Label htmlFor="rib" className="font-semibold">{t('onboarding.ribLabel')}</Label>
+              <Input
+                id="rib"
+                placeholder={t('onboarding.ribPlaceholder')}
                 {...register('rib')}
-                className={cn("h-12 dark:bg-slate-800 dark:border-slate-700", errors.rib && "border-red-500")}
+                className={cn("h-12", errors.rib && "border-danger")}
                 disabled={isVerified}
               />
-              {errors.rib && <p className="text-xs text-red-500 font-medium">{errors.rib.message as string}</p>}
-              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2 italic font-medium">Note: Payouts will be sent to this account after admin approval.</p>
+              {errors.rib && <p className="text-xs text-danger font-medium">{errors.rib.message as string}</p>}
+              <p className="text-[10px] text-muted-foreground mt-2 italic font-medium">{t('onboarding.ribNote')}</p>
             </div>
           </CardContent>
         </Card>
@@ -234,7 +235,7 @@ export default function OnboardingPage() {
             <Button
               variant="outline"
               type="button"
-              className="h-12 px-8 dark:border-slate-700 dark:text-gray-300"
+              className="h-12 px-8"
               onClick={() => {
                 reset({
                   companyName: user?.agencyProfile?.companyName || '',
@@ -246,10 +247,10 @@ export default function OnboardingPage() {
                 setFeedback(null);
               }}
             >
-              {t('common.discardChanges', 'Reset Changes')}
+              {t('common.discardChanges')}
             </Button>
-            <Button type="submit" disabled={profileMutation.isPending} className="h-12 px-10 bg-sunset-orange hover:bg-orange-600 text-white border-none shadow-lg shadow-orange-900/20 font-bold">
-              {profileMutation.isPending ? t('common.submitting', "Submitting...") : t('onboarding.submit', "Submit for Verification")}
+            <Button type="submit" disabled={profileMutation.isPending} className="h-12 px-10 bg-accent hover:bg-accent/90 text-accent-foreground border-none shadow-lg shadow-accent/20 font-bold">
+              {profileMutation.isPending ? t('common.submitting') : t('onboarding.submit')}
             </Button>
           </div>
         )}

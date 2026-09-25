@@ -3,6 +3,9 @@
     "version": "0.0.0",
     "main": "./index.ts",
     "types": "./index.ts",
+    "dependencies": {
+        "@ouiboo/types": "*"
+    },
     "devDependencies": {
         "typescript": "^5.0.0"
     }

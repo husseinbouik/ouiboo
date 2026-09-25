@@ -1,16 +1,17 @@
 'use client'
 
-import React, { Fragment, useState, useEffect, useRef } from 'react'
-import { Bars3Icon, XMarkIcon, GlobeAltIcon, BuildingOffice2Icon, CheckCircleIcon, SparklesIcon, ChartBarIcon, UserGroupIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
-import { Moon, Sun } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Bars3Icon, XMarkIcon, GlobeAltIcon, BuildingOffice2Icon, CheckCircleIcon, SparklesIcon, ChartBarIcon, UserGroupIcon } from '@heroicons/react/24/outline'
 import { motion, useScroll, useTransform, useInView, animate, Variants } from 'framer-motion'
-import axios from 'axios'
-import { Dialog, Transition, Menu } from '@headlessui/react'
+import dynamic from 'next/dynamic'
+import { Dialog } from '@headlessui/react'
 import { useTranslation } from 'react-i18next'
-import { useTheme } from 'next-themes'
 import Image from 'next/image'
-import { Logo } from '@ouiboo/ui'
+import { Logo, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui'
 import { CookiePreferencesButton } from '../components/AnalyticsConsent'
+
+const PricingSection = dynamic(() => import('../components/PricingSection'));
+const WaitlistSection = dynamic(() => import('../components/WaitlistSection'));
 
 // --- Helper Components & Types ---
 
@@ -52,12 +53,6 @@ export default function OuibooLanding() {
   const agencyUrl = process.env.NEXT_PUBLIC_AGENCY_URL || 'http://localhost:3002';
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [formData, setFormData] = useState({
-    name: '', email: '', userType: 'Traveler', phoneNumber: '', agencyName: ''
-  })
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [formError, setFormError] = useState('')
   const [isScrolled, setIsScrolled] = useState(false)
 
   // --- Scroll detection for navbar ---
@@ -140,27 +135,6 @@ export default function OuibooLanding() {
     document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
   }, [currentLang, isRTL]);
 
-  const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    setFormError('');
-    try {
-      // Include the current language in the form submission
-      await axios.post('/api/subscribe', { ...formData, language: currentLang });
-      setIsSuccessModalOpen(true);
-      setFormData({ name: '', email: '', userType: 'Traveler', phoneNumber: '', agencyName: '' });
-    } catch (err) {
-      console.error('Subscribe error:', err);
-      setFormError(t('waitlist.form.error', 'Could not submit your request. Please try again later.'));
-    } finally {
-      setLoading(false);
-    }
-  }
-
   const fadeInUp: Variants = {
     hidden: { opacity: 0, y: 40 },
     visible: { 
@@ -220,57 +194,8 @@ export default function OuibooLanding() {
     }
   }
 
-  const LanguageSwitcher = () => (
-    <Menu as="div" className="relative inline-block text-left">
-      <div>
-        <Menu.Button className="inline-flex w-full justify-center items-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-          <GlobeAltIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
-          {currentLang.toUpperCase()}
-          <ChevronDownIcon className="-mr-1 h-5 w-5 text-gray-400" aria-hidden="true" />
-        </Menu.Button>
-      </div>
-      <Transition as={Fragment} enter="transition ease-out duration-100" enterFrom="transform opacity-0 scale-95" enterTo="transform opacity-100 scale-100" leave="transition ease-in duration-75" leaveFrom="transform opacity-100 scale-100" leaveTo="transform opacity-0 scale-95">
-        <Menu.Items className="absolute right-0 z-10 mt-2 w-32 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-          <div className="py-1">
-            <Menu.Item>{({ active }) => <button onClick={() => changeLanguage('en')} className={`${active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'} block w-full text-left px-4 py-2 text-sm`}>English</button>}</Menu.Item>
-            <Menu.Item>{({ active }) => <button onClick={() => changeLanguage('fr')} className={`${active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'} block w-full text-left px-4 py-2 text-sm`}>Français</button>}</Menu.Item>
-            <Menu.Item>{({ active }) => <button onClick={() => changeLanguage('ar')} className={`${active ? 'bg-gray-100 text-gray-900' : 'text-gray-700'} block w-full text-left px-4 py-2 text-sm`}>العربية</button>}</Menu.Item>
-          </div>
-        </Menu.Items>
-      </Transition>
-    </Menu>
-  );
-
-  const ThemeToggle = () => {
-    const { resolvedTheme, setTheme } = useTheme();
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-      setMounted(true);
-    }, []);
-
-    if (!mounted) {
-      return <div className="h-9 w-9 rounded-full bg-gray-200 animate-pulse" />;
-    }
-
-    const isDark = resolvedTheme === 'dark';
-
-    return (
-      <button
-        type="button"
-        onClick={() => setTheme(isDark ? 'light' : 'dark')}
-        className="h-9 w-9 rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm hover:text-gray-900 transition-colors flex items-center justify-center dark:border-gray-700 dark:bg-slate-900 dark:text-gray-200 dark:hover:text-white"
-        aria-label="Toggle theme"
-        title="Toggle theme"
-      >
-        {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-      </button>
-    );
-  };
-
   return (
     <div className="bg-off-white text-deep-blue font-sans">
-      {/* Header - Fixed with scroll effect */}
       {/* Header - Fixed with scroll effect */}
       <motion.header 
         initial={{ y: -100 }}
@@ -282,7 +207,7 @@ export default function OuibooLanding() {
             : 'bg-transparent'
         }`}
       >
-        <nav aria-label="Global" className="flex items-center justify-between p-6 lg:px-8 max-w-7xl mx-auto">
+        <nav aria-label={t('common.globalNavigationLabel')} className="flex items-center justify-between p-6 lg:px-8 max-w-7xl mx-auto">
           <div className="flex lg:flex-1">
             <a href="#" className="-m-1.5 p-1.5 flex items-center gap-2">
               <Logo />
@@ -295,7 +220,7 @@ export default function OuibooLanding() {
               className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700"
               onClick={() => setMobileMenuOpen(true)}
             >
-              <span className="sr-only">Open main menu</span>
+              <span className="sr-only">{t('common.openMainMenu')}</span>
               <Bars3Icon className="h-6 w-6" aria-hidden="true" />
             </button>
           </div>
@@ -312,9 +237,9 @@ export default function OuibooLanding() {
             ))}
           </div>
           <div className="hidden lg:flex lg:flex-1 lg:justify-end items-center gap-x-4">
-            <div className="flex items-center gap-2">
-              <LanguageSwitcher />
-              <ThemeToggle />
+            <div className="flex items-center gap-1 rounded-full p-1 ring-1 ring-gray-900/10 bg-white/60 backdrop-blur-sm dark:bg-slate-800/60 dark:ring-white/10">
+              <LanguageSwitcher isTransparent={!isScrolled} />
+              <ThemeToggle isTransparent={!isScrolled} />
             </div>
             <div className="flex items-center gap-x-4">
               <a href={`${travelerUrl}/login?lang=${currentLang}`} className="text-sm font-semibold leading-6 text-deep-blue hover:text-sunset-orange transition-colors">
@@ -341,7 +266,7 @@ export default function OuibooLanding() {
                 className="-m-2.5 rounded-md p-2.5 text-gray-700"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <span className="sr-only">Close menu</span>
+                <span className="sr-only">{t('common.closeMenu')}</span>
                 <XMarkIcon className="h-6 w-6" aria-hidden="true" />
               </button>
             </div>
@@ -360,8 +285,7 @@ export default function OuibooLanding() {
                   ))}
                 </div>
                 <div className="py-6 space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Logo />
+                  <div className="flex items-center gap-1 rounded-full p-1 ring-1 ring-gray-900/10 bg-gray-50">
                     <LanguageSwitcher />
                     <ThemeToggle />
                   </div>
@@ -385,7 +309,7 @@ export default function OuibooLanding() {
       </motion.header>
 
       {/* Hero Section */}
-      <main className="isolate">
+      <main id="main-content" tabIndex={-1} className="isolate">
         <div className="relative pt-24 sm:pt-32 overflow-hidden">
             <div aria-hidden="true" className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
                 <div style={{ clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)' }} className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-sunset-orange opacity-10 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"/>
@@ -444,7 +368,7 @@ export default function OuibooLanding() {
                     </motion.div>
                     <motion.div style={{ scale: heroImageScale, rotate: heroImageRotate }} className="mt-16 flow-root sm:mt-24">
                         <div className="-m-2 rounded-xl bg-gray-900/5 p-2 ring-1 ring-inset ring-gray-900/10 lg:-m-4 lg:rounded-2xl lg:p-4">
-                            <Image src="/dashboard-hero.png" alt="Ouiboo Dashboard" width={2432} height={1442} className="rounded-md shadow-2xl ring-1 ring-gray-900/10"/>
+                            <Image src="/dashboard-hero.png" alt={t('common.dashboardImageAlt')} width={2432} height={1442} className="rounded-md shadow-2xl ring-1 ring-gray-900/10"/>
                         </div>
                     </motion.div>
                 </div>
@@ -581,7 +505,7 @@ export default function OuibooLanding() {
                 </div>
               </motion.div>
               <div ref={refTravelerImage} className="w-full h-[30rem] sm:h-[40rem] overflow-hidden rounded-xl shadow-xl">
-                <motion.img style={{ y: parallaxTraveler }} src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2070&auto=format&fit=crop" alt="Traveler enjoying a mountainous view" className="w-full h-full object-cover"/>
+                <motion.img style={{ y: parallaxTraveler }} src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2070&auto=format&fit=crop" alt={t('common.travelerImageAlt')} className="w-full h-full object-cover"/>
               </div>
             </div>
           </div>
@@ -637,7 +561,7 @@ export default function OuibooLanding() {
                 </div>
               </motion.div>
               <div ref={refAgencyImage} className="lg:order-first w-full h-[30rem] sm:h-[40rem] overflow-hidden rounded-xl shadow-xl">
-                <motion.img style={{ y: parallaxAgency }} src="https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?q=80&w=2070&auto=format&fit=crop" alt="Agency dashboard on a laptop" className="w-full h-full object-cover"/>
+                <motion.img style={{ y: parallaxAgency }} src="https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?q=80&w=2070&auto=format&fit=crop" alt={t('common.agencyImageAlt')} className="w-full h-full object-cover"/>
               </div>
             </div>
           </div>
@@ -680,362 +604,10 @@ export default function OuibooLanding() {
         </section>
 
         {/* --- PRICING SECTION --- */}
-        <section id="pricing" className="bg-white py-24 sm:py-32">
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <motion.div 
-              variants={fadeInUp} 
-              initial="hidden" 
-              whileInView="visible" 
-              viewport={{ once: true }} 
-              className="mx-auto max-w-4xl text-center"
-            >
-              <h2 className="text-base font-semibold leading-7 text-sunset-orange uppercase tracking-wide">{t('pricing.preTitle')}</h2>
-              <p className="mt-2 text-4xl font-bold tracking-tight text-deep-blue sm:text-5xl">
-                {t('pricing.title')}
-              </p>
-            </motion.div>
-            <motion.p 
-              variants={fadeInUp} 
-              initial="hidden" 
-              whileInView="visible" 
-              viewport={{ once: true }} 
-              transition={{ delay: 0.2 }}  
-              className="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-gray-600"
-            >
-              {t('pricing.subtitle')}
-            </motion.p>
-            
-            <motion.div 
-              variants={staggerContainer}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              className="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-8 lg:mx-0 lg:max-w-none lg:grid-cols-4"
-            >
-              {/* Free Plan */}
-              <motion.div 
-                variants={scaleIn}
-                whileHover={{ scale: 1.02, y: -5 }}
-                className="rounded-3xl p-8 ring-1 ring-gray-200 xl:p-10 bg-white hover:ring-sunset-orange/30 transition-all duration-300"
-              >
-                <h3 className="text-lg font-semibold leading-8 text-gray-900">{t('pricing.free.title')}</h3>
-                <p className="mt-4 text-sm leading-6 text-gray-600">{t('pricing.free.description')}</p>
-                <p className="mt-6 flex items-baseline gap-x-1">
-                  <span className="text-4xl font-bold tracking-tight text-gray-900">{t('pricing.free.price')}</span>
-                  <span className="text-sm font-semibold leading-6 text-gray-600">{t('pricing.free.currency')}</span>
-                </p>
-                <p className="mt-2 text-xs text-gray-500 font-medium">{t('pricing.free.commission')}</p>
-                <motion.a 
-                  href="#waitlist" 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="mt-8 block rounded-md bg-deep-blue px-3 py-2 text-center text-sm font-semibold leading-6 text-white shadow-sm hover:shadow-md hover:bg-blue-900 transition-all duration-300"
-                >
-                  {t('pricing.free.button')}
-                </motion.a>
-                <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
-                  <li className="flex gap-x-3">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-sunset-orange" aria-hidden="true" />
-                    {t('pricing.free.feature1')}
-                  </li>
-                  <li className="flex gap-x-3">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-sunset-orange" aria-hidden="true" />
-                    {t('pricing.free.feature2')}
-                  </li>
-                  <li className="flex gap-x-3">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-sunset-orange" aria-hidden="true" />
-                    {t('pricing.free.feature3')}
-                  </li>
-                </ul>
-              </motion.div>
-
-              {/* Pro Plan (Highlighted) */}
-              <motion.div 
-                variants={scaleIn}
-                whileHover={{ scale: 1.05, y: -8 }}
-                className="relative rounded-3xl p-8 ring-2 ring-sunset-orange xl:p-10 lg:z-10 bg-white transition-all duration-300 hover:shadow-2xl"
-              >
-                <motion.div 
-                  initial={{ scale: 0 }}
-                  whileInView={{ scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ type: "spring", stiffness: 200 }}
-                  className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                >
-                    <span className="inline-flex items-center rounded-full bg-sunset-orange px-4 py-1 text-sm font-medium text-white shadow-md">
-                        {t('pricing.waitlist.badge')}
-                    </span>
-                </motion.div>
-                <h3 className="text-2xl font-bold tracking-tight text-deep-blue mt-2">{t('pricing.pro.title')}</h3>
-                <p className="mt-4 text-base leading-7 text-gray-600">{t('pricing.pro.description')}</p>
-                <p className="mt-6 flex items-baseline gap-x-1">
-                  <span className="text-5xl font-bold tracking-tight text-deep-blue">{t('pricing.pro.price')}</span>
-                  <span className="text-sm font-semibold leading-6 text-gray-600">{t('pricing.pro.currency')}</span>
-                </p>
-                <p className="mt-2 text-xs text-sunset-orange font-semibold">{t('pricing.pro.commission')}</p>
-                <motion.a 
-                  href="#waitlist" 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="mt-8 block rounded-md bg-sunset-orange px-3 py-2 text-center text-sm font-semibold leading-6 text-white shadow-md hover:shadow-lg hover:bg-orange-600 transition-all duration-300"
-                >
-                  {t('pricing.pro.button')}
-                </motion.a>
-                <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
-                  <li className="flex gap-x-3 font-semibold">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-sunset-orange" aria-hidden="true" />
-                    {t('pricing.pro.feature1')}
-                  </li>
-                  <li className="flex gap-x-3 font-semibold">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-sunset-orange" aria-hidden="true" />
-                    {t('pricing.pro.feature2')}
-                  </li>
-                  <li className="flex gap-x-3 font-semibold">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-sunset-orange" aria-hidden="true" />
-                    {t('pricing.pro.feature3')}
-                  </li>
-                  <li className="flex gap-x-3 font-semibold">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-sunset-orange" aria-hidden="true" />
-                    {t('pricing.pro.feature4')}
-                  </li>
-                </ul>
-              </motion.div>
-
-              {/* Premium Plan */}
-              <motion.div 
-                variants={scaleIn}
-                whileHover={{ scale: 1.02, y: -5 }}
-                className="rounded-3xl p-8 ring-1 ring-gray-200 xl:p-10 bg-white hover:ring-sunset-orange/30 transition-all duration-300"
-              >
-                <h3 className="text-lg font-semibold leading-8 text-gray-900">{t('pricing.premium.title')}</h3>
-                <p className="mt-4 text-sm leading-6 text-gray-600">{t('pricing.premium.description')}</p>
-                <p className="mt-6 flex items-baseline gap-x-1">
-                  <span className="text-4xl font-bold tracking-tight text-gray-900">{t('pricing.premium.price')}</span>
-                  <span className="text-sm font-semibold leading-6 text-gray-600">{t('pricing.premium.currency')}</span>
-                </p>
-                <p className="mt-2 text-xs text-gray-500 font-medium">{t('pricing.premium.commission')}</p>
-                <a href="#" className="mt-8 block rounded-md bg-gray-200 px-3 py-2 text-center text-sm font-semibold leading-6 text-gray-500 cursor-not-allowed">
-                  {t('pricing.premium.button')}
-                </a>
-                <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
-                  <li className="flex gap-x-3">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
-                    {t('pricing.premium.feature1')}
-                  </li>
-                  <li className="flex gap-x-3">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
-                    {t('pricing.premium.feature2')}
-                  </li>
-                  <li className="flex gap-x-3">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
-                    {t('pricing.premium.feature3')}
-                  </li>
-                  <li className="flex gap-x-3">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
-                    {t('pricing.premium.feature4')}
-                  </li>
-                </ul>
-              </motion.div>
-
-              {/* Enterprise Plan */}
-              <motion.div 
-                variants={scaleIn}
-                whileHover={{ scale: 1.02, y: -5 }}
-                className="rounded-3xl p-8 ring-1 ring-gray-200 xl:p-10 bg-white hover:ring-deep-blue/30 transition-all duration-300"
-              >
-                <h3 className="text-lg font-semibold leading-8 text-gray-900">{t('pricing.enterprise.title')}</h3>
-                <p className="mt-4 text-sm leading-6 text-gray-600">{t('pricing.enterprise.description')}</p>
-                <p className="mt-6 flex items-baseline gap-x-1">
-                  <span className="text-4xl font-bold tracking-tight text-gray-900">{t('pricing.enterprise.price')}</span>
-                  <span className="text-sm font-semibold leading-6 text-gray-600">{t('pricing.enterprise.currency')}</span>
-                </p>
-                <p className="mt-2 text-xs text-gray-500 font-medium">{t('pricing.enterprise.commission')}</p>
-                <motion.a 
-                  href="#waitlist" 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="mt-8 block rounded-md bg-deep-blue px-3 py-2 text-center text-sm font-semibold leading-6 text-white shadow-sm hover:shadow-md transition-all duration-300"
-                >
-                  {t('pricing.enterprise.button')}
-                </motion.a>
-                <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
-                  <li className="flex gap-x-3">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
-                    {t('pricing.enterprise.feature1')}
-                  </li>
-                  <li className="flex gap-x-3">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
-                    {t('pricing.enterprise.feature2')}
-                  </li>
-                  <li className="flex gap-x-3">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
-                    {t('pricing.enterprise.feature3')}
-                  </li>
-                  <li className="flex gap-x-3">
-                    <CheckCircleIcon className="h-6 w-5 flex-none text-gray-400" aria-hidden="true" />
-                    {t('pricing.enterprise.feature4')}
-                  </li>
-                </ul>
-              </motion.div>
-            </motion.div>
-          </div>
-        </section>
+        <PricingSection />
 
         {/* Waitlist Section */}
-        <section id="waitlist" className="py-24 sm:py-32 bg-white">
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
-              <motion.div 
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8 }}
-                className="relative isolate overflow-hidden bg-deep-blue px-6 py-24 text-center shadow-2xl sm:rounded-3xl sm:px-16"
-              >
-              <motion.div 
-                variants={fadeInUp} 
-                initial="hidden" 
-                whileInView="visible" 
-                viewport={{ once: true }}
-              >
-                  <h2 className="mx-auto max-w-2xl text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">{t('waitlist.title')}</h2>
-                  <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-200">{t('waitlist.subtitle')}</p>
-              </motion.div>
-              <motion.form 
-                variants={staggerContainer}
-                initial="hidden" 
-                whileInView="visible" 
-                viewport={{ once: true }} 
-                onSubmit={handleSubmit} 
-                className="mt-10 mx-auto max-w-md grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2"
-              >
-                <motion.div variants={fadeInUp} className="sm:col-span-2">
-                    <input 
-                      name="name" 
-                      type="text" 
-                      autoComplete="name" 
-                      required 
-                      className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/10 backdrop-blur-sm px-3.5 py-2.5 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white focus:bg-white/20 transition-all duration-300 sm:text-sm sm:leading-6 placeholder:text-gray-300" 
-                      aria-label={t('waitlist.form.name')}
-                      placeholder={t('waitlist.form.name')} 
-                      value={formData.name} 
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    />
-                </motion.div>
-                <motion.div variants={fadeInUp} className="sm:col-span-2">
-                    <input 
-                      name="email" 
-                      type="email" 
-                      autoComplete="email" 
-                      required 
-                      className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/10 backdrop-blur-sm px-3.5 py-2.5 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white focus:bg-white/20 transition-all duration-300 sm:text-sm sm:leading-6 placeholder:text-gray-300" 
-                      aria-label={t('waitlist.form.email')}
-                      placeholder={t('waitlist.form.email')} 
-                      value={formData.email} 
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    />
-                </motion.div>
-                <motion.div variants={fadeInUp} className="sm:col-span-2">
-                  <input 
-                    name="phoneNumber" 
-                    type="tel" 
-                    autoComplete="tel" 
-                    required 
-                    className="min-w-0 w-full flex-auto rounded-md border-0 bg-white/10 backdrop-blur-sm px-3.5 py-2.5 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white focus:bg-white/20 transition-all duration-300 sm:text-sm sm:leading-6 placeholder:text-gray-300" 
-                    aria-label={t('waitlist.form.phone')}
-                    placeholder={t('waitlist.form.phone')} 
-                    value={formData.phoneNumber} 
-                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                  />
-                </motion.div>
-                <motion.div variants={fadeInUp}>
-                    <select name="userType" aria-label={t('waitlist.form.userType.label', 'User type')} className="min-w-0 w-full h-full flex-auto rounded-md border-0 bg-white/10 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6" value={formData.userType} onChange={(e) => setFormData({ ...formData, userType: e.target.value })}>
-                      <option value="Traveler" className="text-black">{t('waitlist.form.userType.traveler')}</option>
-                      <option value="Agency" className="text-black">{t('waitlist.form.userType.agency')}</option>
-                    </select>
-                </motion.div>
-                <motion.div variants={fadeInUp}>
-                    <motion.button 
-                      type="submit" 
-                      disabled={loading}
-                      whileHover={{ scale: loading ? 1 : 1.02 }}
-                      whileTap={{ scale: loading ? 1 : 0.98 }}
-                      className="w-full flex-none rounded-md bg-sunset-orange px-3.5 py-2.5 text-sm font-semibold text-white shadow-md hover:shadow-lg hover:bg-orange-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {loading ? t('waitlist.form.submitting') : t('waitlist.form.submit')}
-                    </motion.button>
-                </motion.div>
-
-                {formData.userType === 'Agency' && (
-                  <motion.div 
-                    className="sm:col-span-2" 
-                    initial={{ opacity: 0, height: 0 }} 
-                    animate={{ opacity: 1, height: 'auto' }} 
-                    exit={{ opacity: 0, height: 0 }} 
-                    transition={{ duration: 0.4, ease: 'easeInOut' }}
-                  >
-                    <input 
-                      name="agencyName" 
-                      type="text" 
-                      required 
-                      className="mt-4 min-w-0 w-full flex-auto rounded-md border-0 bg-white/10 backdrop-blur-sm px-3.5 py-2.5 text-white shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-white focus:bg-white/20 transition-all duration-300 sm:text-sm sm:leading-6 placeholder:text-gray-300" 
-                      aria-label={t('waitlist.form.agencyName')}
-                      placeholder={t('waitlist.form.agencyName')} 
-                      value={formData.agencyName} 
-                      onChange={(e) => setFormData({ ...formData, agencyName: e.target.value })}
-                    />
-                  </motion.div>
-                )}
-              </motion.form>
-              {formError ? (
-                <p role="alert" className="mx-auto mt-4 max-w-md rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
-                  {formError}
-                </p>
-              ) : null}
-
-              <Transition appear show={isSuccessModalOpen} as={Fragment}>
-                <Dialog as="div" className="relative z-50" onClose={() => setIsSuccessModalOpen(false)}>
-                  <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0">
-                    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
-                  </Transition.Child>
-                  <div className="fixed inset-0 overflow-y-auto">
-                    <div className="flex min-h-full items-center justify-center p-4 text-center">
-                      <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
-                        <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                          <div className="flex flex-col items-center">
-                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1, rotate: 360 }} transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}>
-                              <CheckCircleIcon className="h-20 w-20 text-green-500" />
-                            </motion.div>
-                            <Dialog.Title as="h3" className="mt-4 text-2xl font-bold leading-6 text-gray-900">
-                              {t('modal.title')}
-                            </Dialog.Title>
-                            <div className="mt-2">
-                              <p className="text-sm text-gray-500">
-                              {t('modal.subtitle')}
-                              </p>
-                            </div>
-                            <div className="mt-6">
-                              <button
-                                type="button"
-                                className="inline-flex justify-center rounded-md border border-transparent bg-green-100 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-                                onClick={() => setIsSuccessModalOpen(false)}
-                              >
-                                {t('modal.button')}
-                              </button>
-                            </div>
-                          </div>
-                        </Dialog.Panel>
-                      </Transition.Child>
-                    </div>
-                  </div>
-                </Dialog>
-              </Transition>
-              
-              <svg viewBox="0 0 1024 1024" aria-hidden="true" className="absolute left-1/2 top-1/2 -z-10 h-[64rem] w-[64rem] -translate-x-1/2 opacity-5">
-                <circle cx={512} cy={512} r={512} fill="#F97316" fillOpacity="0.1" />
-              </svg>
-            </motion.div>
-          </div>
-        </section>
+        <WaitlistSection />
       </main>
 
       {/* Footer */}
@@ -1047,27 +619,27 @@ export default function OuibooLanding() {
                       {item.name}
                     </a>
                 ))}
-                <a href="/privacy" className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300">
-                  Privacy
+<a href="/privacy" className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300">
+                  {t('footer.privacy')}
                 </a>
                 <CookiePreferencesButton className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300" />
             </div>
-            <p className="mt-10 text-center text-xs leading-5 text-gray-500">&copy; {new Date().getFullYear()} Ouiboo. {t('footer.rights')}</p>
+            <p className="mt-10 text-center text-xs leading-5 text-gray-500">{t('footer.copyright', { year: new Date().getFullYear() })} {t('footer.rights')}</p>
         </div>
       </footer>
 
       <style jsx global>{`
         :root {
-          --deep-blue: #1E3A8A;
+          --deep-blue: #0A192F;
           --cyan-500: #0EA5E9;
-          --sunset-orange: #F97316;
+          --sunset-orange: #FF6B35;
           --off-white: #F9FAFB;
           --golden-yellow: #FACC15;
         }
-        .dark .bg-off-white { background-color: #0b1120; }
-        .dark .bg-white { background-color: #0f172a; }
-        .dark .bg-white\\/80 { background-color: rgba(15, 23, 42, 0.8); }
-        .dark .bg-gray-50 { background-color: #111827; }
+        .dark .bg-off-white { background-color: #06101f; }
+        .dark .bg-white { background-color: #0d1c34; }
+        .dark .bg-white\\/80 { background-color: rgba(13, 28, 52, 0.8); }
+        .dark .bg-gray-50 { background-color: #13243d; }
         .dark .bg-gray-100 { background-color: #1f2937; }
         .dark .bg-gray-200 { background-color: #1f2937; }
         .dark .bg-gray-900\\/5 { background-color: rgba(15, 23, 42, 0.7); }

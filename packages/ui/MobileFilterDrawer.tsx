@@ -18,6 +18,7 @@ export interface MobileFilterDrawerProps {
   defaultOpen?: boolean
   onOpenChange?: (open: boolean) => void
   className?: string
+  closeLabel?: string
 }
 
 export function MobileFilterDrawer({
@@ -33,6 +34,7 @@ export function MobileFilterDrawer({
   defaultOpen = false,
   onOpenChange,
   className,
+  closeLabel = 'Close filters',
 }: MobileFilterDrawerProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen)
   const open = controlledOpen ?? uncontrolledOpen
@@ -103,7 +105,7 @@ export function MobileFilterDrawer({
           <button
             type="button"
             className="absolute inset-0 bg-black/50"
-            aria-label="Close filters"
+            aria-label={closeLabel}
             onClick={() => setOpen(false)}
           />
           <section
@@ -113,7 +115,7 @@ export function MobileFilterDrawer({
             aria-describedby={descriptionId}
             className={cn(
               'absolute inset-y-0 flex w-[min(90vw,24rem)] flex-col bg-background shadow-2xl',
-              side === 'right' ? 'right-0 border-l' : 'left-0 border-r',
+              side === 'right' ? 'end-0 border-s' : 'start-0 border-e',
               className
             )}
           >
@@ -135,7 +137,7 @@ export function MobileFilterDrawer({
                 variant="ghost"
                 size="icon"
                 onClick={() => setOpen(false)}
-                aria-label="Close filters"
+                aria-label={closeLabel}
               >
                 <X className="h-5 w-5" aria-hidden="true" />
               </Button>

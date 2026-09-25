@@ -1,10 +1,11 @@
 import { apiClient } from '@/lib/api-client';
-import { TripCard, type TripCardTrip } from '@/components/TripCard';
+import dynamic from 'next/dynamic';
+import type { TripCardTrip } from '@/components/TripCard';
 import { Badge, Button } from '@ouiboo/ui';
 import Link from 'next/link';
 import { Compass, Sparkles } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+const TripCard = dynamic(() => import('@/components/TripCard').then((m) => m.TripCard));
 
 async function getFeaturedTrips(): Promise<TripCardTrip[]> {
   try {
@@ -18,7 +19,8 @@ async function getFeaturedTrips(): Promise<TripCardTrip[]> {
     response = await apiClient.get('/trips?status=ACTIVE&sortBy=popularity&sortOrder=desc&limit=12');
     return response.data?.data || response.data || [];
   } catch (error) {
-    console.error('Failed to load featured trips:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.warn(`Failed to load featured trips: ${message}`);
     return [];
   }
 }

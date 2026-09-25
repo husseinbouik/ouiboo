@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState, useSyncExternalStore } from 'react';
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Button } from '@ouiboo/ui';
+import { Button, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
 import { 
   Menu, 
   X, 
@@ -20,8 +20,6 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
-import { ThemeToggle } from './ThemeToggle';
-import { LanguageSwitcher } from './LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 
 export function Navbar() {
@@ -32,10 +30,54 @@ export function Navbar() {
     () => true,
     () => false,
   );
-  const [isOpen, setIsOpen] = useState(false);
+const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const pathname = usePathname();
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuCloseRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    mobileMenuCloseRef.current?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const panel = mobileMenuRef.current;
+      if (!panel) return;
+      const focusable = Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus();
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -69,8 +111,9 @@ export function Navbar() {
   if (isAuthPage) return null;
 
   return (
-    <div className="fixed inset-x-0 top-0 z-50 pointer-events-none sticky-like-nav">
+    <header className="fixed inset-x-0 top-0 z-50 pointer-events-none sticky-like-nav">
       <motion.nav 
+        aria-label={t('nav.mainNavigation', 'Main navigation')}
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5 }}
@@ -222,11 +265,15 @@ export function Navbar() {
             className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md md:hidden pointer-events-auto flex justify-end"
             onClick={() => setIsOpen(false)}
           >
-            <motion.div 
+<motion.div
                initial={{ x: "100%" }}
                animate={{ x: 0 }}
                transition={{ type: "spring", damping: 25 }}
                id="traveler-mobile-menu"
+               ref={mobileMenuRef}
+               role="dialog"
+               aria-modal="true"
+               aria-label={t('nav.mobileMenu', 'Navigation menu')}
                className="w-[80%] max-w-sm h-full bg-background p-8 space-y-12"
                onClick={(e) => e.stopPropagation()}
             >
@@ -235,7 +282,7 @@ export function Navbar() {
                      <div className="w-8 h-8 rounded-xl bg-sunset-orange text-white flex items-center justify-center font-black text-lg">O</div>
                      <span className="text-xl font-black">Ouiboo</span>
                   </div>
-                  <button onClick={() => setIsOpen(false)} aria-label={t('nav.closeMenu', 'Close navigation menu')} className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                  <button ref={mobileMenuCloseRef} onClick={() => setIsOpen(false)} aria-label={t('nav.closeMenu', 'Close navigation menu')} className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
                      <X className="h-5 w-5" />
                   </button>
                </div>
@@ -269,7 +316,7 @@ export function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </header>
   );
 }
 

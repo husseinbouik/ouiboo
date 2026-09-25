@@ -43,6 +43,7 @@ describe('Tenant isolation (agency scope)', () => {
         },
         booking: {
             findMany: jest.fn(({ where }) => bookings.filter((booking) => booking.session.template.agencyId === where.session.template.agencyId)),
+            count: jest.fn(({ where }) => bookings.filter((booking) => booking.session.template.agencyId === where.session.template.agencyId).length),
         },
     };
     const walletsService = {
@@ -105,9 +106,10 @@ describe('Tenant isolation (agency scope)', () => {
             .set('x-tenant-id', 'agency-a')
             .expect(200)
             .expect(({ body }) => {
-                expect(body).toHaveLength(1);
-                expect(body[0]).toMatchObject({ id: 'booking-a' });
-                expect(body[0].session.template.agencyId).toBe('agency-a');
+                expect(body.data).toHaveLength(1);
+                expect(body.data[0]).toMatchObject({ id: 'booking-a' });
+                expect(body.data[0].session.template.agencyId).toBe('agency-a');
+                expect(body.pagination).toMatchObject({ total: 1, page: 1 });
             });
 
         await request(app.getHttpServer())
@@ -115,9 +117,9 @@ describe('Tenant isolation (agency scope)', () => {
             .set('x-tenant-id', 'agency-b')
             .expect(200)
             .expect(({ body }) => {
-                expect(body).toHaveLength(1);
-                expect(body[0]).toMatchObject({ id: 'booking-b' });
-                expect(body[0].session.template.agencyId).toBe('agency-b');
+                expect(body.data).toHaveLength(1);
+                expect(body.data[0]).toMatchObject({ id: 'booking-b' });
+                expect(body.data[0].session.template.agencyId).toBe('agency-b');
             });
     });
 });

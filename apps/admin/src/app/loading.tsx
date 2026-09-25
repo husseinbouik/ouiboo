@@ -1,9 +1,15 @@
+'use client'
+
+import { useTranslation } from 'react-i18next'
+
 export default function AdminLoading() {
+  const { t } = useTranslation()
+
   return (
     <div
       className="mx-auto max-w-[1600px] animate-pulse space-y-7 p-6 lg:p-8"
       role="status"
-      aria-label="Loading administration"
+      aria-label={t('loading.label')}
     >
       <div className="space-y-3">
         <div className="h-9 w-64 rounded-xl bg-muted" />
@@ -23,7 +29,7 @@ export default function AdminLoading() {
           <div key={index} className="h-14 w-full rounded-xl bg-muted/70" />
         ))}
       </div>
-      <span className="sr-only">Loading…</span>
+      <span className="sr-only">{t('loading.text')}</span>
     </div>
   )
 }

@@ -63,7 +63,7 @@ export default function AgencyLoginPage() {
         router.push(`/verify?email=${email}&reason=unverified`);
         return;
       }
-      setError(message || 'Login failed. Please try again.');
+      setError(message || t('login.errorGeneric', 'Login failed. Please try again.'));
     }
   });
 
@@ -75,101 +75,101 @@ export default function AgencyLoginPage() {
     });
   };
 
-  if (!isMounted) return <div className="min-h-screen bg-white" />;
+if (!isMounted) return <div className="min-h-screen bg-background" />;
 
   return (
-    <div className="min-h-screen flex bg-white">
+    <div className="min-h-screen flex bg-background">
       {/* Left Side - Form */}
       <div className="flex-1 flex items-center justify-center p-8 lg:p-12">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
           className="w-full max-w-md space-y-8"
         >
-          <div className="text-center lg:text-left">
-            <h2 className="text-3xl font-bold text-deep-blue">{t('login.title')}</h2>
-            <p className="mt-2 text-gray-600">{t('login.subtitle')}</p>
+          <div className="text-center lg:text-start">
+            <h2 className="text-3xl font-bold text-foreground">{t('login.title')}</h2>
+            <p className="mt-2 text-muted-foreground">{t('login.subtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-gray-700">{t('login.email')}</label>
+                <label htmlFor="email" className="text-sm font-medium text-muted-foreground">{t('login.email')}</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <Input 
-                    id="email" 
-                    type="email" 
+                  <Mail className="absolute start-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
                     placeholder={t('login.emailPlaceholder')}
-                    className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-deep-blue focus:ring-deep-blue transition-all duration-200"
-                    {...register('email', { required: 'Email is required' })} 
+                    className="ps-10 h-12 bg-muted border-border focus:bg-background focus:border-primary focus:ring-primary transition-all duration-200"
+                    {...register('email', { required: t('login.emailRequired') })}
                   />
                 </div>
-                {errors.email && <span className="text-red-500 text-sm">{errors.email.message as string}</span>}
+                {errors.email && <span className="text-danger text-sm">{errors.email.message as string}</span>}
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="text-sm font-medium text-gray-700">{t('login.password')}</label>
-                  <Link href={`/forgot-password?lang=${i18n.language}`} className="text-sm font-medium text-deep-blue hover:text-blue-700">
+                  <label htmlFor="password" className="text-sm font-medium text-muted-foreground">{t('login.password')}</label>
+                  <Link href={`/forgot-password?lang=${i18n.language}`} className="text-sm font-medium text-primary hover:text-primary/80 dark:text-accent dark:hover:text-accent/80">
                     {t('login.forgotPassword')}
                   </Link>
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <Input 
-                    id="password" 
+                  <Lock className="absolute start-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder={t('login.passwordPlaceholder', '********')}
-                    className="pl-10 pr-12 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-deep-blue focus:ring-deep-blue transition-all duration-200"
-                    {...register('password', { required: 'Password is required' })} 
+                    placeholder={t('login.passwordPlaceholder')}
+                    className="ps-10 pe-12 h-12 bg-muted border-border focus:bg-background focus:border-primary focus:ring-primary transition-all duration-200"
+                    {...register('password', { required: t('login.passwordRequired') })}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
-                 {errors.password && <span className="text-red-500 text-sm">{errors.password.message as string}</span>}
+                 {errors.password && <span className="text-danger text-sm">{errors.password.message as string}</span>}
               </div>
             </div>
 
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-gray-600">
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-deep-blue focus:ring-deep-blue"
+                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
                   {...register('rememberMe')}
                 />
                 {t('login.rememberMe')}
               </label>
-              <span className="text-xs text-gray-500">{t('login.securityNote')}</span>
+              <span className="text-xs text-muted-foreground">{t('login.securityNote')}</span>
             </div>
 
             {error && (
-              <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600">
+              <div className="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
                 {error}
               </div>
             )}
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={loginMutation.isPending}
-              className="w-full h-12 bg-deep-blue hover:bg-blue-800 text-white font-semibold rounded-lg transition-colors duration-200"
+              className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-semibold rounded-lg transition-colors duration-200"
             >
-              {loginMutation.isPending ? 'Logging in...' : t('login.signIn')} 
-              {!loginMutation.isPending && <ArrowRight className="ml-2 h-5 w-5 inline" />}
+              {loginMutation.isPending ? t('login.loggingIn') : t('login.signIn')}
+              {!loginMutation.isPending && <ArrowRight className="ms-2 h-5 w-5 inline" />}
             </Button>
 
           </form>
 
-          <p className="text-center text-sm text-gray-600">
+          <p className="text-center text-sm text-muted-foreground">
             {t('login.noAccount')}{' '}
-            <Link href={`/signup?lang=${i18n.language}`} className="font-semibold text-deep-blue hover:text-blue-700 hover:underline">
+            <Link href={`/signup?lang=${i18n.language}`} className="font-semibold text-primary hover:text-primary/80 hover:underline dark:text-accent dark:hover:text-accent/80">
               {t('login.signUpLink')}
             </Link>
           </p>
@@ -177,16 +177,16 @@ export default function AgencyLoginPage() {
       </div>
 
       {/* Right Side - Image */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-deep-blue">
-        <motion.div 
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-primary">
+        <motion.div
           initial={{ scale: 1.1, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 1.5 }}
           className="absolute inset-0"
         >
-          <Image 
-            src="https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop" 
-            alt="Modern Office" 
+          <Image
+            src="https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop"
+            alt={t('login.heroAlt')}
             className="w-full h-full object-cover opacity-40"
             fill
             sizes="50vw"
@@ -202,9 +202,9 @@ export default function AgencyLoginPage() {
             transition={{ delay: 0.8, duration: 0.8 }}
             className="mb-12"
           >
-            <h2 className="text-4xl font-bold mb-4 leading-tight">Empower your travel business.</h2>
+            <h2 className="text-4xl font-bold mb-4 leading-tight">{t('login.heroTitle')}</h2>
             <p className="text-lg text-gray-200 max-w-md">
-              Access powerful tools, analytics, and a global network of travelers to scale your agency.
+              {t('login.heroSubtitle')}
             </p>
           </motion.div>
         </div>

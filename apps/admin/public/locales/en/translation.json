@@ -10,7 +10,13 @@
         "brand": "Ouiboo Admin",
         "heroTitle": "Admin command center",
         "heroSubtitle": "Approve agencies, confirm payments, and keep the marketplace healthy.",
-        "heroNote": "Audit logging and role-based access are enabled."
+        "heroNote": "Audit logging and role-based access are enabled.",
+        "loginFailed": "Login failed. Please try again.",
+        "usernamePlaceholder": "admin",
+        "usernameRequired": "Username is required",
+        "passwordRequired": "Password is required",
+        "showPassword": "Show password",
+        "hidePassword": "Hide password"
     },
     "dashboard": {
         "brand": "OUIBOO ADMIN",
@@ -25,7 +31,8 @@
             "agencies": "Manage Agencies",
             "bookings": "System Bookings",
             "paymentProofs": "Payment Proofs",
-            "payouts": "Payout Requests"
+            "payouts": "Payout Requests",
+            "audit": "Audit Log"
         },
         "meta": {
             "pending": {
@@ -52,6 +59,11 @@
                 "title": "Payout Requests",
                 "description": "Review agency payout requests before releasing funds.",
                 "searchPlaceholder": "Search payout requests by agency..."
+            },
+            "audit": {
+                "title": "Audit Log",
+                "description": "Search operator activity, export records, and apply retention cleanup.",
+                "searchPlaceholder": "Search by action, actor email, target type, or target id"
             }
         },
         "sections": {
@@ -60,7 +72,8 @@
             "allAgencies": "All Agencies Management",
             "bookingMonitor": "System-wide Booking Monitor",
             "pendingPaymentProofs": "Pending Payment Proofs",
-            "payoutRequests": "Payout Requests"
+            "payoutRequests": "Payout Requests",
+            "auditTrail": "Audit trail"
         },
         "table": {
             "booking": "Booking",
@@ -68,7 +81,11 @@
             "status": "Status",
             "amount": "Amount",
             "submitted": "Submitted",
-            "action": "Action"
+            "action": "Action",
+            "when": "When",
+            "actor": "Actor",
+            "target": "Target",
+            "metadata": "Metadata"
         },
         "actions": {
             "review": "Review",
@@ -81,7 +98,8 @@
             "approvePayout": "Approve payout",
             "rejectPayout": "Reject payout",
             "approveAgency": "Approve agency",
-            "rejectAgency": "Reject agency"
+            "rejectAgency": "Reject agency",
+            "refund": "Refund"
         },
         "labels": {
             "ice": "ICE",
@@ -92,6 +110,7 @@
             "agency": "Agency",
             "requested": "Requested",
             "amount": "Amount",
+            "currency": "MAD",
             "bankDetails": "Agency Bank Details",
             "payoutDetails": "Payout Details",
             "selected": "Selected",
@@ -100,7 +119,11 @@
             "agencyAddress": "Agency Address",
             "booking": "Booking",
             "traveler": "Traveler",
-            "na": "N/A"
+            "na": "N/A",
+            "system": "System",
+            "noActorId": "No actor id",
+            "noTargetId": "No target id",
+            "agencyLogo": "{{name}} logo"
         },
         "messages": {
             "noBankDetails": "No bank details on file.",
@@ -129,10 +152,103 @@
             "paymentProofLoadError": "Unable to load payment proof.",
             "payoutPaid": "Payout marked as paid successfully.",
             "payoutRejected": "Payout rejected successfully.",
-            "payoutUpdateError": "Unable to update payout request. Please try again."
+            "payoutUpdateError": "Unable to update payout request. Please try again.",
+            "refundProcessed": "Refund processed successfully.",
+            "refundError": "Unable to process refund right now.",
+            "auditPruneError": "Unable to prune audit logs right now.",
+            "auditExportSuccess": "Audit log export downloaded successfully.",
+            "auditExportError": "Unable to export audit logs right now.",
+            "retentionDaysInvalid": "Retention days must be a positive number."
+        },
+        "aria": {
+            "mainNavigation": "Main navigation",
+            "adminAvatar": "Admin avatar"
+        },
+        "audit": {
+            "trail": "Audit trail ({{total}})",
+            "noMetadata": "No metadata",
+            "noResults": "No audit logs matched the current filters.",
+            "retentionAndExport": "Retention and export",
+            "retentionHint": "Use the shared search box to filter by action, actor email, target type, or target id before exporting.",
+            "currentWindow": "Current window",
+            "showingEvents": "Showing {{total}} matching audit events, page {{page}} of {{totalPages}}.",
+            "retentionDays": "Retention days",
+            "pruneHint": "Pruning only deletes logs older than this cutoff. Newer operator actions stay untouched.",
+            "exporting": "Exporting...",
+            "exportCsv": "Export CSV",
+            "downloadCsv": "Download CSV",
+            "pruning": "Pruning...",
+            "pruneOldLogs": "Prune old logs",
+            "auditPruned_one": "Deleted {{count}} audit log older than {{days}} days.",
+            "auditPruned_other": "Deleted {{count}} audit logs older than {{days}} days."
+        },
+        "confirm": {
+            "confirmRefund": "Confirm refund",
+            "pruneAuditLogs": "Prune audit logs",
+            "refundDescription": "Refund booking {{id}} for {{amount}} {{currency}}? The payment provider may not allow this action to be reversed.",
+            "pruneDescription": "Delete audit logs older than {{days}} days? This cannot be undone.",
+            "processRefund": "Process refund",
+            "deleteOldLogs": "Delete old logs"
+        },
+        "status": {
+            "bookingAwaitingValidation": "Awaiting Validation",
+            "bookingPending": "Pending",
+            "bookingConfirmed": "Confirmed",
+            "bookingRejected": "Rejected",
+            "bookingCancelled": "Cancelled",
+            "bookingCompleted": "Completed",
+            "verificationPending": "Pending",
+            "verificationVerified": "Verified",
+            "verificationRejected": "Rejected",
+            "subscriptionTrial": "Trial",
+            "subscriptionActive": "Active",
+            "subscriptionCancelled": "Cancelled",
+            "subscriptionExpired": "Expired",
+            "paymentUnpaid": "Unpaid",
+            "paymentPaid": "Paid",
+            "paymentRefunded": "Refunded",
+            "paymentFailed": "Failed",
+            "payoutPaidLabel": "Paid",
+            "payoutPaidHelper": "Transfer completed",
+            "payoutRejectedLabel": "Rejected",
+            "payoutRejectedHelper": "Funds returned to the agency wallet",
+            "payoutApprovedLabel": "Approved",
+            "payoutApprovedHelper": "Approved and waiting for payout processing",
+            "payoutPendingLabel": "Pending",
+            "payoutPendingHelper": "Pending admin review"
         },
         "modal": {
             "agencyReview": "Agency Review"
         }
+    },
+    "meta": {
+        "titleDefault": "Platform administration",
+        "titleTemplate": "%s | Ouiboo Admin",
+        "description": "Private Ouiboo platform administration workspace."
+    },
+    "common": {
+        "skipToContent": "Skip to content"
+    },
+    "pagination": {
+        "showing": "Showing",
+        "of": "of",
+        "nav": "Pagination",
+        "previousPage": "Previous page",
+        "nextPage": "Next page",
+        "goToPage": "Go to page {{page}}"
+    },
+    "error": {
+        "title": "Administration page unavailable",
+        "description": "Try again. No moderation or account changes were submitted by this error.",
+        "retry": "Try again"
+    },
+    "notFound": {
+        "title": "Administration page not found",
+        "description": "The requested tool does not exist or is no longer available.",
+        "back": "Return to administration"
+    },
+    "loading": {
+        "label": "Loading administration",
+        "text": "Loading…"
     }
 }

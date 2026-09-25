@@ -100,8 +100,8 @@ export class BookingsApi extends ApiService {
     return this.post<BookingDetails>('/bookings', input)
   }
 
-  getMyBookings() {
-    return this.get<BookingDetails[]>('/bookings/my-bookings')
+  getMyBookings(params: PageParams = {}) {
+    return this.get<PaginatedData<BookingDetails>>('/bookings/my-bookings', { params })
   }
 
   getById(id: string) {
@@ -140,8 +140,8 @@ export class AgencyApi extends ApiService {
     return this.get<BookingDetails[]>('/agency/bookings', { params })
   }
 
-  getPayouts() {
-    return this.get<PayoutDetails[]>('/agency/payouts')
+  getPayouts(params: PageParams = {}) {
+    return this.get<PaginatedData<PayoutDetails>>('/agency/payouts', { params })
   }
 
   requestPayout(input: RequestPayoutInput) {
@@ -155,11 +155,11 @@ export class AgencyApi extends ApiService {
 
 export class AdminApi extends ApiService {
   getPendingAgencies(params: AdminListParams = {}) {
-    return this.get<AdminAgencyRecord[]>('/admin/pending-agencies', { params })
+    return this.get<PaginatedData<AdminAgencyRecord>>('/admin/pending-agencies', { params })
   }
 
   getAgencies(params: AdminListParams = {}) {
-    return this.get<AdminAgencyRecord[]>('/admin/agencies', { params })
+    return this.get<PaginatedData<AdminAgencyRecord>>('/admin/agencies', { params })
   }
 
   verifyAgency({ id, ...input }: AdminVerifyInput) {
@@ -167,7 +167,7 @@ export class AdminApi extends ApiService {
   }
 
   getPendingTrips(params: AdminListParams = {}) {
-    return this.get<TripListItem[]>('/admin/pending-trips', { params })
+    return this.get<PaginatedData<TripListItem>>('/admin/pending-trips', { params })
   }
 
   verifyTrip({ id, ...input }: AdminVerifyInput) {
@@ -175,7 +175,7 @@ export class AdminApi extends ApiService {
   }
 
   getBookings(params: AdminListParams = {}) {
-    return this.get<BookingDetails[]>('/admin/bookings', { params })
+    return this.get<PaginatedData<BookingDetails>>('/admin/bookings', { params })
   }
 
   refundBooking({ id, amount }: AdminRefundBookingInput) {
@@ -183,7 +183,7 @@ export class AdminApi extends ApiService {
   }
 
   getPendingPayments(params: AdminListParams = {}) {
-    return this.get<AdminPaymentRecord[]>('/admin/pending-payments', { params })
+    return this.get<PaginatedData<AdminPaymentRecord>>('/admin/pending-payments', { params })
   }
 
   verifyPayment({ id, ...input }: AdminVerifyInput) {
@@ -194,7 +194,7 @@ export class AdminApi extends ApiService {
   }
 
   getPayoutRequests(params: AdminListParams = {}) {
-    return this.get<PayoutDetails[]>('/admin/payout-requests', { params })
+    return this.get<PaginatedData<PayoutDetails>>('/admin/payout-requests', { params })
   }
 
   processPayout({ id, status }: AdminProcessPayoutInput) {
@@ -202,7 +202,7 @@ export class AdminApi extends ApiService {
   }
 
   getAuditLogs(params: AdminListParams = {}) {
-    return this.get<AuditLogRecord[]>('/admin/audit-logs', { params })
+    return this.get<PaginatedData<AuditLogRecord>>('/admin/audit-logs', { params })
   }
 }
 

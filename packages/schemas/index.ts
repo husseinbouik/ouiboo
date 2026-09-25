@@ -201,7 +201,37 @@ export const RegisterSchema = z.object({
     role: z.enum([UserRole.Agency, UserRole.Traveler]),
 });
 
+export const ForgotPasswordSchema = z.object({
+    email: z.string().email("Invalid email address"),
+});
+
+export const WaitlistSchema = z
+    .object({
+        name: z.string().min(2, "Name must be at least 2 characters"),
+        email: z.string().email("Invalid email address"),
+        phoneNumber: z.string().min(8, "Phone number must be at least 8 characters"),
+        userType: z.enum(["Agency", "Traveler"]),
+        agencyName: z.string().optional(),
+    })
+    .refine((data) => data.userType !== "Agency" || !!data.agencyName?.trim(), {
+        message: "Agency name is required",
+        path: ["agencyName"],
+    });
+
+export const ResetPasswordSchema = z
+    .object({
+        password: z.string().min(8, "Password must be at least 8 characters"),
+        confirmPassword: z.string().min(8, "Password must be at least 8 characters"),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+        message: "Passwords do not match",
+        path: ["confirmPassword"],
+    });
+
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type RegisterInput = z.infer<typeof RegisterSchema>;
+export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof ResetPasswordSchema>;
+export type WaitlistInput = z.infer<typeof WaitlistSchema>;
 export type CreateTripInput = z.infer<typeof CreateTripTemplateSchema>;
 export type CreateTripSessionInput = z.infer<typeof CreateTripSessionSchema>;

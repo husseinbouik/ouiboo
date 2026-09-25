@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertCircle, Check, Lock } from 'lucide-react';
 
 interface SessionStatusBadgeProps {
@@ -9,24 +10,26 @@ interface SessionStatusBadgeProps {
 }
 
 export function SessionStatusBadge({ status, size = 'md' }: SessionStatusBadgeProps) {
+  const { t } = useTranslation();
+
   const statusConfig = {
     OPEN: {
-      color: 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/50',
+      color: 'bg-success/10 text-success border-success/20',
       icon: Check,
-      label: 'Available',
-      dot: 'bg-emerald-500'
+      label: t('status.sessionAvailable'),
+      dot: 'bg-success'
     },
     FULL: {
-      color: 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50',
+      color: 'bg-warning/10 text-warning border-warning/20',
       icon: Lock,
-      label: 'Full',
-      dot: 'bg-amber-500'
+      label: t('status.sessionFull'),
+      dot: 'bg-warning'
     },
     CANCELLED: {
-      color: 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900/50',
+      color: 'bg-danger/10 text-danger border-danger/20',
       icon: AlertCircle,
-      label: 'Cancelled',
-      dot: 'bg-red-500'
+      label: t('status.sessionCancelled'),
+      dot: 'bg-danger'
     }
   };
 
@@ -41,8 +44,8 @@ export function SessionStatusBadge({ status, size = 'md' }: SessionStatusBadgePr
 
   return (
     <div className={`inline-flex items-center gap-2 ${sizeClasses[size]} rounded-full font-medium ${config.color} border`}>
-      <span className={`w-2 h-2 rounded-full ${config.dot}`}></span>
-      <Icon className={size === 'sm' ? 'h-3 w-3' : size === 'md' ? 'h-4 w-4' : 'h-5 w-5'} />
+      <span className={`w-2 h-2 rounded-full ${config.dot}`} aria-hidden="true"></span>
+      <Icon className={size === 'sm' ? 'h-3 w-3' : size === 'md' ? 'h-4 w-4' : 'h-5 w-5'} aria-hidden="true" />
       {config.label}
     </div>
   );

@@ -1,5 +1,5 @@
 import { BookingPaymentStatus, BookingStatus, VerificationStatus } from '@ouiboo/types';
-import { getAgencyBookingStatusMeta, getAgencyPaymentStatusMeta, getAgencyProofStatusLabel } from './booking-status';
+import { getAgencyBookingStatusMeta, getAgencyPaymentStatusMeta, getAgencyProofStatusLabel } from '@ouiboo/utils';
 
 describe('agency booking status helpers', () => {
   it('maps canonical booking statuses to status badge metadata', () => {

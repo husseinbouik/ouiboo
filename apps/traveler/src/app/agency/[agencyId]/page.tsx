@@ -2,6 +2,7 @@ import { apiClient } from '@/lib/api-client';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
+import { getServerTranslations } from '@/lib/server-translations';
 
 interface AgencyPublicProfile {
   id: string;
@@ -43,6 +44,7 @@ async function getAgencyTrips(agencyId: string): Promise<Trip[]> {
 }
 
 export default async function AgencyPage({ params }: { params: { agencyId: string } }) {
+  const { t } = await getServerTranslations();
   const agency = await getAgency(params.agencyId);
   const trips = await getAgencyTrips(params.agencyId);
 
@@ -73,7 +75,7 @@ export default async function AgencyPage({ params }: { params: { agencyId: strin
             <h1 className="text-4xl font-bold mb-2 flex items-center gap-2">
                 {agency.companyName}
                 {agency.verificationStatus === VerificationStatus.Verified && (
-                    <span className="text-ocean-500" title="Verified Agency">
+                    <span className="text-ocean-500" title={t('agency.verifiedTitle')}>
                         <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                     </span>
                 )}
@@ -94,9 +96,9 @@ export default async function AgencyPage({ params }: { params: { agencyId: strin
                             )}
                         </div>
                         <div className="p-4">
-                            <h3 className="font-semibold text-lg mb-1 group-hover:text-sunset-orange transition-colors">{trip.title}</h3>
+                            <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors">{trip.title}</h3>
                             <div className="flex items-center text-sm text-muted-foreground gap-4">
-                                <span>{trip.durationDays} Days</span>
+                                <span>{t('tripCard.days', { count: trip.durationDays })}</span>
                                 <span>/</span>
                                 <span>{trip.startLocation}</span>
                             </div>
@@ -105,7 +107,7 @@ export default async function AgencyPage({ params }: { params: { agencyId: strin
                 ))
             ) : (
                 <div className="col-span-full text-center py-12 text-muted-foreground">
-                    No active trips found for this agency.
+                    {t('agency.noTrips')}
                 </div>
             )}
         </div>

@@ -342,25 +342,48 @@ export class NotificationJobsService {
 
   async completeFinishedBookings() {
     const now = new Date();
+    const affected = await this.prisma.booking.findMany({
+      where: {
+        status: 'CONFIRMED',
+        session: { endDate: { lt: now } },
+      },
+      select: {
+        id: true,
+        session: { select: { templateId: true } },
+      },
+    });
+
+    if (affected.length === 0) {
+      return { count: 0 };
+    }
+
     const result = await this.prisma.booking.updateMany({
       where: {
+        id: { in: affected.map((b) => b.id) },
         status: 'CONFIRMED',
         session: { endDate: { lt: now } },
       },
       data: { status: 'COMPLETED' },
     });
 
-    // Keep the denormalized marketplace sort key aligned as sessions expire.
-    await this.prisma.$executeRaw`
-      UPDATE "TripTemplate" AS trip
-      SET "startingPrice" = (
-        SELECT MIN(session."price")
-        FROM "TripSession" AS session
-        WHERE session."templateId" = trip."id"
-          AND session."status" = 'OPEN'
-          AND session."startDate" >= ${now}
-      )
-    `;
+    // Keep the denormalized marketplace sort key aligned only for templates
+    // whose sessions just finished, instead of a full-table update.
+    const templateIds = Array.from(
+      new Set(affected.map((b) => b.session.templateId)),
+    );
+    if (templateIds.length > 0) {
+      await this.prisma.$executeRaw`
+        UPDATE "TripTemplate" AS trip
+        SET "startingPrice" = (
+          SELECT MIN(session."price")
+          FROM "TripSession" AS session
+          WHERE session."templateId" = trip."id"
+            AND session."status" = 'OPEN'
+            AND session."startDate" >= ${now}
+        )
+        WHERE trip."id" = ANY(${templateIds})
+      `;
+    }
 
     this.logger.log(`Marked ${result.count} finished bookings as completed`);
     return result;

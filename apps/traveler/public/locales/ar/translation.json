@@ -10,7 +10,12 @@
     "logout": "تسجيل الخروج",
     "agencyPanel": "لوحة الوكالة",
     "joinNow": "انضم الآن",
-    "startStory": "ابدأ قصتك"
+    "startStory": "ابدأ قصتك",
+    "mainNavigation": "التنقل الرئيسي",
+    "openProfileMenu": "فتح قائمة الملف الشخصي",
+    "openMenu": "فتح قائمة التنقل",
+    "mobileMenu": "قائمة التنقل",
+    "closeMenu": "إغلاق قائمة التنقل"
   },
   "hero": {
     "tagline": "اكتشف ما هو غير متوقع",
@@ -131,5 +136,92 @@
     "highlightFour": "يمكنك طلب حذف بياناتك في أي وقت.",
     "contactTitle": "لديك أسئلة؟",
     "contactBody": "راسلنا على privacy@ouiboo.com وسنرد بسرعة."
+  },
+  "resetPassword": {
+    "backToLogin": "العودة لتسجيل الدخول",
+    "title": "إعادة تعيين كلمة المرور",
+    "subtitle": "اختر كلمة مرور جديدة لحماية حساب المسافر.",
+    "emailLabel": "البريد الإلكتروني",
+    "passwordLabel": "كلمة المرور الجديدة",
+    "passwordPlaceholder": "أدخل كلمة مرور جديدة",
+    "confirmPasswordLabel": "تأكيد كلمة المرور",
+    "confirmPasswordPlaceholder": "أعد إدخال كلمة المرور الجديدة",
+    "saveButton": "تحديث كلمة المرور",
+    "successTitle": "تم تحديث كلمة المرور",
+    "successMessage": "تم تحديث كلمة المرور. يمكنك الآن تسجيل الدخول ببياناتك الجديدة.",
+    "sideTitle": "عد إلى التخطيط",
+    "sideSubtitle": "حدّث كلمة المرور وارجع إلى لوحة سفرك في دقائق."
+  },
+  "common": {
+    "skipToContent": "تخطَّ إلى المحتوى",
+    "loading": "جارٍ التحميل...",
+    "errorTitle": "حدث خطأ ما",
+    "errorDescription": "بحثك عن الرحلات آمن. أعد المحاولة أو عُد إلى الكتالوج.",
+    "tryAgain": "إعادة المحاولة",
+    "browseTrips": "تصفح الرحلات",
+    "notFoundTitle": "هذا المسار غير موجود على الخريطة",
+    "notFoundDescription": "ربما تم نقل الصفحة أو لم تعد الرحلة متاحة.",
+    "exploreTrips": "استكشف الرحلات المتاحة",
+    "closeDialog": "إغلاق النافذة"
+  },
+  "tripCard": {
+    "previousImage": "الصورة السابقة",
+    "nextImage": "الصورة التالية",
+    "defaultCategory": "مغامرة",
+    "priceTba": "السعر قريباً",
+    "spots_one": "مقعد واحد",
+    "spots_other": "{{count}} مقاعد",
+    "soldOut": "مكتمل",
+    "verifiedAgency": "وكالة موثقة",
+    "agencyPending": "وكالة قيد المراجعة",
+    "days_one": "يوم واحد",
+    "days_other": "{{count}} أيام",
+    "from": "ابتداءً من",
+    "viewDetails": "عرض التفاصيل",
+    "new": "جديد",
+    "wishlistAdd": "أضف إلى المفضلة",
+    "wishlistRemove": "أزل من المفضلة"
+  },
+  "authModal": {
+    "title": "سجّل الدخول للمتابعة",
+    "subtitle": "يرجى تسجيل الدخول لحجز مغامرتك.",
+    "email": "البريد الإلكتروني",
+    "emailPlaceholder": "hello@ouiboo.com",
+    "password": "كلمة المرور",
+    "passwordPlaceholder": "********",
+    "error": "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.",
+    "submitting": "جارٍ تسجيل الدخول...",
+    "signIn": "تسجيل الدخول",
+    "or": "أو",
+    "noAccount": "ليس لديك حساب؟",
+    "signUp": "إنشاء حساب",
+    "close": "إغلاق النافذة"
+  },
+  "agency": {
+    "notFoundTitle": "الوكالة غير موجودة",
+    "verifiedTitle": "وكالة موثقة",
+    "noTrips": "لا توجد رحلات نشطة لهذه الوكالة."
+  },
+  "featuredPage": {
+    "badge": "مجموعة مميزة",
+    "title": "تجارب مختارة بعناية",
+    "subtitle": "قائمة إطلاق مختصرة لأقوى الرحلات النشطة من حيث الاكتشاف والطلب وجودة الوكالة.",
+    "browseAll": "تصفح كل الرحلات",
+    "emptyTitle": "يتم تحديث الرحلات المميزة",
+    "emptySubtitle": "استكشف الكتالوج الكامل بينما يعمل الفريق على القائمة التالية.",
+    "explore": "استكشف الرحلات"
+  },
+  "wishlist": {
+    "title": "مفضلتي",
+    "subtitle": "رحلاتك المحفوظة",
+    "signInTitle": "سجّل الدخول للوصول إلى مفضلتك",
+    "signInSubtitle": "احفظ رحلاتك المفضلة وعد إليها في أي وقت من حسابك.",
+    "signIn": "تسجيل الدخول",
+    "explore": "استكشف الرحلات",
+    "emptyTitle": "مفضلتك فارغة",
+    "emptySubtitle": "ابدأ بإضافة رحلات إلى مفضلتك لعرضها هنا",
+    "previous": "السابق",
+    "next": "التالي",
+    "pageOf": "صفحة {{page}} من {{pages}}"
   }
 }

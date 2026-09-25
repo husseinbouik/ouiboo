@@ -213,7 +213,7 @@ const generateEmailHtml = (name: string, userType: string, language: string = 'e
 
               <!-- HEADER -->
               <tr>
-                <td align="center" style="background:#1E3A8A; padding:36px 20px;">
+                <td align="center" style="background:#0A192F; padding:36px 20px;">
                   <h1 style="margin:0; font-size:34px; font-weight:800; letter-spacing:0.5px;">
                     <span style="color:#fff;">oui</span><span style="color:#0EA5E9;">boo</span>
                   </h1>
@@ -224,7 +224,7 @@ const generateEmailHtml = (name: string, userType: string, language: string = 'e
               <tr>
                 <td style="padding:42px 34px; direction:${dir}; text-align:${textAlign};">
 
-                  <h2 style="font-size:26px; color:#1E3A8A; font-weight:700; text-align:center; margin-top:0;">
+                  <h2 style="font-size:26px; color:#0A192F; font-weight:700; text-align:center; margin-top:0;">
                     ${emailContent.title}
                   </h2>
 
@@ -233,7 +233,7 @@ const generateEmailHtml = (name: string, userType: string, language: string = 'e
                   </p>
 
                   <div style="margin-top:32px; padding:22px; background:#F9FAFB; border-radius:10px;">
-                    <p style="font-size:16px; color:#1E3A8A; font-weight:600; margin:0 0 12px 0;">
+                    <p style="font-size:16px; color:#0A192F; font-weight:600; margin:0 0 12px 0;">
                       ${emailContent.featuresTitle}
                     </p>
                     ${emailContent.features.map((feature: string) => `<p style="margin:8px 0; font-size:16px; color:#374151;">${feature}</p>`).join('')}
@@ -299,7 +299,7 @@ const generateEmailHtml = (name: string, userType: string, language: string = 'e
               <tr>
                 <td align="center" style="padding:32px; border-bottom:4px solid #FACC15;">
                   <h1 style="margin:0; font-size:34px; font-weight:800;">
-                    <span style="color:#1E3A8A;">oui</span><span style="color:#F97316;">boo</span>
+                    <span style="color:#0A192F;">oui</span><span style="color:#FF6B35;">boo</span>
                   </h1>
                 </td>
               </tr>
@@ -308,7 +308,7 @@ const generateEmailHtml = (name: string, userType: string, language: string = 'e
               <tr>
                 <td style="padding:42px 34px; direction:${dir}; text-align:${textAlign};">
 
-                  <h2 style="font-size:26px; color:#1E3A8A; font-weight:700; text-align:center; margin-top:0;">
+                  <h2 style="font-size:26px; color:#0A192F; font-weight:700; text-align:center; margin-top:0;">
                     ${emailContent.title}
                   </h2>
 
@@ -317,7 +317,7 @@ const generateEmailHtml = (name: string, userType: string, language: string = 'e
                   </p>
 
                   <div style="margin:30px 0; padding:24px 0; border-top:1px solid #e5e7eb; border-bottom:1px solid #e5e7eb; text-align:center;">
-                    <p style="font-size:17px; color:#1E3A8A; margin:0; line-height:1.6;">
+                    <p style="font-size:17px; color:#0A192F; margin:0; line-height:1.6;">
                       ${emailContent.highlight}
                     </p>
                   </div>
@@ -329,7 +329,7 @@ const generateEmailHtml = (name: string, userType: string, language: string = 'e
                   <!-- CTA -->
                   <div style="text-align:center; margin-top:40px;">
                     <a href="${officialWebsiteUrl}"
-                      style="background:#F97316; padding:16px 40px; color:#fff; border-radius:8px; 
+                      style="background:#FF6B35; padding:16px 40px; color:#fff; border-radius:8px;
                       text-decoration:none; font-weight:600; font-size:17px; display:inline-block;">
                       ${emailContent.cta}
                     </a>
@@ -480,9 +480,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Success!' }, { status: 200 });
 
   } catch (error) {
-    const message = getErrorMessage(error);
     console.error('API Error:', error);
-    return NextResponse.json({ message: 'Internal server error', error: message }, { status: 500 });
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
 

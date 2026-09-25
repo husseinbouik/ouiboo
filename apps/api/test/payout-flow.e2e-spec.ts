@@ -161,6 +161,31 @@ describe('E2E: payout request + admin processing', () => {
         expect(wallet.transactions[0].amount.toNumber()).toBe(-500);
     });
 
+    it('returns payout history with pagination metadata', async () => {
+        for (let index = 0; index < 3; index++) {
+            await agencyRequest()
+                .send({ amount: 100, bankDetails: 'Verified account ending 0001' })
+                .expect(201);
+        }
+
+        const firstPage = await request(app.getHttpServer())
+            .get('/agency/payouts?page=1&limit=2')
+            .set('Authorization', 'Bearer agency')
+            .expect(200);
+
+        expect(firstPage.body.pagination).toEqual({ total: 3, page: 1, limit: 2, totalPages: 2 });
+        expect(firstPage.body.data).toHaveLength(2);
+        expect(firstPage.body.data[0]).toMatchObject({ agencyId: 'agency-payout-profile', status: 'PENDING' });
+
+        const secondPage = await request(app.getHttpServer())
+            .get('/agency/payouts?page=2&limit=2')
+            .set('Authorization', 'Bearer agency')
+            .expect(200);
+
+        expect(secondPage.body.pagination).toEqual({ total: 3, page: 2, limit: 2, totalPages: 2 });
+        expect(secondPage.body.data).toHaveLength(1);
+    });
+
     it('rejects payout details that do not match the verified agency profile', async () => {
         await agencyRequest()
             .send({ amount: 100, bankDetails: 'Attacker controlled account' })

@@ -25,10 +25,11 @@ export class NotificationsController {
 
   @Get('history')
   @ApiOperation({ summary: 'Get current user notification history' })
-  getHistory(@Request() req: any, @Query('limit') limit?: string) {
+  getHistory(@Request() req: any, @Query('limit') limit?: string, @Query('page') page?: string) {
     return this.notificationsService.getNotificationHistory(
       req.user.id,
       limit ? Number(limit) : 50,
+      page ? Number(page) : 1,
     );
   }
 }

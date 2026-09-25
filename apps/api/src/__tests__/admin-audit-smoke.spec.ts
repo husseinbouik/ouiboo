@@ -14,12 +14,14 @@ describe('Admin audit smoke', () => {
     let app: INestApplication;
 
     const findManyMock = jest.fn();
+    const countMock = jest.fn().mockResolvedValue(1);
     const deleteManyMock = jest.fn();
     const logMock = jest.fn().mockResolvedValue(undefined);
 
     const databaseService = {
         auditLog: {
             findMany: findManyMock,
+            count: countMock,
             deleteMany: deleteManyMock,
         },
     };
@@ -96,11 +98,17 @@ describe('Admin audit smoke', () => {
             .query({ q: 'payout', limit: 20 })
             .expect(200)
             .expect(({ body }) => {
-                expect(body).toHaveLength(1);
-                expect(body[0]).toMatchObject({
+                expect(body.data).toHaveLength(1);
+                expect(body.data[0]).toMatchObject({
                     id: 'audit-1',
                     action: 'PAYOUT_PROCESSED',
                     targetType: 'PayoutRequest',
+                });
+                expect(body.pagination).toEqual({
+                    total: 1,
+                    page: 1,
+                    limit: 20,
+                    totalPages: 1,
                 });
             });
 
@@ -110,7 +118,16 @@ describe('Admin audit smoke', () => {
                     expect.objectContaining({ action: expect.objectContaining({ contains: 'payout' }) }),
                 ]),
             }),
+            skip: 0,
             take: 20,
+        }));
+
+        expect(countMock).toHaveBeenCalledWith(expect.objectContaining({
+            where: expect.objectContaining({
+                OR: expect.arrayContaining([
+                    expect.objectContaining({ action: expect.objectContaining({ contains: 'payout' }) }),
+                ]),
+            }),
         }));
     });
 
