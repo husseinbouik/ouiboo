@@ -1,0 +1,1 @@
+{"$schema":"https://openapi.vercel.sh/vercel.json","buildCommand":"cd ../../packages/database && npx prisma generate && cd ../../apps/api && npm run build","functions":{"api/index.ts":{"maxDuration":60}},"installCommand":"npm install --prefix ../..","outputDirectory":"dist"}
