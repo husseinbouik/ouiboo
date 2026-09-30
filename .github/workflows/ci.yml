@@ -98,6 +98,8 @@ jobs:
 
       - name: Run API E2E tests
         run: npm run test:e2e:safe --workspace apps/api
+        env:
+          STORAGE_PROVIDER: local
 
       - name: Teardown E2E services
         if: always()
