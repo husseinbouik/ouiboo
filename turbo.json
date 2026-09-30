@@ -11,6 +11,9 @@
                 "!.next/cache/**"
             ]
         },
+        "db:generate": {
+            "cache": false
+        },
         "dev": {
             "cache": false
         },
