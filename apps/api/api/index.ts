@@ -14,7 +14,7 @@
  * - Local disk uploads are ephemeral; set STORAGE_PROVIDER=s3 with real
  *   S3-compatible credentials for file uploads to persist.
  */
-import type { VercelRequest, VercelResponse } from '@vercel/node'
+import type { Request, Response } from 'express'
 import serverlessExpress from '@vendia/serverless-express'
 import { createApp } from '../src/create-app'
 
@@ -29,7 +29,7 @@ async function getHandler() {
   return cachedHandler
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: Request, res: Response) {
   const serverlessHandler = await getHandler()
   return serverlessHandler(req, res)
 }
