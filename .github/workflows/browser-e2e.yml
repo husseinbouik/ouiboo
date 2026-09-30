@@ -2,9 +2,9 @@ name: Browser E2E
 
 on:
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, staging ]
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, staging ]
 
 jobs:
   browser-e2e:
