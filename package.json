@@ -12,7 +12,7 @@
     "test": "turbo test",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install --with-deps chromium",
-    "prepare": "husky install",
+    "prepare": "husky install || true",
     "ci": "npm run lint && npm run test",
     "install:ci": "npm install --no-audit --no-fund",
     "check:env": "node scripts/validate-env.mjs",
