@@ -11,7 +11,7 @@ test.describe('agency launch flow', () => {
 
     await expect(page.getByRole('heading', { name: /wallet & payouts/i })).toBeVisible();
     await expect(page.getByText(/add your bank details before requesting a payout/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /request payout/i })).toBeDisabled();
+    await expect(page.locator('#request-payout').getByRole('button', { name: /request payout/i })).toBeDisabled();
   });
 
   test('agency can inspect proof but not finalize bank-transfer verification', async ({ page }) => {

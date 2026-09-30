@@ -47,11 +47,10 @@ export default function BookingsManager() {
       const response = await apiClient.get('/agency/bookings', { params: { page: currentPage, limit: 10 } });
       return toPaginatedList<BookingDetails>(response.data);
     },
-    initialData: { data: [], pagination: null },
   });
 
-  const bookings = result.data;
-  const bookingsPagination = result.pagination;
+  const bookings = result?.data ?? [];
+  const bookingsPagination = result?.pagination ?? null;
 
   const bookingStatusLabel = (status: BookingStatusType) => {
     switch (status) {
