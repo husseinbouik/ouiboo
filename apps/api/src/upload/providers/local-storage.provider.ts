@@ -7,8 +7,10 @@ import { ALLOWED_MIME_TYPES, AllowedMimeType, MAX_UPLOAD_SIZE_BYTES } from '../u
 
 @Injectable()
 export class LocalStorageProvider implements IStorageProvider {
-    private readonly uploadDir = path.resolve(process.cwd(), 'uploads');
-    private readonly privateUploadDir = path.resolve(process.cwd(), 'private-uploads');
+    // Vercel serverless: /var/task is read-only, use /tmp which is writable
+    private readonly basePath = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME ? '/tmp' : process.cwd();
+    private readonly uploadDir = path.resolve(this.basePath, 'uploads');
+    private readonly privateUploadDir = path.resolve(this.basePath, 'private-uploads');
     private readonly allowedMimeTypes = ALLOWED_MIME_TYPES;
     private readonly maxFileSize = MAX_UPLOAD_SIZE_BYTES;
     private readonly privatePrefix = 'private';
