@@ -1,18 +1,38 @@
 'use client';
 
-import React from 'react';
-import { usePathname } from 'next/navigation';
+import React, { useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { AgencySidebar } from "./layout/AgencySidebar";
 import { AgencyNavbar } from "./layout/AgencyNavbar";
 import { AgencyMobileNav } from "./AgencyMobileNav";
+import { useAuth } from "./AuthContext";
+import { Loader2 } from "lucide-react";
 
 export function AgencyShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, isLoading } = useAuth();
   const authRoutes = ['/login', '/signup', '/verify', '/forgot-password', '/reset-password', '/terms', '/privacy'];
   const isAuthPage = authRoutes.some((route) => pathname.startsWith(route));
 
+  useEffect(() => {
+    if (!isAuthPage && !isLoading && !user) {
+      router.replace('/login');
+    }
+  }, [isAuthPage, isLoading, user, router]);
+
   if (isAuthPage) {
     return <main id="main-content" tabIndex={-1} className="min-h-screen">{children}</main>;
+  }
+
+  // While checking auth, or when unauthenticated (redirect pending),
+  // never render protected content — show a loading state instead.
+  if (isLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-label="Loading" />
+      </div>
+    );
   }
 
   return (
