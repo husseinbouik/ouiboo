@@ -30,7 +30,7 @@ export default function AgencySignupPage() {
   const router = useRouter();
   const { register, handleSubmit, formState: { errors } } = useForm<AgencySignupFormValues>({
     defaultValues: {
-      acceptTerms: true,
+      acceptTerms: false,
     },
   });
   const mounted = useSyncExternalStore(
