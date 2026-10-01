@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input } from '@ouiboo/ui';
+import { Button, Input, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, Mail, Lock, Building2, Eye, EyeOff } from 'lucide-react';
@@ -95,7 +95,12 @@ export default function AgencySignupPage() {
   if (!mounted) return <div className="min-h-screen bg-background" />;
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex bg-background relative">
+      {/* Theme + Language controls */}
+      <div className="absolute top-4 end-4 z-10 flex items-center gap-2">
+        <LanguageSwitcher />
+        <ThemeToggle />
+      </div>
       {/* Left Side - Form */}
       <div className="flex-1 flex items-center justify-center p-8 lg:p-12">
         <motion.div
