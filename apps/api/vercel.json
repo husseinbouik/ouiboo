@@ -6,6 +6,5 @@
       "maxDuration": 60
     }
   },
-  "installCommand": "npm install --prefix ../..",
-  "outputDirectory": "dist"
+  "installCommand": "npm install --prefix ../.."
 }
