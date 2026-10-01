@@ -4,4 +4,4 @@ export default function Home() {
   redirect("/login");
 }
 
-// Trigger Vercel git deployment
+// Trigger Vercel git deployment v2
