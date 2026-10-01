@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd ../../packages/database && npx prisma generate && npx prisma migrate deploy && cd ../../apps/api && npm run build",
+  "buildCommand": "cd ../../packages/database && npx prisma generate && npx prisma migrate deploy && cd ../../apps/api && npm run build && mkdir -p public && echo 'ok' > public/health.txt",
   "functions": {
     "api/index.ts": {
       "maxDuration": 60
