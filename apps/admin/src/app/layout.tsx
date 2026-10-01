@@ -7,6 +7,7 @@ import { getInitialLanguage, languageInitScript, type SupportedLanguage } from '
 import adminEn from '../../public/locales/en/translation.json';
 import adminFr from '../../public/locales/fr/translation.json';
 import adminAr from '../../public/locales/ar/translation.json';
+import { Analytics } from '@vercel/analytics/react';
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -76,6 +77,7 @@ export default async function RootLayout({
         <Providers>
           {children}
         </Providers>
+              <Analytics />
       </body>
     </html>
   );
