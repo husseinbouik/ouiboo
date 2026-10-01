@@ -61,14 +61,28 @@ export default function TravelerLoginPage() {
       await refetch();
       router.push('/');
     },
-    onError: (err) => {
-      const message = err?.response?.data?.message;
+    onError: (err: { response?: { data?: { message?: string } | string } }) => {
+      if (!err?.response) {
+        setError(t('login.networkError', 'Cannot reach the server. Please check your connection and try again.'));
+        return;
+      }
+      const data = err.response.data;
+      const message = typeof data === 'string' ? null : data?.message;
       if (message === 'EMAIL_NOT_VERIFIED') {
         const email = (document.getElementById('email') as HTMLInputElement)?.value;
         router.push(`/verify?email=${encodeURIComponent(email || '')}&reason=unverified`);
         return;
       }
-      setError(message || t('login.errorFailed', 'Login failed. Please try again.'));
+      if (message === 'INVALID_CREDENTIALS') {
+        setError(t('login.invalidCredentials', 'Incorrect email or password. Please try again.'));
+        return;
+      }
+      // Show human-readable backend messages, hide raw ALL_CAPS error codes
+      if (message && !/^[A-Z][A-Z0-9_]*$/.test(message)) {
+        setError(message);
+        return;
+      }
+      setError(t('login.errorFailed', 'Login failed. Please try again.'));
     },
   });
 
