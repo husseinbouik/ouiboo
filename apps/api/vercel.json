@@ -6,5 +6,11 @@
       "maxDuration": 60
     }
   },
-  "installCommand": "npm install --prefix ../.."
+  "installCommand": "npm install --prefix ../..",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api"
+    }
+  ]
 }
