@@ -46,6 +46,7 @@ import { getInitialLanguage, languageInitScript, type SupportedLanguage } from '
 import travelerEn from '../../public/locales/en/translation.json';
 import travelerFr from '../../public/locales/fr/translation.json';
 import travelerAr from '../../public/locales/ar/translation.json';
+import { Analytics } from '@vercel/analytics/react';
 
 const SKIP_LINK_BY_LANGUAGE: Record<SupportedLanguage, string> = {
   en: travelerEn.common.skipToContent,
@@ -78,6 +79,7 @@ export default async function RootLayout({
             {children}
           </main>
         </Providers>
+              <Analytics />
       </body>
     </html>
   );
