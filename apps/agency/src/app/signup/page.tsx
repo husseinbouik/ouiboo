@@ -21,8 +21,32 @@ type ApiError = {
   response?: {
     data?: {
       message?: string;
-    };
+    } | string;
   };
+};
+
+const getSignupErrorMessage = (
+  err: ApiError,
+  t: (key: string, fallback: string) => string,
+): string => {
+  if (!err?.response) {
+    return t('signup.networkError', 'Cannot reach the server. Please check your connection and try again.');
+  }
+  const data = err.response.data;
+  const message = typeof data === 'string' ? null : data?.message;
+  switch (message) {
+    case 'EMAIL_ALREADY_IN_USE':
+      return t('signup.emailInUse', 'An account with this email already exists. Try logging in instead.');
+    case 'JWT_NOT_CONFIGURED':
+      return t('signup.serverNotConfigured', 'The server is not fully configured. Please try again later or contact support.');
+    case 'EMAIL_NOT_VERIFIED':
+      return t('signup.emailNotVerified', 'Please verify your email address before continuing.');
+    default:
+      if (message && !/^[A-Z][A-Z0-9_]*$/.test(message)) {
+        return message;
+      }
+      return t('signup.errorGeneric', 'Signup failed. Please try again.');
+  }
 };
 
 export default function AgencySignupPage() {
@@ -54,16 +78,7 @@ export default function AgencySignupPage() {
       router.push(`/verify?email=${encodeURIComponent(data.email)}`);
     },
     onError: (err: ApiError) => {
-      const message = err?.response?.data?.message;
-      if (message === 'EMAIL_ALREADY_IN_USE') {
-        setError(t('signup.emailInUse', 'An account with this email already exists. Try logging in instead.'));
-        return;
-      }
-      if (message === 'JWT_NOT_CONFIGURED') {
-        setError(t('signup.serverNotConfigured', 'The server is not fully configured. Please try again later or contact support.'));
-        return;
-      }
-      setError(message || t('signup.errorGeneric', 'Signup failed. Please try again.'));
+      setError(getSignupErrorMessage(err, t));
     }
   });
 
