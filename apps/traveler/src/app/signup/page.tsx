@@ -32,8 +32,35 @@ type ApiError = {
   response?: {
     data?: {
       message?: string;
-    };
+    } | string;
   };
+};
+
+const getSignupErrorMessage = (
+  err: ApiError,
+  t: (key: string, fallback: string) => string,
+): string => {
+  // No response = network error or server unreachable
+  if (!err?.response) {
+    return t('signup.networkError', 'Cannot reach the server. Please check your connection and try again.');
+  }
+  const data = err.response.data;
+  // Handle non-JSON responses (e.g., HTML error pages from proxy/CDN)
+  const message = typeof data === 'string' ? null : data?.message;
+  switch (message) {
+    case 'EMAIL_ALREADY_IN_USE':
+      return t('signup.emailInUse', 'An account with this email already exists. Try logging in instead.');
+    case 'JWT_NOT_CONFIGURED':
+      return t('signup.serverError', 'The server is not fully configured. Please try again later or contact support.');
+    case 'EMAIL_NOT_VERIFIED':
+      return t('signup.emailNotVerified', 'Please verify your email address before continuing.');
+    default:
+      // Show human-readable backend messages, but hide raw ALL_CAPS error codes
+      if (message && !/^[A-Z][A-Z0-9_]*$/.test(message)) {
+        return message;
+      }
+      return t('signup.errorFailed', 'Signup failed. Please try again.');
+  }
 };
 
 export default function TravelerSignupPage() {
@@ -66,16 +93,7 @@ export default function TravelerSignupPage() {
       router.push(`/verify?email=${encodeURIComponent(data.email)}`);
     },
     onError: (err: ApiError) => {
-      const message = err?.response?.data?.message;
-      if (message === 'EMAIL_ALREADY_IN_USE') {
-        setError(t('signup.emailInUse', 'An account with this email already exists. Try logging in instead.'));
-        return;
-      }
-      if (message === 'JWT_NOT_CONFIGURED') {
-        setError(t('signup.serverError', 'The server is not fully configured. Please try again later or contact support.'));
-        return;
-      }
-      setError(message || t('signup.errorFailed', 'Signup failed. Please try again.'));
+      setError(getSignupErrorMessage(err, t));
     }
   });
 
