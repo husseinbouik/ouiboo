@@ -24,7 +24,7 @@ type ApiError = {
   response?: {
     data?: {
       message?: string;
-    };
+    } | string;
   };
 };
 
@@ -57,13 +57,27 @@ export default function AgencyLoginPage() {
     },
     onError: (err: ApiError) => {
       console.error('Login failed:', err);
-      const message = err?.response?.data?.message;
-      if (message === 'EMAIL_NOT_VERIFIED') {
-        const email = (document.getElementById('email') as HTMLInputElement)?.value;
-        router.push(`/verify?email=${email}&reason=unverified`);
+      if (!err?.response) {
+        setError(t('login.networkError', 'Cannot reach the server. Please check your connection and try again.'));
         return;
       }
-      setError(message || t('login.errorGeneric', 'Login failed. Please try again.'));
+      const data = err.response.data;
+      const message = typeof data === 'string' ? null : data?.message;
+      if (message === 'EMAIL_NOT_VERIFIED') {
+        const email = (document.getElementById('email') as HTMLInputElement)?.value;
+        router.push(`/verify?email=${encodeURIComponent(email || '')}&reason=unverified`);
+        return;
+      }
+      if (message === 'INVALID_CREDENTIALS') {
+        setError(t('login.invalidCredentials', 'Incorrect email or password. Please try again.'));
+        return;
+      }
+      // Show human-readable backend messages, hide raw ALL_CAPS error codes
+      if (message && !/^[A-Z][A-Z0-9_]*$/.test(message)) {
+        setError(message);
+        return;
+      }
+      setError(t('login.errorGeneric', 'Login failed. Please try again.'));
     }
   });
 
