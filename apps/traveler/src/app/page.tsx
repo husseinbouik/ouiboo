@@ -44,4 +44,4 @@ export default async function HomePage() {
 
   return <HomeClient featuredTrips={featuredTrips} />;
 }
-
+// Trigger fresh traveler deployment
