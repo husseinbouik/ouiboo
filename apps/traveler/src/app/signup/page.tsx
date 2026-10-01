@@ -42,7 +42,7 @@ export default function TravelerSignupPage() {
   const { register, handleSubmit, formState: { errors } } = useForm<TravelerSignupFormValues>({
     resolver: zodResolver(TravelerSignupSchema),
     defaultValues: {
-      acceptTerms: true,
+      acceptTerms: false,
     },
   });
   const mounted = useSyncExternalStore(
