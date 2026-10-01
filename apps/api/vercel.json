@@ -6,12 +6,5 @@
       "maxDuration": 60
     }
   },
-  "installCommand": "npm install --prefix ../..",
-  "outputFileTracingIncludes": {
-    "/api/index.ts": [
-      "../../packages/database/generated-client/**/*",
-      "../../node_modules/.prisma/**/*",
-      "../../node_modules/@prisma/**/*"
-    ]
-  }
+  "installCommand": "npm install --prefix ../.."
 }
