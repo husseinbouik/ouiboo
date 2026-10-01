@@ -19,6 +19,7 @@ const mediaRemotePatterns = (() => {
 })();
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   transpilePackages: ["@ouiboo/ui", "@ouiboo/utils"],
   images: {
     remotePatterns: [
