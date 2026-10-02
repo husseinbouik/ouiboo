@@ -1,10 +1,12 @@
 # Dependabot configuration for Ouiboo
 # https://docs.github.com/en/code-security/dependabot
+# PRs target staging (not master) to follow the feature -> staging -> master flow.
 version: 2
 updates:
   # npm dependencies (monorepo root)
   - package-ecosystem: "npm"
     directory: "/"
+    target-branch: "staging"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -28,6 +30,7 @@ updates:
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "staging"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -42,11 +45,17 @@ updates:
   # Docker base images
   - package-ecosystem: "docker"
     directory: "/apps/api"
+    target-branch: "staging"
     schedule:
       interval: "weekly"
       day: "monday"
       time: "06:00"
       timezone: "Africa/Casablanca"
+    # Ignore Node.js major upgrades — the project standardizes on Node 20.
+    # A Node major bump needs deliberate planning, not an automated PR.
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
