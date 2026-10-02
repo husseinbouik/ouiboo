@@ -1,0 +1,22 @@
+# Auto-label PRs by changed paths for faster triage.
+area:api:
+  - apps/api/**/*
+  - packages/database/**/*
+area:traveler:
+  - apps/traveler/**/*
+area:agency:
+  - apps/agency/**/*
+area:admin:
+  - apps/admin/**/*
+area:landing:
+  - apps/landing/**/*
+area:ci:
+  - .github/**/*
+area:deps:
+  - package.json
+  - package-lock.json
+  - apps/*/package.json
+  - packages/*/package.json
+area:docs:
+  - "*.md"
+  - docs/**/*

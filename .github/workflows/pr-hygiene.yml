@@ -1,0 +1,43 @@
+name: PR Hygiene
+
+# Auto-label PRs and warn on oversized ones.
+on:
+  pull_request:
+    branches: [ master, staging ]
+    types: [ opened, synchronize, reopened ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/labeler@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+  size:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const { data } = await github.rest.pulls.get({
+              owner: context.repo.owner, repo: context.repo.repo, pull_number: pr.number,
+            });
+            const changes = data.additions + data.deletions;
+            const limit = 1000;
+            if (changes > limit) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo, issue_number: pr.number,
+                body: `⚠️ This PR changes **${changes}** lines (limit: ${limit}). Consider splitting it for easier review.`,
+              });
+              core.setFailed(`PR too large: ${changes} lines changed`);
+            } else {
+              core.info(`PR size OK: ${changes} lines`);
+            }
