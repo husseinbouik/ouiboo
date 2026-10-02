@@ -2,6 +2,7 @@ name: Auto-fix
 
 # Automatically fixes lint/format issues and pushes the fix back to the PR branch.
 # This prevents the common loop of "CI fails lint -> manually fix -> push -> wait".
+# Only touches files changed in the PR to avoid reformatting the entire repo.
 on:
   pull_request:
     branches: [ master, staging ]
@@ -10,6 +11,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  workflows: write
 
 jobs:
   autofix:
@@ -22,6 +24,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -31,11 +34,20 @@ jobs:
       - name: Install dependencies
         run: npm ci --include=dev
 
-      - name: Run lint --fix
-        run: npx turbo lint -- --fix 2>/dev/null || npm run lint -- --fix 2>/dev/null || true
+      - name: Get changed files
+        id: changed
+        run: |
+          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.json' '*.md' '*.yml' '*.yaml' | tr '\n' ' ')
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+          echo "Changed files: $FILES"
 
-      - name: Run prettier --write
-        run: npx prettier --write . 2>/dev/null || true
+      - name: Run prettier on changed files
+        if: steps.changed.outputs.files != ''
+        run: npx prettier --write ${{ steps.changed.outputs.files }} || true
+
+      - name: Run eslint --fix on changed files
+        if: steps.changed.outputs.files != ''
+        run: npx eslint --fix ${{ steps.changed.outputs.files }} || true
 
       - name: Commit fixes if any
         run: |
