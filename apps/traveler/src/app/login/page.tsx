@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { Button, Input } from '@ouiboo/ui';
+import { Button, Input, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/components/AuthContext';
 import { setBrowserAccessToken } from '@ouiboo/api-client';
@@ -16,7 +16,6 @@ import { LoginSchema, type LoginInput } from '@ouiboo/schemas';
 import '../../lib/i18n';
 
 type LoginFormValues = LoginInput & {
-  rememberMe?: boolean;
 };
 
 type LoginResponse = {
@@ -73,7 +72,7 @@ export default function TravelerLoginPage() {
         router.push(`/verify?email=${encodeURIComponent(email || '')}&reason=unverified`);
         return;
       }
-      if (message === 'INVALID_CREDENTIALS') {
+      if (message === 'INVALID_CREDENTIALS' || message === 'Unauthorized') {
         setError(t('login.invalidCredentials', 'Incorrect email or password. Please try again.'));
         return;
       }
@@ -99,6 +98,11 @@ export default function TravelerLoginPage() {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center bg-background overflow-hidden p-6 font-sans">
+      {/* Theme + Language controls */}
+      <div className="absolute top-4 end-4 z-10 flex items-center gap-2">
+        <LanguageSwitcher />
+        <ThemeToggle />
+      </div>
       
       {/* Background Blobs */}
       <div className="absolute top-0 end-0 -translate-y-1/2 translate-x-1/2 rtl:-translate-x-1/2 w-[40rem] h-[40rem] bg-sunset-orange/10 dark:bg-sunset-orange/5 rounded-full blur-3xl opacity-50 pointer-events-none" />
@@ -167,15 +171,7 @@ export default function TravelerLoginPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-border text-sunset-orange focus:ring-sunset-orange"
-                  {...register('rememberMe')}
-                />
-                {t('login.rememberMe', 'Remember me')}
-              </label>
+            <div className="flex items-center justify-end">
               <span className="text-xs text-muted-foreground">{t('login.securityNote', '256-bit encryption')}</span>
             </div>
 

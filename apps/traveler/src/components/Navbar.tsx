@@ -208,11 +208,6 @@ const [isOpen, setIsOpen] = useState(false);
                                     <Link href="/bookings" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg">
                                         <CalendarIcon className="w-4 h-4" /> {t('nav.bookings')}
                                     </Link>
-                                    {user.role === 'AGENCY' && (
-                                        <Link href="/dashboard" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-sunset-orange hover:bg-sunset-orange/10 rounded-lg">
-                                            <LayoutDashboard className="w-4 h-4" /> {t('nav.agencyPanel')}
-                                        </Link>
-                                    )}
                                 </div>
                                 <div className="p-1 border-t border-border">
                                     <button 

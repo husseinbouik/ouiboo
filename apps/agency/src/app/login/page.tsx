@@ -17,7 +17,6 @@ import { useAuth } from '@/components/AuthContext';
 import { setBrowserAccessToken } from '@ouiboo/api-client';
 
 type AgencyLoginFormValues = LoginInput & {
-  rememberMe?: boolean;
 };
 
 type ApiError = {
@@ -31,7 +30,7 @@ type ApiError = {
 export default function AgencyLoginPage() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const { refetch } = useAuth();
+  const { user, isLoading, refetch } = useAuth();
   const { register, handleSubmit, formState: { errors } } = useForm<AgencyLoginFormValues>();
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -44,6 +43,13 @@ export default function AgencyLoginPage() {
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
+
+  // Bounce authenticated users to the dashboard
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.replace('/dashboard');
+    }
+  }, [user, isLoading, router]);
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginInput) => {
@@ -68,7 +74,7 @@ export default function AgencyLoginPage() {
         router.push(`/verify?email=${encodeURIComponent(email || '')}&reason=unverified`);
         return;
       }
-      if (message === 'INVALID_CREDENTIALS') {
+      if (message === 'INVALID_CREDENTIALS' || message === 'Unauthorized') {
         setError(t('login.invalidCredentials', 'Incorrect email or password. Please try again.'));
         return;
       }
@@ -157,15 +163,7 @@ if (!isMounted) return <div className="min-h-screen bg-background" />;
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                  {...register('rememberMe')}
-                />
-                {t('login.rememberMe')}
-              </label>
+            <div className="flex items-center justify-end">
               <span className="text-xs text-muted-foreground">{t('login.securityNote')}</span>
             </div>
 

@@ -368,7 +368,7 @@ export default function OuibooLanding() {
                     </motion.div>
                     <motion.div style={{ scale: heroImageScale, rotate: heroImageRotate }} className="mt-16 flow-root sm:mt-24">
                         <div className="-m-2 rounded-xl bg-gray-900/5 p-2 ring-1 ring-inset ring-gray-900/10 lg:-m-4 lg:rounded-2xl lg:p-4">
-                            <Image src="/dashboard-hero.png" alt={t('common.dashboardImageAlt')} width={2432} height={1442} className="rounded-md shadow-2xl ring-1 ring-gray-900/10"/>
+                            <Image src="/dashboard-hero.webp" alt={t('common.dashboardImageAlt')} width={1024} height={1024} priority className="rounded-md shadow-2xl ring-1 ring-gray-900/10"/>
                         </div>
                     </motion.div>
                 </div>

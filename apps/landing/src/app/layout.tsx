@@ -1,8 +1,6 @@
 // app/layout.tsx
 import React from "react";
 import { Metadata } from "next";
-import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
 import { Manrope, Space_Grotesk } from 'next/font/google';
 import Script from 'next/script';
 import "./globals.css";
@@ -61,7 +59,7 @@ export default async function RootLayout({
 
   return (
     <html lang={currentLocale} dir={currentLocale === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning={true}>
-      <body className={`${GeistSans.variable} ${GeistMono.variable} ${manrope.variable} ${spaceGrotesk.variable} antialiased`} suppressHydrationWarning>
+      <body className={`${manrope.variable} ${spaceGrotesk.variable} antialiased`} suppressHydrationWarning>
         <Script
           id="language-init"
           strategy="beforeInteractive"

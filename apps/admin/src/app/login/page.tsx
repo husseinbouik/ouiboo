@@ -38,11 +38,30 @@ export default function AdminLoginPage() {
       return response.data;
     },
     onSuccess: (data) => {
+      // Verify the user has ADMIN role before granting access
+      if (data.user?.role !== 'ADMIN') {
+        setError(t('login.notAdmin', 'This account does not have admin access.'));
+        return;
+      }
       setBrowserAccessToken(data.accessToken);
       router.push('/');
     },
     onError: (err: AxiosError<ApiErrorResponse>) => {
-      setError(err.response?.data?.message || t('login.loginFailed'));
+      if (!err?.response) {
+        setError(t('login.networkError', 'Cannot reach the server. Please check your connection and try again.'));
+        return;
+      }
+      const message = err.response.data?.message;
+      if (message === 'INVALID_CREDENTIALS' || message === 'Unauthorized') {
+        setError(t('login.invalidCredentials', 'Incorrect email or password. Please try again.'));
+        return;
+      }
+      // Hide raw ALL_CAPS error codes, show human-readable messages
+      if (message && !/^[A-Z][A-Z0-9_]*$/.test(message)) {
+        setError(message);
+        return;
+      }
+      setError(t('login.loginFailed', 'Login failed. Please try again.'));
     },
   });
 

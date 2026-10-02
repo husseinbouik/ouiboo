@@ -1,13 +1,24 @@
 "use client";
 
 import React, { useState, useMemo, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import DateRangeSelector from '../../../components/charts/DateRangeSelector';
-import RevenueTrendChart from '../../../components/charts/RevenueTrendChart';
-import ConversionFunnelChart from '../../../components/charts/ConversionFunnelChart';
+// Dynamically load recharts-heavy components to reduce initial bundle
+const RevenueTrendChart = dynamic(() => import('../../../components/charts/RevenueTrendChart'), { 
+  ssr: false,
+  loading: () => <div className="h-64 animate-pulse bg-muted rounded-lg" />
+});
+const ConversionFunnelChart = dynamic(() => import('../../../components/charts/ConversionFunnelChart'), { 
+  ssr: false,
+  loading: () => <div className="h-64 animate-pulse bg-muted rounded-lg" />
+});
+const PaymentMethodChart = dynamic(() => import('../../../components/charts/PaymentMethodChart'), { 
+  ssr: false,
+  loading: () => <div className="h-64 animate-pulse bg-muted rounded-lg" />
+});
 import TopTripsTable from '../../../components/charts/TopTripsTable';
-import PaymentMethodChart from '../../../components/charts/PaymentMethodChart';
 import CustomerDemographicsCard from '../../../components/charts/CustomerDemographicsCard';
 import { LineChartSkeleton, PieChartSkeleton, TableSkeleton } from '../../../components/charts/ChartSkeleton';
 import { motion } from 'framer-motion';

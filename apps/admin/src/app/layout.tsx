@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Manrope, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
+import { AdminShell } from "@/components/AdminShell";
 import { getInitialLanguage, languageInitScript, type SupportedLanguage } from '@ouiboo/i18n/server';
 import adminEn from '../../public/locales/en/translation.json';
 import adminFr from '../../public/locales/fr/translation.json';
@@ -75,7 +76,9 @@ export default async function RootLayout({
           {meta.skipToContent}
         </a>
         <Providers>
-          {children}
+          <AdminShell>
+            {children}
+          </AdminShell>
         </Providers>
               <Analytics />
       </body>
