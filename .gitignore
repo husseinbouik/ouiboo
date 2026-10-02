@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+**/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -12,18 +13,29 @@
 
 # testing
 /coverage
+**/coverage
+jest-results.json
+playwright-report
+test-results
+e2e/.auth
 
 # next.js
 .next/
+**/.next
 .turbo/
+**/.turbo
 /out/
 
 # production
 /build
+**/build
+**/dist
+packages/database/generated-client
 
 # misc
 .DS_Store
 *.pem
+*.log
 
 # debug
 npm-debug.log*
@@ -32,7 +44,12 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
+.env
+**/.env
+.env.*
+**/.env.*
+!.env.example
+!**/.env.example
 
 # vercel
 .vercel
@@ -40,3 +57,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local storage and uploads
+apps/api/uploads
+apps/api/private-uploads
+.demo-runtime/

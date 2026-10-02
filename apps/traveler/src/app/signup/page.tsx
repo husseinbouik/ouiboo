@@ -1,149 +1,245 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input } from '@ouiboo/ui'; // Ensure this path is correct for your project
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button, Input, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Mail, Lock, User } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-// Make sure this path points to your actual i18n config file
+import { z } from 'zod';
 import '../../lib/i18n';
+
+import { useRouter } from 'next/navigation';
+import { useMutation } from '@tanstack/react-query';
+import { type RegisterInput } from '@ouiboo/schemas';
+import { apiClient } from '@/lib/api-client';
+import { UserRole } from '@ouiboo/types';
+
+const TravelerSignupSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  acceptTerms: z.boolean().refine((val) => val === true, {
+    message: "Please accept the terms to continue.",
+  }),
+});
+
+type TravelerSignupFormValues = z.infer<typeof TravelerSignupSchema>;
+
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    } | string;
+  };
+};
+
+const getSignupErrorMessage = (
+  err: ApiError,
+  t: (key: string, fallback: string) => string,
+): string => {
+  // No response = network error or server unreachable
+  if (!err?.response) {
+    return t('signup.networkError', 'Cannot reach the server. Please check your connection and try again.');
+  }
+  const data = err.response.data;
+  // Handle non-JSON responses (e.g., HTML error pages from proxy/CDN)
+  const message = typeof data === 'string' ? null : data?.message;
+  switch (message) {
+    case 'EMAIL_ALREADY_IN_USE':
+      return t('signup.emailInUse', 'An account with this email already exists. Try logging in instead.');
+    case 'JWT_NOT_CONFIGURED':
+      return t('signup.serverError', 'The server is not fully configured. Please try again later or contact support.');
+    case 'EMAIL_NOT_VERIFIED':
+      return t('signup.emailNotVerified', 'Please verify your email address before continuing.');
+    default:
+      // Show human-readable backend messages, but hide raw ALL_CAPS error codes
+      if (message && !/^[A-Z][A-Z0-9_]*$/.test(message)) {
+        return message;
+      }
+      return t('signup.errorFailed', 'Signup failed. Please try again.');
+  }
+};
 
 export default function TravelerSignupPage() {
   const { t, i18n } = useTranslation();
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const router = useRouter();
+  const { register, handleSubmit, formState: { errors } } = useForm<TravelerSignupFormValues>({
+    resolver: zodResolver(TravelerSignupSchema),
+    defaultValues: {
+      acceptTerms: false,
+    },
+  });
+  const mounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Handle RTL direction for Arabic language
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
-  const onSubmit = (data: any) => {
-    console.log('Traveler Signup Data:', data);
-    // TODO: Add API call here
-    alert('Signup simulated! Check console for data.');
+  const signupMutation = useMutation({
+    mutationFn: async (data: RegisterInput) => {
+      const response = await apiClient.post('/auth/register', data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      router.push(`/verify?email=${encodeURIComponent(data.email)}`);
+    },
+    onError: (err: ApiError) => {
+      setError(getSignupErrorMessage(err, t));
+    }
+  });
+
+  const onSubmit = (data: TravelerSignupFormValues) => {
+    setError(null);
+    signupMutation.mutate({
+      email: data.email,
+      name: data.name,
+      password: data.password,
+      role: UserRole.Traveler,
+    });
   };
 
+  if (!mounted) return <div className="min-h-screen bg-background" />;
+
   return (
-    <div className="min-h-screen flex bg-white">
-      {/* Left Side - Image */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gray-900">
-        <motion.div
-          initial={{ scale: 1.1, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 1.5 }}
-          className="absolute inset-0"
-        >
-          <img
-            src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=2070&auto=format&fit=crop"
-            alt="Travel Journey"
-            className="w-full h-full object-cover opacity-60"
-          />
-        </motion.div>
-        <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
-          <motion.div
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.8 }}
-          >
-            <div className="text-3xl font-bold tracking-tight">Ouiboo</div>
-          </motion.div>
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.8, duration: 0.8 }}
-            className="mb-12"
-          >
-            <h2 className="text-4xl font-bold mb-4 leading-tight">Start your adventure today.</h2>
-            <p className="text-lg text-gray-200 max-w-md">
-              Connect with millions of travelers and manage your agency with ease.
-            </p>
-          </motion.div>
-        </div>
+    <div className="min-h-screen relative flex items-center justify-center bg-background overflow-hidden p-6 font-sans">
+      {/* Theme + Language controls */}
+      <div className="absolute top-4 end-4 z-10 flex items-center gap-2">
+        <LanguageSwitcher />
+        <ThemeToggle />
       </div>
+       {/* Background Blobs */}
+      <div className="absolute top-0 start-0 -translate-y-1/2 -translate-x-1/2 rtl:translate-x-1/2 w-[40rem] h-[40rem] bg-sunset-orange/10 dark:bg-sunset-orange/5 rounded-full blur-3xl opacity-50 pointer-events-none" />
+      <div className="absolute bottom-0 end-0 translate-y-1/2 translate-x-1/2 rtl:-translate-x-1/2 w-[40rem] h-[40rem] bg-blue-100 dark:bg-blue-900/20 rounded-full blur-3xl opacity-50 pointer-events-none" />
 
-      {/* Right Side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 lg:p-12">
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
-          className="w-full max-w-md space-y-8"
-        >
-          <div className="text-center lg:text-left">
-            <h2 className="text-3xl font-bold text-gray-900">{t('signup.title')}</h2>
-            <p className="mt-2 text-gray-600">{t('signup.subtitle')}</p>
-          </div>
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="relative w-full max-w-md bg-card backdrop-blur-xl border border-border shadow-2xl rounded-[2.5rem] p-8 md:p-12"
+      >
+        <div className="text-center mb-10">
+          <Link href="/" className="inline-flex items-center justify-center gap-2 mb-8 group">
+              <div className="w-10 h-10 rounded-xl bg-deep-blue dark:bg-sunset-orange text-white flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">O</div>
+              <span className="text-2xl font-bold text-deep-blue dark:text-foreground">Ouiboo</span>
+          </Link>
+          <h2 className="text-3xl font-bold text-foreground mb-2">{t('signup.title', 'Create Account')}</h2>
+          <p className="text-muted-foreground font-medium text-sm">{t('signup.subtitle', 'Start your journey with us')}</p>
+        </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-4">
-              {/* Name Input */}
-              <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium text-gray-700">{t('signup.name')}</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder={t('signup.namePlaceholder')}
-                    className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
-                    {...register('name', { required: 'Name is required' })}
-                  />
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <div className="space-y-3">
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-foreground ms-1">{t('signup.name', 'Full Name')}</label>
+                    <div className="relative group">
+                        <div className="absolute start-4 top-1/2 -translate-y-1/2 text-foreground group-focus-within:text-sunset-orange transition-colors">
+                            <User className="h-5 w-5" />
+                        </div>
+                        <Input
+                            id="name"
+                            type="text"
+                            placeholder={t('signup.namePlaceholder', 'Your full name')}
+                            className="ps-12 h-14 bg-muted border-border rounded-2xl focus:bg-background focus:ring-2 focus:ring-sunset-orange/10 focus:border-sunset-orange transition-all font-medium text-foreground placeholder:text-muted-foreground"
+                            {...register('name')}
+                        />
+                    </div>
+                    {errors.name && <span className="text-danger text-xs font-semibold ps-1">{errors.name.message as string}</span>}
                 </div>
-                {errors.name && <span className="text-red-500 text-sm">{errors.name.message as string}</span>}
-              </div>
 
-              {/* Email Input */}
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-gray-700">{t('signup.email')}</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder={t('signup.emailPlaceholder')}
-                    className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
-                    {...register('email', { required: 'Email is required' })}
-                  />
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-foreground ms-1">{t('signup.email', 'Email')}</label>
+                    <div className="relative group">
+                        <div className="absolute start-4 top-1/2 -translate-y-1/2 text-foreground group-focus-within:text-sunset-orange transition-colors">
+                            <Mail className="h-5 w-5" />
+                        </div>
+                        <Input
+                            id="email"
+                            type="email"
+                            placeholder={t('signup.emailPlaceholder', 'hello@example.com')}
+                            className="ps-12 h-14 bg-muted border-border rounded-2xl focus:bg-background focus:ring-2 focus:ring-sunset-orange/10 focus:border-sunset-orange transition-all font-medium text-foreground placeholder:text-muted-foreground"
+                            {...register('email')}
+                        />
+                    </div>
+                    {errors.email && <span className="text-danger text-xs font-semibold ps-1">{errors.email.message as string}</span>}
                 </div>
-                {errors.email && <span className="text-red-500 text-sm">{errors.email.message as string}</span>}
-              </div>
+            </div>
 
               {/* Password Input */}
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-gray-700">{t('signup.password')}</label>
+                <label htmlFor="password" className="text-sm font-medium text-foreground">{t('signup.password', 'Password')}</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Lock className="absolute start-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     id="password"
-                    type="password"
-                    placeholder={t('signup.passwordPlaceholder')}
-                    className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
-                    {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Password must be at least 6 characters' } })}
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder={t('signup.passwordPlaceholder', '********')}
+                    className="ps-10 pe-12 h-12 bg-muted border-border focus:bg-background focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
+                    {...register('password')}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label={showPassword ? t('signup.hidePassword', 'Hide password') : t('signup.showPassword', 'Show password')}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
                 </div>
-                {errors.password && <span className="text-red-500 text-sm">{errors.password.message as string}</span>}
+                <p className="text-xs text-muted-foreground">{t('signup.passwordHint', 'Must be at least 8 characters')}</p>
+                {errors.password && <span className="text-danger text-xs font-semibold ps-1">{errors.password.message as string}</span>}
               </div>
+
+              {error && (
+                <div className="rounded-2xl border border-danger/20 bg-danger/10 px-4 py-3 text-sm font-semibold text-danger">
+                  {error}
+                </div>
+              )}
+
+              <label className="flex items-start gap-2 rounded-lg border border-border bg-muted px-3 py-3 text-sm text-muted-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-border text-sunset-orange focus:ring-sunset-orange"
+                  {...register('acceptTerms')}
+                />
+                <span>
+                  {t('signup.acceptTerms', 'I accept the')}{' '}
+                  <Link href={`/terms?lang=${i18n.language}`} className="font-semibold text-sunset-orange hover:text-orange-600 hover:underline">
+                    {t('signup.termsLink', 'Terms of Service')}
+                  </Link>{' '}
+                  {t('signup.and', 'and')}{' '}
+                  <Link href={`/privacy?lang=${i18n.language}`} className="font-semibold text-sunset-orange hover:text-orange-600 hover:underline">
+                    {t('signup.privacyLink', 'Privacy Policy')}
+                  </Link>
+                  .
+                </span>
+              </label>
+              {errors.acceptTerms && <p className="text-xs text-danger ps-1">{errors.acceptTerms.message as string}</p>}
 
               {/* Submit Button */}
               <Button
                 type="submit"
-                className="w-full h-12 bg-sunset-orange hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors duration-200"
+                disabled={signupMutation.isPending}
+                className="w-full h-14 bg-sunset-orange hover:bg-orange-600 text-white font-bold rounded-2xl shadow-lg shadow-orange-900/20 transition-all hover:scale-[1.02] active:scale-95 text-lg"
               >
-                {t('signup.createAccount')} <ArrowRight className="ml-2 h-5 w-5 inline" />
+                {signupMutation.isPending ? t('signup.creatingAccount', 'Creating Account...') : t('signup.createAccount', 'Register')}
               </Button>
-            </div>
-          </form>
 
-          <p className="text-center text-sm text-gray-600">
-            {t('signup.hasAccount')}{' '}
-            <Link href={`/login?lang=${i18n.language}`} className="font-semibold text-sunset-orange hover:text-orange-600 hover:underline">
-              {t('signup.logInLink')}
-            </Link>
-          </p>
-        </motion.div>
-      </div>
+            <p className="text-center text-sm text-muted-foreground font-medium">
+                {t('signup.hasAccount', 'Already have an account?')}{' '}
+                <Link href={`/login?lang=${i18n.language}`} className="text-deep-blue dark:text-sunset-orange font-bold hover:underline">
+                    {t('signup.logInLink', 'Sign in')}
+                </Link>
+            </p>
+        </form>
+      </motion.div>
     </div>
   );
 }

@@ -1,0 +1,10 @@
+Sources used:
+- docs/ARCHITECTURE.md: app tiers, modules, integrations, deployment architecture.
+- docs/MVP_LAUNCH_READINESS_REPORT.md: hardening completed, verification completed, remaining launch blockers, readiness scores.
+- docs/API_ROUTE_SECURITY_INVENTORY.md: route inventory and security hardening reference.
+- docs/PRODUCTION_DEPLOYMENT_RUNBOOK.md: production procedure and managed services assumption.
+- docs/MVP_DEMO_RUNBOOK.md: demo startup and seeded accounts reference.
+
+Identity assets:
+- No official Ouiboo logo asset was verified or embedded.
+- Deck uses text wordmark "Ouiboo" only, plus an original abstract color system.

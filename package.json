@@ -1,17 +1,45 @@
 {
-    "name": "ouiboo-monorepo",
-    "private": true,
-    "workspaces": [
-        "apps/*",
-        "packages/*"
-    ],
-    "scripts": {
-        "dev": "turbo dev",
-        "build": "turbo build",
-        "lint": "turbo lint"
-    },
-    "devDependencies": {
-        "turbo": "latest"
-    },
-    "packageManager": "npm@10.0.0"
+  "name": "ouiboo-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install --with-deps chromium",
+    "prepare": "husky install || true",
+    "ci": "npm run lint && npm run test",
+    "install:ci": "npm install --no-audit --no-fund",
+    "check:env": "node scripts/validate-env.mjs",
+    "check:env:prod": "node scripts/validate-env.mjs --production",
+    "check:tracked-env": "node scripts/check-tracked-env.mjs",
+    "check:placeholders": "node scripts/check-placeholders.mjs",
+    "check:prod": "npm run check:env:prod && npm run check:tracked-env && npm run check:placeholders && npm run build",
+    "seed:demo": "node scripts/seed-demo.mjs",
+    "demo:prepare": "node scripts/prepare-demo.mjs",
+    "demo:start": "node scripts/demo-processes.mjs start",
+    "demo:status": "node scripts/demo-processes.mjs status",
+    "demo:smoke": "node scripts/smoke-deploy.mjs",
+    "demo:stop": "node scripts/demo-processes.mjs stop",
+    "test:e2e:api:prepare": "npm run test:e2e:prepare --workspace apps/api",
+    "test:e2e:api": "npm run test:e2e:safe --workspace apps/api"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "dotenv": "^17.2.3",
+    "husky": "^8.0.0",
+    "turbo": "latest",
+    "zod": "^4.3.5"
+  },
+  "overrides": {
+    "@nestjs/swagger": {
+      "js-yaml": "5.4.2"
+    }
+  },
+  "packageManager": "npm@10.0.0"
 }

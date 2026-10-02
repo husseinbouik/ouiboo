@@ -1,0 +1,19 @@
+{
+  "name": "@ouiboo/database",
+  "version": "0.0.0",
+  "main": "./generated-client/index.js",
+  "types": "./generated-client/index.d.ts",
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "prisma": "^5.22.0",
+    "@prisma/client": "^5.22.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

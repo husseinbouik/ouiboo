@@ -1,0 +1,1135 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/n7sgck",
+    "id": "n7sgck",
+    "slide": 2,
+    "layoutId": "ec629243-cddc-4d29-bbe4-b1ff22cf1b82",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "f84ae8df-b132-4a5a-8f77-abaacf460124",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "+mn-lt"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "ec629243-cddc-4d29-bbe4-b1ff22cf1b82",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "f84ae8df-b132-4a5a-8f77-abaacf460124",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "f84ae8df-b132-4a5a-8f77-abaacf460124",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7adsji5s",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#F7F3EA",
+      "lineColor": "#F7F3EA",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wval87ed",
+      "id": "2",
+      "name": "kicker-02-marker",
+      "bbox": [
+        74,
+        54,
+        28,
+        10
+      ],
+      "geometry": "rect",
+      "fillColor": "#E76F51",
+      "lineColor": "#E76F51",
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/pg3ex0nu",
+      "id": "3",
+      "name": "kicker-02-label",
+      "bbox": [
+        114,
+        44,
+        420,
+        32
+      ],
+      "geometry": "rect",
+      "text": "PRODUCT SYSTEM",
+      "textPreview": "PRODUCT SYSTEM",
+      "resolvedFontSize": 12,
+      "resolvedTextStyle": {
+        "fontSize": 12,
+        "typeface": "+mn-lt",
+        "color": "#6C6A61",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "PRODUCT SYSTEM"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "PRODUCT SYSTEM",
+          "resolvedTextStyle": {
+            "fontSize": 12,
+            "color": "#6C6A61",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "PRODUCT SYSTEM",
+              "fontSize": 12,
+              "color": "#6C6A61",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/e1w7mp0b",
+      "id": "4",
+      "bbox": [
+        74,
+        92,
+        930,
+        104
+      ],
+      "geometry": "rect",
+      "text": "Ouiboo organizes travel demand, agency supply, and platform governance into one marketplace loop.",
+      "textPreview": "Ouiboo organizes travel demand, agency supply, and platform governance into one marketplace loop.",
+      "resolvedFontSize": 40,
+      "resolvedTextStyle": {
+        "fontSize": 40,
+        "typeface": "+mn-lt",
+        "color": "#14213D",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Ouiboo organizes travel demand, agency supply, and"
+          },
+          {
+            "index": 2,
+            "text": "platform governance into one marketplace loop."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Ouiboo organizes travel demand, agency supply, and platform governance into one marketplace loop.",
+          "resolvedTextStyle": {
+            "fontSize": 40,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Ouiboo organizes travel demand, agency supply, and platform governance into one marketplace loop.",
+              "fontSize": 40,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7mp0bi9s",
+      "id": "5",
+      "bbox": [
+        76,
+        194,
+        760,
+        48
+      ],
+      "geometry": "rect",
+      "text": "The platform is not a single storefront; it is three role-specific applications coordinated by one API, one data model, and financial controls.",
+      "textPreview": "The platform is not a single storefront; it is three role-specific applications coordinated by one API, one data model, and financial con...",
+      "resolvedFontSize": 17,
+      "resolvedTextStyle": {
+        "fontSize": 17,
+        "typeface": "+mn-lt",
+        "color": "#6C6A61",
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 2,
+        "lines": [
+          {
+            "index": 1,
+            "text": "The platform is not a single storefront; it is three role-specific applications coordinated by one API, one data"
+          },
+          {
+            "index": 2,
+            "text": "model, and financial controls."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "The platform is not a single storefront; it is three role-specific applications coordinated by one API, one data model, and financial controls.",
+          "resolvedTextStyle": {
+            "fontSize": 17,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "The platform is not a single storefront; it is three role-specific applications coordinated by one API, one data model, and financial controls.",
+              "fontSize": 17,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/w7mp0bi9",
+      "id": "6",
+      "bbox": [
+        80,
+        298,
+        320,
+        210
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#2A9D8F",
+      "lineWidth": 3
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/psfil0rq",
+      "id": "7",
+      "bbox": [
+        80,
+        298,
+        320,
+        8
+      ],
+      "geometry": "rect",
+      "fillColor": "#2A9D8F",
+      "lineColor": "#2A9D8F",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ed8bat47",
+      "id": "8",
+      "bbox": [
+        104,
+        326,
+        220,
+        34
+      ],
+      "geometry": "rect",
+      "text": "Traveler",
+      "textPreview": "Traveler",
+      "resolvedFontSize": 27,
+      "resolvedTextStyle": {
+        "fontSize": 27,
+        "typeface": "+mn-lt",
+        "color": "#14213D",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Traveler"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Traveler",
+          "resolvedTextStyle": {
+            "fontSize": 27,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Traveler",
+              "fontSize": 27,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7u54zido",
+      "id": "9",
+      "bbox": [
+        104,
+        378,
+        260,
+        98
+      ],
+      "geometry": "rect",
+      "text": "Search trips\nBook sessions\nPay securely\nReview + wishlist",
+      "textPreview": "Search trips | Book sessions | Pay securely | Review + wishlist",
+      "resolvedFontSize": 20,
+      "resolvedTextStyle": {
+        "fontSize": 20,
+        "typeface": "+mn-lt",
+        "color": "#6C6A61",
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Search trips"
+          },
+          {
+            "index": 2,
+            "text": "Book sessions"
+          },
+          {
+            "index": 3,
+            "text": "Pay securely"
+          },
+          {
+            "index": 4,
+            "text": "Review + wishlist"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Search trips",
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Search trips",
+              "fontSize": 20,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "Book sessions",
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Book sessions",
+              "fontSize": 20,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "Pay securely",
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Pay securely",
+              "fontSize": 20,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "Review + wishlist",
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Review + wishlist",
+              "fontSize": 20,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3q5o7qpg",
+      "id": "10",
+      "bbox": [
+        460,
+        298,
+        320,
+        210
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E9C46A",
+      "lineWidth": 3
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/e9cvixcz",
+      "id": "11",
+      "bbox": [
+        460,
+        298,
+        320,
+        8
+      ],
+      "geometry": "rect",
+      "fillColor": "#E9C46A",
+      "lineColor": "#E9C46A",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/lwval87e",
+      "id": "12",
+      "bbox": [
+        484,
+        326,
+        220,
+        34
+      ],
+      "geometry": "rect",
+      "text": "Agency",
+      "textPreview": "Agency",
+      "resolvedFontSize": 27,
+      "resolvedTextStyle": {
+        "fontSize": 27,
+        "typeface": "+mn-lt",
+        "color": "#14213D",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Agency"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Agency",
+          "resolvedTextStyle": {
+            "fontSize": 27,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Agency",
+              "fontSize": 27,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 13,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/wb2hwfyx",
+      "id": "13",
+      "bbox": [
+        484,
+        378,
+        260,
+        98
+      ],
+      "geometry": "rect",
+      "text": "Create supply\nManage bookings\nMessage travelers\nWithdraw earnings",
+      "textPreview": "Create supply | Manage bookings | Message travelers | Withdraw earnings",
+      "resolvedFontSize": 20,
+      "resolvedTextStyle": {
+        "fontSize": 20,
+        "typeface": "+mn-lt",
+        "color": "#6C6A61",
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Create supply"
+          },
+          {
+            "index": 2,
+            "text": "Manage bookings"
+          },
+          {
+            "index": 3,
+            "text": "Message travelers"
+          },
+          {
+            "index": 4,
+            "text": "Withdraw earnings"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Create supply",
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Create supply",
+              "fontSize": 20,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "Manage bookings",
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Manage bookings",
+              "fontSize": 20,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "Message travelers",
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Message travelers",
+              "fontSize": 20,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "Withdraw earnings",
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Withdraw earnings",
+              "fontSize": 20,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 14,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3itgfmlk",
+      "id": "14",
+      "bbox": [
+        840,
+        298,
+        320,
+        210
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#E76F51",
+      "lineWidth": 3
+    },
+    {
+      "order": 15,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ex0nuxc3",
+      "id": "15",
+      "bbox": [
+        840,
+        298,
+        320,
+        8
+      ],
+      "geometry": "rect",
+      "fillColor": "#E76F51",
+      "lineColor": "#E76F51",
+      "lineWidth": 0
+    },
+    {
+      "order": 16,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/loj2t83i",
+      "id": "16",
+      "bbox": [
+        864,
+        326,
+        220,
+        34
+      ],
+      "geometry": "rect",
+      "text": "Admin",
+      "textPreview": "Admin",
+      "resolvedFontSize": 27,
+      "resolvedTextStyle": {
+        "fontSize": 27,
+        "typeface": "+mn-lt",
+        "color": "#14213D",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Admin"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Admin",
+          "resolvedTextStyle": {
+            "fontSize": 27,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Admin",
+              "fontSize": 27,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 17,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/w3m94fu1",
+      "id": "17",
+      "bbox": [
+        864,
+        378,
+        260,
+        98
+      ],
+      "geometry": "rect",
+      "text": "Approve agencies\nMonitor finance\nResolve refunds\nGovern quality",
+      "textPreview": "Approve agencies | Monitor finance | Resolve refunds | Govern quality",
+      "resolvedFontSize": 20,
+      "resolvedTextStyle": {
+        "fontSize": 20,
+        "typeface": "+mn-lt",
+        "color": "#6C6A61",
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 4,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Approve agencies"
+          },
+          {
+            "index": 2,
+            "text": "Monitor finance"
+          },
+          {
+            "index": 3,
+            "text": "Resolve refunds"
+          },
+          {
+            "index": 4,
+            "text": "Govern quality"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Approve agencies",
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Approve agencies",
+              "fontSize": 20,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 2,
+          "text": "Monitor finance",
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Monitor finance",
+              "fontSize": 20,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 3,
+          "text": "Resolve refunds",
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Resolve refunds",
+              "fontSize": 20,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        },
+        {
+          "index": 4,
+          "text": "Govern quality",
+          "resolvedTextStyle": {
+            "fontSize": 20,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Govern quality",
+              "fontSize": 20,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 18,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/3ex0nuxc",
+      "id": "18",
+      "bbox": [
+        245,
+        534,
+        770,
+        3
+      ],
+      "geometry": "rect",
+      "fillColor": "#264653",
+      "lineColor": "#264653",
+      "lineWidth": 0
+    },
+    {
+      "order": 19,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/at47y1kr",
+      "id": "19",
+      "bbox": [
+        168,
+        558,
+        940,
+        30
+      ],
+      "geometry": "rect",
+      "text": "Shared capabilities: Auth/RBAC • Trips • Bookings • Payments • Wallet • Reviews • Messaging • Notifications • Analytics",
+      "textPreview": "Shared capabilities: Auth/RBAC • Trips • Bookings • Payments • Wallet • Reviews • Messaging • Notifications • Analytics",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "fontSize": 18,
+        "typeface": "+mn-lt",
+        "color": "#14213D",
+        "bold": true,
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Shared capabilities: Auth/RBAC • Trips • Bookings • Payments • Wallet • Reviews • Messaging • Notifications • Analytics"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Shared capabilities: Auth/RBAC • Trips • Bookings • Payments • Wallet • Reviews • Messaging • Notifications • Analytics",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "color": "#14213D",
+            "bold": true
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Shared capabilities: Auth/RBAC • Trips • Bookings • Payments • Wallet • Reviews • Messaging • Notifications • Analytics",
+              "fontSize": 18,
+              "color": "#14213D",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 20,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/ixczed8v",
+      "id": "20",
+      "bbox": [
+        74,
+        668,
+        1060,
+        1
+      ],
+      "geometry": "rect",
+      "fillColor": "#D8D1C3",
+      "lineColor": "#D8D1C3",
+      "lineWidth": 0
+    },
+    {
+      "order": 21,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/bi9s36hc",
+      "id": "21",
+      "bbox": [
+        74,
+        676,
+        620,
+        20
+      ],
+      "geometry": "rect",
+      "text": "Sources: repository docs and hardening execution report",
+      "textPreview": "Sources: repository docs and hardening execution report",
+      "resolvedFontSize": 10,
+      "resolvedTextStyle": {
+        "fontSize": 10,
+        "typeface": "+mn-lt",
+        "color": "#6C6A61",
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Sources: repository docs and hardening execution report"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Sources: repository docs and hardening execution report",
+          "resolvedTextStyle": {
+            "fontSize": 10,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Sources: repository docs and hardening execution report",
+              "fontSize": 10,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    },
+    {
+      "order": 22,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/032lszqt",
+      "id": "22",
+      "bbox": [
+        1160,
+        676,
+        45,
+        20
+      ],
+      "geometry": "rect",
+      "text": "02",
+      "textPreview": "02",
+      "resolvedFontSize": 10,
+      "resolvedTextStyle": {
+        "fontSize": 10,
+        "typeface": "+mn-lt",
+        "color": "#6C6A61",
+        "alignment": "left",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "02"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "02",
+          "resolvedTextStyle": {
+            "fontSize": 10,
+            "color": "#6C6A61"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "02",
+              "fontSize": 10,
+              "color": "#6C6A61"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ]
+    }
+  ],
+  "composeRuns": []
+}

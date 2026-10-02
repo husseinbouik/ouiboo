@@ -1,0 +1,118 @@
+{
+  "name": "@ouiboo/api",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "nest build",
+    "dev": "npm run start:dev",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "start": "node dist/apps/api/src/main",
+    "start:worker": "node dist/apps/api/src/worker",
+    "start:dev": "ts-node -T -r tsconfig-paths/register src/main.ts",
+    "start:worker:dev": "ts-node -T -r tsconfig-paths/register src/worker.ts",
+    "start:worker:demo": "ts-node -T -r tsconfig-paths/register src/worker-demo.ts",
+    "start:debug": "ts-node -T --inspect-brk -r tsconfig-paths/register src/main.ts",
+    "start:prod": "node dist/apps/api/src/main",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e:all": "jest --config ./test/jest-e2e.json --runInBand",
+    "test:ci": "npm run test && npm run test:e2e:all",
+    "coverage:report": "jest --coverage --coverageReporters=text --coverageDirectory=./coverage",
+    "test:e2e:prepare": "node ../../scripts/prepare-e2e-db.mjs",
+    "test:e2e:safe": "npm run test:e2e:prepare && npm run test:e2e:all"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.908.0",
+    "@nestjs/bullmq": "^11.0.4",
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/jwt": "^11.0.0",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/platform-socket.io": "^11.1.13",
+    "@nestjs/schedule": "^6.1.1",
+    "@nestjs/serve-static": "^5.0.4",
+    "@nestjs/swagger": "^11.0.3",
+    "@nestjs/websockets": "^11.0.1",
+    "@ouiboo/database": "^0.0.0",
+    "@ouiboo/schemas": "*",
+    "@ouiboo/types": "*",
+    "@vendia/serverless-express": "^4.12.6",
+    "axios": "^1.5.0",
+    "bcrypt": "^6.0.0",
+    "bullmq": "^5.78.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "compression": "^1.7.4",
+    "dotenv": "^17.2.3",
+    "helmet": "^8.3.0",
+    "ioredis": "^5.11.1",
+    "nodemailer": "^10.0.13",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "socket.io": "^4.8.3",
+    "stripe": "^14.0.0"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.24",
+    "@nestjs/schematics": "^11.0.0",
+    "@nestjs/testing": "^11.0.1",
+    "@types/bcrypt": "^6.0.0",
+    "@types/compression": "^1.7.5",
+    "@types/express": "^5.0.0",
+    "@types/jest": "^29.5.14",
+    "@types/multer": "^2.0.0",
+    "@types/node": "22.19.3",
+    "@types/nodemailer": "^8.0.1",
+    "@types/passport-jwt": "^4.0.1",
+    "@types/supertest": "^6.0.2",
+    "aws-sdk-client-mock": "^4.0.0",
+    "eslint": "^9.18.0",
+    "jest": "^29.7.0",
+    "source-map-support": "^0.5.21",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.5",
+    "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.7.3"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "**/*.(t|j)s"
+    ],
+    "coverageDirectory": "../coverage",
+    "coverageReporters": [
+      "text",
+      "lcov"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 50,
+        "functions": 60,
+        "lines": 60,
+        "statements": 60
+      }
+    },
+    "testEnvironment": "node"
+  }
+}

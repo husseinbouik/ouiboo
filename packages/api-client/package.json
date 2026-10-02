@@ -4,6 +4,8 @@
     "main": "./index.ts",
     "types": "./index.ts",
     "dependencies": {
+        "@ouiboo/types": "^0.0.0",
+        "@tanstack/react-query": "^5.90.16",
         "axios": "^1.0.0"
     },
     "devDependencies": {

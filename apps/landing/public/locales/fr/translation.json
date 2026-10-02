@@ -5,14 +5,47 @@
     "forTravelers": "Pour les Voyageurs",
     "forAgencies": "Pour les Agences",
     "pricing": "Tarifs",
-    "travelerLogin": "Traveler Login",
-    "agencyLogin": "Agency Login"
+    "travelerLogin": "Espace Voyageurs",
+    "agencyLogin": "Espace Agences"
   },
   "hero": {
-    "title": "Votre Prochaine Aventure, Connectée Sans Effort.",
-    "subtitle": "Pour les voyageurs, un monde de voyages organisés. Pour les agences, une plateforme puissante pour se développer. Ouiboo est le point de rencontre du voyage.",
+    "badge": "Nouveau lancement marketplace",
+    "title": "Votre Prochaine Aventure, Connectée en Toute Simplicité.",
+    "subtitle": "Pour les voyageurs, un monde de séjours organisés. Pour les agences, une plateforme puissante pour se développer. Ouiboo est le point de rencontre du voyage.",
     "ctaPrimary": "Rejoignez la liste d'attente et obtenez un mois gratuit",
-    "ctaSecondary": "En savoir plus"
+    "ctaSecondary": "Explorer les voyages",
+    "ctaTertiary": "En savoir plus"
+  },
+  "trusted": {
+    "title": "Une marketplace conçue pour la confiance",
+    "subtitle": "Des fondations claires pour chaque étape du voyage.",
+    "item1": "Détails de voyage structurés",
+    "item2": "Vérification des agences",
+    "item3": "Paiements traçables",
+    "item4": "Support réactif"
+  },
+  "highlights": {
+    "title": "Pensé pour les agences de voyage",
+    "subtitle": "Tout ce qu'il faut pour publier, vendre et gérer vos voyages sans complexité.",
+    "curated": {
+      "title": "Expériences sélectionnées",
+      "description": "Proposez des itinéraires vérifiés avec inclusions claires, sécurité et avis transparents."
+    },
+    "payments": {
+      "title": "Réservations fluides",
+      "description": "Checkout simplifié, dépôts flexibles et notifications voyageurs automatisées."
+    },
+    "growth": {
+      "title": "Outils de croissance",
+      "description": "Analytique, promotions et gestion des disponibilités conçues pour évoluer."
+    }
+  },
+  "stats": {
+    "items": {
+      "languages": "Langues d'interface",
+      "workspaces": "Expériences connectées",
+      "bookingFlow": "Parcours de réservation"
+    }
   },
   "howItWorks": {
     "preTitle": "Le Processus",
@@ -73,12 +106,21 @@
       "alreadyPartner": "Déjà partenaire ? Se connecter"
     }
   },
-  "testimonials": {
-    "preTitle": "Témoignages",
-    "title": "Apprécié par les Voyageurs et les Agences",
-    "quote1": "Enfin, une plateforme qui comprend les besoins des agences de voyages indépendantes. Le tableau de bord change la donne.",
-    "quote2": "En tant que voyageur, trouver des voyages uniques a toujours été un défi. La place de marché de Ouiboo est magnifiquement organisée. J'ai hâte !",
-    "quote3": "La capacité d'atteindre un public mondial sans un énorme budget marketing est incroyable. Ouiboo est en passe de devenir essentiel."
+  "principles": {
+    "preTitle": "Nos principes produit",
+    "title": "La confiance à chaque étape",
+    "item1": {
+      "title": "La clarté avant la complexité",
+      "description": "Les détails, prix, disponibilités et prochaines étapes sont présentés clairement pour décider en confiance."
+    },
+    "item2": {
+      "title": "Pensé pour les agences responsables",
+      "description": "Publication, clients, réservations et paiements restent connectés sans masquer les responsabilités."
+    },
+    "item3": {
+      "title": "Prêt à grandir avec méthode",
+      "description": "Des fondations partagées pour les langues, devises et lieux permettent à Ouiboo de s'étendre sans devenir générique."
+    }
   },
   "pricing": {
     "preTitle": "Tarifs",
@@ -89,7 +131,7 @@
       "description": "Parfait pour commencer",
       "price": "0",
       "currency": "MAD/mois",
-      "commission": "Frais de commission 5%",
+      "commission": "Commission de 5%",
       "button": "Commencer",
       "feature1": "3 voyages",
       "feature2": "Profil de base",
@@ -97,10 +139,10 @@
     },
     "pro": {
       "title": "Pro",
-      "description": "Pour les agences de voyages en croissance",
+      "description": "Pour les agences en croissance",
       "price": "499",
       "currency": "MAD/mois",
-      "commission": "Frais de commission 3%",
+      "commission": "Commission de 3%",
       "button": "Bientôt disponible",
       "feature1": "Voyages illimités",
       "feature2": "Marque et personnalisation",
@@ -112,7 +154,7 @@
       "description": "Pour les agences établies",
       "price": "999",
       "currency": "MAD/mois",
-      "commission": "Frais de commission 2%",
+      "commission": "Commission de 2%",
       "button": "Bientôt disponible",
       "feature1": "Tout du plan Pro",
       "feature2": "Analyses avancées",
@@ -122,12 +164,12 @@
     "enterprise": {
       "title": "Enterprise",
       "description": "Pour les opérations à grande échelle",
-      "price": "Personnalisé",
+      "price": "Sur mesure",
       "currency": "",
       "commission": "Commission négociable",
       "button": "Contacter les ventes",
       "feature1": "Tout du plan Premium",
-      "feature2": "Solution white-label",
+      "feature2": "Solution en marque blanche",
       "feature3": "Intégrations personnalisées",
       "feature4": "Support dédié"
     },
@@ -135,7 +177,7 @@
       "badge": "Temps Limité",
       "title": "Offre d'Accès Anticipé",
       "description": "Rejoignez notre liste d'attente et obtenez 3 mois gratuits du plan Pro lors du lancement.",
-      "price": "3 Moes Gratuits",
+      "price": "3 Mois Gratuits",
       "button": "Rejoindre la liste d'attente",
       "feature1": "Accès anticipé à la plateforme",
       "feature2": "3 mois du plan Pro gratuits"
@@ -149,12 +191,14 @@
       "email": "Entrez votre email",
       "phone": "Entrez votre numéro de téléphone",
       "userType": {
+        "label": "Type d'utilisateur",
         "traveler": "Voyageur",
         "agency": "Agence"
       },
       "agencyName": "Entrez le nom de votre agence",
       "submit": "Rejoindre la liste d'attente",
-      "submitting": "Inscription..."
+      "submitting": "Inscription...",
+      "error": "Impossible d'envoyer votre demande. Veuillez réessayer plus tard."
     }
   },
   "modal": {
@@ -163,6 +207,60 @@
     "button": "Génial !"
   },
   "footer": {
-    "rights": "Tous droits réservés."
+    "rights": "Tous droits réservés.",
+    "privacy": "Confidentialité",
+    "copyright": "© {{year}} Ouiboo."
+  },
+  "common": {
+    "globalNavigationLabel": "Navigation principale",
+    "openMainMenu": "Ouvrir le menu principal",
+    "closeMenu": "Fermer le menu",
+    "dashboardImageAlt": "Tableau de bord Ouiboo",
+    "travelerImageAlt": "Voyageur admirant une vue montagneuse",
+    "agencyImageAlt": "Tableau de bord d'agence sur un ordinateur portable"
+  },
+  "error": {
+    "title": "Nous avons rencontré un imprévu",
+    "description": "Veuillez réessayer cette page. Votre demande n'a pas été soumise deux fois.",
+    "tryAgain": "Réessayer"
+  },
+  "notFound": {
+    "title": "Cette page est hors de l'itinéraire",
+    "description": "L'adresse a peut-être changé ou la page n'est peut-être plus disponible.",
+    "returnHome": "Retour à l'accueil"
+  },
+  "privacy": {
+    "back": "← Retour à Ouiboo",
+    "title": "Avis de confidentialité",
+    "updated": "Dernière mise à jour : {{date}}",
+    "section1": {
+      "title": "Informations que nous traitons",
+      "body": "Ouiboo traite les informations que vous fournissez lors de l'inscription à la liste d'attente, de la création d'un compte, de la gestion d'une agence, de la publication d'un voyage, de la réservation, de la prise de contact avec le support ou de l'exécution d'un paiement. Cela peut inclure vos informations d'identité et de contact, les informations de l'agence, les dossiers de réservation et les références de transaction."
+    },
+    "section2": {
+      "title": "Pourquoi nous les utilisons",
+      "body": "Nous utilisons ces informations pour fournir et sécuriser la place de marché, honorer les réservations, communiquer les mises à jour du service, prévenir les abus, respecter nos obligations légales et améliorer le produit. Nous ne vendons pas vos informations personnelles."
+    },
+    "section3": {
+      "title": "Analytics facultatifs",
+      "body": "Les analytics du site sont désactivés sauf si vous choisissez de les autoriser. Vous pouvez modifier ce choix à tout moment. Le stockage lié à la langue et à la sécurité peut rester utilisé car il est nécessaire au fonctionnement du site."
+    },
+    "section4": {
+      "title": "Partage et conservation",
+      "body": "Les informations ne sont partagées qu'avec les prestataires de services et les participants de la place de marché lorsque c'est nécessaire au fonctionnement du service demandé, ou lorsque la loi l'exige. Les enregistrements ne sont conservés que le temps nécessaire au service, à la sécurité, à la comptabilité, au règlement des litiges et à des fins juridiques."
+    },
+    "section5": {
+      "title": "Vos choix",
+      "body": "Selon la loi applicable, vous pouvez demander à accéder à vos informations personnelles, à les corriger, à les supprimer, à en restreindre ou à en exporter le traitement, ou à vous y opposer. Utilisez le canal de contact indiqué dans votre compte Ouiboo ou dans les e-mails de service pour soumettre une demande de confidentialité."
+    }
+  },
+  "analyticsConsent": {
+    "cookieSettings": "Paramètres des cookies",
+    "preferencesLabel": "Préférences d'analytics",
+    "title": "À vous de choisir",
+    "intro": "Nous n'utilisons les analytics facultatifs qu'avec votre permission pour comprendre comment Ouiboo est utilisé. Les préférences de langue essentielles fonctionnent sans analytics. Lisez notre",
+    "privacyNotice": "avis de confidentialité",
+    "continueWithoutAnalytics": "Continuer sans analytics",
+    "allowAnalytics": "Autoriser les analytics"
   }
 }

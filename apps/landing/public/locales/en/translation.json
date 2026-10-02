@@ -1,27 +1,68 @@
 {
   "joinWaitlist": "Join Waitlist",
   "nav": {
-    "howItWorks": "How it Works",
+    "howItWorks": "How It Works",
     "forTravelers": "For Travelers",
     "forAgencies": "For Agencies",
     "pricing": "Pricing",
     "travelerLogin": "Traveler Login",
     "agencyLogin": "Agency Login"
   },
-  "preTitle": "The Process",
-  "title": "Getting Started is Easy",
-  "subtitle": "Whether you're finding an adventure or listing one, the path is simple and clear.",
-  "step1": {
-    "title": "Discover or Create",
-    "description": "Travelers browse a curated marketplace. Agencies easily build and publish their unique travel packages."
+  "hero": {
+    "badge": "New marketplace launch",
+    "title": "Your Next Adventure, Effortlessly Connected.",
+    "subtitle": "For travelers, a world of curated journeys. For agencies, a powerful growth platform. Ouiboo is the meeting point of travel.",
+    "ctaPrimary": "Join the waitlist and get a free month",
+    "ctaSecondary": "Explore trips",
+    "ctaTertiary": "Learn more"
   },
-  "step2": {
-    "title": "Book Seamlessly",
-    "description": "A simple, secure booking process for travelers. Agencies manage everything from a single, intuitive dashboard."
+  "trusted": {
+    "title": "A marketplace designed for trust",
+    "subtitle": "Clear foundations for every side of the journey.",
+    "item1": "Curated trip details",
+    "item2": "Agency review workflows",
+    "item3": "Traceable payments",
+    "item4": "Responsive support"
   },
-  "step3": {
-    "title": "Experience & Grow",
-    "description": "Travelers embark on their adventure. Agencies gain valuable insights and a global audience."
+  "highlights": {
+    "title": "Built for real-world travel businesses",
+    "subtitle": "Everything you need to list, sell, and deliver standout trips without the chaos.",
+    "curated": {
+      "title": "Curated experiences",
+      "description": "Offer verified itineraries with clear inclusions, safety checks, and transparent reviews."
+    },
+    "payments": {
+      "title": "Frictionless bookings",
+      "description": "Streamlined checkout, flexible deposits, and automated traveler updates."
+    },
+    "growth": {
+      "title": "Growth-ready tools",
+      "description": "Analytics, promotions, and availability management built for scaling agencies."
+    }
+  },
+  "stats": {
+    "items": {
+      "languages": "Interface languages",
+      "workspaces": "Connected experiences",
+      "bookingFlow": "Booking journey"
+    }
+  },
+  "howItWorks": {
+    "preTitle": "The Process",
+    "title": "Getting Started is Easy",
+    "subtitle": "Whether you're finding an adventure or listing one, the path is simple and clear.",
+    "step1": {
+      "title": "Discover or Create",
+      "description": "Travelers browse a curated marketplace. Agencies easily build and publish their unique travel packages."
+    },
+    "step2": {
+      "title": "Book Seamlessly",
+      "description": "A simple, secure booking process for travelers. Agencies manage everything from a single, intuitive dashboard."
+    },
+    "step3": {
+      "title": "Experience & Grow",
+      "description": "Travelers embark on their adventure. Agencies gain valuable insights and a global audience."
+    }
   },
   "travelers": {
     "preTitle": "For Travelers",
@@ -29,7 +70,7 @@
     "subtitle": "Trade endless scrolling for authentic adventures. We connect you with unique trips from trusted, independent agencies.",
     "feature1": {
       "title": "Discover Unique Trips",
-      "description": "Find experiences you won’t see anywhere else, from culinary tours to mountain treks."
+      "description": "Find experiences you won't see anywhere else, from culinary tours to mountain treks."
     },
     "feature2": {
       "title": "Book with Confidence",
@@ -65,12 +106,21 @@
       "alreadyPartner": "Already a partner? Log in"
     }
   },
-  "testimonials": {
-    "preTitle": "Testimonials",
-    "title": "Loved by Travelers and Agencies",
-    "quote1": "Finally, a platform that understands the needs of independent travel agencies. The dashboard is a game-changer.",
-    "quote2": "As a traveler, finding unique trips was always a challenge. Ouiboo's marketplace is beautifully curated. I can't wait!",
-    "quote3": "The ability to reach a global audience without a huge marketing budget is incredible. Ouiboo is set to be essential."
+  "principles": {
+    "preTitle": "Our product principles",
+    "title": "Confidence at every step",
+    "item1": {
+      "title": "Clear before clever",
+      "description": "Trip details, prices, availability, and next steps are presented plainly so travelers can decide with confidence."
+    },
+    "item2": {
+      "title": "Built for responsible agencies",
+      "description": "Publishing, customer, booking, and payment workflows stay connected without hiding who is accountable."
+    },
+    "item3": {
+      "title": "Ready to grow thoughtfully",
+      "description": "Shared foundations for languages, currencies, and locations let Ouiboo expand without making the experience feel generic."
+    }
   },
   "pricing": {
     "preTitle": "Pricing",
@@ -141,20 +191,77 @@
       "email": "Enter your email",
       "phone": "Enter your phone number",
       "userType": {
+        "label": "User type",
         "traveler": "Traveler",
         "agency": "Agency"
       },
       "agencyName": "Enter your agency name",
       "submit": "Join Waitlist",
-      "submitting": "Joining..."
+      "submitting": "Joining...",
+      "error": "Could not submit your request. Please try again later."
     }
   },
   "modal": {
-    "title": "You're on the list! 🎉",
+    "title": "You're on the list!",
     "subtitle": "Thanks for joining! We'll notify you when early access launches.",
     "button": "Awesome!"
   },
   "footer": {
-    "rights": "All rights reserved."
+    "rights": "All rights reserved.",
+    "privacy": "Privacy",
+    "copyright": "© {{year}} Ouiboo."
+  },
+  "common": {
+    "globalNavigationLabel": "Global",
+    "openMainMenu": "Open main menu",
+    "closeMenu": "Close menu",
+    "dashboardImageAlt": "Ouiboo Dashboard",
+    "travelerImageAlt": "Traveler enjoying a mountainous view",
+    "agencyImageAlt": "Agency dashboard on a laptop"
+  },
+  "error": {
+    "title": "We hit an unexpected detour",
+    "description": "Please try this page again. Your request has not been submitted twice.",
+    "tryAgain": "Try again"
+  },
+  "notFound": {
+    "title": "This page is off the itinerary",
+    "description": "The address may have changed or the page may no longer be available.",
+    "returnHome": "Return home"
+  },
+  "privacy": {
+    "back": "← Back to Ouiboo",
+    "title": "Privacy notice",
+    "updated": "Last updated: {{date}}",
+    "section1": {
+      "title": "Information we process",
+      "body": "Ouiboo processes information you provide when joining the waitlist, creating an account, managing an agency, publishing a trip, making a booking, contacting support, or completing a payment workflow. This can include identity and contact details, agency information, booking records, and transaction references."
+    },
+    "section2": {
+      "title": "Why we use it",
+      "body": "We use this information to provide and secure the marketplace, fulfill bookings, communicate service updates, prevent abuse, meet legal obligations, and improve the product. We do not sell personal information."
+    },
+    "section3": {
+      "title": "Optional analytics",
+      "body": "Website analytics are disabled unless you choose to allow them. You can change that choice at any time. Language and security-related storage may still be used because it is necessary to provide the site."
+    },
+    "section4": {
+      "title": "Sharing and retention",
+      "body": "Information is shared only with service providers and marketplace participants when needed to operate the requested service, or when required by law. Records are retained only as long as needed for service, security, accounting, dispute resolution, and legal purposes."
+    },
+    "section5": {
+      "title": "Your choices",
+      "body": "Depending on applicable law, you may ask to access, correct, delete, restrict, or export your personal information, or object to certain processing. Use the contact channel shown in your Ouiboo account or service emails to submit a privacy request."
+    }
+  },
+  "analyticsConsent": {
+    "cookieSettings": "Cookie settings",
+    "preferencesLabel": "Analytics preferences",
+    "title": "Your privacy, your choice",
+    "intro": "We use optional analytics only with your permission to understand how Ouiboo is used. Essential language preferences work without analytics. Read our",
+    "privacyNotice": "privacy notice",
+    "continueWithoutAnalytics": "Continue without analytics",
+    "allowAnalytics": "Allow analytics"
   }
 }
+

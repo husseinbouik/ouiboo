@@ -1,9 +1,13 @@
 {
     "name": "@ouiboo/schemas",
     "version": "0.0.0",
-    "main": "./index.ts",
-    "types": "./index.ts",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "scripts": {
+        "build": "tsc"
+    },
     "dependencies": {
+        "@ouiboo/types": "*",
         "zod": "^3.0.0"
     },
     "devDependencies": {

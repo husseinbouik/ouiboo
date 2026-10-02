@@ -1,0 +1,167 @@
+name: Production Release
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish-images:
+    runs-on: ubuntu-latest
+    environment: production
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: api
+            dockerfile: apps/api/Dockerfile
+          - service: traveler
+            dockerfile: apps/traveler/Dockerfile
+          - service: agency
+            dockerfile: apps/agency/Dockerfile
+          - service: admin
+            dockerfile: apps/admin/Dockerfile
+          - service: landing
+            dockerfile: apps/landing/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/ouiboo-${{ matrix.service }}
+          tags: |
+            type=sha,format=long
+
+      - name: Build and publish immutable image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.PRODUCTION_API_URL }}
+            NEXT_PUBLIC_TRAVELER_URL=${{ vars.PRODUCTION_TRAVELER_URL }}
+            NEXT_PUBLIC_AGENCY_URL=${{ vars.PRODUCTION_AGENCY_URL }}
+            NEXT_PUBLIC_LANDING_URL=${{ vars.PRODUCTION_LANDING_URL }}
+            NEXT_PUBLIC_MEDIA_URL=${{ vars.PRODUCTION_MEDIA_URL }}
+            NEXT_PUBLIC_CLARITY_PROJECT_ID=${{ vars.CLARITY_PROJECT_ID }}
+            NEXT_PUBLIC_GA_MEASUREMENT_ID=${{ vars.GA_MEASUREMENT_ID }}
+
+  verify-and-migrate:
+    needs: publish-images
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      NODE_ENV: production
+      DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+      REDIS_URL: ${{ secrets.REDIS_URL }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+      CORS_ORIGINS: ${{ vars.PRODUCTION_CORS_ORIGINS }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      API_URL: ${{ vars.PRODUCTION_API_URL }}
+      NEXT_PUBLIC_API_URL: ${{ vars.PRODUCTION_API_URL }}
+      TRAVELER_APP_URL: ${{ vars.PRODUCTION_TRAVELER_URL }}
+      AGENCY_APP_URL: ${{ vars.PRODUCTION_AGENCY_URL }}
+      ADMIN_APP_URL: ${{ vars.PRODUCTION_ADMIN_URL }}
+      NEXT_PUBLIC_TRAVELER_URL: ${{ vars.PRODUCTION_TRAVELER_URL }}
+      NEXT_PUBLIC_AGENCY_URL: ${{ vars.PRODUCTION_AGENCY_URL }}
+      NEXT_PUBLIC_LANDING_URL: ${{ vars.PRODUCTION_LANDING_URL }}
+      NEXT_PUBLIC_MEDIA_URL: ${{ vars.PRODUCTION_MEDIA_URL }}
+      GMAIL_EMAIL: ${{ secrets.GMAIL_EMAIL }}
+      GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
+      GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
+      GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+      STORAGE_PROVIDER: s3
+      S3_BUCKET: ${{ secrets.S3_BUCKET }}
+      S3_REGION: ${{ secrets.S3_REGION }}
+      S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+      S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+      S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+      S3_PUBLIC_URL: ${{ vars.PRODUCTION_MEDIA_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate launch contract
+        run: npm run check:env && npm run check:placeholders
+
+      - name: Build release candidate
+        run: npm run build
+
+      - name: Apply Prisma migrations
+        run: npx prisma migrate deploy --schema packages/database/prisma/schema.prisma
+
+      - name: Trigger production deployment orchestrator
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.DEPLOY_HOOK_URL }}
+          DEPLOY_HOOK_TOKEN: ${{ secrets.DEPLOY_HOOK_TOKEN }}
+        run: |
+          test -n "$DEPLOY_HOOK_URL"
+          curl --fail-with-body --retry 3 --retry-all-errors \
+            -X POST "$DEPLOY_HOOK_URL" \
+            -H "Authorization: Bearer $DEPLOY_HOOK_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "{\"environment\":\"production\",\"commit\":\"${GITHUB_SHA}\",\"imageTag\":\"sha-${GITHUB_SHA}\"}"
+
+      - name: Smoke deployed production services
+        env:
+          SMOKE_API_URL: ${{ vars.PRODUCTION_API_URL }}
+          SMOKE_TRAVELER_URL: ${{ vars.PRODUCTION_TRAVELER_URL }}
+          SMOKE_AGENCY_URL: ${{ vars.PRODUCTION_AGENCY_URL }}
+          SMOKE_ADMIN_URL: ${{ vars.PRODUCTION_ADMIN_URL }}
+          SMOKE_LANDING_URL: ${{ vars.PRODUCTION_LANDING_URL }}
+        run: node scripts/smoke-deploy.mjs
+
+  rollback-guidance:
+    runs-on: ubuntu-latest
+    needs: verify-and-migrate
+    if: failure()
+    steps:
+      - name: Publish rollback guidance
+        run: |
+          {
+            echo "## Production rollback";
+            echo "";
+            echo "The release verification failed. Restore the previously known-good deployment in your platform, then rerun the smoke checks.";
+            echo "";
+            echo "Recommended immediate actions:";
+            echo "1. Roll back the app deployment in your hosting platform or cluster.";
+            echo "2. Re-run health checks against the previous production URLs.";
+            echo "3. Review migration impact before promoting again.";
+          } >> "$GITHUB_STEP_SUMMARY"

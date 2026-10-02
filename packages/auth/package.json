@@ -1,0 +1,23 @@
+{
+    "name": "@ouiboo/auth",
+    "version": "0.0.0",
+    "main": "./index.tsx",
+    "types": "./index.tsx",
+    "dependencies": {
+        "@ouiboo/api-client": "*",
+        "@tanstack/react-query": "*",
+        "next": "^16.0.0",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0"
+    },
+    "peerDependencies": {
+        "@tanstack/react-query": "*",
+        "next": ">=14.0.0",
+        "react": "^19.0.0"
+    },
+    "devDependencies": {
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "typescript": "^5.0.0"
+    }
+}

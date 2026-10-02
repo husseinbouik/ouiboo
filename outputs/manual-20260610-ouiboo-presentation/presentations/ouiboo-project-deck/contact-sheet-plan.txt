@@ -1,0 +1,8 @@
+1. Cover with readiness rail.
+2. Platform operating model map.
+3. Hardening status matrix.
+4. Deployment architecture flow.
+5. Security route-control checklist.
+6. Verification and demo readiness scoreboard.
+7. Production launch timeline.
+8. Decision board with blockers.

@@ -1,9 +1,257 @@
 {
-    "login": {
-        "title": "Accès Admin",
-        "subtitle": "Zone restreinte. Personnel autorisé uniquement.",
-        "username": "Nom d'utilisateur",
-        "password": "Mot de passe",
-        "authenticate": "S'authentifier"
+  "login": {
+    "title": "Accès Admin",
+    "subtitle": "Zone restreinte. Personnel autorisé uniquement.",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "authenticate": "S'authentifier",
+    "authenticating": "Authentification...",
+    "helper": "Utilisez les identifiants administrateur configurés pour cet environnement.",
+    "brand": "Ouiboo Admin",
+    "heroTitle": "Centre de commandement admin",
+    "heroSubtitle": "Approuvez les agences, confirmez les paiements et maintenez la place de marché saine.",
+    "heroNote": "La journalisation des audits et l'accès par rôles sont activés.",
+    "loginFailed": "Échec de la connexion. Veuillez réessayer.",
+    "usernamePlaceholder": "admin",
+    "usernameRequired": "Le nom d'utilisateur est requis",
+    "passwordRequired": "Le mot de passe est requis",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "notAdmin": "Ce compte n'a pas d'accès administrateur.",
+    "networkError": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
+    "invalidCredentials": "Email ou mot de passe incorrect. Veuillez réessayer."
+  },
+  "dashboard": {
+    "brand": "OUIBOO ADMIN",
+    "summary": {
+      "pendingAgencies": "Agences en attente",
+      "tripsInReview": "Voyages en revue",
+      "bookingsToday": "Réservations du jour",
+      "paymentProofs": "Justificatifs de paiement"
+    },
+    "tabs": {
+      "pending": "File de vérification",
+      "agencies": "Gérer les agences",
+      "bookings": "Réservations système",
+      "paymentProofs": "Justificatifs de paiement",
+      "payouts": "Demandes de paiement",
+      "audit": "Journal d'audit"
+    },
+    "meta": {
+      "pending": {
+        "title": "File de vérification",
+        "description": "Examiner les agences et voyages en attente d'approbation.",
+        "searchPlaceholder": "Rechercher des agences, voyages ou IDs..."
+      },
+      "agencies": {
+        "title": "Annuaire des agences",
+        "description": "Gérer le statut de vérification et les abonnements.",
+        "searchPlaceholder": "Rechercher des agences par nom ou email..."
+      },
+      "bookings": {
+        "title": "Réservations système",
+        "description": "Suivre les réservations et l'activité des voyageurs sur la plateforme.",
+        "searchPlaceholder": "Rechercher des réservations ou des voyageurs..."
+      },
+      "paymentProofs": {
+        "title": "Justificatifs de paiement",
+        "description": "Approuver ou rejeter les reçus de paiement téléchargés.",
+        "searchPlaceholder": "Rechercher des justificatifs par voyageur ou réservation..."
+      },
+      "payouts": {
+        "title": "Demandes de paiement",
+        "description": "Examiner les demandes de paiement des agences avant de libérer les fonds.",
+        "searchPlaceholder": "Rechercher des demandes de paiement par agence..."
+      },
+      "audit": {
+        "title": "Journal d'audit",
+        "description": "Rechercher l'activité des opérateurs, exporter les enregistrements et appliquer le nettoyage de rétention.",
+        "searchPlaceholder": "Rechercher par action, email de l'acteur, type de cible ou id de cible"
+      }
+    },
+    "sections": {
+      "pendingAgencies": "Demandes d'inscription d'agences",
+      "tripQualityReview": "Revue de qualité des voyages",
+      "allAgencies": "Gestion de toutes les agences",
+      "bookingMonitor": "Suivi des réservations système",
+      "pendingPaymentProofs": "Justificatifs de paiement en attente",
+      "payoutRequests": "Demandes de paiement",
+      "auditTrail": "Piste d'audit"
+    },
+    "table": {
+      "booking": "Réservation",
+      "traveler": "Voyageur",
+      "status": "Statut",
+      "amount": "Montant",
+      "submitted": "Soumis",
+      "action": "Action",
+      "when": "Quand",
+      "actor": "Acteur",
+      "target": "Cible",
+      "metadata": "Métadonnées"
+    },
+    "actions": {
+      "review": "Examiner",
+      "view": "Voir",
+      "details": "Détails",
+      "reject": "Rejeter",
+      "approve": "Approuver",
+      "activate": "Activer",
+      "deactivate": "Désactiver",
+      "approvePayout": "Approuver le paiement",
+      "rejectPayout": "Rejeter le paiement",
+      "approveAgency": "Approuver l'agence",
+      "rejectAgency": "Rejeter l'agence",
+      "refund": "Rembourser"
+    },
+    "labels": {
+      "ice": "ICE",
+      "joined": "Inscrit le",
+      "request": "Demande",
+      "requestId": "Demande #{{id}}",
+      "agencyPayout": "Paiement agence",
+      "agency": "Agence",
+      "requested": "Demandé le",
+      "amount": "Montant",
+      "currency": "MAD",
+      "bankDetails": "Coordonnées bancaires de l'agence",
+      "payoutDetails": "Détails du paiement",
+      "selected": "Sélectionné",
+      "contact": "Contact",
+      "status": "Statut",
+      "agencyAddress": "Adresse de l'agence",
+      "booking": "Réservation",
+      "traveler": "Voyageur",
+      "na": "N/A",
+      "system": "Système",
+      "noActorId": "Aucun id d'acteur",
+      "noTargetId": "Aucun id de cible",
+      "agencyLogo": "Logo de {{name}}"
+    },
+    "messages": {
+      "noBankDetails": "Aucune coordonnée bancaire enregistrée.",
+      "noPaymentProofs": "Aucun justificatif de paiement en attente.",
+      "noPayoutRequests": "Aucune demande de paiement en attente.",
+      "selectPayoutPrompt": "Sélectionnez une demande de paiement pour consulter les coordonnées bancaires et approuver ou rejeter.",
+      "reviewVerification": "Vérifiez les détails et approuvez ou rejetez.",
+      "notProvided": "Non renseigné",
+      "noEmail": "Aucun email enregistré",
+      "noPhone": "Aucun téléphone enregistré",
+      "noAddress": "Aucune adresse fournie.",
+      "unknown": "Inconnu",
+      "loading": "Chargement"
+    },
+    "prompts": {
+      "paymentProofRejection": "Ajoutez un motif de rejet pour ce justificatif de paiement.",
+      "paymentProofReasonRequired": "Le motif de rejet est requis pour rejeter un justificatif de paiement."
+    },
+    "feedback": {
+      "agencyApproved": "Agence approuvée avec succès.",
+      "agencyRejected": "Agence rejetée avec succès.",
+      "agencyUpdateError": "Impossible de mettre à jour le statut de l'agence. Réessayez.",
+      "paymentProofApproved": "Justificatif de paiement approuvé avec succès.",
+      "paymentProofRejected": "Justificatif de paiement rejeté avec succès.",
+      "paymentProofUpdateError": "Impossible de mettre à jour le justificatif de paiement. Réessayez.",
+      "paymentProofLoadError": "Impossible de charger le justificatif de paiement.",
+      "payoutPaid": "Paiement marqué comme payé avec succès.",
+      "payoutRejected": "Paiement rejeté avec succès.",
+      "payoutUpdateError": "Impossible de mettre à jour la demande de paiement. Réessayez.",
+      "refundProcessed": "Remboursement traité avec succès.",
+      "refundError": "Impossible de traiter le remboursement pour le moment.",
+      "auditPruneError": "Impossible d'élaguer les journaux d'audit pour le moment.",
+      "auditExportSuccess": "Export du journal d'audit téléchargé avec succès.",
+      "auditExportError": "Impossible d'exporter les journaux d'audit pour le moment.",
+      "retentionDaysInvalid": "Le nombre de jours de rétention doit être un nombre positif."
+    },
+    "aria": {
+      "mainNavigation": "Navigation principale",
+      "adminAvatar": "Avatar administrateur"
+    },
+    "audit": {
+      "trail": "Piste d'audit ({{total}})",
+      "noMetadata": "Aucune métadonnée",
+      "noResults": "Aucun journal d'audit ne correspond aux filtres actuels.",
+      "retentionAndExport": "Rétention et export",
+      "retentionHint": "Utilisez le champ de recherche partagé pour filtrer par action, email de l'acteur, type de cible ou id de cible avant l'export.",
+      "currentWindow": "Fenêtre actuelle",
+      "showingEvents": "Affichage de {{total}} événements d'audit correspondants, page {{page}} sur {{totalPages}}.",
+      "retentionDays": "Jours de rétention",
+      "pruneHint": "L'élagage supprime uniquement les journaux plus anciens que cette limite. Les actions d'opérateur plus récentes restent intactes.",
+      "exporting": "Exportation...",
+      "exportCsv": "Exporter CSV",
+      "downloadCsv": "Télécharger CSV",
+      "pruning": "Élagage...",
+      "pruneOldLogs": "Élaguer les anciens journaux",
+      "auditPruned_one": "{{count}} journal d'audit plus ancien que {{days}} jours supprimé.",
+      "auditPruned_other": "{{count}} journaux d'audit plus anciens que {{days}} jours supprimés."
+    },
+    "confirm": {
+      "confirmRefund": "Confirmer le remboursement",
+      "pruneAuditLogs": "Élaguer les journaux d'audit",
+      "refundDescription": "Rembourser la réservation {{id}} de {{amount}} {{currency}} ? Le prestataire de paiement peut ne pas permettre l'annulation de cette action.",
+      "pruneDescription": "Supprimer les journaux d'audit plus anciens que {{days}} jours ? Cette action est irréversible.",
+      "processRefund": "Traiter le remboursement",
+      "deleteOldLogs": "Supprimer les anciens journaux"
+    },
+    "status": {
+      "bookingAwaitingValidation": "En attente de validation",
+      "bookingPending": "En attente",
+      "bookingConfirmed": "Confirmée",
+      "bookingRejected": "Rejetée",
+      "bookingCancelled": "Annulée",
+      "bookingCompleted": "Terminée",
+      "verificationPending": "En attente",
+      "verificationVerified": "Vérifiée",
+      "verificationRejected": "Rejetée",
+      "subscriptionTrial": "Essai",
+      "subscriptionActive": "Active",
+      "subscriptionCancelled": "Annulée",
+      "subscriptionExpired": "Expirée",
+      "paymentUnpaid": "Impayé",
+      "paymentPaid": "Payé",
+      "paymentRefunded": "Remboursé",
+      "paymentFailed": "Échoué",
+      "payoutPaidLabel": "Payé",
+      "payoutPaidHelper": "Virement effectué",
+      "payoutRejectedLabel": "Rejeté",
+      "payoutRejectedHelper": "Fonds renvoyés au portefeuille de l'agence",
+      "payoutApprovedLabel": "Approuvé",
+      "payoutApprovedHelper": "Approuvé et en attente de traitement du paiement",
+      "payoutPendingLabel": "En attente",
+      "payoutPendingHelper": "En attente de révision par l'admin"
+    },
+    "modal": {
+      "agencyReview": "Revue d'agence"
     }
+  },
+  "meta": {
+    "titleDefault": "Administration de la plateforme",
+    "titleTemplate": "%s | Ouiboo Admin",
+    "description": "Espace d'administration privé de la plateforme Ouiboo."
+  },
+  "common": {
+    "skipToContent": "Aller au contenu"
+  },
+  "pagination": {
+    "showing": "Affichage",
+    "of": "sur",
+    "nav": "Pagination",
+    "previousPage": "Page précédente",
+    "nextPage": "Page suivante",
+    "goToPage": "Aller à la page {{page}}"
+  },
+  "error": {
+    "title": "Page d'administration indisponible",
+    "description": "Réessayez. Aucune modification de modération ou de compte n'a été soumise par cette erreur.",
+    "retry": "Réessayer"
+  },
+  "notFound": {
+    "title": "Page d'administration introuvable",
+    "description": "L'outil demandé n'existe pas ou n'est plus disponible.",
+    "back": "Retour à l'administration"
+  },
+  "loading": {
+    "label": "Chargement de l'administration",
+    "text": "Chargement…"
+  }
 }

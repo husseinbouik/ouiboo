@@ -1,0 +1,14 @@
+﻿next.config.ts(5,3): error TS2353: Object literal may only specify known properties, and 'eslint' does not exist in type 'NextConfig'.
+src/components/charts/DateRangeSelector.tsx(35,17): error TS2322: Type '"ghost" | "primary"' is not assignable to type '"default" | "link" | "outline" | "secondary" | "destructive" | "ghost" | "orange" | null | undefined'.
+  Type '"primary"' is not assignable to type '"default" | "link" | "outline" | "secondary" | "destructive" | "ghost" | "orange" | null | undefined'.
+src/components/charts/DateRangeSelector.tsx(36,17): error TS2322: Type '"ghost" | "primary"' is not assignable to type '"default" | "link" | "outline" | "secondary" | "destructive" | "ghost" | "orange" | null | undefined'.
+  Type '"primary"' is not assignable to type '"default" | "link" | "outline" | "secondary" | "destructive" | "ghost" | "orange" | null | undefined'.
+src/components/charts/DateRangeSelector.tsx(37,17): error TS2322: Type '"ghost" | "primary"' is not assignable to type '"default" | "link" | "outline" | "secondary" | "destructive" | "ghost" | "orange" | null | undefined'.
+  Type '"primary"' is not assignable to type '"default" | "link" | "outline" | "secondary" | "destructive" | "ghost" | "orange" | null | undefined'.
+src/components/charts/DateRangeSelector.tsx(38,17): error TS2322: Type '"ghost" | "primary"' is not assignable to type '"default" | "link" | "outline" | "secondary" | "destructive" | "ghost" | "orange" | null | undefined'.
+  Type '"primary"' is not assignable to type '"default" | "link" | "outline" | "secondary" | "destructive" | "ghost" | "orange" | null | undefined'.
+src/components/charts/DateRangeSelector.tsx(39,17): error TS2322: Type '"ghost" | "primary"' is not assignable to type '"default" | "link" | "outline" | "secondary" | "destructive" | "ghost" | "orange" | null | undefined'.
+  Type '"primary"' is not assignable to type '"default" | "link" | "outline" | "secondary" | "destructive" | "ghost" | "orange" | null | undefined'.
+src/components/charts/TopTripsTable.tsx(18,41): error TS2322: Type '{ children: Element[]; value: string; onValueChange: (v: any) => void | undefined; }' is not assignable to type 'IntrinsicAttributes & SelectProps & RefAttributes<HTMLSelectElement>'.
+  Property 'onValueChange' does not exist on type 'IntrinsicAttributes & SelectProps & RefAttributes<HTMLSelectElement>'. Did you mean 'onVolumeChange'?
+src/components/charts/TopTripsTable.tsx(18,57): error TS7006: Parameter 'v' implicitly has an 'any' type.

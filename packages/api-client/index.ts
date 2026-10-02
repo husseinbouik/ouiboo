@@ -1,5 +1,5 @@
-import axios from "axios";
-
-export const client = axios.create({
-    baseURL: "https://api.ouiboo.com",
-});
+export * from './client'
+export * from './contracts'
+export * from './hooks'
+export * from './sdk'
+export * from './services'

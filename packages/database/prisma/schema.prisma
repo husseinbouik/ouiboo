@@ -1,0 +1,495 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated-client"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  AGENCY
+  TRAVELER
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum TripStatus {
+  ACTIVE
+  DRAFT
+  ARCHIVED
+}
+
+enum TripCategory {
+  ADVENTURE
+  CULTURAL
+  LUXURY
+  BUDGET
+  NATURE
+}
+
+enum BookingStatus {
+  PENDING
+  AWAITING_VALIDATION
+  CONFIRMED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  CANCELLED
+  EXPIRED
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+  REFUND
+  PAYMENT_GATEWAY
+  BOOKING
+}
+
+enum PaymentMethod {
+  MANUAL
+  GATEWAY
+}
+
+enum NotificationType {
+  PAYMENT_REMINDER
+  TRIP_REMINDER
+  BOOKING_CONFIRMATION
+  CANCELLATION
+  REVIEW_REQUEST
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+enum BookingPaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+  FAILED
+}
+
+enum SessionStatus {
+  OPEN
+  FULL
+  CANCELLED
+}
+
+enum NotificationDeliveryStatus {
+  SENT
+  FAILED
+  BOUNCED
+}
+
+enum PaymentTransactionStatus {
+  INITIATED
+  SUCCESS
+  FAILED
+  PENDING
+}
+
+model User {
+  id                      String                  @id @default(cuid())
+  name                    String?
+  email                   String                  @unique
+  password                String
+  role                    UserRole                @default(TRAVELER)
+  avatar                  String?
+  isEmailVerified         Boolean                 @default(false)
+  otp                     String?
+  otpExpiresAt            DateTime?
+  otpLastSentAt           DateTime?
+  passwordResetTokenHash  String?                 @unique
+  passwordResetExpiresAt  DateTime?
+  passwordResetSentAt     DateTime?
+  refreshTokens           RefreshToken[]
+  agencyProfile           AgencyProfile?
+  bookings                Booking[]
+  reviews                 Review[]
+  wishlist                Wishlist[]
+  travelerConversations   Conversation[]          @relation("TravelerConversations")
+  notificationPreferences NotificationPreference?
+  displayCurrency         String                  @default("MAD")
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+}
+
+model RefreshToken {
+  id                String         @id @default(cuid())
+  tokenHash         String         @unique
+  userId            String
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime       @default(now())
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  replacedByTokenId String?
+  replacedByToken   RefreshToken?  @relation("RefreshTokenRotation", fields: [replacedByTokenId], references: [id])
+  replacedTokens    RefreshToken[] @relation("RefreshTokenRotation")
+
+  @@index([userId])
+}
+
+model AgencyProfile {
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id])
+  companyName        String
+  ice                String             @unique
+  patente            String
+  rib                String
+  verificationStatus VerificationStatus @default(PENDING)
+  bio                String?
+  logo               String?
+  templates          TripTemplate[]
+  wallet             Wallet?
+  payoutRequests     PayoutRequest[]
+  conversations      Conversation[]     @relation("AgencyConversations")
+  subscriptionStatus SubscriptionStatus @default(TRIAL)
+  trialEndsAt        DateTime?
+  subscriptionEndsAt DateTime?
+  bankDetails        String?            @db.Text
+}
+
+model TripTemplate {
+  id                 String         @id @default(cuid())
+  agencyId           String
+  agency             AgencyProfile  @relation(fields: [agencyId], references: [id])
+  title              String
+  description        String
+  category           TripCategory
+  startLocation      String
+  endLocation        String?
+  durationDays       Int
+  durationNights     Int
+  inclusions         String[]
+  exclusions         String[]
+  checklist          String[]
+  images             String[]
+  status             TripStatus     @default(DRAFT)
+  featured           Boolean        @default(false)
+  currency           String         @default("MAD")
+  sessions           TripSession[]
+  itinerary          ItineraryDay[]
+  reviews            Review[]
+  wishlists          Wishlist[]
+  averageRating      Float?
+  reviewCount        Int            @default(0)
+  lastReviewDate     DateTime?
+  startingPrice      Decimal?       @db.Decimal(18, 2)
+  cancellationPolicy Json?
+  minBookings        Int            @default(1)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@unique([id, currency])
+  @@index([agencyId, status, createdAt])
+  @@index([status, featured])
+  @@index([category, status])
+  @@index([createdAt])
+  @@index([status, currency, startingPrice])
+}
+
+model ItineraryDay {
+  id          String       @id @default(cuid())
+  templateId  String
+  template    TripTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  dayNumber   Int
+  title       String?
+  description String
+  activities  String[]
+
+  @@unique([templateId, dayNumber])
+}
+
+model TripSession {
+  id                 String        @id @default(cuid())
+  templateId         String
+  template           TripTemplate  @relation(fields: [templateId, currency], references: [id, currency], onDelete: Cascade, onUpdate: Restrict)
+  startDate          DateTime
+  endDate            DateTime
+  price              Decimal       @db.Decimal(18, 2)
+  deposit            Decimal       @default(0) @db.Decimal(18, 2)
+  totalSeats         Int
+  availableSeats     Int
+  status             SessionStatus @default(OPEN)
+  bookings           Booking[]
+  currency           String        @default("MAD")
+  cancellationReason String?
+  minBookings        Int           @default(1)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([startDate])
+  @@index([endDate])
+  @@index([templateId, status, startDate])
+  @@index([status, startDate])
+}
+
+model Booking {
+  id                          String               @id @default(cuid())
+  sessionId                   String
+  session                     TripSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  travelerId                  String
+  traveler                    User                 @relation(fields: [travelerId], references: [id])
+  bookingDate                 DateTime             @default(now())
+  status                      BookingStatus        @default(PENDING)
+  totalAmount                 Decimal              @db.Decimal(18, 2)
+  currency                    String               @default("MAD")
+  guestsCount                 Int
+  fullName                    String?
+  phoneNumber                 String?
+  documentNumber              String?
+  paymentProofUrl             String?
+  paymentProofId              String?              @unique
+  paymentProof                PaymentProof?
+  paymentMethod               PaymentMethod        @default(MANUAL)
+  paymentGatewayTransactionId String?
+  paymentGatewayMetadata      Json?
+  paymentStatus               BookingPaymentStatus @default(UNPAID)
+  lastReminderSentAt          DateTime?
+  notificationsSent           Json?
+  cancelledAt                 DateTime?
+  cancelledBy                 String?
+  cancellationReason          String?
+  confirmedAt                 DateTime?
+  refundAmount                Decimal?             @db.Decimal(18, 2)
+  refundStatus                RefundStatus?
+  refundProcessedAt           DateTime?
+  review                      Review?
+  createdAt                   DateTime             @default(now())
+  updatedAt                   DateTime             @updatedAt
+  paymentTransactions         PaymentTransaction[]
+
+  @@index([travelerId])
+  @@index([sessionId])
+  @@index([sessionId, status])
+  @@index([status])
+  @@index([travelerId, bookingDate])
+  @@index([status, bookingDate])
+  @@index([paymentStatus, bookingDate])
+  @@index([cancelledAt])
+  @@index([status, paymentStatus, createdAt])
+}
+
+model PaymentProof {
+  id              String             @id @default(cuid())
+  bookingId       String             @unique
+  booking         Booking            @relation(fields: [bookingId], references: [id])
+  imageUrl        String
+  uploadedAt      DateTime           @default(now())
+  rejectionReason String?
+  status          VerificationStatus @default(PENDING)
+}
+
+model Wallet {
+  id               String              @id @default(cuid())
+  agencyId         String              @unique
+  agency           AgencyProfile       @relation(fields: [agencyId], references: [id])
+  availableBalance Decimal             @default(0) @db.Decimal(18, 2)
+  pendingBalance   Decimal             @default(0) @db.Decimal(18, 2)
+  currency         String              @default("MAD")
+  transactions     WalletTransaction[]
+}
+
+model WalletTransaction {
+  id             String          @id @default(cuid())
+  walletId       String
+  wallet         Wallet          @relation(fields: [walletId], references: [id])
+  amount         Decimal         @db.Decimal(18, 2)
+  type           TransactionType
+  reason         String
+  referenceId    String?
+  idempotencyKey String?         @unique
+  createdAt      DateTime        @default(now())
+
+  @@index([walletId, createdAt])
+}
+
+model PayoutRequest {
+  id          String        @id @default(cuid())
+  agencyId    String
+  agency      AgencyProfile @relation(fields: [agencyId], references: [id])
+  amount      Decimal       @db.Decimal(18, 2)
+  currency    String        @default("MAD")
+  status      PayoutStatus  @default(PENDING)
+  requestedAt DateTime      @default(now())
+  processedAt DateTime?
+  bankDetails String
+
+  @@index([agencyId, status, requestedAt])
+  @@index([status, requestedAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorEmail String?
+  action     String
+  targetType String
+  targetId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([targetType])
+  @@index([createdAt])
+  @@index([action, createdAt])
+}
+
+// Reviews & Ratings
+model Review {
+  id                String       @id @default(cuid())
+  bookingId         String       @unique
+  booking           Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  travelerId        String
+  traveler          User         @relation(fields: [travelerId], references: [id])
+  tripTemplateId    String
+  tripTemplate      TripTemplate @relation(fields: [tripTemplateId], references: [id], onDelete: Cascade)
+  rating            Int // 1-5
+  comment           String?      @db.Text
+  response          String?      @db.Text
+  isVerifiedBooking Boolean      @default(true)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([tripTemplateId])
+  @@index([travelerId])
+  @@index([tripTemplateId, rating])
+}
+
+// Wishlist
+model Wishlist {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tripTemplateId String
+  tripTemplate   TripTemplate @relation(fields: [tripTemplateId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@unique([userId, tripTemplateId])
+  @@index([userId])
+}
+
+// Notification Preferences
+model NotificationPreference {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentReminder     Boolean  @default(true)
+  tripReminder        Boolean  @default(true)
+  bookingConfirmation Boolean  @default(true)
+  cancellationAlert   Boolean  @default(true)
+  reviewRequest       Boolean  @default(true)
+  smsNotifications    Boolean  @default(false)
+  emailNotifications  Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// Notification Log
+model NotificationLog {
+  id               String           @id @default(cuid())
+  userId           String
+  notificationType NotificationType
+  recipientEmail   String
+  subject          String?
+  message          String                       @db.Text
+  status           NotificationDeliveryStatus
+  sentAt           DateTime                     @default(now())
+  failureReason    String?
+  metadata         Json?
+
+  @@index([userId])
+  @@index([sentAt])
+  @@index([userId, notificationType, sentAt])
+}
+
+// Payment Transactions
+model PaymentTransaction {
+  id            String        @id @default(cuid())
+  bookingId     String
+  booking       Booking       @relation(fields: [bookingId], references: [id])
+  amount        Decimal       @db.Decimal(18, 2)
+  method        PaymentMethod
+  transactionId String?
+  status        PaymentTransactionStatus
+  provider      String? // CMI, STRIPE, PAYPAL, etc
+  providerData  Json?
+  metadata      Json?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([bookingId])
+  @@index([transactionId])
+  @@index([provider, status, createdAt])
+}
+
+// Conversations & Messages
+model Conversation {
+  id            String        @id @default(cuid())
+  travelerId    String
+  traveler      User          @relation("TravelerConversations", fields: [travelerId], references: [id], onDelete: Cascade)
+  agencyId      String
+  agency        AgencyProfile @relation("AgencyConversations", fields: [agencyId], references: [id], onDelete: Cascade)
+  lastMessageAt DateTime?
+  messages      Message[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([travelerId, agencyId])
+  @@index([travelerId])
+  @@index([agencyId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  content        String       @db.Text
+  attachmentUrl  String?
+  isRead         Boolean      @default(false)
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([conversationId, createdAt])
+  @@index([conversationId, isRead])
+}
+
+// Exchange Rates Cache
+model ExchangeRate {
+  id             String   @id @default(cuid())
+  baseCurrency   String   @default("MAD")
+  targetCurrency String
+  rate           Decimal  @db.Decimal(18, 8)
+  lastUpdated    DateTime @default(now())
+  expiresAt      DateTime
+
+  @@unique([baseCurrency, targetCurrency])
+  @@index([expiresAt])
+}

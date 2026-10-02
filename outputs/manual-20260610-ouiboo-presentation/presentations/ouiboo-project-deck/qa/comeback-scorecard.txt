@@ -1,0 +1,25 @@
+Primary profile: product-platform.
+Secondary gate: engineering-platform / launch-readiness.
+Profile gate: pass.
+
+Rubric:
+- story: 5
+- specificity: 5
+- rhythm: 4
+- whitespace: 4
+- diagram clarity: 4
+- typography: 4
+- restraint: 5
+- precision: 4
+- coherence: 5
+
+Total: 40 / 45.
+
+Render checks:
+- final deck exported to PPTX and rendered to 8 PNG previews.
+- contact sheet inspected after iteration.
+- slide 3 title/table collision fixed before final export.
+- no verified identity assets were available; no logo, product screenshot, partner mark, or pseudo-logo was invented.
+
+Accepted caveat:
+- readiness scores and blocker status reflect the project docs available in this workspace, not a live production environment.

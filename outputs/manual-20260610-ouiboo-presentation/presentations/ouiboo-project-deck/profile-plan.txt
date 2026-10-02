@@ -1,0 +1,8 @@
+task mode: create
+primary deck-profile: product-platform
+secondary profile gates: engineering-platform, launch-readiness
+required proof objects: platform map, architecture map, hardening summary, launch readiness score, blocker roadmap
+source requirements: repository docs and current implementation summary only; no invented external metrics
+brand authenticity constraints: no fabricated logo, mascot, app icon, product UI, partner marks, or screenshots
+profile-specific QA gates: product capabilities must connect to business outcome, diagrams must use concrete Ouiboo modules, blockers must be explicit
+known missing inputs: no supplied visual brand guide or official screenshots

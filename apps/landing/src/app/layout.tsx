@@ -1,71 +1,82 @@
 // app/layout.tsx
 import React from "react";
 import { Metadata } from "next";
-import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
+import { Manrope, Space_Grotesk } from 'next/font/google';
 import Script from 'next/script';
 import "./globals.css";
+import { getInitialLanguage, languageInitScript } from '@ouiboo/i18n/server';
 
-import TranslationsProvider from "../components/TranslationsProvider";
+import Providers from "../components/Providers";
 import LoadingSpinner from "../components/LoadingSpinner"; // Import the spinner
+import AnalyticsConsent from "../components/AnalyticsConsent";
 import { Suspense } from "react";
+import { Analytics } from '@vercel/analytics/react';
 
-// This is a placeholder for your i18n configuration
-// You would typically have a file that exports your supported locales.
-export const i18n = {
-  defaultLocale: 'en',
-  locales: ['en', 'fr', 'ar'],
-};
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "Ouiboo",
-  description: "The future of travel planning.", // A more descriptive default
+  metadataBase: new URL(process.env.NEXT_PUBLIC_LANDING_URL || 'http://localhost:3004'),
+  applicationName: "Ouiboo",
+  title: {
+    default: "Ouiboo — Travel experiences, made personal",
+    template: "%s | Ouiboo",
+  },
+  description: "Discover memorable trips from local travel experts and manage every booking with confidence.",
+  keywords: ["Ouiboo", "travel marketplace", "travel experiences", "travel agencies", "local travel experts"],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "Ouiboo",
+    title: "Ouiboo — Travel experiences, made personal",
+    description: "Discover memorable trips from local travel experts and manage every booking with confidence.",
+    url: "/",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ouiboo — Travel experiences, made personal",
+    description: "Discover memorable trips from local travel experts and manage every booking with confidence.",
+  },
+robots: { index: true, follow: true },
 };
 
-// The signature of RootLayout now accepts `params` to get the locale
-// In Next.js 16, params is a Promise and needs to be awaited
-export default async function RootLayout({ 
-  children, 
-  params 
+export default async function RootLayout({
+  children
 }: { 
   children: React.ReactNode;
-  params: Promise<{ locale?: string }>;
 }) {
-  // Await params in Next.js 16
-  const resolvedParams = await params;
-  const locale = resolvedParams?.locale;
-  
-  // Use the locale from the URL, or fall back to the default
-  const currentLocale = locale && i18n.locales.includes(locale) ? locale : i18n.defaultLocale;
+  const currentLocale = await getInitialLanguage();
 
   return (
-    // The `lang` attribute is now dynamic
-    <html lang={currentLocale} suppressHydrationWarning={true}>
-      <body className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}>
+    <html lang={currentLocale} dir={currentLocale === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning={true}>
+      <body className={`${manrope.variable} ${spaceGrotesk.variable} antialiased`} suppressHydrationWarning>
+        <Script
+          id="language-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: languageInitScript }}
+        />
+<a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:font-semibold focus:text-[#07152f] focus:shadow-lg">
+          Skip to content
+        </a>
         {/* Pass the current locale to the provider */}
-        <TranslationsProvider locale={currentLocale}>
+        <Providers locale={currentLocale}>
           {/* Use the new LoadingSpinner as the Suspense fallback */}
-          <Suspense fallback={<LoadingSpinner />}>
+<Suspense fallback={<LoadingSpinner />}>
             {children}
           </Suspense>
-        </TranslationsProvider>
-        
-        <Script
-          strategy="afterInteractive"
-          src="https://www.googletagmanager.com/gtag/js?id=G-NGNWG1877Q"
-        />
-        <Script
-          id="google-analytics"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-NGNWG1877Q');
-            `,
-          }}
-        />
+          <AnalyticsConsent />
+        </Providers>
+              <Analytics />
       </body>
     </html>
   );

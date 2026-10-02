@@ -1,109 +1,192 @@
 'use client';
 
-import { useEffect } from 'react';
+import Image from 'next/image';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input } from '@ouiboo/ui';
+import { Button, Input, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Mail, Lock, Building2 } from 'lucide-react';
+import { ArrowRight, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
+import { apiClient } from '@/lib/api-client';
+import { useRouter } from 'next/navigation';
+import { useMutation } from '@tanstack/react-query';
+import { type LoginInput } from '@ouiboo/schemas';
+import { useAuth } from '@/components/AuthContext';
+import { setBrowserAccessToken } from '@ouiboo/api-client';
+
+type AgencyLoginFormValues = LoginInput & {
+};
+
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    } | string;
+  };
+};
 
 export default function AgencyLoginPage() {
   const { t, i18n } = useTranslation();
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const router = useRouter();
+  const { user, isLoading, refetch } = useAuth();
+  const { register, handleSubmit, formState: { errors } } = useForm<AgencyLoginFormValues>();
+  const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const isMounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
 
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
-  const onSubmit = (data: any) => {
-    console.log('Agency Login Data:', data);
-    alert('Login simulated! Check console for data.');
+  // Bounce authenticated users to the dashboard
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.replace('/dashboard');
+    }
+  }, [user, isLoading, router]);
+
+  const loginMutation = useMutation({
+    mutationFn: async (data: LoginInput) => {
+      const response = await apiClient.post('/auth/login', data);
+      return response.data;
+    },
+    onSuccess: async (data) => {
+      setBrowserAccessToken(data.accessToken);
+      await refetch();
+      router.push('/dashboard');
+    },
+    onError: (err: ApiError) => {
+      console.error('Login failed:', err);
+      if (!err?.response) {
+        setError(t('login.networkError', 'Cannot reach the server. Please check your connection and try again.'));
+        return;
+      }
+      const data = err.response.data;
+      const message = typeof data === 'string' ? null : data?.message;
+      if (message === 'EMAIL_NOT_VERIFIED') {
+        const email = (document.getElementById('email') as HTMLInputElement)?.value;
+        router.push(`/verify?email=${encodeURIComponent(email || '')}&reason=unverified`);
+        return;
+      }
+      if (message === 'INVALID_CREDENTIALS' || message === 'Unauthorized') {
+        setError(t('login.invalidCredentials', 'Incorrect email or password. Please try again.'));
+        return;
+      }
+      // Show human-readable backend messages, hide raw ALL_CAPS error codes
+      if (message && !/^[A-Z][A-Z0-9_]*$/.test(message)) {
+        setError(message);
+        return;
+      }
+      setError(t('login.errorGeneric', 'Login failed. Please try again.'));
+    }
+  });
+
+  const onSubmit = (data: AgencyLoginFormValues) => {
+    setError(null);
+    loginMutation.mutate({
+      email: data.email,
+      password: data.password,
+    });
   };
 
+if (!isMounted) return <div className="min-h-screen bg-background" />;
+
   return (
-    <div className="min-h-screen flex bg-white">
+    <div className="min-h-screen flex bg-background relative">
+      {/* Theme + Language controls */}
+      <div className="absolute top-4 end-4 z-10 flex items-center gap-2">
+        <LanguageSwitcher />
+        <ThemeToggle />
+      </div>
       {/* Left Side - Form */}
       <div className="flex-1 flex items-center justify-center p-8 lg:p-12">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
           className="w-full max-w-md space-y-8"
         >
-          <div className="text-center lg:text-left">
-            <h2 className="text-3xl font-bold text-deep-blue">{t('login.title')}</h2>
-            <p className="mt-2 text-gray-600">{t('login.subtitle')}</p>
+          <div className="text-center lg:text-start">
+            <h2 className="text-3xl font-bold text-foreground">{t('login.title')}</h2>
+            <p className="mt-2 text-muted-foreground">{t('login.subtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-gray-700">{t('login.email')}</label>
+                <label htmlFor="email" className="text-sm font-medium text-muted-foreground">{t('login.email')}</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <Input 
-                    id="email" 
-                    type="email" 
+                  <Mail className="absolute start-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
                     placeholder={t('login.emailPlaceholder')}
-                    className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-deep-blue focus:ring-deep-blue transition-all duration-200"
-                    {...register('email', { required: 'Email is required' })} 
+                    className="ps-10 h-12 bg-muted border-border focus:bg-background focus:border-primary focus:ring-primary transition-all duration-200"
+                    {...register('email', { required: t('login.emailRequired') })}
                   />
                 </div>
-                {errors.email && <span className="text-red-500 text-sm">{errors.email.message as string}</span>}
+                {errors.email && <span className="text-danger text-sm">{errors.email.message as string}</span>}
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="text-sm font-medium text-gray-700">{t('login.password')}</label>
-                  <a href="#" className="text-sm font-medium text-deep-blue hover:text-blue-700">{t('login.forgotPassword')}</a>
+                  <label htmlFor="password" className="text-sm font-medium text-muted-foreground">{t('login.password')}</label>
+                  <Link href={`/forgot-password?lang=${i18n.language}`} className="text-sm font-medium text-primary hover:text-primary/80 dark:text-accent dark:hover:text-accent/80">
+                    {t('login.forgotPassword')}
+                  </Link>
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <Input 
-                    id="password" 
-                    type="password" 
+                  <Lock className="absolute start-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
                     placeholder={t('login.passwordPlaceholder')}
-                    className="pl-10 h-12 bg-gray-50 border-gray-200 focus:bg-white focus:border-deep-blue focus:ring-deep-blue transition-all duration-200"
-                    {...register('password', { required: 'Password is required' })} 
+                    className="ps-10 pe-12 h-12 bg-muted border-border focus:bg-background focus:border-primary focus:ring-primary transition-all duration-200"
+                    {...register('password', { required: t('login.passwordRequired') })}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
                 </div>
-                 {errors.password && <span className="text-red-500 text-sm">{errors.password.message as string}</span>}
+                 {errors.password && <span className="text-danger text-sm">{errors.password.message as string}</span>}
               </div>
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full h-12 bg-deep-blue hover:bg-blue-800 text-white font-semibold rounded-lg transition-colors duration-200"
+            <div className="flex items-center justify-end">
+              <span className="text-xs text-muted-foreground">{t('login.securityNote')}</span>
+            </div>
+
+            {error && (
+              <div className="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
+                {error}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={loginMutation.isPending}
+              className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-semibold rounded-lg transition-colors duration-200"
             >
-              {t('login.signIn')} <ArrowRight className="ml-2 h-5 w-5 inline" />
+              {loginMutation.isPending ? t('login.loggingIn') : t('login.signIn')}
+              {!loginMutation.isPending && <ArrowRight className="ms-2 h-5 w-5 inline" />}
             </Button>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-2 text-gray-500">{t('login.orContinue')}</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-5 w-5 mr-2" alt="Google" />
-                <span className="text-sm font-medium text-gray-700">{t('login.google')}</span>
-              </button>
-              <button type="button" className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <img src="https://www.svgrepo.com/show/448234/linkedin.svg" className="h-5 w-5 mr-2" alt="LinkedIn" />
-                <span className="text-sm font-medium text-gray-700">{t('login.linkedin')}</span>
-              </button>
-            </div>
           </form>
 
-          <p className="text-center text-sm text-gray-600">
+          <p className="text-center text-sm text-muted-foreground">
             {t('login.noAccount')}{' '}
-            <Link href={`/signup?lang=${i18n.language}`} className="font-semibold text-deep-blue hover:text-blue-700 hover:underline">
+            <Link href={`/signup?lang=${i18n.language}`} className="font-semibold text-primary hover:text-primary/80 hover:underline dark:text-accent dark:hover:text-accent/80">
               {t('login.signUpLink')}
             </Link>
           </p>
@@ -111,17 +194,19 @@ export default function AgencyLoginPage() {
       </div>
 
       {/* Right Side - Image */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-deep-blue">
-        <motion.div 
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-primary">
+        <motion.div
           initial={{ scale: 1.1, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 1.5 }}
           className="absolute inset-0"
         >
-          <img 
-            src="https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop" 
-            alt="Modern Office" 
+          <Image
+            src="https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop"
+            alt={t('login.heroAlt')}
             className="w-full h-full object-cover opacity-40"
+            fill
+            sizes="50vw"
           />
         </motion.div>
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full h-full">
@@ -134,9 +219,9 @@ export default function AgencyLoginPage() {
             transition={{ delay: 0.8, duration: 0.8 }}
             className="mb-12"
           >
-            <h2 className="text-4xl font-bold mb-4 leading-tight">Empower your travel business.</h2>
+            <h2 className="text-4xl font-bold mb-4 leading-tight">{t('login.heroTitle')}</h2>
             <p className="text-lg text-gray-200 max-w-md">
-              Access powerful tools, analytics, and a global network of travelers to scale your agency.
+              {t('login.heroSubtitle')}
             </p>
           </motion.div>
         </div>
