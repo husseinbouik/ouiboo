@@ -130,7 +130,9 @@ jobs:
         run: npm run build
 
       - name: Apply Prisma migrations
-        run: npx prisma migrate deploy --schema packages/database/prisma/schema.prisma
+        # Run via the database workspace so the locally-installed prisma
+        # binary is used (npx from root cannot resolve it reliably).
+        run: npm run db:migrate:deploy --workspace=packages/database
 
       - name: Trigger staging deployment orchestrator
         env:
