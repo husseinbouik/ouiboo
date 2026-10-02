@@ -1,0 +1,23 @@
+# CODEOWNERS for Ouiboo
+# These paths require review before merging. The CI/audit history shows
+# these are the paths most likely to break the release pipeline.
+
+# CI/CD workflows — changes here affect every build and deployment
+.github/workflows/ @husseinbouik
+
+# Database schema and migrations — data integrity critical
+packages/database/prisma/ @husseinbouik
+
+# Environment validation — blocks staging/production releases
+scripts/validate-env.mjs @husseinbouik
+
+# Docker and compose files — deployment configuration
+Dockerfile @husseinbouik
+apps/*/Dockerfile @husseinbouik
+docker-compose*.yml @husseinbouik
+
+# Dependency manifests — supply chain
+package.json @husseinbouik
+package-lock.json @husseinbouik
+apps/*/package.json @husseinbouik
+packages/*/package.json @husseinbouik

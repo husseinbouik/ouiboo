@@ -116,7 +116,9 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        # NODE_ENV=production is set for env validation, but the build step needs
+        # devDependencies (turbo, typescript, etc.), so install them explicitly.
+        run: npm ci --include=dev
 
       - name: Validate launch contract
         run: npm run check:env && npm run check:placeholders
@@ -125,14 +127,21 @@ jobs:
         run: npm run build
 
       - name: Apply Prisma migrations
-        run: npx prisma migrate deploy --schema packages/database/prisma/schema.prisma
+        # Run via the database workspace so the locally-installed prisma
+        # binary is used (npx from root cannot resolve it reliably).
+        run: npm run db:migrate:deploy --workspace=packages/database
 
       - name: Trigger production deployment orchestrator
         env:
           DEPLOY_HOOK_URL: ${{ secrets.DEPLOY_HOOK_URL }}
           DEPLOY_HOOK_TOKEN: ${{ secrets.DEPLOY_HOOK_TOKEN }}
         run: |
-          test -n "$DEPLOY_HOOK_URL"
+          # The orchestrator hook is optional. When unset (e.g. Vercel
+          # auto-deploys from git), skip instead of failing.
+          if [ -z "$DEPLOY_HOOK_URL" ]; then
+            echo "DEPLOY_HOOK_URL not configured; skipping orchestrator trigger."
+            exit 0
+          fi
           curl --fail-with-body --retry 3 --retry-all-errors \
             -X POST "$DEPLOY_HOOK_URL" \
             -H "Authorization: Bearer $DEPLOY_HOOK_TOKEN" \

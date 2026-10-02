@@ -2,9 +2,12 @@ name: Browser E2E
 
 on:
   pull_request:
-    branches: [ main, develop, staging ]
+    branches: [ master, staging ]
   push:
-    branches: [ main, develop, staging ]
+    branches: [ master, staging ]
+
+permissions:
+  contents: read
 
 jobs:
   browser-e2e:

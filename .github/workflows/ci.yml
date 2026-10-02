@@ -2,13 +2,22 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop, staging ]
+    branches: [ master, staging ]
   pull_request:
-    branches: [ main, develop, staging ]
+    branches: [ master, staging ]
+
+permissions:
+  contents: read
+
+# Cancel superseded runs on PRs to save minutes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       DATABASE_URL: postgresql://test:test@localhost:5433/ouiboo_test?schema=public
       E2E_DATABASE_URL: postgresql://test:test@localhost:5433/ouiboo_test?schema=public
