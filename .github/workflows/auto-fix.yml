@@ -3,6 +3,7 @@ name: Auto-fix
 # Automatically fixes lint/format issues and pushes the fix back to the PR branch.
 # This prevents the common loop of "CI fails lint -> manually fix -> push -> wait".
 # Only touches files changed in the PR to avoid reformatting the entire repo.
+# Note: requires workflows:write permission to push fixes to workflow files.
 on:
   pull_request:
     branches: [ master, staging ]
