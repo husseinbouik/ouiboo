@@ -12,8 +12,11 @@ const optionalValue = (schema) =>
   z.preprocess((value) => value === '' ? undefined : value, schema.optional());
 
 const envSchema = z.object({
-  // Database
-  DATABASE_URL: z.string().url(),
+  // Database (PostgreSQL connection string, not an HTTP URL)
+  DATABASE_URL: z.string().min(1).refine(
+    (v) => v.startsWith('postgresql://') || v.startsWith('postgres://'),
+    { message: 'DATABASE_URL must be a valid PostgreSQL connection string' }
+  ),
   
   // Auth
   JWT_SECRET: z.string().min(16),
