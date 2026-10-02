@@ -32,7 +32,7 @@ jobs:
           - service: landing
             dockerfile: apps/landing/Dockerfile
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -110,7 +110,7 @@ jobs:
       S3_PUBLIC_URL: ${{ vars.STAGING_MEDIA_URL }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4

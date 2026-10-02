@@ -17,7 +17,7 @@ jobs:
       NEXT_PUBLIC_API_URL: http://127.0.0.1:3000/api
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
