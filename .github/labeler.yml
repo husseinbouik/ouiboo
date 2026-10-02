@@ -1,0 +1,38 @@
+# Auto-label PRs by changed paths for faster triage.
+area:api:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'apps/api/**/*'
+          - 'packages/database/**/*'
+area:traveler:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'apps/traveler/**/*'
+area:agency:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'apps/agency/**/*'
+area:admin:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'apps/admin/**/*'
+area:landing:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'apps/landing/**/*'
+area:ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**/*'
+area:deps:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'package.json'
+          - 'package-lock.json'
+          - 'apps/*/package.json'
+          - 'packages/*/package.json'
+area:docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '*.md'
+          - 'docs/**/*'
