@@ -5,6 +5,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ThemeProvider } from 'next-themes';
+import { AuthProvider } from './AuthContext';
 import '@/lib/i18n';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
@@ -28,7 +29,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     return (
         <QueryClientProvider client={queryClient}>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-                {children}
+                <AuthProvider>
+                    {children}
+                </AuthProvider>
             </ThemeProvider>
             {process.env.NODE_ENV === 'development' ? <ReactQueryDevtools initialIsOpen={false} /> : null}
         </QueryClientProvider>

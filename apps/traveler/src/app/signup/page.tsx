@@ -3,7 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Input } from '@ouiboo/ui';
+import { Button, Input, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
@@ -111,6 +111,11 @@ export default function TravelerSignupPage() {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center bg-background overflow-hidden p-6 font-sans">
+      {/* Theme + Language controls */}
+      <div className="absolute top-4 end-4 z-10 flex items-center gap-2">
+        <LanguageSwitcher />
+        <ThemeToggle />
+      </div>
        {/* Background Blobs */}
       <div className="absolute top-0 start-0 -translate-y-1/2 -translate-x-1/2 rtl:translate-x-1/2 w-[40rem] h-[40rem] bg-sunset-orange/10 dark:bg-sunset-orange/5 rounded-full blur-3xl opacity-50 pointer-events-none" />
       <div className="absolute bottom-0 end-0 translate-y-1/2 translate-x-1/2 rtl:-translate-x-1/2 w-[40rem] h-[40rem] bg-blue-100 dark:bg-blue-900/20 rounded-full blur-3xl opacity-50 pointer-events-none" />

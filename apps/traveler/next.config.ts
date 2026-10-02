@@ -20,6 +20,9 @@ const mediaRemotePatterns = (() => {
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion', 'date-fns', 'recharts'],
+  },
   transpilePackages: ["@ouiboo/ui", "@ouiboo/utils"],
   images: {
     remotePatterns: [

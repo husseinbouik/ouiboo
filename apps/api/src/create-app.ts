@@ -3,6 +3,7 @@ import { ValidationPipe, type INestApplication } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import helmet from 'helmet'
+import compression from 'compression'
 import { AppModule } from './app.module'
 import { GlobalExceptionFilter } from './common/global-exception.filter'
 import { RedisResponseCacheInterceptor } from './common/redis-response-cache.interceptor'
@@ -107,6 +108,9 @@ export async function createApp(): Promise<INestApplication> {
           : false,
     }),
   )
+
+  // Enable gzip compression for API responses
+  app.use(compression())
 
   app.use((_req: Request, res: Response, next: NextFunction) => {
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
