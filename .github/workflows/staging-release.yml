@@ -139,13 +139,17 @@ jobs:
           DEPLOY_HOOK_URL: ${{ secrets.DEPLOY_HOOK_URL }}
           DEPLOY_HOOK_TOKEN: ${{ secrets.DEPLOY_HOOK_TOKEN }}
         run: |
-          test -n "$DEPLOY_HOOK_URL"
+          # The orchestrator hook is optional. When unset (e.g. Vercel
+          # auto-deploys from git), skip instead of failing.
+          if [ -z "$DEPLOY_HOOK_URL" ]; then
+            echo "DEPLOY_HOOK_URL not configured; skipping orchestrator trigger."
+            exit 0
+          fi
           curl --fail-with-body --retry 3 --retry-all-errors \
             -X POST "$DEPLOY_HOOK_URL" \
             -H "Authorization: Bearer $DEPLOY_HOOK_TOKEN" \
             -H "Content-Type: application/json" \
             --data "{\"environment\":\"staging\",\"commit\":\"${GITHUB_SHA}\",\"imageTag\":\"sha-${GITHUB_SHA}\"}"
-
       - name: Smoke deployed staging services
         env:
           SMOKE_API_URL: ${{ vars.STAGING_API_URL }}
