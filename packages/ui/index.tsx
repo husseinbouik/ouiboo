@@ -25,6 +25,7 @@ export * from './RadioGroup';
 export * from './Select';
 export * from './Sheet';
 export * from './Skeleton';
+export * from './LoadingSkeletons';
 export * from './Switch';
 export * from './Table';
 export * from './Tabs';
