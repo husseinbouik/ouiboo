@@ -11,7 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { Button, Input, Badge, MobileFilterDrawer } from "@ouiboo/ui";
+import { Button, Input, Badge, MobileFilterDrawer, TripCardSkeletonGrid } from "@ouiboo/ui";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@ouiboo/ui/utils";
 import { TripCard } from "@/components/TripCard";
@@ -291,12 +291,7 @@ export default function SearchPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {isLoading ? (
-                [1,2,3,4].map(i => (
-                  <div key={i} className="rounded-2xl border border-border bg-card p-4">
-                    <div className="h-40 bg-muted animate-pulse rounded-md" />
-                    <div className="h-4 bg-muted rounded mt-4 w-1/2 animate-pulse" />
-                  </div>
-                ))
+                <TripCardSkeletonGrid count={4} className="md:col-span-2" />
               ) : trips.length > 0 ? (
                 <AnimatePresence>
                   {trips.map((trip, idx) => (
