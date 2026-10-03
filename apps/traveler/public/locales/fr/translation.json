@@ -88,7 +88,7 @@
     "emailPlaceholder": "Saisissez votre e-mail",
     "password": "Mot de passe",
     "passwordPlaceholder": "Créez un mot de passe",
-    "passwordHint": "Utilisez au moins 6 caractères avec un mélange de lettres et de chiffres.",
+    "passwordHint": "Utilisez au moins 8 caractères avec un mélange de lettres et de chiffres.",
     "acceptTerms": "J'accepte les",
     "termsLink": "Conditions d'utilisation",
     "privacyLink": "Politique de confidentialité",
