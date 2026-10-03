@@ -26,7 +26,8 @@
     "test:ci": "npm run test && npm run test:e2e:all",
     "coverage:report": "jest --coverage --coverageReporters=text --coverageDirectory=./coverage",
     "test:e2e:prepare": "node ../../scripts/prepare-e2e-db.mjs",
-    "test:e2e:safe": "npm run test:e2e:prepare && npm run test:e2e:all"
+    "test:e2e:safe": "npm run test:e2e:prepare && npm run test:e2e:all",
+    "seed:staging": "node prisma/seed-staging.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.908.0",
