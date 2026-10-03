@@ -41,7 +41,7 @@ const staggerContainer: Variants = {
 };
 
 export default function HomeClient({ featuredTrips }: HomeClientProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const travelStyles = [
     { key: 'adventure', name: t('categories.adventure'), Icon: Mountain, color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' },
     { key: 'cultural', name: t('categories.cultural'), Icon: Compass, color: 'bg-blue-100 text-ocean-600 dark:text-ocean-300 dark:bg-blue-900/30 dark:text-blue-400' },
@@ -121,7 +121,7 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
               <p className="text-lg text-muted-foreground">{t('featured.subtitle')}</p>
             </div>
             <Link href="/search" className="text-sunset-orange font-semibold hover:text-orange-600 flex items-center gap-2 transition-colors">
-              {t('featured.viewAll')} <ArrowRight className="h-4 w-4" />
+              {t('featured.viewAll')} <ArrowRight className={`h-4 w-4 ${i18n.language === 'ar' ? 'rotate-180' : ''}`} />
             </Link>
           </div>
 

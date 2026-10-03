@@ -166,7 +166,7 @@ export default function ProfilePage() {
                   <Palette className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground transition-colors" />
                   <Input
                     {...register('avatar')}
-                    placeholder="https://example.com/avatar.png"
+                    placeholder="https://..."
                     className="h-14 pl-12 bg-muted/50 dark:bg-card border-none rounded-2xl font-bold"
                   />
                 </div>
