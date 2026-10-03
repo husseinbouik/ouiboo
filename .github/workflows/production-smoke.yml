@@ -1,0 +1,130 @@
+name: Production Smoke Tests
+
+# Runs fast production smoke tests on every PR to staging.
+# Catches broken URLs, CORS regressions, dead links, and UI failures
+# before they reach production. Failures auto-create GitHub issues.
+
+on:
+  pull_request:
+    branches: [staging]
+  workflow_dispatch:
+  schedule:
+    # Daily at 06:00 UTC as a safety net
+    - cron: '0 6 * * *'
+
+concurrency:
+  group: production-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --include=dev
+        working-directory: .
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run production smoke tests
+        id: smoke
+        run: npx playwright test e2e/production/smoke.spec.ts --reporter=json
+        env:
+          SMOKE_TRAVELER_URL: ${{ vars.STAGING_TRAVELER_URL }}
+          SMOKE_AGENCY_URL: ${{ vars.STAGING_AGENCY_URL }}
+          SMOKE_ADMIN_URL: ${{ vars.STAGING_ADMIN_URL }}
+          SMOKE_LANDING_URL: ${{ vars.STAGING_LANDING_URL }}
+          SMOKE_API_URL: ${{ vars.STAGING_API_URL }}
+        continue-on-error: true
+
+      - name: Parse failures and create issues
+        if: steps.smoke.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let report;
+            try {
+              const files = fs.readdirSync('test-results');
+              const jsonFile = files.find(f => f.endsWith('.json'));
+              report = JSON.parse(fs.readFileSync(`test-results/${jsonFile}`, 'utf8'));
+            } catch (e) {
+              console.log('Could not read test report:', e.message);
+              return;
+            }
+
+            const failures = [];
+            const collectFailures = (suite) => {
+              for (const spec of (suite.specs || [])) {
+                for (const test of (spec.tests || [])) {
+                  const failed = (test.results || []).some(r => r.status === 'failed' || r.status === 'timedOut');
+                  if (failed) {
+                    const error = (test.results || [])
+                      .flatMap(r => (r.errors || []).map(e => e.message))
+                      .join('\n').slice(0, 2000);
+                    failures.push({ title: spec.title, error });
+                  }
+                }
+              }
+              for (const child of (suite.suites || [])) collectFailures(child);
+            };
+            for (const suite of (report.suites || [])) collectFailures(suite);
+
+            if (failures.length === 0) {
+              console.log('No failures found in report');
+              return;
+            }
+
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'smoke-test',
+              per_page: 50,
+            });
+            const existingTitles = new Set(existing.map(i => i.title));
+
+            for (const f of failures) {
+              const title = `[smoke] ${f.title}`;
+              if (existingTitles.has(title)) {
+                console.log(`Skipping duplicate: ${title}`);
+                continue;
+              }
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body: [
+                  '## Automated Smoke Test Failure',
+                  '',
+                  `**Test:** ${f.title}`,
+                  `**PR:** #${context.payload.pull_request?.number || 'scheduled'}`,
+                  `**Commit:** ${context.sha.slice(0, 8)}`,
+                  `**Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                  '',
+                  '### Error',
+                  '```',
+                  f.error || '(no error details captured)',
+                  '```',
+                  '',
+                  '_Auto-created by production smoke tests. Close if fixed or flaky._',
+                ].join('\n'),
+                labels: ['bug', 'smoke-test', 'automated'],
+              });
+              console.log(`Created issue: ${title}`);
+            }
