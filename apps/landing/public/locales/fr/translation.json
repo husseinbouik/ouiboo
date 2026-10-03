@@ -209,7 +209,7 @@
   "footer": {
     "rights": "Tous droits réservés.",
     "privacy": "Confidentialité",
-    "copyright": "© {{year}} Ouiboo."
+    "copyright": "© {{year}} Ouiboo. "
   },
   "common": {
     "globalNavigationLabel": "Navigation principale",
