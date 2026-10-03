@@ -37,6 +37,7 @@ type ApiError = {
 export default function CreateTripPage() {
   const { t } = useTranslation();
   const [step, setStep] = useState(1);
+  const [validating, setValidating] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
@@ -44,6 +45,8 @@ export default function CreateTripPage() {
   const [submissionError, setSubmissionError] = useState('');
   const { register, handleSubmit, control, watch, setValue, trigger, formState: { errors } } = useForm<CreateTripInput>({
     resolver: zodResolver(CreateTripTemplateSchema),
+    // Revalidate on change so errors clear as the user fixes them (#72)
+    reValidateMode: 'onChange',
     defaultValues: {
       category: TripCategory.Adventure,
       inclusions: [],
@@ -133,21 +136,27 @@ try {
   };
 
   const nextStep = async () => {
-    let fieldsToValidate: Array<keyof CreateTripInput | 'itinerary'> = [];
-    if (step === 1) fieldsToValidate = ['title', 'description', 'category', 'startLocation', 'durationDays', 'durationNights'];
-    if (step === 2) fieldsToValidate = ['itinerary'];
-    if (step === 3) fieldsToValidate = ['images'];
-    
-    const isValid = await trigger(fieldsToValidate);
-    if (isValid) {
-      if (step === 1 && itineraryFields.length === 0) {
-        // Initialize itinerary based on durationDays
-        const days = watch('durationDays');
-        for (let i = 1; i <= days; i++) {
-          appendDay({ dayNumber: i, title: `Day ${i}`, description: '', activities: [] });
+    if (validating) return;
+    setValidating(true);
+    try {
+      let fieldsToValidate: Array<keyof CreateTripInput | 'itinerary'> = [];
+      if (step === 1) fieldsToValidate = ['title', 'description', 'category', 'startLocation', 'durationDays', 'durationNights'];
+      if (step === 2) fieldsToValidate = ['itinerary'];
+      if (step === 3) fieldsToValidate = ['images'];
+      
+      const isValid = await trigger(fieldsToValidate);
+      if (isValid) {
+        if (step === 1 && itineraryFields.length === 0) {
+          // Initialize itinerary based on durationDays
+          const days = watch('durationDays');
+          for (let i = 1; i <= days; i++) {
+            appendDay({ dayNumber: i, title: `Day ${i}`, description: '', activities: [] });
+          }
         }
+        setStep(s => s + 1);
       }
-      setStep(s => s + 1);
+    } finally {
+      setValidating(false);
     }
   };
 
@@ -488,14 +497,15 @@ try {
                 <Button 
                   key="continue-btn"
                   type="button"
+                  disabled={validating}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     nextStep();
                   }}
-                  className="px-10 h-12 bg-primary hover:bg-primary/90 text-primary-foreground border-none shadow-lg shadow-primary/20"
+                  className="px-10 h-12 bg-primary hover:bg-primary/90 text-primary-foreground border-none shadow-lg shadow-primary/20 disabled:opacity-50"
                 >
-                  {t('common.continue')}
+                  {validating ? t('common.loading', 'Loading...') : t('common.continue')}
                 </Button>
               ) : (
                 <Button 
