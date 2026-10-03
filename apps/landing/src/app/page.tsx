@@ -203,7 +203,7 @@ export default function OuibooLanding() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
           isScrolled 
-            ? 'bg-white/80 backdrop-blur-md shadow-lg' 
+            ? 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-lg' 
             : 'bg-transparent'
         }`}
       >
