@@ -209,7 +209,7 @@
   "footer": {
     "rights": "All rights reserved.",
     "privacy": "Privacy",
-    "copyright": "© {{year}} Ouiboo."
+    "copyright": "© {{year}} Ouiboo. "
   },
   "common": {
     "globalNavigationLabel": "Global",
@@ -264,4 +264,3 @@
     "allowAnalytics": "Allow analytics"
   }
 }
-
