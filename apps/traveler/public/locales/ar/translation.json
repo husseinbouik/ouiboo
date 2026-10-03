@@ -88,7 +88,7 @@
     "emailPlaceholder": "أدخل بريدك الإلكتروني",
     "password": "كلمة المرور",
     "passwordPlaceholder": "أنشئ كلمة مرور",
-    "passwordHint": "استخدم 6 أحرف على الأقل مع مزيج من الحروف والأرقام.",
+    "passwordHint": "استخدم 8 أحرف على الأقل مع مزيج من الحروف والأرقام.",
     "acceptTerms": "أوافق على",
     "termsLink": "شروط الخدمة",
     "privacyLink": "سياسة الخصوصية",
