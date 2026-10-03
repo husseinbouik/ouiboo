@@ -426,7 +426,7 @@
     }
   },
   "dashboard": {
-    "greeting": "Bonjour, {{name}}",
+    "greeting": "Hello, {{name}}",
     "subtitle": "Here is your agency command center for bookings, payouts, and growth.",
     "liveSnapshot": "Live Snapshot",
     "requestPayout": "Request Payout",
