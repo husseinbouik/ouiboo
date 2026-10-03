@@ -101,7 +101,9 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
                     className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
                   />
                 </div>
-                <Button className="h-14 sm:h-auto px-8 rounded-xl bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-orange-600 text-white font-semibold text-lg shadow-md transition-all">
+                <Button 
+                  onClick={() => window.location.href = '/search'}
+                  className="h-14 sm:h-auto px-8 rounded-xl bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-orange-600 text-white font-semibold text-lg shadow-md transition-all">
                   {t('hero.search', 'Search')}
                 </Button>
               </div>
@@ -162,6 +164,7 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
                     <motion.div 
                         key={style.key}
                         whileHover={{ y: -5 }}
+                        onClick={() => window.location.href = `/search?category=${style.key}`}
                         className="bg-card p-8 rounded-3xl shadow-sm border border-border hover:shadow-md transition-all cursor-pointer group"
                     >
                         <div className={`w-14 h-14 rounded-2xl ${style.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
