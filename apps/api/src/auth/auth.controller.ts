@@ -61,10 +61,11 @@ export class AuthController {
     ) {
         const refreshToken = this.getRefreshToken(req, dto);
         const result = await this.authService.logout(refreshToken);
+        const isProduction = process.env.NODE_ENV === 'production';
         res.clearCookie(REFRESH_COOKIE_NAME, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'lax',
             path: '/api/v1/auth',
         });
         return result;
@@ -101,10 +102,13 @@ export class AuthController {
     }
 
     private setRefreshCookie(res: Response, token: string) {
+        const isProduction = process.env.NODE_ENV === 'production';
         res.cookie(REFRESH_COOKIE_NAME, token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            secure: isProduction,
+            // Cross-site (traveler/agency/admin on separate Vercel domains) requires SameSite=None in production.
+            // In development, use Lax since Secure cookies don't work on http://localhost.
+            sameSite: isProduction ? 'none' : 'lax',
             maxAge: REFRESH_COOKIE_MAX_AGE_MS,
             path: '/api/v1/auth',
         });

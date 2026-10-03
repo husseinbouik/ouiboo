@@ -41,7 +41,7 @@ const staggerContainer: Variants = {
 };
 
 export default function HomeClient({ featuredTrips }: HomeClientProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const travelStyles = [
     { key: 'adventure', name: t('categories.adventure'), Icon: Mountain, color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' },
     { key: 'cultural', name: t('categories.cultural'), Icon: Compass, color: 'bg-blue-100 text-ocean-600 dark:text-ocean-300 dark:bg-blue-900/30 dark:text-blue-400' },
@@ -101,7 +101,9 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
                     className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
                   />
                 </div>
-                <Button className="h-14 sm:h-auto px-8 rounded-xl bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-orange-600 text-white font-semibold text-lg shadow-md transition-all">
+                <Button 
+                  onClick={() => window.location.href = '/search'}
+                  className="h-14 sm:h-auto px-8 rounded-xl bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-orange-600 text-white font-semibold text-lg shadow-md transition-all">
                   {t('hero.search', 'Search')}
                 </Button>
               </div>
@@ -119,7 +121,7 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
               <p className="text-lg text-muted-foreground">{t('featured.subtitle')}</p>
             </div>
             <Link href="/search" className="text-sunset-orange font-semibold hover:text-orange-600 flex items-center gap-2 transition-colors">
-              {t('featured.viewAll')} <ArrowRight className="h-4 w-4" />
+              {t('featured.viewAll')} <ArrowRight className={`h-4 w-4 ${i18n.language === 'ar' ? 'rotate-180' : ''}`} />
             </Link>
           </div>
 
@@ -162,6 +164,7 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
                     <motion.div 
                         key={style.key}
                         whileHover={{ y: -5 }}
+                        onClick={() => window.location.href = `/search?category=${style.key}`}
                         className="bg-card p-8 rounded-3xl shadow-sm border border-border hover:shadow-md transition-all cursor-pointer group"
                     >
                         <div className={`w-14 h-14 rounded-2xl ${style.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>

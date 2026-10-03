@@ -426,7 +426,7 @@
     }
   },
   "dashboard": {
-    "greeting": "Bonjour, {{name}}",
+    "greeting": "Hello, {{name}}",
     "subtitle": "Here is your agency command center for bookings, payouts, and growth.",
     "liveSnapshot": "Live Snapshot",
     "requestPayout": "Request Payout",
@@ -645,7 +645,7 @@
     "title": "Free Trial Ending Soon",
     "body": "You have {{daysLeft}} days remaining in your free trial.",
     "upgradeNow": "Upgrade now to avoid interruption.",
-    "meaningfulFeatures": "meaningful features await.",
+    "meaningfulFeatures": " meaningful features await.",
     "upgrade": "Upgrade Plan"
   },
   "deleteConfirmation": {

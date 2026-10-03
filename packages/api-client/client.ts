@@ -164,10 +164,14 @@ export function attachBrowserAuth(
 
         if (typeof window !== 'undefined') {
           clearBrowserAccessToken()
+          const requestUrl = String(originalRequest?.url || '')
           const isAnonymousProfileProbe =
             !hadAccessToken &&
-            String(originalRequest?.url || '').includes('/users/me')
-          if (!isAnonymousProfileProbe) {
+            requestUrl.includes('/users/me')
+          // Don't redirect when the 401 came from the login endpoint itself —
+          // the login form needs to receive the error to display it (#54, #55, #56)
+          const isLoginAttempt = requestUrl.includes('/auth/login')
+          if (!isAnonymousProfileProbe && !isLoginAttempt) {
             window.location.href = loginPath
           }
         }
