@@ -119,7 +119,9 @@ export default function AgencyDashboard() {
     },
   });
 
-  const companyName = user?.agencyProfile?.companyName || t('dashboard.yourAgency');
+  const rawCompanyName = user?.agencyProfile?.companyName || t('dashboard.yourAgency');
+  // Capitalize display name (#73: "Bonjour, ouiboo" -> "Bonjour, Ouiboo")
+  const companyName = rawCompanyName.charAt(0).toUpperCase() + rawCompanyName.slice(1);
   const stats = statsData || {
     revenue: 0,
     activeTrips: 0,
@@ -227,8 +229,11 @@ export default function AgencyDashboard() {
           <Button variant="outline" className="rounded-xl font-bold h-12 px-6 gap-2">
             <Calendar className="h-4 w-4" /> {t('dashboard.liveSnapshot')}
           </Button>
-          <Link href="/dashboard/wallet">
-            <Button className="rounded-xl font-black h-12 px-8 bg-primary">{t('dashboard.requestPayout')}</Button>
+          <Link
+            href="/dashboard/wallet"
+            className="inline-flex items-center justify-center rounded-xl font-black h-12 px-8 bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            {t('dashboard.requestPayout')}
           </Link>
         </div>
       </div>
