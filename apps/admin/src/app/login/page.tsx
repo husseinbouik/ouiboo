@@ -10,7 +10,7 @@ import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Lock, ShieldCheck, User } from 'lucide-react';
-import { setBrowserAccessToken } from '@ouiboo/api-client';
+import { setBrowserAccessToken, getAuthErrorMessage } from '@ouiboo/api-client';
 
 type AdminLoginForm = {
   username: string;
@@ -47,21 +47,8 @@ export default function AdminLoginPage() {
       router.push('/');
     },
     onError: (err: AxiosError<ApiErrorResponse>) => {
-      if (!err?.response) {
-        setError(t('login.networkError', 'Cannot reach the server. Please check your connection and try again.'));
-        return;
-      }
-      const message = err.response.data?.message;
-      if (message === 'INVALID_CREDENTIALS' || message === 'Unauthorized') {
-        setError(t('login.invalidCredentials', 'Incorrect email or password. Please try again.'));
-        return;
-      }
-      // Hide raw ALL_CAPS error codes, show human-readable messages
-      if (message && !/^[A-Z][A-Z0-9_]*$/.test(message)) {
-        setError(message);
-        return;
-      }
-      setError(t('login.loginFailed', 'Login failed. Please try again.'));
+      const errorInfo = getAuthErrorMessage(err, (key, fallback) => t(key, fallback));
+      setError(errorInfo.fallback);
     },
   });
 

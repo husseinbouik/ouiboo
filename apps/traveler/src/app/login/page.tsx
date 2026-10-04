@@ -11,7 +11,7 @@ import { apiClient } from '@/lib/api-client';
 import { Button, Input, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/components/AuthContext';
-import { setBrowserAccessToken } from '@ouiboo/api-client';
+import { setBrowserAccessToken, getAuthErrorMessage } from '@ouiboo/api-client';
 import { LoginSchema, type LoginInput } from '@ouiboo/schemas';
 import '../../lib/i18n';
 
@@ -61,27 +61,13 @@ export default function TravelerLoginPage() {
       router.push('/');
     },
     onError: (err: { response?: { data?: { message?: string } | string } }) => {
-      if (!err?.response) {
-        setError(t('login.networkError', 'Cannot reach the server. Please check your connection and try again.'));
-        return;
-      }
-      const data = err.response.data;
-      const message = typeof data === 'string' ? null : data?.message;
-      if (message === 'EMAIL_NOT_VERIFIED') {
+      const errorInfo = getAuthErrorMessage(err, (key, fallback) => t(key, fallback));
+      if (errorInfo.redirect) {
         const email = (document.getElementById('email') as HTMLInputElement)?.value;
         router.push(`/verify?email=${encodeURIComponent(email || '')}&reason=unverified`);
         return;
       }
-      if (message === 'INVALID_CREDENTIALS' || message === 'Unauthorized') {
-        setError(t('login.invalidCredentials', 'Incorrect email or password. Please try again.'));
-        return;
-      }
-      // Show human-readable backend messages, hide raw ALL_CAPS error codes
-      if (message && !/^[A-Z][A-Z0-9_]*$/.test(message)) {
-        setError(message);
-        return;
-      }
-      setError(t('login.errorFailed', 'Login failed. Please try again.'));
+      setError(errorInfo.fallback);
     },
   });
 
