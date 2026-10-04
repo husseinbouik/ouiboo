@@ -129,7 +129,10 @@ export async function createApp(): Promise<INestApplication> {
   })
 
   app.setGlobalPrefix('api/v1', {
-    exclude: [{ path: 'media', method: RequestMethod.ALL }],
+    exclude: [
+      { path: 'media', method: RequestMethod.ALL },
+      { path: 'media/{*key}', method: RequestMethod.ALL },
+    ],
   })
   app.useGlobalPipes(
     new ValidationPipe({
