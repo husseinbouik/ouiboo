@@ -43,16 +43,8 @@ export const metadata: Metadata = {
 };
 
 import { getInitialLanguage, languageInitScript, type SupportedLanguage } from '@ouiboo/i18n/server';
-import travelerEn from '../../public/locales/en/translation.json';
-import travelerFr from '../../public/locales/fr/translation.json';
-import travelerAr from '../../public/locales/ar/translation.json';
 import { Analytics } from '@vercel/analytics/react';
-
-const SKIP_LINK_BY_LANGUAGE: Record<SupportedLanguage, string> = {
-  en: travelerEn.common.skipToContent,
-  fr: travelerFr.common.skipToContent,
-  ar: travelerAr.common.skipToContent,
-};
+import { SkipLink } from '@/components/SkipLink';
 
 export default async function RootLayout({
   children,
@@ -60,7 +52,6 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const initialLanguage = await getInitialLanguage();
-  const skipToContent = SKIP_LINK_BY_LANGUAGE[initialLanguage];
 
   return (
     <html lang={initialLanguage} dir={initialLanguage === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning>
@@ -70,9 +61,7 @@ export default async function RootLayout({
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: languageInitScript }}
         />
-<a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-card focus:px-4 focus:py-2 focus:font-semibold focus:text-foreground focus:shadow-lg">
-          {skipToContent}
-        </a>
+        <SkipLink />
         <Providers>
           <Navbar />
           <main id="main-content" className="min-h-screen" tabIndex={-1}>
