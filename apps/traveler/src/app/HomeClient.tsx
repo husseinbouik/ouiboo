@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { 
   MapPin, Calendar, Star, ArrowRight, Compass, Shield, Zap, Heart, Mountain, Palmtree
@@ -42,6 +43,17 @@ const staggerContainer: Variants = {
 
 export default function HomeClient({ featuredTrips }: HomeClientProps) {
   const { t, i18n } = useTranslation();
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (searchQuery.trim()) {
+      params.set('q', searchQuery.trim());
+    }
+    const queryString = params.toString();
+    router.push(`/search${queryString ? `?${queryString}` : ''}`);
+  };
   const travelStyles = [
     { key: 'adventure', name: t('categories.adventure'), Icon: Mountain, color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' },
     { key: 'cultural', name: t('categories.cultural'), Icon: Compass, color: 'bg-blue-100 text-ocean-600 dark:text-ocean-300 dark:bg-blue-900/30 dark:text-blue-400' },
@@ -89,6 +101,9 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
                     type="text" 
                     aria-label={t('hero.where')}
                     placeholder={t('hero.where')}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                     className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
                   />
                 </div>
@@ -102,7 +117,7 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
                   />
                 </div>
                 <Button 
-                  onClick={() => window.location.href = '/search'}
+                  onClick={handleSearch}
                   className="h-14 sm:h-auto px-8 rounded-xl bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-orange-600 text-white font-semibold text-lg shadow-md transition-all">
                   {t('hero.search', 'Search')}
                 </Button>

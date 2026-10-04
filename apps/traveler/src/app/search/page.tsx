@@ -2,7 +2,7 @@
 
 import React, { useCallback, useMemo, useState, useEffect } from "react";
 import { keepPreviousData } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Search,
   Filter,
@@ -44,6 +44,7 @@ const TRIP_CATEGORIES = [
 
 export default function SearchPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQueryInput, setSearchQueryInput] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("createdAt");
@@ -61,6 +62,19 @@ export default function SearchPage() {
     availabilityOnly: false,
     ratingMin: 0,
   });
+
+  // Initialize search query from URL ?q= parameter (e.g. from homepage hero search)
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q) {
+      setSearchQueryInput(q);
+      setFilters((prev) => ({ ...prev, searchQuery: q }));
+    }
+    const category = searchParams.get("category");
+    if (category) {
+      setFilters((prev) => ({ ...prev, category }));
+    }
+  }, [searchParams]);
 
   const activeFiltersCount = useMemo(
     () =>
@@ -275,7 +289,7 @@ export default function SearchPage() {
             )}
 
             <div className="mb-4 flex items-center justify-between bg-muted/50 p-3 rounded-lg border border-border">
-              <div className="text-sm text-muted-foreground">Showing <strong className="text-foreground">{(pagination.page - 1) * pagination.limit + trips.length}</strong> of <strong>{pagination.total}</strong></div>
+              <div className="text-sm text-muted-foreground">Showing <strong className="text-foreground">{Number((pagination.page - 1) * pagination.limit + trips.length) || 0}</strong> of <strong>{Number(pagination.total) || 0}</strong></div>
               <div className="flex items-center gap-2">
                 <button onClick={() => setSortOrder((state) => state === 'asc' ? 'desc' : 'asc')} aria-label="Toggle sort order" className="px-3 py-1 rounded-lg bg-muted">{sortOrder === 'asc' ? 'Asc' : 'Desc'}</button>
               </div>

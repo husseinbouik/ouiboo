@@ -13,9 +13,9 @@ export default function NotFoundPage() {
       <EmptyState
         className="w-full border-solid bg-card py-16"
         icon={<Compass className="h-6 w-6 text-primary" aria-hidden="true" />}
-        title={t('common.notFoundTitle')}
-        description={t('common.notFoundDescription')}
-        action={<Button asChild><Link href="/search">{t('common.exploreTrips')}</Link></Button>}
+        title={t('common.notFoundTitle', 'This route is not on the map')}
+        description={t('common.notFoundDescription', 'The page may have moved or the trip may no longer be available.')}
+        action={<Button asChild><Link href="/search">{t('common.exploreTrips', 'Explore available trips')}</Link></Button>}
       />
     </main>
   )

@@ -260,5 +260,8 @@
     "errorOtpExpired": "Ce code a expiré. Demandez-en un nouveau et réessayez.",
     "errorInvalidOtp": "Ce code est incorrect. Vérifiez et réessayez.",
     "errorCooldown": "Vous avez récemment demandé un nouveau code. Veuillez patienter un moment avant de réessayer."
+  },
+  "search": {
+    "resultCount": "Affichage de {{count}} sur {{total}}"
   }
 }

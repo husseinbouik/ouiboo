@@ -97,7 +97,7 @@ export default function AgencySignupPage() {
   return (
     <div className="min-h-screen flex bg-background relative">
       {/* Theme + Language controls */}
-      <div className="absolute top-4 end-4 z-10 flex items-center gap-2">
+      <div className="absolute top-4 end-4 z-50 flex items-center gap-2 pointer-events-auto">
         <LanguageSwitcher />
         <ThemeToggle />
       </div>
