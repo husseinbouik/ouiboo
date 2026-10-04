@@ -460,7 +460,10 @@
       "followUpTitle": "ابقَ قريباً من الحجوزات الجديدة",
       "followUpDescription_one": "{{count}} حجز ما زال ينتظر المتابعة أو التحقق.",
       "followUpDescription_other": "{{count}} حجوزات ما زالت تنتظر المتابعة أو التحقق.",
-      "reviewBookingsCta": "مراجعة الحجوزات"
+      "reviewBookingsCta": "مراجعة الحجوزات",
+      "publishDescription_zero": "لديك حالياً {{count}} رحلات نشطة في السوق.",
+      "reviewPaymentsDescription_zero": "{{count}} إثباتات دفع من مسافرين بانتظار قرارك.",
+      "followUpDescription_zero": "{{count}} حجوزات ما زالت تنتظر المتابعة أو التحقق."
     },
     "recentBookings": "الحجوزات الأخيرة",
     "recentRequestsCount_one": "{{count}} طلب حديث",
@@ -490,7 +493,8 @@
     "growTitle": "مستعد لتوسيع نطاقك؟",
     "growBody": "لديك {{tripCount}} رحلات نشطة و{{travelerCount}} مسافراً في جمهورك. أضف تجربة جديدة للحفاظ على الزخم.",
     "createNewTrip": "إنشاء رحلة جديدة",
-    "yourAgency": "وكالتك"
+    "yourAgency": "وكالتك",
+    "recentRequestsCount_zero": "{{count}} طلبات حديثة"
   },
   "status": {
     "bookingPending": "قيد الانتظار",
