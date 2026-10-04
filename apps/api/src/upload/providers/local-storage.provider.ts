@@ -48,11 +48,11 @@ export class LocalStorageProvider implements IStorageProvider {
 
         const baseUrl = process.env.API_URL || 'http://localhost:3010/api/v1';
         const publicOrigin = new URL(baseUrl).origin;
-        const publicPath = path.posix.join('uploads', relative.replace(/\\/g, '/'), filename);
-        const url = isPrivate ? '' : `${publicOrigin}/${publicPath}`;
         const key = isPrivate
             ? path.posix.join(this.privatePrefix, relative.replace(/\\/g, '/'), filename)
             : path.posix.join(relative.replace(/\\/g, '/'), filename);
+        // Public URL uses the /media endpoint (excluded from global /api/v1 prefix)
+        const url = isPrivate ? '' : `${publicOrigin}/media/${key}`;
 
         return { url, key };
     }

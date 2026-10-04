@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { type LoginInput } from '@ouiboo/schemas';
 import { useAuth } from '@/components/AuthContext';
-import { setBrowserAccessToken } from '@ouiboo/api-client';
+import { setBrowserAccessToken, getAuthErrorMessage } from '@ouiboo/api-client';
 
 type AgencyLoginFormValues = LoginInput & {
 };
@@ -63,27 +63,13 @@ export default function AgencyLoginPage() {
     },
     onError: (err: ApiError) => {
       console.error('Login failed:', err);
-      if (!err?.response) {
-        setError(t('login.networkError', 'Cannot reach the server. Please check your connection and try again.'));
-        return;
-      }
-      const data = err.response.data;
-      const message = typeof data === 'string' ? null : data?.message;
-      if (message === 'EMAIL_NOT_VERIFIED') {
+      const errorInfo = getAuthErrorMessage(err, (key, fallback) => t(key, fallback));
+      if (errorInfo.redirect) {
         const email = (document.getElementById('email') as HTMLInputElement)?.value;
         router.push(`/verify?email=${encodeURIComponent(email || '')}&reason=unverified`);
         return;
       }
-      if (message === 'INVALID_CREDENTIALS' || message === 'Unauthorized') {
-        setError(t('login.invalidCredentials', 'Incorrect email or password. Please try again.'));
-        return;
-      }
-      // Show human-readable backend messages, hide raw ALL_CAPS error codes
-      if (message && !/^[A-Z][A-Z0-9_]*$/.test(message)) {
-        setError(message);
-        return;
-      }
-      setError(t('login.errorGeneric', 'Login failed. Please try again.'));
+      setError(errorInfo.fallback);
     }
   });
 

@@ -645,7 +645,7 @@
     "title": "La période d'essai se termine bientôt",
     "body": "Il vous reste {{daysLeft}} jours dans votre période d'essai gratuite.",
     "upgradeNow": "Mettez à niveau maintenant pour éviter toute interruption.",
-    "meaningfulFeatures": " des fonctionnalités utiles vous attendent.",
+    "meaningfulFeatures": "des fonctionnalités utiles vous attendent.",
     "upgrade": "Mettre à niveau"
   },
   "deleteConfirmation": {

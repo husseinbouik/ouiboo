@@ -645,7 +645,7 @@
     "title": "الفترة التجريبية تنتهي قريباً",
     "body": "تتبقى {{daysLeft}} يوماً في فترة التجربة المجانية.",
     "upgradeNow": "قم بالترقية الآن لتجنب الانقطاع.",
-    "meaningfulFeatures": " ميزات مفيدة بانتظارك.",
+    "meaningfulFeatures": "ميزات مفيدة بانتظارك.",
     "upgrade": "ترقية الخطة"
   },
   "deleteConfirmation": {

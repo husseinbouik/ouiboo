@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { ValidationPipe, type INestApplication } from '@nestjs/common'
+import { ValidationPipe, type INestApplication, RequestMethod } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import helmet from 'helmet'
@@ -128,7 +128,9 @@ export async function createApp(): Promise<INestApplication> {
     exposedHeaders: 'X-Cache',
   })
 
-  app.setGlobalPrefix('api/v1')
+  app.setGlobalPrefix('api/v1', {
+    exclude: [{ path: 'media', method: RequestMethod.ALL }],
+  })
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
