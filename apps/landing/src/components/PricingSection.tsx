@@ -177,7 +177,7 @@ export default function PricingSection() {
               <span className="text-sm font-semibold leading-6 text-gray-600">{t('pricing.premium.currency')}</span>
             </p>
             <p className="mt-2 text-xs text-gray-500 font-medium">{t('pricing.premium.commission')}</p>
-            <a href="#" className="mt-8 block rounded-md bg-gray-200 px-3 py-2 text-center text-sm font-semibold leading-6 text-gray-500 cursor-not-allowed">
+            <a href="#waitlist" className="mt-8 block rounded-md bg-gray-200 px-3 py-2 text-center text-sm font-semibold leading-6 text-gray-500 cursor-not-allowed">
               {t('pricing.premium.button')}
             </a>
             <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">

@@ -275,7 +275,7 @@ export default function SearchPage() {
             )}
 
             <div className="mb-4 flex items-center justify-between bg-muted/50 p-3 rounded-lg border border-border">
-              <div className="text-sm text-muted-foreground">Showing <strong className="text-foreground">{(pagination.page - 1) * pagination.limit + trips.length}</strong> of <strong>{pagination.total}</strong></div>
+              <div className="text-sm text-muted-foreground">Showing <strong className="text-foreground">{Number((pagination.page - 1) * pagination.limit + trips.length) || 0}</strong> of <strong>{Number(pagination.total) || 0}</strong></div>
               <div className="flex items-center gap-2">
                 <button onClick={() => setSortOrder((state) => state === 'asc' ? 'desc' : 'asc')} aria-label="Toggle sort order" className="px-3 py-1 rounded-lg bg-muted">{sortOrder === 'asc' ? 'Asc' : 'Desc'}</button>
               </div>
