@@ -262,6 +262,17 @@
     "errorCooldown": "You requested a new code recently. Please wait a moment before trying again."
   },
   "search": {
-    "resultCount": "Showing {{count}} of {{total}}"
+    "resultCount": "Showing {{count}} of {{total}}",
+    "title": "Find your next Adventure",
+    "placeholder": "Destination, activity or keyword",
+    "searchButton": "Search",
+    "filters": "Filters",
+    "clearAll": "Clear all",
+    "clear": "Clear",
+    "showing": "Showing",
+    "of": "of",
+    "failedToLoad": "Failed to load trips",
+    "retry": "Retry",
+    "noTrips": "No trips match your filters"
   }
 }
