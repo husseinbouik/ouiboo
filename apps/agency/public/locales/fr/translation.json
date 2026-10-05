@@ -207,7 +207,7 @@
       "backToTrips": "Retour aux voyages",
       "updating": "Mise à jour...",
       "setDraft": "Passer en brouillon",
-      "activateTrip": "Activer le voyage",
+      "activateTrip": "Activer",
       "editTemplate": "Modifier le modèle",
       "deleting": "Suppression...",
       "delete": "Supprimer",
@@ -220,11 +220,16 @@
       "bulkCreateSessions": "Créer des sessions en masse",
       "deleteSessionTitle": "Supprimer la session",
       "deleteSessionBody": "Voulez-vous vraiment supprimer cette session ? Cette action est irréversible.",
-      "deleteTripTitle": "Supprimer le modèle de voyage",
-      "deleteTripBody": "Voulez-vous vraiment supprimer ce modèle de voyage ? Toutes les sessions et réservations associées seront définitivement supprimées. Cette action est irréversible.",
+      "deleteTripTitle": "Archiver le voyage",
+      "deleteTripBody": "L'archivage masque ce voyage aux voyageurs. Vos réservations, sessions et revenus sont conservés et le voyage peut être restauré à tout moment.",
       "altTrip": "Voyage",
       "listView": "Vue liste",
-      "calendarView": "Vue calendrier"
+      "calendarView": "Vue calendrier",
+      "deactivate": "Désactiver",
+      "archive": "Archiver",
+      "archiving": "Archivage...",
+      "restore": "Restaurer",
+      "restoring": "Restauration..."
     },
     "edit": {
       "backToDetail": "Retour au détail du voyage",

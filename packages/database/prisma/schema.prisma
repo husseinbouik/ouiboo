@@ -25,6 +25,7 @@ enum TripStatus {
   ACTIVE
   DRAFT
   ARCHIVED
+  INACTIVE
 }
 
 enum TripCategory {
