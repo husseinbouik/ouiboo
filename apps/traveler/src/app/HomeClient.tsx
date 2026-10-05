@@ -45,11 +45,15 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchDate, setSearchDate] = useState('');
 
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (searchQuery.trim()) {
       params.set('q', searchQuery.trim());
+    }
+    if (searchDate) {
+      params.set('date', searchDate);
     }
     const queryString = params.toString();
     router.push(`/search${queryString ? `?${queryString}` : ''}`);
@@ -110,9 +114,11 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
                 <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
                   <Calendar className="h-5 w-5 text-sunset-orange mr-3" />
                   <input 
-                    type="text" 
+                    type="date" 
                     aria-label={t('hero.when')}
                     placeholder={t('hero.when')}
+                    value={searchDate}
+                    onChange={(e) => setSearchDate(e.target.value)}
                     className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
                   />
                 </div>
