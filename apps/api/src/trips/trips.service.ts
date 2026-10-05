@@ -92,7 +92,14 @@ export class TripsService {
             if (featured) where.featured = true;
             if (agencyId) where.agencyId = agencyId;
             if (currency) where.currency = currency;
-            if (category) where.category = category;
+            // Normalize category to uppercase enum value (#119: ?category=adventure -> ADVENTURE)
+            if (category) {
+                const normalized = category.toUpperCase();
+                // Validate against known enum values to avoid Prisma errors
+                if (['ADVENTURE', 'CULTURAL', 'LUXURY', 'BUDGET', 'NATURE'].includes(normalized)) {
+                    where.category = normalized as any;
+                }
+            }
             if (q?.trim()) {
                 const search = q.trim();
                 where.OR = [
