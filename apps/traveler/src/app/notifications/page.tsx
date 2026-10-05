@@ -31,19 +31,8 @@ export default function NotificationsPage() {
 
   const notifications = data?.items || [];
 
-  if (isAuthLoading || isLoading) {
-    return (
-      <div className="mx-auto max-w-4xl px-6 py-12">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/3" />
-          <div className="h-20 bg-muted rounded-2xl" />
-          <div className="h-20 bg-muted rounded-2xl" />
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
+  // Show sign-in gate immediately for guests (#139)
+  if (!isAuthLoading && !user) {
     return (
       <div className="mx-auto max-w-4xl px-6 py-12">
         <div className="text-center py-28 bg-card/70 rounded-2xl border border-dashed border-border">
@@ -62,6 +51,18 @@ export default function NotificationsPage() {
               <Button variant="outline">Explore Trips</Button>
             </Link>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAuthLoading || isLoading) {
+    return (
+      <div className="mx-auto max-w-4xl px-6 py-12">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-1/3" />
+          <div className="h-20 bg-muted rounded-2xl" />
+          <div className="h-20 bg-muted rounded-2xl" />
         </div>
       </div>
     );
