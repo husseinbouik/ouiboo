@@ -92,11 +92,26 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
 
   const deleteTripMutation = useMutation({
     mutationFn: async () => {
-      await apiClient.delete(`/trips/${params.id}`);
+      // Drafts: hard delete. Published trips: archive (preserves records).
+      if (trip?.status === TripStatus.Draft) {
+        await apiClient.delete(`/trips/${params.id}`);
+      } else {
+        await apiClient.post(`/trips/${params.id}/archive`);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['agency-trips'] });
       router.push('/dashboard/trips');
+    },
+    onError: (error: unknown) => {
+      // Show the API's helpful message (e.g. active bookings block)
+      const apiError = error as { response?: { data?: { message?: string } } };
+      const message = apiError.response?.data?.message;
+      if (message) {
+        // The confirmation dialog will show this via a toast or alert
+        // For now, surface via the existing error handling
+        console.error('Archive failed:', message);
+      }
     }
   });
 
@@ -168,9 +183,50 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
 
   const handleToggleStatus = () => {
     if (!trip) return;
-    const newStatus = trip.status === TripStatus.Active ? TripStatus.Draft : TripStatus.Active;
+    // Toggle between Active and Inactive (deactivate = hide from marketplace, keep bookings)
+    const newStatus = trip.status === TripStatus.Active ? TripStatus.Inactive : TripStatus.Active;
     updateStatusMutation.mutate(newStatus);
   };
+
+  const archiveTripMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.post(`/trips/${params.id}/archive`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trip', params.id] });
+      queryClient.invalidateQueries({ queryKey: ['agency-trips'] });
+    }
+  });
+
+  const restoreTripMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.post(`/trips/${params.id}/restore`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trip', params.id] });
+      queryClient.invalidateQueries({ queryKey: ['agency-trips'] });
+    }
+  });
+
+  const deactivateTripMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.post(`/trips/${params.id}/deactivate`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trip', params.id] });
+      queryClient.invalidateQueries({ queryKey: ['agency-trips'] });
+    }
+  });
+
+  const activateTripMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.post(`/trips/${params.id}/activate`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trip', params.id] });
+      queryClient.invalidateQueries({ queryKey: ['agency-trips'] });
+    }
+  });
 
   const handleEditSession = (session: SessionItem) => {
     setEditingSession(session);
@@ -198,33 +254,61 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
           {t('trips.detail.backToTrips')}
         </Link>
         <div className="flex gap-2 flex-wrap">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className={cn(
-                "gap-2",
-                trip.status === TripStatus.Active ? "text-success border-success/30 bg-success/10" : "text-muted-foreground border-border bg-muted/50"
-            )}
-            onClick={handleToggleStatus}
-            disabled={updateStatusMutation.isPending}
-          >
-            <CheckCircle2 className="h-4 w-4" /> 
-            {updateStatusMutation.isPending ? t('trips.detail.updating') : (trip.status === TripStatus.Active ? t('trips.detail.setDraft') : t('trips.detail.activateTrip'))}
-          </Button>
+          {/* Deactivate/Activate toggle - always safe, keeps bookings */}
+          {(trip.status === TripStatus.Active || trip.status === TripStatus.Inactive) && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className={cn(
+                  "gap-2",
+                  trip.status === TripStatus.Active ? "text-success border-success/30 bg-success/10" : "text-muted-foreground border-border bg-muted/50"
+              )}
+              onClick={() => {
+                if (trip.status === TripStatus.Active) {
+                  deactivateTripMutation.mutate();
+                } else {
+                  activateTripMutation.mutate();
+                }
+              }}
+              disabled={deactivateTripMutation.isPending || activateTripMutation.isPending}
+            >
+              <CheckCircle2 className="h-4 w-4" /> 
+              {trip.status === TripStatus.Active ? t('trips.detail.deactivate') : t('trips.detail.activateTrip')}
+            </Button>
+          )}
+          {/* Restore button for archived trips */}
+          {trip.status === TripStatus.Archived && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2 text-success border-success/30 bg-success/10"
+              onClick={() => restoreTripMutation.mutate()}
+              disabled={restoreTripMutation.isPending}
+            >
+              <CheckCircle2 className="h-4 w-4" /> 
+              {restoreTripMutation.isPending ? t('trips.detail.restoring') : t('trips.detail.restore')}
+            </Button>
+          )}
           <Link href={`/dashboard/trips/${params.id}/edit`}>
             <Button variant="outline" size="sm" className="gap-2">
               <Settings className="h-4 w-4" /> {t('trips.detail.editTemplate')}
             </Button>
           </Link>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-2 text-danger hover:bg-danger/10 hover:text-danger border-danger/30"
-            onClick={handleDelete}
-            disabled={deleteTripMutation.isPending}
-          >
-            <Trash className="h-4 w-4" /> {deleteTripMutation.isPending ? t('trips.detail.deleting') : t('trips.detail.delete')}
-          </Button>
+          {/* Archive for published trips, hard delete only for untouched drafts */}
+          {trip.status !== TripStatus.Archived && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-2 text-danger hover:bg-danger/10 hover:text-danger border-danger/30"
+              onClick={handleDelete}
+              disabled={deleteTripMutation.isPending || archiveTripMutation.isPending}
+            >
+              <Trash className="h-4 w-4" /> 
+              {trip.status === TripStatus.Draft
+                ? (deleteTripMutation.isPending ? t('trips.detail.deleting') : t('trips.detail.delete'))
+                : (archiveTripMutation.isPending ? t('trips.detail.archiving') : t('trips.detail.archive'))}
+            </Button>
+          )}
         </div>
       </div>
 

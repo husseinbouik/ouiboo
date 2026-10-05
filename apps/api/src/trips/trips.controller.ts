@@ -157,11 +157,47 @@ export class TripsController {
     }
 
     @Delete(':id')
-    @ApiOperation({ summary: 'Delete a trip template' })
+    @ApiOperation({ summary: 'Permanently delete a draft trip (drafts with no sessions only)' })
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
     @Roles(UserRole.Agency)
     remove(@Request() req, @Param('id') id: string) {
         return this.tripsService.deleteTemplate(id, req.tenantId);
+    }
+
+    @Post(':id/archive')
+    @ApiOperation({ summary: 'Archive a trip (preserves all records, reversible)' })
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
+    @Roles(UserRole.Agency)
+    archive(@Request() req, @Param('id') id: string) {
+        return this.tripsService.archiveTemplate(id, req.tenantId);
+    }
+
+    @Post(':id/restore')
+    @ApiOperation({ summary: 'Restore an archived trip' })
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
+    @Roles(UserRole.Agency)
+    restore(@Request() req, @Param('id') id: string) {
+        return this.tripsService.restoreTemplate(id, req.tenantId);
+    }
+
+    @Post(':id/deactivate')
+    @ApiOperation({ summary: 'Deactivate a trip (hide from marketplace, keep bookings)' })
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
+    @Roles(UserRole.Agency)
+    deactivate(@Request() req, @Param('id') id: string) {
+        return this.tripsService.deactivateTemplate(id, req.tenantId);
+    }
+
+    @Post(':id/activate')
+    @ApiOperation({ summary: 'Re-activate a deactivated trip' })
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
+    @Roles(UserRole.Agency)
+    activate(@Request() req, @Param('id') id: string) {
+        return this.tripsService.activateTemplate(id, req.tenantId);
     }
 }

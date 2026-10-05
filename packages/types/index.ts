@@ -98,6 +98,7 @@ export enum TripStatus {
     Active = "ACTIVE",
     Draft = "DRAFT",
     Archived = "ARCHIVED",
+    Inactive = "INACTIVE",
 }
 
 export type TripStatusType = TripStatus;
