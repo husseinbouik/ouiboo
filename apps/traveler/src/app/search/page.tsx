@@ -44,7 +44,7 @@ const TRIP_CATEGORIES = [
 ] as const;
 
 export default function SearchPage() {
-  const { t } = useTranslation();
+  const { t, ready } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentPage, setCurrentPage] = useState(1);
@@ -74,7 +74,14 @@ export default function SearchPage() {
     }
     const category = searchParams.get("category");
     if (category) {
-      setFilters((prev) => ({ ...prev, category }));
+      // Normalize to uppercase to match TripCategory enum (#133)
+      const normalized = category.toUpperCase();
+      const valid = Object.values(TripCategory).includes(normalized as TripCategory);
+      setFilters((prev) => ({ ...prev, category: valid ? normalized : category }));
+    }
+    const date = searchParams.get("date");
+    if (date) {
+      setFilters((prev) => ({ ...prev, dateFrom: date }));
     }
   }, [searchParams]);
 
@@ -177,7 +184,7 @@ export default function SearchPage() {
   const renderFilterControls = () => (
     <div className="space-y-6">
       <div className="space-y-3">
-        <p className="text-xs font-bold text-muted-foreground uppercase">Travel Styles</p>
+        <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.travelStyles')}</p>
         <div className="grid gap-2">
           {TRIP_CATEGORIES.map((category) => (
             <button
@@ -197,32 +204,32 @@ export default function SearchPage() {
       </div>
 
       <div className="space-y-3">
-        <p className="text-xs font-bold text-muted-foreground uppercase">Dates</p>
-        <Input type="date" aria-label="Start date" value={filters.dateFrom} onChange={(event) => updateFilter("dateFrom", event.target.value)} />
-        <Input type="date" aria-label="End date" value={filters.dateTo} onChange={(event) => updateFilter("dateTo", event.target.value)} />
+        <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.dates')}</p>
+        <Input type="date" aria-label={t('search.startDate')} value={filters.dateFrom} onChange={(event) => updateFilter("dateFrom", event.target.value)} />
+        <Input type="date" aria-label={t('search.endDate')} value={filters.dateTo} onChange={(event) => updateFilter("dateTo", event.target.value)} />
       </div>
 
       <div className="space-y-3">
-        <p className="text-xs font-bold text-muted-foreground uppercase">Price (MAD)</p>
+        <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.price')}</p>
         <div className="grid grid-cols-2 gap-2">
-          <Input type="number" min="0" aria-label="Minimum price" placeholder="Min" value={filters.priceMin} onChange={(event) => updateFilter("priceMin", event.target.value)} />
-          <Input type="number" min="0" aria-label="Maximum price" placeholder="Max" value={filters.priceMax} onChange={(event) => updateFilter("priceMax", event.target.value)} />
+          <Input type="number" min="0" aria-label={t('search.minPrice')} placeholder={t('search.min')} value={filters.priceMin} onChange={(event) => updateFilter("priceMin", event.target.value)} />
+          <Input type="number" min="0" aria-label={t('search.maxPrice')} placeholder={t('search.max')} value={filters.priceMax} onChange={(event) => updateFilter("priceMax", event.target.value)} />
         </div>
       </div>
 
       <div className="space-y-3">
-        <p className="text-xs font-bold text-muted-foreground uppercase">Availability</p>
-        <button type="button" onClick={() => updateFilter("availabilityOnly", !filters.availabilityOnly)} aria-pressed={filters.availabilityOnly} className={cn("px-3 py-2 rounded-lg w-full", filters.availabilityOnly ? "bg-success/10 text-success" : "bg-muted")}>Only show available dates</button>
+        <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.availability')}</p>
+        <button type="button" onClick={() => updateFilter("availabilityOnly", !filters.availabilityOnly)} aria-pressed={filters.availabilityOnly} className={cn("px-3 py-2 rounded-lg w-full", filters.availabilityOnly ? "bg-success/10 text-success" : "bg-muted")}>{t('search.availabilityOnly')}</button>
       </div>
 
       <div className="space-y-3">
-        <p className="text-xs font-bold text-muted-foreground uppercase">Sort</p>
+        <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.sort')}</p>
         <div className="grid gap-2">
           {[
-            { value: "createdAt", label: "Newest" },
-            { value: "price", label: "Price" },
-            { value: "rating", label: "Rating" },
-            { value: "popularity", label: "Popularity" },
+            { value: "createdAt", label: t('search.newest') },
+            { value: "price", label: t('search.sortPrice') },
+            { value: "rating", label: t('search.rating') },
+            { value: "popularity", label: t('search.popularity') },
           ].map((option) => (
             <button key={option.value} type="button" onClick={() => setSortBy(option.value as SortBy)} aria-pressed={sortBy === option.value} className={cn("px-3 py-2 rounded-lg", sortBy === option.value ? "bg-sunset-orange/10" : "bg-muted")}>{option.label}</button>
           ))}
@@ -230,6 +237,19 @@ export default function SearchPage() {
       </div>
     </div>
   );
+
+  // Don't render until translations are ready to avoid raw key flash (#122)
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-background font-sans text-foreground">
+        <div className="pt-24 sm:pt-28 pb-6 sm:pb-8 px-4 sm:px-6">
+          <div className="max-w-6xl mx-auto">
+            <TripCardSkeletonGrid />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">

@@ -273,6 +273,22 @@
     "of": "of",
     "failedToLoad": "Failed to load trips",
     "retry": "Retry",
-    "noTrips": "No trips match your filters"
+    "noTrips": "No trips match your filters",
+    "travelStyles": "Travel Styles",
+    "dates": "Dates",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "price": "Price (MAD)",
+    "minPrice": "Minimum price",
+    "maxPrice": "Maximum price",
+    "min": "Min",
+    "max": "Max",
+    "availability": "Availability",
+    "availabilityOnly": "Only show available dates",
+    "sort": "Sort",
+    "newest": "Newest",
+    "sortPrice": "Price",
+    "rating": "Rating",
+    "popularity": "Popularity"
   }
 }
