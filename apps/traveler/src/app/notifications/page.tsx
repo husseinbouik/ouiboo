@@ -39,17 +39,17 @@ export default function NotificationsPage() {
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <Bell className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h3 className="text-xl font-bold">Sign in to view your notifications</h3>
+          <h1 className="text-xl font-bold">Sign in to view your notifications</h1>
           <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
             Stay updated on booking confirmations, trip updates, and messages.
           </p>
           <div className="mt-6 flex justify-center gap-3">
-            <Link href="/login">
-              <Button>Sign In</Button>
-            </Link>
-            <Link href="/search">
-              <Button variant="outline">Explore Trips</Button>
-            </Link>
+            <Button asChild>
+              <Link href="/login">Sign In</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/search">Explore Trips</Link>
+            </Button>
           </div>
         </div>
       </div>

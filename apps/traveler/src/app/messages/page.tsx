@@ -37,17 +37,17 @@ export default function MessagesPage() {
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <MessageCircle className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h3 className="text-xl font-bold">Sign in to view your messages</h3>
+          <h1 className="text-xl font-bold">Sign in to view your messages</h1>
           <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
             Chat with agencies about trips, bookings, and travel plans.
           </p>
           <div className="mt-6 flex justify-center gap-3">
-            <Link href="/login">
-              <Button>Sign In</Button>
-            </Link>
-            <Link href="/search">
-              <Button variant="outline">Explore Trips</Button>
-            </Link>
+            <Button asChild>
+              <Link href="/login">Sign In</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/search">Explore Trips</Link>
+            </Button>
           </div>
         </div>
       </div>
@@ -73,9 +73,9 @@ export default function MessagesPage() {
         <div className="text-center py-16 bg-card/70 rounded-2xl border border-dashed border-border">
           <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground">No conversations yet. Start chatting with an agency from a trip page.</p>
-          <Link href="/search" className="mt-4 inline-block">
-            <Button variant="outline">Browse Trips</Button>
-          </Link>
+          <Button asChild variant="outline">
+              <Link href="/search">Browse Trips</Link>
+            </Button>
         </div>
       ) : (
         <div className="space-y-3">
