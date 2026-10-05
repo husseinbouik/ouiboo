@@ -461,8 +461,8 @@ export class TripsService {
             await tx.tripSession.deleteMany({ where: { templateId: id } });
             // Delete itinerary days
             await tx.itineraryDay.deleteMany({ where: { templateId: id } });
-            // Delete reviews
-            await tx.review.deleteMany({ where: { templateId: id } });
+            // Delete reviews (field is tripTemplateId)
+            await tx.review.deleteMany({ where: { tripTemplateId: id } });
             // Delete the template
             return tx.tripTemplate.delete({ where: { id } });
         });
