@@ -273,6 +273,22 @@
     "of": "sur",
     "failedToLoad": "Échec du chargement des voyages",
     "retry": "Réessayer",
-    "noTrips": "Aucun voyage ne correspond à vos filtres"
+    "noTrips": "Aucun voyage ne correspond à vos filtres",
+    "travelStyles": "Styles de voyage",
+    "dates": "Dates",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "price": "Prix (MAD)",
+    "minPrice": "Prix minimum",
+    "maxPrice": "Prix maximum",
+    "min": "Min",
+    "max": "Max",
+    "availability": "Disponibilité",
+    "availabilityOnly": "Afficher uniquement les dates disponibles",
+    "sort": "Trier",
+    "newest": "Plus récent",
+    "sortPrice": "Prix",
+    "rating": "Note",
+    "popularity": "Popularité"
   }
 }
