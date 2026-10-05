@@ -24,7 +24,7 @@ import { useTranslation } from 'react-i18next';
 
 export function Navbar() {
   const { t } = useTranslation();
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading: isAuthLoading } = useAuth();
   const mounted = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -297,7 +297,7 @@ const [isOpen, setIsOpen] = useState(false);
                         </Link>
                </div>
 
-               {!user && (
+               {!isAuthLoading && !user && (
                  <div className="space-y-4 pt-10">
                     <Link onClick={() => setIsOpen(false)} href="/signup" className="block w-full py-5 rounded-2xl bg-sunset-orange text-white font-black text-center text-xl shadow-xl shadow-orange-900/20">
                        {t('nav.startStory')}
