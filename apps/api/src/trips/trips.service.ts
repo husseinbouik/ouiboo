@@ -429,7 +429,17 @@ export class TripsService {
         });
     }
 
-    async deleteTemplate(id: string, agencyId: string) {
+    /**
+     * Trip lifecycle (see #114):
+     * - deactivate: ACTIVE -> INACTIVE. Always allowed. Hides from marketplace,
+     *   existing bookings/sessions untouched. Use to pause sales.
+     * - activate: INACTIVE -> ACTIVE. Re-publish a deactivated trip.
+     * - archive: ACTIVE/INACTIVE -> ARCHIVED. Blocked with active bookings.
+     *   Trip leaves the marketplace but all records are preserved.
+     * - restore: ARCHIVED -> ACTIVE. Bring back an archived trip.
+     * - delete: DRAFT only, zero sessions/bookings. True hard delete.
+     */
+    private async getOwnedTemplate(id: string, agencyId: string) {
         const agency = await this.db.agencyProfile.findUnique({ where: { id: agencyId } });
         if (!agency) throw new NotFoundException('Agency profile not found');
 
@@ -437,10 +447,13 @@ export class TripsService {
             where: { id, agencyId: agencyId }
         });
         if (!existing) throw new NotFoundException('Trip template not found');
+        return existing;
+    }
 
-        const activeBookings = await this.db.booking.count({
+    private async countActiveBookings(templateId: string) {
+        return this.db.booking.count({
             where: {
-                session: { templateId: id },
+                session: { templateId },
                 status: {
                     in: [
                         BookingStatus.PENDING,
@@ -450,20 +463,80 @@ export class TripsService {
                 },
             },
         });
+    }
+
+    async deactivateTemplate(id: string, agencyId: string) {
+        const existing = await this.getOwnedTemplate(id, agencyId);
+        if (existing.status !== TripStatus.ACTIVE) {
+            throw new ConflictException('Only active trips can be deactivated');
+        }
+        return this.db.tripTemplate.update({
+            where: { id },
+            data: { status: TripStatus.INACTIVE },
+        });
+    }
+
+    async activateTemplate(id: string, agencyId: string) {
+        const existing = await this.getOwnedTemplate(id, agencyId);
+        if (existing.status !== TripStatus.INACTIVE) {
+            throw new ConflictException('Only deactivated trips can be re-activated');
+        }
+        return this.db.tripTemplate.update({
+            where: { id },
+            data: { status: TripStatus.ACTIVE },
+        });
+    }
+
+    async archiveTemplate(id: string, agencyId: string) {
+        const existing = await this.getOwnedTemplate(id, agencyId);
+        if (existing.status === TripStatus.ARCHIVED) {
+            throw new ConflictException('Trip is already archived');
+        }
+        if (existing.status === TripStatus.DRAFT) {
+            throw new ConflictException('Drafts cannot be archived; delete them instead');
+        }
+        const activeBookings = await this.countActiveBookings(id);
         if (activeBookings > 0) {
-            throw new ConflictException('Trips with active bookings cannot be deleted');
+            throw new ConflictException(
+                `This trip has ${activeBookings} active booking(s). ` +
+                `Complete or cancel them before archiving. ` +
+                `You can deactivate the trip to stop new bookings while existing ones run their course.`
+            );
+        }
+        return this.db.tripTemplate.update({
+            where: { id },
+            data: { status: TripStatus.ARCHIVED },
+        });
+    }
+
+    async restoreTemplate(id: string, agencyId: string) {
+        const existing = await this.getOwnedTemplate(id, agencyId);
+        if (existing.status !== TripStatus.ARCHIVED) {
+            throw new ConflictException('Only archived trips can be restored');
+        }
+        return this.db.tripTemplate.update({
+            where: { id },
+            data: { status: TripStatus.ACTIVE },
+        });
+    }
+
+    async deleteTemplate(id: string, agencyId: string) {
+        const existing = await this.getOwnedTemplate(id, agencyId);
+
+        // Hard delete is only safe for untouched drafts
+        if (existing.status !== TripStatus.DRAFT) {
+            throw new ConflictException(
+                'Only draft trips can be permanently deleted. Archive published trips instead to preserve booking records.'
+            );
+        }
+        const sessionCount = await this.db.tripSession.count({ where: { templateId: id } });
+        if (sessionCount > 0) {
+            throw new ConflictException('Drafts with sessions cannot be permanently deleted; archive them instead');
         }
 
-        // True deletion: remove related records first, then the template (#114)
-        // Use transaction for atomicity
         return this.db.$transaction(async (tx) => {
-            // Delete sessions (bookings already checked, but sessions may exist)
-            await tx.tripSession.deleteMany({ where: { templateId: id } });
-            // Delete itinerary days
             await tx.itineraryDay.deleteMany({ where: { templateId: id } });
-            // Delete reviews (field is tripTemplateId)
             await tx.review.deleteMany({ where: { tripTemplateId: id } });
-            // Delete the template
             return tx.tripTemplate.delete({ where: { id } });
         });
     }
