@@ -6,6 +6,7 @@ import {
     ParseFilePipe,
     MaxFileSizeValidator,
     FileTypeValidator,
+    BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
@@ -51,6 +52,13 @@ export class UploadController {
                     }),
                 ],
                 errorHttpStatusCode: 400,
+                exceptionFactory: (error) => {
+                    // Replace technical validator message with user-friendly one (#140)
+                    return new BadRequestException(
+                        'Please upload a JPEG, PNG, WebP, or GIF image (or PDF). ' +
+                        'HEIC photos from phones need to be converted to JPEG first.'
+                    );
+                },
             }),
         )
         file: Express.Multer.File,
