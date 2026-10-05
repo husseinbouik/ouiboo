@@ -20,13 +20,18 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             },
         },
     }));
-    const { i18n } = useTranslation();
+    const { i18n, ready } = useTranslation();
 
     useEffect(() => {
         const dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
         document.documentElement.dir = dir;
         document.documentElement.lang = i18n.language;
     }, [i18n.language]);
+
+    // Don't render until translations are loaded to avoid flash of raw keys (#122)
+    if (!ready) {
+        return null;
+    }
 
     return (
         <QueryClientProvider client={queryClient}>

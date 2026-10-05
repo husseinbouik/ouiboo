@@ -451,12 +451,20 @@ export class TripsService {
             },
         });
         if (activeBookings > 0) {
-            throw new ConflictException('Trips with active bookings cannot be archived');
+            throw new ConflictException('Trips with active bookings cannot be deleted');
         }
 
-        return this.db.tripTemplate.update({
-            where: { id },
-            data: { status: TripStatus.ARCHIVED },
+        // True deletion: remove related records first, then the template (#114)
+        // Use transaction for atomicity
+        return this.db.$transaction(async (tx) => {
+            // Delete sessions (bookings already checked, but sessions may exist)
+            await tx.tripSession.deleteMany({ where: { templateId: id } });
+            // Delete itinerary days
+            await tx.itineraryDay.deleteMany({ where: { templateId: id } });
+            // Delete reviews
+            await tx.review.deleteMany({ where: { templateId: id } });
+            // Delete the template
+            return tx.tripTemplate.delete({ where: { id } });
         });
     }
 
