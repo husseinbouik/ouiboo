@@ -17,6 +17,7 @@ import { cn } from "@ouiboo/ui/utils";
 import { TripCard } from "@/components/TripCard";
 import { TripCategory, TripStatus } from "@ouiboo/types";
 import { useTripsQuery, type TripsQueryParams } from "@ouiboo/api-client";
+import { useTranslation } from "react-i18next";
 
 type SearchFilters = {
   category: string;
@@ -43,6 +44,7 @@ const TRIP_CATEGORIES = [
 ] as const;
 
 export default function SearchPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentPage, setCurrentPage] = useState(1);
@@ -233,14 +235,14 @@ export default function SearchPage() {
     <div className="min-h-screen bg-background font-sans text-foreground">
       <div className="pt-24 sm:pt-28 pb-6 sm:pb-8 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto text-center">
-          <motion.h1 initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="text-4xl font-bold">Find your next Adventure</motion.h1>
+          <motion.h1 initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="text-4xl font-bold">{t('search.title')}</motion.h1>
           <div className="mt-6 max-w-3xl mx-auto">
             <div className="flex gap-3 bg-card p-2 rounded-2xl items-center">
               <div className="flex-1 flex items-center gap-3 px-4">
                 <Search className="h-5 w-5 text-muted-foreground" />
-                <input value={searchQueryInput} onChange={(e) => setSearchQueryInput(e.target.value)} aria-label="Search destination, activity or keyword" placeholder="Destination, activity or keyword" className="bg-transparent w-full outline-none" />
+                <input value={searchQueryInput} onChange={(e) => setSearchQueryInput(e.target.value)} aria-label={t('search.placeholder')} placeholder={t('search.placeholder')} className="bg-transparent w-full outline-none" />
               </div>
-              <Button onClick={() => updateFilter('searchQuery', searchQueryInput)}>Search</Button>
+              <Button onClick={() => updateFilter('searchQuery', searchQueryInput)}>{t('search.searchButton')}</Button>
             </div>
           </div>
         </div>
@@ -256,7 +258,7 @@ export default function SearchPage() {
             description="Choose travel style, dates, budget, availability, and sorting."
             footer={(
               <div className="grid grid-cols-2 gap-3">
-                <Button type="button" variant="outline" onClick={clearAllFilters} disabled={activeFiltersCount === 0}>Clear all</Button>
+                <Button type="button" variant="outline" onClick={clearAllFilters} disabled={activeFiltersCount === 0}>{t('search.clearAll')}</Button>
                 <Button type="button" onClick={() => setFilterDrawerOpen(false)}>View {pagination.total} trips</Button>
               </div>
             )}
@@ -297,7 +299,7 @@ export default function SearchPage() {
 
             {isError && (
               <div className="p-6 bg-danger/10 border border-danger/20 rounded-lg text-center">
-                <p className="font-semibold text-danger">Failed to load trips</p>
+                <p className="font-semibold text-danger">{t('search.failedToLoad')}</p>
                 <p className="text-sm text-danger/80 mt-1">{error instanceof Error ? error.message : 'Please try again'}</p>
                 <div className="mt-3"><Button onClick={() => window.location.reload()}>Retry</Button></div>
               </div>

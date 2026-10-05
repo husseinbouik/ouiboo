@@ -262,6 +262,17 @@
     "errorCooldown": "Vous avez récemment demandé un nouveau code. Veuillez patienter un moment avant de réessayer."
   },
   "search": {
-    "resultCount": "Affichage de {{count}} sur {{total}}"
+    "resultCount": "Affichage de {{count}} sur {{total}}",
+    "title": "Trouvez votre prochaine Aventure",
+    "placeholder": "Destination, activité ou mot-clé",
+    "searchButton": "Rechercher",
+    "filters": "Filtres",
+    "clearAll": "Tout effacer",
+    "clear": "Effacer",
+    "showing": "Affichage de",
+    "of": "sur",
+    "failedToLoad": "Échec du chargement des voyages",
+    "retry": "Réessayer",
+    "noTrips": "Aucun voyage ne correspond à vos filtres"
   }
 }
