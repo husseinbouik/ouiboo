@@ -289,11 +289,9 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
               {restoreTripMutation.isPending ? t('trips.detail.restoring') : t('trips.detail.restore')}
             </Button>
           )}
-          <Link href={`/dashboard/trips/${params.id}/edit`}>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Settings className="h-4 w-4" /> {t('trips.detail.editTemplate')}
+          <Button asChild variant="outline" size="sm" className="gap-2">
+              <Link href={`/dashboard/trips/${params.id}/edit`}><Settings className="h-4 w-4" /> {t('trips.detail.editTemplate')}</Link>
             </Button>
-          </Link>
           {/* Archive for published trips, hard delete only for untouched drafts */}
           {trip.status !== TripStatus.Archived && (
             <Button 

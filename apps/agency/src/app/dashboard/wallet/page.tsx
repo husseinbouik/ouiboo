@@ -261,11 +261,11 @@ export default function WalletPage() {
                   {t('wallet.missingBankHint')}
                 </div>
               )}
-              <Link href="/dashboard/settings" className="inline-flex">
-                <Button variant="outline" size="sm">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/dashboard/settings" className="inline-flex">
                   {t('wallet.updateBankDetails')}
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
 
             <div className="lg:col-span-2 space-y-5">

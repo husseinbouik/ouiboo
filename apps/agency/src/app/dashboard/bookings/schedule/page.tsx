@@ -117,11 +117,9 @@ export default function TripSchedulePage() {
               </option>
             ))}
           </select>
-          <Link href="/dashboard/trips/create">
-            <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2 border-none">
-              <Plus className="h-4 w-4" /> {t('bookings.schedule.addTrip')}
+          <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2 border-none">
+              <Link href="/dashboard/trips/create"><Plus className="h-4 w-4" /> {t('bookings.schedule.addTrip')}</Link>
             </Button>
-          </Link>
         </div>
       </div>
 
