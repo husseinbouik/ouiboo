@@ -12,6 +12,7 @@ interface DeleteConfirmationProps {
   onConfirm: () => void;
   title?: string;
   description?: string;
+  confirmText?: string;
   isLoading?: boolean;
 }
 
@@ -21,11 +22,13 @@ export function DeleteConfirmation({
   onConfirm,
   title,
   description,
+  confirmText,
   isLoading = false
 }: DeleteConfirmationProps) {
   const { t } = useTranslation();
   const resolvedTitle = title ?? t('deleteConfirmation.defaultTitle');
   const resolvedDescription = description ?? t('deleteConfirmation.defaultDescription');
+  const resolvedConfirmText = confirmText ?? t('deleteConfirmation.deletePermanently');
 
   return (
     <AnimatePresence>
@@ -76,7 +79,7 @@ export function DeleteConfirmation({
                   disabled={isLoading}
                   className="flex-1 h-12 bg-danger text-danger-foreground hover:bg-danger/90 border-none rounded-xl font-bold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-danger/20"
                 >
-                  {isLoading ? t('deleteConfirmation.deleting') : t('deleteConfirmation.deletePermanently')}
+                  {isLoading ? t('deleteConfirmation.deleting') : resolvedConfirmText}
                 </Button>
               </div>
             </div>

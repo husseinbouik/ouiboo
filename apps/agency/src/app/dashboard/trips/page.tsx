@@ -316,6 +316,10 @@ export default function AgencyTripsPage() {
             ? t('trips.deleteBody')
             : t('trips.archiveBody', 'This trip will be hidden from travelers and moved to your archive. All bookings, sessions, and records are preserved and it can be restored later.');
         })()}
+        confirmText={(() => {
+          const trip = trips.find((tr) => tr.id === deleteTripId);
+          return trip?.status === 'DRAFT' ? undefined : t('trips.archiveConfirm', 'Archive Trip');
+        })()}
       />
     </div>
   );
