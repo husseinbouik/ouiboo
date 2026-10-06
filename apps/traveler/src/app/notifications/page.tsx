@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { Button } from '@ouiboo/ui';
 import { Bell } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/components/AuthContext';
 
 type Notification = {
@@ -18,6 +19,7 @@ type Notification = {
 };
 
 export default function NotificationsPage() {
+  const { t } = useTranslation();
   const { user, isLoading: isAuthLoading } = useAuth();
 
   const { data, isLoading } = useQuery<{ items: Notification[] }>({
@@ -39,16 +41,16 @@ export default function NotificationsPage() {
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <Bell className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h1 className="text-xl font-bold">Sign in to view your notifications</h1>
+          <h1 className="text-xl font-bold">{t('notifications.signInTitle')}</h1>
           <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
             Stay updated on booking confirmations, trip updates, and messages.
           </p>
           <div className="mt-6 flex justify-center gap-3">
             <Button asChild>
-              <Link href="/login">Sign In</Link>
+              <Link href="/login">{t('notifications.signIn')}</Link>
             </Button>
             <Button asChild variant="outline">
-              <Link href="/search">Explore Trips</Link>
+              <Link href="/search">{t('notifications.exploreTrips')}</Link>
             </Button>
           </div>
         </div>
@@ -74,7 +76,7 @@ export default function NotificationsPage() {
       {notifications.length === 0 ? (
         <div className="text-center py-16 bg-card/70 rounded-2xl border border-dashed border-border">
           <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">You&apos;re all caught up. No new notifications.</p>
+          <p className="text-muted-foreground">{t('notifications.emptyBody')}</p>
         </div>
       ) : (
         <div className="space-y-3">

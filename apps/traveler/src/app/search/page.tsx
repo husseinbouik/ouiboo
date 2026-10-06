@@ -310,9 +310,9 @@ export default function SearchPage() {
             )}
 
             <div className="mb-4 flex items-center justify-between bg-muted/50 p-3 rounded-lg border border-border">
-              <div className="text-sm text-muted-foreground">Showing <strong className="text-foreground">{Number((pagination.page - 1) * pagination.limit + trips.length) || 0}</strong> of <strong>{Number(pagination.total) || 0}</strong></div>
+              <div className="text-sm text-muted-foreground">{t('search.resultCount', { count: Number((pagination.page - 1) * pagination.limit + trips.length) || 0, total: Number(pagination.total) || 0 })}</div>
               <div className="flex items-center gap-2">
-                <button onClick={() => setSortOrder((state) => state === 'asc' ? 'desc' : 'asc')} aria-label="Toggle sort order" className="px-3 py-1 rounded-lg bg-muted">{sortOrder === 'asc' ? 'Asc' : 'Desc'}</button>
+                <button onClick={() => setSortOrder((state) => state === 'asc' ? 'desc' : 'asc')} aria-label={t('search.toggleSortOrder', 'Toggle sort order')} className="px-3 py-1 rounded-lg bg-muted">{sortOrder === 'asc' ? t('search.ascending', 'Asc') : t('search.descending', 'Desc')}</button>
               </div>
             </div>
 
@@ -338,8 +338,8 @@ export default function SearchPage() {
               ) : (
                 <div className="col-span-full py-16 text-center">
                   <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4"><Compass className="h-6 w-6" /></div>
-                  <h3 className="text-lg font-semibold">No trips match your filters</h3>
-                  <p className="text-sm text-muted-foreground mt-2">Try adjusting your filters or clearing them.</p>
+                  <h3 className="text-lg font-semibold">{t('search.noTrips')}</h3>
+                  <p className="text-sm text-muted-foreground mt-2">{t('search.noTripsHint', 'Try adjusting your filters or clearing them.')}</p>
                 </div>
               )}
             </div>

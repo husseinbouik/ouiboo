@@ -289,6 +289,29 @@
     "newest": "Plus récent",
     "sortPrice": "Prix",
     "rating": "Note",
-    "popularity": "Popularité"
+    "popularity": "Popularité",
+    "toggleSortOrder": "Changer l’ordre de tri",
+    "ascending": "Croissant",
+    "descending": "Décroissant",
+    "noTripsHint": "Essayez d’ajuster vos filtres ou de les effacer."
+  },
+  "messages": {
+    "signInTitle": "Connectez-vous pour voir vos messages",
+    "signInBody": "Discutez avec les agences au sujet des voyages, réservations et plans de voyage.",
+    "signIn": "Se connecter",
+    "exploreTrips": "Explorer les voyages",
+    "browseTrips": "Parcourir les voyages",
+    "emptyTitle": "Aucune conversation pour le moment",
+    "emptyBody": "Commencez à discuter avec une agence depuis une page de voyage.",
+    "title": "Messages"
+  },
+  "notifications": {
+    "signInTitle": "Connectez-vous pour voir vos notifications",
+    "signInBody": "Restez informé des réservations, messages et mises à jour de voyages.",
+    "signIn": "Se connecter",
+    "exploreTrips": "Explorer les voyages",
+    "emptyTitle": "Vous êtes à jour",
+    "emptyBody": "Aucune nouvelle notification.",
+    "title": "Notifications"
   }
 }

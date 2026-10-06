@@ -183,9 +183,9 @@ export function TripCard({ trip }: TripCardProps) {
                 </span>
             </div>
           </div>
-          <Button size="sm" className="rounded-xl px-4 py-2 h-auto text-sm font-semibold bg-muted text-foreground hover:bg-primary hover:text-primary-foreground transition-all shadow-none hover:shadow-md">
+          <span className="rounded-xl px-4 py-2 h-auto text-sm font-semibold bg-muted text-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-all shadow-none group-hover:shadow-md inline-flex items-center justify-center">
             {t('tripCard.viewDetails')}
-          </Button>
+          </span>
         </div>
       </Link>
     </Card>
