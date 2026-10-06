@@ -798,7 +798,7 @@
     "logoutTitle": "Log out",
     "loadingUser": "Loading...",
     "profilePending": "Agency Profile Pending",
-    "mobileCopyright": "Copyright 2024 Ouiboo Platform",
+    "mobileCopyright": "Copyright {{year}} Ouiboo Platform",
     "openNavigation": "Open navigation menu",
     "mainNavigation": "Main navigation"
   },
