@@ -57,7 +57,7 @@ export function AgencyMobileNav() {
                 })}
             </nav>
             <div className="p-6 border-t border-border bg-muted/30">
-                <p className="text-sm font-medium text-muted-foreground">{t('navbar.mobileCopyright')}</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('navbar.mobileCopyright', { year: new Date().getFullYear() })}</p>
             </div>
         </div>
       </SheetContent>

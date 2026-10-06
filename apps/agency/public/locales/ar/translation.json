@@ -805,7 +805,7 @@
     "logoutTitle": "تسجيل الخروج",
     "loadingUser": "جار التحميل...",
     "profilePending": "ملف الوكالة قيد الانتظار",
-    "mobileCopyright": "حقوق النشر 2024 منصة Ouiboo",
+    "mobileCopyright": "حقوق النشر {{year}} منصة Ouiboo",
     "openNavigation": "فتح قائمة التنقل",
     "mainNavigation": "التنقل الرئيسي"
   },
