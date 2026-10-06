@@ -41,12 +41,10 @@ export default async function FeaturedTripsPage() {
               A launch-MVP shortlist of the strongest active trips across discovery, demand, and agency quality.
             </p>
           </div>
-          <Link href="/search">
-            <Button variant="outline" className="rounded-xl font-bold">
-              <Compass className="h-4 w-4 mr-2" />
-              Browse all trips
+          <Button asChild variant="outline" className="rounded-xl font-bold">
+              <Link href="/search"><Compass className="h-4 w-4 mr-2" />
+              Browse all trips</Link>
             </Button>
-          </Link>
         </div>
 
         {trips.length > 0 ? (
@@ -65,9 +63,9 @@ export default async function FeaturedTripsPage() {
               Explore the full catalog while the team curates the next launch-ready list.
             </p>
             <div className="mt-6">
-              <Link href="/search">
-                <Button className="bg-sunset-orange hover:bg-orange-600 border-none">Explore trips</Button>
-              </Link>
+              <Button asChild className="bg-sunset-orange hover:bg-orange-600 border-none">
+              <Link href="/search">Explore trips</Link>
+            </Button>
             </div>
           </div>
         )}

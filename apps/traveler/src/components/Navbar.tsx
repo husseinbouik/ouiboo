@@ -161,7 +161,12 @@ const [isOpen, setIsOpen] = useState(false);
                 <ThemeToggle />
             </div>
 
-            {user ? (
+            {isAuthLoading ? (
+                <div className="flex items-center gap-4">
+                    <div className="h-9 w-16 rounded-md bg-muted/50 animate-pulse" />
+                    <div className="h-9 w-24 rounded-md bg-muted/50 animate-pulse" />
+                </div>
+            ) : user ? (
                 <div className="relative">
                     <button 
                         onMouseEnter={() => setProfileOpen(true)}
@@ -226,11 +231,9 @@ const [isOpen, setIsOpen] = useState(false);
                     <Link href="/login" className="text-sm font-semibold text-foreground hover:text-sunset-orange transition-colors">
                         {t('nav.login')}
                     </Link>
-                    <Link href="/signup">
-                        <Button className="rounded-md bg-sunset-orange hover:bg-orange-600 text-white font-semibold text-sm px-5 py-2.5 h-auto border-none shadow-sm transition-transform hover:scale-105">
-                            {t('nav.joinNow')}
-                        </Button>
-                    </Link>
+                    <Button asChild className="rounded-md bg-sunset-orange hover:bg-orange-600 text-white font-semibold text-sm px-5 py-2.5 h-auto border-none shadow-sm transition-transform hover:scale-105">
+              <Link href="/signup">{t('nav.joinNow')}</Link>
+            </Button>
                 </div>
             )}
 
