@@ -63,7 +63,13 @@ export default function AgencyTripsPage() {
 
   const deleteTripMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiClient.delete(`/trips/${id}`);
+      const trip = trips.find((tr) => tr.id === id);
+      // Lifecycle: drafts get hard-deleted, published trips get archived (records preserved)
+      if (trip && trip.status === 'DRAFT') {
+        await apiClient.delete(`/trips/${id}`);
+      } else {
+        await apiClient.post(`/trips/${id}/archive`);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['agency-trips'] });
@@ -244,10 +250,8 @@ export default function AgencyTripsPage() {
                       <p className="text-lg font-bold text-primary">{formatCurrency(trip.sessions?.[0]?.price || 0, undefined, i18n.language)}</p>
                    </div>
                    <div className="flex gap-1">
-                      <Link href={`/dashboard/trips/${trip.id}`} aria-label={t('common.edit')}>
-                        <button className="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors">
+                      <Link href={`/dashboard/trips/${trip.id}`} aria-label={t('common.edit')} className="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors inline-flex">
                            <Edit className="h-5 w-5" />
-                        </button>
                       </Link>
                       <button
                         onClick={() => handleDelete(trip.id)}
@@ -302,8 +306,16 @@ export default function AgencyTripsPage() {
         onClose={() => setDeleteTripId(null)}
         onConfirm={() => deleteTripId && deleteTripMutation.mutate(deleteTripId)}
         isLoading={deleteTripMutation.isPending}
-        title={t('trips.deleteTitle')}
-        description={t('trips.deleteBody')}
+        title={(() => {
+          const trip = trips.find((tr) => tr.id === deleteTripId);
+          return trip?.status === 'DRAFT' ? t('trips.deleteTitle') : t('trips.archiveTitle', 'Archive Trip');
+        })()}
+        description={(() => {
+          const trip = trips.find((tr) => tr.id === deleteTripId);
+          return trip?.status === 'DRAFT'
+            ? t('trips.deleteBody')
+            : t('trips.archiveBody', 'This trip will be hidden from travelers and moved to your archive. All bookings, sessions, and records are preserved and it can be restored later.');
+        })()}
       />
     </div>
   );
