@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Manrope, Space_Grotesk } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import "@/lib/i18n";
@@ -15,12 +15,6 @@ import { Analytics } from '@vercel/analytics/react';
 const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-manrope",
-  display: "swap",
-});
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-space-grotesk",
   display: "swap",
 });
 
@@ -87,7 +81,7 @@ export default async function RootLayout({
 
   return (
     <html lang={initialLanguage} dir={initialLanguage === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning>
-      <body className={`${manrope.variable} ${spaceGrotesk.variable} bg-muted/20`} suppressHydrationWarning>
+      <body className={`${manrope.variable} bg-muted/20`} suppressHydrationWarning>
         <Script
           id="language-init"
           strategy="beforeInteractive"
