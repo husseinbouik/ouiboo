@@ -285,11 +285,9 @@ export default function AgencyDashboard() {
             <h2 className="text-2xl font-black font-display tracking-tight">{t('dashboard.actionCenter')}</h2>
             <p className="text-muted-foreground font-medium">{t('dashboard.actionCenterSubtitle')}</p>
           </div>
-          <Link href="/dashboard/bookings">
-            <Button variant="ghost" className="font-bold text-primary gap-2 rounded-xl group">
-              {t('dashboard.openBookings')} <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+          <Button asChild variant="ghost" className="font-bold text-primary gap-2 rounded-xl group">
+              <Link href="/dashboard/bookings">{t('dashboard.openBookings')} <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" /></Link>
             </Button>
-          </Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {quickActions.map((action) => (
@@ -324,11 +322,9 @@ export default function AgencyDashboard() {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{t('dashboard.recentRequestsCount', { count: latestBookings.length })}</p>
             </div>
           </div>
-          <Link href="/dashboard/bookings">
-            <Button variant="ghost" className="font-bold text-primary gap-2 rounded-xl group">
-              {t('dashboard.viewAll')} <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+          <Button asChild variant="ghost" className="font-bold text-primary gap-2 rounded-xl group">
+              <Link href="/dashboard/bookings">{t('dashboard.viewAll')} <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" /></Link>
             </Button>
-          </Link>
         </div>
 
         <Card className="border-none shadow-xl shadow-black/5 rounded-[2.5rem] overflow-hidden">
@@ -384,11 +380,9 @@ export default function AgencyDashboard() {
                         </Badge>
                       </TableCell>
                       <TableCell className="pe-10 text-end">
-                        <Link href="/dashboard/bookings">
-                          <Button variant="ghost" size="icon" className="rounded-xl bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-all">
-                            <Eye className="h-5 w-5" />
-                          </Button>
-                        </Link>
+                        <Button asChild variant="ghost" size="icon" className="rounded-xl bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-all">
+              <Link href="/dashboard/bookings"><Eye className="h-5 w-5" /></Link>
+            </Button>
                       </TableCell>
                     </TableRow>
                   );
@@ -407,11 +401,9 @@ export default function AgencyDashboard() {
             {t('dashboard.growBody', { tripCount: stats.activeTrips, travelerCount: stats.totalCustomers })}
           </p>
         </div>
-        <Link href="/dashboard/trips/create" className="relative z-10 mt-8 md:mt-0">
-          <Button className="h-20 px-12 rounded-[2rem] bg-white text-primary hover:bg-slate-100 font-black text-xl border-none shadow-2xl transition-all hover:scale-105 active:scale-95">
-            {t('dashboard.createNewTrip')}
-          </Button>
-        </Link>
+        <Button asChild className="h-20 px-12 rounded-[2rem] bg-white text-primary hover:bg-slate-100 font-black text-xl border-none shadow-2xl transition-all hover:scale-105 active:scale-95">
+              <Link href="/dashboard/trips/create">{t('dashboard.createNewTrip')}</Link>
+            </Button>
       </div>
     </div>
   );
