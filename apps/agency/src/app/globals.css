@@ -5,6 +5,7 @@
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
+  /* Display font: Manrope (replaces Space Grotesk for clearer lowercase i) */
   --font-sans: var(--font-manrope), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-manrope), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
