@@ -111,9 +111,9 @@ export default function BookingDetailsPage() {
         <Card className="max-w-xl w-full rounded-[2rem] p-8 text-center">
           <h1 className="text-2xl font-black text-foreground">Booking not found</h1>
           <p className="mt-3 text-muted-foreground">This booking may have been removed or you may not have access to it.</p>
-          <Link href="/bookings" className="inline-flex mt-6">
-            <Button className="rounded-xl">Back to my bookings</Button>
-          </Link>
+          <Button asChild className="rounded-xl">
+              <Link href="/bookings">Back to my bookings</Link>
+            </Button>
         </Card>
       </div>
     );
@@ -136,9 +136,9 @@ export default function BookingDetailsPage() {
             <h1 className="text-4xl font-black font-display tracking-tight text-foreground">{booking.id}</h1>
             <p className="text-muted-foreground mt-2">Review your reservation details, payment state, and next actions.</p>
           </div>
-          <Link href="/bookings">
-            <Button variant="outline" className="rounded-xl font-bold">Back to my bookings</Button>
-          </Link>
+          <Button asChild variant="outline" className="rounded-xl font-bold">
+              <Link href="/bookings">Back to my bookings</Link>
+            </Button>
         </div>
 
         <Card className="group border border-border shadow-sm rounded-[2rem] overflow-hidden bg-card">
@@ -244,11 +244,11 @@ export default function BookingDetailsPage() {
                   </label>
                 )}
                 {showRetryPayment && (
-                  <Link href={retryHref}>
-                    <Button variant="outline" className="h-12 px-6 rounded-xl text-xs font-black uppercase tracking-widest">
+                  <Button asChild variant="outline" className="h-12 px-6 rounded-xl text-xs font-black uppercase tracking-widest">
+                    <Link href={retryHref}>
                       Retry Payment
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 )}
                 <Button
                   variant="ghost"

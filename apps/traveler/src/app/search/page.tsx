@@ -35,16 +35,15 @@ type FilterKey = keyof SearchFilters;
 type SortBy = "price" | "rating" | "popularity" | "createdAt";
 type SortOrder = "asc" | "desc";
 
-const TRIP_CATEGORIES = [
-  { label: "Adventure", value: TripCategory.Adventure },
-  { label: "Cultural", value: TripCategory.Cultural },
-  { label: "Luxury", value: TripCategory.Luxury },
-  { label: "Budget", value: TripCategory.Budget },
-  { label: "Nature", value: TripCategory.Nature },
-] as const;
-
 export default function SearchPage() {
   const { t, ready } = useTranslation();
+  const TRIP_CATEGORIES = [
+    { label: t('categories.adventure'), value: TripCategory.Adventure },
+    { label: t('categories.cultural'), value: TripCategory.Cultural },
+    { label: t('categories.luxury'), value: TripCategory.Luxury },
+    { label: t('categories.budget'), value: TripCategory.Budget },
+    { label: t('categories.nature'), value: TripCategory.Nature },
+  ] as const;
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentPage, setCurrentPage] = useState(1);
@@ -291,8 +290,8 @@ export default function SearchPage() {
           <aside className="hidden lg:block w-72 shrink-0">
             <div className="bg-card p-5 rounded-2xl border border-border space-y-6 sticky top-28">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold flex items-center gap-2"><Filter className="h-4 w-4" /> Filters</h3>
-                {activeFiltersCount > 0 && <button onClick={clearAllFilters} aria-label="Clear all filters" className="text-sm text-muted-foreground">Clear</button>}
+                <h3 className="font-semibold flex items-center gap-2"><Filter className="h-4 w-4" /> {t('search.filters')}</h3>
+                {activeFiltersCount > 0 && <button onClick={clearAllFilters} aria-label={t('search.clearAll')} className="text-sm text-muted-foreground">{t('search.clear')}</button>}
               </div>
 
               {renderFilterControls()}
@@ -321,7 +320,7 @@ export default function SearchPage() {
               <div className="p-6 bg-danger/10 border border-danger/20 rounded-lg text-center">
                 <p className="font-semibold text-danger">{t('search.failedToLoad')}</p>
                 <p className="text-sm text-danger/80 mt-1">{error instanceof Error ? error.message : 'Please try again'}</p>
-                <div className="mt-3"><Button onClick={() => window.location.reload()}>Retry</Button></div>
+                <div className="mt-3"><Button onClick={() => window.location.reload()}>{t('search.retry')}</Button></div>
               </div>
             )}
 
