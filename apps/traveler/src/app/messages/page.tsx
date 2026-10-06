@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { Button } from '@ouiboo/ui';
 import { MessageCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/components/AuthContext';
 
 type Conversation = {
@@ -16,6 +17,7 @@ type Conversation = {
 };
 
 export default function MessagesPage() {
+  const { t } = useTranslation();
   const { user, isLoading: isAuthLoading } = useAuth();
 
   const { data, isLoading } = useQuery<{ items: Conversation[] }>({
@@ -37,16 +39,16 @@ export default function MessagesPage() {
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <MessageCircle className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h1 className="text-xl font-bold">Sign in to view your messages</h1>
+          <h1 className="text-xl font-bold">{t('messages.signInTitle')}</h1>
           <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
-            Chat with agencies about trips, bookings, and travel plans.
+            {t('messages.signInBody')}
           </p>
           <div className="mt-6 flex justify-center gap-3">
             <Button asChild>
-              <Link href="/login">Sign In</Link>
+              <Link href="/login">{t('messages.signIn')}</Link>
             </Button>
             <Button asChild variant="outline">
-              <Link href="/search">Explore Trips</Link>
+              <Link href="/search">{t('messages.exploreTrips')}</Link>
             </Button>
           </div>
         </div>
@@ -72,9 +74,9 @@ export default function MessagesPage() {
       {conversations.length === 0 ? (
         <div className="text-center py-16 bg-card/70 rounded-2xl border border-dashed border-border">
           <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">No conversations yet. Start chatting with an agency from a trip page.</p>
+          <p className="text-muted-foreground">{t('messages.emptyBody')}</p>
           <Button asChild variant="outline">
-              <Link href="/search">Browse Trips</Link>
+              <Link href="/search">{t('messages.browseTrips')}</Link>
             </Button>
         </div>
       ) : (
