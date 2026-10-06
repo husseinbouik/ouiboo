@@ -302,11 +302,9 @@ export default function AgencyDashboard() {
                     <action.icon className="h-6 w-6" />
                   </div>
                 </div>
-                <Link href={action.href} className="self-start">
-                  <Button variant="outline" className="rounded-xl font-bold">
-                    {action.cta}
-                  </Button>
-                </Link>
+                <Button asChild variant="outline" className="rounded-xl font-bold">
+              <Link href={action.href}>{action.cta}</Link>
+            </Button>
               </CardContent>
             </Card>
           ))}

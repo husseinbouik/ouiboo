@@ -136,12 +136,10 @@ export default function AgencyTripsPage() {
           <h1 className="text-3xl font-bold text-foreground">{t('sidebar.myTrips')}</h1>
           <p className="text-muted-foreground mt-1">{t('trips.manageTitle')}</p>
         </div>
-        <Link href="/dashboard/trips/create">
-          <Button className="h-12 px-6 bg-accent text-accent-foreground hover:bg-accent/90 border-none shadow-lg shadow-accent/20 gap-2 font-bold">
-            <Plus className="h-5 w-5" />
-            {t('sidebar.createNew')}
-          </Button>
-        </Link>
+        <Button asChild className="h-12 px-6 bg-accent text-accent-foreground hover:bg-accent/90 border-none shadow-lg shadow-accent/20 gap-2 font-bold">
+              <Link href="/dashboard/trips/create"><Plus className="h-5 w-5" />
+            {t('sidebar.createNew')}</Link>
+            </Button>
       </div>
 
       <Card className="border-none shadow-sm bg-card border border-border">
@@ -276,9 +274,9 @@ export default function AgencyTripsPage() {
                   <Button variant="outline" onClick={() => { setSearchTerm(''); setStatusFilter('ALL'); setSortBy('recent'); }}>
                     {t('trips.clearFilters')}
                   </Button>
-                  <Link href="/dashboard/trips/create">
-                    <Button className="bg-accent text-accent-foreground hover:bg-accent/90 border-none">{t('trips.createCta')}</Button>
-                  </Link>
+                  <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90 border-none">
+              <Link href="/dashboard/trips/create">{t('trips.createCta')}</Link>
+            </Button>
                 </div>
               </CardContent>
             </Card>
