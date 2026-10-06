@@ -798,7 +798,7 @@
     "logoutTitle": "Se déconnecter",
     "loadingUser": "Chargement...",
     "profilePending": "Profil d'agence en attente",
-    "mobileCopyright": "Copyright 2024 Ouiboo Platform",
+    "mobileCopyright": "Droits d’auteur {{year}} Plateforme Ouiboo",
     "openNavigation": "Ouvrir le menu de navigation",
     "mainNavigation": "Navigation principale"
   },
