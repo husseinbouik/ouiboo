@@ -289,6 +289,29 @@
     "newest": "Newest",
     "sortPrice": "Price",
     "rating": "Rating",
-    "popularity": "Popularity"
+    "popularity": "Popularity",
+    "toggleSortOrder": "Toggle sort order",
+    "ascending": "Asc",
+    "descending": "Desc",
+    "noTripsHint": "Try adjusting your filters or clearing them."
+  },
+  "messages": {
+    "signInTitle": "Sign in to view your messages",
+    "signInBody": "Chat with agencies about trips, bookings, and travel plans.",
+    "signIn": "Sign In",
+    "exploreTrips": "Explore Trips",
+    "browseTrips": "Browse Trips",
+    "emptyTitle": "No conversations yet",
+    "emptyBody": "Start chatting with an agency from a trip page.",
+    "title": "Messages"
+  },
+  "notifications": {
+    "signInTitle": "Sign in to view your notifications",
+    "signInBody": "Stay updated on bookings, messages, and trip updates.",
+    "signIn": "Sign In",
+    "exploreTrips": "Explore Trips",
+    "emptyTitle": "You're all caught up",
+    "emptyBody": "No new notifications.",
+    "title": "Notifications"
   }
 }

@@ -289,6 +289,29 @@
     "newest": "الأحدث",
     "sortPrice": "السعر",
     "rating": "التقييم",
-    "popularity": "الشعبية"
+    "popularity": "الشعبية",
+    "toggleSortOrder": "تبديل ترتيب الفرز",
+    "ascending": "تصاعدي",
+    "descending": "تنازلي",
+    "noTripsHint": "حاول تعديل الفلاتر أو مسحها."
+  },
+  "messages": {
+    "signInTitle": "سجّل الدخول لعرض رسائلك",
+    "signInBody": "تحدث مع الوكالات حول الرحلات والحجوزات وخطط السفر.",
+    "signIn": "تسجيل الدخول",
+    "exploreTrips": "استكشف الرحلات",
+    "browseTrips": "تصفح الرحلات",
+    "emptyTitle": "لا توجد محادثات بعد",
+    "emptyBody": "ابدأ المحادثة مع وكالة من صفحة رحلة.",
+    "title": "الرسائل"
+  },
+  "notifications": {
+    "signInTitle": "سجّل الدخول لعرض إشعاراتك",
+    "signInBody": "ابقَ على اطلاع بالحجوزات والرسائل وتحديثات الرحلات.",
+    "signIn": "تسجيل الدخول",
+    "exploreTrips": "استكشف الرحلات",
+    "emptyTitle": "أنت على اطلاع كامل",
+    "emptyBody": "لا توجد إشعارات جديدة.",
+    "title": "الإشعارات"
   }
 }
