@@ -109,12 +109,12 @@ export default function MyBookingsPage() {
                             Your trip confirmations, payment proof uploads, and review actions all live here once you are signed in.
                         </p>
                         <div className="mt-6 flex justify-center gap-3">
-                            <Link href="/login">
-                                <Button>Sign In</Button>
-                            </Link>
-                            <Link href="/search">
-                                <Button variant="outline">Explore Trips</Button>
-                            </Link>
+                            <Button asChild>
+              <Link href="/login">Sign In</Link>
+            </Button>
+                            <Button asChild variant="outline">
+              <Link href="/search">Explore Trips</Link>
+            </Button>
                         </div>
                     </div>
                 </div>
@@ -243,23 +243,25 @@ export default function MyBookingsPage() {
                                                         <Check className="h-4 w-4" /> Proof {proofStatus.label}
                                                     </div>
                                                     {showRetryPayment && (
-                                                        <Link href={retryHref}>
-                                                            <Button
+                                                        <Button
+                                                                asChild
                                                                 variant="outline"
                                                                 className="h-12 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest border-border/60"
                                                             >
+                                                                <Link href={retryHref}>
                                                                 Retry Payment
+                                                                </Link>
                                                             </Button>
-                                                        </Link>
                                                     )}
-                                                    <Link href={`/booking/${booking.id}`}>
-                                                        <Button
+                                                    <Button
+                                                            asChild
                                                             variant="outline"
                                                             className="h-12 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest border-border/60"
                                                         >
+                                                            <Link href={`/booking/${booking.id}`}>
                                                             View Details
+                                                            </Link>
                                                         </Button>
-                                                    </Link>
                                                     <Button
                                                         variant="ghost"
                                                         className="h-12 w-12 rounded-xl hover:bg-muted text-muted-foreground border border-border/50"
