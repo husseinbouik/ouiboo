@@ -21,8 +21,10 @@ import {
   FileText,
   Download,
   Trash2,
+  LogOut,
 } from 'lucide-react';
-import { Button, Card, CardContent, CardHeader, CardTitle, Badge, ConfirmDialog, ThemeToggle, LanguageSwitcher, Pagination } from '@ouiboo/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle, Badge, ConfirmDialog, ThemeToggle, LanguageSwitcher, Pagination, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@ouiboo/ui';
+import { useAuth } from '@/components/AuthContext';
 import { toPaginatedList, type PaginationMeta } from '@ouiboo/utils';
 import {
   BookingPaymentStatus,
@@ -146,6 +148,7 @@ type AdminListResponse = {
 };
 
 export default function AdminDashboard() {
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>('PENDING');
   const [selectedAgency, setSelectedAgency] = useState<AdminAgency | null>(null);
   const [selectedPayout, setSelectedPayout] = useState<AdminPayoutRequest | null>(null);
@@ -726,9 +729,22 @@ const useAdminListQuery = <T,>(path: string, queryKeyKey: string, enabled: boole
                </div>
                <LanguageSwitcher />
                <ThemeToggle />
-               <div className="h-10 w-10 bg-muted rounded-full border-2 border-border shadow-sm overflow-hidden">
-                  <Image src="https://ui-avatars.com/api/?name=Admin&background=0A192F&color=fff" alt={t('dashboard.aria.adminAvatar')} width={40} height={40} />
-               </div>
+               <DropdownMenu>
+                 <DropdownMenuTrigger asChild>
+                   <button
+                     aria-label={t('dashboard.signOut')}
+                     className="h-10 w-10 bg-muted rounded-full border-2 border-border shadow-sm overflow-hidden hover:border-sunset-orange transition-colors focus:outline-none focus:ring-2 focus:ring-sunset-orange/40"
+                   >
+                     <Image src="https://ui-avatars.com/api/?name=Admin&background=0A192F&color=fff" alt={t('dashboard.aria.adminAvatar')} width={40} height={40} />
+                   </button>
+                 </DropdownMenuTrigger>
+                 <DropdownMenuContent align="end">
+                   <DropdownMenuItem onClick={() => logout()} className="text-danger focus:text-danger cursor-pointer">
+                     <LogOut className="h-4 w-4 me-2" />
+                     {t('dashboard.signOut')}
+                   </DropdownMenuItem>
+                 </DropdownMenuContent>
+               </DropdownMenu>
             </div>
          </header>
 
