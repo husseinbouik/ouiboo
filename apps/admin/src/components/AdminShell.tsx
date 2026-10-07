@@ -13,12 +13,24 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const isAuthPage = authRoutes.some((route) => pathname.startsWith(route));
 
   useEffect(() => {
-    if (!isAuthPage && !isLoading && !user) {
-      router.replace('/login');
+    if (!isLoading) {
+      if (!isAuthPage && !user) {
+        router.replace('/login');
+      } else if (isAuthPage && user) {
+        router.replace('/');
+      }
     }
   }, [isAuthPage, isLoading, user, router]);
 
   if (isAuthPage) {
+    // Authenticated users are redirected to dashboard; show loading during redirect
+    if (isLoading || user) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-label="Loading" />
+        </div>
+      );
+    }
     return <main id="main-content" tabIndex={-1} className="min-h-screen">{children}</main>;
   }
 
