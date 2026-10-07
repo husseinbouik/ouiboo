@@ -2,7 +2,7 @@
   "login": {
     "title": "Accès Admin",
     "subtitle": "Zone restreinte. Personnel autorisé uniquement.",
-    "username": "Nom d'utilisateur",
+    "username": "E-mail",
     "password": "Mot de passe",
     "authenticate": "S'authentifier",
     "authenticating": "Authentification...",
@@ -12,8 +12,8 @@
     "heroSubtitle": "Approuvez les agences, confirmez les paiements et maintenez la place de marché saine.",
     "heroNote": "La journalisation des audits et l'accès par rôles sont activés.",
     "loginFailed": "Échec de la connexion. Veuillez réessayer.",
-    "usernamePlaceholder": "admin",
-    "usernameRequired": "Le nom d'utilisateur est requis",
+    "usernamePlaceholder": "admin@example.com",
+    "usernameRequired": "L'e-mail est requis",
     "passwordRequired": "Le mot de passe est requis",
     "showPassword": "Afficher le mot de passe",
     "hidePassword": "Masquer le mot de passe",
@@ -222,7 +222,8 @@
     },
     "modal": {
       "agencyReview": "Revue d'agence"
-    }
+    },
+    "signOut": "Se déconnecter"
   },
   "meta": {
     "titleDefault": "Administration de la plateforme",
