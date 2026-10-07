@@ -739,7 +739,17 @@ const useAdminListQuery = <T,>(path: string, queryKeyKey: string, enabled: boole
                    </button>
                  </DropdownMenuTrigger>
                  <DropdownMenuContent align="end">
-                   <DropdownMenuItem onClick={() => logout()} className="text-danger focus:text-danger cursor-pointer">
+                   <DropdownMenuItem
+                     onSelect={async (event) => {
+                       event.preventDefault();
+                       try {
+                         await logout();
+                       } finally {
+                         window.location.href = '/login';
+                       }
+                     }}
+                     className="text-danger focus:text-danger cursor-pointer"
+                   >
                      <LogOut className="h-4 w-4 me-2" />
                      {t('dashboard.signOut')}
                    </DropdownMenuItem>
