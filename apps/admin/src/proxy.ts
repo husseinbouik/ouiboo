@@ -18,6 +18,17 @@ export function proxy(request: NextRequest) {
     requestHeaders.set('x-ouiboo-language', language);
   }
 
+
+  // Auth gate (#185): redirect unauthenticated users from protected routes
+  const ADMIN_PUBLIC = ['/login'];
+  const adminPath = request.nextUrl.pathname;
+  const adminIsPublic = ADMIN_PUBLIC.some((p) => adminPath === p || adminPath.startsWith(p + '/'));
+  if (!adminIsPublic && !request.cookies.get('refresh_token')) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', adminPath);
+    return NextResponse.redirect(loginUrl);
+  }
+
   const response = NextResponse.next({
     request: {
       headers: requestHeaders,
