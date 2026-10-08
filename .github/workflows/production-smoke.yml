@@ -42,7 +42,7 @@ jobs:
 
       - name: Run production smoke tests
         id: smoke
-        run: npx playwright test e2e/production/smoke.spec.ts --reporter=json
+        run: mkdir -p test-results && npx playwright test e2e/production/smoke.spec.ts --reporter=json:test-results/results.json
         env:
           SMOKE_TRAVELER_URL: ${{ vars.STAGING_TRAVELER_URL }}
           SMOKE_AGENCY_URL: ${{ vars.STAGING_AGENCY_URL }}
