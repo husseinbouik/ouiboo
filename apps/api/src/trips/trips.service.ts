@@ -85,8 +85,12 @@ export class TripsService {
             const safeSortBy = allowedSortFields.has(sortBy) ? sortBy : 'createdAt';
 
             // Build WHERE clause for trip templates
+            // Only show trips from verified agencies (launch blocker #182)
             const where: any = {
                 status: TripStatus.ACTIVE,
+                agency: {
+                    verificationStatus: 'VERIFIED',
+                },
             };
 
             if (featured) where.featured = true;
@@ -216,7 +220,11 @@ export class TripsService {
 
     async findOneTemplate(id: string) {
         const result = await this.db.tripTemplate.findFirst({
-            where: { id, status: TripStatus.ACTIVE },
+            where: {
+                id,
+                status: TripStatus.ACTIVE,
+                agency: { verificationStatus: 'VERIFIED' },
+            },
             select: {
                 id: true,
                 title: true,
@@ -379,7 +387,11 @@ export class TripsService {
 
     async findSessionsByTemplate(templateId: string) {
         const template = await this.db.tripTemplate.findFirst({
-            where: { id: templateId, status: TripStatus.ACTIVE },
+            where: {
+                id: templateId,
+                status: TripStatus.ACTIVE,
+                agency: { verificationStatus: 'VERIFIED' },
+            },
             select: { id: true },
         });
         if (!template) throw new NotFoundException('Trip template not found');
