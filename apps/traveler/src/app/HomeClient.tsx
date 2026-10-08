@@ -185,7 +185,7 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
                     <motion.div 
                         key={style.key}
                         whileHover={{ y: -5 }}
-                        onClick={() => window.location.href = `/search?category=${style.key}`}
+                        onClick={() => window.location.href = `/search?category=${style.key.toUpperCase()}`}
                         className="bg-card p-8 rounded-3xl shadow-sm border border-border hover:shadow-md transition-all cursor-pointer group"
                     >
                         <div className={`w-14 h-14 rounded-2xl ${style.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
