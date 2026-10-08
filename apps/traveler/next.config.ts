@@ -7,12 +7,17 @@ const mediaRemotePatterns = (() => {
   try {
     const url = new URL(value);
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return [];
-    return [{
-      protocol: url.protocol.slice(0, -1) as 'http' | 'https',
+    const protocol = url.protocol.slice(0, -1) as 'http' | 'https';
+    const basePath = url.pathname.replace(/\/$/, '');
+    // Allow both /media/** and /api/v1/media/** — the API serves uploads
+    // at /api/v1/media while the public CDN-style URL is /media.
+    const pathnames = new Set([`${basePath}/**`, '/api/v1/media/**', '/media/**']);
+    return [...pathnames].map((pathname) => ({
+      protocol,
       hostname: url.hostname,
       port: url.port,
-      pathname: `${url.pathname.replace(/\/$/, '')}/**`,
-    }];
+      pathname,
+    }));
   } catch {
     return [];
   }
