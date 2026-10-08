@@ -22,7 +22,7 @@ import { UploadService } from './upload.service';
 export class MediaController {
     constructor(private readonly uploadService: UploadService) { }
 
-    @Get('*key')
+    @Get('{*key}')
     @ApiOperation({ summary: 'Serve an uploaded file' })
     @ApiResponse({ status: 200, description: 'File content' })
     @ApiResponse({ status: 403, description: 'Private file' })
