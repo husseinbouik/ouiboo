@@ -31,6 +31,17 @@ export function proxy(request: NextRequest) {
     requestHeaders.set('x-ouiboo-language', language);
   }
 
+
+  // Auth gate (#185): redirect unauthenticated users from protected routes
+  const TRAVELER_PROTECTED = ['/messages', '/notifications', '/bookings', '/wishlist', '/profile'];
+  const travelerPath = request.nextUrl.pathname;
+  const travelerIsProtected = TRAVELER_PROTECTED.some((p) => travelerPath === p || travelerPath.startsWith(p + '/'));
+  if (travelerIsProtected && !request.cookies.get('refresh_token')) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', travelerPath);
+    return NextResponse.redirect(loginUrl);
+  }
+
   const response = NextResponse.next({
     request: {
       headers: requestHeaders,
