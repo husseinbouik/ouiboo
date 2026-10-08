@@ -2,7 +2,14 @@ import type { NextConfig } from "next";
 
 const mediaRemotePatterns = (() => {
   const value = process.env.NEXT_PUBLIC_MEDIA_URL;
-  if (!value) return [];
+  if (!value) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'NEXT_PUBLIC_MEDIA_URL is required in production to allow Next.js image optimization of API media URLs.'
+      );
+    }
+    return [];
+  }
 
   try {
     const url = new URL(value);
