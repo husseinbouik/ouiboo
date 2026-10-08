@@ -22,19 +22,20 @@ import { UploadService } from './upload.service';
 export class MediaController {
     constructor(private readonly uploadService: UploadService) { }
 
-    @Get('{*key}')
+    @Get(':folder/:filename')
     @ApiOperation({ summary: 'Serve an uploaded file' })
     @ApiResponse({ status: 200, description: 'File content' })
     @ApiResponse({ status: 403, description: 'Private file' })
     @ApiResponse({ status: 404, description: 'File not found' })
     async serveFile(
-        @Param('key') key: string | string[],
+        @Param('folder') folder: string,
+        @Param('filename') filename: string,
         @Res() res: Response,
     ) {
-        // Normalize key from wildcard param (can be string or array)
-        const fileKey = Array.isArray(key) ? key.join('/') : key;
+        // Reconstruct the storage key from the two path segments
+        const fileKey = `${folder}/${filename}`;
 
-        if (!fileKey) {
+        if (!fileKey || fileKey === '/') {
             throw new NotFoundException('File not found');
         }
 
