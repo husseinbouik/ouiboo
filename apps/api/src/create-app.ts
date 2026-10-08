@@ -128,12 +128,7 @@ export async function createApp(): Promise<INestApplication> {
     exposedHeaders: 'X-Cache',
   })
 
-  app.setGlobalPrefix('api/v1', {
-    exclude: [
-      { path: 'media', method: RequestMethod.ALL },
-      { path: 'media/{*key}', method: RequestMethod.ALL },
-    ],
-  })
+  app.setGlobalPrefix('api/v1')
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
