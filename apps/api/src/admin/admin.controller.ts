@@ -338,7 +338,7 @@ export class AdminController {
         const [agencies, total] = await Promise.all([
             this.db.agencyProfile.findMany({
                 where,
-                include: { user: true },
+                include: { user: { select: { id: true, name: true, email: true, role: true, avatar: true, isEmailVerified: true } } },
                 orderBy: { id: 'asc' },
                 skip: (safePage - 1) * safeLimit,
                 take: safeLimit,
@@ -465,7 +465,7 @@ export class AdminController {
         const [agencies, total] = await Promise.all([
             this.db.agencyProfile.findMany({
                 where,
-                include: { user: true },
+                include: { user: { select: { id: true, name: true, email: true, role: true, avatar: true, isEmailVerified: true } } },
                 orderBy: { id: 'asc' },
                 skip: (safePage - 1) * safeLimit,
                 take: safeLimit,
@@ -616,7 +616,7 @@ export class AdminController {
         const [payouts, total] = await Promise.all([
             this.db.payoutRequest.findMany({
                 where,
-                include: { agency: { include: { user: true } } },
+                include: { agency: { select: { id: true, companyName: true, verificationStatus: true, user: { select: { id: true, email: true } } } } },
                 orderBy: { requestedAt: 'desc' },
                 skip: (safePage - 1) * safeLimit,
                 take: safeLimit,

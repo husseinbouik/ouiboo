@@ -18,6 +18,17 @@ export function proxy(request: NextRequest) {
     requestHeaders.set('x-ouiboo-language', language);
   }
 
+
+  // Auth gate (#185): redirect unauthenticated users from dashboard
+  const AGENCY_PUBLIC = ['/login', '/signup', '/forgot-password', '/reset-password', '/verify'];
+  const agencyPath = request.nextUrl.pathname;
+  const agencyIsPublic = AGENCY_PUBLIC.some((p) => agencyPath === p || agencyPath.startsWith(p + '/'));
+  if (!agencyIsPublic && agencyPath.startsWith('/dashboard') && !request.cookies.get('refresh_token')) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', agencyPath);
+    return NextResponse.redirect(loginUrl);
+  }
+
   const response = NextResponse.next({
     request: {
       headers: requestHeaders,
