@@ -1,13 +1,23 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { IStorageProvider } from './interfaces/storage-provider.interface';
 import { UploadSafetyService } from './upload-safety.service';
+import { PRIVATE_FILE_PREFIX, SIGNED_URL_TOKEN_PURPOSE, SIGNED_URL_TTL_SECONDS } from './upload.constants';
+
+export interface SignedUrlRequester {
+    userId: string;
+    role: string;
+}
 
 @Injectable()
 export class UploadService {
     private storageProvider?: IStorageProvider;
     private initialization: Promise<void>;
 
-    constructor(private readonly uploadSafetyService: UploadSafetyService) {
+    constructor(
+        private readonly uploadSafetyService: UploadSafetyService,
+        private readonly jwtService: JwtService,
+    ) {
         this.initialization = this.initializeProvider();
     }
 
@@ -51,6 +61,89 @@ export class UploadService {
     async isLocal() {
         const provider = await this.getStorageProvider();
         return provider.isLocal();
+    }
+
+    /**
+     * Issues a short-lived signed URL for a private file (#191).
+     * Only the file owner (private/{userId}/...) or an admin may obtain one.
+     * Public files don't need signed URLs — they already have public URLs.
+     */
+    async createSignedFileUrl(key: string, requester: SignedUrlRequester): Promise<{ url: string; expiresAt: string }> {
+        const safeKey = this.assertSafeKey(key);
+
+        if (!this.isPrivateKey(safeKey)) {
+            throw new BadRequestException('Signed URLs are only issued for private files');
+        }
+
+        const ownerId = safeKey.split('/')[1];
+        const isOwner = !!ownerId && ownerId === requester.userId;
+        const isAdmin = requester.role === 'ADMIN';
+        if (!isOwner && !isAdmin) {
+            throw new ForbiddenException('Access denied');
+        }
+
+        const token = await this.jwtService.signAsync(
+            { key: safeKey, purpose: SIGNED_URL_TOKEN_PURPOSE },
+            { expiresIn: SIGNED_URL_TTL_SECONDS },
+        );
+
+        return {
+            url: `${this.apiOrigin()}/api/v1/upload/file?token=${token}`,
+            expiresAt: new Date(Date.now() + SIGNED_URL_TTL_SECONDS * 1000).toISOString(),
+        };
+    }
+
+    /**
+     * Resolves a signed file token back to the file bytes (#191).
+     * The token itself is the credential: valid signature + purpose + expiry
+     * is sufficient; no session is required.
+     */
+    async readPrivateFileByToken(token: string): Promise<{ data: Buffer; contentType: string }> {
+        let payload: { key?: unknown; purpose?: unknown };
+        try {
+            payload = await this.jwtService.verifyAsync(token);
+        } catch {
+            throw new UnauthorizedException('Invalid or expired file token');
+        }
+
+        if (payload?.purpose !== SIGNED_URL_TOKEN_PURPOSE || typeof payload?.key !== 'string') {
+            throw new UnauthorizedException('Invalid file token');
+        }
+
+        const safeKey = this.assertSafeKey(payload.key);
+        if (!this.isPrivateKey(safeKey)) {
+            throw new ForbiddenException('Access denied');
+        }
+
+        const provider = await this.getStorageProvider();
+        try {
+            return await provider.read(safeKey);
+        } catch {
+            throw new NotFoundException('File not found');
+        }
+    }
+
+    private isPrivateKey(key: string): boolean {
+        return key === PRIVATE_FILE_PREFIX || key.startsWith(`${PRIVATE_FILE_PREFIX}/`);
+    }
+
+    private assertSafeKey(key: string): string {
+        const normalized = (key || '').replace(/\\/g, '/').replace(/^\/+/, '');
+        const segments = normalized.split('/').filter(Boolean);
+        if (!segments.length) {
+            throw new BadRequestException('Invalid file key');
+        }
+        for (const segment of segments) {
+            if (segment === '.' || segment === '..' || !/^[a-zA-Z0-9._-]+$/.test(segment)) {
+                throw new BadRequestException('Invalid file key');
+            }
+        }
+        return segments.join('/');
+    }
+
+    private apiOrigin(): string {
+        const baseUrl = process.env.API_URL || 'http://localhost:3010/api/v1';
+        return new URL(baseUrl).origin;
     }
 
     private async getStorageProvider() {
