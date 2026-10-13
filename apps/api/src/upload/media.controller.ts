@@ -33,8 +33,25 @@ export class MediaController {
         @Res() res: Response,
     ) {
         // Reconstruct the storage key from the two path segments
-        const fileKey = `${folder}/${filename}`;
+        return this.serveFileByKey(`${folder}/${filename}`, res);
+    }
 
+    @Get(':folder/:subfolder/:filename')
+    @ApiOperation({ summary: 'Serve an uploaded file (tenant-namespaced key)' })
+    @ApiResponse({ status: 200, description: 'File content' })
+    @ApiResponse({ status: 403, description: 'Private file' })
+    @ApiResponse({ status: 404, description: 'File not found' })
+    async serveNamespacedFile(
+        @Param('folder') folder: string,
+        @Param('subfolder') subfolder: string,
+        @Param('filename') filename: string,
+        @Res() res: Response,
+    ) {
+        // Supports intent-based keys like trips/{agencyId}/{filename} (#191)
+        return this.serveFileByKey(`${folder}/${subfolder}/${filename}`, res);
+    }
+
+    private async serveFileByKey(fileKey: string, res: Response) {
         if (!fileKey || fileKey === '/') {
             throw new NotFoundException('File not found');
         }
