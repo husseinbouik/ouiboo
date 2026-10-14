@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/labeler@v7
+      - uses: actions/labeler@v5
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -23,14 +23,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/github-script@v9
+      - uses: actions/github-script@v7
         with:
           script: |
             const pr = context.payload.pull_request;
-            const { data } = await github.rest.pulls.get({
-              owner: context.repo.owner, repo: context.repo.repo, pull_number: pr.number,
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner, repo: context.repo.repo, pull_number: pr.number, per_page: 100,
             });
-            const changes = data.additions + data.deletions;
+            // Exclude machine-generated lockfiles from the size count
+            const humanFiles = files.filter(f => !f.filename.endsWith('package-lock.json') && !f.filename.endsWith('yarn.lock') && !f.filename.endsWith('pnpm-lock.yaml'));
+            const changes = humanFiles.reduce((sum, f) => sum + f.additions + f.deletions, 0);
             const limit = 1000;
             if (changes > limit) {
               await github.rest.issues.createComment({
