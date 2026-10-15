@@ -1,9 +1,10 @@
-import { Controller, Post, Body, UnauthorizedException, Request, Res, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, UnauthorizedException, Request, Res, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, RefreshTokenDto, VerifyEmailDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 import { Request as ExpressRequest, Response } from 'express';
 import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
+import { CsrfGuard } from './guards/csrf.guard';
 
 const REFRESH_COOKIE_NAME = 'refresh_token';
 const REFRESH_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -36,6 +37,7 @@ export class AuthController {
     }
 
     @Post('refresh')
+    @UseGuards(CsrfGuard)
     @RateLimit({ points: 30, windowMs: 60_000, keyPrefix: 'auth:refresh' })
     @ApiOperation({ summary: 'Refresh access token using refresh token' })
     async refresh(
@@ -53,8 +55,8 @@ export class AuthController {
     }
 
     @Post('logout')
-    @ApiOperation({ summary: 'Logout and revoke refresh token' })
-    async logout(
+    @UseGuards(CsrfGuard)
+    @ApiOperation({ summary: 'Logout and revoke refresh token' })    async logout(
         @Body() dto: RefreshTokenDto,
         @Request() req: ExpressRequest,
         @Res({ passthrough: true }) res: Response,
@@ -69,6 +71,17 @@ export class AuthController {
             path: '/api/v1/auth',
         });
         return result;
+    }
+
+    @Get('session')
+    @RateLimit({ points: 60, windowMs: 60_000, keyPrefix: 'auth:session' })
+    @ApiOperation({ summary: 'Validate refresh token and return session info (BFF)' })
+    async session(@Request() req: ExpressRequest) {
+        const refreshToken = this.getRefreshToken(req);
+        if (!refreshToken) {
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        return this.authService.validateSession(refreshToken);
     }
 
     @Post('verify-email')
@@ -115,8 +128,7 @@ export class AuthController {
     }
 
     private publicTokenResponse<T extends { refreshToken: string }>(tokens: T) {
-        const response = { ...tokens } as T & { refreshToken?: string };
-        delete response.refreshToken;
+        const { refreshToken: _removed, ...response } = tokens;
         return response as Omit<T, 'refreshToken'>;
     }
 

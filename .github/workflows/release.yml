@@ -1,0 +1,318 @@
+name: Release — Promote Staging SHA to Production
+
+# Single immutable staging-to-production promotion path (issue #211).
+#
+# Problem this solves: Vercel auto-deploys on every push to `master`,
+# which can ship code before migrations, environment validation, and
+# smoke tests complete. This workflow is the ONE release owner:
+# it validates a staging SHA, runs migrations exactly once, records
+# the promotion manifest, then triggers Vercel production deploys
+# pinned to the exact SHA.
+#
+# Required secrets:
+#   VERCEL_TOKEN               Vercel API token (Account Settings → Tokens)
+#   PRODUCTION_DATABASE_URL    Production Postgres connection string
+# Required vars (already used by production-release.yml):
+#   PRODUCTION_API_URL, PRODUCTION_TRAVELER_URL, PRODUCTION_AGENCY_URL,
+#   PRODUCTION_ADMIN_URL, PRODUCTION_LANDING_URL
+
+on:
+  workflow_dispatch:
+    inputs:
+      staging_sha:
+        description: 'Staging commit SHA to promote (must be deployed + green on staging)'
+        required: true
+        type: string
+      confirm:
+        description: 'I confirm this SHA passed staging validation and should go to production'
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: production-promotion
+  cancel-in-progress: false
+
+permissions:
+  contents: write # create GitHub release + tag
+
+env:
+  VERCEL_API: https://api.vercel.com
+  GITHUB_REPO_ID: "1094209326" # Vercel GitHub repo ID for husseinbouik/ouiboo
+
+jobs:
+  validate:
+    name: Validate staging SHA
+    runs-on: ubuntu-latest
+    outputs:
+      rollback_api_sha: ${{ steps.rollback.outputs.api_sha }}
+      rollback_traveler_sha: ${{ steps.rollback.outputs.traveler_sha }}
+      rollback_agency_sha: ${{ steps.rollback.outputs.agency_sha }}
+      rollback_admin_sha: ${{ steps.rollback.outputs.admin_sha }}
+      rollback_landing_sha: ${{ steps.rollback.outputs.landing_sha }}
+    steps:
+      - name: Require explicit confirmation
+        run: |
+          if [ "${{ inputs.confirm }}" != "true" ]; then
+            echo "::error::Confirmation checkbox not set. Aborting promotion."
+            exit 1
+          fi
+          echo "Promotion confirmed for SHA ${{ inputs.staging_sha }}"
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify SHA exists and is on staging
+        run: |
+          SHA="${{ inputs.staging_sha }}"
+          if ! git cat-file -e "$SHA^{commit}" 2>/dev/null; then
+            echo "::error::SHA $SHA is not a valid commit in this repo."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$SHA" origin/staging; then
+            echo "::error::SHA $SHA is not reachable from staging. Promote only tested staging SHAs."
+            exit 1
+          fi
+          echo "SHA $SHA is a valid ancestor of staging."
+
+      - name: Check Vercel staging deployments are READY at SHA
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          SHA="${{ inputs.staging_sha }}"
+          # projectId → service name map (from Vercel project settings)
+          for entry in \
+            "prj_xFvldAu1E8tvhHjUdmk4gKmCHxyH:api" \
+            "prj_3nFyYwZx6qlXgq0zZxrRnhN2FUsi:traveler" \
+            "prj_pQZnn6KXd888uTMYHPcP5KxGwnV4:agency" \
+            "prj_u5swiJfjFREJosd64mYll7lUpzEV:admin" \
+            "prj_Uzyhvl0AxiD38EZiaTzq5AgYMqNN:landing"; do
+            pid="${entry%%:*}"; name="${entry##*:}"
+            state=$(curl -sS -H "Authorization: Bearer $VERCEL_TOKEN" \
+              "$VERCEL_API/v6/deployments?projectId=$pid&target=staging&limit=5" \
+              | python3 -c "
+          import json,sys
+          ds = json.load(sys.stdin)['deployments']
+          hit = next((d for d in ds if (d.get('meta',{}).get('githubCommitSha') or '')[:7] == '$SHA'[:7]), None)
+          print(hit['state'] if hit else 'NOT_FOUND')
+          ")
+            echo "$name staging @ $SHA: $state"
+            if [ "$state" != "READY" ]; then
+              echo "::error::$name has no READY staging deployment for $SHA (got: $state)."
+              exit 1
+            fi
+          done
+          echo "All staging deployments READY at $SHA."
+
+      - name: Record rollback targets (current production SHAs)
+        id: rollback
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          for entry in \
+            "prj_xFvldAu1E8tvhHjUdmk4gKmCHxyH:api" \
+            "prj_3nFyYwZx6qlXgq0zZxrRnhN2FUsi:traveler" \
+            "prj_pQZnn6KXd888uTMYHPcP5KxGwnV4:agency" \
+            "prj_u5swiJfjFREJosd64mYll7lUpzEV:admin" \
+            "prj_Uzyhvl0AxiD38EZiaTzq5AgYMqNN:landing"; do
+            pid="${entry%%:*}"; name="${entry##*:}"
+            sha=$(curl -sS -H "Authorization: Bearer $VERCEL_TOKEN" \
+              "$VERCEL_API/v6/deployments?projectId=$pid&target=production&limit=1" \
+              | python3 -c "
+          import json,sys
+          ds = json.load(sys.stdin)['deployments']
+          print((ds[0].get('meta',{}).get('githubCommitSha') or 'unknown')[:7] if ds else 'unknown')
+          ")
+            echo "${name}_sha=$sha" >> "$GITHUB_OUTPUT"
+            echo "Rollback target $name: $sha"
+          done
+
+      - name: Smoke-test staging
+        env:
+          SMOKE_API_URL: ${{ vars.STAGING_API_URL }}
+          SMOKE_TRAVELER_URL: ${{ vars.STAGING_TRAVELER_URL }}
+          SMOKE_AGENCY_URL: ${{ vars.STAGING_AGENCY_URL }}
+          SMOKE_ADMIN_URL: ${{ vars.STAGING_ADMIN_URL }}
+          SMOKE_LANDING_URL: ${{ vars.STAGING_LANDING_URL }}
+        run: node scripts/smoke-deploy.mjs
+
+  migrate:
+    name: Apply production migrations (single owner)
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      migration_version: ${{ steps.record.outputs.migration_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.staging_sha }}
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --include=dev
+
+      - name: Apply Prisma migrations exactly once
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        run: npm run db:migrate:deploy --workspace=packages/database
+
+      - name: Record applied migration version
+        id: record
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        run: |
+          version=$(ls packages/database/prisma/migrations/ | grep -v migration_lock | sort | tail -1)
+          echo "migration_version=$version" >> "$GITHUB_OUTPUT"
+          echo "Applied migration version: $version"
+
+  promote:
+    name: Promote SHA to production
+    needs: [validate, migrate]
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      release_tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - name: Trigger Vercel production deploys pinned to SHA
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          SHA="${{ inputs.staging_sha }}"
+          for entry in \
+            "prj_xFvldAu1E8tvhHjUdmk4gKmCHxyH:ouiboo-api" \
+            "prj_3nFyYwZx6qlXgq0zZxrRnhN2FUsi:ouiboo-traveler" \
+            "prj_pQZnn6KXd888uTMYHPcP5KxGwnV4:ouiboo-agency" \
+            "prj_u5swiJfjFREJosd64mYll7lUpzEV:ouiboo-admin" \
+            "prj_Uzyhvl0AxiD38EZiaTzq5AgYMqNN:ouiboo-landing"; do
+            pid="${entry%%:*}"; name="${entry##*:}"
+            # NOTE: `target` must be passed explicitly; omitting it returns 402.
+            resp=$(curl -sS -X POST "$VERCEL_API/v13/deployments" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"name\":\"$name\",\"project\":\"$pid\",\"target\":\"production\",\"gitSource\":{\"type\":\"github\",\"repoId\":$GITHUB_REPO_ID,\"ref\":\"$SHA\"}}")
+            url=$(echo "$resp" | python3 -c "import json,sys; print(json.load(sys.stdin).get('url','ERROR'))")
+            echo "$name → $url"
+            if [ "$url" = "ERROR" ]; then
+              echo "::error::Failed to trigger production deploy for $name: $resp"
+              exit 1
+            fi
+          done
+
+      - name: Wait for production deployments to go READY
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          SHA="${{ inputs.staging_sha }}"
+          for pid in prj_xFvldAu1E8tvhHjUdmk4gKmCHxyH prj_3nFyYwZx6qlXgq0zZxrRnhN2FUsi prj_pQZnn6KXd888uTMYHPcP5KxGwnV4 prj_u5swiJfjFREJosd64mYll7lUpzEV prj_Uzyhvl0AxiD38EZiaTzq5AgYMqNN; do
+            for i in $(seq 1 40); do
+              state=$(curl -sS -H "Authorization: Bearer $VERCEL_TOKEN" \
+                "$VERCEL_API/v6/deployments?projectId=$pid&target=production&limit=3" \
+                | python3 -c "
+          import json,sys
+          ds = json.load(sys.stdin)['deployments']
+          hit = next((d for d in ds if (d.get('meta',{}).get('githubCommitSha') or '')[:7] == '$SHA'[:7]), None)
+          print(hit['state'] if hit else 'PENDING')
+          ")
+              echo "$pid: $state (attempt $i/40)"
+              if [ "$state" = "READY" ]; then break; fi
+              if [ "$state" = "ERROR" ] || [ "$state" = "CANCELED" ]; then
+                echo "::error::Production deploy for $pid ended in $state."
+                exit 1
+              fi
+              sleep 30
+            done
+          done
+          echo "All production deployments READY."
+
+      - name: Create GitHub release with promotion manifest
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="release-$(date -u +%Y%m%d)-${{ inputs.staging_sha }}"
+          TAG="${TAG:0:40}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          cat > /tmp/promotion-manifest.json <<EOF
+          {
+            "promoted_sha": "${{ inputs.staging_sha }}",
+            "promoted_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "promoted_by": "${{ github.actor }}",
+            "migration_version": "${{ needs.migrate.outputs.migration_version }}",
+            "staging_smoke": "pass",
+            "rollback_targets": {
+              "api": "${{ needs.validate.outputs.rollback_api_sha }}",
+              "traveler": "${{ needs.validate.outputs.rollback_traveler_sha }}",
+              "agency": "${{ needs.validate.outputs.rollback_agency_sha }}",
+              "admin": "${{ needs.validate.outputs.rollback_admin_sha }}",
+              "landing": "${{ needs.validate.outputs.rollback_landing_sha }}"
+            }
+          }
+          EOF
+          gh release create "$TAG" \
+            --target "${{ inputs.staging_sha }}" \
+            --title "Production promotion ${{ inputs.staging_sha }}" \
+            --notes-file /tmp/promotion-manifest.json
+
+  smoke-production:
+    name: Smoke-test production
+    needs: [validate, migrate, promote]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Smoke deployed production services
+        env:
+          SMOKE_API_URL: ${{ vars.PRODUCTION_API_URL }}
+          SMOKE_TRAVELER_URL: ${{ vars.PRODUCTION_TRAVELER_URL }}
+          SMOKE_AGENCY_URL: ${{ vars.PRODUCTION_AGENCY_URL }}
+          SMOKE_ADMIN_URL: ${{ vars.PRODUCTION_ADMIN_URL }}
+          SMOKE_LANDING_URL: ${{ vars.PRODUCTION_LANDING_URL }}
+        run: node scripts/smoke-deploy.mjs
+
+      - name: Publish promotion summary
+        if: always()
+        run: |
+          {
+            echo "## Production promotion ${{ inputs.staging_sha }}";
+            echo "";
+            echo "- Migration version: ${{ needs.migrate.outputs.migration_version }}";
+            echo "- GitHub release: ${{ needs.promote.outputs.release_tag }}";
+            echo "- Rollback targets (previous production SHAs):";
+            echo "  - api: ${{ needs.validate.outputs.rollback_api_sha }}";
+            echo "  - traveler: ${{ needs.validate.outputs.rollback_traveler_sha }}";
+            echo "  - agency: ${{ needs.validate.outputs.rollback_agency_sha }}";
+            echo "  - admin: ${{ needs.validate.outputs.rollback_admin_sha }}";
+            echo "  - landing: ${{ needs.validate.outputs.rollback_landing_sha }}";
+            echo "";
+            echo "Rollback: see RELEASE.md.";
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  rollback-guidance:
+    name: Publish rollback guidance
+    runs-on: ubuntu-latest
+    needs: [validate, migrate, promote, smoke-production]
+    if: failure()
+    steps:
+      - name: Publish rollback guidance
+        run: |
+          {
+            echo "## Production promotion FAILED — rollback guidance";
+            echo "";
+            echo "The promotion of ${{ inputs.staging_sha }} failed.";
+            echo "Previous production SHAs (rollback targets):";
+            echo "- api: ${{ needs.validate.outputs.rollback_api_sha }}";
+            echo "- traveler: ${{ needs.validate.outputs.rollback_traveler_sha }}";
+            echo "- agency: ${{ needs.validate.outputs.rollback_agency_sha }}";
+            echo "- admin: ${{ needs.validate.outputs.rollback_admin_sha }}";
+            echo "- landing: ${{ needs.validate.outputs.rollback_landing_sha }}";
+            echo "";
+            echo "Follow the rollback procedure in RELEASE.md.";
+          } >> "$GITHUB_STEP_SUMMARY"

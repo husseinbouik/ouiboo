@@ -123,12 +123,10 @@ export default function BillingSettingsPage() {
             {t('settings.billing.subtitle')}
           </p>
         </div>
-        <Link href="/dashboard/wallet">
-          <Button className="bg-accent text-accent-foreground hover:bg-accent/90 border-none gap-2">
-            {t('settings.billing.openWallet')}
-            <ArrowUpRight className="h-4 w-4 rtl:rotate-90" />
-          </Button>
-        </Link>
+        <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90 border-none gap-2">
+              <Link href="/dashboard/wallet">{t('settings.billing.openWallet')}
+            <ArrowUpRight className="h-4 w-4 rtl:rotate-90" /></Link>
+            </Button>
       </div>
 
       <Card className="border-none shadow-sm bg-card border border-border">
@@ -235,9 +233,9 @@ export default function BillingSettingsPage() {
                 {hasBankDetails ? t('settings.billing.bankConfigured') : t('settings.billing.bankMissing')}
               </p>
             </div>
-            <Link href="/dashboard/settings">
-              <Button variant="outline">{t('settings.billing.updateSettings')}</Button>
-            </Link>
+            <Button asChild variant="outline">
+              <Link href="/dashboard/settings">{t('settings.billing.updateSettings')}</Link>
+            </Button>
           </CardContent>
         </Card>
 
@@ -256,12 +254,12 @@ export default function BillingSettingsPage() {
             <p>{t('settings.billing.checklistItem2')}</p>
             <p>{t('settings.billing.checklistItem3')}</p>
             <div className="pt-2 flex flex-wrap gap-3">
-              <Link href="/dashboard/wallet">
-                <Button>{t('settings.billing.managePayouts')}</Button>
-              </Link>
-              <Link href="/dashboard/analytics">
-                <Button variant="outline">{t('settings.billing.viewAnalytics')}</Button>
-              </Link>
+              <Button asChild>
+              <Link href="/dashboard/wallet">{t('settings.billing.managePayouts')}</Link>
+            </Button>
+              <Button asChild variant="outline">
+              <Link href="/dashboard/analytics">{t('settings.billing.viewAnalytics')}</Link>
+            </Button>
             </div>
           </CardContent>
         </Card>

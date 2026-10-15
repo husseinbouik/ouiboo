@@ -262,6 +262,56 @@
     "errorCooldown": "لقد طلبت رمزاً جديداً مؤخراً. يرجى الانتظار قليلاً قبل المحاولة مرة أخرى."
   },
   "search": {
-    "resultCount": "عرض {{count}} من {{total}}"
+    "resultCount": "عرض {{count}} من {{total}}",
+    "title": "اعثر على مغامرتك القادمة",
+    "placeholder": "الوجهة أو النشاط أو الكلمة المفتاحية",
+    "searchButton": "بحث",
+    "filters": "الفلاتر",
+    "clearAll": "مسح الكل",
+    "clear": "مسح",
+    "showing": "عرض",
+    "of": "من",
+    "failedToLoad": "فشل تحميل الرحلات",
+    "retry": "إعادة المحاولة",
+    "noTrips": "لا توجد رحلات تطابق الفلاتر",
+    "travelStyles": "أنماط السفر",
+    "dates": "التواريخ",
+    "startDate": "تاريخ البدء",
+    "endDate": "تاريخ الانتهاء",
+    "price": "السعر (درهم)",
+    "minPrice": "السعر الأدنى",
+    "maxPrice": "السعر الأقصى",
+    "min": "الأدنى",
+    "max": "الأقصى",
+    "availability": "التوفر",
+    "availabilityOnly": "عرض التواريخ المتاحة فقط",
+    "sort": "ترتيب",
+    "newest": "الأحدث",
+    "sortPrice": "السعر",
+    "rating": "التقييم",
+    "popularity": "الشعبية",
+    "toggleSortOrder": "تبديل ترتيب الفرز",
+    "ascending": "تصاعدي",
+    "descending": "تنازلي",
+    "noTripsHint": "حاول تعديل الفلاتر أو مسحها."
+  },
+  "messages": {
+    "signInTitle": "سجّل الدخول لعرض رسائلك",
+    "signInBody": "تحدث مع الوكالات حول الرحلات والحجوزات وخطط السفر.",
+    "signIn": "تسجيل الدخول",
+    "exploreTrips": "استكشف الرحلات",
+    "browseTrips": "تصفح الرحلات",
+    "emptyTitle": "لا توجد محادثات بعد",
+    "emptyBody": "ابدأ المحادثة مع وكالة من صفحة رحلة.",
+    "title": "الرسائل"
+  },
+  "notifications": {
+    "signInTitle": "سجّل الدخول لعرض إشعاراتك",
+    "signInBody": "ابقَ على اطلاع بالحجوزات والرسائل وتحديثات الرحلات.",
+    "signIn": "تسجيل الدخول",
+    "exploreTrips": "استكشف الرحلات",
+    "emptyTitle": "أنت على اطلاع كامل",
+    "emptyBody": "لا توجد إشعارات جديدة.",
+    "title": "الإشعارات"
   }
 }

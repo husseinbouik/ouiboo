@@ -1,19 +1,28 @@
 import {
     Controller,
     Post,
+    Get,
     UseInterceptors,
     UploadedFile,
     ParseFilePipe,
     MaxFileSizeValidator,
     FileTypeValidator,
+    BadRequestException,
+    Body,
+    Query,
+    Res,
+    UseGuards,
+    Request,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { UploadService } from './upload.service';
 import { UploadResponseDto } from './dto/upload-response.dto';
+import { UploadFileDto } from './dto/upload-file.dto';
+import { SignedUrlQueryDto } from './dto/signed-url-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { UseGuards, Request } from '@nestjs/common';
-import { ALLOWED_MIME_TYPES_REGEX, MAX_UPLOAD_SIZE_BYTES } from './upload.constants';
+import { ALLOWED_MIME_TYPES_REGEX, MAX_UPLOAD_SIZE_BYTES, type UploadIntent } from './upload.constants';
 import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
 
 @ApiTags('Upload')
@@ -35,6 +44,11 @@ export class UploadController {
                     type: 'string',
                     format: 'binary',
                 },
+                intent: {
+                    type: 'string',
+                    enum: ['trip-asset', 'identity-document'],
+                    description: 'Upload intent. Defaults to trip-asset.',
+                },
             },
         },
     })
@@ -51,12 +65,66 @@ export class UploadController {
                     }),
                 ],
                 errorHttpStatusCode: 400,
+                exceptionFactory: (error) => {
+                    // Replace technical validator message with user-friendly one (#140)
+                    return new BadRequestException(
+                        'Please upload a JPEG, PNG, WebP, or GIF image (or PDF). ' +
+                        'HEIC photos from phones need to be converted to JPEG first.'
+                    );
+                },
             }),
         )
         file: Express.Multer.File,
+        @Body() dto: UploadFileDto,
         @Request() req,
     ) {
-        const folder = req.user?.userId || 'anonymous';
+        const intent: UploadIntent = dto.intent ?? 'trip-asset';
+        const folder = this.resolveFolder(intent, req.user);
         return this.uploadService.uploadFile(file, folder);
+    }
+
+    /**
+     * Resolve the storage folder from the upload intent (#191).
+     * - trip-asset: `trips/{agencyId}/` (tenant-isolated, publicly servable)
+     * - identity-document: `private/{userId}/` (never publicly servable)
+     */
+    private resolveFolder(intent: UploadIntent, user?: { userId?: string; agencyId?: string | null }): string {
+        if (intent === 'identity-document') {
+            return `private/${user?.userId || 'anonymous'}`;
+        }
+        return `trips/${user?.agencyId || user?.userId || 'anonymous'}`;
+    }
+
+    @Get('signed-url')
+    @RateLimit({ points: 30, windowMs: 60_000, keyPrefix: 'upload:signed-url' })
+    @ApiOperation({ summary: 'Get a short-lived signed URL for a private file' })
+    @ApiResponse({ status: 200, description: 'Signed URL and expiry' })
+    @ApiResponse({ status: 403, description: 'Not the file owner' })
+    async getSignedUrl(@Query() query: SignedUrlQueryDto, @Request() req) {
+        return this.uploadService.createSignedFileUrl(query.key, {
+            userId: req.user.userId,
+            role: req.user.role,
+        });
+    }
+
+    @Get('file')
+    @UseGuards(RateLimitGuard)
+    @RateLimit({ points: 60, windowMs: 60_000, keyPrefix: 'upload:file-token' })
+    @ApiOperation({ summary: 'Serve a private file via a signed token (no session required)' })
+    @ApiQuery({ name: 'token', description: 'Token from the signed-url endpoint' })
+    @ApiResponse({ status: 200, description: 'File content' })
+    @ApiResponse({ status: 401, description: 'Invalid or expired token' })
+    async servePrivateFile(@Query('token') token: string, @Res() res: Response) {
+        if (!token) {
+            throw new BadRequestException('Missing token');
+        }
+        const { data, contentType } = await this.uploadService.readPrivateFileByToken(token);
+        res.set({
+            'Content-Type': contentType,
+            'Content-Length': data.length.toString(),
+            // Short-lived token URLs must not be cached publicly
+            'Cache-Control': 'private, max-age=300',
+        });
+        res.send(data);
     }
 }

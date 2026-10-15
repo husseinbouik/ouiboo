@@ -25,6 +25,11 @@ export function LanguageSwitcher({ isTransparent }: { isTransparent?: boolean })
     const index = LANGS.indexOf(current);
     const next = LANGS[(index + 1) % LANGS.length] || 'en';
     i18n.changeLanguage(next);
+    // Explicitly persist to cookie for hard-reload survival (#135)
+    document.cookie = `i18nextLng=${next}; path=/; max-age=31536000; samesite=lax`;
+    try {
+      localStorage.setItem('i18nextLng', next);
+    } catch {}
     document.documentElement.dir = next === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = next;
   };

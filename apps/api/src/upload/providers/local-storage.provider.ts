@@ -51,8 +51,8 @@ export class LocalStorageProvider implements IStorageProvider {
         const key = isPrivate
             ? path.posix.join(this.privatePrefix, relative.replace(/\\/g, '/'), filename)
             : path.posix.join(relative.replace(/\\/g, '/'), filename);
-        // Public URL uses the /media endpoint (excluded from global /api/v1 prefix)
-        const url = isPrivate ? '' : `${publicOrigin}/media/${key}`;
+        // Public URL uses /api/v1/media (the /media rewrite 404s on Vercel, see #98, #142)
+        const url = isPrivate ? '' : `${publicOrigin}/api/v1/media/${key}`;
 
         return { url, key };
     }

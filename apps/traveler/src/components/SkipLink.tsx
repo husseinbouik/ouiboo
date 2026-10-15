@@ -3,7 +3,8 @@
 import { useTranslation } from 'react-i18next';
 
 export function SkipLink() {
-  const { t } = useTranslation();
+  const { t, ready } = useTranslation();
+  if (!ready) return null;
   return (
     <a
       href="#main-content"

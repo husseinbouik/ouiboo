@@ -18,24 +18,33 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'npm run build --workspace apps/traveler && npm run start --workspace apps/traveler',
+      // Mock API server — serves test data for both SSR (server-side fetches)
+      // and browser requests. Must start before the Next.js apps.
+      command: 'node e2e/mock-api-server.mjs 3000',
+      url: 'http://localhost:3000/api/trips',
+      reuseExistingServer: !process.env.CI,
+      timeout: 30_000,
+    },
+    {
+      // Use `next start` (standalone output removed - broken in Next.js 16)
+      command: 'npm run start --workspace apps/traveler',
       url: 'http://localhost:3001/login',
       reuseExistingServer: !process.env.CI,
-      timeout: 300_000,
+      timeout: 120_000,
       env: { ...process.env, NEXT_PUBLIC_API_URL: 'http://localhost:3000/api' },
     },
     {
-      command: 'npm run build --workspace apps/agency && npm run start --workspace apps/agency',
+      command: 'npm run start --workspace apps/agency',
       url: 'http://localhost:3002/login',
       reuseExistingServer: !process.env.CI,
-      timeout: 300_000,
+      timeout: 120_000,
       env: { ...process.env, NEXT_PUBLIC_API_URL: 'http://localhost:3000/api' },
     },
     {
-      command: 'npm run build --workspace apps/admin && npm run start --workspace apps/admin',
+      command: 'npm run start --workspace apps/admin',
       url: 'http://localhost:3003/login',
       reuseExistingServer: !process.env.CI,
-      timeout: 300_000,
+      timeout: 120_000,
       env: { ...process.env, NEXT_PUBLIC_API_URL: 'http://localhost:3000/api' },
     },
   ],

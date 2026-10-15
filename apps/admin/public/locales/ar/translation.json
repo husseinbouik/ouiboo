@@ -2,7 +2,7 @@
   "login": {
     "title": "دخول المشرف",
     "subtitle": "منطقة مقيدة. للمستخدمين المصرح لهم فقط.",
-    "username": "اسم المستخدم",
+    "username": "البريد الإلكتروني",
     "password": "كلمة المرور",
     "authenticate": "تسجيل الدخول",
     "authenticating": "جار تسجيل الدخول...",
@@ -12,8 +12,8 @@
     "heroSubtitle": "اعتمد الوكالات، أكد المدفوعات، وحافظ على سلامة السوق.",
     "heroNote": "سجل التدقيق والتحكم بالأدوار مفعلان.",
     "loginFailed": "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.",
-    "usernamePlaceholder": "admin",
-    "usernameRequired": "اسم المستخدم مطلوب",
+    "usernamePlaceholder": "admin@example.com",
+    "usernameRequired": "البريد الإلكتروني مطلوب",
     "passwordRequired": "كلمة المرور مطلوبة",
     "showPassword": "إظهار كلمة المرور",
     "hidePassword": "إخفاء كلمة المرور",
@@ -222,7 +222,8 @@
     },
     "modal": {
       "agencyReview": "مراجعة الوكالة"
-    }
+    },
+    "signOut": "تسجيل الخروج"
   },
   "meta": {
     "titleDefault": "إدارة المنصة",

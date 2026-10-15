@@ -207,7 +207,7 @@
       "backToTrips": "العودة إلى الرحلات",
       "updating": "جار التحديث...",
       "setDraft": "تعيين كمسودة",
-      "activateTrip": "تفعيل الرحلة",
+      "activateTrip": "تفعيل",
       "editTemplate": "تعديل القالب",
       "deleting": "جار الحذف...",
       "delete": "حذف",
@@ -220,11 +220,16 @@
       "bulkCreateSessions": "إنشاء جلسات بالجملة",
       "deleteSessionTitle": "حذف الجلسة",
       "deleteSessionBody": "هل أنت متأكد من حذف هذه الجلسة؟ لا يمكن التراجع عن هذا الإجراء.",
-      "deleteTripTitle": "حذف قالب الرحلة",
-      "deleteTripBody": "هل أنت متأكد من حذف قالب الرحلة هذا؟ سيتم حذف جميع الجلسات والحجوزات المرتبطة بشكل نهائي. لا يمكن التراجع عن هذا الإجراء.",
+      "deleteTripTitle": "أرشفة الرحلة",
+      "deleteTripBody": "الأرشفة تخفي هذه الرحلة عن المسافرين. يتم الاحتفاظ بحجوزاتك وجلساتك وسجلات الإيرادات ويمكن استعادة الرحلة في أي وقت.",
       "altTrip": "الرحلة",
       "listView": "عرض القائمة",
-      "calendarView": "عرض التقويم"
+      "calendarView": "عرض التقويم",
+      "deactivate": "إلغاء التفعيل",
+      "archive": "أرشفة",
+      "archiving": "جارٍ الأرشفة...",
+      "restore": "استعادة",
+      "restoring": "جارٍ الاستعادة..."
     },
     "edit": {
       "backToDetail": "العودة إلى تفاصيل الرحلة",
@@ -433,10 +438,13 @@
     "availableBalance": "الرصيد المتاح",
     "pendingEscrow": "قيد الضمان",
     "totalRevenue": "إجمالي الإيرادات",
+    "bookCount_zero": "{{count}} حجوزات",
     "bookCount_one": "{{count}} حجز",
     "bookCount_other": "{{count}} حجوزات",
+    "proofCount_zero": "{{count}} إثباتات للمراجعة",
     "proofCount_one": "{{count}} إثبات للمراجعة",
     "proofCount_other": "{{count}} إثباتات للمراجعة",
+    "travelerCount_zero": "{{count}} مسافرين",
     "travelerCount_one": "{{count}} مسافر",
     "travelerCount_other": "{{count}} مسافرون",
     "actionCenter": "مركز الإجراءات",
@@ -460,7 +468,10 @@
       "followUpTitle": "ابقَ قريباً من الحجوزات الجديدة",
       "followUpDescription_one": "{{count}} حجز ما زال ينتظر المتابعة أو التحقق.",
       "followUpDescription_other": "{{count}} حجوزات ما زالت تنتظر المتابعة أو التحقق.",
-      "reviewBookingsCta": "مراجعة الحجوزات"
+      "reviewBookingsCta": "مراجعة الحجوزات",
+      "publishDescription_zero": "لديك حالياً {{count}} رحلات نشطة في السوق.",
+      "reviewPaymentsDescription_zero": "{{count}} إثباتات دفع من مسافرين بانتظار قرارك.",
+      "followUpDescription_zero": "{{count}} حجوزات ما زالت تنتظر المتابعة أو التحقق."
     },
     "recentBookings": "الحجوزات الأخيرة",
     "recentRequestsCount_one": "{{count}} طلب حديث",
@@ -490,7 +501,8 @@
     "growTitle": "مستعد لتوسيع نطاقك؟",
     "growBody": "لديك {{tripCount}} رحلات نشطة و{{travelerCount}} مسافراً في جمهورك. أضف تجربة جديدة للحفاظ على الزخم.",
     "createNewTrip": "إنشاء رحلة جديدة",
-    "yourAgency": "وكالتك"
+    "yourAgency": "وكالتك",
+    "recentRequestsCount_zero": "{{count}} طلبات حديثة"
   },
   "status": {
     "bookingPending": "قيد الانتظار",
@@ -793,7 +805,7 @@
     "logoutTitle": "تسجيل الخروج",
     "loadingUser": "جار التحميل...",
     "profilePending": "ملف الوكالة قيد الانتظار",
-    "mobileCopyright": "حقوق النشر 2024 منصة Ouiboo",
+    "mobileCopyright": "حقوق النشر {{year}} منصة Ouiboo",
     "openNavigation": "فتح قائمة التنقل",
     "mainNavigation": "التنقل الرئيسي"
   },

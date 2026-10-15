@@ -62,3 +62,7 @@ next-env.d.ts
 apps/api/uploads
 apps/api/private-uploads
 .demo-runtime/
+
+# generated artifacts (task outputs, sprite sheets, etc.)
+/outputs
+outputs/

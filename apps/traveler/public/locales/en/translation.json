@@ -262,6 +262,56 @@
     "errorCooldown": "You requested a new code recently. Please wait a moment before trying again."
   },
   "search": {
-    "resultCount": "Showing {{count}} of {{total}}"
+    "resultCount": "Showing {{count}} of {{total}}",
+    "title": "Find your next Adventure",
+    "placeholder": "Destination, activity or keyword",
+    "searchButton": "Search",
+    "filters": "Filters",
+    "clearAll": "Clear all",
+    "clear": "Clear",
+    "showing": "Showing",
+    "of": "of",
+    "failedToLoad": "Failed to load trips",
+    "retry": "Retry",
+    "noTrips": "No trips match your filters",
+    "travelStyles": "Travel Styles",
+    "dates": "Dates",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "price": "Price (MAD)",
+    "minPrice": "Minimum price",
+    "maxPrice": "Maximum price",
+    "min": "Min",
+    "max": "Max",
+    "availability": "Availability",
+    "availabilityOnly": "Only show available dates",
+    "sort": "Sort",
+    "newest": "Newest",
+    "sortPrice": "Price",
+    "rating": "Rating",
+    "popularity": "Popularity",
+    "toggleSortOrder": "Toggle sort order",
+    "ascending": "Asc",
+    "descending": "Desc",
+    "noTripsHint": "Try adjusting your filters or clearing them."
+  },
+  "messages": {
+    "signInTitle": "Sign in to view your messages",
+    "signInBody": "Chat with agencies about trips, bookings, and travel plans.",
+    "signIn": "Sign In",
+    "exploreTrips": "Explore Trips",
+    "browseTrips": "Browse Trips",
+    "emptyTitle": "No conversations yet",
+    "emptyBody": "Start chatting with an agency from a trip page.",
+    "title": "Messages"
+  },
+  "notifications": {
+    "signInTitle": "Sign in to view your notifications",
+    "signInBody": "Stay updated on bookings, messages, and trip updates.",
+    "signIn": "Sign In",
+    "exploreTrips": "Explore Trips",
+    "emptyTitle": "You're all caught up",
+    "emptyBody": "No new notifications.",
+    "title": "Notifications"
   }
 }

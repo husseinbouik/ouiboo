@@ -22,19 +22,37 @@ import { UploadService } from './upload.service';
 export class MediaController {
     constructor(private readonly uploadService: UploadService) { }
 
-    @Get('*key')
+    @Get(':folder/:filename')
     @ApiOperation({ summary: 'Serve an uploaded file' })
     @ApiResponse({ status: 200, description: 'File content' })
     @ApiResponse({ status: 403, description: 'Private file' })
     @ApiResponse({ status: 404, description: 'File not found' })
     async serveFile(
-        @Param('key') key: string | string[],
+        @Param('folder') folder: string,
+        @Param('filename') filename: string,
         @Res() res: Response,
     ) {
-        // Normalize key from wildcard param (can be string or array)
-        const fileKey = Array.isArray(key) ? key.join('/') : key;
+        // Reconstruct the storage key from the two path segments
+        return this.serveFileByKey(`${folder}/${filename}`, res);
+    }
 
-        if (!fileKey) {
+    @Get(':folder/:subfolder/:filename')
+    @ApiOperation({ summary: 'Serve an uploaded file (tenant-namespaced key)' })
+    @ApiResponse({ status: 200, description: 'File content' })
+    @ApiResponse({ status: 403, description: 'Private file' })
+    @ApiResponse({ status: 404, description: 'File not found' })
+    async serveNamespacedFile(
+        @Param('folder') folder: string,
+        @Param('subfolder') subfolder: string,
+        @Param('filename') filename: string,
+        @Res() res: Response,
+    ) {
+        // Supports intent-based keys like trips/{agencyId}/{filename} (#191)
+        return this.serveFileByKey(`${folder}/${subfolder}/${filename}`, res);
+    }
+
+    private async serveFileByKey(fileKey: string, res: Response) {
+        if (!fileKey || fileKey === '/') {
             throw new NotFoundException('File not found');
         }
 

@@ -75,12 +75,12 @@ export default function WishlistPage() {
               Save your favorite trips and come back to them any time from your account.
             </p>
             <div className="mt-6 flex justify-center gap-3">
-              <Link href="/login">
-                <Button>Sign In</Button>
-              </Link>
-              <Link href="/search">
-                <Button variant="outline">Explore Trips</Button>
-              </Link>
+              <Button asChild>
+              <Link href="/login">Sign In</Link>
+            </Button>
+              <Button asChild variant="outline">
+              <Link href="/search">Explore Trips</Link>
+            </Button>
             </div>
           </div>
         ) : wishlist.length === 0 ? (

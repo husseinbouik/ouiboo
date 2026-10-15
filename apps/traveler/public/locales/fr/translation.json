@@ -262,6 +262,56 @@
     "errorCooldown": "Vous avez récemment demandé un nouveau code. Veuillez patienter un moment avant de réessayer."
   },
   "search": {
-    "resultCount": "Affichage de {{count}} sur {{total}}"
+    "resultCount": "Affichage de {{count}} sur {{total}}",
+    "title": "Trouvez votre prochaine Aventure",
+    "placeholder": "Destination, activité ou mot-clé",
+    "searchButton": "Rechercher",
+    "filters": "Filtres",
+    "clearAll": "Tout effacer",
+    "clear": "Effacer",
+    "showing": "Affichage de",
+    "of": "sur",
+    "failedToLoad": "Échec du chargement des voyages",
+    "retry": "Réessayer",
+    "noTrips": "Aucun voyage ne correspond à vos filtres",
+    "travelStyles": "Styles de voyage",
+    "dates": "Dates",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "price": "Prix (MAD)",
+    "minPrice": "Prix minimum",
+    "maxPrice": "Prix maximum",
+    "min": "Min",
+    "max": "Max",
+    "availability": "Disponibilité",
+    "availabilityOnly": "Afficher uniquement les dates disponibles",
+    "sort": "Trier",
+    "newest": "Plus récent",
+    "sortPrice": "Prix",
+    "rating": "Note",
+    "popularity": "Popularité",
+    "toggleSortOrder": "Changer l’ordre de tri",
+    "ascending": "Croissant",
+    "descending": "Décroissant",
+    "noTripsHint": "Essayez d’ajuster vos filtres ou de les effacer."
+  },
+  "messages": {
+    "signInTitle": "Connectez-vous pour voir vos messages",
+    "signInBody": "Discutez avec les agences au sujet des voyages, réservations et plans de voyage.",
+    "signIn": "Se connecter",
+    "exploreTrips": "Explorer les voyages",
+    "browseTrips": "Parcourir les voyages",
+    "emptyTitle": "Aucune conversation pour le moment",
+    "emptyBody": "Commencez à discuter avec une agence depuis une page de voyage.",
+    "title": "Messages"
+  },
+  "notifications": {
+    "signInTitle": "Connectez-vous pour voir vos notifications",
+    "signInBody": "Restez informé des réservations, messages et mises à jour de voyages.",
+    "signIn": "Se connecter",
+    "exploreTrips": "Explorer les voyages",
+    "emptyTitle": "Vous êtes à jour",
+    "emptyBody": "Aucune nouvelle notification.",
+    "title": "Notifications"
   }
 }

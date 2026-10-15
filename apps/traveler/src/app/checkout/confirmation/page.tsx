@@ -204,22 +204,18 @@ export default function CheckoutConfirmationPage() {
 
               <div className="flex flex-col sm:flex-row gap-4">
               {isCancelled && retryCheckoutHref && (
-                <Link href={retryCheckoutHref} className="w-full sm:w-auto">
-                  <Button className="w-full sm:w-auto h-14 px-8 rounded-[1.5rem] bg-sunset-orange hover:bg-orange-600 text-white font-black border-none">
+                <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-[1.5rem] bg-sunset-orange hover:bg-orange-600 text-white font-black border-none">
+                  <Link href={retryCheckoutHref} className="w-full sm:w-auto">
                     Retry payment
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               )}
-              <Link href="/bookings" className="w-full sm:w-auto">
-                <Button className="w-full sm:w-auto h-14 px-8 rounded-[1.5rem] bg-deep-blue dark:bg-card text-white font-black">
-                  View my bookings
-                </Button>
-              </Link>
-              <Link href="/" className="w-full sm:w-auto">
-                <Button variant="outline" className="w-full sm:w-auto h-14 px-8 rounded-[1.5rem] font-black">
-                  Back to home
-                </Button>
-              </Link>
+              <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-[1.5rem] bg-deep-blue dark:bg-card text-white font-black">
+              <Link href="/bookings">View my bookings</Link>
+            </Button>
+              <Button asChild variant="outline" className="w-full sm:w-auto h-14 px-8 rounded-[1.5rem] font-black">
+              <Link href="/">Back to home</Link>
+            </Button>
             </div>
           </CardContent>
         </Card>

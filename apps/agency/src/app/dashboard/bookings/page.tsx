@@ -108,11 +108,9 @@ export default function BookingsManager() {
           <Button variant="outline" className="gap-2">
             <Download className="h-4 w-4" /> {t('bookings.exportGuestList')}
           </Button>
-          <Link href="/dashboard/bookings/schedule">
-            <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2 border-none">
-              <Calendar className="h-4 w-4" /> {t('bookings.viewSchedule')}
+          <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2 border-none">
+              <Link href="/dashboard/bookings/schedule"><Calendar className="h-4 w-4" /> {t('bookings.viewSchedule')}</Link>
             </Button>
-          </Link>
         </div>
       </div>
 

@@ -22,7 +22,7 @@ type ApiErrorResponse = {
 };
 
 export default function AdminLoginPage() {
-  const { t } = useTranslation();
+  const { t, ready } = useTranslation();
   const router = useRouter();
   const { register, handleSubmit, formState: { errors } } = useForm<AdminLoginForm>({
     defaultValues: {
@@ -58,6 +58,15 @@ export default function AdminLoginPage() {
     const email = normalized.includes('@') ? normalized : `${normalized}@ouiboo.local`;
     loginMutation.mutate({ email, password: data.password });
   };
+
+  // Don't render raw translation keys while i18n is loading
+  if (!ready) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-sunset-orange" aria-label="Loading" />
+      </main>
+    );
+  }
 
   return (
     <main id="main-content" tabIndex={-1} className="min-h-screen grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] bg-background text-foreground">

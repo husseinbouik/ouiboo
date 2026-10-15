@@ -64,7 +64,14 @@ i18n
         },
         backend: {
             loadPath: '/locales/{{lng}}/{{ns}}.json',
-        }
+        },
+        // #122: During SSR, translations aren't loaded yet. Return empty string
+        // instead of the raw key to avoid flashing keys in server-rendered HTML.
+        // Client-side keeps returning keys for easier debugging of missing translations.
+        parseMissingKeyHandler: (key: string) => {
+            if (typeof window === 'undefined') return '';
+            return key;
+        },
     });
 
 export { i18n };

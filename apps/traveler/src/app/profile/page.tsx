@@ -70,12 +70,12 @@ export default function ProfilePage() {
               Your traveler profile stores the name and avatar used across bookings, reviews, and support requests.
             </p>
             <div className="mt-6 flex justify-center gap-3">
-              <Link href="/login">
-                <Button>Sign In</Button>
-              </Link>
-              <Link href="/signup">
-                <Button variant="outline">Create Account</Button>
-              </Link>
+              <Button asChild>
+                <Link href="/login">Sign In</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/signup">Create Account</Link>
+              </Button>
             </div>
           </Card>
         </div>

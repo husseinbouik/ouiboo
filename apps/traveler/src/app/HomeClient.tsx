@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -45,11 +45,18 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchDate, setSearchDate] = useState('');
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (searchQuery.trim()) {
       params.set('q', searchQuery.trim());
+    }
+    // Read date from ref as fallback in case state hasn't synced (#120)
+    const dateValue = searchDate || dateInputRef.current?.value || '';
+    if (dateValue) {
+      params.set('date', dateValue);
     }
     const queryString = params.toString();
     router.push(`/search${queryString ? `?${queryString}` : ''}`);
@@ -110,9 +117,12 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
                 <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
                   <Calendar className="h-5 w-5 text-sunset-orange mr-3" />
                   <input 
-                    type="text" 
+                    type="date" 
+                    ref={dateInputRef}
                     aria-label={t('hero.when')}
                     placeholder={t('hero.when')}
+                    value={searchDate}
+                    onChange={(e) => setSearchDate(e.target.value)}
                     className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
                   />
                 </div>
@@ -179,7 +189,7 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
                     <motion.div 
                         key={style.key}
                         whileHover={{ y: -5 }}
-                        onClick={() => window.location.href = `/search?category=${style.key}`}
+                        onClick={() => window.location.href = `/search?category=${style.key.toUpperCase()}`}
                         className="bg-card p-8 rounded-3xl shadow-sm border border-border hover:shadow-md transition-all cursor-pointer group"
                     >
                         <div className={`w-14 h-14 rounded-2xl ${style.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>

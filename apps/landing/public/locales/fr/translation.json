@@ -33,7 +33,7 @@
     },
     "payments": {
       "title": "Réservations fluides",
-      "description": "Checkout simplifié, dépôts flexibles et notifications voyageurs automatisées."
+      "description": "Paiement simplifié, dépôts flexibles et notifications voyageurs automatisées."
     },
     "growth": {
       "title": "Outils de croissance",
@@ -158,7 +158,7 @@
       "button": "Bientôt disponible",
       "feature1": "Tout du plan Pro",
       "feature2": "Analyses avancées",
-      "feature3": "Boost marketing",
+      "feature3": "Marketing boosté",
       "feature4": "Support prioritaire"
     },
     "enterprise": {

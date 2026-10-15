@@ -119,7 +119,9 @@ export default function AgencyDashboard() {
     },
   });
 
-  const companyName = user?.agencyProfile?.companyName || t('dashboard.yourAgency');
+  const rawCompanyName = user?.agencyProfile?.companyName || t('dashboard.yourAgency');
+  // Capitalize display name (#73: "Bonjour, ouiboo" -> "Bonjour, Ouiboo")
+  const companyName = rawCompanyName.charAt(0).toUpperCase() + rawCompanyName.slice(1);
   const stats = statsData || {
     revenue: 0,
     activeTrips: 0,
@@ -227,8 +229,11 @@ export default function AgencyDashboard() {
           <Button variant="outline" className="rounded-xl font-bold h-12 px-6 gap-2">
             <Calendar className="h-4 w-4" /> {t('dashboard.liveSnapshot')}
           </Button>
-          <Link href="/dashboard/wallet">
-            <Button className="rounded-xl font-black h-12 px-8 bg-primary">{t('dashboard.requestPayout')}</Button>
+          <Link
+            href="/dashboard/wallet"
+            className="inline-flex items-center justify-center rounded-xl font-black h-12 px-8 bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            {t('dashboard.requestPayout')}
           </Link>
         </div>
       </div>
@@ -280,11 +285,9 @@ export default function AgencyDashboard() {
             <h2 className="text-2xl font-black font-display tracking-tight">{t('dashboard.actionCenter')}</h2>
             <p className="text-muted-foreground font-medium">{t('dashboard.actionCenterSubtitle')}</p>
           </div>
-          <Link href="/dashboard/bookings">
-            <Button variant="ghost" className="font-bold text-primary gap-2 rounded-xl group">
-              {t('dashboard.openBookings')} <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+          <Button asChild variant="ghost" className="font-bold text-primary gap-2 rounded-xl group">
+              <Link href="/dashboard/bookings">{t('dashboard.openBookings')} <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" /></Link>
             </Button>
-          </Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {quickActions.map((action) => (
@@ -299,11 +302,9 @@ export default function AgencyDashboard() {
                     <action.icon className="h-6 w-6" />
                   </div>
                 </div>
-                <Link href={action.href} className="self-start">
-                  <Button variant="outline" className="rounded-xl font-bold">
-                    {action.cta}
-                  </Button>
-                </Link>
+                <Button asChild variant="outline" className="rounded-xl font-bold">
+              <Link href={action.href}>{action.cta}</Link>
+            </Button>
               </CardContent>
             </Card>
           ))}
@@ -319,11 +320,9 @@ export default function AgencyDashboard() {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{t('dashboard.recentRequestsCount', { count: latestBookings.length })}</p>
             </div>
           </div>
-          <Link href="/dashboard/bookings">
-            <Button variant="ghost" className="font-bold text-primary gap-2 rounded-xl group">
-              {t('dashboard.viewAll')} <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+          <Button asChild variant="ghost" className="font-bold text-primary gap-2 rounded-xl group">
+              <Link href="/dashboard/bookings">{t('dashboard.viewAll')} <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" /></Link>
             </Button>
-          </Link>
         </div>
 
         <Card className="border-none shadow-xl shadow-black/5 rounded-[2.5rem] overflow-hidden">
@@ -379,11 +378,9 @@ export default function AgencyDashboard() {
                         </Badge>
                       </TableCell>
                       <TableCell className="pe-10 text-end">
-                        <Link href="/dashboard/bookings">
-                          <Button variant="ghost" size="icon" className="rounded-xl bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-all">
-                            <Eye className="h-5 w-5" />
-                          </Button>
-                        </Link>
+                        <Button asChild variant="ghost" size="icon" className="rounded-xl bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-all">
+              <Link href="/dashboard/bookings"><Eye className="h-5 w-5" /></Link>
+            </Button>
                       </TableCell>
                     </TableRow>
                   );
@@ -402,11 +399,9 @@ export default function AgencyDashboard() {
             {t('dashboard.growBody', { tripCount: stats.activeTrips, travelerCount: stats.totalCustomers })}
           </p>
         </div>
-        <Link href="/dashboard/trips/create" className="relative z-10 mt-8 md:mt-0">
-          <Button className="h-20 px-12 rounded-[2rem] bg-white text-primary hover:bg-slate-100 font-black text-xl border-none shadow-2xl transition-all hover:scale-105 active:scale-95">
-            {t('dashboard.createNewTrip')}
-          </Button>
-        </Link>
+        <Button asChild className="h-20 px-12 rounded-[2rem] bg-white text-primary hover:bg-slate-100 font-black text-xl border-none shadow-2xl transition-all hover:scale-105 active:scale-95">
+              <Link href="/dashboard/trips/create">{t('dashboard.createNewTrip')}</Link>
+            </Button>
       </div>
     </div>
   );

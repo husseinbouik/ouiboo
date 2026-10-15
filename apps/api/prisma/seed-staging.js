@@ -12,7 +12,7 @@
  */
 
 const bcrypt = require('bcrypt');
-const { PrismaClient } = require('../../packages/database/generated-client');
+const { PrismaClient } = require('../../../packages/database/generated-client');
 
 const prisma = new PrismaClient();
 

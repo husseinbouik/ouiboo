@@ -9,6 +9,7 @@ import { GlobalExceptionFilter } from './common/global-exception.filter'
 import { RedisResponseCacheInterceptor } from './common/redis-response-cache.interceptor'
 import { ResponseInterceptor } from './common/response.interceptor'
 import { RequestLoggingInterceptor } from './monitoring/request-logging.interceptor'
+import { getTrustedOrigins } from './common/trusted-origins.util'
 import type { NextFunction, Request, Response } from 'express'
 
 const REQUIRED_ENV_VARS = [
@@ -45,29 +46,7 @@ export const validateRequiredEnv = () => {
   }
 }
 
-const DEV_CORS_ORIGINS = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://localhost:3002',
-  'http://localhost:3003',
-  'http://localhost:3004',
-  'http://127.0.0.1:3000',
-  'http://127.0.0.1:3001',
-  'http://127.0.0.1:3002',
-  'http://127.0.0.1:3003',
-  'http://127.0.0.1:3004',
-]
-
-const getCorsOrigins = () => {
-  const configuredOrigins = process.env.CORS_ORIGINS
-    ? process.env.CORS_ORIGINS.split(',')
-        .map((origin) => origin.trim())
-        .filter(Boolean)
-    : []
-
-  if (process.env.NODE_ENV === 'production') return configuredOrigins
-  return Array.from(new Set([...configuredOrigins, ...DEV_CORS_ORIGINS]))
-}
+const getCorsOrigins = () => getTrustedOrigins()
 
 /**
  * Creates and configures the NestJS application instance without starting
@@ -128,12 +107,7 @@ export async function createApp(): Promise<INestApplication> {
     exposedHeaders: 'X-Cache',
   })
 
-  app.setGlobalPrefix('api/v1', {
-    exclude: [
-      { path: 'media', method: RequestMethod.ALL },
-      { path: 'media/{*key}', method: RequestMethod.ALL },
-    ],
-  })
+  app.setGlobalPrefix('api/v1')
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
