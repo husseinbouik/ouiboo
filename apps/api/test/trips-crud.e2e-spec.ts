@@ -126,7 +126,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             data: {
                 id: 'agency-profile-123',
                 userId: agencyUser1.id,
-                companyName: 'Test Agency', ice: 'ICE100004', patente: 'PAT100004', rib: 'RIB100004',
+                companyName: 'Test Agency', ice: 'ICE100004', patente: 'PAT100004', rib: 'RIB100004', verificationStatus: 'VERIFIED',
             } as any,
         });
 
@@ -147,7 +147,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             data: {
                 id: 'agency-profile-456',
                 userId: agencyUser2.id,
-                companyName: 'Other Agency', ice: 'ICE100005', patente: 'PAT100005', rib: 'RIB100005',
+                companyName: 'Other Agency', ice: 'ICE100005', patente: 'PAT100005', rib: 'RIB100005', verificationStatus: 'VERIFIED',
             } as any,
         });
 
@@ -425,7 +425,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
     });
 
     // ===== Section 5: Trip Template Deletion Tests =====
-    it('Agency deletes own trip template', async () => {
+    it('Agency deletes own draft trip template', async () => {
         const { agency1 } = await seedTestData();
         const template = await createTripTemplate(agency1.id);
 
@@ -434,8 +434,9 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             .set('Authorization', 'Bearer agency-123')
             .expect(200);
 
-        const archived = await db.tripTemplate.findUnique({ where: { id: template.id } });
-        expect(archived?.status).toBe('ARCHIVED');
+        // Drafts are hard-deleted (not archived)
+        const deleted = await db.tripTemplate.findUnique({ where: { id: template.id } });
+        expect(deleted).toBeNull();
     });
 
     it('Agency cannot delete another agency trip template', async () => {
@@ -813,7 +814,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         const template = await createTripTemplate(agency1.id);
         const fixturePath = path.join(__dirname, 'fixtures', 'proof.png');
 
-        const urls = [];
+        const urls: string[] = [];
         for (let i = 0; i < 3; i++) {
             const res = await request(app.getHttpServer())
                 .post('/upload')

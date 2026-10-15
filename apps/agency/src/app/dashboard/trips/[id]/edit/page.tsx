@@ -35,10 +35,11 @@ export default function EditTripPage() {
   });
 
   const form = useTripWizardForm();
+  const { reset: resetForm } = form;
 
   useEffect(() => {
     if (trip) {
-      form.reset({
+      resetForm({
         title: trip.title,
         description: trip.description,
         category: trip.category,
@@ -55,7 +56,7 @@ export default function EditTripPage() {
         currency: trip.currency || 'MAD',
       });
     }
-  }, [trip, form.reset]);
+  }, [trip, resetForm]);
 
   const updateTripMutation = useMutation({
     mutationFn: async (data: CreateTripInput) => {

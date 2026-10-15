@@ -43,10 +43,11 @@ async function getAgencyTrips(agencyId: string): Promise<Trip[]> {
   }
 }
 
-export default async function AgencyPage({ params }: { params: { agencyId: string } }) {
+export default async function AgencyPage({ params }: { params: Promise<{ agencyId: string }> }) {
+  const { agencyId } = await params;
   const { t } = await getServerTranslations();
-  const agency = await getAgency(params.agencyId);
-  const trips = await getAgencyTrips(params.agencyId);
+  const agency = await getAgency(agencyId);
+  const trips = await getAgencyTrips(agencyId);
 
   if (!agency) {
     notFound();

@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/labeler@v7
+      - uses: actions/labeler@v5
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -23,14 +23,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/github-script@v9
+      - uses: actions/github-script@v7
         with:
           script: |
             const pr = context.payload.pull_request;
-            const { data } = await github.rest.pulls.get({
-              owner: context.repo.owner, repo: context.repo.repo, pull_number: pr.number,
-            });
-            const changes = data.additions + data.deletions;
+            // Paginate through all files (PRs can have >100 files)
+            let files = [];
+            let page = 1;
+            while (true) {
+              const { data } = await github.rest.pulls.listFiles({
+                owner: context.repo.owner, repo: context.repo.repo, pull_number: pr.number, per_page: 100, page,
+              });
+              files = files.concat(data);
+              if (data.length < 100) break;
+              page++;
+            }
+            // Exclude machine-generated files from the size count
+            const generatedPatterns = ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'node_modules/', 'outputs/', 'dist/', '.next/'];
+            const humanFiles = files.filter(f => !generatedPatterns.some(p => f.filename.includes(p)));
+            const changes = humanFiles.reduce((sum, f) => sum + f.additions + f.deletions, 0);
             const limit = 1000;
             if (changes > limit) {
               await github.rest.issues.createComment({
