@@ -1,0 +1,81 @@
+# Lighthouse CI + axe-core accessibility budgets for key pages.
+#
+# Issue #213. Non-blocking while budgets are being tuned:
+# every step uses continue-on-error so results are reported
+# without failing the PR. Promote to blocking once green.
+name: Lighthouse & Accessibility
+
+on:
+  pull_request:
+    branches: [ master, staging ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# Cancel superseded runs on PRs to save minutes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lighthouse-a11y:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Non-blocking initially (issue #213): report results without failing PRs
+    continue-on-error: true
+    env:
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:3000/api
+      NEXT_PUBLIC_MEDIA_URL: http://127.0.0.1:3000/api/v1/media
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build traveler app
+        # Traveler is the highest-conversion surface (AGENTS.md); keep the
+        # job scoped to it until budgets are proven, then extend to agency/admin.
+        run: npm run build --workspace apps/traveler
+
+      - name: Start traveler app
+        run: |
+          npm run start --workspace apps/traveler &
+          npx --yes wait-on http://localhost:3001/login --timeout 120000
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            http://localhost:3001/
+            http://localhost:3001/search
+            http://localhost:3001/login
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          runs: 1
+          configPath: ./.github/lighthouse/lighthouserc.json
+          budgetPath: ./.github/lighthouse/budget.json
+
+      - name: Install axe-core (CI-only, not saved to package.json)
+        # @axe-core/playwright is intentionally NOT a repo dependency yet;
+        # install it transiently so package.json/package-lock.json stay untouched.
+        run: npm install --no-save @axe-core/playwright
+
+      - name: Run axe accessibility checks
+        run: node .github/lighthouse/axe-check.mjs http://localhost:3001
+
+      - name: Upload Lighthouse results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-results
+          path: .lighthouseci
+          if-no-files-found: ignore
