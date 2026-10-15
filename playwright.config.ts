@@ -26,26 +26,25 @@ export default defineConfig({
       timeout: 30_000,
     },
     {
-      // Standalone builds: `next start` doesn't serve them; use the built server directly.
-      // Apps are built in a separate CI step; the webServer only serves.
-      command: 'PORT=3001 node apps/traveler/.next/standalone/server.js',
+      // Use `next start` (standalone output removed - broken in Next.js 16)
+      command: 'npm run start --workspace apps/traveler',
       url: 'http://localhost:3001/login',
       reuseExistingServer: !process.env.CI,
-      timeout: 60_000,
+      timeout: 120_000,
       env: { ...process.env, NEXT_PUBLIC_API_URL: 'http://localhost:3000/api' },
     },
     {
-      command: 'PORT=3002 node apps/agency/.next/standalone/server.js',
+      command: 'npm run start --workspace apps/agency',
       url: 'http://localhost:3002/login',
       reuseExistingServer: !process.env.CI,
-      timeout: 60_000,
+      timeout: 120_000,
       env: { ...process.env, NEXT_PUBLIC_API_URL: 'http://localhost:3000/api' },
     },
     {
-      command: 'PORT=3003 node apps/admin/.next/standalone/server.js',
+      command: 'npm run start --workspace apps/admin',
       url: 'http://localhost:3003/login',
       reuseExistingServer: !process.env.CI,
-      timeout: 60_000,
+      timeout: 120_000,
       env: { ...process.env, NEXT_PUBLIC_API_URL: 'http://localhost:3000/api' },
     },
   ],
