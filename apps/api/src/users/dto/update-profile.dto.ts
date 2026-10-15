@@ -5,21 +5,21 @@ export class UpdateAgencyProfileDto {
     @ApiProperty({ example: 'Atlas Voyages' })
     @IsString()
     @MinLength(2)
-    companyName: string;
+    companyName!: string;
 
     @ApiProperty({ example: '123456789012345' })
     @IsString()
     @MinLength(15)
-    ice: string;
+    ice!: string;
 
     @ApiProperty({ example: 'P1234567' })
     @IsString()
-    patente: string;
+    patente!: string;
 
     @ApiProperty({ example: 'MA6400010001000100010001' })
     @IsString()
     @MinLength(24)
-    rib: string;
+    rib!: string;
 
     @ApiProperty({ example: 'Expert travel agency in Morocco...', required: false })
     @IsString()

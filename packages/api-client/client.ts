@@ -14,10 +14,43 @@ export interface BrowserAuthOptions {
 
 export function setBrowserAccessToken(token: string | null) {
   browserAccessToken = token
+  // Establish the BFF app session (#208) so the Next.js proxy can validate
+  // authenticated requests. Fire-and-forget; the API remains authoritative.
+  if (token && typeof window !== 'undefined') {
+    establishAppSession(token).catch(() => {
+      // Session establishment is best-effort; API auth is authoritative.
+    })
+  }
 }
 
 export function clearBrowserAccessToken() {
   browserAccessToken = null
+  // Clear the BFF app session (#208). Fire-and-forget.
+  if (typeof window !== 'undefined') {
+    clearAppSession().catch(() => {
+      // Best-effort; the proxy will fail closed on the next request.
+    })
+  }
+}
+
+/**
+ * Establishes the app-domain session cookie via the Next.js BFF route.
+ * The BFF validates the access token with the API and sets a signed,
+ * HttpOnly session cookie that the proxy can verify.
+ */
+export async function establishAppSession(accessToken: string): Promise<void> {
+  await fetch('/api/auth/session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accessToken }),
+  })
+}
+
+/**
+ * Clears the app-domain session cookie via the Next.js BFF route.
+ */
+export async function clearAppSession(): Promise<void> {
+  await fetch('/api/auth/session', { method: 'DELETE' })
 }
 
 type ApiEnvelopeBody = {

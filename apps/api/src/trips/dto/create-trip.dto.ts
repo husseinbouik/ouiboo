@@ -8,7 +8,7 @@ export class ItineraryDayDto {
     @ApiProperty({ example: 1 })
     @IsInt()
     @IsPositive()
-    dayNumber: number;
+    dayNumber!: number;
 
     @ApiProperty({ example: 'Arrival in Marrakech' })
     @IsOptional()
@@ -17,32 +17,32 @@ export class ItineraryDayDto {
 
     @ApiProperty({ example: 'We will pick you up from the airport...' })
     @IsString()
-    description: string;
+    description!: string;
 
     @ApiProperty({ example: ['Airport transfer', 'Welcome dinner'] })
     @IsArray()
     @IsString({ each: true })
-    activities: string[];
+    activities!: string[];
 }
 
 export class CreateTripTemplateDto {
     @ApiProperty({ example: 'Marrakech Desert Adventure' })
     @IsString()
     @MinLength(3)
-    title: string;
+    title!: string;
 
     @ApiProperty({ example: 'Experience the magic of the Moroccan desert...' })
     @IsString()
     @MinLength(10)
-    description: string;
+    description!: string;
 
     @ApiProperty({ enum: TripCategory, example: TripCategory.Adventure })
     @IsEnum(TripCategory)
-    category: TripCategory;
+    category!: TripCategory;
 
     @ApiProperty({ example: 'Marrakech, Morocco' })
     @IsString()
-    startLocation: string;
+    startLocation!: string;
 
     @ApiProperty({ example: 'Merzouga, Morocco', required: false })
     @IsOptional()
@@ -57,38 +57,38 @@ export class CreateTripTemplateDto {
     @ApiProperty({ example: 5 })
     @IsInt()
     @IsPositive()
-    durationDays: number;
+    durationDays!: number;
 
     @ApiProperty({ example: 4 })
     @IsInt()
     @Min(0)
-    durationNights: number;
+    durationNights!: number;
 
     @ApiProperty({ example: ['Transport', 'Lunch', 'Guide'] })
     @IsArray()
     @IsString({ each: true })
-    inclusions: string[];
+    inclusions!: string[];
 
     @ApiProperty({ example: ['Safari Nature', 'Kayak'] })
     @IsOptional()
     @IsArray()
     @IsString({ each: true })
-    exclusions: string[];
+    exclusions!: string[];
 
     @ApiProperty({ example: ['Hiking shoes', 'Backpack'] })
     @IsOptional()
     @IsArray()
     @IsString({ each: true })
-    checklist: string[];
+    checklist!: string[];
 
     @ApiProperty({ example: ['https://example.com/image1.jpg'] })
     @IsArray()
     @IsString({ each: true })
-    images: string[];
+    images!: string[];
 
     @ApiProperty({ enum: TripStatus, example: TripStatus.Draft })
     @IsEnum(TripStatus)
-    status: TripStatus;
+    status!: TripStatus;
 
     @ApiProperty({ type: [ItineraryDayDto], required: false })
     @IsOptional()
@@ -103,25 +103,25 @@ export class UpdateTripTemplateDto extends PartialType(CreateTripTemplateDto) { 
 export class CreateTripSessionDto {
     @ApiProperty({ example: '2025-01-01T00:00:00Z' })
     @IsDateString()
-    startDate: string;
+    startDate!: string;
 
     @ApiProperty({ example: '2025-01-05T00:00:00Z' })
     @IsDateString()
-    endDate: string;
+    endDate!: string;
 
     @ApiProperty({ example: 1200.00 })
     @IsDecimalMoney()
-    price: string | number;
+    price!: string | number;
 
     @ApiProperty({ example: 500.00 })
     @IsOptional()
     @IsDecimalMoney({ allowZero: true })
-    deposit: string | number;
+    deposit!: string | number;
 
     @ApiProperty({ example: 20 })
     @IsInt()
     @IsPositive()
-    totalSeats: number;
+    totalSeats!: number;
 
     @ApiProperty({ example: 'MAD', required: false })
     @IsOptional()

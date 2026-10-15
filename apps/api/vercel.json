@@ -7,6 +7,12 @@
       "maxDuration": 60
     }
   },
+  "crons": [
+    {
+      "path": "/api/v1/cron/maintenance",
+      "schedule": "0 */6 * * *"
+    }
+  ],
   "installCommand": "npm install --prefix ../..",
   "rewrites": [
     {

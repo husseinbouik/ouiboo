@@ -13,5 +13,5 @@ export class SignedUrlQueryDto {
     @IsString()
     @IsNotEmpty()
     @Matches(/^private\//, { message: 'key must point to a private file' })
-    key: string;
+    key!: string;
 }

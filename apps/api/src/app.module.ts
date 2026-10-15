@@ -7,6 +7,7 @@ import { AnalyticsModule } from './analytics/analytics.module'
 import { AuthModule } from './auth/auth.module'
 import { BookingsModule } from './bookings/bookings.module'
 import { CommonModule } from './common/common.module'
+import { CronModule } from './cron/cron.module'
 import { CurrencyModule } from './currency/currency.module'
 import { DatabaseModule } from './database/database.module'
 import { EmailModule } from './email/email.module'
@@ -28,6 +29,7 @@ import { WishlistModule } from './wishlist/wishlist.module'
       serveRoot: '/uploads',
     }),
     CommonModule,
+    CronModule,
     DatabaseModule,
     AuthModule,
     TripsModule,
