@@ -87,7 +87,7 @@ export default function VerifyEmailPage() {
       });
       return response.data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       await setBrowserAccessToken(data.accessToken);
       setSuccess(true);
       setTimeout(() => {
