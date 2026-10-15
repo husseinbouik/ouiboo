@@ -3,9 +3,9 @@ import { IsDecimalMoney } from '../../common/validators/is-decimal-money.decorat
 
 export class RequestPayoutDto {
     @IsDecimalMoney()
-    amount: string | number;
+    amount!: string | number;
 
     @IsString()
     @IsNotEmpty()
-    bankDetails: string;
+    bankDetails!: string;
 }

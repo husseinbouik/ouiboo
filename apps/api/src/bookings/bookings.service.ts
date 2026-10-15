@@ -105,6 +105,9 @@ export class BookingsService {
                 where: { id: dto.sessionId },
                 include: { template: { include: { agency: true } } }
             });
+            if (!sessionWithInfo) {
+                throw new BadRequestException('Session not found');
+            }
 
             // Map PaymentMethodEnum to PaymentMethod enum
             const paymentMethodMap: Record<PaymentMethodEnum, PaymentMethod> = {
@@ -380,6 +383,11 @@ export class BookingsService {
             throw new BadRequestException('No payment proof uploaded');
         }
 
+        const paymentProofId = booking.paymentProofId;
+        if (!paymentProofId) {
+            throw new BadRequestException('No payment proof uploaded');
+        }
+
         if (await this.uploadService.isLocal()) {
             const filePath = await this.uploadService.getFilePath(booking.paymentProof.imageUrl);
             return { kind: 'local' as const, filePath };
@@ -436,6 +444,11 @@ export class BookingsService {
             throw new BadRequestException('No payment proof uploaded');
         }
 
+        const paymentProofId = booking.paymentProofId;
+        if (!paymentProofId) {
+            throw new BadRequestException('No payment proof uploaded');
+        }
+
         if (booking.paymentProof.status !== 'PENDING') {
             throw new BadRequestException('Payment proof has already been reviewed');
         }
@@ -450,7 +463,7 @@ export class BookingsService {
 
         const updatedBooking = await this.db.$transaction(async (tx) => {
             const claimedProof = await tx.paymentProof.updateMany({
-                where: { id: booking.paymentProofId, status: 'PENDING' },
+                where: { id: paymentProofId, status: 'PENDING' },
                 data: {
                     status: approved ? 'VERIFIED' : 'REJECTED',
                     rejectionReason: approved ? null : rejectionReason,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifySession, SESSION_COOKIE_NAME } from '@/lib/session';
 
 const supportedLanguages = ['en', 'fr', 'ar'];
 
@@ -21,7 +22,7 @@ function normalizeLanguage(value?: string | null) {
   return language && supportedLanguages.includes(language) ? language : null;
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   const queryLanguage = normalizeLanguage(request.nextUrl.searchParams.get('lang'));
   const cookieLanguage = normalizeLanguage(request.cookies.get('i18nextLng')?.value);
@@ -32,14 +33,20 @@ export function proxy(request: NextRequest) {
   }
 
 
-  // Auth gate (#185): redirect unauthenticated users from protected routes
+  // Auth gate (#208): validate server-managed session instead of cookie presence.
+  // The API's refresh_token cookie is HttpOnly and scoped to the API domain,
+  // so this proxy can never see it. We validate our own signed session cookie.
+  // Fail closed: invalid/missing/expired session -> redirect to login.
   const TRAVELER_PROTECTED = ['/messages', '/notifications', '/bookings', '/wishlist', '/profile'];
   const travelerPath = request.nextUrl.pathname;
   const travelerIsProtected = TRAVELER_PROTECTED.some((p) => travelerPath === p || travelerPath.startsWith(p + '/'));
-  if (travelerIsProtected && !request.cookies.get('refresh_token')) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', travelerPath);
-    return NextResponse.redirect(loginUrl);
+  if (travelerIsProtected) {
+    const session = await verifySession(request.cookies.get(SESSION_COOKIE_NAME)?.value);
+    if (!session) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', travelerPath);
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
   const response = NextResponse.next({

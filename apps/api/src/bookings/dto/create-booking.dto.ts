@@ -13,30 +13,30 @@ export class CreateBookingDto {
     @IsString()
     @IsNotEmpty()
     @MaxLength(64)
-    sessionId: string;
+    sessionId!: string;
 
     @ApiProperty({ example: 2 })
     @IsInt()
     @IsPositive()
-    guestsCount: number;
+    guestsCount!: number;
 
     @ApiProperty({ example: 'Abderrahmane El Amrani' })
     @IsString()
     @IsNotEmpty()
     @MaxLength(120)
-    fullName: string;
+    fullName!: string;
 
     @ApiProperty({ example: '+212612345678' })
     @IsString()
     @IsNotEmpty()
     @MaxLength(32)
-    phoneNumber: string;
+    phoneNumber!: string;
 
     @ApiProperty({ example: 'CIN AE123456' })
     @IsString()
     @IsNotEmpty()
     @MaxLength(100)
-    documentNumber: string;
+    documentNumber!: string;
 
     @ApiProperty({ enum: PaymentMethodEnum, example: PaymentMethodEnum.BANK_TRANSFER, description: 'Preferred payment method' })
     @IsEnum(PaymentMethodEnum)
@@ -47,7 +47,7 @@ export class CreateBookingDto {
 export class VerifyManualPaymentDto {
     @ApiProperty({ example: true })
     @IsBoolean()
-    approved: boolean;
+    approved!: boolean;
 
     @ApiProperty({ example: 'The transfer details do not match', required: false })
     @IsOptional()

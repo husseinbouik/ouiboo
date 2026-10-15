@@ -1,3 +1,7 @@
+/**
+ * DEPRECATED on Vercel serverless (#216).
+ * See websocket.module.ts for details. Not loaded in production.
+ */
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -23,7 +27,7 @@ const ADMIN_ROOM = 'admin';
 export class NotificationGateway
   implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   private readonly logger = new Logger(WebSocketGateway.name);
 

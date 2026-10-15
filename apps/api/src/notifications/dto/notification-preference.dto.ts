@@ -32,13 +32,13 @@ export class NotificationPreferenceDto {
 
 export class SendNotificationDto {
   @IsEmail()
-  recipientEmail: string;
+  recipientEmail!: string;
 
-  notificationType: string;
+  notificationType!: string;
 
-  subject: string;
+  subject!: string;
 
-  message: string;
+  message!: string;
 
   metadata?: Record<string, any>;
 }
