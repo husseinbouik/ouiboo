@@ -24,7 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Non-blocking initially (issue #213): report results without failing PRs
-    continue-on-error: true
+    # Note: continue-on-error is on the Lighthouse step (not job level) so
+    # subsequent axe steps still run even if budgets are exceeded.
     env:
       NEXT_PUBLIC_API_URL: http://127.0.0.1:3000/api
       NEXT_PUBLIC_MEDIA_URL: http://127.0.0.1:3000/api/v1/media
@@ -52,6 +53,7 @@ jobs:
           npx --yes wait-on http://localhost:3001/login --timeout 120000
 
       - name: Run Lighthouse CI
+        continue-on-error: true
         uses: treosh/lighthouse-ci-action@v12
         with:
           urls: |
