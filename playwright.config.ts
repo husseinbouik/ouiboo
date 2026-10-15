@@ -18,6 +18,14 @@ export default defineConfig({
   },
   webServer: [
     {
+      // Mock API server — serves test data for both SSR (server-side fetches)
+      // and browser requests. Must start before the Next.js apps.
+      command: 'node e2e/mock-api-server.mjs 3000',
+      url: 'http://localhost:3000/api/trips',
+      reuseExistingServer: !process.env.CI,
+      timeout: 30_000,
+    },
+    {
       command: 'npm run build --workspace apps/traveler && npm run start --workspace apps/traveler',
       url: 'http://localhost:3001/login',
       reuseExistingServer: !process.env.CI,
