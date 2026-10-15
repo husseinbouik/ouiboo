@@ -34,10 +34,12 @@ jobs:
 
       - name: Build Next.js apps (standalone)
         # Build separately so failures are visible; the webServer entries only serve.
+        # NOTE: Must use --webpack because Turbopack (Next.js 16 default) does not
+        # support `output: "standalone"` — it silently skips generating server.js.
         run: |
-          npm run build --workspace apps/traveler
-          npm run build --workspace apps/agency
-          npm run build --workspace apps/admin
+          npm run build --workspace apps/traveler -- --webpack
+          npm run build --workspace apps/agency -- --webpack
+          npm run build --workspace apps/admin -- --webpack
 
       - name: Run browser launch suite
         run: npm run test:e2e
