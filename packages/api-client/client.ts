@@ -12,12 +12,13 @@ export interface BrowserAuthOptions {
   loginPath?: string
 }
 
-export function setBrowserAccessToken(token: string | null) {
+export async function setBrowserAccessToken(token: string | null): Promise<void> {
   browserAccessToken = token
   // Establish the BFF app session (#208) so the Next.js proxy can validate
-  // authenticated requests. Fire-and-forget; the API remains authoritative.
+  // authenticated requests. MUST be awaited before redirecting to protected
+  // routes, otherwise the proxy will not see the session cookie yet.
   if (token && typeof window !== 'undefined') {
-    establishAppSession(token).catch(() => {
+    await establishAppSession(token).catch(() => {
       // Session establishment is best-effort; API auth is authoritative.
     })
   }
