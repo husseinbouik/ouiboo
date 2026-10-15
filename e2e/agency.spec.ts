@@ -1,9 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { mockAgencyApi } from './helpers';
+import { authenticateAs, mockAgencyApi } from './helpers';
 
 test.describe('agency launch flow', () => {
   test.beforeEach(async ({ page }) => {
     await mockAgencyApi(page);
+    // The #208 proxy auth gate redirects /dashboard/* to /login without a
+    // valid signed session cookie — establish one before navigating.
+    await authenticateAs(page, 'AGENCY');
   });
 
   test('agency wallet launch surface renders readiness state', async ({ page }) => {

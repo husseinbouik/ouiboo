@@ -15,6 +15,11 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'off',
+    // The apps ship a strict Content-Security-Policy (connect-src 'self'
+    // + production API). E2E tests call a local mock API on :3000, which CSP
+    // would block before page.route can intercept. Bypass CSP in tests only;
+    // production CSP is untouched.
+    bypassCSP: true,
   },
   webServer: [
     {
