@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TripsService } from './trips.service';
 import { DatabaseService } from '../database/database.service';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 
 const mockTripTemplate = {
     id: 'trip-123',
@@ -13,6 +13,11 @@ const mockTripTemplate = {
 };
 
 const mockDatabaseService = {
+    $transaction: jest.fn((fn: any) => fn({
+        itineraryDay: { deleteMany: jest.fn().mockResolvedValue({}) },
+        review: { deleteMany: jest.fn().mockResolvedValue({}) },
+        tripTemplate: { delete: jest.fn().mockResolvedValue({}) },
+    })),
     tripTemplate: {
         findFirst: jest.fn(),
         findMany: jest.fn(),
@@ -29,6 +34,7 @@ const mockDatabaseService = {
         findFirst: jest.fn(),
         findMany: jest.fn(),
         aggregate: jest.fn(),
+        count: jest.fn().mockResolvedValue(0),
     },
     booking: {
         count: jest.fn().mockResolvedValue(0),
@@ -91,20 +97,24 @@ describe('TripsService', () => {
     });
 
     describe('deleteTemplate', () => {
-        it('should delete a template if owned by user', async () => {
+        it('should delete a draft template if owned by user', async () => {
             db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
             db.tripTemplate.findFirst.mockResolvedValue(mockTripTemplate);
-            db.tripTemplate.update.mockResolvedValue({ ...mockTripTemplate, status: 'ARCHIVED' });
 
             await service.deleteTemplate('trip-123', 'agency-123');
 
             expect(db.tripTemplate.findFirst).toHaveBeenCalledWith({
                 where: { id: 'trip-123', agencyId: 'agency-123' },
             });
-            expect(db.tripTemplate.update).toHaveBeenCalledWith({
-                where: { id: 'trip-123' },
-                data: { status: 'ARCHIVED' },
-            });
+            // Drafts are hard-deleted via transaction (not archived)
+            expect(db.$transaction).toHaveBeenCalled();
+        });
+
+        it('should throw ConflictException for non-draft templates', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'PUBLISHED' });
+
+            await expect(service.deleteTemplate('trip-123', 'agency-123')).rejects.toThrow(ConflictException);
         });
 
         it('should throw error if unauthorized', async () => {
@@ -141,7 +151,7 @@ describe('TripsService', () => {
             }));
             expect(db.tripTemplate.count).toHaveBeenCalledWith(expect.objectContaining({
                 where: expect.objectContaining({
-                    category: 'Adventure',
+                    category: 'ADVENTURE',
                     agencyId: 'agency-123',
                 }),
             }));
