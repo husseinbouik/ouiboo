@@ -32,6 +32,13 @@ jobs:
       - name: Install Playwright browser
         run: npm run test:e2e:install
 
+      - name: Build Next.js apps (standalone)
+        # Build separately so failures are visible; the webServer entries only serve.
+        run: |
+          npm run build --workspace apps/traveler
+          npm run build --workspace apps/agency
+          npm run build --workspace apps/admin
+
       - name: Run browser launch suite
         run: npm run test:e2e
 

@@ -8,6 +8,7 @@ const mockTripTemplate = {
     agencyId: 'agency-123',
     title: 'Test Trip',
     currency: 'MAD',
+    status: 'DRAFT',
     _count: { sessions: 0 },
 };
 
@@ -129,7 +130,7 @@ describe('TripsService', () => {
             expect(db.tripTemplate.findMany).toHaveBeenCalledWith(expect.objectContaining({
                 where: expect.objectContaining({
                     status: 'ACTIVE',
-                    category: 'Adventure',
+                    category: 'ADVENTURE',
                     agencyId: 'agency-123',
                     OR: [
                         { title: { contains: 'atlas', mode: 'insensitive' } },
