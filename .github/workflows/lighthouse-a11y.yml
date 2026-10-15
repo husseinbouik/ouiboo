@@ -69,7 +69,9 @@ jobs:
       - name: Install axe-core (CI-only, not saved to package.json)
         # @axe-core/playwright is intentionally NOT a repo dependency yet;
         # install it transiently so package.json/package-lock.json stay untouched.
-        run: npm install --no-save @axe-core/playwright
+        run: |
+          npm install --no-save @axe-core/playwright
+          npx playwright install chromium
 
       - name: Run axe accessibility checks
         run: node .github/lighthouse/axe-check.mjs http://localhost:3001
