@@ -37,7 +37,7 @@ export default function AdminLoginPage() {
       const response = await apiClient.post('/auth/login', payload);
       return response.data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       // Verify the user has ADMIN role before granting access
       if (data.user?.role !== 'ADMIN') {
         setError(t('login.notAdmin', 'This account does not have admin access.'));
