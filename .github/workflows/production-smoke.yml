@@ -1,4 +1,4 @@
-name: Production Smoke Tests
+name: Staging Smoke Tests
 
 # Runs fast production smoke tests on every PR to staging.
 # Catches broken URLs, CORS regressions, dead links, and UI failures
