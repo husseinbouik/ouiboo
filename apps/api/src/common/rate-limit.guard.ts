@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable, HttpException, HttpStatus, SetMetadata } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, HttpException, HttpStatus, SetMetadata, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RedisService } from './redis.service';
 
@@ -9,12 +9,13 @@ type RateLimitOptions = {
 };
 
 const RATE_LIMIT_KEY = 'ouiboo:rate-limit';
-const buckets = new Map<string, { count: number; resetAt: number }>();
 
 export const RateLimit = (options: RateLimitOptions) => SetMetadata(RATE_LIMIT_KEY, options);
 
 @Injectable()
 export class RateLimitGuard implements CanActivate {
+  private readonly logger = new Logger(RateLimitGuard.name);
+
   constructor(
     private reflector: Reflector,
     private redisService: RedisService,
@@ -40,33 +41,24 @@ export class RateLimitGuard implements CanActivate {
     const key = `${options.keyPrefix || req.method}:${req.route?.path || req.url}:${userId}:${ip}`;
     const redis = this.redisService.getClient();
 
-    if (redis) {
-      const redisKey = `rate-limit:${key}`;
-      const count = await redis.incr(redisKey);
-      if (count === 1) {
-        await redis.pexpire(redisKey, options.windowMs);
-      }
-
-      if (count > options.points) {
-        throw new HttpException('Rate limit exceeded. Please try again later.', HttpStatus.TOO_MANY_REQUESTS);
-      }
-
+    // Fail-open when Redis is unavailable: a process-local counter would give
+    // inconsistent limits across instances, so we allow the request and log.
+    // Rate limiting is a defense-in-depth control, not an auth check.
+    if (!redis) {
+      this.logger.warn(`Rate limiting disabled for ${key}: Redis unavailable (fail-open)`);
       return true;
     }
 
-    const now = Date.now();
-    const bucket = buckets.get(key);
-
-    if (!bucket || bucket.resetAt <= now) {
-      buckets.set(key, { count: 1, resetAt: now + options.windowMs });
-      return true;
+    const redisKey = `rate-limit:${key}`;
+    const count = await redis.incr(redisKey);
+    if (count === 1) {
+      await redis.pexpire(redisKey, options.windowMs);
     }
 
-    if (bucket.count >= options.points) {
+    if (count > options.points) {
       throw new HttpException('Rate limit exceeded. Please try again later.', HttpStatus.TOO_MANY_REQUESTS);
     }
 
-    bucket.count += 1;
     return true;
   }
 }
