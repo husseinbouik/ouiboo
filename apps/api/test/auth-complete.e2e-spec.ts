@@ -169,13 +169,13 @@ describe('Auth - Complete E2E (auth-complete.e2e-spec)', () => {
         expect(refreshCookie).toContain('refresh_token=');
         if (!refreshCookie) throw new Error('Login response did not set the refresh cookie');
 
-        const refreshRes = await request(app.getHttpServer()).post('/auth/refresh').set('Cookie', refreshCookie).send({}).expect(201);
+        const refreshRes = await request(app.getHttpServer()).post('/auth/refresh').set('Cookie', refreshCookie).set('X-Requested-With', 'XMLHttpRequest').send({}).expect(201);
         expect(refreshRes.body).toHaveProperty('accessToken');
         expect(refreshRes.body).not.toHaveProperty('refreshToken');
         expect(refreshRes.headers['set-cookie']?.[0]).toContain('refresh_token=');
 
         // old token should be revoked
-        await request(app.getHttpServer()).post('/auth/refresh').set('Cookie', refreshCookie).send({}).expect(401);
+        await request(app.getHttpServer()).post('/auth/refresh').set('Cookie', refreshCookie).set('X-Requested-With', 'XMLHttpRequest').send({}).expect(401);
     });
 
     it('Password reset flow: request and reset', async () => {
