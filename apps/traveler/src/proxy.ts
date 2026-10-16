@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifySession, SESSION_COOKIE_NAME } from '@/lib/session';
 
 const supportedLanguages = ['en', 'fr', 'ar'];
 
@@ -21,7 +22,7 @@ function normalizeLanguage(value?: string | null) {
   return language && supportedLanguages.includes(language) ? language : null;
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   const queryLanguage = normalizeLanguage(request.nextUrl.searchParams.get('lang'));
   const cookieLanguage = normalizeLanguage(request.cookies.get('i18nextLng')?.value);
@@ -33,12 +34,13 @@ export function proxy(request: NextRequest) {
 
 
   // Auth gate: redirect unauthenticated users from protected pages.
-  // TODO(#208): re-enable BFF session validation once /api/auth/session route works on Vercel.
+  // Validates the signed BFF session cookie (ouiboo_session) (#208).
   const TRAVELER_PROTECTED = ['/messages', '/notifications', '/bookings', '/wishlist', '/profile'];
   const travelerPath = request.nextUrl.pathname;
   const travelerIsProtected = TRAVELER_PROTECTED.some((p) => travelerPath === p || travelerPath.startsWith(p + '/'));
   if (travelerIsProtected) {
-    if (!request.cookies.get('refresh_token')) {
+    const session = await verifySession(request.cookies.get(SESSION_COOKIE_NAME)?.value);
+    if (!session) {
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('redirect', travelerPath);
       return NextResponse.redirect(loginUrl);
