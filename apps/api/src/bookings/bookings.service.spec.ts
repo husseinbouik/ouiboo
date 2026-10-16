@@ -198,6 +198,7 @@ describe('BookingsService', () => {
         const proofBooking = {
             id: 'booking-123',
             travelerId: 'user-123',
+            paymentProofId: 'proof-123',
             paymentProof: { imageUrl: 'private/payment-proofs/booking-123/proof.png' },
             session: { template: { agencyId: 'agency-123' } },
         };
