@@ -85,7 +85,12 @@ export default function VerifyEmailPage() {
       return response.data;
     },
     onSuccess: async (data) => {
-      await setBrowserAccessToken(data.accessToken);
+      try {
+        await setBrowserAccessToken(data.accessToken);
+      } catch {
+        setError(t('verify.sessionError', 'Verification succeeded but we could not start your session. Please try again.'));
+        return;
+      }
       setSuccess(true);
       setTimeout(() => {
         router.push('/');
