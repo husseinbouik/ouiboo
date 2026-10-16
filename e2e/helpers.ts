@@ -56,6 +56,17 @@ export const authenticateAs = async (page: Page, role: 'AGENCY' | 'ADMIN' | 'TRA
       httpOnly: true,
       sameSite: 'Lax',
     },
+    {
+      // The proxy currently checks for refresh_token (pre-#208 behavior) because
+      // the BFF /api/auth/session route 404s on Vercel. Set a dummy value so
+      // e2e tests can reach protected pages.
+      name: 'refresh_token',
+      value: 'e2e-test-refresh-token',
+      domain: 'localhost',
+      path: '/',
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
   ]);
 };
 
