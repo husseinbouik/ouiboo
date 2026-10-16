@@ -57,7 +57,12 @@ export default function AgencyLoginPage() {
       return response.data;
     },
     onSuccess: async (data) => {
-      await setBrowserAccessToken(data.accessToken);
+      try {
+        await setBrowserAccessToken(data.accessToken);
+      } catch {
+        setError(t('login.sessionError', 'Failed to establish session. Please try again.'));
+        return;
+      }
       await refetch();
       router.push('/dashboard');
     },
