@@ -10,42 +10,42 @@ export enum PaymentProviderDto {
 
 export class InitiatePaymentDto {
   @IsString()
-  bookingId: string;
+  bookingId!: string;
 
   @IsDecimalMoney()
-  amount: MoneyInput;
+  amount!: MoneyInput;
 
   @IsEmail()
-  travelerEmail: string;
+  travelerEmail!: string;
 
   @IsString()
-  travelerName: string;
+  travelerName!: string;
 
   @IsEnum(PaymentProviderDto)
-  provider: string;
+  provider!: string;
 }
 
 export class VerifyPaymentDto {
   @IsString()
-  transactionId: string;
+  transactionId!: string;
 
   @IsString()
-  bookingId: string;
+  bookingId!: string;
 
   @IsEnum(PaymentProviderDto)
-  provider: string;
+  provider!: string;
 }
 
 export class ProcessRefundDto {
   @IsString()
-  bookingId: string;
+  bookingId!: string;
 
   @IsString()
-  transactionId: string;
+  transactionId!: string;
 
   @IsDecimalMoney()
-  amount: MoneyInput;
+  amount!: MoneyInput;
 
   @IsEnum(PaymentProviderDto)
-  provider: string;
+  provider!: string;
 }

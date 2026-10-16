@@ -23,11 +23,12 @@
                 "../../packages/database/index.ts"
             ]
         },
-        "strictNullChecks": false,
+        "strictNullChecks": true,
         "noImplicitAny": false,
         "strictBindCallApply": false,
         "forceConsistentCasingInFileNames": false,
-        "noFallthroughCasesInSwitch": false
+        "noFallthroughCasesInSwitch": false,
+        "strictPropertyInitialization": true
     },
     "exclude": [
         "node_modules",

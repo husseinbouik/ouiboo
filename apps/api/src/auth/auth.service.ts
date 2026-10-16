@@ -26,8 +26,7 @@ export class AuthService {
                 // Explicit code so frontends can show a friendly message
                 throw new UnauthorizedException('EMAIL_NOT_VERIFIED');
             }
-            const result = { ...user };
-            delete result.password;
+            const { password: _removed, ...result } = user;
             return result;
         }
         return null;
@@ -356,8 +355,58 @@ export class AuthService {
         }
     }
 
-    async logout(token?: string) {
-        if (!token) {
+    /**
+     * Validates a refresh token WITHOUT rotating it.
+     * Used by BFF session checks (GET /auth/session).
+     * Returns the user and token expiry, or throws Unauthorized.
+     */
+    async validateSession(token: string) {
+        try {
+            const refreshSecret = process.env.JWT_REFRESH_SECRET;
+            if (!refreshSecret) {
+                throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+            }
+            const payload = this.jwtService.verify(token, {
+                secret: refreshSecret,
+            }) as { sub: string; exp?: number };
+            const tokenHash = this.hashToken(token);
+            const tokenRecord = await this.db.refreshToken.findFirst({
+                where: {
+                    tokenHash,
+                    userId: payload.sub,
+                    revokedAt: null,
+                    expiresAt: { gt: new Date() },
+                },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            email: true,
+                            name: true,
+                            role: true,
+                            isEmailVerified: true,
+                        },
+                    },
+                },
+            });
+            if (!tokenRecord?.user?.isEmailVerified) {
+                throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+            }
+            return {
+                user: {
+                    id: tokenRecord.user.id,
+                    email: tokenRecord.user.email,
+                    name: tokenRecord.user.name,
+                    role: tokenRecord.user.role,
+                },
+                expiresAt: tokenRecord.expiresAt.toISOString(),
+            };
+        } catch {
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+    }
+
+    async logout(token?: string) {        if (!token) {
             return { message: 'Logged out' };
         }
         const tokenHash = this.hashToken(token);

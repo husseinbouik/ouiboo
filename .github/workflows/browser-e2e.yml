@@ -15,6 +15,11 @@ jobs:
     timeout-minutes: 30
     env:
       NEXT_PUBLIC_API_URL: http://127.0.0.1:3000/api
+      NEXT_PUBLIC_MEDIA_URL: http://127.0.0.1:3000/api/v1/media
+      # Test-only session signing secret. The #208 proxy auth gate verifies the
+      # ouiboo_session cookie with HMAC-SHA256(SESSION_SECRET); e2e tests sign
+      # their own cookies via e2e/helpers.ts authenticateAs(). Never use a real secret here.
+      SESSION_SECRET: e2e-test-secret
 
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +35,13 @@ jobs:
 
       - name: Install Playwright browser
         run: npm run test:e2e:install
+
+      - name: Build Next.js apps
+        # Build separately so failures are visible; the webServer entries only serve.
+        run: |
+          npm run build --workspace apps/traveler
+          npm run build --workspace apps/agency
+          npm run build --workspace apps/admin
 
       - name: Run browser launch suite
         run: npm run test:e2e

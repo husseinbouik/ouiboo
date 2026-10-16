@@ -19,14 +19,18 @@ export function proxy(request: NextRequest) {
   }
 
 
-  // Auth gate (#185): redirect unauthenticated users from dashboard
+  // Auth gate: redirect unauthenticated users from dashboard.
+  // Checks for refresh_token cookie (API sets it as HttpOnly on login).
+  // TODO(#208): re-enable BFF session validation once /api/auth/session route works on Vercel.
   const AGENCY_PUBLIC = ['/login', '/signup', '/forgot-password', '/reset-password', '/verify'];
   const agencyPath = request.nextUrl.pathname;
   const agencyIsPublic = AGENCY_PUBLIC.some((p) => agencyPath === p || agencyPath.startsWith(p + '/'));
-  if (!agencyIsPublic && agencyPath.startsWith('/dashboard') && !request.cookies.get('refresh_token')) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', agencyPath);
-    return NextResponse.redirect(loginUrl);
+  if (!agencyIsPublic && agencyPath.startsWith('/dashboard')) {
+    if (!request.cookies.get('refresh_token')) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', agencyPath);
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
   const response = NextResponse.next({

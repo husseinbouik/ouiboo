@@ -57,7 +57,7 @@ export default function AgencyLoginPage() {
       return response.data;
     },
     onSuccess: async (data) => {
-      setBrowserAccessToken(data.accessToken);
+      await setBrowserAccessToken(data.accessToken);
       await refetch();
       router.push('/dashboard');
     },

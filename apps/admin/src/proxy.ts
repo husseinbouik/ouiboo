@@ -19,14 +19,17 @@ export function proxy(request: NextRequest) {
   }
 
 
-  // Auth gate (#185): redirect unauthenticated users from protected routes
+  // Auth gate: redirect unauthenticated users.
+  // TODO(#208): re-enable BFF session validation once /api/auth/session route works on Vercel.
   const ADMIN_PUBLIC = ['/login'];
   const adminPath = request.nextUrl.pathname;
   const adminIsPublic = ADMIN_PUBLIC.some((p) => adminPath === p || adminPath.startsWith(p + '/'));
-  if (!adminIsPublic && !request.cookies.get('refresh_token')) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', adminPath);
-    return NextResponse.redirect(loginUrl);
+  if (!adminIsPublic) {
+    if (!request.cookies.get('refresh_token')) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', adminPath);
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
   const response = NextResponse.next({

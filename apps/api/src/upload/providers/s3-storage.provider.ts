@@ -12,18 +12,18 @@ export class S3StorageProvider implements IStorageProvider {
     private readonly region: string;
 
     constructor() {
-        this.bucket = process.env.S3_BUCKET;
-        this.region = process.env.S3_REGION || 'us-east-1';
-
-        if (!this.bucket) {
+        const bucket = process.env.S3_BUCKET;
+        if (!bucket) {
             throw new Error('S3_BUCKET environment variable is not defined');
         }
+        this.bucket = bucket;
+        this.region = process.env.S3_REGION || 'us-east-1';
 
         this.s3Client = new S3Client({
             region: this.region,
             credentials: {
-                accessKeyId: process.env.S3_ACCESS_KEY_ID,
-                secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+                accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
+                secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
             },
             endpoint: process.env.S3_ENDPOINT,
             forcePathStyle: !!process.env.S3_ENDPOINT,

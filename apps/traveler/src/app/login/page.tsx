@@ -55,7 +55,7 @@ export default function TravelerLoginPage() {
       return response.data;
     },
     onSuccess: async (data) => {
-      setBrowserAccessToken(data.accessToken);
+      await setBrowserAccessToken(data.accessToken);
       // Force update user state
       await refetch();
       router.push('/');
