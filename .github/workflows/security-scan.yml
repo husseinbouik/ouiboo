@@ -1,0 +1,82 @@
+name: Security Scan
+
+# Automated security scanning for issue #215:
+# - Gitleaks: secret scanning on PRs
+# - Semgrep: SAST for TypeScript / NestJS / Next.js
+# - CodeQL: GitHub-native SAST for javascript-typescript
+#
+# Dependency Review is intentionally NOT duplicated here — it already
+# exists in .github/workflows/dependency-review.yml.
+# Container scanning is intentionally omitted — the project deploys to
+# Vercel serverless; there are no container images to scan.
+
+on:
+  pull_request:
+    branches: [ master, staging ]
+  push:
+    branches: [ master, staging ]
+
+permissions:
+  contents: read
+
+# Cancel superseded runs on PRs to save minutes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  gitleaks:
+    name: Secret scanning (Gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true # non-blocking while findings are triaged (#215)
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  semgrep:
+    name: SAST (Semgrep)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true # non-blocking while findings are triaged (#215)
+    permissions:
+      contents: read
+    container:
+      image: semgrep/semgrep:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Semgrep
+        run: |
+          semgrep ci \
+            --config p/typescript \
+            --config p/nestjs \
+            --config p/nextjs \
+            --config p/security-audit \
+            --metrics=off
+
+  codeql:
+    name: SAST (CodeQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true # non-blocking while findings are triaged (#215)
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
