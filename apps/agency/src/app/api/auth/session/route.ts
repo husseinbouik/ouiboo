@@ -8,8 +8,12 @@
  * #247: POST failures return stable error codes for diagnostics:
  *   SESSION_MALFORMED      (400) - missing/invalid request body
  *   SESSION_INVALID_TOKEN  (401) - API rejected the token
+ *   SESSION_ROLE_MISMATCH  (403) - token valid but role not allowed on this portal (#257)
  *   SESSION_UPSTREAM_ERROR (502) - API validation unreachable (network/timeout)
  *   SESSION_CONFIG_ERROR   (500) - SESSION_SECRET missing or invalid
+ *
+ * #257: Portal role isolation - a session is only created when the user's role
+ * matches this portal. Cross-portal sessions are rejected with 403.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { signSession, verifySession, SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from '@/lib/session';
@@ -20,8 +24,12 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1
 type SessionErrorCode =
   | 'SESSION_MALFORMED'
   | 'SESSION_INVALID_TOKEN'
+  | 'SESSION_ROLE_MISMATCH'
   | 'SESSION_UPSTREAM_ERROR'
   | 'SESSION_CONFIG_ERROR';
+
+/** Portal role isolation (#257): only this role may establish a session here. */
+const ALLOWED_ROLE = 'AGENCY';
 
 function sessionError(code: SessionErrorCode, status: number, message: string) {
   return NextResponse.json({ error: code, message }, { status });
@@ -85,6 +93,13 @@ export async function POST(request: NextRequest) {
   if (!userData?.id || !userData?.role) {
     logSessionError('SESSION_INVALID_TOKEN', 'POST users/me missing id/role');
     return sessionError('SESSION_INVALID_TOKEN', 401, 'Invalid or expired token');
+  }
+
+  // Portal role isolation (#257): reject tokens whose role does not match this portal.
+  // Log only the mismatch (never the token or user id).
+  if (userData.role !== ALLOWED_ROLE) {
+    logSessionError('SESSION_ROLE_MISMATCH', `POST role mismatch expected=${ALLOWED_ROLE}`);
+    return sessionError('SESSION_ROLE_MISMATCH', 403, 'Account not authorized for this portal');
   }
 
   let token: string;
