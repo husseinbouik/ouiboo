@@ -1,9 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { mockAdminApi } from './helpers';
+import { authenticateAs, mockAdminApi } from './helpers';
 
 test.describe('admin launch flow', () => {
   test.beforeEach(async ({ page }) => {
     await mockAdminApi(page);
+    // The #208 proxy auth gate redirects everything except /login to /login
+    // without a valid signed ADMIN session cookie.
+    await authenticateAs(page, 'ADMIN');
   });
 
   test('admin dashboard exposes audit visibility for launch operators', async ({ page }) => {

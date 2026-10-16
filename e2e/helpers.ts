@@ -1,13 +1,62 @@
 import type { Page, Route } from '@playwright/test';
+import { createHmac } from 'node:crypto';
 
 type Json = Record<string, unknown> | unknown[] | string | number | boolean | null;
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+};
+
 const jsonResponse = async (route: Route, status: number, body: Json) => {
+  // CORS headers: the apps call the mock API cross-origin (app on :3001/:3002/:3003,
+  // API on :3000), so preflights and responses must be explicitly allowed.
+  // NOTE: the api client sends withCredentials: true, so we must echo the exact
+  // request Origin (a wildcard '*' is rejected by browsers for credentialed requests)
+  // and set Access-Control-Allow-Credentials.
+  const origin = route.request().headers()['origin'] || '*';
   await route.fulfill({
     status,
     contentType: 'application/json',
+    headers: {
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Allow-Headers': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+    },
     body: JSON.stringify(body),
   });
+};
+
+/**
+ * Signs a BFF session cookie (ouiboo_session) the same way apps/<app>/src/lib/session.ts
+ * does, so tests can pass the #208 proxy auth gate without a real login.
+ * Requires SESSION_SECRET to match the value the apps run with (set in CI env).
+ */
+const base64UrlEncode = (data: string): string =>
+  Buffer.from(data, 'utf8').toString('base64url');
+
+export const signTestSession = (role: 'AGENCY' | 'ADMIN' | 'TRAVELER', sub = 'e2e-test-user'): string => {
+  const secret = process.env.SESSION_SECRET || 'e2e-test-secret';
+  const payload = { sub, role, exp: Math.floor(Date.now() / 1000) + 15 * 60 };
+  const encoded = base64UrlEncode(JSON.stringify(payload));
+  const signature = createHmac('sha256', secret).update(encoded, 'utf8').digest('base64url');
+  return `${encoded}.${signature}`;
+};
+
+/** Establishes an authenticated session for the given role before navigating to protected pages. */
+export const authenticateAs = async (page: Page, role: 'AGENCY' | 'ADMIN' | 'TRAVELER') => {
+  await page.context().addCookies([
+    {
+      name: 'ouiboo_session',
+      value: signTestSession(role),
+      domain: 'localhost',
+      path: '/',
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ]);
 };
 
 export const seedLocalStorage = async (page: Page, values: Record<string, string>) => {
@@ -21,10 +70,13 @@ export const seedLocalStorage = async (page: Page, values: Record<string, string
 export const mockTravelerApi = async (page: Page) => {
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url());
-    const { pathname, searchParams } = url;
+    const { searchParams } = url;
+    // Normalize: the built app may use /api or /api/v1 as the API prefix
+    // (NEXT_PUBLIC_API_URL is inlined at build time and differs per environment).
+    const pathname = url.pathname.replace(/^\/api(\/v1)?/, '') || '/';
     const method = route.request().method();
 
-    if (pathname === '/api/auth/register' && method === 'POST') {
+    if (pathname === '/auth/register' && method === 'POST') {
       return jsonResponse(route, 201, {
         email: 'traveler@example.com',
         requiresEmailVerification: true,
@@ -32,22 +84,22 @@ export const mockTravelerApi = async (page: Page) => {
       });
     }
 
-    if (pathname === '/api/auth/verify-email' && method === 'POST') {
+    if (pathname === '/auth/verify-email' && method === 'POST') {
       return jsonResponse(route, 201, { status: 'verified' });
     }
 
-    if (pathname === '/api/auth/resend-otp' && method === 'POST') {
+    if (pathname === '/auth/resend-otp' && method === 'POST') {
       return jsonResponse(route, 201, { status: 'resent' });
     }
 
-    if (pathname === '/api/auth/login' && method === 'POST') {
+    if (pathname === '/auth/login' && method === 'POST') {
       return jsonResponse(route, 201, {
         accessToken: 'traveler-token',
         refreshToken: 'traveler-refresh',
       });
     }
 
-    if (pathname === '/api/users/me' && method === 'GET') {
+    if (pathname === '/users/me' && method === 'GET') {
       return jsonResponse(route, 200, {
         id: 'traveler-1',
         name: 'Launch Traveler',
@@ -56,11 +108,11 @@ export const mockTravelerApi = async (page: Page) => {
       });
     }
 
-    if (pathname === '/api/users/wishlist/count' && method === 'GET') {
+    if (pathname === '/users/wishlist/count' && method === 'GET') {
       return jsonResponse(route, 200, { count: 1 });
     }
 
-    if (pathname === '/api/agencies/agency-1/public' && method === 'GET') {
+    if (pathname === '/agencies/agency-1/public' && method === 'GET') {
       return jsonResponse(route, 200, {
         id: 'agency-1',
         companyName: 'Atlas Agency',
@@ -70,7 +122,7 @@ export const mockTravelerApi = async (page: Page) => {
       });
     }
 
-    if (pathname === '/api/trips' && method === 'GET') {
+    if (pathname === '/trips' && method === 'GET') {
       const agencyId = searchParams.get('agencyId');
       const q = (searchParams.get('q') || '').toLowerCase();
       const category = searchParams.get('category');
@@ -114,7 +166,7 @@ export const mockTravelerApi = async (page: Page) => {
       });
     }
 
-    if (pathname === '/api/trips/trip-1' && method === 'GET') {
+    if (pathname === '/trips/trip-1' && method === 'GET') {
       return jsonResponse(route, 200, {
         id: 'trip-1',
         title: 'Atlas Weekend Escape',
@@ -148,7 +200,7 @@ export const mockTravelerApi = async (page: Page) => {
       });
     }
 
-    if (pathname === '/api/trips/trip-1/reviews/stats' && method === 'GET') {
+    if (pathname === '/trips/trip-1/reviews/stats' && method === 'GET') {
       return jsonResponse(route, 200, {
         averageRating: 4.8,
         totalReviews: 12,
@@ -156,18 +208,18 @@ export const mockTravelerApi = async (page: Page) => {
       });
     }
 
-    if (pathname === '/api/trips/trip-1/reviews' && method === 'GET') {
+    if (pathname === '/trips/trip-1/reviews' && method === 'GET') {
       return jsonResponse(route, 200, {
         data: [],
         pagination: { total: 0, page: 1, limit: 10, totalPages: 0 },
       });
     }
 
-    if (pathname === '/api/bookings' && method === 'POST') {
+    if (pathname === '/bookings' && method === 'POST') {
       return jsonResponse(route, 201, { id: 'booking-1' });
     }
 
-    if (pathname === '/api/bookings/booking-1' && method === 'GET') {
+    if (pathname === '/bookings/booking-1' && method === 'GET') {
       return jsonResponse(route, 200, {
         id: 'booking-1',
         status: 'AWAITING_VALIDATION',
@@ -199,11 +251,11 @@ export const mockTravelerApi = async (page: Page) => {
       });
     }
 
-    if (pathname === '/api/bookings/booking-1/payment-proof' && method === 'POST') {
+    if (pathname === '/bookings/booking-1/payment-proof' && method === 'POST') {
       return jsonResponse(route, 201, { ok: true });
     }
 
-    if (pathname === '/api/reviews' && method === 'POST') {
+    if (pathname === '/reviews' && method === 'POST') {
       return jsonResponse(route, 201, { id: 'review-1' });
     }
 
@@ -225,10 +277,11 @@ export const mockAgencyApi = async (page: Page) => {
 
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url());
-    const { pathname } = url;
+    // Normalize: the built app may use /api or /api/v1 as the API prefix.
+    const pathname = url.pathname.replace(/^\/api(\/v1)?/, '') || '/';
     const method = route.request().method();
 
-    if (pathname === '/api/users/me' && method === 'GET') {
+    if (pathname === '/users/me' && method === 'GET') {
       return jsonResponse(route, 200, {
         id: 'agency-user-1',
         name: 'Atlas Agency',
@@ -244,7 +297,7 @@ export const mockAgencyApi = async (page: Page) => {
       });
     }
 
-    if (pathname === '/api/agency/stats' && method === 'GET') {
+    if (pathname === '/agency/stats' && method === 'GET') {
       return jsonResponse(route, 200, {
         revenue: 12000,
         totalBookings: 14,
@@ -255,18 +308,18 @@ export const mockAgencyApi = async (page: Page) => {
       });
     }
 
-    if (pathname === '/api/agency/payouts' && method === 'GET') {
+    if (pathname === '/agency/payouts' && method === 'GET') {
       return jsonResponse(route, 200, {
         data: [],
         pagination: { total: 0, page: 1, limit: 10, totalPages: 0 },
       });
     }
 
-    if (pathname === '/api/agency/payouts' && method === 'POST') {
+    if (pathname === '/agency/payouts' && method === 'POST') {
       return jsonResponse(route, 201, { id: 'payout-1', status: 'PENDING' });
     }
 
-    if (pathname === '/api/agency/bookings' && method === 'GET') {
+    if (pathname === '/agency/bookings' && method === 'GET') {
       return jsonResponse(route, 200, [
         {
           id: 'booking-1',
@@ -311,45 +364,46 @@ export const mockAdminApi = async (page: Page) => {
 
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url());
-    const { pathname } = url;
+    // Normalize: the built app may use /api or /api/v1 as the API prefix.
+    const pathname = url.pathname.replace(/^\/api(\/v1)?/, '') || '/';
     const method = route.request().method();
 
-    if (pathname === '/api/auth/login' && method === 'POST') {
+    if (pathname === '/auth/login' && method === 'POST') {
       return jsonResponse(route, 201, {
         accessToken: 'admin-token',
         refreshToken: 'admin-refresh',
       });
     }
 
-    if (pathname === '/api/auth/refresh' && method === 'POST') {
+    if (pathname === '/auth/refresh' && method === 'POST') {
       return jsonResponse(route, 201, {
         accessToken: 'admin-token',
         refreshToken: 'admin-refresh',
       });
     }
 
-    if (pathname === '/api/admin/pending-agencies' && method === 'GET') {
+    if (pathname === '/admin/pending-agencies' && method === 'GET') {
       return jsonResponse(route, 200, {
         data: [],
         pagination: { total: 0, page: 1, limit: 25, totalPages: 0 },
       });
     }
 
-    if (pathname === '/api/admin/pending-trips' && method === 'GET') {
+    if (pathname === '/admin/pending-trips' && method === 'GET') {
       return jsonResponse(route, 200, {
         data: [],
         pagination: { total: 0, page: 1, limit: 25, totalPages: 0 },
       });
     }
 
-    if (pathname === '/api/admin/agencies' && method === 'GET') {
+    if (pathname === '/admin/agencies' && method === 'GET') {
       return jsonResponse(route, 200, {
         data: [],
         pagination: { total: 0, page: 1, limit: 25, totalPages: 0 },
       });
     }
 
-    if (pathname === '/api/admin/bookings' && method === 'GET') {
+    if (pathname === '/admin/bookings' && method === 'GET') {
       return jsonResponse(route, 200, {
         data: [
           {
@@ -384,14 +438,14 @@ export const mockAdminApi = async (page: Page) => {
       });
     }
 
-    if (pathname === '/api/admin/pending-payments' && method === 'GET') {
+    if (pathname === '/admin/pending-payments' && method === 'GET') {
       return jsonResponse(route, 200, {
         data: [],
         pagination: { total: 0, page: 1, limit: 25, totalPages: 0 },
       });
     }
 
-    if (pathname === '/api/admin/payout-requests' && method === 'GET') {
+    if (pathname === '/admin/payout-requests' && method === 'GET') {
       return jsonResponse(route, 200, {
         data: [
           {
@@ -414,17 +468,17 @@ export const mockAdminApi = async (page: Page) => {
       });
     }
 
-    if (pathname === '/api/admin/bookings/booking-1/refund' && method === 'POST') {
+    if (pathname === '/admin/bookings/booking-1/refund' && method === 'POST') {
       bookingPaymentStatus = 'REFUNDED';
       return jsonResponse(route, 201, { status: 'REFUNDED' });
     }
 
-    if (pathname === '/api/admin/payouts/payout-1/process' && method === 'POST') {
+    if (pathname === '/admin/payouts/payout-1/process' && method === 'POST') {
       payoutStatus = 'PAID';
       return jsonResponse(route, 201, { id: 'payout-1', status: 'PAID' });
     }
 
-    if (pathname === '/api/admin/audit-logs' && method === 'GET') {
+    if (pathname === '/admin/audit-logs' && method === 'GET') {
       return jsonResponse(route, 200, {
         data: [
           {
@@ -442,7 +496,7 @@ export const mockAdminApi = async (page: Page) => {
       });
     }
 
-    if (pathname === '/api/admin/audit-logs/export' && method === 'GET') {
+    if (pathname === '/admin/audit-logs/export' && method === 'GET') {
       await route.fulfill({
         status: 200,
         contentType: 'text/csv',
@@ -451,7 +505,7 @@ export const mockAdminApi = async (page: Page) => {
       return;
     }
 
-    if (pathname === '/api/admin/audit-logs/retention' && method === 'POST') {
+    if (pathname === '/admin/audit-logs/retention' && method === 'POST') {
       return jsonResponse(route, 201, { deleted: auditDeletedCount, cutoff: '2026-01-01T00:00:00.000Z' });
     }
 

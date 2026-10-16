@@ -33,7 +33,8 @@ test.describe('traveler launch flow', () => {
   test('traveler can go from trip detail to checkout confirmation', async ({ page }) => {
     await page.goto('/search', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: 'Atlas Weekend Escape' })).toBeVisible();
-    await page.getByRole('button', { name: /view details/i }).click();
+    // "View details" is rendered as a link (Next.js Link), not a button.
+    await page.getByRole('link', { name: /view details/i }).first().click();
     await page.waitForURL(/\/trip\/trip-1/);
     await expect(page.getByRole('heading', { name: 'Atlas Weekend Escape' })).toBeVisible();
     await page.getByText(/spots left/i).first().click();
