@@ -1,14 +1,39 @@
 /**
- * BFF session route (#208).
+ * BFF session route (#208, #247).
  *
  * POST   /api/auth/session  { accessToken } -> validates with API, sets signed session cookie
  * GET    /api/auth/session                    -> returns current session status from cookie
  * DELETE /api/auth/session                    -> clears session cookie
+ *
+ * #247: POST failures return stable error codes for diagnostics:
+ *   SESSION_MALFORMED      (400) - missing/invalid request body
+ *   SESSION_INVALID_TOKEN  (401) - API rejected the token
+ *   SESSION_UPSTREAM_ERROR (502) - API validation unreachable (network/timeout)
+ *   SESSION_CONFIG_ERROR   (500) - SESSION_SECRET missing or invalid
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { signSession, verifySession, SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from '@/lib/session';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+
+/** Stable error codes for BFF session diagnostics (#247). */
+type SessionErrorCode =
+  | 'SESSION_MALFORMED'
+  | 'SESSION_INVALID_TOKEN'
+  | 'SESSION_UPSTREAM_ERROR'
+  | 'SESSION_CONFIG_ERROR';
+
+function sessionError(code: SessionErrorCode, status: number, message: string) {
+  return NextResponse.json({ error: code, message }, { status });
+}
+
+/**
+ * Safe diagnostic logging (#247): error category + timestamp only.
+ * NEVER log tokens, cookies, passwords, or request bodies.
+ */
+function logSessionError(code: SessionErrorCode, context: string) {
+  console.error(`[session:${code}] ${context} at=${new Date().toISOString()}`);
+}
 
 function sessionCookieOptions() {
   const isProduction = process.env.NODE_ENV === 'production';
@@ -22,40 +47,63 @@ function sessionCookieOptions() {
 }
 
 export async function POST(request: NextRequest) {
+  let accessToken: unknown;
   try {
-    const { accessToken } = await request.json();
-    if (!accessToken || typeof accessToken !== 'string') {
-      return NextResponse.json({ error: 'accessToken required' }, { status: 400 });
-    }
+    ({ accessToken } = await request.json());
+  } catch {
+    logSessionError('SESSION_MALFORMED', 'POST body parse failed');
+    return sessionError('SESSION_MALFORMED', 400, 'Invalid request body');
+  }
+  if (!accessToken || typeof accessToken !== 'string') {
+    logSessionError('SESSION_MALFORMED', 'POST missing accessToken');
+    return sessionError('SESSION_MALFORMED', 400, 'Invalid request body');
+  }
 
-    // Validate the access token with the API (authoritative)
-    const apiRes = await fetch(`${API_URL}/users/me`, {
+  // Fail fast on missing server config (#243, #247) rather than hitting the API first.
+  if (!process.env.SESSION_SECRET) {
+    logSessionError('SESSION_CONFIG_ERROR', 'POST SESSION_SECRET not configured');
+    return sessionError('SESSION_CONFIG_ERROR', 500, 'Session service misconfigured');
+  }
+
+  // Validate the access token with the API (authoritative)
+  let apiRes: Response;
+  try {
+    apiRes = await fetch(`${API_URL}/users/me`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       cache: 'no-store',
     });
-    if (!apiRes.ok) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
-    const user = await apiRes.json();
-    const userData = user.data ?? user;
-    if (!userData?.id || !userData?.role) {
-      return NextResponse.json({ error: 'Invalid user' }, { status: 401 });
-    }
+  } catch {
+    logSessionError('SESSION_UPSTREAM_ERROR', 'POST users/me fetch failed');
+    return sessionError('SESSION_UPSTREAM_ERROR', 502, 'Authentication service unavailable');
+  }
+  if (!apiRes.ok) {
+    logSessionError('SESSION_INVALID_TOKEN', `POST users/me rejected status=${apiRes.status}`);
+    return sessionError('SESSION_INVALID_TOKEN', 401, 'Invalid or expired token');
+  }
+  const user = await apiRes.json();
+  const userData = user.data ?? user;
+  if (!userData?.id || !userData?.role) {
+    logSessionError('SESSION_INVALID_TOKEN', 'POST users/me missing id/role');
+    return sessionError('SESSION_INVALID_TOKEN', 401, 'Invalid or expired token');
+  }
 
-    const token = await signSession({
+  let token: string;
+  try {
+    token = await signSession({
       sub: userData.id,
       role: userData.role,
       exp: Math.floor(Date.now() / 1000) + SESSION_MAX_AGE_SECONDS,
     });
-
-    const response = NextResponse.json({
-      user: { id: userData.id, email: userData.email, name: userData.name, role: userData.role },
-    });
-    response.cookies.set(SESSION_COOKIE_NAME, token, sessionCookieOptions());
-    return response;
   } catch {
-    return NextResponse.json({ error: 'Session creation failed' }, { status: 500 });
+    logSessionError('SESSION_CONFIG_ERROR', 'POST signSession failed');
+    return sessionError('SESSION_CONFIG_ERROR', 500, 'Session service misconfigured');
   }
+
+  const response = NextResponse.json({
+    user: { id: userData.id, email: userData.email, name: userData.name, role: userData.role },
+  });
+  response.cookies.set(SESSION_COOKIE_NAME, token, sessionCookieOptions());
+  return response;
 }
 
 export async function GET(request: NextRequest) {
