@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, UnauthorizedException, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { DatabaseService } from '../database/database.service';
 import { RegisterDto } from './dto/auth.dto';
@@ -6,22 +6,98 @@ import * as bcrypt from 'bcrypt';
 import { EmailService } from '../email/email.service';
 import { createHash, randomInt, randomUUID, timingSafeEqual } from 'crypto';
 import { UserRole } from '@ouiboo/types';
+import { RedisService } from '../common/redis.service';
 
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 const UNAUTHORIZED_MESSAGE = 'Unauthorized';
 
+// #264: cheap pre-bcrypt risk gate.
+// bcrypt.compare costs ~200-300ms of CPU; a Redis GET costs ~0.1ms. This gate
+// tracks failed logins per email in Redis and fails fast (429) once the
+// threshold is exceeded, so credential-stuffing cannot burn bcrypt CPU.
+// Sliding window via key TTL — never a permanent lockout. Fails open if
+// Redis is unavailable so login never breaks on a Redis outage.
+const LOGIN_GATE_KEY_PREFIX = 'login:gate';
+const LOGIN_GATE_MAX_FAILURES = 10;
+const LOGIN_GATE_WINDOW_SECONDS = 15 * 60;
+
 @Injectable()
 export class AuthService {
+    private readonly logger = new Logger(AuthService.name);
+
     constructor(
         private db: DatabaseService,
         private jwtService: JwtService,
         private emailService: EmailService,
+        private redisService: RedisService,
     ) { }
 
+    /**
+     * Redis key for the pre-bcrypt login gate. The email is hashed so no PII
+     * lands in Redis keys (which may appear in slow-logs or monitoring).
+     */
+    private loginGateKey(email: string): string {
+        const normalized = email.trim().toLowerCase();
+        const digest = createHash('sha256').update(normalized).digest('hex');
+        return `${LOGIN_GATE_KEY_PREFIX}:${digest}`;
+    }
+
+    /**
+     * Cheap check run BEFORE bcrypt.compare. Throws 429 when the failure
+     * threshold is exceeded. Fails open (no-op) when Redis is unavailable.
+     */
+    private async checkLoginGate(email: string): Promise<void> {
+        try {
+            const redis = this.redisService.getClient();
+            if (!redis) return;
+            const raw = await redis.get(this.loginGateKey(email));
+            const failures = raw ? parseInt(raw, 10) : 0;
+            if (Number.isFinite(failures) && failures >= LOGIN_GATE_MAX_FAILURES) {
+                throw new HttpException(
+                    'Too many failed login attempts. Please try again later.',
+                    HttpStatus.TOO_MANY_REQUESTS,
+                );
+            }
+        } catch (err) {
+            if (err instanceof HttpException) throw err;
+            this.logger.warn(`login gate check failed (fail-open): ${(err as Error).message}`);
+        }
+    }
+
+    /** Increment the failure counter with a sliding-window TTL. Never logs the password. */
+    private async recordLoginFailure(email: string): Promise<void> {
+        try {
+            const redis = this.redisService.getClient();
+            if (!redis) return;
+            const key = this.loginGateKey(email);
+            const count = await redis.incr(key);
+            if (count === 1) {
+                await redis.expire(key, LOGIN_GATE_WINDOW_SECONDS);
+            }
+        } catch (err) {
+            this.logger.warn(`login gate record failed (fail-open): ${(err as Error).message}`);
+        }
+    }
+
+    /** Clear the failure counter after a successful (correct-password) login. */
+    private async clearLoginFailures(email: string): Promise<void> {
+        try {
+            const redis = this.redisService.getClient();
+            if (!redis) return;
+            await redis.del(this.loginGateKey(email));
+        } catch (err) {
+            this.logger.warn(`login gate clear failed (fail-open): ${(err as Error).message}`);
+        }
+    }
+
     async validateUser(email: string, pass: string): Promise<any> {
+        // #264: gate checked before any expensive work (DB lookup + bcrypt)
+        await this.checkLoginGate(email);
         const user = await this.db.user.findUnique({ where: { email } });
         if (user && await bcrypt.compare(pass, user.password)) {
+            // Correct password — reset the gate even if email is unverified
+            await this.clearLoginFailures(email);
             if (!user.isEmailVerified) {
                 // Explicit code so frontends can show a friendly message
                 throw new UnauthorizedException('EMAIL_NOT_VERIFIED');
@@ -29,6 +105,7 @@ export class AuthService {
             const { password: _removed, ...result } = user;
             return result;
         }
+        await this.recordLoginFailure(email);
         return null;
     }
 
