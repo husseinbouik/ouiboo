@@ -60,7 +60,7 @@ export default function AgencyLoginPage() {
       try {
         await setBrowserAccessToken(data.accessToken);
       } catch {
-        setError(t('login.sessionError', 'Failed to establish session. Please try again.'));
+        setError('Failed to establish session. Please try again.');
         return;
       }
       await refetch();
