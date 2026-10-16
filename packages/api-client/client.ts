@@ -17,10 +17,11 @@ export async function setBrowserAccessToken(token: string | null): Promise<void>
   // Establish the BFF app session (#208) so the Next.js proxy can validate
   // authenticated requests. MUST be awaited before redirecting to protected
   // routes, otherwise the proxy will not see the session cookie yet.
+  // Errors are intentionally propagated: a login that succeeds at the API
+  // but fails to establish the app session must surface visibly (#234)
+  // instead of silently bouncing the user back to the login page.
   if (token && typeof window !== 'undefined') {
-    await establishAppSession(token).catch(() => {
-      // Session establishment is best-effort; API auth is authoritative.
-    })
+    await establishAppSession(token)
   }
 }
 
@@ -40,11 +41,17 @@ export function clearBrowserAccessToken() {
  * HttpOnly session cookie that the proxy can verify.
  */
 export async function establishAppSession(accessToken: string): Promise<void> {
-  await fetch('/api/auth/session', {
+  const res = await fetch('/api/auth/session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ accessToken }),
   })
+  // Fail loudly (#234): a non-2xx response means the session cookie was not
+  // set, so callers (e.g. login onSuccess) must not proceed to protected
+  // routes as if the user were authenticated.
+  if (!res.ok) {
+    throw new Error(`Session establishment failed: ${res.status}`)
+  }
 }
 
 /**

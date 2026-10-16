@@ -43,7 +43,12 @@ export default function AdminLoginPage() {
         setError(t('login.notAdmin', 'This account does not have admin access.'));
         return;
       }
-      await setBrowserAccessToken(data.accessToken);
+      try {
+        await setBrowserAccessToken(data.accessToken);
+      } catch {
+        setError(t('login.sessionError', 'Failed to establish session. Please try again.'));
+        return;
+      }
       router.push('/');
     },
     onError: (err: AxiosError<ApiErrorResponse>) => {
