@@ -29,7 +29,7 @@ jobs:
     name: Secret scanning (Gitleaks)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    continue-on-error: true # non-blocking while findings are triaged (#215)
+    continue-on-error: false # blocking per #245
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,7 +43,7 @@ jobs:
     name: SAST (Semgrep)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    continue-on-error: true # non-blocking while findings are triaged (#215)
+    continue-on-error: false # blocking per #245
     permissions:
       contents: read
     container:
@@ -63,7 +63,7 @@ jobs:
     name: SAST (CodeQL)
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    continue-on-error: true # non-blocking while findings are triaged (#215)
+    continue-on-error: false # blocking per #245
     permissions:
       actions: read
       contents: read
