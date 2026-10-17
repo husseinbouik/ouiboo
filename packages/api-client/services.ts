@@ -133,7 +133,7 @@ export class AgencyApi extends ApiService {
   }
 
   getTrips(params: PageParams = {}) {
-    return this.get<TripListItem[]>('/agency/trips', { params })
+    return this.get<PaginatedData<TripListItem>>('/agency/trips', { params })
   }
 
   getBookings(params: AgencyBookingsParams = {}) {

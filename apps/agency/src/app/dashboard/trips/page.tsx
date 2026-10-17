@@ -57,7 +57,8 @@ export default function AgencyTripsPage() {
     queryKey: ['agency-trips'],
     queryFn: async () => {
       const response = await apiClient.get('/agency/trips');
-      return response.data;
+      const payload = response.data as AgencyTripSummary[] | { data: AgencyTripSummary[] };
+      return Array.isArray(payload) ? payload : (payload.data ?? []);
     }
   });
 

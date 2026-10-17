@@ -736,7 +736,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             .set('Authorization', 'Bearer agency-123')
             .expect(200);
 
-        const tripIds = res.body.map((t: any) => t.id);
+        const tripIds = res.body.data.map((t: any) => t.id);
         expect(tripIds.includes(t1.id)).toBe(true);
         expect(tripIds.includes(t2.id)).toBe(false);
     });
