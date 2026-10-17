@@ -93,23 +93,38 @@ export class AgencyController {
     async getTrips(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
         const agencyId = req.tenantId;
         const take = clampListLimit(limit);
-        const skip = (parsePage(page) - 1) * take;
+        const currentPage = parsePage(page);
+        const skip = (currentPage - 1) * take;
+        const where = { agencyId };
 
-        return this.prisma.tripTemplate.findMany({
-            where: { agencyId },
-            include: {
-                sessions: {
-                    include: {
-                        _count: {
-                            select: { bookings: true }
+        const [data, total] = await Promise.all([
+            this.prisma.tripTemplate.findMany({
+                where,
+                include: {
+                    sessions: {
+                        include: {
+                            _count: {
+                                select: { bookings: true }
+                            }
                         }
                     }
-                }
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take,
+            }),
+            this.prisma.tripTemplate.count({ where }),
+        ]);
+
+        return {
+            data,
+            pagination: {
+                page: currentPage,
+                limit: take,
+                total,
+                totalPages: Math.ceil(total / take),
             },
-            orderBy: { createdAt: 'desc' },
-            skip,
-            take,
-        });
+        };
     }
 
     @Get('trips/:id')
