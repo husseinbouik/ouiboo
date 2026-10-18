@@ -6,7 +6,7 @@ name: Staging Smoke Tests
 
 on:
   pull_request:
-    branches: [staging]
+    branches: [staging, master]
   workflow_dispatch:
   schedule:
     # Daily at 06:00 UTC as a safety net
