@@ -15,6 +15,7 @@
     "@ouiboo/auth": "*",
     "@ouiboo/i18n": "*",
     "@ouiboo/schemas": "*",
+    "@ouiboo/session": "*",
     "@ouiboo/tokens": "*",
     "@ouiboo/types": "*",
     "@ouiboo/ui": "*",
