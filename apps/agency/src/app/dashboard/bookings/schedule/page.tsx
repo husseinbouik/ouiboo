@@ -47,7 +47,8 @@ export default function TripSchedulePage() {
     queryKey: ['agency-trips'],
     queryFn: async () => {
       const response = await apiClient.get('/agency/trips');
-      return response.data;
+      const payload = response.data as ScheduleTrip[] | { data: ScheduleTrip[] };
+      return Array.isArray(payload) ? payload : (payload.data ?? []);
     },
   });
 

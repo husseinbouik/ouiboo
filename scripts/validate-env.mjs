@@ -21,6 +21,9 @@ const envSchema = z.object({
   // Auth
   JWT_SECRET: z.string().min(16),
   JWT_REFRESH_SECRET: z.string().min(16),
+  // BFF session secret for web apps (agency, traveler, admin) - #243
+  // Required in production for signed session cookies; server-only, never exposed to client
+  SESSION_SECRET: z.string().min(32).optional(),
   CORS_ORIGINS: z.string().min(1),
   TRUST_PROXY_HOPS: optionalValue(z.coerce.number().int().min(1).max(5)),
   
@@ -99,8 +102,9 @@ const envSchema = z.object({
   if (!productionValidation) return;
 
   const secretPlaceholderPattern = /(?:demo|change|replace|secret|password)/i;
-  for (const name of ['JWT_SECRET', 'JWT_REFRESH_SECRET']) {
+  for (const name of ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'SESSION_SECRET']) {
     const secret = data[name];
+    if (!secret) continue; // SESSION_SECRET is optional for API-only contexts
     if (secret.length < 32 || secretPlaceholderPattern.test(secret)) {
       ctx.addIssue({
         code: 'custom',

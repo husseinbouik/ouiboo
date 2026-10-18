@@ -58,7 +58,7 @@ export default function TravelerLoginPage() {
       try {
         await setBrowserAccessToken(data.accessToken);
       } catch {
-        setError(t('login.sessionError', 'Failed to establish session. Please try again.'));
+        setError('Failed to establish session. Please try again.');
         return;
       }
       // Force update user state

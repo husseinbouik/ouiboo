@@ -1,7 +1,7 @@
 'use client';
 
 import type { AxiosError } from 'axios';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, Input, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +31,13 @@ export default function AdminLoginPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // If i18n never reports ready (e.g. resource load failure), stop showing
+  // the loading spinner after a timeout and render the form anyway (#256).
+  const [i18nTimedOut, setI18nTimedOut] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setI18nTimedOut(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const loginMutation = useMutation({
     mutationFn: async (payload: { email: string; password: string }) => {
@@ -46,7 +53,7 @@ export default function AdminLoginPage() {
       try {
         await setBrowserAccessToken(data.accessToken);
       } catch {
-        setError(t('login.sessionError', 'Failed to establish session. Please try again.'));
+        setError('Failed to establish session. Please try again.');
         return;
       }
       router.push('/');
@@ -64,8 +71,9 @@ export default function AdminLoginPage() {
     loginMutation.mutate({ email, password: data.password });
   };
 
-  // Don't render raw translation keys while i18n is loading
-  if (!ready) {
+  // Don't render raw translation keys while i18n is loading, but don't hang
+  // forever on the spinner if i18n never becomes ready (#256).
+  if (!ready && !i18nTimedOut) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-sunset-orange" aria-label="Loading" />

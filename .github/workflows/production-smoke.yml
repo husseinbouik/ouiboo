@@ -1,4 +1,4 @@
-name: Production Smoke Tests
+name: Staging Smoke Tests
 
 # Runs fast production smoke tests on every PR to staging.
 # Catches broken URLs, CORS regressions, dead links, and UI failures
@@ -6,7 +6,7 @@ name: Production Smoke Tests
 
 on:
   pull_request:
-    branches: [staging]
+    branches: [staging, master]
   workflow_dispatch:
   schedule:
     # Daily at 06:00 UTC as a safety net

@@ -91,7 +91,7 @@ export default function VerifyEmailPage() {
       try {
         await setBrowserAccessToken(data.accessToken);
       } catch {
-        setError(t('verify.sessionError', 'Verification succeeded but we could not start your session. Please try again.'));
+        setError('Verification succeeded but we could not start your session. Please try again.');
         return;
       }
       setSuccess(true);
