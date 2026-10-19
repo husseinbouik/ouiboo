@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifySession, SESSION_COOKIE_NAME } from '@/lib/session';
+import { verifySession, SESSION_COOKIE_NAME } from '@ouiboo/session';
 
 const supportedLanguages = ['en', 'fr', 'ar'];
 
