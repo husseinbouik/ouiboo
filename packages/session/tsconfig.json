@@ -1,0 +1,1 @@
+{"compilerOptions":{"forceConsistentCasingInFileNames":true,"isolatedModules":true,"jsx":"preserve","lib":["ES2022","DOM","DOM.Iterable"],"module":"ESNext","moduleResolution":"bundler","noEmit":true,"resolveJsonModule":true,"skipLibCheck":true,"strict":true,"target":"ES2022","types":["node","jest"]},"exclude":["node_modules"],"include":["index.ts","src/**/*.ts"]}
