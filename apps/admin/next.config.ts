@@ -1,4 +1,11 @@
 import type { NextConfig } from "next";
+import bundleAnalyzer from "@next/bundle-analyzer";
+
+// Opt-in bundle analysis: run `npm run analyze` (ANALYZE=true) to
+// generate interactive treemap reports under .next/analyze/.
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 const mediaRemotePatterns = (() => {
   const value = process.env.NEXT_PUBLIC_MEDIA_URL;
@@ -72,4 +79,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);
