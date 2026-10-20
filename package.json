@@ -27,7 +27,8 @@
     "demo:smoke": "node scripts/smoke-deploy.mjs",
     "demo:stop": "node scripts/demo-processes.mjs stop",
     "test:e2e:api:prepare": "npm run test:e2e:prepare --workspace apps/api",
-    "test:e2e:api": "npm run test:e2e:safe --workspace apps/api"
+    "test:e2e:api": "npm run test:e2e:safe --workspace apps/api",
+    "smoke:providers": "node scripts/provider-smoke.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
