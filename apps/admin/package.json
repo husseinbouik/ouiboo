@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --webpack -p 3003",
     "build": "next build",
+    "analyze": "ANALYZE=true next build --webpack",
     "start": "next start -p 3003",
     "lint": "eslint .",
     "test": "jest --runInBand"
@@ -39,6 +40,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "16.3.8",
     "@types/jest": "^29.5.14",
     "@types/node": "^20",
     "@types/react": "^19",
