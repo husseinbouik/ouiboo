@@ -6,11 +6,12 @@
  * each with sessions, itinerary, and images.
  *
  * ⚠️  STAGING ONLY — never run against production.
- * Idempotent: skips if seed data already exists.
+ * Idempotent: creates only missing agency/trip fixtures.
  *
- * Usage: DATABASE_URL=... node apps/api/prisma/seed-staging.js
+ * Usage: ALLOW_SEED=staging DATABASE_URL=... node apps/api/prisma/seed-staging.js
  */
 
+const crypto = require('node:crypto');
 const bcrypt = require('bcrypt');
 const { PrismaClient } = require('../../../packages/database/generated-client');
 
@@ -184,23 +185,21 @@ const TRIPS = [
 async function main() {
   console.log('🌱 Staging seed starting...');
 
-  // Safety: refuse to run on production
-  const dbUrl = process.env.DATABASE_URL || '';
-  if (dbUrl.includes('prod') || dbUrl.includes('production')) {
+  // Safety: require an explicit staging confirmation and reject production-like targets.
+  if (process.env.ALLOW_SEED !== 'staging') {
+    throw new Error('⛔ Refusing to seed — set ALLOW_SEED=staging.');
+  }
+  if (!process.env.DATABASE_URL) {
+    throw new Error('⛔ Refusing to seed — DATABASE_URL is required.');
+  }
+  const parsedUrl = new URL(process.env.DATABASE_URL);
+  const targetFingerprint = `${parsedUrl.hostname}/${parsedUrl.pathname}/${parsedUrl.search}`.toLowerCase();
+  if (/prod|production|live/.test(targetFingerprint)) {
     throw new Error('⛔ Refusing to seed — DATABASE_URL looks like production!');
   }
 
-  // Check if already seeded
-  const existing = await prisma.tripTemplate.findFirst({
-    where: { description: { contains: SEED_MARKER } },
-  });
-  if (existing) {
-    console.log('✅ Seed data already exists, skipping.');
-    return;
-  }
-
-  // Create or find demo agency
-  const password = await bcrypt.hash('staging-demo-123', 10);
+  // Create or find demo agency. The random credential is never printed or reused.
+  const password = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
   let user = await prisma.user.findUnique({ where: { email: DEMO_AGENCY.email } });
   if (!user) {
     user = await prisma.user.create({
@@ -235,6 +234,15 @@ async function main() {
   // Create trips
   let tripCount = 0;
   for (const trip of TRIPS) {
+    const existingTrip = await prisma.tripTemplate.findFirst({
+      where: { agencyId: profile.id, title: trip.title, description: { contains: SEED_MARKER } },
+    });
+    if (existingTrip) {
+      console.log(`  ↷ ${trip.title} already exists`);
+      tripCount++;
+      continue;
+    }
+
     const template = await prisma.tripTemplate.create({
       data: {
         agencyId: profile.id,
@@ -248,7 +256,7 @@ async function main() {
         inclusions: trip.inclusions,
         exclusions: trip.exclusions,
         checklist: ['Passport or CIN', 'Comfortable shoes', 'Sunscreen'],
-        images: trip.images,
+        images: [...trip.images, trip.images[0] === IMG.marrakech ? IMG.atlas : IMG.marrakech],
         status: 'ACTIVE',
         featured: tripCount < 3,
         currency: 'MAD',
@@ -290,7 +298,7 @@ async function main() {
   }
 
   console.log(`\n🎉 Seeded ${tripCount} trips with sessions.`);
-  console.log(`   Demo agency: ${DEMO_AGENCY.email} / staging-demo-123`);
+  console.log(`   Demo agency: ${DEMO_AGENCY.email} (non-login fixture; no password is printed)`);
 }
 
 main()
