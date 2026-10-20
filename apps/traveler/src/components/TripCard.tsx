@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, Badge, Button } from '@ouiboo/ui';
 import { MapPin, Star, ChevronLeft, ChevronRight, Zap, ShieldCheck, Ticket } from 'lucide-react';
@@ -55,19 +55,79 @@ export function TripCard({ trip }: TripCardProps) {
     : null;
   const isAgencyVerified = trip.agency?.verificationStatus === VerificationStatus.Verified;
 
+  const goToNextImage = () => {
+    setCurrentImage((prev) => (prev + 1) % images.length);
+  };
+
+  const goToPrevImage = () => {
+    setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
+  };
+
   const nextImage = (e: React.MouseEvent) => {
     e.preventDefault();
-    setCurrentImage((prev) => (prev + 1) % images.length);
+    goToNextImage();
   };
 
   const prevImage = (e: React.MouseEvent) => {
     e.preventDefault();
-    setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
+    goToPrevImage();
+  };
+
+  // Touch swipe support for the image carousel (mobile): a horizontal swipe
+  // changes the image, while vertical gestures still scroll the page. The
+  // container uses `touch-pan-y`, so the browser natively handles vertical
+  // panning and only horizontal-dominant gestures reach these handlers.
+  const SWIPE_THRESHOLD_PX = 40;
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeHandledRef = useRef(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    swipeHandledRef.current = false;
+    if (images.length <= 1) return;
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (images.length <= 1 || !touchStartRef.current) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+    if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) <= Math.abs(dy)) return;
+    swipeHandledRef.current = true;
+    window.setTimeout(() => {
+      swipeHandledRef.current = false;
+    }, 400);
+    // In RTL the carousel is mirrored (next sits on the left), so the swipe
+    // direction that advances to the next image flips with it.
+    const advancesNext = i18n.dir() === 'rtl' ? dx > 0 : dx < 0;
+    if (advancesNext) {
+      goToNextImage();
+    } else {
+      goToPrevImage();
+    }
+  };
+
+  // A real swipe is followed by a synthetic click on the touched element;
+  // swallow it so a swipe never toggles the wishlist or follows a link.
+  // Plain taps are unaffected because the flag is only set after a swipe.
+  const handleClickCapture = (e: React.MouseEvent) => {
+    if (swipeHandledRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      swipeHandledRef.current = false;
+    }
   };
 
   return (
     <Card className="group border-border shadow-sm hover:shadow-xl transition-all duration-300 rounded-[2rem] overflow-hidden bg-card h-full flex flex-col">
-      <div className="relative h-64 overflow-hidden">
+      <div
+        className="relative h-64 overflow-hidden touch-pan-y"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onClickCapture={handleClickCapture}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={currentImage}
