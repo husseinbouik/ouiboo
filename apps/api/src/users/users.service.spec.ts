@@ -38,6 +38,14 @@ describe('UsersService', () => {
             agencyProfile: {
                 upsert: jest.fn(),
             },
+            notificationLog: { findMany: jest.fn().mockResolvedValue([]), updateMany: jest.fn() },
+            auditLog: { findMany: jest.fn().mockResolvedValue([]), updateMany: jest.fn() },
+            refreshToken: { deleteMany: jest.fn() },
+            wishlist: { deleteMany: jest.fn() },
+            notificationPreference: { deleteMany: jest.fn() },
+            booking: { updateMany: jest.fn() },
+            tripTemplate: { updateMany: jest.fn() },
+            $transaction: jest.fn(async (callback) => callback(db)),
         };
 
         return {
@@ -75,5 +83,28 @@ describe('UsersService', () => {
             id: 'user-1',
             name: 'Updated User',
         });
+    });
+
+    it('exports owned data without selecting authentication secrets', async () => {
+        const { db, service } = createService();
+
+        await service.exportUserData('user-1');
+
+        expect(db.user.findUnique).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 'user-1' },
+            select: expect.not.objectContaining({ password: expect.anything() }),
+        }));
+    });
+
+    it('revokes access and pseudonymizes the authenticated account', async () => {
+        const { db, service } = createService();
+
+        await service.deleteUserAccount('user-1');
+
+        expect(db.refreshToken.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user-1' } });
+        expect(db.user.update).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 'user-1' },
+            data: expect.objectContaining({ isEmailVerified: false, name: null, avatar: null }),
+        }));
     });
 });

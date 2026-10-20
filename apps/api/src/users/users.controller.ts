@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, UseGuards, Request, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -27,6 +27,23 @@ export class UsersController {
     @ApiOperation({ summary: 'Update current user profile' })
     updateMe(@Request() req, @Body() body: UpdateUserProfileDto) {
         return this.usersService.updateUserProfile(req.user.userId, body);
+    }
+
+    @Get('me/export')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Export the authenticated user personal data' })
+    exportMe(@Request() req) {
+        return this.usersService.exportUserData(req.user.userId);
+    }
+
+    @Delete('me')
+    @HttpCode(204)
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Delete the authenticated user account' })
+    async deleteMe(@Request() req) {
+        await this.usersService.deleteUserAccount(req.user.userId);
     }
 
     @Post('agency-profile')

@@ -232,6 +232,37 @@ describe('User features E2E (user-features.e2e-spec)', () => {
         expect(res.body).not.toHaveProperty('password');
     });
 
+    it('exports only the authenticated user data without authentication secrets', async () => {
+        const { traveler } = await seedTestData();
+
+        const res = await request(app.getHttpServer())
+            .get('/users/me/export')
+            .set('Authorization', 'Bearer traveler')
+            .expect(200);
+
+        expect(res.body.subject.id).toBe(traveler.id);
+        expect(res.body.subject).not.toHaveProperty('password');
+        expect(res.body.subject).not.toHaveProperty('otp');
+        expect(res.body.subject).not.toHaveProperty('refreshTokens');
+        expect(res.body.exportedAt).toBeDefined();
+    });
+
+    it('deletes only the authenticated account by revoking and pseudonymizing it', async () => {
+        await seedTestData();
+
+        await request(app.getHttpServer())
+            .delete('/users/me')
+            .set('Authorization', 'Bearer traveler')
+            .expect(204);
+
+        const deleted = await db.user.findUnique({ where: { id: 'traveler-user-1' } });
+        const admin = await db.user.findUnique({ where: { id: 'admin-user' } });
+        expect(deleted?.isEmailVerified).toBe(false);
+        expect(deleted?.name).toBeNull();
+        expect(deleted?.email).toMatch(/^deleted-.+@privacy\.invalid$/);
+        expect(admin?.email).toBe('admin@test.com');
+    });
+
     // ===== Review CRUD tests =====
     it('Create review for completed booking', async () => {
         const { traveler, agencyProfile } = await seedTestData();
