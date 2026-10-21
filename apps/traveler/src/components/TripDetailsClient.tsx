@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -80,6 +80,8 @@ export default function TripDetailsClient({
   const { user, setShowLoginModal } = useAuth();
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [activeImage, setActiveImage] = useState(0);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeHandledRef = useRef(false);
 
   const { data: trip, isLoading, isError, refetch } = useQuery<TripDetails | null>({
     queryKey: ['trip', tripId],
@@ -157,6 +159,51 @@ export default function TripDetailsClient({
   const hiddenTileCount = galleryTiles.length - desktopTiles.length;
   const firstHiddenTileIndex = hiddenTileCount > 0 ? galleryTiles[desktopTiles.length].index : -1;
 
+  // Touch swipe support for the main gallery image (mobile): a horizontal
+  // swipe changes the photo, while vertical gestures still scroll the page.
+  // The container uses `touch-pan-y`, so the browser natively handles
+  // vertical panning and only horizontal-dominant gestures reach these
+  // handlers. Mirrors the TripCard carousel pattern (PR #306).
+  const SWIPE_THRESHOLD_PX = 40;
+  const imageCount = trip.images?.length ?? 0;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    swipeHandledRef.current = false;
+    if (imageCount <= 1) return;
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (imageCount <= 1 || !touchStartRef.current) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+    if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) <= Math.abs(dy)) return;
+    swipeHandledRef.current = true;
+    window.setTimeout(() => {
+      swipeHandledRef.current = false;
+    }, 400);
+    // In RTL the gallery is mirrored, so the swipe direction that advances
+    // to the next image flips with it (same convention as TripCard).
+    const advancesNext = i18n.dir() === 'rtl' ? dx > 0 : dx < 0;
+    setActiveImage((prev) => advancesNext
+      ? (prev + 1) % imageCount
+      : (prev - 1 + imageCount) % imageCount);
+  };
+
+  // A real swipe is followed by a synthetic click on the touched element;
+  // swallow it so a swipe ending on a dot never also jumps via that dot.
+  // Plain taps are unaffected because the flag is only set after a swipe.
+  const handleClickCapture = (e: React.MouseEvent) => {
+    if (swipeHandledRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      swipeHandledRef.current = false;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-32 font-sans text-foreground overflow-hidden relative">
       {/* Background Blobs */}
@@ -179,9 +226,12 @@ export default function TripDetailsClient({
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className={cn(
-                  "relative h-[280px] sm:h-[400px] lg:h-full rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden shadow-2xl shadow-black/5 dark:shadow-black/20 group border border-border/50",
+                  "relative h-[280px] sm:h-[400px] lg:h-full rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden shadow-2xl shadow-black/5 dark:shadow-black/20 group border border-border/50 touch-pan-y",
                   (trip.images?.length ?? 0) > 1 ? "lg:col-span-7" : "lg:col-span-12",
                 )}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                onClickCapture={handleClickCapture}
             >
                 <Image 
                     src={trip.images?.[activeImage] || 'https://images.unsplash.com/photo-1489749798305-4fea3ae63d43'} 
