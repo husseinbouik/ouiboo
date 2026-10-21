@@ -1,4 +1,17 @@
 {
+  "auth": {
+    "errors": {
+      "invalidCredentials": "Email ou mot de passe incorrect. Veuillez réessayer.",
+      "emailNotVerified": "Veuillez vérifier votre email avant de vous connecter.",
+      "emailInUse": "Cet email est déjà enregistré. Essayez plutôt de vous connecter.",
+      "userNotFound": "Aucun compte trouvé avec cet email.",
+      "invalidOtp": "Le code de vérification est incorrect. Veuillez réessayer.",
+      "otpExpired": "Le code de vérification a expiré. Demandez-en un nouveau.",
+      "serverError": "Un problème est survenu de notre côté. Veuillez réessayer plus tard.",
+      "genericError": "Un problème est survenu. Veuillez réessayer.",
+      "networkError": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez."
+    }
+  },
   "common": {
     "back": "Retour aux Voyages",
     "saveDraft": "Enregistrer le brouillon",

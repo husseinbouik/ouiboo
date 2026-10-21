@@ -1,4 +1,17 @@
 {
+  "auth": {
+    "errors": {
+      "invalidCredentials": "Incorrect email or password. Please try again.",
+      "emailNotVerified": "Please verify your email before signing in.",
+      "emailInUse": "This email is already registered. Try signing in instead.",
+      "userNotFound": "No account found with this email.",
+      "invalidOtp": "The verification code is incorrect. Please try again.",
+      "otpExpired": "The verification code has expired. Request a new one.",
+      "serverError": "Something went wrong on our end. Please try again later.",
+      "genericError": "Something went wrong. Please try again.",
+      "networkError": "Cannot reach the server. Please check your connection and try again."
+    }
+  },
   "common": {
     "back": "Back to Trips",
     "saveDraft": "Save Draft",
