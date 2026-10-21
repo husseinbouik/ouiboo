@@ -18,7 +18,7 @@ type TripLayoutProps = {
 async function getTrip(id: string): Promise<TripMetadata | null> {
   try {
     const response = await fetch(`${API_URL}/trips/${encodeURIComponent(id)}`, {
-      next: { revalidate: 900 },
+      next: { revalidate: 60 },
     })
     if (!response.ok) return null
     return response.json() as Promise<TripMetadata>
