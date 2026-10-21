@@ -27,14 +27,35 @@ const DEMO_AGENCY = {
 
 // Unsplash images of Morocco (stable URLs; each photo visually verified
 // against its subject on 2026-10-21 — the previous IDs depicted wrong
-// subjects, e.g. the old "marrakech" photo was the Giza pyramids)
+// subjects, e.g. the old "marrakech" photo was the Giza pyramids).
+// Each destination has its own [primary, second] pair: galleries must use
+// only the destination's own photos (issue #309 — cross-destination
+// padding made every trip share the same second photo).
 const IMG = {
-  marrakech: 'https://images.unsplash.com/photo-1597212618440-806262de4f6b?q=80&w=1200&auto=format&fit=crop',
-  sahara: 'https://images.unsplash.com/photo-1489493585363-d69421e0edd3?q=80&w=1200&auto=format&fit=crop',
-  atlas: 'https://images.unsplash.com/photo-1559315390-1065ae6b47c0?q=80&w=1200&auto=format&fit=crop',
-  chefchaouen: 'https://images.unsplash.com/photo-1569383746724-6f1b882b8f46?q=80&w=1200&auto=format&fit=crop',
-  essaouira: 'https://images.unsplash.com/photo-1646590640485-df729f1bcfed?q=80&w=1200&auto=format&fit=crop',
-  fes: 'https://images.unsplash.com/photo-1557503799-fac6a98054b3?q=80&w=1200&auto=format&fit=crop',
+  marrakech: [
+    'https://images.unsplash.com/photo-1597212618440-806262de4f6b?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1569440703456-29b9c31765ca?q=80&w=1200&auto=format&fit=crop',
+  ],
+  sahara: [
+    'https://images.unsplash.com/photo-1489493585363-d69421e0edd3?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1542401886-65d6c61db217?q=80&w=1200&auto=format&fit=crop',
+  ],
+  atlas: [
+    'https://images.unsplash.com/photo-1559315390-1065ae6b47c0?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1716240772720-81a703864c6e?q=80&w=1200&auto=format&fit=crop',
+  ],
+  chefchaouen: [
+    'https://images.unsplash.com/photo-1569383746724-6f1b882b8f46?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1564507004663-b6dfb3c824d5?q=80&w=1200&auto=format&fit=crop',
+  ],
+  essaouira: [
+    'https://images.unsplash.com/photo-1646590640485-df729f1bcfed?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1555686367-56d5186965d5?q=80&w=1200&auto=format&fit=crop',
+  ],
+  fes: [
+    'https://images.unsplash.com/photo-1557503799-fac6a98054b3?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1758185282460-4eeef1439227?q=80&w=1200&auto=format&fit=crop',
+  ],
 };
 
 const TRIPS = [
@@ -46,7 +67,7 @@ const TRIPS = [
     endLocation: 'Marrakech',
     durationDays: 3, durationNights: 2,
     price: 1800, sessions: 3,
-    images: [IMG.marrakech],
+    images: IMG.marrakech,
     inclusions: ['Local guide', 'Riad accommodation', 'Daily breakfast', 'Medina walking tour'],
     exclusions: ['Flights', 'Lunches and dinners', 'Personal expenses'],
   },
@@ -58,7 +79,7 @@ const TRIPS = [
     endLocation: 'Merzouga',
     durationDays: 2, durationNights: 1,
     price: 3500, sessions: 2,
-    images: [IMG.sahara],
+    images: IMG.sahara,
     inclusions: ['Luxury tent', 'Camel trek at sunset', 'Traditional dinner', '4x4 transfers'],
     exclusions: ['Flights to Errachidia', 'Travel insurance', 'Tips'],
   },
@@ -70,7 +91,7 @@ const TRIPS = [
     endLocation: 'Imlil',
     durationDays: 4, durationNights: 3,
     price: 2200, sessions: 2,
-    images: [IMG.atlas],
+    images: IMG.atlas,
     inclusions: ['Mountain guide', 'Mule support', 'Guesthouse stays', 'All meals on trek'],
     exclusions: ['Hiking gear rental', 'Flights', 'Personal expenses'],
   },
@@ -82,7 +103,7 @@ const TRIPS = [
     endLocation: 'Fes',
     durationDays: 1, durationNights: 0,
     price: 650, sessions: 4,
-    images: [IMG.chefchaouen],
+    images: IMG.chefchaouen,
     inclusions: ['Transport', 'Local guide', 'Plaza Uta el-Hammam visit'],
     exclusions: ['Meals', 'Entrance fees', 'Shopping'],
   },
@@ -94,7 +115,7 @@ const TRIPS = [
     endLocation: 'Essaouira',
     durationDays: 2, durationNights: 1,
     price: 1200, sessions: 3,
-    images: [IMG.essaouira],
+    images: IMG.essaouira,
     inclusions: ['Beachfront hotel', 'Seafood dinner', 'Medina tour', 'Sunset sailing'],
     exclusions: ['Surf lessons', 'Flights', 'Lunches'],
   },
@@ -106,7 +127,7 @@ const TRIPS = [
     endLocation: 'Fes',
     durationDays: 3, durationNights: 2,
     price: 1600, sessions: 2,
-    images: [IMG.fes],
+    images: IMG.fes,
     inclusions: ['Riad stay', 'Expert guide', 'Tannery visit', 'Cooking class'],
     exclusions: ['Flights', 'Some meals', 'Personal shopping'],
   },
@@ -118,7 +139,7 @@ const TRIPS = [
     endLocation: 'Marrakech',
     durationDays: 1, durationNights: 0,
     price: 850, sessions: 5,
-    images: [IMG.sahara],
+    images: IMG.sahara,
     inclusions: ['4x4 transport', 'Camel ride', 'Sunset dinner', 'Traditional music'],
     exclusions: ['Quad biking (optional)', 'Drinks', 'Tips'],
   },
@@ -130,7 +151,7 @@ const TRIPS = [
     endLocation: 'Ouarzazate',
     durationDays: 3, durationNights: 2,
     price: 1900, sessions: 2,
-    images: [IMG.atlas],
+    images: IMG.atlas,
     inclusions: ['4x4 with driver', 'Kasbah stays', 'Gorge hike', 'All breakfasts'],
     exclusions: ['Flights', 'Dinners', 'Entrance fees'],
   },
@@ -142,7 +163,7 @@ const TRIPS = [
     endLocation: 'Marrakech',
     durationDays: 1, durationNights: 0,
     price: 450, sessions: 6,
-    images: [IMG.atlas],
+    images: IMG.atlas,
     inclusions: ['Transport', 'Local mountain guide', 'Mint tea with Berber family'],
     exclusions: ['Lunch', 'Waterfall entrance', 'Tips'],
   },
@@ -154,7 +175,7 @@ const TRIPS = [
     endLocation: 'Rabat',
     durationDays: 2, durationNights: 1,
     price: 950, sessions: 3,
-    images: [IMG.marrakech],
+    images: IMG.marrakech,
     inclusions: ['3-star hotel', 'City guides', 'Train between cities', 'Mosque visit'],
     exclusions: ['Flights', 'Meals', 'Personal expenses'],
   },
@@ -166,7 +187,7 @@ const TRIPS = [
     endLocation: 'Merzouga',
     durationDays: 2, durationNights: 1,
     price: 1400, sessions: 3,
-    images: [IMG.sahara],
+    images: IMG.sahara,
     inclusions: ['Camel trek', 'Desert bivouac', 'Sandboarding', 'All desert meals'],
     exclusions: ['Transport to Merzouga', 'Sleeping bag', 'Insurance'],
   },
@@ -178,7 +199,7 @@ const TRIPS = [
     endLocation: 'Chefchaouen',
     durationDays: 2, durationNights: 1,
     price: 1100, sessions: 2,
-    images: [IMG.chefchaouen],
+    images: IMG.chefchaouen,
     inclusions: ['Photography guide', 'Guesthouse', 'Sunrise shoot', 'Editing workshop'],
     exclusions: ['Camera rental', 'Flights', 'Meals'],
   },
@@ -258,7 +279,7 @@ async function main() {
         inclusions: trip.inclusions,
         exclusions: trip.exclusions,
         checklist: ['Passport or CIN', 'Comfortable shoes', 'Sunscreen'],
-        images: [...trip.images, trip.images[0] === IMG.marrakech ? IMG.atlas : IMG.marrakech],
+        images: trip.images,
         status: 'ACTIVE',
         featured: tripCount < 3,
         currency: 'MAD',
