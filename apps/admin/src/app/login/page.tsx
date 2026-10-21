@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
+import { useAuth } from '@/components/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Lock, ShieldCheck, User } from 'lucide-react';
 import { setBrowserAccessToken, getAuthErrorMessage } from '@ouiboo/api-client';
@@ -24,6 +25,7 @@ type ApiErrorResponse = {
 export default function AdminLoginPage() {
   const { t, ready } = useTranslation();
   const router = useRouter();
+  const { refetch } = useAuth();
   const { register, handleSubmit, formState: { errors } } = useForm<AdminLoginForm>();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +54,7 @@ export default function AdminLoginPage() {
         setError('Failed to establish session. Please try again.');
         return;
       }
+      await refetch();
       router.push('/');
     },
     onError: (err: AxiosError<ApiErrorResponse>) => {
