@@ -27,6 +27,12 @@ export enum VerificationStatus {
     Rejected = "REJECTED",
 }
 
+export enum CopyrightReportStatus {
+    Open = "OPEN",
+    Actioned = "ACTIONED",
+    Dismissed = "DISMISSED",
+}
+
 export type VerificationStatusType = VerificationStatus;
 
 export enum SubscriptionStatus {
