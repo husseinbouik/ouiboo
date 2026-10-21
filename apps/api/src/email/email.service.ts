@@ -1,4 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, Optional } from '@nestjs/common'
+import { createHmac, timingSafeEqual } from 'node:crypto'
+import { DatabaseService } from '../database/database.service'
 import * as nodemailer from 'nodemailer'
 import {
   emailButton,
@@ -10,6 +12,7 @@ import {
   escapeHtml,
   maskEmail,
   renderEmail,
+  renderMarketingEmail,
   sanitizeEmailSubject,
 } from './email-template'
 
@@ -18,7 +21,7 @@ export class EmailService {
   private transporter?: nodemailer.Transporter
   private readonly logger = new Logger(EmailService.name)
 
-  constructor() {
+  constructor(@Optional() private readonly db?: DatabaseService) {
     const host = process.env.SMTP_HOST
     const port = Number.parseInt(process.env.SMTP_PORT || '587', 10)
     const user = process.env.SMTP_USER
@@ -53,7 +56,7 @@ export class EmailService {
     return Boolean(this.transporter)
   }
 
-  async sendEmail(to: string, subject: string, html: string) {
+  async sendEmail(to: string, subject: string, html: string, headers?: Record<string, string>) {
     const safeSubject = sanitizeEmailSubject(subject)
     const maskedRecipient = maskEmail(to)
 
@@ -75,6 +78,7 @@ export class EmailService {
         subject: safeSubject,
         html,
         text: emailToPlainText(html),
+        headers,
       })
       this.logger.log(`Email sent to ${maskedRecipient}. MessageId: ${result.messageId}`)
       return result
@@ -86,6 +90,92 @@ export class EmailService {
 
   async sendMail(to: string, subject: string, html: string) {
     return this.sendEmail(to, subject, html)
+  }
+
+  // --- Marketing email compliance (#322) -------------------------------------
+  // Marketing sends are fail-closed: no postal address configured, no
+  // suppression check available, or a suppressed address all stop the send.
+  // Transactional mail never passes through this path.
+
+  private unsubscribeSecret(): string {
+    const secret = process.env.UNSUBSCRIBE_SECRET || process.env.JWT_SECRET
+    if (secret) return secret
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('UNSUBSCRIBE_SECRET or JWT_SECRET must be configured for marketing email')
+    }
+    return 'development-unsubscribe-secret'
+  }
+
+  createUnsubscribeToken(email: string): string {
+    const normalized = email.trim().toLowerCase()
+    const payload = Buffer.from(normalized, 'utf8').toString('base64url')
+    const signature = createHmac('sha256', this.unsubscribeSecret()).update(normalized).digest('base64url')
+    return `${payload}.${signature}`
+  }
+
+  verifyUnsubscribeToken(token: string): string | null {
+    const [payload, signature] = (token || '').split('.')
+    if (!payload || !signature) return null
+    let email: string
+    try {
+      email = Buffer.from(payload, 'base64url').toString('utf8')
+    } catch {
+      return null
+    }
+    const expected = createHmac('sha256', this.unsubscribeSecret()).update(email).digest('base64url')
+    const given = Buffer.from(signature)
+    const wanted = Buffer.from(expected)
+    if (given.length !== wanted.length || !timingSafeEqual(given, wanted)) return null
+    return email
+  }
+
+  buildUnsubscribeUrl(email: string): string {
+    const base = (process.env.API_PUBLIC_URL || 'https://ouiboo-api.vercel.app').replace(/\/+$/, '')
+    return `${base}/api/v1/email/unsubscribe?t=${this.createUnsubscribeToken(email)}`
+  }
+
+  async isSuppressed(email: string): Promise<boolean> {
+    if (!this.db) return false
+    const row = await this.db.emailSuppression.findUnique({
+      where: { email: email.trim().toLowerCase() },
+    })
+    return Boolean(row)
+  }
+
+  async suppressEmail(email: string, reason = 'unsubscribe'): Promise<void> {
+    if (!this.db) throw new Error('Database unavailable: cannot record email suppression')
+    const normalized = email.trim().toLowerCase()
+    await this.db.emailSuppression.upsert({
+      where: { email: normalized },
+      create: { email: normalized, reason },
+      update: {},
+    })
+  }
+
+  async sendMarketingEmail(
+    to: string,
+    subject: string,
+    emailContent: { title: string; preheader: string; content: string },
+  ) {
+    const postalAddress = process.env.OUIBOO_POSTAL_ADDRESS
+    if (!postalAddress) {
+      throw new Error('Marketing email blocked: OUIBOO_POSTAL_ADDRESS is not configured')
+    }
+    if (!this.db) {
+      throw new Error('Marketing email blocked: suppression list unavailable')
+    }
+    const normalized = to.trim().toLowerCase()
+    if (await this.isSuppressed(normalized)) {
+      this.logger.log(`Marketing email skipped for suppressed address ${maskEmail(normalized)}`)
+      return { skipped: true as const, reason: 'suppressed' as const }
+    }
+    const unsubscribeUrl = this.buildUnsubscribeUrl(normalized)
+    const html = renderMarketingEmail({ ...emailContent, unsubscribeUrl, postalAddress })
+    const result = await this.sendEmail(normalized, subject, html, {
+      'List-Unsubscribe': `<${unsubscribeUrl}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    })
+    return { skipped: false as const, result }
   }
 
   getOTPTemplate(otp: string) {

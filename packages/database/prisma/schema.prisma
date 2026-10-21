@@ -494,3 +494,13 @@ model ExchangeRate {
   @@unique([baseCurrency, targetCurrency])
   @@index([expiresAt])
 }
+
+// #322: marketing-email suppression list. An address recorded here must never
+// receive marketing mail again. Transactional mail (OTP, reset, booking) is
+// unaffected — suppression applies to marketing sends only.
+model EmailSuppression {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  reason    String   @default("unsubscribe")
+  createdAt DateTime @default(now())
+}

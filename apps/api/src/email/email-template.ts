@@ -73,9 +73,10 @@ type EmailLayoutOptions = {
   title: string
   preheader: string
   content: string
+  footerHtml?: string
 }
 
-export function renderEmail({ title, preheader, content }: EmailLayoutOptions): string {
+export function renderEmail({ title, preheader, content, footerHtml }: EmailLayoutOptions): string {
   const year = new Date().getFullYear()
   return `<!doctype html>
 <html lang="en">
@@ -109,8 +110,7 @@ export function renderEmail({ title, preheader, content }: EmailLayoutOptions): 
             </tr>
             <tr>
               <td class="ouiboo-footer" style="padding:20px 32px 26px;border-top:1px solid ${BRAND.border};color:#718096;font-size:12px;line-height:1.6;text-align:center;">
-                This is a service message from Ouiboo.<br>
-                &copy; ${year} Ouiboo. All rights reserved.
+                ${footerHtml ?? `This is a service message from Ouiboo.<br>&copy; ${year} Ouiboo. All rights reserved.`}
               </td>
             </tr>
           </table>
@@ -136,4 +136,19 @@ export function emailToPlainText(html: string): string {
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
+}
+
+type MarketingEmailOptions = EmailLayoutOptions & {
+  unsubscribeUrl: string
+  postalAddress: string
+}
+
+// Marketing layout (#322): CAN-SPAM / Law 09-08 / GDPR require a physical
+// postal address and a working unsubscribe in every marketing send. This
+// variant is deliberately separate from the transactional (service) layout.
+export function renderMarketingEmail({ title, preheader, content, unsubscribeUrl, postalAddress }: MarketingEmailOptions): string {
+  const year = new Date().getFullYear()
+  const addressHtml = escapeHtml(postalAddress).replaceAll('\n', '<br>')
+  const footerHtml = `You are receiving this email because you subscribed to Ouiboo updates.<br>${addressHtml}<br><a href="${safeEmailUrl(unsubscribeUrl)}" style="color:#718096;text-decoration:underline;">Unsubscribe</a> &middot; &copy; ${year} Ouiboo. All rights reserved.`
+  return renderEmail({ title, preheader, content, footerHtml })
 }

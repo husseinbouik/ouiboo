@@ -82,3 +82,59 @@ describe('EmailService delivery', () => {
       .rejects.toThrow('Email delivery failed: temporary failure')
   })
 })
+
+describe('EmailService marketing compliance (#322)', () => {
+  const originalEnv = { ...process.env }
+
+  afterEach(() => {
+    process.env = { ...originalEnv }
+  })
+
+  it('round-trips an unsubscribe token and rejects tampering', () => {
+    const service = new EmailService()
+    const token = service.createUnsubscribeToken('Person@Example.com')
+    expect(service.verifyUnsubscribeToken(token)).toBe('person@example.com')
+    expect(service.verifyUnsubscribeToken(token.replace(/.$/, 'x'))).toBeNull()
+    expect(service.verifyUnsubscribeToken('not-a-token')).toBeNull()
+    expect(service.verifyUnsubscribeToken('')).toBeNull()
+  })
+
+  it('fails closed when no postal address is configured', async () => {
+    delete process.env.OUIBOO_POSTAL_ADDRESS
+    const service = new EmailService({ emailSuppression: { findUnique: jest.fn(), upsert: jest.fn() } } as never)
+    await expect(
+      service.sendMarketingEmail('a@b.co', 'Launch', { title: 't', preheader: 'p', content: 'c' }),
+    ).rejects.toThrow('OUIBOO_POSTAL_ADDRESS')
+  })
+
+  it('skips suppressed addresses without sending', async () => {
+    process.env.OUIBOO_POSTAL_ADDRESS = 'Ouiboo, Casablanca, Morocco'
+    const db = {
+      emailSuppression: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'sup-1', email: 'a@b.co' }),
+        upsert: jest.fn(),
+      },
+    }
+    const service = new EmailService(db as never)
+    const outcome = await service.sendMarketingEmail('a@b.co', 'Launch', {
+      title: 't',
+      preheader: 'p',
+      content: 'c',
+    })
+    expect(outcome.skipped).toBe(true)
+  })
+
+  it('records a suppression via upsert', async () => {
+    const db = {
+      emailSuppression: {
+        findUnique: jest.fn(),
+        upsert: jest.fn().mockResolvedValue({}),
+      },
+    }
+    const service = new EmailService(db as never)
+    await service.suppressEmail('Person@Example.com')
+    expect(db.emailSuppression.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { email: 'person@example.com' } }),
+    )
+  })
+})
