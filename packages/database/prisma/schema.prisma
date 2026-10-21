@@ -134,6 +134,9 @@ model User {
   travelerConversations   Conversation[]          @relation("TravelerConversations")
   notificationPreferences NotificationPreference?
   displayCurrency         String                  @default("MAD")
+  dateOfBirth             DateTime?
+  ageAttestedAt           DateTime?
+  termsVersion            String?
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
 }
@@ -172,6 +175,10 @@ model AgencyProfile {
   trialEndsAt        DateTime?
   subscriptionEndsAt DateTime?
   bankDetails        String?            @db.Text
+  // #324: subscription terms acceptance + pre-renewal reminder marker
+  subscriptionTermsVersion    String?
+  subscriptionTermsAcceptedAt DateTime?
+  renewalReminderSentFor      DateTime?
 }
 
 model TripTemplate {
@@ -493,4 +500,35 @@ model ExchangeRate {
 
   @@unique([baseCurrency, targetCurrency])
   @@index([expiresAt])
+}
+
+// #322: marketing-email suppression list. An address recorded here must never
+// receive marketing mail again. Transactional mail (OTP, reset, booking) is
+// unaffected — suppression applies to marketing sends only.
+model EmailSuppression {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  reason    String   @default("unsubscribe")
+  createdAt DateTime @default(now())
+}
+
+enum CopyrightReportStatus {
+  OPEN
+  ACTIONED
+  DISMISSED
+}
+
+// #325: copyright takedown reports for user-uploaded content. An ACTIONED
+// report records who resolved it and when; resolving against a trip also
+// deactivates the trip (status INACTIVE), removing it from the public catalog.
+model CopyrightReport {
+  id            String                @id @default(cuid())
+  reporterName  String
+  reporterEmail String
+  contentUrl    String
+  description   String
+  status        CopyrightReportStatus @default(OPEN)
+  createdAt     DateTime              @default(now())
+  resolvedAt    DateTime?
+  resolvedBy    String?
 }

@@ -157,4 +157,22 @@ describe('TripsService', () => {
             }));
         });
     });
+
+    describe('findAllTemplates public catalog gate (#317)', () => {
+        it('restricts the public catalog to VERIFIED agencies and selects agency.verificationStatus', async () => {
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(0);
+
+            await service.findAllTemplates({});
+
+            expect(db.tripTemplate.findMany).toHaveBeenCalled();
+            const args = db.tripTemplate.findMany.mock.calls[0][0];
+            // Anonymous catalog must never include pending/rejected/suspended agencies (#182, #317)
+            expect(args.where.status).toBe('ACTIVE');
+            expect(args.where.agency).toEqual({ verificationStatus: 'VERIFIED' });
+            // The traveler card derives its verified badge from this field; if it
+            // is dropped from the select again, every card is mislabeled (#317).
+            expect(args.include.agency.select.verificationStatus).toBe(true);
+        });
+    });
 });

@@ -9,6 +9,7 @@ import { BookingsModule } from './bookings/bookings.module'
 import { CommonModule } from './common/common.module'
 import { CronModule } from './cron/cron.module'
 import { CurrencyModule } from './currency/currency.module'
+import { CopyrightModule } from './copyright/copyright.module'
 import { DatabaseModule } from './database/database.module'
 import { EmailModule } from './email/email.module'
 import { HealthModule } from './health/health.module'
@@ -47,6 +48,7 @@ import { WishlistModule } from './wishlist/wishlist.module'
     WishlistModule,
     AnalyticsModule,
     CurrencyModule,
+    CopyrightModule,
     MessagesModule,
   ],
 })

@@ -64,7 +64,7 @@ describe('Auth - Complete E2E (auth-complete.e2e-spec)', () => {
         const email = 'traveler@example.com';
         const res = await request(app.getHttpServer())
             .post('/auth/register')
-            .send({ email, password: 'Password123!', name: 'Traveler', role: 'TRAVELER' })
+            .send({ email, password: 'Password123!', name: 'Traveler', role: 'TRAVELER', dateOfBirth: '1990-01-15' })
             .expect(201);
 
         expect(res.body).toMatchObject({
@@ -108,7 +108,7 @@ describe('Auth - Complete E2E (auth-complete.e2e-spec)', () => {
 
         await request(app.getHttpServer())
             .post('/auth/register')
-            .send({ email, password: 'Password123!', name: 'Legacy OTP', role: 'TRAVELER' })
+            .send({ email, password: 'Password123!', name: 'Legacy OTP', role: 'TRAVELER', dateOfBirth: '1990-01-15' })
             .expect(201);
 
         await db.user.update({
@@ -133,7 +133,7 @@ describe('Auth - Complete E2E (auth-complete.e2e-spec)', () => {
         const email = 'resend@example.com';
         await request(app.getHttpServer())
             .post('/auth/register')
-            .send({ email, password: 'Password123!', name: 'Test', role: 'TRAVELER' })
+            .send({ email, password: 'Password123!', name: 'Test', role: 'TRAVELER', dateOfBirth: '1990-01-15' })
             .expect(201);
 
         // immediate resend should be rate limited
@@ -157,7 +157,7 @@ describe('Auth - Complete E2E (auth-complete.e2e-spec)', () => {
     it('Login and refresh token rotation', async () => {
         const email = 'login@example.com';
         const password = 'Password123!';
-        await request(app.getHttpServer()).post('/auth/register').send({ email, password, name: 'L', role: 'TRAVELER' }).expect(201);
+        await request(app.getHttpServer()).post('/auth/register').send({ email, password, name: 'L', role: 'TRAVELER', dateOfBirth: '1990-01-15' }).expect(201);
         const u = await db.user.findUnique({ where: { email } });
         // verify
         await db.user.update({ where: { id: u!.id }, data: { isEmailVerified: true } });
@@ -181,7 +181,7 @@ describe('Auth - Complete E2E (auth-complete.e2e-spec)', () => {
     it('Password reset flow: request and reset', async () => {
         const email = 'reset@example.com';
         const password = 'Password123!';
-        await request(app.getHttpServer()).post('/auth/register').send({ email, password, name: 'Reset', role: 'TRAVELER' }).expect(201);
+        await request(app.getHttpServer()).post('/auth/register').send({ email, password, name: 'Reset', role: 'TRAVELER', dateOfBirth: '1990-01-15' }).expect(201);
         const u = await db.user.findUnique({ where: { email } });
         await db.user.update({ where: { id: u!.id }, data: { isEmailVerified: true } });
 

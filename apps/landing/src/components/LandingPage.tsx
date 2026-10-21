@@ -351,11 +351,11 @@ export default function LandingPage() {
                             </motion.a>
                             <motion.a 
                               href={`${travelerUrl}/search?lang=${currentLang}`} 
-                              whileHover={{ scale: 1.03 }}
-                              whileTap={{ scale: 0.97 }}
-                              className="rounded-md border border-deep-blue/20 px-6 py-3 text-base font-semibold text-deep-blue shadow-sm hover:border-sunset-orange hover:text-sunset-orange transition-all duration-300"
+                              whileHover={{ x: 5 }}
+                              
+                              className="text-sm font-semibold leading-6 group text-deep-blue hover:text-sunset-orange transition-colors duration-300"
                             >
-                                {t('hero.ctaSecondary')}
+                                {t('hero.ctaSecondary')} <span aria-hidden="true">→</span>
                             </motion.a>
                             <motion.a 
                               href="#how-it-works" 
@@ -621,6 +621,9 @@ export default function LandingPage() {
                 ))}
 <a href="/privacy" className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300">
                   {t('footer.privacy')}
+                </a>
+                <a href={`${travelerUrl}/copyright-report?lang=${currentLang}`} className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300">
+                  {t('footer.copyright', 'Copyright')}
                 </a>
                 <CookiePreferencesButton className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300" />
             </div>

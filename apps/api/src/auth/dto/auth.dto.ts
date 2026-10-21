@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength, MaxLength, Matches, IsIn, IsOptional } from 'class-validator';
+import { IsDateString, IsEmail, IsString, MinLength, MaxLength, Matches, IsIn, IsOptional } from 'class-validator';
 import { UserRole } from '@ouiboo/types';
 
 export class LoginDto {
@@ -33,6 +33,12 @@ export class RegisterDto {
     @ApiProperty({ enum: [UserRole.Agency, UserRole.Traveler], example: UserRole.Agency })
     @IsIn([UserRole.Agency, UserRole.Traveler])
     role!: UserRole.Agency | UserRole.Traveler;
+
+    // #321: age gate. Required for every new account; the service enforces
+    // the 18+ rule server-side and records the attestation on the user row.
+    @ApiProperty({ example: '1995-04-12' })
+    @IsDateString()
+    dateOfBirth!: string;
 }
 
 export class RefreshTokenDto {

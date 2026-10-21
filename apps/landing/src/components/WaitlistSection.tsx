@@ -84,6 +84,7 @@ export default function WaitlistSection() {
             <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-200">{t('waitlist.subtitle')}</p>
           </motion.div>
           <motion.form
+            data-clarity-mask="true"
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"

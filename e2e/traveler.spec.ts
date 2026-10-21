@@ -12,6 +12,7 @@ test.describe('traveler launch flow', () => {
     await page.locator('#name').fill('Launch Traveler');
     await page.locator('#email').fill('traveler@example.com');
     await page.locator('#password').fill('Password123!');
+    await page.locator('#dateOfBirth').fill('1990-01-15');
     // Accept terms (required by signup form validation)
     await page.getByRole('checkbox').check();
     await page.getByRole('button', { name: /register|create account/i }).click();

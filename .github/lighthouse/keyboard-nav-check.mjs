@@ -61,6 +61,7 @@ for (const path of pages) {
         const style = window.getComputedStyle(el);
         return {
           tag: el.tagName.toLowerCase(),
+          type: (el.getAttribute('type') || '').toLowerCase(),
           id: el.id || '',
           ariaLabel:
             el.getAttribute('aria-label') ||
@@ -82,7 +83,16 @@ for (const path of pages) {
       const key = `${info.tag}#${info.id}@${info.ariaLabel}`;
       if (key === lastKey) {
         stuckCount++;
-        if (stuckCount >= 3) {
+        // Native date/time inputs are a special case (#332): Chromium keeps
+        // document.activeElement on the <input> while Tab traverses its
+        // internal segments (month/day/year + the picker indicator), so the
+        // same element legitimately repeats several times before focus moves
+        // on. Allow those repeats; a genuine trap still fails because focus
+        // never advances past the higher limit either.
+        const DATE_TIME_TYPES = ['date', 'time', 'datetime-local', 'month', 'week'];
+        const stuckLimit =
+          info.tag === 'input' && DATE_TIME_TYPES.includes(info.type) ? 6 : 3;
+        if (stuckCount >= stuckLimit) {
           pageFailures.push(
             `focus stuck on ${describe(info)} after ${i + 1} tabs (keyboard trap?)`,
           );

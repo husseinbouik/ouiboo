@@ -17,6 +17,7 @@ export default function TravelerTermsPage() {
     { title: t('terms.sectionTwoTitle'), body: t('terms.sectionTwoBody') },
     { title: t('terms.sectionThreeTitle'), body: t('terms.sectionThreeBody') },
     { title: t('terms.sectionFourTitle'), body: t('terms.sectionFourBody') },
+    { title: t('terms.sectionFiveTitle'), body: t('terms.sectionFiveBody') },
   ];
 
   return (
@@ -39,6 +40,13 @@ export default function TravelerTermsPage() {
             </div>
           ))}
         </div>
+
+        <p className="mt-8 text-sm text-muted-foreground">
+          {t('terms.copyrightReportPrompt', 'Believe content on Ouiboo infringes your copyright?')}{' '}
+          <Link href="/copyright-report" className="font-semibold text-sunset-orange hover:text-orange-600">
+            {t('terms.copyrightReportLink', 'File a copyright report')}
+          </Link>
+        </p>
       </div>
     </div>
   );

@@ -27,6 +27,12 @@ export enum VerificationStatus {
     Rejected = "REJECTED",
 }
 
+export enum CopyrightReportStatus {
+    Open = "OPEN",
+    Actioned = "ACTIONED",
+    Dismissed = "DISMISSED",
+}
+
 export type VerificationStatusType = VerificationStatus;
 
 export enum SubscriptionStatus {
@@ -92,6 +98,8 @@ export interface AgencyProfile {
     subscriptionStatus: SubscriptionStatus;
     trialEndsAt?: string;
     subscriptionEndsAt?: string;
+    subscriptionTermsVersion?: string;
+    subscriptionTermsAcceptedAt?: string;
 }
 
 export enum TripStatus {

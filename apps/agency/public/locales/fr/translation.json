@@ -1,4 +1,18 @@
 {
+  "auth": {
+    "errors": {
+      "invalidCredentials": "Email ou mot de passe incorrect. Veuillez réessayer.",
+      "emailNotVerified": "Veuillez vérifier votre email avant de vous connecter.",
+      "emailInUse": "Cet email est déjà enregistré. Essayez plutôt de vous connecter.",
+      "userNotFound": "Aucun compte trouvé avec cet email.",
+      "invalidOtp": "Le code de vérification est incorrect. Veuillez réessayer.",
+      "otpExpired": "Le code de vérification a expiré. Demandez-en un nouveau.",
+      "serverError": "Un problème est survenu de notre côté. Veuillez réessayer plus tard.",
+      "genericError": "Un problème est survenu. Veuillez réessayer.",
+      "networkError": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
+      "ageRestricted": "Vous devez avoir au moins 18 ans pour créer un compte."
+    }
+  },
   "common": {
     "back": "Retour aux Voyages",
     "saveDraft": "Enregistrer le brouillon",
@@ -70,6 +84,9 @@
     "invalidCredentials": "Email ou mot de passe incorrect. Veuillez réessayer."
   },
   "signup": {
+    "dateOfBirth": "Date de naissance",
+    "dateOfBirthRequired": "La date de naissance est requise",
+    "ageRestricted": "Vous devez avoir au moins 18 ans pour créer un compte.",
     "title": "Devenir partenaire Ouiboo",
     "subtitle": "Créez votre compte agence et commencez à grandir.",
     "agencyName": "Nom de l'agence",
@@ -123,6 +140,8 @@
     "heroAlt": "Planification en agence"
   },
   "terms": {
+    "sectionFiveTitle": "Droits d'auteur et retrait de contenu",
+    "sectionFiveBody": "Ouiboo respecte les droits de propriété intellectuelle d'autrui et attend de ses utilisateurs qu'ils fassent de même. Si vous estimez qu'un contenu sur Ouiboo porte atteinte à vos droits d'auteur, déposez un signalement sur notre page de signalement des droits d'auteur. Votre notification doit identifier l'œuvre protégée, le contenu prétendument litigieux et son emplacement sur Ouiboo, vos coordonnées, une déclaration de bonne foi selon laquelle l'utilisation n'est autorisée ni par le titulaire, ni par son agent, ni par la loi, ainsi qu'une déclaration, sous peine de parjure, attestant que les informations sont exactes et que vous êtes le titulaire des droits ou autorisé à agir en son nom. Nous examinons rapidement les notifications valides, retirons les contenus litigieux ou en désactivons l'accès, et résilions les comptes des contrefacteurs répétés. Si votre contenu a été retiré par erreur, vous pouvez déposer une contre-notification via la même page ; nous restaurerons le contenu sauf si l'auteur du signalement initial engage une action en justice. Les coordonnées de notre agent désigné seront publiées ici dès son enregistrement terminé.",
     "backToSignup": "Retour à l'inscription",
     "title": "Conditions d'utilisation",
     "updated": "Dernière mise à jour : mars 2024",
@@ -559,6 +578,9 @@
     "saveChanges": "Enregistrer les modifications",
     "backToSettings": "Retour aux paramètres",
     "billing": {
+      "termsTitle": "Conditions d'abonnement",
+      "termsSubtitle": "Fonctionnement du renouvellement et de l'annulation",
+      "termsBody": "Les formules payantes se renouvellent automatiquement au prix et à la période affichés sur cette page, jusqu'à annulation. Nous vous envoyons un rappel par email avant chaque prélèvement de renouvellement. Vous pouvez annuler à tout moment — l'annulation prend effet à la fin de la période payée en cours, et vos annonces restent en ligne jusque-là. Souscrire une formule payante vaut acceptation de ces conditions (version {{version}}).",
       "title": "Facturation et abonnement",
       "subtitle": "Suivez l'état de l'abonnement et la préparation des versements dont votre équipe a besoin au quotidien.",
       "openWallet": "Ouvrir le portefeuille",
