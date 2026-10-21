@@ -55,7 +55,7 @@ describe('CopyrightService (#325)', () => {
     });
 
     it('throws for an unknown report id', async () => {
-        db.copyrightReport.findUnique.mockResolvedValue(null);
+        db.copyrightReport.findUnique.mockResolvedValue(null as never);
         await expect(
             service.resolveReport('nope', { status: 'DISMISSED' }, 'admin-1'),
         ).rejects.toThrow(NotFoundException);

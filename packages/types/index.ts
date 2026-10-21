@@ -98,6 +98,8 @@ export interface AgencyProfile {
     subscriptionStatus: SubscriptionStatus;
     trialEndsAt?: string;
     subscriptionEndsAt?: string;
+    subscriptionTermsVersion?: string;
+    subscriptionTermsAcceptedAt?: string;
 }
 
 export enum TripStatus {
