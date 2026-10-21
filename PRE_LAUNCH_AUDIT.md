@@ -981,3 +981,18 @@ packages/
 ---
 
 *End of Pre-Launch Audit Report*
+
+## Session-replay rule (#323, added 2026-10-22)
+
+- Microsoft Clarity (or any session-replay tool) may be initialized ONLY through
+  the consent gate in `apps/landing/src/components/AnalyticsConsent.tsx`, which
+  fires solely when the stored consent value is `accepted`. There is exactly
+  one Clarity init path in the codebase; the un-gated `ClaritySetup.tsx` was
+  deleted on 2026-10-22 — do not reintroduce a second init path.
+- Traveler, Agency, and Admin ship NO session-replay tooling (Vercel Analytics
+  only). Do not add replay to authenticated apps without a fresh privacy review.
+- Input masking: Clarity's project-level masking must stay enabled (verify in
+  the Clarity dashboard: Settings -> Masking -> mask all inputs/text). As
+  defense in depth, sensitive capture surfaces carry `data-clarity-mask`
+  (the waitlist form does). Add the attribute to any new form that collects
+  personal data on a page where replay runs.
