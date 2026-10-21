@@ -24,11 +24,7 @@ type ApiErrorResponse = {
 export default function AdminLoginPage() {
   const { t, ready } = useTranslation();
   const router = useRouter();
-  const { register, handleSubmit, formState: { errors } } = useForm<AdminLoginForm>({
-    defaultValues: {
-      username: t('login.usernamePlaceholder'),
-    },
-  });
+  const { register, handleSubmit, formState: { errors } } = useForm<AdminLoginForm>();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // If i18n never reports ready (e.g. resource load failure), stop showing
