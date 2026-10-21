@@ -184,7 +184,7 @@ export default function TravelerSignupPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-foreground ms-1">{t('signup.dateOfBirth', 'Date of birth')}</label>
+                    <label htmlFor="dateOfBirth" className="text-sm font-semibold text-foreground ms-1">{t('signup.dateOfBirth', 'Date of birth')}</label>
                     <div className="relative group">
                         <div className="absolute start-4 top-1/2 -translate-y-1/2 text-foreground group-focus-within:text-sunset-orange transition-colors">
                             <Calendar className="h-5 w-5" />
