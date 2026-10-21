@@ -217,15 +217,17 @@ export function TripCard({ trip }: TripCardProps) {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge className={cn(
-              "border-none text-[10px] font-bold uppercase tracking-wider flex items-center gap-1",
-              isAgencyVerified ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"
-            )}>
-              <ShieldCheck className="h-3 w-3" />
-              {isAgencyVerified ? t('tripCard.verifiedAgency') : t('tripCard.agencyPending')}
-            </Badge>
-          </div>
+          {/* #317: public cards never display an internal approval state.
+              The badge exists only as a positive verified signal; a pending,
+              rejected, or unknown state renders no badge at all. */}
+          {isAgencyVerified && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="border-none text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 bg-success/15 text-success">
+                <ShieldCheck className="h-3 w-3" />
+                {t('tripCard.verifiedAgency')}
+              </Badge>
+            </div>
+          )}
           
           <div className="flex items-center gap-3 text-muted-foreground text-xs font-medium">
             <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {trip.startLocation}</span>
