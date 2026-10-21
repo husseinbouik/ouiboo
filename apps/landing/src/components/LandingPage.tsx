@@ -622,6 +622,9 @@ export default function LandingPage() {
 <a href="/privacy" className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300">
                   {t('footer.privacy')}
                 </a>
+                <a href={`${travelerUrl}/copyright-report?lang=${currentLang}`} className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300">
+                  {t('footer.copyright', 'Copyright')}
+                </a>
                 <CookiePreferencesButton className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300" />
             </div>
             <p className="mt-10 text-center text-xs leading-5 text-gray-500">{t('footer.copyright', { year: new Date().getFullYear() })} {t('footer.rights')}</p>
