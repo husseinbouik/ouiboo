@@ -25,14 +25,16 @@ const DEMO_AGENCY = {
   companyName: 'Atlas Adventures SARL',
 };
 
-// Unsplash images of Morocco (stable URLs)
+// Unsplash images of Morocco (stable URLs; each photo visually verified
+// against its subject on 2026-10-21 — the previous IDs depicted wrong
+// subjects, e.g. the old "marrakech" photo was the Giza pyramids)
 const IMG = {
-  marrakech: 'https://images.unsplash.com/photo-1539650116574-8efeb43e2750?q=80&w=1200&auto=format&fit=crop',
-  sahara: 'https://images.unsplash.com/photo-1518684079-3c830dcef090?q=80&w=1200&auto=format&fit=crop',
-  atlas: 'https://images.unsplash.com/photo-1489493585363-d69421e0edd3?q=80&w=1200&auto=format&fit=crop',
-  chefchaouen: 'https://images.unsplash.com/photo-1553603227-2358aabe821e?q=80&w=1200&auto=format&fit=crop',
-  essaouira: 'https://images.unsplash.com/photo-1569383746724-6f1b882b8f46?q=80&w=1200&auto=format&fit=crop',
-  fes: 'https://images.unsplash.com/photo-1548013146-72479768bada?q=80&w=1200&auto=format&fit=crop',
+  marrakech: 'https://images.unsplash.com/photo-1597212618440-806262de4f6b?q=80&w=1200&auto=format&fit=crop',
+  sahara: 'https://images.unsplash.com/photo-1489493585363-d69421e0edd3?q=80&w=1200&auto=format&fit=crop',
+  atlas: 'https://images.unsplash.com/photo-1559315390-1065ae6b47c0?q=80&w=1200&auto=format&fit=crop',
+  chefchaouen: 'https://images.unsplash.com/photo-1569383746724-6f1b882b8f46?q=80&w=1200&auto=format&fit=crop',
+  essaouira: 'https://images.unsplash.com/photo-1646590640485-df729f1bcfed?q=80&w=1200&auto=format&fit=crop',
+  fes: 'https://images.unsplash.com/photo-1557503799-fac6a98054b3?q=80&w=1200&auto=format&fit=crop',
 };
 
 const TRIPS = [
