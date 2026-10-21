@@ -9,7 +9,8 @@
       "otpExpired": "Le code de vérification a expiré. Demandez-en un nouveau.",
       "serverError": "Un problème est survenu de notre côté. Veuillez réessayer plus tard.",
       "genericError": "Un problème est survenu. Veuillez réessayer.",
-      "networkError": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez."
+      "networkError": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
+      "ageRestricted": "Vous devez avoir au moins 18 ans pour créer un compte."
     }
   },
   "nav": {
@@ -93,6 +94,7 @@
     "socialComingSoon": "Connexion sociale bientôt disponible"
   },
   "signup": {
+    "dateOfBirth": "Date de naissance",
     "title": "Créer un compte",
     "subtitle": "Rejoignez Ouiboo et commencez votre voyage.",
     "name": "Nom complet",

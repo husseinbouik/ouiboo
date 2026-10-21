@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, Calendar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import '../../lib/i18n';
@@ -20,6 +20,15 @@ import { UserRole } from '@ouiboo/types';
 const TravelerSignupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
+  dateOfBirth: z.string().min(1, "Date of birth is required").refine((value) => {
+    const dob = new Date(value);
+    if (Number.isNaN(dob.getTime())) return false;
+    const now = new Date();
+    let age = now.getFullYear() - dob.getFullYear();
+    const monthDelta = now.getMonth() - dob.getMonth();
+    if (monthDelta < 0 || (monthDelta === 0 && now.getDate() < dob.getDate())) age--;
+    return age >= 18;
+  }, { message: "You must be at least 18 years old to create an account." }),
   password: z.string().min(8, "Password must be at least 8 characters"),
   acceptTerms: z.boolean().refine((val) => val === true, {
     message: "Please accept the terms to continue.",
@@ -48,6 +57,8 @@ const getSignupErrorMessage = (
   // Handle non-JSON responses (e.g., HTML error pages from proxy/CDN)
   const message = typeof data === 'string' ? null : data?.message;
   switch (message) {
+    case 'AGE_RESTRICTED':
+      return t('auth.errors.ageRestricted', 'You must be at least 18 years old to create an account.');
     case 'EMAIL_ALREADY_IN_USE':
       return t('signup.emailInUse', 'An account with this email already exists. Try logging in instead.');
     case 'JWT_NOT_CONFIGURED':
@@ -103,6 +114,7 @@ export default function TravelerSignupPage() {
       email: data.email,
       name: data.name,
       password: data.password,
+      dateOfBirth: data.dateOfBirth,
       role: UserRole.Traveler,
     });
   };
@@ -169,6 +181,23 @@ export default function TravelerSignupPage() {
                         />
                     </div>
                     {errors.email && <span className="text-danger text-xs font-semibold ps-1">{errors.email.message as string}</span>}
+                </div>
+
+                <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-foreground ms-1">{t('signup.dateOfBirth', 'Date of birth')}</label>
+                    <div className="relative group">
+                        <div className="absolute start-4 top-1/2 -translate-y-1/2 text-foreground group-focus-within:text-sunset-orange transition-colors">
+                            <Calendar className="h-5 w-5" />
+                        </div>
+                        <Input
+                            id="dateOfBirth"
+                            type="date"
+                            max={new Date().toISOString().split('T')[0]}
+                            className="ps-12 h-14 bg-muted border-border rounded-2xl focus:bg-background focus:ring-2 focus:ring-sunset-orange/10 focus:border-sunset-orange transition-all font-medium text-foreground"
+                            {...register('dateOfBirth')}
+                        />
+                    </div>
+                    {errors.dateOfBirth && <span className="text-danger text-xs font-semibold ps-1">{errors.dateOfBirth.message as string}</span>}
                 </div>
             </div>
 

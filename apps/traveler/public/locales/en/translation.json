@@ -9,7 +9,8 @@
       "otpExpired": "The verification code has expired. Request a new one.",
       "serverError": "Something went wrong on our end. Please try again later.",
       "genericError": "Something went wrong. Please try again.",
-      "networkError": "Cannot reach the server. Please check your connection and try again."
+      "networkError": "Cannot reach the server. Please check your connection and try again.",
+      "ageRestricted": "You must be at least 18 years old to create an account."
     }
   },
   "nav": {
@@ -93,6 +94,7 @@
     "socialComingSoon": "Social login coming soon"
   },
   "signup": {
+    "dateOfBirth": "Date of birth",
     "title": "Create an account",
     "subtitle": "Join Ouiboo and start your journey.",
     "name": "Full Name",

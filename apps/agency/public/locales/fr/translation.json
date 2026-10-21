@@ -9,7 +9,8 @@
       "otpExpired": "Le code de vérification a expiré. Demandez-en un nouveau.",
       "serverError": "Un problème est survenu de notre côté. Veuillez réessayer plus tard.",
       "genericError": "Un problème est survenu. Veuillez réessayer.",
-      "networkError": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez."
+      "networkError": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
+      "ageRestricted": "Vous devez avoir au moins 18 ans pour créer un compte."
     }
   },
   "common": {
@@ -83,6 +84,9 @@
     "invalidCredentials": "Email ou mot de passe incorrect. Veuillez réessayer."
   },
   "signup": {
+    "dateOfBirth": "Date de naissance",
+    "dateOfBirthRequired": "La date de naissance est requise",
+    "ageRestricted": "Vous devez avoir au moins 18 ans pour créer un compte.",
     "title": "Devenir partenaire Ouiboo",
     "subtitle": "Créez votre compte agence et commencez à grandir.",
     "agencyName": "Nom de l'agence",

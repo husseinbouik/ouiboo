@@ -9,7 +9,8 @@
       "otpExpired": "The verification code has expired. Request a new one.",
       "serverError": "Something went wrong on our end. Please try again later.",
       "genericError": "Something went wrong. Please try again.",
-      "networkError": "Cannot reach the server. Please check your connection and try again."
+      "networkError": "Cannot reach the server. Please check your connection and try again.",
+      "ageRestricted": "You must be at least 18 years old to create an account."
     }
   },
   "common": {
@@ -83,6 +84,9 @@
     "invalidCredentials": "Incorrect email or password. Please try again."
   },
   "signup": {
+    "dateOfBirth": "Date of birth",
+    "dateOfBirthRequired": "Date of birth is required",
+    "ageRestricted": "You must be at least 18 years old to create an account.",
     "title": "Partner with Ouiboo",
     "subtitle": "Create your agency account and start growing.",
     "agencyName": "Agency Name",
