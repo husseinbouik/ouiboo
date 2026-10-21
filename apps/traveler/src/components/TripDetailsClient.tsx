@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -80,6 +80,8 @@ export default function TripDetailsClient({
   const { user, setShowLoginModal } = useAuth();
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [activeImage, setActiveImage] = useState(0);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeHandledRef = useRef(false);
 
   const { data: trip, isLoading, isError, refetch } = useQuery<TripDetails | null>({
     queryKey: ['trip', tripId],
@@ -147,6 +149,61 @@ export default function TripDetailsClient({
     ? formatCurrency(lowestPricedSession.price, lowestPricedSession.currency, i18n.language)
     : 'On request';
 
+  // Gallery tiles/thumbnails never include the photo currently shown in the
+  // main viewer, so the same photo is never on screen twice. Indices are the
+  // original positions in trip.images so clicks/dots keep their meaning.
+  const galleryTiles = (trip.images ?? [])
+    .map((src, index) => ({ src, index }))
+    .filter(({ index }) => index !== activeImage);
+  const desktopTiles = galleryTiles.slice(0, 3);
+  const hiddenTileCount = galleryTiles.length - desktopTiles.length;
+  const firstHiddenTileIndex = hiddenTileCount > 0 ? galleryTiles[desktopTiles.length].index : -1;
+
+  // Touch swipe support for the main gallery image (mobile): a horizontal
+  // swipe changes the photo, while vertical gestures still scroll the page.
+  // The container uses `touch-pan-y`, so the browser natively handles
+  // vertical panning and only horizontal-dominant gestures reach these
+  // handlers. Mirrors the TripCard carousel pattern (PR #306).
+  const SWIPE_THRESHOLD_PX = 40;
+  const imageCount = trip.images?.length ?? 0;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    swipeHandledRef.current = false;
+    if (imageCount <= 1) return;
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (imageCount <= 1 || !touchStartRef.current) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+    if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) <= Math.abs(dy)) return;
+    swipeHandledRef.current = true;
+    window.setTimeout(() => {
+      swipeHandledRef.current = false;
+    }, 400);
+    // In RTL the gallery is mirrored, so the swipe direction that advances
+    // to the next image flips with it (same convention as TripCard).
+    const advancesNext = i18n.dir() === 'rtl' ? dx > 0 : dx < 0;
+    setActiveImage((prev) => advancesNext
+      ? (prev + 1) % imageCount
+      : (prev - 1 + imageCount) % imageCount);
+  };
+
+  // A real swipe is followed by a synthetic click on the touched element;
+  // swallow it so a swipe ending on a dot never also jumps via that dot.
+  // Plain taps are unaffected because the flag is only set after a swipe.
+  const handleClickCapture = (e: React.MouseEvent) => {
+    if (swipeHandledRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      swipeHandledRef.current = false;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-32 font-sans text-foreground overflow-hidden relative">
       {/* Background Blobs */}
@@ -169,9 +226,12 @@ export default function TripDetailsClient({
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className={cn(
-                  "relative h-[280px] sm:h-[400px] lg:h-full rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden shadow-2xl shadow-black/5 dark:shadow-black/20 group border border-border/50",
+                  "relative h-[280px] sm:h-[400px] lg:h-full rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden shadow-2xl shadow-black/5 dark:shadow-black/20 group border border-border/50 touch-pan-y",
                   (trip.images?.length ?? 0) > 1 ? "lg:col-span-7" : "lg:col-span-12",
                 )}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                onClickCapture={handleClickCapture}
             >
                 <Image 
                     src={trip.images?.[activeImage] || 'https://images.unsplash.com/photo-1489749798305-4fea3ae63d43'} 
@@ -196,22 +256,32 @@ export default function TripDetailsClient({
             </motion.div>
             
             {(trip.images?.length ?? 0) > 1 ? (
+              <div className="flex lg:hidden gap-3 overflow-x-auto pb-1" aria-label="Trip photos">
+                  {galleryTiles.map(({ src, index }) => (
+                      <button key={index} type="button" className="relative h-20 w-28 shrink-0 rounded-2xl overflow-hidden shadow-md border border-border/50" onClick={() => setActiveImage(index)} aria-label={`View image ${index + 1}`}>
+                          <Image src={src} className="w-full h-full object-cover" alt={`${trip.title} - image ${index + 1}`} fill sizes="112px" />
+                      </button>
+                  ))}
+              </div>
+            ) : null}
+
+            {(trip.images?.length ?? 0) > 1 ? (
               <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="hidden sm:grid lg:col-span-5 grid-cols-2 auto-rows-fr gap-4 md:gap-6"
+                  className="hidden lg:grid lg:col-span-5 grid-cols-2 auto-rows-fr gap-4 md:gap-6"
               >
-                  {trip.images?.slice(1, 4).map((img: string, idx: number) => (
-                      <button key={idx} type="button" className="relative min-h-36 rounded-[1.5rem] overflow-hidden shadow-lg border border-border/50 group" onClick={() => setActiveImage(idx + 1)} aria-label={`View image ${idx + 2}`}>
-                          <Image src={img} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={`${trip.title} - image ${idx + 2}`} fill sizes="(min-width: 1024px) 20vw, 50vw" />
+                  {desktopTiles.map(({ src, index }) => (
+                      <button key={index} type="button" className="relative min-h-36 rounded-[1.5rem] overflow-hidden shadow-lg border border-border/50 group" onClick={() => setActiveImage(index)} aria-label={`View image ${index + 1}`}>
+                          <Image src={src} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={`${trip.title} - image ${index + 1}`} fill sizes="20vw" />
                           <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                       </button>
                   ))}
-                  {(trip.images?.length ?? 0) > 4 ? (
-                    <button type="button" onClick={() => setActiveImage(4)} className="bg-muted/50 rounded-[1.5rem] flex items-center justify-center hover:bg-muted transition-colors border border-border" aria-label={`View ${(trip.images?.length ?? 0) - 4} more images`}>
+                  {hiddenTileCount > 0 ? (
+                    <button type="button" onClick={() => setActiveImage(firstHiddenTileIndex)} className="bg-muted/50 rounded-[1.5rem] flex items-center justify-center hover:bg-muted transition-colors border border-border" aria-label={`View ${hiddenTileCount} more images`}>
                         <span className="flex flex-col items-center gap-2">
                             <span className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground font-bold shadow-sm">
-                                +{(trip.images?.length ?? 0) - 4}
+                                +{hiddenTileCount}
                             </span>
                             <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">View Gallery</span>
                         </span>
