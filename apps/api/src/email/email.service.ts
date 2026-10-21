@@ -178,6 +178,26 @@ export class EmailService {
     return { skipped: false as const, result }
   }
 
+  getSubscriptionRenewalReminderTemplate(companyName: string, renewalDateLabel: string, billingUrl: string) {
+    const content = `
+      ${emailHeading('Your subscription renews soon')}
+      ${emailParagraph(`Hello ${companyName}, your Ouiboo agency subscription renews on ${renewalDateLabel}. It renews automatically at your current plan price unless you cancel before that date.`)}
+      ${emailParagraph('Cancellation takes effect at the end of the paid period, and your listings stay live until then. You can review your plan, renewal date, and the subscription terms on your billing page.')}
+      ${emailButton('Review your subscription', billingUrl)}
+      ${emailPanel('You are receiving this email because you have an active Ouiboo agency subscription.')}
+    `
+    return renderEmail({
+      title: 'Your Ouiboo subscription renews soon',
+      preheader: `Your subscription renews on ${renewalDateLabel}`,
+      content,
+    })
+  }
+
+  async sendSubscriptionRenewalReminder(email: string, companyName: string, renewalDateLabel: string, billingUrl: string) {
+    const html = this.getSubscriptionRenewalReminderTemplate(companyName, renewalDateLabel, billingUrl)
+    return this.sendEmail(email, 'Your Ouiboo subscription renews soon', html)
+  }
+
   getOTPTemplate(otp: string) {
     const content = `
       ${emailHeading('Verify your email address')}

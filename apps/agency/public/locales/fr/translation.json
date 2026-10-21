@@ -576,6 +576,9 @@
     "saveChanges": "Enregistrer les modifications",
     "backToSettings": "Retour aux paramètres",
     "billing": {
+      "termsTitle": "Conditions d'abonnement",
+      "termsSubtitle": "Fonctionnement du renouvellement et de l'annulation",
+      "termsBody": "Les formules payantes se renouvellent automatiquement au prix et à la période affichés sur cette page, jusqu'à annulation. Nous vous envoyons un rappel par email avant chaque prélèvement de renouvellement. Vous pouvez annuler à tout moment — l'annulation prend effet à la fin de la période payée en cours, et vos annonces restent en ligne jusque-là. Souscrire une formule payante vaut acceptation de ces conditions (version {{version}}).",
       "title": "Facturation et abonnement",
       "subtitle": "Suivez l'état de l'abonnement et la préparation des versements dont votre équipe a besoin au quotidien.",
       "openWallet": "Ouvrir le portefeuille",

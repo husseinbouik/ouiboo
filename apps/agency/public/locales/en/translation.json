@@ -576,6 +576,9 @@
     "saveChanges": "Save Changes",
     "backToSettings": "Back to settings",
     "billing": {
+      "termsTitle": "Subscription terms",
+      "termsSubtitle": "How renewal and cancellation work",
+      "termsBody": "Paid plans renew automatically at the price and period shown on this page until cancelled. We email you a reminder before each renewal charge. You can cancel at any time — cancellation takes effect at the end of the current paid period, and your listings stay live until then. Starting a paid plan means accepting these terms (version {{version}}).",
       "title": "Billing & Subscription",
       "subtitle": "Track the subscription state and payout readiness your team needs for day-to-day launch operations.",
       "openWallet": "Open wallet",

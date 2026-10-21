@@ -23,6 +23,60 @@ export class NotificationJobsService {
   ) {}
 
   /**
+   * Pre-renewal reminders (#324): email agencies whose paid subscription
+   * renews within 3 days. Idempotent per period — renewalReminderSentFor
+   * stores the subscriptionEndsAt the reminder was sent for, so a renewal
+   * (a new endsAt) re-arms the reminder and a repeat run sends nothing.
+   */
+  async sendSubscriptionRenewalReminders() {
+    this.logger.log('Running subscription renewal reminder job');
+    try {
+      const now = new Date();
+      const inThreeDays = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+
+      const profiles = await this.prisma.agencyProfile.findMany({
+        where: {
+          subscriptionStatus: 'ACTIVE',
+          subscriptionEndsAt: { gte: now, lte: inThreeDays },
+        },
+        include: { user: true },
+        take: 500,
+      });
+
+      for (const profile of profiles) {
+        try {
+          if (
+            profile.renewalReminderSentFor &&
+            profile.subscriptionEndsAt &&
+            profile.renewalReminderSentFor.getTime() === profile.subscriptionEndsAt.getTime()
+          ) {
+            continue;
+          }
+          const billingUrl = `${process.env.AGENCY_APP_URL}/dashboard/settings/billing`;
+          const renewalDateLabel = profile.subscriptionEndsAt!.toISOString().slice(0, 10);
+          await this.emailService.sendSubscriptionRenewalReminder(
+            profile.user.email,
+            profile.companyName,
+            renewalDateLabel,
+            billingUrl,
+          );
+          await this.prisma.agencyProfile.update({
+            where: { id: profile.id },
+            data: { renewalReminderSentFor: profile.subscriptionEndsAt },
+          });
+        } catch (error) {
+          this.logger.error(
+            `Failed to send renewal reminder for agency ${profile.id}`,
+            error,
+          );
+        }
+      }
+    } catch (error) {
+      this.logger.error('Subscription renewal reminder job failed', error);
+    }
+  }
+
+  /**
    * Send payment proof reminders - every 12 hours for unpaid bookings
    */
   async sendPaymentProofReminders() {

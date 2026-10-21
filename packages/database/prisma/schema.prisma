@@ -175,6 +175,10 @@ model AgencyProfile {
   trialEndsAt        DateTime?
   subscriptionEndsAt DateTime?
   bankDetails        String?            @db.Text
+  // #324: subscription terms acceptance + pre-renewal reminder marker
+  subscriptionTermsVersion    String?
+  subscriptionTermsAcceptedAt DateTime?
+  renewalReminderSentFor      DateTime?
 }
 
 model TripTemplate {

@@ -7,6 +7,7 @@ import { EmailService } from '../email/email.service';
 import { createHash, randomInt, randomUUID, timingSafeEqual } from 'crypto';
 import { UserRole } from '@ouiboo/types';
 import { RedisService } from '../common/redis.service';
+import { CURRENT_SUBSCRIPTION_TERMS_VERSION } from '../common/subscription-terms';
 
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -194,6 +195,8 @@ export class AuthService {
                             patente: 'PENDING',
                             rib: 'PENDING',
                             subscriptionStatus: 'TRIAL',
+                            subscriptionTermsVersion: CURRENT_SUBSCRIPTION_TERMS_VERSION,
+                            subscriptionTermsAcceptedAt: new Date(),
                             trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days trial
                         }
                     });
