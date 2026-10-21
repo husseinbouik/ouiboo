@@ -1,10 +1,20 @@
 import axios, {
   type AxiosInstance,
   type AxiosResponse,
+  type InternalAxiosRequestConfig,
 } from 'axios'
 
 const DEFAULT_API_URL = 'http://localhost:3000/api/v1'
 const DEFAULT_LOGIN_PATH = '/login'
+
+// Cold-start resilience (#318): after the stack has been idle, the first
+// requests can hang while cold serverless functions and a suspended database
+// wake up. Bound every call with a timeout and retry a request that never
+// received a response exactly once (see createApiClient / establishAppSession).
+const API_REQUEST_TIMEOUT_MS = 20000
+const NETWORK_RETRY_DELAY_MS = 1500
+const SESSION_REQUEST_TIMEOUT_MS = 15000
+const SESSION_RETRY_DELAY_MS = 1000
 
 let browserAccessToken: string | null = null
 
@@ -35,23 +45,59 @@ export function clearBrowserAccessToken() {
   }
 }
 
+async function postAppSession(accessToken: string): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(
+    () => controller.abort(),
+    SESSION_REQUEST_TIMEOUT_MS
+  )
+  try {
+    return await fetch('/api/auth/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessToken }),
+      signal: controller.signal,
+    })
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 /**
  * Establishes the app-domain session cookie via the Next.js BFF route.
  * The BFF validates the access token with the API and sets a signed,
  * HttpOnly session cookie that the proxy can verify.
+ *
+ * The whole call is retried exactly once when an attempt fails without an
+ * authoritative answer: a network/timeout failure, or a 502 from the BFF
+ * route (its "upstream API unreachable" code, #318). Every other non-2xx
+ * response is authoritative and is not retried.
  */
 export async function establishAppSession(accessToken: string): Promise<void> {
-  const res = await fetch('/api/auth/session', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ accessToken }),
-  })
-  // Fail loudly (#234): a non-2xx response means the session cookie was not
-  // set, so callers (e.g. login onSuccess) must not proceed to protected
-  // routes as if the user were authenticated.
-  if (!res.ok) {
+  let lastNetworkError: unknown
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt > 0) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, SESSION_RETRY_DELAY_MS)
+      )
+    }
+    let res: Response
+    try {
+      res = await postAppSession(accessToken)
+    } catch (error) {
+      lastNetworkError = error
+      continue
+    }
+    if (res.ok) return
+    if (res.status === 502 && attempt === 0) continue
+    // Fail loudly (#234): a non-2xx response means the session cookie was not
+    // set, so callers (e.g. login onSuccess) must not proceed to protected
+    // routes as if the user were authenticated.
     throw new Error(`Session establishment failed: ${res.status}`)
   }
+  throw lastNetworkError instanceof Error
+    ? lastNetworkError
+    : new Error('Session establishment failed: network error')
 }
 
 /**
@@ -120,6 +166,7 @@ export function getApiBaseUrl(explicitBaseUrl?: string) {
 export function createApiClient(explicitBaseUrl?: string) {
   const client = axios.create({
     baseURL: getApiBaseUrl(explicitBaseUrl),
+    timeout: API_REQUEST_TIMEOUT_MS,
     headers: {
       Accept: 'application/vnd.ouiboo.v2+json',
     },
@@ -127,6 +174,28 @@ export function createApiClient(explicitBaseUrl?: string) {
   client.interceptors.response.use(
     unwrapApiEnvelope,
     (error) => Promise.reject(normalizeApiProblem(error))
+  )
+  // Cold-start resilience (#318): a request that fails WITHOUT a response
+  // (network error or client timeout — e.g. the first hit waking a suspended
+  // database or a cold function) is retried exactly once after a short
+  // backoff. Errors with a response are never retried: the server answered,
+  // so replaying could duplicate side effects or mask real failures. The
+  // `_networkRetry` flag on the config guards against retry loops.
+  client.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      const config = error?.config as
+        | (InternalAxiosRequestConfig & { _networkRetry?: boolean })
+        | undefined
+      if (!error?.response && config && !config._networkRetry) {
+        config._networkRetry = true
+        await new Promise((resolve) =>
+          setTimeout(resolve, NETWORK_RETRY_DELAY_MS)
+        )
+        return client(config)
+      }
+      return Promise.reject(error)
+    }
   )
   return client
 }

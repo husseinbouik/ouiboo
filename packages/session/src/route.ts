@@ -42,10 +42,43 @@ export interface CreateSessionRouteOptions {
 
 const DEFAULT_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
+// Cold-start resilience (#318): the first token validation after the stack
+// has been idle can hang while a cold API instance and a suspended database
+// wake up. Bound each attempt with a timeout and retry a thrown
+// (network/timeout) failure exactly once before reporting
+// SESSION_UPSTREAM_ERROR. HTTP error responses are never retried — the API
+// answered, so its verdict on the token is authoritative.
+const USERS_ME_TIMEOUT_MS = 8000;
+const USERS_ME_RETRY_DELAY_MS = 500;
+
 export function createSessionRoute(options: CreateSessionRouteOptions) {
   /** Portal role isolation (#257): only this role may establish a session here. */
   const ALLOWED_ROLE = options.allowedRole;
   const API_URL = options.apiUrl ?? DEFAULT_API_URL;
+
+  /**
+   * Validates an access token against the API's /users/me endpoint.
+   * Retries a thrown (network/timeout) failure exactly once; HTTP error
+   * responses are returned as-is for the caller to map to an error code.
+   */
+  async function fetchUsersMe(accessToken: string): Promise<Response> {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (attempt > 0) {
+        await new Promise((resolve) => setTimeout(resolve, USERS_ME_RETRY_DELAY_MS));
+      }
+      try {
+        return await fetch(`${API_URL}/users/me`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          cache: 'no-store',
+          signal: AbortSignal.timeout(USERS_ME_TIMEOUT_MS),
+        });
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError;
+  }
 
   async function POST(request: NextRequest) {
     let accessToken: unknown;
@@ -69,10 +102,7 @@ export function createSessionRoute(options: CreateSessionRouteOptions) {
     // Validate the access token with the API (authoritative)
     let apiRes: Response;
     try {
-      apiRes = await fetch(`${API_URL}/users/me`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        cache: 'no-store',
-      });
+      apiRes = await fetchUsersMe(accessToken);
     } catch {
       logSessionError('SESSION_UPSTREAM_ERROR', 'POST users/me fetch failed');
       return sessionError('SESSION_UPSTREAM_ERROR', 502, 'Authentication service unavailable');
