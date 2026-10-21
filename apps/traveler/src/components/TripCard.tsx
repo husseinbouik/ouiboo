@@ -7,6 +7,8 @@ import { Card, Badge, Button } from '@ouiboo/ui';
 import { MapPin, Star, ChevronLeft, ChevronRight, Zap, ShieldCheck, Ticket } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
 import { cn } from '@ouiboo/ui/utils';
 import { formatCurrency } from '@ouiboo/utils';
 import { SessionStatus, type SessionStatusType, VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
@@ -54,6 +56,22 @@ export function TripCard({ trip }: TripCardProps) {
     ? Math.min(...sessions.map((session) => Number(session.price || 0)))
     : null;
   const isAgencyVerified = trip.agency?.verificationStatus === VerificationStatus.Verified;
+
+  // #333: warm the trip-detail query on hover/focus/press so tapping a card
+  // paints instantly instead of starting a cold request chain. Uses the exact
+  // query key + fetcher of TripDetailsClient; prefetch is cached and
+  // deduplicated by React Query, so repeated triggers are free.
+  const queryClient = useQueryClient();
+  const prefetchTrip = () => {
+    void queryClient.prefetchQuery({
+      queryKey: ['trip', trip.id],
+      queryFn: async () => {
+        const response = await apiClient.get(`/trips/${trip.id}`);
+        return response.data;
+      },
+      staleTime: 60 * 1000,
+    });
+  };
 
   const goToNextImage = () => {
     setCurrentImage((prev) => (prev + 1) % images.length);
@@ -121,7 +139,7 @@ export function TripCard({ trip }: TripCardProps) {
   };
 
   return (
-    <Card className="group border-border shadow-sm hover:shadow-xl transition-all duration-300 rounded-[2rem] overflow-hidden bg-card h-full flex flex-col">
+    <Card onMouseEnter={prefetchTrip} onFocus={prefetchTrip} onPointerDown={prefetchTrip} className="group border-border shadow-sm hover:shadow-xl transition-all duration-300 rounded-[2rem] overflow-hidden bg-card h-full flex flex-col">
       <div
         className="relative h-64 overflow-hidden touch-pan-y"
         onTouchStart={handleTouchStart}

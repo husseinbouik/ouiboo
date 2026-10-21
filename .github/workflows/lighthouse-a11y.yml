@@ -1,8 +1,10 @@
 # Lighthouse CI + axe-core accessibility budgets for key pages.
 #
-# Issue #213. Non-blocking while budgets are being tuned:
-# every step uses continue-on-error so results are reported
-# without failing the PR. Promote to blocking once green.
+# Issue #213, promoted by #332 (2026-10-22): the axe checks (desktop +
+# mobile viewport) and the keyboard-navigation check are BLOCKING — a red
+# step fails the PR. The Lighthouse CI step stays report-only because its
+# budgets bundle performance scores with accessibility; the a11y gate is
+# enforced by the axe + keyboard steps below.
 name: Lighthouse & Accessibility
 
 on:
@@ -77,15 +79,12 @@ jobs:
         run: node .github/lighthouse/axe-check.mjs http://localhost:3001
 
       - name: Run axe accessibility checks (mobile viewport)
-        # #213: mobile viewport regression coverage. Non-blocking while
-        # budgets are being tuned, matching the Lighthouse step above.
-        continue-on-error: true
+        # #213: mobile viewport regression coverage. Blocking since #332.
         run: node .github/lighthouse/axe-check-mobile.mjs http://localhost:3001
 
       - name: Run keyboard navigation checks
         # #213: basic keyboard-navigation regression coverage (tab order,
-        # visible focus, no keyboard traps). Non-blocking while being tuned.
-        continue-on-error: true
+        # visible focus, no keyboard traps). Blocking since #332.
         run: node .github/lighthouse/keyboard-nav-check.mjs http://localhost:3001
 
       - name: Upload Lighthouse results
