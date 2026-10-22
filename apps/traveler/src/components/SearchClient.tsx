@@ -196,7 +196,7 @@ export default function SearchClient({
               aria-pressed={filters.category === category.value}
               className={cn(
                 "px-3 py-2 rounded-lg text-sm text-left",
-                filters.category === category.value ? "bg-sunset-orange/10 text-sunset-orange" : "bg-muted",
+                filters.category === category.value ? "bg-sunset-orange/10 text-sunset-orange-dark" : "bg-muted",
               )}
             >
               {category.label}
@@ -398,7 +398,7 @@ export default function SearchClient({
               <div className="mt-8 flex items-center justify-center gap-3">
                 <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage===1} aria-label="Previous page" className="px-3 py-1 rounded-lg bg-muted"><ChevronLeft /></button>
                 {Array.from({ length: pagination.totalPages }, (_,i)=>i+1).filter(p=>Math.abs(p-currentPage)<=2||p===1||p===pagination.totalPages).map(p=> (
-                  <button key={p} onClick={()=>setCurrentPage(p)} aria-label={`Go to page ${p}`} aria-current={p === currentPage ? 'page' : undefined} className={cn('px-3 py-1 rounded-lg', p===currentPage?'bg-sunset-orange text-white':'bg-muted')}>{p}</button>
+                  <button key={p} onClick={()=>setCurrentPage(p)} aria-label={`Go to page ${p}`} aria-current={p === currentPage ? 'page' : undefined} className={cn('px-3 py-1 rounded-lg', p===currentPage?'bg-sunset-orange-dark text-white':'bg-muted')}>{p}</button>
                 ))}
                 <button onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p+1))} disabled={currentPage===pagination.totalPages} aria-label="Next page" className="px-3 py-1 rounded-lg bg-muted"><ChevronRight /></button>
               </div>

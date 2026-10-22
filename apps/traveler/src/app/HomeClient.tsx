@@ -86,13 +86,13 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
             className="mx-auto max-w-4xl text-center"
           >
             <motion.div variants={fadeInUp} className="mb-6 flex justify-center">
-                <span className="rounded-full bg-sunset-orange/10 px-3 py-1 text-sm font-semibold text-sunset-orange ring-1 ring-inset ring-sunset-orange/20">
+                <span className="rounded-full bg-sunset-orange/10 px-3 py-1 text-sm font-semibold text-sunset-orange-dark ring-1 ring-inset ring-sunset-orange/20">
                     {t('hero.tagline')}
                 </span>
             </motion.div>
             
             <motion.h1 variants={fadeInUp} className="text-5xl font-bold tracking-tight text-foreground sm:text-7xl mb-6">
-              {t('hero.title', 'Find your perfect')} <span className="text-sunset-orange">{t('hero.accent', 'Adventure')}</span>
+              {t('hero.title', 'Find your perfect')} <span className="text-sunset-orange-dark">{t('hero.accent', 'Adventure')}</span>
             </motion.h1>
             
             <motion.p variants={fadeInUp} className="mt-6 text-lg leading-8 text-muted-foreground max-w-2xl mx-auto">
@@ -145,7 +145,7 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
               <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">{t('featured.title')}</h2>
               <p className="text-lg text-muted-foreground">{t('featured.subtitle')}</p>
             </div>
-            <Link href="/search" className="text-sunset-orange font-semibold hover:text-orange-600 flex items-center gap-2 transition-colors">
+            <Link href="/search" className="text-sunset-orange-dark font-semibold hover:text-orange-800 flex items-center gap-2 transition-colors">
               {t('featured.viewAll')} <ArrowRight className={`h-4 w-4 ${i18n.language === 'ar' ? 'rotate-180' : ''}`} />
             </Link>
           </div>

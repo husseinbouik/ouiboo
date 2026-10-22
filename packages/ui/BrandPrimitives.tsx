@@ -55,7 +55,7 @@ export function SectionHeader({
   return (
     <div className={cn("space-y-4", align === "center" && "mx-auto max-w-3xl text-center", className)}>
       {eyebrow ? (
-        <div className="inline-flex rounded-full border border-sunset-orange/20 bg-sunset-orange/10 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-sunset-orange">
+        <div className="inline-flex rounded-full border border-sunset-orange/20 bg-sunset-orange/10 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-sunset-orange-dark">
           {eyebrow}
         </div>
       ) : null}
@@ -120,7 +120,7 @@ const statusBadgeVariants = cva(
         success: "border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
         warning: "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300",
         danger: "border-rose-500/25 bg-rose-500/10 text-rose-600 dark:text-rose-300",
-        brand: "border-sunset-orange/25 bg-sunset-orange/10 text-sunset-orange",
+        brand: "border-sunset-orange/25 bg-sunset-orange/10 text-sunset-orange-dark",
         ocean: "border-ocean-500/25 bg-ocean-500/10 text-ocean-700 dark:text-ocean-300",
       },
     },

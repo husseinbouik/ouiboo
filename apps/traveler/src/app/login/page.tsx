@@ -136,7 +136,7 @@ export default function TravelerLoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label htmlFor="password" className="text-sm font-medium text-foreground">{t('login.password', 'Password')}</label>
-                  <Link href={`/forgot-password?lang=${i18n.language}`} className="text-sm font-medium text-sunset-orange hover:text-orange-600">
+                  <Link href={`/forgot-password?lang=${i18n.language}`} className="text-sm font-medium text-sunset-orange-dark hover:text-orange-800">
                     {t('login.forgotPassword', 'Forgot Password?')}
                   </Link>
                 </div>
@@ -176,7 +176,7 @@ export default function TravelerLoginPage() {
             <Button 
               type="submit" 
               disabled={loginMutation.isPending}
-              className="w-full h-12 bg-sunset-orange hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors duration-200"
+              className="w-full h-12 bg-sunset-orange-dark hover:bg-[#b03d11] text-white font-semibold rounded-lg transition-colors duration-200"
             >
               {loginMutation.isPending ? t('login.loggingIn', 'Logging in...') : t('login.signIn', 'Sign In')}
               {!loginMutation.isPending && <ArrowRight className="ms-2 h-5 w-5 inline rtl:rotate-180" />}
@@ -204,7 +204,7 @@ export default function TravelerLoginPage() {
 
              <p className="text-center text-sm text-muted-foreground font-medium">
                 {t('login.noAccount', "Don't have an account?")}{' '}
-                <Link href={`/signup?lang=${i18n.language}`} className="text-sunset-orange font-bold hover:underline">
+                <Link href={`/signup?lang=${i18n.language}`} className="text-sunset-orange-dark font-bold hover:underline">
                     {t('signup.signUpLink', 'Sign up')}
                 </Link>
             </p>

@@ -240,11 +240,11 @@ export default function TravelerSignupPage() {
                 />
                 <span>
                   {t('signup.acceptTerms', 'I accept the')}{' '}
-                  <Link href={`/terms?lang=${i18n.language}`} className="font-semibold text-sunset-orange hover:text-orange-600 hover:underline">
+                  <Link href={`/terms?lang=${i18n.language}`} className="font-semibold text-sunset-orange-dark hover:text-orange-800 hover:underline">
                     {t('signup.termsLink', 'Terms of Service')}
                   </Link>{' '}
                   {t('signup.and', 'and')}{' '}
-                  <Link href={`/privacy?lang=${i18n.language}`} className="font-semibold text-sunset-orange hover:text-orange-600 hover:underline">
+                  <Link href={`/privacy?lang=${i18n.language}`} className="font-semibold text-sunset-orange-dark hover:text-orange-800 hover:underline">
                     {t('signup.privacyLink', 'Privacy Policy')}
                   </Link>
                   .
@@ -256,7 +256,7 @@ export default function TravelerSignupPage() {
               <Button
                 type="submit"
                 disabled={signupMutation.isPending}
-                className="w-full h-14 bg-sunset-orange hover:bg-orange-600 text-white font-bold rounded-2xl shadow-lg shadow-orange-900/20 transition-all hover:scale-[1.02] active:scale-95 text-lg"
+                className="w-full h-14 bg-sunset-orange-dark hover:bg-[#b03d11] text-white font-bold rounded-2xl shadow-lg shadow-orange-900/20 transition-all hover:scale-[1.02] active:scale-95 text-lg"
               >
                 {signupMutation.isPending ? t('signup.creatingAccount', 'Creating Account...') : t('signup.createAccount', 'Register')}
               </Button>

@@ -158,7 +158,7 @@ export function TripCard({ trip }: TripCardProps) {
             <Image
               src={images[currentImage]}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              alt={trip.title}
+              alt={trip.startLocation ? `${trip.title} · ${trip.startLocation}` : trip.title}
               fill
               sizes="(min-width: 1024px) 33vw, 100vw"
             />

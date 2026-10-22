@@ -231,7 +231,7 @@ const [isOpen, setIsOpen] = useState(false);
                     <Link href="/login" className="text-sm font-semibold text-foreground hover:text-sunset-orange transition-colors">
                         {t('nav.login')}
                     </Link>
-                    <Button asChild className="rounded-md bg-sunset-orange hover:bg-orange-600 text-white font-semibold text-sm px-5 py-2.5 h-auto border-none shadow-sm transition-transform hover:scale-105">
+                    <Button asChild className="rounded-md bg-sunset-orange-dark hover:bg-[#b03d11] text-white font-semibold text-sm px-5 py-2.5 h-auto border-none shadow-sm transition-transform hover:scale-105">
               <Link href="/signup">{t('nav.joinNow')}</Link>
             </Button>
                 </div>
@@ -277,7 +277,7 @@ const [isOpen, setIsOpen] = useState(false);
             >
                <div className="flex justify-between items-center text-foreground">
                   <div className="flex items-center gap-2">
-                     <div className="w-8 h-8 rounded-xl bg-sunset-orange text-white flex items-center justify-center font-black text-lg">O</div>
+                     <div className="w-8 h-8 rounded-xl bg-sunset-orange-dark text-white flex items-center justify-center font-black text-lg">O</div>
                      <span className="text-xl font-black">Ouiboo</span>
                   </div>
                   <button ref={mobileMenuCloseRef} onClick={() => setIsOpen(false)} aria-label={t('nav.closeMenu', 'Close navigation menu')} className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
@@ -302,7 +302,7 @@ const [isOpen, setIsOpen] = useState(false);
 
                {!isAuthLoading && !user && (
                  <div className="space-y-4 pt-10">
-                    <Link onClick={() => setIsOpen(false)} href="/signup" className="block w-full py-5 rounded-2xl bg-sunset-orange text-white font-black text-center text-xl shadow-xl shadow-orange-900/20">
+                    <Link onClick={() => setIsOpen(false)} href="/signup" className="block w-full py-5 rounded-2xl bg-sunset-orange-dark text-white font-black text-center text-xl shadow-xl shadow-orange-900/20">
                        {t('nav.startStory')}
                     </Link>
                     <Link onClick={() => setIsOpen(false)} href="/login" className="block w-full py-5 rounded-2xl bg-muted font-bold text-center text-xl">
