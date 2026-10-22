@@ -17,6 +17,7 @@ export default function AgencyTermsPage() {
     { title: t('terms.sectionTwoTitle'), body: t('terms.sectionTwoBody') },
     { title: t('terms.sectionThreeTitle'), body: t('terms.sectionThreeBody') },
     { title: t('terms.sectionFourTitle'), body: t('terms.sectionFourBody') },
+    { title: t('terms.sectionFiveTitle'), body: t('terms.sectionFiveBody') },
   ];
 
   return (

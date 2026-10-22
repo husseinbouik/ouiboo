@@ -22,6 +22,7 @@ interface User {
         subscriptionStatus?: string;
         trialEndsAt?: string;
         subscriptionEndsAt?: string;
+        subscriptionTermsVersion?: string;
     };
 }
 

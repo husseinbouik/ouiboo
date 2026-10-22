@@ -190,6 +190,9 @@ export class TripsService {
                                 companyName: true,
                                 logo: true,
                                 id: true,
+                                // #317: the traveler card badges verified agencies from
+                                // this field; without it every card read "Agency Pending".
+                                verificationStatus: true,
                             },
                         },
                         _count: {

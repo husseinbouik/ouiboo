@@ -27,6 +27,10 @@ const ERROR_MAP: Record<string, Omit<AuthErrorInfo, 'code'>> = {
     key: 'invalidCredentials',
     fallback: 'Incorrect email or password. Please try again.',
   },
+  AGE_RESTRICTED: {
+    key: 'ageRestricted',
+    fallback: 'You must be at least 18 years old to create an account.',
+  },
   EMAIL_NOT_VERIFIED: {
     key: 'emailNotVerified',
     fallback: 'Please verify your email before signing in.',

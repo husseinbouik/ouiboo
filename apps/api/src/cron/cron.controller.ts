@@ -89,6 +89,9 @@ export class CronController {
     await run('completeFinishedBookings', () =>
       this.notificationJobs.completeFinishedBookings(),
     );
+    await run('subscriptionRenewalReminders', () =>
+      this.notificationJobs.sendSubscriptionRenewalReminders(),
+    );
 
     return { ranAt: new Date().toISOString(), results };
   }

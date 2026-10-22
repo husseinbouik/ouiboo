@@ -7,8 +7,25 @@ import { EmailService } from '../email/email.service';
 import { createHash, randomInt, randomUUID, timingSafeEqual } from 'crypto';
 import { UserRole } from '@ouiboo/types';
 import { RedisService } from '../common/redis.service';
+import { CURRENT_SUBSCRIPTION_TERMS_VERSION } from '../common/subscription-terms';
 
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+// #321: age gate. Ouiboo contracts bookings, which minors cannot legally
+// enter, so accounts are 18+. Enforced server-side in register(); the client
+// checks are UX only. CURRENT_TERMS_VERSION is recorded with the attestation
+// so a future terms change (legal sign-off: #251) can bump it in one place.
+export const MINIMUM_ACCOUNT_AGE = 18;
+export const CURRENT_TERMS_VERSION = '1.0';
+
+export function ageInYears(dateOfBirth: Date, on: Date): number {
+    let age = on.getFullYear() - dateOfBirth.getFullYear();
+    const monthDelta = on.getMonth() - dateOfBirth.getMonth();
+    if (monthDelta < 0 || (monthDelta === 0 && on.getDate() < dateOfBirth.getDate())) {
+        age -= 1;
+    }
+    return age;
+}
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 const UNAUTHORIZED_MESSAGE = 'Unauthorized';
 
@@ -135,6 +152,15 @@ export class AuthService {
     }
 
     async register(dto: RegisterDto) {
+        // #321: refuse under-age accounts before any hashing or DB write.
+        const dateOfBirth = new Date(dto.dateOfBirth);
+        if (
+            Number.isNaN(dateOfBirth.getTime()) ||
+            ageInYears(dateOfBirth, new Date()) < MINIMUM_ACCOUNT_AGE
+        ) {
+            throw new HttpException('AGE_RESTRICTED', HttpStatus.BAD_REQUEST);
+        }
+
         const hashedPassword = await bcrypt.hash(dto.password, 10);
         // Generate 6-digit OTP (100000 to 999999)
         const otp = this.generateOtp();
@@ -151,6 +177,9 @@ export class AuthService {
                         email: dto.email,
                         password: hashedPassword,
                         role: dto.role as any,
+                        dateOfBirth,
+                        ageAttestedAt: new Date(),
+                        termsVersion: CURRENT_TERMS_VERSION,
                         otp: otpHash,
                         otpExpiresAt,
                         otpLastSentAt,
@@ -166,6 +195,8 @@ export class AuthService {
                             patente: 'PENDING',
                             rib: 'PENDING',
                             subscriptionStatus: 'TRIAL',
+                            subscriptionTermsVersion: CURRENT_SUBSCRIPTION_TERMS_VERSION,
+                            subscriptionTermsAcceptedAt: new Date(),
                             trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days trial
                         }
                     });

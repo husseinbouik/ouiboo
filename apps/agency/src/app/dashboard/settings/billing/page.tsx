@@ -170,6 +170,23 @@ export default function BillingSettingsPage() {
         </CardContent>
       </Card>
 
+      <Card className="border-none shadow-sm bg-card border border-border">
+        <CardHeader className="border-b border-border bg-muted/30">
+          <CardTitle className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-accent" />
+            {t('settings.billing.termsTitle')}
+          </CardTitle>
+          <CardDescription>{t('settings.billing.termsSubtitle')}</CardDescription>
+        </CardHeader>
+        <CardContent className="p-6">
+          <p className="text-sm leading-6 text-muted-foreground">
+            {t('settings.billing.termsBody', {
+              version: agencyProfile?.subscriptionTermsVersion || '1.0',
+            })}
+          </p>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border-none shadow-sm bg-card border border-border">
           <CardContent className="p-6 space-y-3">

@@ -1,4 +1,18 @@
 {
+  "auth": {
+    "errors": {
+      "invalidCredentials": "Incorrect email or password. Please try again.",
+      "emailNotVerified": "Please verify your email before signing in.",
+      "emailInUse": "This email is already registered. Try signing in instead.",
+      "userNotFound": "No account found with this email.",
+      "invalidOtp": "The verification code is incorrect. Please try again.",
+      "otpExpired": "The verification code has expired. Request a new one.",
+      "serverError": "Something went wrong on our end. Please try again later.",
+      "genericError": "Something went wrong. Please try again.",
+      "networkError": "Cannot reach the server. Please check your connection and try again.",
+      "ageRestricted": "You must be at least 18 years old to create an account."
+    }
+  },
   "common": {
     "back": "Back to Trips",
     "saveDraft": "Save Draft",
@@ -70,6 +84,9 @@
     "invalidCredentials": "Incorrect email or password. Please try again."
   },
   "signup": {
+    "dateOfBirth": "Date of birth",
+    "dateOfBirthRequired": "Date of birth is required",
+    "ageRestricted": "You must be at least 18 years old to create an account.",
     "title": "Partner with Ouiboo",
     "subtitle": "Create your agency account and start growing.",
     "agencyName": "Agency Name",
@@ -123,6 +140,8 @@
     "heroAlt": "Agency planning"
   },
   "terms": {
+    "sectionFiveTitle": "Copyright and takedown",
+    "sectionFiveBody": "Ouiboo respects the intellectual property rights of others and expects its users to do the same. If you believe content on Ouiboo infringes your copyright, file a report on our copyright report page. Your notice must identify the copyrighted work, the allegedly infringing material and where it appears on Ouiboo, your contact details, a good-faith statement that the use is not authorized by the owner, its agent, or the law, and a statement, under penalty of perjury, that the information is accurate and that you are the owner or authorized to act on the owner's behalf. We review valid notices promptly and remove or disable access to infringing material, and we terminate the accounts of repeat infringers. If your content was removed in error, you may file a counter-notice through the same page and we will restore the content unless the original reporter files a court action. Our designated agent information will be published here when registration is complete.",
     "backToSignup": "Back to sign up",
     "title": "Terms of Service",
     "updated": "Last updated: March 2024",
@@ -559,6 +578,9 @@
     "saveChanges": "Save Changes",
     "backToSettings": "Back to settings",
     "billing": {
+      "termsTitle": "Subscription terms",
+      "termsSubtitle": "How renewal and cancellation work",
+      "termsBody": "Paid plans renew automatically at the price and period shown on this page until cancelled. We email you a reminder before each renewal charge. You can cancel at any time — cancellation takes effect at the end of the current paid period, and your listings stay live until then. Starting a paid plan means accepting these terms (version {{version}}).",
       "title": "Billing & Subscription",
       "subtitle": "Track the subscription state and payout readiness your team needs for day-to-day launch operations.",
       "openWallet": "Open wallet",

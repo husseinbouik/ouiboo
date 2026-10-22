@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { Button, Input, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Mail, Lock, Building2, Eye, EyeOff } from 'lucide-react';
+import { ArrowRight, Mail, Lock, Building2, Eye, EyeOff, Calendar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
 import { apiClient } from '@/lib/api-client';
@@ -35,6 +35,8 @@ const getSignupErrorMessage = (
   const data = err.response.data;
   const message = typeof data === 'string' ? null : data?.message;
   switch (message) {
+    case 'AGE_RESTRICTED':
+      return t('signup.ageRestricted', 'You must be at least 18 years old to create an account.');
     case 'EMAIL_ALREADY_IN_USE':
       return t('signup.emailInUse', 'An account with this email already exists. Try logging in instead.');
     case 'JWT_NOT_CONFIGURED':
@@ -88,6 +90,7 @@ export default function AgencySignupPage() {
       email: data.email,
       name: data.name,
       password: data.password,
+      dateOfBirth: data.dateOfBirth,
       role: UserRole.Agency,
     });
   };
@@ -144,6 +147,32 @@ export default function AgencySignupPage() {
                   />
                 </div>
                 {errors.email && <span className="text-danger text-sm">{errors.email.message as string}</span>}
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="dateOfBirth" className="text-sm font-medium text-muted-foreground">{t('signup.dateOfBirth')}</label>
+                <div className="relative">
+                  <Calendar className="absolute start-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="dateOfBirth"
+                    type="date"
+                    max={new Date().toISOString().split('T')[0]}
+                    className="ps-10 h-12 bg-muted border-border focus:bg-background transition-all duration-200"
+                    {...register('dateOfBirth', {
+                      required: t('signup.dateOfBirthRequired'),
+                      validate: (value) => {
+                        const dob = new Date(value as string);
+                        if (Number.isNaN(dob.getTime())) return t('signup.dateOfBirthRequired');
+                        const now = new Date();
+                        let age = now.getFullYear() - dob.getFullYear();
+                        const monthDelta = now.getMonth() - dob.getMonth();
+                        if (monthDelta < 0 || (monthDelta === 0 && now.getDate() < dob.getDate())) age--;
+                        return age >= 18 || t('signup.ageRestricted');
+                      },
+                    })}
+                  />
+                </div>
+                {errors.dateOfBirth && <span className="text-danger text-sm">{errors.dateOfBirth.message as string}</span>}
               </div>
 
               <div className="space-y-2">
