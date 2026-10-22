@@ -20,7 +20,7 @@ export default function CheckoutPage() {
   const { tripId } = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { isLoading: isAuthLoading } = useAuth();
+  const { user } = useAuth();
   const { i18n } = useTranslation();
   const sessionFromQuery = searchParams.get('session');
   const parsedGuestsCount = Number(searchParams.get('guests'));
@@ -74,6 +74,7 @@ export default function CheckoutPage() {
   const fullName = fullNameOverride
     ?? retryBooking?.fullName
     ?? retryBooking?.traveler?.name
+    ?? user?.name
     ?? '';
   const phoneNumber = phoneNumberOverride ?? retryBooking?.phoneNumber ?? '';
   const documentNumber = documentNumberOverride ?? retryBooking?.documentNumber ?? '';
@@ -118,7 +119,7 @@ export default function CheckoutPage() {
     setProofFile(file);
   };
 
-  if (isLoading || isAuthLoading) return <div className="min-h-screen flex items-center justify-center font-black animate-pulse">Initializing Security...</div>;
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center font-black animate-pulse">Initializing Security...</div>;
   if (!trip) return <div className="min-h-screen flex items-center justify-center font-black">Trip not found.</div>;
 
   const canSubmit = Boolean(

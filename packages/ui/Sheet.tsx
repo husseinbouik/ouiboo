@@ -42,7 +42,7 @@ const SheetOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('fixed inset-0 z-40 bg-black/50', className)}
+    className={cn('fixed inset-0 z-40 bg-black/70', className)}
     {...props}
   />
 ))

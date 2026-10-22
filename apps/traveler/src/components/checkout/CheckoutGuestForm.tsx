@@ -101,6 +101,8 @@ export function CheckoutGuestForm({
         <div className="space-y-2">
           <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Full Name</Label>
           <Input
+            name="name"
+            autoComplete="name"
             placeholder="Abderrahmane..."
             className="h-14 rounded-2xl bg-muted/30 border-none font-bold text-lg"
             value={fullName}
@@ -112,6 +114,9 @@ export function CheckoutGuestForm({
           <div className="relative">
             <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
+              type="tel"
+              name="tel"
+              autoComplete="tel"
               placeholder="Include country code"
               className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold text-lg"
               value={phoneNumber}
@@ -122,6 +127,8 @@ export function CheckoutGuestForm({
         <div className="space-y-2 md:col-span-2">
           <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">CIN or Passport Number</Label>
           <Input
+            name="document-number"
+            autoComplete="off"
             placeholder="Enter document number for insurance"
             className="h-14 rounded-2xl bg-muted/30 border-none font-bold text-lg"
             value={documentNumber}
