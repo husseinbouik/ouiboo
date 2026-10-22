@@ -37,6 +37,7 @@ export class NotificationJobsService {
       const profiles = await this.prisma.agencyProfile.findMany({
         where: {
           subscriptionStatus: 'ACTIVE',
+          cancelAtPeriodEnd: false,
           subscriptionEndsAt: { gte: now, lte: inThreeDays },
         },
         include: { user: true },

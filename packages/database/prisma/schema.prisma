@@ -179,6 +179,9 @@ model AgencyProfile {
   subscriptionTermsVersion    String?
   subscriptionTermsAcceptedAt DateTime?
   renewalReminderSentFor      DateTime?
+  // #324: self-serve cancellation — takes effect at the period boundary
+  cancelAtPeriodEnd           Boolean   @default(false)
+  cancellationRequestedAt     DateTime?
 }
 
 model TripTemplate {
