@@ -43,6 +43,20 @@ function Counter({ from, to, duration = 2 }: CounterProps) {
 }
 
 
+// Fail production builds that are missing the cross-app URLs (#347):
+// NEXT_PUBLIC_* values are inlined at build time, so a missing var would
+// otherwise bake the localhost fallbacks inside the component into the
+// deployed site (this shipped to production once — the hero links pointed
+// at http://localhost:3001).
+if (
+  process.env.NODE_ENV === 'production' &&
+  (!process.env.NEXT_PUBLIC_TRAVELER_URL || !process.env.NEXT_PUBLIC_AGENCY_URL)
+) {
+  throw new Error(
+    'NEXT_PUBLIC_TRAVELER_URL and NEXT_PUBLIC_AGENCY_URL must be set for production builds'
+  );
+}
+
 // --- Main Landing Page Component ---
 
 export default function LandingPage() {
