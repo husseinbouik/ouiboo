@@ -1,13 +1,13 @@
 # Lighthouse CI + axe-core accessibility budgets for key pages.
 #
-# Issue #213, promoted by #332 (2026-10-22): the desktop axe check and
-# the keyboard-navigation check are BLOCKING — a red step fails the PR.
-# The mobile axe check stays report-only for now: it surfaces pre-existing
-# brand color-contrast debt (sunset-orange below WCAG AA on /, /search,
-# /login, /signup) that needs a design-level fix; findings are tracked on
-# #332 and the step goes blocking as soon as they land. The Lighthouse CI step stays report-only because its
-# budgets bundle performance scores with accessibility; the a11y gate is
-# enforced by the axe + keyboard steps below.
+# Issue #213, promoted by #332 (2026-10-22): the desktop axe check, the
+# mobile axe check, and the keyboard-navigation check are BLOCKING — a red
+# step fails the PR. The brand color-contrast debt that kept the mobile
+# check report-only (sunset-orange below WCAG AA on /, /search, /login,
+# /signup) was fixed on #332 with an AA shade (--sunset-orange-dark) for
+# text and interactive surfaces. The Lighthouse CI step stays report-only
+# because its budgets bundle performance scores with accessibility; the
+# a11y gate is enforced by the axe + keyboard steps below.
 name: Lighthouse & Accessibility
 
 on:
@@ -82,9 +82,8 @@ jobs:
         run: node .github/lighthouse/axe-check.mjs http://localhost:3001
 
       - name: Run axe accessibility checks (mobile viewport)
-        # #213: mobile viewport regression coverage. Report-only until the
-        # brand color-contrast debt tracked on #332 is fixed (see header).
-        continue-on-error: true
+        # #213: mobile viewport regression coverage. Blocking since the
+        # #332 contrast fix landed (see header).
         run: node .github/lighthouse/axe-check-mobile.mjs http://localhost:3001
 
       - name: Run keyboard navigation checks

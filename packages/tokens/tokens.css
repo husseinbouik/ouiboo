@@ -49,6 +49,7 @@
   /* Brand palette */
   --color-deep-blue: var(--deep-blue);
   --color-sunset-orange: var(--sunset-orange);
+  --color-sunset-orange-dark: var(--sunset-orange-dark);
   --color-sand: var(--sand);
   --color-ocean: var(--ocean);
   --color-off-white: var(--off-white);
@@ -90,6 +91,10 @@
   /* Brand */
   --deep-blue: #0a192f;
   --sunset-orange: #ff6b35;
+  /* AA-safe shade of the brand orange for text and interactive surfaces
+     (#ff6b35 on white is 2.84:1; this is 4.77:1). Brand/display use keeps
+     --sunset-orange. See #332. */
+  --sunset-orange-dark: #cc4414;
   --sand: #f7e1c3;
   --ocean: #2ec4b6;
   --off-white: #f9fafb;
@@ -107,7 +112,7 @@
   --secondary-foreground: #0a192f;
   --muted: #f5eadc;
   --muted-foreground: #6b6175;
-  --accent: #ff6b35;
+  --accent: #cc4414; /* AA shade (see --sunset-orange-dark) */
   --accent-foreground: #ffffff;
   --destructive: #e11d48;
   --success: #059669;
