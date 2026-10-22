@@ -108,7 +108,7 @@ export default function SearchClient({
       return nextFilters;
     });
     setCurrentPage(1);
-  }, [router]);
+  }, [router, setCurrentPage]);
 
   // Debounce local input -> sync to filters.searchQuery
   useEffect(() => {
