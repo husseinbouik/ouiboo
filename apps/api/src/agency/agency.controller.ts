@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request, Patch, Body, Post, Query, Param, NotFoundException } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request, Patch, Body, Post, Query, Param, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -35,6 +35,48 @@ export class AgencyController {
         private readonly prisma: DatabaseService,
         private readonly walletsService: WalletsService,
     ) { }
+
+    @Post('subscription/cancel')
+    @ApiOperation({ summary: 'Cancel the agency subscription at the end of the current period (#324)' })
+    async cancelSubscription(@Request() req) {
+        const agencyId = req.tenantId;
+        const profile = await this.prisma.agencyProfile.findUnique({
+            where: { id: agencyId },
+            select: { subscriptionStatus: true, trialEndsAt: true, subscriptionEndsAt: true },
+        });
+        if (!profile) throw new NotFoundException('Agency profile not found');
+        if (profile.subscriptionStatus !== 'TRIAL' && profile.subscriptionStatus !== 'ACTIVE') {
+            throw new BadRequestException('Only a trial or active subscription can be cancelled');
+        }
+        const updated = await this.prisma.agencyProfile.update({
+            where: { id: agencyId },
+            data: { cancelAtPeriodEnd: true, cancellationRequestedAt: new Date() },
+            select: { cancelAtPeriodEnd: true, cancellationRequestedAt: true, trialEndsAt: true, subscriptionEndsAt: true },
+        });
+        return {
+            cancelAtPeriodEnd: updated.cancelAtPeriodEnd,
+            cancellationRequestedAt: updated.cancellationRequestedAt,
+            // Access continues until this boundary; the SubscriptionGuard ends it there.
+            effectiveAt: updated.subscriptionEndsAt ?? updated.trialEndsAt,
+        };
+    }
+
+    @Post('subscription/resume')
+    @ApiOperation({ summary: 'Undo a scheduled subscription cancellation (#324)' })
+    async resumeSubscription(@Request() req) {
+        const agencyId = req.tenantId;
+        const profile = await this.prisma.agencyProfile.findUnique({
+            where: { id: agencyId },
+            select: { id: true },
+        });
+        if (!profile) throw new NotFoundException('Agency profile not found');
+        const updated = await this.prisma.agencyProfile.update({
+            where: { id: agencyId },
+            data: { cancelAtPeriodEnd: false, cancellationRequestedAt: null },
+            select: { cancelAtPeriodEnd: true },
+        });
+        return { cancelAtPeriodEnd: updated.cancelAtPeriodEnd };
+    }
 
     @Get('stats')
     @ApiOperation({ summary: 'Get agency dashboard stats' })
