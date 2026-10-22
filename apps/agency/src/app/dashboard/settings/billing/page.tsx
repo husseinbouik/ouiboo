@@ -220,7 +220,9 @@ export default function BillingSettingsPage() {
                 <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
                   <p className="text-sm font-semibold text-foreground">{t('settings.billing.cancelScheduledTitle')}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {t('settings.billing.cancelScheduledBody', { date: boundaryLabel })}
+                    {upcomingBoundary
+                      ? t('settings.billing.cancelScheduledBody', { date: boundaryLabel })
+                      : t('settings.billing.cancelScheduledBodyNoDate')}
                   </p>
                 </div>
                 <Button onClick={() => resumeMutation.mutate()} disabled={resumeMutation.isPending}>
@@ -248,7 +250,11 @@ export default function BillingSettingsPage() {
         open={cancelDialogOpen}
         onOpenChange={setCancelDialogOpen}
         title={t('settings.billing.cancelConfirmTitle')}
-        description={t('settings.billing.cancelConfirmBody', { date: boundaryLabel })}
+        description={
+          upcomingBoundary
+            ? t('settings.billing.cancelConfirmBody', { date: boundaryLabel })
+            : t('settings.billing.cancelConfirmBodyNoDate')
+        }
         confirmLabel={t('settings.billing.cancelConfirmAction')}
         destructive
         pending={cancelMutation.isPending}
