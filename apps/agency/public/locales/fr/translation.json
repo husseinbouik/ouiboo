@@ -179,7 +179,8 @@
     "sections": {
       "agency": "Détails de l'agence",
       "legal": "Documents juridiques",
-      "payment": "Détails de paiement"
+      "payment": "Détails de paiement",
+      "licence": "Licence de voyage (loi 11-16)"
     },
     "submit": "Soumettre pour vérification",
     "documentsRequired": "Documents requis pour la conformité B2B au Maroc.",
@@ -197,7 +198,36 @@
     "ribPlaceholder": "Saisissez votre RIB à 24 chiffres",
     "ribNote": "Remarque : les voyageurs paient votre agence directement sur ce compte par virement bancaire. OuiBoo ne collecte ni ne détient les paiements des voyageurs.",
     "success": "Documents de conformité soumis pour vérification !",
-    "error": "Échec de la mise à jour. Veuillez vérifier vos données."
+    "error": "Échec de la mise à jour. Veuillez vérifier vos données.",
+    "licenceSectionSubtitle": "Votre licence d’agent de voyages doit être vérifiée avant de pouvoir publier des voyages ou activer les paiements.",
+    "legalNameLabel": "Raison sociale",
+    "legalNamePlaceholder": "Dénomination légale enregistrée de la société",
+    "rcLabel": "Registre de commerce (RC)",
+    "rcPlaceholder": "ex. 123456 (Casablanca)",
+    "taxIdLabel": "Identifiant fiscal (IF)",
+    "taxIdPlaceholder": "Identifiant fiscal",
+    "legalRepresentativeLabel": "Représentant légal",
+    "legalRepresentativePlaceholder": "Nom complet du représentant légal",
+    "businessAddressLabel": "Adresse professionnelle",
+    "businessAddressPlaceholder": "Adresse du siège social",
+    "licence": {
+      "typeLabel": "Type de licence",
+      "typePlaceholder": "Sélectionnez un type de licence",
+      "typeOdv": "ODV — Organisateur-distributeur de voyages",
+      "typeDv": "DV — Distributeur de voyages",
+      "numberLabel": "Numéro de licence",
+      "numberPlaceholder": "Numéro de licence du ministère",
+      "expiryLabel": "Date d’expiration de la licence",
+      "expiresOn": "valable jusqu’au {{date}}",
+      "note": "L’envoi ou la modification des informations de licence renvoie la licence en examen par l’administration. Les voyages ne peuvent pas être publiés et les paiements ne peuvent pas être activés tant que la licence n’est pas vérifiée.",
+      "status": {
+        "NOT_SUBMITTED": "Aucune licence de voyage envoyée pour le moment.",
+        "PENDING_REVIEW": "Votre licence de voyage est en cours d’examen.",
+        "VERIFIED": "Votre licence de voyage est vérifiée.",
+        "REJECTED": "Votre licence de voyage a été rejetée.",
+        "EXPIRED": "Votre licence de voyage a expiré. Renouvelez-la et renvoyez-la pour continuer à publier des voyages."
+      }
+    }
   },
   "trips": {
     "manageTitle": "Gérez et suivez vos forfaits voyage.",

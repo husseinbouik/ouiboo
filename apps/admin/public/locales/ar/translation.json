@@ -112,7 +112,9 @@
       "deactivate": "إيقاف",
       "approveAgency": "الموافقة على الوكالة",
       "rejectAgency": "رفض الوكالة",
-      "refund": "استرداد"
+      "refund": "استرداد",
+      "verifyLicence": "التحقق من الرخصة",
+      "rejectLicence": "رفض الرخصة"
     },
     "labels": {
       "ice": "ICE",
@@ -134,7 +136,15 @@
       "system": "النظام",
       "noActorId": "لا يوجد معرف منفذ",
       "noTargetId": "لا يوجد معرف هدف",
-      "agencyLogo": "شعار {{name}}"
+      "agencyLogo": "شعار {{name}}",
+      "travelLicence": "رخصة الأسفار (القانون 11-16)",
+      "legalName": "الاسم القانوني",
+      "legalRepresentative": "الممثل القانوني",
+      "rc": "السجل التجاري (RC)",
+      "taxId": "التعريف الضريبي (IF)",
+      "licenceExpiry": "انتهاء الرخصة",
+      "licenceVerifiedAt": "تم التحقق من الرخصة في",
+      "licenceRejectionReason": "سبب الرفض"
     },
     "messages": {
       "noBankDetails": "لا توجد بيانات بنكية محفوظة.",
@@ -164,7 +174,10 @@
       "auditPruneError": "تعذر تقليم سجلات التدقيق الآن.",
       "auditExportSuccess": "تم تنزيل تصدير سجل التدقيق بنجاح.",
       "auditExportError": "تعذر تصدير سجلات التدقيق الآن.",
-      "retentionDaysInvalid": "يجب أن يكون عدد أيام الاحتفاظ رقمًا موجبًا."
+      "retentionDaysInvalid": "يجب أن يكون عدد أيام الاحتفاظ رقمًا موجبًا.",
+      "licenceVerified": "تم التحقق من رخصة الأسفار",
+      "licenceRejected": "تم رفض رخصة الأسفار",
+      "licenceUpdateError": "تعذّر تحديث رخصة الأسفار"
     },
     "aria": {
       "mainNavigation": "التنقل الرئيسي",
@@ -250,7 +263,12 @@
       "payoutApprovedLabel": "موافق عليه",
       "payoutApprovedHelper": "تمت الموافقة وبانتظار المعالجة",
       "payoutPendingLabel": "قيد الانتظار",
-      "payoutPendingHelper": "بانتظار مراجعة المسؤول"
+      "payoutPendingHelper": "بانتظار مراجعة المسؤول",
+      "licenceNotSubmitted": "الرخصة غير مُرسلة",
+      "licencePendingReview": "الرخصة قيد المراجعة",
+      "licenceVerified": "الرخصة موثّقة",
+      "licenceRejected": "الرخصة مرفوضة",
+      "licenceExpired": "الرخصة منتهية"
     },
     "modal": {
       "agencyReview": "مراجعة الوكالة"
