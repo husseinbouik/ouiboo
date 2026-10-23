@@ -182,6 +182,7 @@ model AgencyProfile {
   // #324: self-serve cancellation — takes effect at the period boundary
   cancelAtPeriodEnd           Boolean   @default(false)
   cancellationRequestedAt     DateTime?
+  invoices                    Invoice[]
 }
 
 model TripTemplate {
@@ -293,6 +294,7 @@ model Booking {
   createdAt                   DateTime             @default(now())
   updatedAt                   DateTime             @updatedAt
   paymentTransactions         PaymentTransaction[]
+  invoiceLineItems            InvoiceLineItem[]
 
   @@index([travelerId])
   @@index([sessionId])
@@ -534,4 +536,66 @@ model CopyrightReport {
   createdAt     DateTime              @default(now())
   resolvedAt    DateTime?
   resolvedBy    String?
+}
+
+enum InvoiceStatus {
+  ISSUED
+}
+
+// #359: monthly commission invoices Ouiboo issues to each agency. Ouiboo is
+// technology-only (the agency is the seller; travelers pay the agency
+// directly), so this is Ouiboo's own billing document for the commission on
+// the agency's paid bookings in the period. Issuer/agency legal details are
+// snapshotted at issuance so a stored invoice (and its PDF) is reproducible
+// even after profiles or env config change. Line items are stored as
+// structured rows for the same reason.
+model Invoice {
+  id             String        @id @default(cuid())
+  number         String        @unique
+  agencyId       String
+  agency         AgencyProfile @relation(fields: [agencyId], references: [id])
+  periodStart    DateTime
+  periodEnd      DateTime
+  currency       String        @default("MAD")
+  commissionRate Decimal       @db.Decimal(5, 2)
+  subtotalAmount Decimal       @db.Decimal(18, 2)
+  totalAmount    Decimal       @db.Decimal(18, 2)
+  status         InvoiceStatus @default(ISSUED)
+  issuerName     String?
+  issuerIce      String?
+  issuerRc       String?
+  issuerAddress  String?       @db.Text
+  agencyName     String
+  agencyIce      String
+  lineItems      InvoiceLineItem[]
+  issuedAt       DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+
+  @@unique([agencyId, periodStart, periodEnd])
+  @@index([agencyId, issuedAt])
+  @@index([issuedAt])
+}
+
+model InvoiceLineItem {
+  id               String  @id @default(cuid())
+  invoiceId        String
+  invoice          Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  bookingId        String
+  booking          Booking @relation(fields: [bookingId], references: [id])
+  description      String
+  bookingDate      DateTime
+  grossAmount      Decimal @db.Decimal(18, 2)
+  commissionRate   Decimal @db.Decimal(5, 2)
+  commissionAmount Decimal @db.Decimal(18, 2)
+
+  @@index([invoiceId])
+  @@index([bookingId])
+}
+
+// #359: per-year sequence backing the sequential invoice numbers
+// (INV-<year>-<seq>). Incremented atomically inside the generation
+// transaction (INSERT ... ON CONFLICT DO UPDATE ... RETURNING).
+model InvoiceSequence {
+  year      Int @id
+  lastValue Int @default(0)
 }

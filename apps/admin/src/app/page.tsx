@@ -14,6 +14,7 @@ import {
   CalendarClock,
   FileText,
   LayoutDashboard,
+  Receipt,
 } from 'lucide-react';
 import { ConfirmDialog } from '@ouiboo/ui';
 import { useAuth } from '@/components/AuthContext';
@@ -35,6 +36,7 @@ import type {
   AdminPaymentProof,
   AdminPayoutRequest,
   AdminAuditLog,
+  AdminInvoice,
   AdminOverviewCounts,
   ApiErrorResponse,
   FeedbackState,
@@ -49,6 +51,7 @@ import BookingsTab from '@/components/dashboard/BookingsTab';
 import PaymentProofsTab from '@/components/dashboard/PaymentProofsTab';
 import PayoutsTab from '@/components/dashboard/PayoutsTab';
 import AuditTab from '@/components/dashboard/AuditTab';
+import InvoicesTab from '@/components/dashboard/InvoicesTab';
 import AgencyReviewModal from '@/components/dashboard/AgencyReviewModal';
 
 export default function AdminDashboard() {
@@ -148,6 +151,10 @@ export default function AdminDashboard() {
   const payoutRequestsList = useAdminListQuery<AdminPayoutRequest>('/admin/payout-requests', 'payout-requests', activeTab === 'PAYOUTS', activeTab, debouncedQuery, currentPage);
   const payoutRequests = payoutRequestsList.data;
   const payoutRequestsPagination = payoutRequestsList.pagination;
+
+  const invoicesList = useAdminListQuery<AdminInvoice>('/admin/invoices', 'invoices', activeTab === 'INVOICES', activeTab, debouncedQuery, currentPage);
+  const invoices = invoicesList.data;
+  const invoicesPagination = invoicesList.pagination;
 
   const verifyAgencyMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string, status: VerificationStatusType }) => {
@@ -451,6 +458,12 @@ export default function AdminDashboard() {
       description: t('dashboard.meta.audit.description'),
       searchPlaceholder: t('dashboard.meta.audit.searchPlaceholder')
     }
+,
+    INVOICES: {
+      title: t('dashboard.meta.invoices.title'),
+      description: t('dashboard.meta.invoices.description'),
+      searchPlaceholder: t('dashboard.meta.invoices.searchPlaceholder')
+    }
   } as const;
 
   const navItems = [
@@ -491,6 +504,12 @@ export default function AdminDashboard() {
       label: t('dashboard.tabs.audit'),
       icon: FileText,
       count: overviewCounts?.auditLogs ?? auditLogs.length,
+    },
+    {
+      key: 'INVOICES',
+      label: t('dashboard.tabs.invoices'),
+      icon: Receipt,
+      count: invoicesPagination?.total ?? invoices.length,
     },
   ] as const;
 
@@ -609,6 +628,16 @@ export default function AdminDashboard() {
             isPruning={pruneAuditLogsMutation.isPending}
             onExportAuditLogs={handleExportAuditLogs}
             onPruneAuditLogs={handlePruneAuditLogs}
+          />
+        )}
+
+        {activeTab === 'INVOICES' && (
+          <InvoicesTab
+            t={t}
+            invoices={invoices}
+            pagination={invoicesPagination}
+            onPageChange={setCurrentPage}
+            paginationLabels={paginationLabels}
           />
         )}
       </DashboardShell>

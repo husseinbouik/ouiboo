@@ -48,7 +48,8 @@
       "bookings": "Réservations système",
       "paymentProofs": "Justificatifs de paiement",
       "payouts": "Demandes de paiement",
-      "audit": "Journal d'audit"
+      "audit": "Journal d'audit",
+      "invoices": "Factures"
     },
     "meta": {
       "pending": {
@@ -80,6 +81,11 @@
         "title": "Journal d'audit",
         "description": "Rechercher l'activité des opérateurs, exporter les enregistrements et appliquer le nettoyage de rétention.",
         "searchPlaceholder": "Rechercher par action, email de l'acteur, type de cible ou id de cible"
+      },
+      "invoices": {
+        "title": "Factures de frais de service plateforme",
+        "description": "Consultez les factures de frais de service plateforme émises et générez la facture mensuelle par agence.",
+        "searchPlaceholder": "Rechercher une facture par numéro ou agence..."
       }
     },
     "sections": {
@@ -179,6 +185,27 @@
     "aria": {
       "mainNavigation": "Navigation principale",
       "adminAvatar": "Avatar administrateur"
+    },
+    "invoices": {
+      "title": "Factures de frais de service plateforme ({{total}})",
+      "generateTitle": "Générer la facture mensuelle",
+      "agency": "Agence",
+      "selectAgency": "Sélectionner une agence",
+      "month": "Mois",
+      "year": "Année",
+      "rate": "Taux des frais (%)",
+      "generate": "Générer la facture",
+      "generateHint": "La génération est idempotente : une facture existante pour la même agence et le même mois est renvoyée inchangée.",
+      "generated": "La facture {{number}} est prête.",
+      "generateError": "Impossible de générer la facture. Vérifiez l'agence, la période et le taux des frais.",
+      "downloadError": "Impossible de télécharger le PDF de la facture.",
+      "empty": "Aucune facture émise pour le moment.",
+      "number": "Facture",
+      "period": "Période",
+      "issued": "Émise le",
+      "gross": "Réservations brutes",
+      "fee": "Frais de service plateforme",
+      "download": "PDF"
     },
     "audit": {
       "trail": "Piste d'audit ({{total}})",

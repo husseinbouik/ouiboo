@@ -5,7 +5,34 @@ import type {
   VerificationStatusType,
 } from '@ouiboo/types';
 
-export type AdminTab = 'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'PAYMENT_PROOFS' | 'PAYOUTS' | 'AUDIT';
+export type AdminTab = 'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'PAYMENT_PROOFS' | 'PAYOUTS' | 'AUDIT' | 'INVOICES';
+
+export type AdminInvoiceLineItem = {
+  id: string;
+  bookingId: string;
+  description: string;
+  bookingDate: string;
+  grossAmount: string;
+  commissionRate: string;
+  commissionAmount: string;
+};
+
+export type AdminInvoice = {
+  id: string;
+  number: string;
+  agencyId: string;
+  agencyName: string;
+  agencyIce: string;
+  periodStart: string;
+  periodEnd: string;
+  currency: string;
+  commissionRate: string;
+  subtotalAmount: string;
+  totalAmount: string;
+  status: string;
+  issuedAt: string;
+  lineItems?: AdminInvoiceLineItem[];
+};
 
 export type ApiErrorResponse = {
   message?: string;

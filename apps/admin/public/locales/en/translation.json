@@ -48,7 +48,8 @@
       "bookings": "System Bookings",
       "paymentProofs": "Payment Proofs",
       "payouts": "Payout Requests",
-      "audit": "Audit Log"
+      "audit": "Audit Log",
+      "invoices": "Invoices"
     },
     "meta": {
       "pending": {
@@ -80,6 +81,11 @@
         "title": "Audit Log",
         "description": "Search operator activity, export records, and apply retention cleanup.",
         "searchPlaceholder": "Search by action, actor email, target type, or target id"
+      },
+      "invoices": {
+        "title": "Platform Service Fee Invoices",
+        "description": "Review issued platform service fee invoices and generate the monthly invoice per agency.",
+        "searchPlaceholder": "Search invoices by number or agency..."
       }
     },
     "sections": {
@@ -179,6 +185,27 @@
     "aria": {
       "mainNavigation": "Main navigation",
       "adminAvatar": "Admin avatar"
+    },
+    "invoices": {
+      "title": "Platform service fee invoices ({{total}})",
+      "generateTitle": "Generate monthly invoice",
+      "agency": "Agency",
+      "selectAgency": "Select an agency",
+      "month": "Month",
+      "year": "Year",
+      "rate": "Fee rate (%)",
+      "generate": "Generate invoice",
+      "generateHint": "Generation is idempotent: an existing invoice for the same agency and month is returned unchanged.",
+      "generated": "Invoice {{number}} is ready.",
+      "generateError": "Could not generate the invoice. Check the agency, period, and fee rate.",
+      "downloadError": "Could not download the invoice PDF.",
+      "empty": "No invoices issued yet.",
+      "number": "Invoice",
+      "period": "Period",
+      "issued": "Issued",
+      "gross": "Gross bookings",
+      "fee": "Platform service fee",
+      "download": "PDF"
     },
     "audit": {
       "trail": "Audit trail ({{total}})",
