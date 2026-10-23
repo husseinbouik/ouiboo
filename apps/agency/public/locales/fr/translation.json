@@ -739,7 +739,10 @@
     "cancel": "Annuler",
     "creating": "Création des sessions...",
     "createCount_one": "Créer {{count}} session",
-    "createCount_other": "Créer {{count}} sessions"
+    "createCount_other": "Créer {{count}} sessions",
+    "minGroupSize": "Taille minimale du groupe",
+    "confirmationDeadline": "Date limite de confirmation",
+    "stagedHint": "Groupe minimum supérieur à 1 = paiement en deux temps : les voyageurs paient d’abord l’acompte (max 30 % du prix), le solde uniquement après confirmation."
   },
   "editSession": {
     "validation": "La date de début, la date de fin et un prix supérieur à zéro sont requis.",
@@ -767,7 +770,10 @@
     "totalSeatsReadOnly": "Places totales (lecture seule)",
     "seatsNote": "Note : le nombre de places totales ne peut pas être modifié après la création. Pour changer la capacité, supprimez et recréez la session.",
     "saving": "Enregistrement...",
-    "saveChanges": "Enregistrer les modifications"
+    "saveChanges": "Enregistrer les modifications",
+    "minGroupSize": "Taille minimale du groupe",
+    "confirmationDeadline": "Date limite de confirmation",
+    "stagedHint": "Avec une taille minimale de groupe supérieure à 1, les voyageurs paient d’abord uniquement l’acompte (maximum 30 % du prix). Le solde n’est demandé qu’après confirmation du voyage ; si le minimum n’est pas atteint avant la date limite, les acomptes sont remboursés."
   },
   "charts": {
     "topTrips": {

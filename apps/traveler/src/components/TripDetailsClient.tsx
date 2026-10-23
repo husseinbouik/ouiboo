@@ -42,7 +42,15 @@ type TripSession = {
   currency: string;
   availableSeats: number;
   status: SessionStatusType;
+  /** #369: staged-payment configuration (minimum-group trips). */
+  minBookings?: number;
+  confirmationDeadline?: string | null;
+  groupStatus?: string;
 };
+
+/** #369: a session is staged when it needs a minimum group and a deposit. */
+const isStagedSession = (session: TripSession) =>
+  (session.minBookings ?? 1) > 1 && Number(session.deposit ?? 0) > 0;
 
 type TripDetails = {
   id: string;
@@ -600,13 +608,34 @@ export default function TripDetailsClient({
                                     
                                     {selectedSession === session.id && (
                                       <div className="pt-3 border-t border-sunset-orange/20 flex flex-col gap-1.5">
-                                        <div className="flex justify-between text-[11px] font-bold">
-                                          <span className="text-sunset-orange uppercase tracking-tighter">Total due at checkout</span>
-                                          <span className="text-foreground">{formatCurrency(session.price, session.currency, i18n.language)}</span>
-                                        </div>
-                                        <p className="text-[10px] text-muted-foreground">
-                                          Split-deposit payments are not enabled; the full amount is required.
-                                        </p>
+                                        {isStagedSession(session) ? (
+                                          <>
+                                            <div className="flex justify-between text-[11px] font-bold">
+                                              <span className="text-sunset-orange uppercase tracking-tighter">Deposit due at checkout</span>
+                                              <span className="text-foreground">{formatCurrency(session.deposit, session.currency, i18n.language)}</span>
+                                            </div>
+                                            <div className="flex justify-between text-[11px] font-bold">
+                                              <span className="text-muted-foreground uppercase tracking-tighter">Balance after confirmation</span>
+                                              <span className="text-foreground">{formatCurrency(Number(session.price) - Number(session.deposit), session.currency, i18n.language)}</span>
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground">
+                                              This trip needs at least {session.minBookings} participants to run.
+                                              {session.confirmationDeadline
+                                                ? ` Confirmed by ${new Date(session.confirmationDeadline).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' })} — if the minimum is not reached, your deposit is refunded.`
+                                                : ' If the minimum is not reached, your deposit is refunded.'}
+                                            </p>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <div className="flex justify-between text-[11px] font-bold">
+                                              <span className="text-sunset-orange uppercase tracking-tighter">Total due at checkout</span>
+                                              <span className="text-foreground">{formatCurrency(session.price, session.currency, i18n.language)}</span>
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground">
+                                              The full amount is required at checkout.
+                                            </p>
+                                          </>
+                                        )}
                                       </div>
                                     )}
                                 </div>

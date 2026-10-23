@@ -25,6 +25,9 @@ export type BulkSessionInput = {
   deposit?: number;
   totalSeats: number;
   currency: string;
+  /** #369: staged-payment configuration (minimum-group trips). */
+  minBookings?: number;
+  confirmationDeadline?: string;
 };
 
 export { TripStatus };
