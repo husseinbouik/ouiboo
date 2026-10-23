@@ -198,6 +198,14 @@
       "generateHint": "La génération est idempotente : une facture existante pour la même agence et le même mois est renvoyée inchangée.",
       "generated": "La facture {{number}} est prête.",
       "generateError": "Impossible de générer la facture. Vérifiez l'agence, la période et le taux des frais.",
+      "errors": {
+        "noBillableBookings": "Aucune réservation payée n'a été confirmée pour cette agence sur cette période : il n'y a encore rien à facturer.",
+        "rateNotConfigured": "Aucun taux de frais n'a été saisi et aucun taux par défaut n'est configuré sur le serveur.",
+        "rateOutOfRange": "Le taux de frais doit être supérieur à 0 et au maximum de 100 %.",
+        "mixedCurrencies": "Les réservations payées de cette agence pour cette période utilisent plusieurs devises : une facture unique ne peut pas être générée.",
+        "notReady": "Le stockage des factures n'est pas encore disponible (migration de la base de données en attente).",
+        "agencyNotFound": "Cette agence est introuvable. Actualisez la liste des agences et réessayez."
+      },
       "downloadError": "Impossible de télécharger le PDF de la facture.",
       "empty": "Aucune facture émise pour le moment.",
       "number": "Facture",

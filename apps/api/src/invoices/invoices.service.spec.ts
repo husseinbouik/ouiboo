@@ -149,6 +149,22 @@ describe('InvoicesService (#359)', () => {
         await expect(service.generateMonthlyInvoice('agency-1', 2026, 10, 10)).rejects.toThrow(/NO_BILLABLE_BOOKINGS/);
     });
 
+    it('surfaces the stable error codes the admin UI maps to specific messages (#374)', async () => {
+        // The admin invoices tab translates these codes into actionable copy,
+        // so the exact code strings are part of the API contract.
+        bookings = [];
+        const noBillable = await service
+            .generateMonthlyInvoice('agency-1', 2026, 10, 10)
+            .catch((error: unknown) => error);
+        expect(noBillable).toBeInstanceOf(BadRequestException);
+        expect((noBillable as BadRequestException).message).toBe('NO_BILLABLE_BOOKINGS_FOR_PERIOD');
+
+        bookings = [makeBooking('b1', '1000.00', 3)];
+        const noRate = await service.generateMonthlyInvoice('agency-1', 2026, 10).catch((error: unknown) => error);
+        expect(noRate).toBeInstanceOf(BadRequestException);
+        expect((noRate as BadRequestException).message).toContain('COMMISSION_RATE_NOT_CONFIGURED');
+    });
+
     it('rejects an unknown agency', async () => {
         db.agencyProfile.findUnique.mockResolvedValue(null as never);
         await expect(service.generateMonthlyInvoice('agency-x', 2026, 10, 10)).rejects.toThrow(NotFoundException);

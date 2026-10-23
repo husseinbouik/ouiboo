@@ -18,6 +18,7 @@ import {
   User,
   ShieldCheck,
   Bell,
+  Receipt,
   Sun,
   Moon,
   Save,
@@ -108,6 +109,9 @@ export default function SettingsPage() {
           </Link>
           <Link href="/dashboard/settings/notifications" className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg">
             <Bell className="h-4 w-4" /> {t('settings.tabNotifications')}
+          </Link>
+          <Link href="/dashboard/settings/billing" className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg">
+            <Receipt className="h-4 w-4" /> {t('settings.tabBilling')}
           </Link>
           <div className="rounded-lg border border-border bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-2 font-semibold text-foreground">
