@@ -57,6 +57,20 @@ export type AdminAgency = {
     address?: string | null;
   } | null;
   user?: AdminUser | null;
+  // #371: legal identity + Law 11-16 travel licence
+  legalName?: string | null;
+  rc?: string | null;
+  taxId?: string | null;
+  legalRepresentative?: string | null;
+  businessAddress?: string | null;
+  travelLicenceType?: string | null;
+  travelLicenceNumber?: string | null;
+  travelLicenceStatus?: string | null;
+  /** Server-derived licence status (VERIFIED + past expiry reads EXPIRED). */
+  effectiveLicenceStatus?: string | null;
+  licenceVerifiedAt?: string | null;
+  licenceExpiry?: string | null;
+  licenceRejectionReason?: string | null;
 };
 
 export type AdminTrip = {

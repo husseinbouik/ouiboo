@@ -1,11 +1,13 @@
 import {
   BookingPaymentStatus,
   BookingStatus,
+  LicenceStatus,
   PayoutStatus,
   SubscriptionStatus,
   VerificationStatus,
   type BookingPaymentStatusType,
   type BookingStatusType,
+  type LicenceStatusType,
   type PayoutStatusType,
   type VerificationStatusType,
 } from '@ouiboo/types';
@@ -16,6 +18,15 @@ const VERIFICATION_STATUS_KEYS: Record<string, string> = {
   [VerificationStatus.Pending]: 'dashboard.status.verificationPending',
   [VerificationStatus.Verified]: 'dashboard.status.verificationVerified',
   [VerificationStatus.Rejected]: 'dashboard.status.verificationRejected',
+};
+
+// #371: Law 11-16 travel licence lifecycle.
+const LICENCE_STATUS_KEYS: Record<string, string> = {
+  [LicenceStatus.NotSubmitted]: 'dashboard.status.licenceNotSubmitted',
+  [LicenceStatus.PendingReview]: 'dashboard.status.licencePendingReview',
+  [LicenceStatus.Verified]: 'dashboard.status.licenceVerified',
+  [LicenceStatus.Rejected]: 'dashboard.status.licenceRejected',
+  [LicenceStatus.Expired]: 'dashboard.status.licenceExpired',
 };
 
 const SUBSCRIPTION_STATUS_KEYS: Record<string, string> = {
@@ -63,6 +74,43 @@ export const getAdminVerificationBadgeClass = (status?: VerificationStatusType) 
 
 export const getAdminVerificationBadgeLabel = (status?: VerificationStatusType, t?: Translate) => {
   return statusLabel(status, VERIFICATION_STATUS_KEYS, t ? t('dashboard.status.verificationPending') : 'Pending', t);
+};
+
+// #371: licence status derivation mirrors the API — prefer the
+// server-provided effective status; fall back to deriving expiry locally.
+export const getEffectiveLicenceStatus = (agency: {
+  travelLicenceStatus?: string | null;
+  effectiveLicenceStatus?: string | null;
+  licenceExpiry?: string | null;
+}): LicenceStatusType => {
+  if (agency.effectiveLicenceStatus) {
+    return agency.effectiveLicenceStatus as LicenceStatusType;
+  }
+  const status = (agency.travelLicenceStatus || LicenceStatus.NotSubmitted) as LicenceStatusType;
+  if (status === LicenceStatus.Verified && agency.licenceExpiry && new Date(agency.licenceExpiry).getTime() <= Date.now()) {
+    return LicenceStatus.Expired;
+  }
+  return status;
+};
+
+export const getAdminLicenceBadgeClass = (status?: LicenceStatusType) => {
+  if (status === LicenceStatus.Verified) {
+    return 'bg-success/15 text-success';
+  }
+
+  if (status === LicenceStatus.Rejected || status === LicenceStatus.Expired) {
+    return 'bg-danger/15 text-danger';
+  }
+
+  if (status === LicenceStatus.PendingReview) {
+    return 'bg-warning/15 text-warning';
+  }
+
+  return 'bg-muted text-muted-foreground';
+};
+
+export const getAdminLicenceBadgeLabel = (status?: LicenceStatusType, t?: Translate) => {
+  return statusLabel(status, LICENCE_STATUS_KEYS, t ? t('dashboard.status.licenceNotSubmitted') : 'Not submitted', t);
 };
 
 export const getAdminSubscriptionBadgeLabel = (status?: string | null, t?: Translate) => {

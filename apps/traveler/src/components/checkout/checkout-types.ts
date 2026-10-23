@@ -33,6 +33,11 @@ export type CheckoutTrip = {
   agency?: {
     bankDetails?: string | null;
     companyName?: string | null;
+    /** #371: seller of record (legal name + verified licence). */
+    legalName?: string | null;
+    travelLicenceNumber?: string | null;
+    travelLicenceStatus?: string | null;
+    licenceExpiry?: string | null;
   } | null;
   images?: string[];
   /** #332: agency-provided alt text per image (index-aligned); may be absent. */

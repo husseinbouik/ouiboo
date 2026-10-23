@@ -4,10 +4,10 @@ import React from 'react';
 import Image from 'next/image';
 import { XCircle, CheckCircle2 } from 'lucide-react';
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge } from '@ouiboo/ui';
-import { VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
+import { LicenceStatus, VerificationStatus, type LicenceStatusType, type VerificationStatusType } from '@ouiboo/types';
 import type { AdminAgency, FeedbackState } from './types';
-import { getAdminVerificationBadgeClass, getAdminVerificationBadgeLabel, getAdminSubscriptionBadgeLabel } from '../../app/status-mappers';
-import { canApproveAgency, canRejectAgency } from './formatters';
+import { getAdminVerificationBadgeClass, getAdminVerificationBadgeLabel, getAdminSubscriptionBadgeLabel, getAdminLicenceBadgeClass, getAdminLicenceBadgeLabel, getEffectiveLicenceStatus } from '../../app/status-mappers';
+import { canApproveAgency, canRejectAgency, canVerifyLicence, canRejectLicence } from './formatters';
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -16,8 +16,10 @@ type AgencyReviewModalProps = {
   agency: AdminAgency;
   agencyFeedback: FeedbackState | null;
   isVerifying: boolean;
+  isVerifyingLicence: boolean;
   onClose: () => void;
   onVerify: (id: string, status: VerificationStatusType) => void;
+  onVerifyLicence: (id: string, status: LicenceStatusType) => void;
 };
 
 export default function AgencyReviewModal({
@@ -25,9 +27,12 @@ export default function AgencyReviewModal({
   agency: selectedAgency,
   agencyFeedback,
   isVerifying,
+  isVerifyingLicence,
   onClose,
   onVerify,
+  onVerifyLicence,
 }: AgencyReviewModalProps) {
+  const licenceStatus = getEffectiveLicenceStatus(selectedAgency);
   return (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
     <Card className="max-w-2xl w-full border-none shadow-2xl rounded-3xl overflow-hidden">
@@ -71,7 +76,57 @@ export default function AgencyReviewModal({
           </div>
           <div className="md:col-span-2 space-y-1">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('dashboard.labels.agencyAddress')}</p>
-            <p className="text-muted-foreground">{selectedAgency.address || selectedAgency.profile?.address || t('dashboard.messages.noAddress')}</p>
+            <p className="text-muted-foreground">{selectedAgency.businessAddress || selectedAgency.address || selectedAgency.profile?.address || t('dashboard.messages.noAddress')}</p>
+          </div>
+          <div className="md:col-span-2 space-y-2 border-t border-border pt-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('dashboard.labels.travelLicence')}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className={getAdminLicenceBadgeClass(licenceStatus)}>
+                {getAdminLicenceBadgeLabel(licenceStatus, t)}
+              </Badge>
+              {selectedAgency.travelLicenceType && (
+                <span className="text-muted-foreground">{selectedAgency.travelLicenceType}</span>
+              )}
+              {selectedAgency.travelLicenceNumber && (
+                <span className="font-medium text-foreground">{selectedAgency.travelLicenceNumber}</span>
+              )}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-muted-foreground">
+              <p>{t('dashboard.labels.legalName')}: <span className="text-foreground font-medium">{selectedAgency.legalName || t('dashboard.labels.na')}</span></p>
+              <p>{t('dashboard.labels.legalRepresentative')}: <span className="text-foreground font-medium">{selectedAgency.legalRepresentative || t('dashboard.labels.na')}</span></p>
+              <p>{t('dashboard.labels.rc')}: <span className="text-foreground font-medium">{selectedAgency.rc || t('dashboard.labels.na')}</span></p>
+              <p>{t('dashboard.labels.taxId')}: <span className="text-foreground font-medium">{selectedAgency.taxId || t('dashboard.labels.na')}</span></p>
+              <p>{t('dashboard.labels.licenceExpiry')}: <span className="text-foreground font-medium">{selectedAgency.licenceExpiry ? new Date(selectedAgency.licenceExpiry).toLocaleDateString() : t('dashboard.labels.na')}</span></p>
+              <p>{t('dashboard.labels.licenceVerifiedAt')}: <span className="text-foreground font-medium">{selectedAgency.licenceVerifiedAt ? new Date(selectedAgency.licenceVerifiedAt).toLocaleDateString() : t('dashboard.labels.na')}</span></p>
+            </div>
+            {selectedAgency.licenceRejectionReason && (
+              <p className="text-danger">{t('dashboard.labels.licenceRejectionReason')}: {selectedAgency.licenceRejectionReason}</p>
+            )}
+            {(() => {
+              const canVerify = canVerifyLicence(licenceStatus);
+              const canReject = canRejectLicence(licenceStatus);
+              if (!canVerify && !canReject) return null;
+              return (
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <Button
+                    className="bg-success text-success-foreground hover:bg-success/90 border-none"
+                    onClick={() => onVerifyLicence(selectedAgency.id, LicenceStatus.Verified)}
+                    disabled={!canVerify || isVerifyingLicence}
+                  >
+                    <CheckCircle2 className="h-4 w-4 ms-2" />
+                    {t('dashboard.actions.verifyLicence')}
+                  </Button>
+                  <Button
+                    className="bg-danger/10 text-danger hover:bg-danger/15 border-none"
+                    onClick={() => onVerifyLicence(selectedAgency.id, LicenceStatus.Rejected)}
+                    disabled={!canReject || isVerifyingLicence}
+                  >
+                    <XCircle className="h-4 w-4 ms-2" />
+                    {t('dashboard.actions.rejectLicence')}
+                  </Button>
+                </div>
+              );
+            })()}
           </div>
         </div>
         {agencyFeedback && (

@@ -52,7 +52,8 @@ export const AgencyProfileSchema = z.object({
     businessAddress: z.string().optional(),
     travelLicenceType: z.nativeEnum(TravelLicenceType).optional(),
     travelLicenceNumber: z.string().optional(),
-    licenceExpiry: z.string().datetime().optional(),
+    // Date (YYYY-MM-DD from the onboarding form) or full ISO datetime.
+    licenceExpiry: z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Invalid licence expiry date").optional(),
 });
 
 export const ItineraryDaySchema = z.object({

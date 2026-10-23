@@ -179,7 +179,8 @@
     "sections": {
       "agency": "Agency Details",
       "legal": "Legal Documents",
-      "payment": "Payment Details"
+      "payment": "Payment Details",
+      "licence": "Travel Licence (Law 11-16)"
     },
     "submit": "Submit for Verification",
     "documentsRequired": "Required documents for B2B compliance in Morocco.",
@@ -197,7 +198,36 @@
     "ribPlaceholder": "Enter your 24-digit RIB",
     "ribNote": "Note: Payouts will be sent to this account after admin approval.",
     "success": "Compliance documents submitted for verification!",
-    "error": "Update failed. Please check your data."
+    "error": "Update failed. Please check your data.",
+    "licenceSectionSubtitle": "Your travel-agent licence must be verified before you can publish trips or activate payments.",
+    "legalNameLabel": "Legal name (raison sociale)",
+    "legalNamePlaceholder": "Registered legal name of the company",
+    "rcLabel": "Trade register (RC)",
+    "rcPlaceholder": "e.g. 123456 (Casablanca)",
+    "taxIdLabel": "Tax ID (IF)",
+    "taxIdPlaceholder": "Identifiant fiscal",
+    "legalRepresentativeLabel": "Legal representative",
+    "legalRepresentativePlaceholder": "Full name of the legal representative",
+    "businessAddressLabel": "Business address",
+    "businessAddressPlaceholder": "Registered office address",
+    "licence": {
+      "typeLabel": "Licence type",
+      "typePlaceholder": "Select a licence type",
+      "typeOdv": "ODV — Tour operator-distributor",
+      "typeDv": "DV — Travel distributor",
+      "numberLabel": "Licence number",
+      "numberPlaceholder": "Ministry licence number",
+      "expiryLabel": "Licence expiry date",
+      "expiresOn": "valid until {{date}}",
+      "note": "Submitting or changing licence details sends the licence back for admin review. Trips cannot be published and payments cannot be activated until the licence is verified.",
+      "status": {
+        "NOT_SUBMITTED": "No travel licence submitted yet.",
+        "PENDING_REVIEW": "Your travel licence is under review.",
+        "VERIFIED": "Your travel licence is verified.",
+        "REJECTED": "Your travel licence was rejected.",
+        "EXPIRED": "Your travel licence has expired. Renew it and resubmit to keep publishing trips."
+      }
+    }
   },
   "trips": {
     "manageTitle": "Manage and monitor your travel packages.",

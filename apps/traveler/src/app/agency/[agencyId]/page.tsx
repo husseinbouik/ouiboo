@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 import { getServerTranslations } from '@/lib/server-translations';
+import SellerIdentity from '@/components/SellerIdentity';
 
 interface AgencyPublicProfile {
   id: string;
@@ -10,6 +11,10 @@ interface AgencyPublicProfile {
   bio: string | null;
   logo: string | null;
   verificationStatus: VerificationStatusType;
+  // #371: seller-of-record fields from GET /agencies/:id/public
+  legalName?: string | null;
+  licenceVerified?: boolean;
+  travelLicenceNumber?: string | null;
 }
 
 interface Trip {
@@ -83,6 +88,8 @@ export default async function AgencyPage({ params }: { params: Promise<{ agencyI
                 )}
             </h1>
             {agency.bio && <p className="text-muted-foreground max-w-2xl">{agency.bio}</p>}
+            {/* #371: seller of record + verified travel licence */}
+            <SellerIdentity agency={agency} className="mt-4" />
         </div>
 
         {/* Trips Grid */}

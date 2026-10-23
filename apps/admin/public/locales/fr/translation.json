@@ -121,7 +121,9 @@
       "rejectPayout": "Rejeter le paiement",
       "approveAgency": "Approuver l'agence",
       "rejectAgency": "Rejeter l'agence",
-      "refund": "Rembourser"
+      "refund": "Rembourser",
+      "verifyLicence": "Vérifier la licence",
+      "rejectLicence": "Rejeter la licence"
     },
     "labels": {
       "ice": "ICE",
@@ -145,7 +147,15 @@
       "system": "Système",
       "noActorId": "Aucun id d'acteur",
       "noTargetId": "Aucun id de cible",
-      "agencyLogo": "Logo de {{name}}"
+      "agencyLogo": "Logo de {{name}}",
+      "travelLicence": "Licence de voyage (loi 11-16)",
+      "legalName": "Raison sociale",
+      "legalRepresentative": "Représentant légal",
+      "rc": "Registre de commerce (RC)",
+      "taxId": "Identifiant fiscal (IF)",
+      "licenceExpiry": "Expiration de la licence",
+      "licenceVerifiedAt": "Licence vérifiée le",
+      "licenceRejectionReason": "Motif du rejet"
     },
     "messages": {
       "noBankDetails": "Aucune coordonnée bancaire enregistrée.",
@@ -180,7 +190,10 @@
       "auditPruneError": "Impossible d'élaguer les journaux d'audit pour le moment.",
       "auditExportSuccess": "Export du journal d'audit téléchargé avec succès.",
       "auditExportError": "Impossible d'exporter les journaux d'audit pour le moment.",
-      "retentionDaysInvalid": "Le nombre de jours de rétention doit être un nombre positif."
+      "retentionDaysInvalid": "Le nombre de jours de rétention doit être un nombre positif.",
+      "licenceVerified": "Licence de voyage vérifiée",
+      "licenceRejected": "Licence de voyage rejetée",
+      "licenceUpdateError": "Impossible de mettre à jour la licence de voyage"
     },
     "aria": {
       "mainNavigation": "Navigation principale",
@@ -266,7 +279,12 @@
       "payoutApprovedLabel": "Approuvé",
       "payoutApprovedHelper": "Approuvé et en attente de traitement du paiement",
       "payoutPendingLabel": "En attente",
-      "payoutPendingHelper": "En attente de révision par l'admin"
+      "payoutPendingHelper": "En attente de révision par l'admin",
+      "licenceNotSubmitted": "Licence non envoyée",
+      "licencePendingReview": "Licence en examen",
+      "licenceVerified": "Licence vérifiée",
+      "licenceRejected": "Licence rejetée",
+      "licenceExpired": "Licence expirée"
     },
     "modal": {
       "agencyReview": "Revue d'agence"

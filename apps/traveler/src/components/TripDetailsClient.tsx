@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
 import { useAuth } from '@/components/AuthContext';
 import { ReviewList } from '@/components/ReviewList';
+import SellerIdentity from '@/components/SellerIdentity';
 import { SessionStatus, type SessionStatusType } from '@ouiboo/types';
 import { formatCurrency } from '@ouiboo/utils';
 
@@ -63,6 +64,15 @@ type TripDetails = {
   images?: string[];
   /** #332: agency-provided alt text per image (index-aligned); may be absent. */
   imageAlts?: string[];
+  /** #371: seller of record (legal name + verified licence) from GET /trips/:id. */
+  agency?: {
+    id?: string;
+    companyName?: string | null;
+    legalName?: string | null;
+    travelLicenceNumber?: string | null;
+    travelLicenceStatus?: string | null;
+    licenceExpiry?: string | null;
+  } | null;
   sessions?: TripSession[];
   itinerary?: TripDay[];
   inclusions?: string[];
@@ -330,6 +340,9 @@ export default function TripDetailsClient({
                             <span className="text-xs text-amber-700 dark:text-yellow-400/70 font-medium">({reviewStats?.totalReviews || 0} reviews)</span>
                         </div>
                     </div>
+
+                    {/* #371: seller of record + verified travel licence */}
+                    <SellerIdentity agency={trip.agency} className="mt-4" />
                 </motion.div>
 
                 {/* Quick Stats Grid */}
