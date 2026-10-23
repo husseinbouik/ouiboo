@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { CurrencyModule } from '../currency/currency.module';
+import { StagedPaymentsModule } from '../staged-payments/staged-payments.module';
 import { CronController } from './cron.controller';
 
 /**
@@ -10,7 +11,7 @@ import { CronController } from './cron.controller';
  * on Vercel serverless functions.
  */
 @Module({
-  imports: [NotificationsModule, CurrencyModule],
+  imports: [NotificationsModule, CurrencyModule, StagedPaymentsModule],
   controllers: [CronController],
 })
 export class CronModule {}

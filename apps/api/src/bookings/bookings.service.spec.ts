@@ -5,6 +5,7 @@ import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { UploadService } from '../upload/upload.service';
 import { EmailService } from '../email/email.service';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
+import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
 
 const mockBooking = {
     id: 'booking-123',
@@ -64,6 +65,13 @@ const mockExternalPaymentsService = {
     recordPaymentRejectedInTransaction: jest.fn(),
 };
 
+// #369: default mock = non-staged sessions; staged tests override these.
+const mockStagedPaymentsService = {
+    isStagedSession: jest.fn(() => false),
+    createPlanInTransaction: jest.fn(),
+    applyProofDecisionInTransaction: jest.fn(),
+};
+
 describe('BookingsService', () => {
     let service: BookingsService;
     let db: typeof mockDatabaseService;
@@ -88,6 +96,10 @@ describe('BookingsService', () => {
                 {
                     provide: ExternalPaymentsService,
                     useValue: mockExternalPaymentsService,
+                },
+                {
+                    provide: StagedPaymentsService,
+                    useValue: mockStagedPaymentsService,
                 },
             ],
         }).compile();
@@ -173,7 +185,10 @@ describe('BookingsService', () => {
 
             expect(db.booking.findUnique).toHaveBeenCalledWith({
                 where: { id: 'booking-123' },
-                include: { session: { include: { template: true } } },
+                include: {
+                    session: { include: { template: true } },
+                    paymentPlan: true,
+                },
             });
             expect(db.paymentProof.upsert).toHaveBeenCalled();
             expect(db.booking.update).toHaveBeenCalled();
@@ -235,6 +250,235 @@ describe('BookingsService', () => {
 
         it('rejects a user who is not owner, agency, or admin', async () => {
             await expect(service.getPaymentProofFile('booking-123', 'user-999')).rejects.toThrow('Unauthorized');
+        });
+    });
+
+    describe('staged payments (#369)', () => {
+        let stagedPayments: typeof mockStagedPaymentsService;
+
+        const createDto = {
+            sessionId: 'session-123',
+            guestsCount: 2,
+            fullName: 'Test Traveler',
+            phoneNumber: '+212600000000',
+            documentNumber: 'AA123456',
+        };
+        const stagedSession = {
+            id: 'session-123',
+            status: 'OPEN',
+            startDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            price: 250,
+            deposit: 50,
+            minBookings: 4,
+            groupStatus: 'PENDING_MINIMUM',
+            confirmationDeadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+            template: {
+                status: 'ACTIVE',
+                title: 'Atlas Escape',
+                agencyId: 'agency-123',
+                agency: {
+                    id: 'agency-123',
+                    userId: 'agency-user-123',
+                    verificationStatus: 'VERIFIED',
+                    subscriptionStatus: 'TRIAL',
+                    trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                    subscriptionEndsAt: null,
+                },
+            },
+        };
+
+        beforeEach(() => {
+            stagedPayments = (service as any).stagedPaymentsService ?? mockStagedPaymentsService;
+            mockStagedPaymentsService.isStagedSession.mockReturnValue(true);
+        });
+
+        it('rejects gateway payment methods for staged sessions (no one-shot full payment)', async () => {
+            db.tripSession.findUnique.mockResolvedValue(stagedSession);
+
+            await expect(service.create('user-123', {
+                ...createDto,
+                paymentMethod: 'CARD',
+            } as any)).rejects.toThrow('Only bank transfer payment is available');
+            expect(db.$transaction).not.toHaveBeenCalled();
+        });
+
+        it('rejects bookings for a session whose group was not confirmed', async () => {
+            db.tripSession.findUnique.mockResolvedValue({
+                ...stagedSession,
+                groupStatus: 'NOT_CONFIRMED',
+            });
+
+            await expect(service.create('user-123', {
+                ...createDto,
+                paymentMethod: 'BANK_TRANSFER',
+            } as any)).rejects.toThrow('minimum group size was not reached');
+        });
+
+        it('creates the payment plan inside the booking transaction', async () => {
+            db.tripSession.findUnique.mockResolvedValue(stagedSession);
+            db.tripSession.updateMany.mockResolvedValue({ count: 1 });
+            db.booking.findFirst.mockResolvedValue(null);
+            db.user.findUnique.mockResolvedValue({ email: 'traveler@example.com' });
+            ((service as any).emailService.sendBookingNotification as jest.Mock).mockResolvedValue(undefined);
+            const plan = {
+                id: 'plan-1',
+                status: 'DEPOSIT_DUE',
+                totalAmount: '500.00',
+                depositAmount: '100.00',
+                balanceAmount: '400.00',
+                currency: 'MAD',
+                minimumParticipants: 4,
+                confirmationDeadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+                balanceDueAt: null,
+                groupConfirmedAt: null,
+                paymentPolicyVersion: 'phase1-v1',
+                refundPolicyVersion: 'phase1-v1',
+            };
+            mockStagedPaymentsService.createPlanInTransaction.mockResolvedValue(plan);
+            db.booking.create.mockResolvedValue({
+                id: 'booking-new',
+                sessionId: 'session-123',
+                travelerId: 'user-123',
+                bookingDate: new Date(),
+                status: 'PENDING',
+                totalAmount: '500.00',
+                currency: 'MAD',
+                guestsCount: 2,
+                paymentMethod: 'MANUAL',
+                paymentStatus: 'UNPAID',
+                paymentPlan: null,
+                traveler: { email: 'traveler@example.com', name: 'Test Traveler' },
+                session: {
+                    id: 'session-123',
+                    templateId: 'template-1',
+                    startDate: new Date(),
+                    endDate: new Date(),
+                    price: '250.00',
+                    deposit: '50.00',
+                    totalSeats: 10,
+                    availableSeats: 8,
+                    status: 'OPEN',
+                    currency: 'MAD',
+                    template: {
+                        id: 'template-1',
+                        title: 'Atlas Escape',
+                        startLocation: 'Marrakech',
+                        images: [],
+                        agencyId: 'agency-123',
+                        agency: { id: 'agency-123', companyName: 'Atlas' },
+                    },
+                },
+            });
+
+            const result: any = await service.create('user-123', {
+                ...createDto,
+                paymentMethod: 'BANK_TRANSFER',
+            } as any);
+
+            expect(mockStagedPaymentsService.createPlanInTransaction).toHaveBeenCalledTimes(1);
+            const planArgs = mockStagedPaymentsService.createPlanInTransaction.mock.calls[0][1];
+            expect(planArgs.bookingId).toBe('booking-new');
+            expect(planArgs.agencyId).toBe('agency-123');
+            // The API response carries the mapped plan (money as strings).
+            expect(result.paymentPlan).toEqual(expect.objectContaining({
+                id: 'plan-1',
+                status: 'DEPOSIT_DUE',
+                depositAmount: '100.00',
+                balanceAmount: '400.00',
+                minimumParticipants: 4,
+            }));
+        });
+
+        it('rejects a balance proof while the group is still unconfirmed (invariant)', async () => {
+            db.booking.findUnique.mockResolvedValue({
+                id: 'booking-123',
+                travelerId: 'user-123',
+                status: 'PENDING_MINIMUM',
+                bookingDate: new Date(),
+                session: { groupStatus: 'PENDING_MINIMUM' },
+                paymentPlan: { status: 'DEPOSIT_DUE' },
+            });
+
+            await expect(service.uploadPaymentProof('booking-123', 'user-123', {} as any))
+                .rejects.toThrow('not awaiting a deposit payment proof');
+            expect(uploadService.uploadFile).not.toHaveBeenCalled();
+        });
+
+        it('accepts a balance proof after confirmation, without the initial expiry window', async () => {
+            db.booking.findUnique.mockResolvedValue({
+                id: 'booking-123',
+                travelerId: 'user-123',
+                status: 'CONFIRMED',
+                // Long past the 24h initial-proof window: must not matter
+                // for the balance stage.
+                bookingDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+                sessionId: 'session-123',
+                guestsCount: 2,
+                session: { groupStatus: 'CONFIRMED' },
+                paymentPlan: { status: 'BALANCE_DUE' },
+            });
+            db.paymentProof.upsert.mockResolvedValue({ id: 'proof-9' });
+            db.booking.update.mockResolvedValue({});
+            uploadService.uploadFile.mockResolvedValue({
+                url: 'http://upload.url',
+                filename: 'payment-proofs/booking-123/balance.png',
+                size: 100,
+            });
+
+            await service.uploadPaymentProof('booking-123', 'user-123', {
+                originalname: 'balance.png',
+                mimetype: 'image/png',
+                size: 100,
+                buffer: Buffer.from('file'),
+            } as Express.Multer.File);
+
+            expect(db.paymentProof.upsert).toHaveBeenCalled();
+        });
+
+        it('rejects any proof once the plan is fully paid', async () => {
+            db.booking.findUnique.mockResolvedValue({
+                id: 'booking-123',
+                travelerId: 'user-123',
+                status: 'CONFIRMED',
+                bookingDate: new Date(),
+                session: { groupStatus: 'CONFIRMED' },
+                paymentPlan: { status: 'FULLY_PAID' },
+            });
+
+            await expect(service.uploadPaymentProof('booking-123', 'user-123', {} as any))
+                .rejects.toThrow('not awaiting a payment proof');
+        });
+
+        it('delegates staged proof decisions to StagedPaymentsService and emails only when fully paid', async () => {
+            const stagedBooking = {
+                id: 'booking-123',
+                travelerId: 'user-123',
+                status: 'AWAITING_VALIDATION',
+                paymentProofId: 'proof-1',
+                paymentProof: { id: 'proof-1', status: 'PENDING' },
+                paymentPlan: { id: 'plan-1', status: 'DEPOSIT_DUE' },
+                session: { template: { agencyId: 'agency-123', title: 'Atlas Escape' } },
+                traveler: { email: 'traveler@example.com' },
+            };
+            db.booking.findUnique.mockResolvedValue(stagedBooking);
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.paymentProof.updateMany.mockResolvedValue({ count: 1 });
+            db.booking.findUniqueOrThrow.mockResolvedValue({ id: 'booking-123', status: 'PENDING_MINIMUM' });
+            mockStagedPaymentsService.applyProofDecisionInTransaction.mockResolvedValue({
+                stage: 'DEPOSIT',
+                fullyPaid: false,
+                bookingStatus: 'PENDING_MINIMUM',
+                planStatus: 'DEPOSIT_PAID',
+            });
+
+            const emailService: any = (service as any).emailService;
+            await service.verifyPayment('booking-123', 'agency-123', true);
+
+            expect(mockStagedPaymentsService.applyProofDecisionInTransaction).toHaveBeenCalledTimes(1);
+            const decisionArgs = mockStagedPaymentsService.applyProofDecisionInTransaction.mock.calls[0][1];
+            expect(decisionArgs.plan).toEqual(stagedBooking.paymentPlan);
+            expect(decisionArgs.approved).toBe(true);
+            expect(emailService.sendPaymentConfirmation).not.toHaveBeenCalled();
         });
     });
 });

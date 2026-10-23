@@ -257,4 +257,72 @@ describe('TripsService', () => {
             expect(args.include.agency.select.verificationStatus).toBe(true);
         });
     });
+    describe('session staged-payment configuration (#369)', () => {
+        const future = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+
+        beforeEach(() => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.tripTemplate.findFirst.mockResolvedValue({ id: 'trip-123', currency: 'MAD' });
+            db.tripSession.create.mockImplementation(async ({ data }: any) => ({ id: 'session-new', ...data }));
+            db.tripSession.aggregate.mockResolvedValue({ _min: { price: null } });
+            db.tripTemplate.update.mockResolvedValue({});
+        });
+
+        it('persists minBookings, deadline and PENDING_MINIMUM for a staged session', async () => {
+            const deadline = future(20);
+            await service.createSession('agency-123', 'trip-123', {
+                startDate: future(30),
+                endDate: future(34),
+                price: 1000,
+                deposit: 200,
+                totalSeats: 12,
+                minBookings: 6,
+                confirmationDeadline: deadline,
+            } as any);
+
+            const data = db.tripSession.create.mock.calls[0][0].data;
+            expect(data.minBookings).toBe(6);
+            expect(data.groupStatus).toBe('PENDING_MINIMUM');
+            expect(data.confirmationDeadline).toEqual(new Date(deadline));
+        });
+
+        it('rejects a deposit above the 30% platform cap for minimum-group trips', async () => {
+            await expect(service.createSession('agency-123', 'trip-123', {
+                startDate: future(30),
+                endDate: future(34),
+                price: 1000,
+                deposit: 900,
+                totalSeats: 12,
+                minBookings: 6,
+                confirmationDeadline: future(20),
+            } as any)).rejects.toThrow('cannot exceed 30%');
+            expect(db.tripSession.create).not.toHaveBeenCalled();
+        });
+
+        it('rejects a staged session without a confirmation deadline', async () => {
+            await expect(service.createSession('agency-123', 'trip-123', {
+                startDate: future(30),
+                endDate: future(34),
+                price: 1000,
+                deposit: 200,
+                totalSeats: 12,
+                minBookings: 6,
+            } as any)).rejects.toThrow('confirmation deadline is required');
+        });
+
+        it('keeps non-staged sessions NOT_REQUIRED even with a large deposit', async () => {
+            await service.createSession('agency-123', 'trip-123', {
+                startDate: future(30),
+                endDate: future(34),
+                price: 1000,
+                deposit: 900,
+                totalSeats: 12,
+            } as any);
+
+            const data = db.tripSession.create.mock.calls[0][0].data;
+            expect(data.minBookings).toBe(1);
+            expect(data.groupStatus).toBe('NOT_REQUIRED');
+            expect(data.confirmationDeadline).toBeNull();
+        });
+    });
 });

@@ -3,6 +3,7 @@ import { DatabaseService } from '../database/database.service';
 import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripSessionDto } from './dto/create-trip.dto';
 import { BookingStatus, SessionStatus, TripStatus } from '@ouiboo/database';
 import { toMoneyDecimal } from '../common/money.util';
+import { resolveStagedSessionConfig } from '../staged-payments/staged-payments.util';
 
 @Injectable()
 export class TripsService {
@@ -333,6 +334,16 @@ export class TripsService {
         const requestedCurrency = dto.currency ?? template.currency;
         this.assertTripCurrency(template.currency, requestedCurrency);
 
+        // #369: staged-payment configuration (deposit cap, deadline rules).
+        const stagedConfig = resolveStagedSessionConfig({
+            price,
+            deposit,
+            minBookings: dto.minBookings ?? 1,
+            confirmationDeadline: dto.confirmationDeadline ? new Date(dto.confirmationDeadline) : null,
+            startDate,
+        });
+
+
         const session = await this.db.tripSession.create({
             data: {
                 templateId,
@@ -343,6 +354,9 @@ export class TripsService {
                 startDate,
                 endDate,
                 currency: requestedCurrency,
+                minBookings: dto.minBookings ?? 1,
+                confirmationDeadline: stagedConfig.confirmationDeadline,
+                groupStatus: stagedConfig.groupStatus,
             },
         });
         await this.refreshStartingPrice(templateId);
@@ -379,6 +393,20 @@ export class TripsService {
         const currency = dto.currency ?? session.currency;
         this.assertTripCurrency(session.template.currency, currency);
 
+        // #369: validate the merged staged-payment configuration (a partial
+        // update can create or break a staged session).
+        const minBookings = dto.minBookings ?? session.minBookings;
+        const stagedConfig = resolveStagedSessionConfig({
+            price,
+            deposit,
+            minBookings,
+            confirmationDeadline: dto.confirmationDeadline
+                ? new Date(dto.confirmationDeadline)
+                : session.confirmationDeadline,
+            startDate,
+        });
+
+
         const updated = await this.db.tripSession.update({
             where: { id: sessionId },
             data: {
@@ -389,6 +417,9 @@ export class TripsService {
                 currency,
                 totalSeats: dto.totalSeats,
                 availableSeats: dto.totalSeats,
+                minBookings,
+                confirmationDeadline: stagedConfig.confirmationDeadline,
+                groupStatus: stagedConfig.groupStatus,
             },
         });
         await this.refreshStartingPrice(templateId);

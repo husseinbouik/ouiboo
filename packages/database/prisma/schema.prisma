@@ -43,6 +43,12 @@ enum BookingStatus {
   REJECTED
   CANCELLED
   COMPLETED
+  // #369: staged payments — deposit verified, waiting for the session's
+  // minimum group size to be confirmed.
+  PENDING_MINIMUM
+  // #369: staged payments — the confirmation deadline passed without the
+  // minimum group size; the deposit is refund-due (see BookingPaymentPlan).
+  NOT_CONFIRMED
 }
 
 enum PayoutStatus {
@@ -91,6 +97,9 @@ enum BookingPaymentStatus {
   PAID
   REFUNDED
   FAILED
+  // #369: staged payments — deposit verified with the agency, balance
+  // still outstanding.
+  PARTIALLY_PAID
 }
 
 enum SessionStatus {
@@ -135,6 +144,10 @@ enum PaymentLedgerEntryType {
   PAYMENT_FAILED
   REFUND_INITIATED
   REFUND_COMPLETED
+  // #369: staged payments (plan §22 example types).
+  DEPOSIT_CAPTURED
+  BALANCE_CAPTURED
+  REFUND_DUE
 }
 
 enum PaymentLedgerSource {
@@ -142,6 +155,37 @@ enum PaymentLedgerSource {
   ADMIN_PROOF_REVIEW
   GATEWAY_WEBHOOK
   GATEWAY_REFUND
+}
+
+// #369: staged payments. A session is "staged" when it requires a minimum
+// group size (minBookings > 1) and collects a deposit first. groupStatus
+// tracks the session-level minimum-group outcome.
+enum SessionGroupStatus {
+  NOT_REQUIRED
+  PENDING_MINIMUM
+  CONFIRMED
+  NOT_CONFIRMED
+}
+
+// #369: lifecycle of one booking's staged payment plan (plan §27). Only
+// staged bookings have a plan; single-payment bookings have none.
+enum BookingPaymentPlanStatus {
+  DEPOSIT_DUE
+  DEPOSIT_PAID
+  BALANCE_DUE
+  FULLY_PAID
+  REFUND_DUE
+  REFUNDED
+  CANCELLED
+}
+
+// #369: which stage of a booking's payments an ExternalPayment records.
+// FULL preserves the pre-#369 single-payment behaviour (one record per
+// booking); staged bookings get one DEPOSIT and one BALANCE record.
+enum ExternalPaymentStage {
+  FULL
+  DEPOSIT
+  BALANCE
 }
 
 model User {
@@ -288,6 +332,12 @@ model TripSession {
   currency           String        @default("MAD")
   cancellationReason String?
   minBookings        Int           @default(1)
+  // #369: staged payments — for sessions with minBookings > 1 and a
+  // deposit, the deadline by which the minimum group size must be reached
+  // and the tracked outcome of that requirement.
+  confirmationDeadline DateTime?
+  groupStatus          SessionGroupStatus @default(NOT_REQUIRED)
+  paymentPlans         BookingPaymentPlan[]
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -295,6 +345,7 @@ model TripSession {
   @@index([endDate])
   @@index([templateId, status, startDate])
   @@index([status, startDate])
+  @@index([groupStatus, confirmationDeadline])
 }
 
 model Booking {
@@ -332,7 +383,8 @@ model Booking {
   updatedAt                   DateTime             @updatedAt
   paymentTransactions         PaymentTransaction[]
   invoiceLineItems            InvoiceLineItem[]
-  externalPayment             ExternalPayment?
+  externalPayments            ExternalPayment[]
+  paymentPlan                 BookingPaymentPlan?
 
   @@index([travelerId])
   @@index([sessionId])
@@ -361,7 +413,7 @@ model PaymentProof {
 // withdraw from OuiBoo.
 model ExternalPayment {
   id                String                @id @default(cuid())
-  bookingId         String                @unique
+  bookingId         String
   booking           Booking               @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   agencyId          String
   agency            AgencyProfile         @relation(fields: [agencyId], references: [id])
@@ -374,12 +426,46 @@ model ExternalPayment {
   custodian         PaymentCustodian
   status            ExternalPaymentStatus @default(PENDING_VERIFICATION)
   verifiedAt        DateTime?
+  // #369: FULL = the booking's single payment (pre-staged behaviour);
+  // staged bookings hold one DEPOSIT and one BALANCE record instead.
+  stage             ExternalPaymentStage  @default(FULL)
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
   ledgerEntries     PaymentStatusLedgerEntry[]
 
+  @@unique([bookingId, stage])
   @@index([agencyId, status, createdAt])
   @@index([travelerId])
+}
+
+// #369: the staged payment plan of one booking (plan §25). Amounts are
+// snapshotted at booking time from the session configuration, so later
+// session edits can never rewrite what a traveller owes. The plan tracks
+// money owed to / held by the AGENCY — never a OuiBoo balance.
+model BookingPaymentPlan {
+  id                    String                   @id @default(cuid())
+  bookingId             String                   @unique
+  booking               Booking                  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  sessionId             String
+  session               TripSession              @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  agencyId              String
+  totalAmount           Decimal                  @db.Decimal(18, 2)
+  depositAmount         Decimal                  @db.Decimal(18, 2)
+  balanceAmount         Decimal                  @db.Decimal(18, 2)
+  currency              String                   @default("MAD")
+  minimumParticipants   Int
+  confirmationDeadline  DateTime
+  balanceDueAt          DateTime?
+  groupConfirmedAt      DateTime?
+  status                BookingPaymentPlanStatus @default(DEPOSIT_DUE)
+  paymentPolicyVersion  String
+  refundPolicyVersion   String
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+
+  @@index([sessionId, status])
+  @@index([agencyId, status])
+  @@index([status, confirmationDeadline])
 }
 
 // #368: Append-only log of external payment events. Amounts describe money

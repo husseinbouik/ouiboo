@@ -14,6 +14,7 @@ import {
     BookingStatus,
 } from '@ouiboo/types';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
+import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
 import { EmailService } from '../email/email.service';
 import { PaymentCustodian, PaymentLedgerSource, PaymentMethod, Prisma } from '@ouiboo/database';
 import { AuditLogService } from './audit-log.service';
@@ -126,6 +127,7 @@ export class AdminController {
     constructor(
         private db: DatabaseService,
         private externalPaymentsService: ExternalPaymentsService,
+        private stagedPaymentsService: StagedPaymentsService,
         private emailService: EmailService,
         private auditLogService: AuditLogService,
         private paymentsService: PaymentsService,
@@ -196,7 +198,7 @@ export class AdminController {
         const result = await this.db.$transaction(async (tx) => {
             const proof = await tx.paymentProof.findUnique({
                 where: { id },
-                include: { booking: { include: { session: { include: { template: true } }, traveler: true } } }
+                include: { booking: { include: { session: { include: { template: true } }, traveler: true, paymentPlan: true } } }
             });
 
             if (!proof) {
@@ -218,6 +220,27 @@ export class AdminController {
                     rejectionReason: status === 'REJECTED' ? rejectionReason : null,
                 }
             });
+
+            // #369: staged bookings follow the plan state machine (deposit
+            // stage, then balance after confirmation); only the stage
+            // amount is recorded and the booking is fully paid at the
+            // balance stage.
+            if (proof.booking.paymentPlan) {
+                const decision = await this.stagedPaymentsService.applyProofDecisionInTransaction(tx, {
+                    booking: proof.booking,
+                    plan: proof.booking.paymentPlan,
+                    approved: status === 'VERIFIED',
+                    source: PaymentLedgerSource.ADMIN_PROOF_REVIEW,
+                    externalReference: proof.id,
+                });
+                return {
+                    updatedProof,
+                    bookingId: proof.bookingId,
+                    travelerEmail: proof.booking.traveler?.email,
+                    tripTitle: proof.booking.session.template.title,
+                    fullyPaid: decision.fullyPaid,
+                };
+            }
 
             const updatedBooking = await tx.booking.update({
                 where: { id: proof.bookingId },
@@ -254,10 +277,11 @@ export class AdminController {
                 bookingId: proof.bookingId,
                 travelerEmail: proof.booking.traveler?.email,
                 tripTitle: updatedBooking.session.template.title,
+                fullyPaid: status === 'VERIFIED',
             };
         });
 
-        if (status === 'VERIFIED' && result.travelerEmail) {
+        if (result.fullyPaid && result.travelerEmail) {
             this.emailService.sendPaymentConfirmation(
                 result.travelerEmail,
                 result.tripTitle,

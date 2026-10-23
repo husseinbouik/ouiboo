@@ -286,7 +286,9 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         // #368: approval records ONE verified external payment held by the
         // agency — it must never credit a withdrawable OuiBoo wallet.
         const externalPayment = await db.externalPayment.findUniqueOrThrow({
-            where: { bookingId: booking.id },
+            // #369: payments are unique per (booking, stage); this is the
+            // single full payment.
+            where: { bookingId_stage: { bookingId: booking.id, stage: 'FULL' } },
         });
         expect(externalPayment.status).toBe('VERIFIED');
         expect(externalPayment.custodian).toBe('AGENCY');
