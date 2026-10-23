@@ -21,6 +21,23 @@ enum VerificationStatus {
   REJECTED
 }
 
+// #371: Law 11-16 travel-agent licence categories.
+enum TravelLicenceType {
+  ODV // Organisateur-distributeur de voyages
+  DV  // Distributeur de voyages
+}
+
+// #371: lifecycle of an agency's travel licence on the platform.
+// EXPIRED is normally derived on read from licenceExpiry; it is stored
+// only when an admin or a future job records the lapse explicitly.
+enum LicenceStatus {
+  NOT_SUBMITTED
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
 enum TripStatus {
   ACTIVE
   DRAFT
@@ -260,6 +277,21 @@ model AgencyProfile {
   cancellationRequestedAt     DateTime?
   invoices                    Invoice[]
   externalPayments            ExternalPayment[]
+
+  // #371: legal identity + Law 11-16 travel licence. companyName stays
+  // the commercial/trade name; legalName is the registered legal name
+  // (raison sociale) shown to travellers as the seller of record.
+  legalName              String?
+  rc                     String?
+  taxId                  String?
+  legalRepresentative    String?
+  businessAddress        String?
+  travelLicenceType      TravelLicenceType?
+  travelLicenceNumber    String?
+  travelLicenceStatus    LicenceStatus      @default(NOT_SUBMITTED)
+  licenceVerifiedAt      DateTime?
+  licenceExpiry          DateTime?
+  licenceRejectionReason String?
 }
 
 model TripTemplate {

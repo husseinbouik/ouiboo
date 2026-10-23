@@ -3,6 +3,7 @@ import { DatabaseService } from '../database/database.service';
 import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripSessionDto } from './dto/create-trip.dto';
 import { BookingStatus, SessionStatus, TripStatus } from '@ouiboo/database';
 import { toMoneyDecimal } from '../common/money.util';
+import { getAgencyActivationBlock } from '../common/agency-licence.util';
 import { resolveStagedSessionConfig } from '../staged-payments/staged-payments.util';
 
 @Injectable()
@@ -21,6 +22,21 @@ export class TripsService {
         const cleaned = imageAlts.map((alt) => (typeof alt === 'string' ? alt.trim().slice(0, 300) : ''));
         if (!images) return cleaned;
         return images.map((_, i) => cleaned[i] ?? '');
+    }
+
+    /**
+     * #371: publishing gate. Moving a trip INTO the marketplace (ACTIVE)
+     * requires a verified agency identity AND a verified, unexpired
+     * travel licence. Already-ACTIVE trips are never blocked by this —
+     * it only runs on transitions into ACTIVE.
+     */
+    private async assertAgencyCanPublish(agencyId: string) {
+        const agency = await this.db.agencyProfile.findUnique({
+            where: { id: agencyId },
+            select: { verificationStatus: true, travelLicenceStatus: true, licenceExpiry: true },
+        });
+        const block = agency ? getAgencyActivationBlock(agency) : 'Agency profile not found';
+        if (block) throw new ForbiddenException(block);
     }
 
     async createTemplate(agencyId: string, dto: CreateTripTemplateDto) {
@@ -285,6 +301,12 @@ export class TripsService {
                         // it is empty; without it in the select, checkout read
                         // undefined and refused every booking.
                         bankDetails: true,
+                        // #371: seller-of-record display on the trip page and
+                        // at checkout (legal name + verified licence number).
+                        legalName: true,
+                        travelLicenceNumber: true,
+                        travelLicenceStatus: true,
+                        licenceExpiry: true,
                     },
                 },
                 itinerary: {
@@ -480,6 +502,12 @@ export class TripsService {
 
         const status = requestedStatus ?? existing.status;
 
+        // #371: a status change INTO Active is a publish transition and
+        // goes through the same identity + licence gate as activate.
+        if (status === TripStatus.ACTIVE && existing.status !== TripStatus.ACTIVE) {
+            await this.assertAgencyCanPublish(agencyId);
+        }
+
         return this.db.tripTemplate.update({
             where: { id },
             data: {
@@ -549,6 +577,7 @@ export class TripsService {
         if (existing.status !== TripStatus.INACTIVE) {
             throw new ConflictException('Only deactivated trips can be re-activated');
         }
+        await this.assertAgencyCanPublish(agencyId);
         return this.db.tripTemplate.update({
             where: { id },
             data: { status: TripStatus.ACTIVE },
@@ -582,6 +611,7 @@ export class TripsService {
         if (existing.status !== TripStatus.ARCHIVED) {
             throw new ConflictException('Only archived trips can be restored');
         }
+        await this.assertAgencyCanPublish(agencyId);
         return this.db.tripTemplate.update({
             where: { id },
             data: { status: TripStatus.ACTIVE },

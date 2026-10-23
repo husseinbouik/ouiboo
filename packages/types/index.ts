@@ -35,6 +35,24 @@ export enum CopyrightReportStatus {
 
 export type VerificationStatusType = VerificationStatus;
 
+// Law 11-16 travel-agency licence categories (#371)
+export enum TravelLicenceType {
+    FullOperator = "ODV",
+    SalesOnly = "DV",
+}
+
+export type TravelLicenceTypeType = TravelLicenceType;
+
+export enum LicenceStatus {
+    NotSubmitted = "NOT_SUBMITTED",
+    PendingReview = "PENDING_REVIEW",
+    Verified = "VERIFIED",
+    Rejected = "REJECTED",
+    Expired = "EXPIRED",
+}
+
+export type LicenceStatusType = LicenceStatus;
+
 export enum SubscriptionStatus {
     Trial = "TRIAL",
     Active = "ACTIVE",
@@ -147,6 +165,18 @@ export interface AgencyProfile {
     subscriptionEndsAt?: string;
     subscriptionTermsVersion?: string;
     subscriptionTermsAcceptedAt?: string;
+    // #371: legal identity + Law 11-16 travel licence
+    legalName?: string;
+    rc?: string;
+    taxId?: string;
+    legalRepresentative?: string;
+    businessAddress?: string;
+    travelLicenceType?: TravelLicenceType;
+    travelLicenceNumber?: string;
+    travelLicenceStatus?: LicenceStatus;
+    licenceVerifiedAt?: string;
+    licenceExpiry?: string;
+    licenceRejectionReason?: string;
 }
 
 export enum TripStatus {
