@@ -46,9 +46,15 @@ function promptSection() {
 }
 
 function gaScripts() {
-    return screen
-        .queryAllByTestId('next-script')
-        .filter((el) => (el.getAttribute('data-src') || '').includes('googletagmanager.com'));
+    return screen.queryAllByTestId('next-script').filter((el) => {
+        const src = el.getAttribute('data-src');
+        if (!src) return false;
+        try {
+            return new URL(src).hostname === 'www.googletagmanager.com';
+        } catch {
+            return false;
+        }
+    });
 }
 
 describe('AnalyticsConsent', () => {
