@@ -9,12 +9,16 @@ test.describe('agency launch flow', () => {
     await authenticateAs(page, 'AGENCY');
   });
 
-  test('agency wallet launch surface renders readiness state', async ({ page }) => {
+  test('agency payments surface reports payments received by the agency, with no payout flow', async ({ page }) => {
     await page.goto('/dashboard/wallet', { waitUntil: 'domcontentloaded' });
 
-    await expect(page.getByRole('heading', { name: /wallet & payouts/i })).toBeVisible();
-    await expect(page.getByText(/add your bank details before requesting a payout/i)).toBeVisible();
-    await expect(page.locator('#request-payout').getByRole('button', { name: /request payout/i })).toBeDisabled();
+    await expect(page.getByRole('heading', { name: /^payments$/i })).toBeVisible();
+    await expect(page.getByText(/received by your merchant account/i)).toBeVisible();
+    await expect(page.getByText(/payment received/i)).toBeVisible();
+    // #368: traveller money is paid directly to the agency — there is no
+    // OuiBoo balance and no payout request UI anymore.
+    await expect(page.getByRole('button', { name: /request payout/i })).toHaveCount(0);
+    await expect(page.getByText(/available balance/i)).toHaveCount(0);
   });
 
   test('agency can inspect proof but not finalize bank-transfer verification', async ({ page }) => {

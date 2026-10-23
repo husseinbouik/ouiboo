@@ -1,120 +1,87 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { type PayoutDetails } from '@ouiboo/types';
 import { toPaginatedList } from '@ouiboo/utils';
-import { useAuth } from '@/components/AuthContext';
-import { WalletBalanceCards } from '@/components/wallet/WalletBalanceCards';
-import { PayoutRequest } from '@/components/wallet/PayoutRequest';
-import { PayoutHistory } from '@/components/wallet/PayoutHistory';
-import { WalletHelp } from '@/components/wallet/WalletHelp';
-import { usePayoutForm } from '@/components/wallet/usePayoutForm';
+import { PaymentsOverviewCards } from '@/components/payments/PaymentsOverviewCards';
+import { PaymentsActivityList, type AgencyPaymentListItem } from '@/components/payments/PaymentsActivityList';
+import { PaymentsHelp } from '@/components/payments/PaymentsHelp';
 
-export default function WalletPage() {
+type PaymentsOverviewResponse = {
+  currency: string;
+  totalReceived: string;
+  totalRefunded: string;
+  pendingVerificationCount: number;
+  pendingVerificationAmount: string;
+};
+
+const PAYMENTS_PAGE_LIMIT = 10;
+
+/**
+ * #368: this page used to be "Wallet & Payouts" with a withdrawable OuiBoo
+ * balance. Traveller money is paid directly to the agency / its payment
+ * provider, so the page now reports recorded payment facts only.
+ */
+export default function PaymentsPage() {
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
-  const [bankDetails, setBankDetails] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const PAYOUTS_PAGE_LIMIT = 10;
 
-  const { data: statsData, isLoading: statsLoading } = useQuery({
-    queryKey: ['agency-stats'],
+  const { data: overview, isLoading: overviewLoading } = useQuery<PaymentsOverviewResponse>({
+    queryKey: ['agency-payments-overview'],
     queryFn: async () => {
-      const response = await apiClient.get('/agency/stats');
+      const response = await apiClient.get('/agency/payments/overview');
       return response.data;
-    }
+    },
   });
 
-  const { data: rawPayouts, isLoading: payoutsLoading } = useQuery<unknown>({
-    queryKey: ['agency-payouts', currentPage],
+  const { data: rawPayments, isLoading: paymentsLoading } = useQuery<unknown>({
+    queryKey: ['agency-payments', currentPage],
     queryFn: async () => {
-      const response = await apiClient.get('/agency/payouts', {
-        params: { page: currentPage, limit: PAYOUTS_PAGE_LIMIT },
+      const response = await apiClient.get('/agency/payments', {
+        params: { page: currentPage, limit: PAYMENTS_PAGE_LIMIT },
       });
       return response.data;
     },
     placeholderData: (prev: unknown) => prev,
   });
-  const { data: payouts = [], pagination: payoutsPagination } =
-    toPaginatedList<PayoutDetails>(rawPayouts);
+  const { data: payments = [], pagination: paymentsPagination } =
+    toPaginatedList<AgencyPaymentListItem>(rawPayments);
 
-  const wallet = statsData?.wallet || { availableBalance: 0, pendingBalance: 0 };
-  const currency = wallet.currency || 'MAD';
-  const availableBalance = Number(wallet.availableBalance || 0);
-  const initialBankDetails = useMemo(
-    () => user?.agencyProfile?.bankDetails ?? '',
-    [user?.agencyProfile?.bankDetails],
-  );
-  const effectiveBankDetails = bankDetails || initialBankDetails;
-  const hasBankDetails = effectiveBankDetails.trim().length > 0;
-
-  const {
-    payoutAmount,
-    setPayoutAmount,
-    payoutError,
-    payoutSuccess,
-    payoutMutation,
-    handleRequestPayout,
-  } = usePayoutForm({ availableBalance, hasBankDetails, effectiveBankDetails });
-
-  const handleScrollToRequest = () => {
-    const section = document.getElementById('request-payout');
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
+  const currency = overview?.currency || 'MAD';
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
       <div>
         <h1 className="text-3xl font-bold text-foreground">
-          {t('wallet.title')}
+          {t('payments.title')}
         </h1>
         <p className="text-muted-foreground mt-1">
-          {t('wallet.subtitle')}
+          {t('payments.subtitle')}
         </p>
       </div>
 
-      <WalletBalanceCards
-        availableBalance={availableBalance}
-        pendingBalance={Number(wallet.pendingBalance || 0)}
-        currency={currency}
-        revenue={statsData?.revenue || 0}
-        totalBookings={statsData?.totalBookings || 0}
-        language={i18n.language}
-        onRequestPayout={handleScrollToRequest}
-      />
-
-      <PayoutRequest
-        availableBalance={availableBalance}
+      <PaymentsOverviewCards
+        totalReceived={Number(overview?.totalReceived || 0)}
+        totalRefunded={Number(overview?.totalRefunded || 0)}
+        pendingVerificationAmount={Number(overview?.pendingVerificationAmount || 0)}
+        pendingVerificationCount={overview?.pendingVerificationCount || 0}
         currency={currency}
         language={i18n.language}
-        hasBankDetails={hasBankDetails}
-        effectiveBankDetails={effectiveBankDetails}
-        onBankDetailsChange={setBankDetails}
-        payoutAmount={payoutAmount}
-        onPayoutAmountChange={setPayoutAmount}
-        payoutError={payoutError}
-        payoutSuccess={payoutSuccess}
-        isSubmitting={payoutMutation.isPending}
-        canSubmit={Boolean(payoutAmount) && availableBalance > 0}
-        onSubmit={handleRequestPayout}
       />
 
-      <PayoutHistory
-        payouts={payouts}
-        pagination={payoutsPagination}
+      <PaymentsActivityList
+        payments={payments}
+        pagination={paymentsPagination}
         currentPage={currentPage}
         onPageChange={setCurrentPage}
-        isLoading={statsLoading || payoutsLoading}
+        isLoading={overviewLoading || paymentsLoading}
         currency={currency}
         language={i18n.language}
       />
 
-      <WalletHelp />
+      <PaymentsHelp />
     </div>
   );
 }

@@ -22,7 +22,6 @@ import { toPaginatedList } from '@ouiboo/utils';
 import {
   BookingPaymentStatus,
   PaymentMethod,
-  PayoutStatus,
   TripStatus,
   VerificationStatus,
   type VerificationStatusType,
@@ -34,7 +33,6 @@ import type {
   AdminTrip,
   AdminBooking,
   AdminPaymentProof,
-  AdminPayoutRequest,
   AdminAuditLog,
   AdminInvoice,
   AdminOverviewCounts,
@@ -49,7 +47,6 @@ import PendingTab from '@/components/dashboard/PendingTab';
 import AgenciesTab from '@/components/dashboard/AgenciesTab';
 import BookingsTab from '@/components/dashboard/BookingsTab';
 import PaymentProofsTab from '@/components/dashboard/PaymentProofsTab';
-import PayoutsTab from '@/components/dashboard/PayoutsTab';
 import AuditTab from '@/components/dashboard/AuditTab';
 import InvoicesTab from '@/components/dashboard/InvoicesTab';
 import AgencyReviewModal from '@/components/dashboard/AgencyReviewModal';
@@ -58,14 +55,12 @@ export default function AdminDashboard() {
   const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>('PENDING');
   const [selectedAgency, setSelectedAgency] = useState<AdminAgency | null>(null);
-  const [selectedPayout, setSelectedPayout] = useState<AdminPayoutRequest | null>(null);
   const [viewingProofId, setViewingProofId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [agencyFeedback, setAgencyFeedback] = useState<FeedbackState | null>(null);
   const [paymentProofFeedback, setPaymentProofFeedback] = useState<FeedbackState | null>(null);
-  const [payoutFeedback, setPayoutFeedback] = useState<FeedbackState | null>(null);
   const [bookingFeedback, setBookingFeedback] = useState<FeedbackState | null>(null);
   const [auditFeedback, setAuditFeedback] = useState<FeedbackState | null>(null);
   const [retentionDays, setRetentionDays] = useState('90');
@@ -147,10 +142,6 @@ export default function AdminDashboard() {
   const pendingPaymentProofsList = useAdminListQuery<AdminPaymentProof>('/admin/pending-payments', 'pending-payments', activeTab === 'PAYMENT_PROOFS', activeTab, debouncedQuery, currentPage);
   const pendingPaymentProofs = pendingPaymentProofsList.data;
   const pendingPaymentProofsPagination = pendingPaymentProofsList.pagination;
-
-  const payoutRequestsList = useAdminListQuery<AdminPayoutRequest>('/admin/payout-requests', 'payout-requests', activeTab === 'PAYOUTS', activeTab, debouncedQuery, currentPage);
-  const payoutRequests = payoutRequestsList.data;
-  const payoutRequestsPagination = payoutRequestsList.pagination;
 
   const invoicesList = useAdminListQuery<AdminInvoice>('/admin/invoices', 'invoices', activeTab === 'INVOICES', activeTab, debouncedQuery, currentPage);
   const invoices = invoicesList.data;
@@ -243,28 +234,6 @@ export default function AdminDashboard() {
       setPaymentProofFeedback({
         type: 'error',
         message: getErrorMessage(error, t('dashboard.feedback.paymentProofUpdateError'))
-      });
-    }
-  });
-
-  const processPayoutMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string, status: string }) => {
-      return apiClient.post(`/admin/payouts/${id}/process`, { status });
-    },
-    onSuccess: (_data, variables) => {
-      invalidateOverviewCounts();
-      queryClient.invalidateQueries({ queryKey: ['payout-requests'] });
-      setPayoutFeedback({
-        type: 'success',
-        message: variables.status === PayoutStatus.Paid
-          ? t('dashboard.feedback.payoutPaid')
-          : t('dashboard.feedback.payoutRejected')
-      });
-    },
-    onError: (error: AxiosError<ApiErrorResponse>) => {
-      setPayoutFeedback({
-        type: 'error',
-        message: getErrorMessage(error, t('dashboard.feedback.payoutUpdateError'))
       });
     }
   });
@@ -448,11 +417,6 @@ export default function AdminDashboard() {
       description: t('dashboard.meta.paymentProofs.description'),
       searchPlaceholder: t('dashboard.meta.paymentProofs.searchPlaceholder')
     },
-    PAYOUTS: {
-      title: t('dashboard.meta.payouts.title'),
-      description: t('dashboard.meta.payouts.description'),
-      searchPlaceholder: t('dashboard.meta.payouts.searchPlaceholder')
-    },
     AUDIT: {
       title: t('dashboard.meta.audit.title'),
       description: t('dashboard.meta.audit.description'),
@@ -492,12 +456,6 @@ export default function AdminDashboard() {
       label: t('dashboard.tabs.paymentProofs'),
       icon: CreditCard,
       count: overviewCounts?.pendingPaymentProofs ?? pendingPaymentProofs.length,
-    },
-    {
-      key: 'PAYOUTS',
-      label: t('dashboard.tabs.payouts'),
-      icon: CalendarClock,
-      count: overviewCounts?.pendingPayouts ?? payoutRequests.length,
     },
     {
       key: 'AUDIT',
@@ -598,20 +556,6 @@ export default function AdminDashboard() {
             isVerifying={verifyPaymentMutation.isPending}
             onViewProof={handleViewPaymentProof}
             onVerifyPayment={(id, status) => verifyPaymentMutation.mutate({ id, status })}
-          />
-        )}
-        {activeTab === 'PAYOUTS' && (
-          <PayoutsTab
-            t={t}
-            payouts={payoutRequests}
-            pagination={payoutRequestsPagination}
-            onPageChange={setCurrentPage}
-            paginationLabels={paginationLabels}
-            payoutFeedback={payoutFeedback}
-            selectedPayout={selectedPayout}
-            isProcessing={processPayoutMutation.isPending}
-            onSelectPayout={setSelectedPayout}
-            onProcessPayout={(id, status) => processPayoutMutation.mutate({ id, status })}
           />
         )}
         {activeTab === 'AUDIT' && (
