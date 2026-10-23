@@ -9,17 +9,26 @@ import { AuthProvider } from './AuthContext';
 import { AuthModal } from './AuthModal';
 import { ThemeProvider } from 'next-themes';
 import '@/lib/i18n';
+import { restorePublicQueryCache, subscribePublicQueryCache } from '@/lib/query-persistence';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-    const [queryClient] = useState(() => new QueryClient({
-        defaultOptions: {
-            queries: {
-                staleTime: 60 * 1000,
-                refetchOnWindowFocus: false,
-                retry: 1,
+    const [queryClient] = useState(() => {
+        const client = new QueryClient({
+            defaultOptions: {
+                queries: {
+                    staleTime: 60 * 1000,
+                    refetchOnWindowFocus: false,
+                    retry: 1,
+                },
             },
-        },
-    }));
+        });
+        // #333: repeat visits paint instantly from the persisted public
+        // catalog snapshot; fresh data refetches in the background.
+        restorePublicQueryCache(client);
+        return client;
+    });
+
+    useEffect(() => subscribePublicQueryCache(queryClient), [queryClient]);
     const { i18n, ready } = useTranslation();
 
     useEffect(() => {

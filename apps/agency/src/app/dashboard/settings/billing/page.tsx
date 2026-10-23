@@ -20,7 +20,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@ouiboo/ui';
-import { useQuery } from '@tanstack/react-query';
+import { ConfirmDialog } from '@ouiboo/ui';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SubscriptionStatus, VerificationStatus } from '@ouiboo/types';
 import { formatCurrency, formatLocalDate } from '@ouiboo/utils';
 import { useAuth } from '@/components/AuthContext';
@@ -97,6 +98,40 @@ export default function BillingSettingsPage() {
   const hasBankDetails = Boolean(agencyProfile?.bankDetails || agencyProfile?.rib);
   const verificationState = agencyProfile?.verificationStatus || VerificationStatus.Pending;
 
+  // #324: self-serve cancellation (takes effect at the period boundary)
+  const queryClient = useQueryClient();
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [actionError, setActionError] = useState(false);
+  const cancellationScheduled = Boolean(agencyProfile?.cancelAtPeriodEnd);
+  const canCancel =
+    agencyProfile?.subscriptionStatus === SubscriptionStatus.Trial ||
+    agencyProfile?.subscriptionStatus === SubscriptionStatus.Active;
+  const boundaryLabel = upcomingBoundary
+    ? formatLocalDate(upcomingBoundary, i18n.language, { dateStyle: 'medium' })
+    : '';
+
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.post('/agency/subscription/cancel');
+    },
+    onSuccess: async () => {
+      setCancelDialogOpen(false);
+      setActionError(false);
+      await queryClient.invalidateQueries({ queryKey: ['me'] });
+    },
+    onError: () => setActionError(true),
+  });
+  const resumeMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.post('/agency/subscription/resume');
+    },
+    onSuccess: async () => {
+      setActionError(false);
+      await queryClient.invalidateQueries({ queryKey: ['me'] });
+    },
+    onError: () => setActionError(true),
+  });
+
   const daysUntilBoundary = upcomingBoundary
     ? Math.round((upcomingBoundary.getTime() - mountedAt) / (1000 * 60 * 60 * 24))
     : 0;
@@ -169,6 +204,62 @@ export default function BillingSettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {(canCancel || cancellationScheduled) && (
+        <Card className="border-none shadow-sm bg-card border border-border">
+          <CardHeader className="border-b border-border bg-muted/30">
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-accent" />
+              {t('settings.billing.cancelTitle')}
+            </CardTitle>
+            <CardDescription>{t('settings.billing.cancelBody')}</CardDescription>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4">
+            {cancellationScheduled ? (
+              <>
+                <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
+                  <p className="text-sm font-semibold text-foreground">{t('settings.billing.cancelScheduledTitle')}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {upcomingBoundary
+                      ? t('settings.billing.cancelScheduledBody', { date: boundaryLabel })
+                      : t('settings.billing.cancelScheduledBodyNoDate')}
+                  </p>
+                </div>
+                <Button onClick={() => resumeMutation.mutate()} disabled={resumeMutation.isPending}>
+                  {t('settings.billing.resumeButton')}
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="outline"
+                className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+                onClick={() => {
+                  setActionError(false);
+                  setCancelDialogOpen(true);
+                }}
+              >
+                {t('settings.billing.cancelButton')}
+              </Button>
+            )}
+            {actionError && <p className="text-sm text-red-600">{t('settings.billing.cancelError')}</p>}
+          </CardContent>
+        </Card>
+      )}
+
+      <ConfirmDialog
+        open={cancelDialogOpen}
+        onOpenChange={setCancelDialogOpen}
+        title={t('settings.billing.cancelConfirmTitle')}
+        description={
+          upcomingBoundary
+            ? t('settings.billing.cancelConfirmBody', { date: boundaryLabel })
+            : t('settings.billing.cancelConfirmBodyNoDate')
+        }
+        confirmLabel={t('settings.billing.cancelConfirmAction')}
+        destructive
+        pending={cancelMutation.isPending}
+        onConfirm={() => cancelMutation.mutate()}
+      />
 
       <Card className="border-none shadow-sm bg-card border border-border">
         <CardHeader className="border-b border-border bg-muted/30">

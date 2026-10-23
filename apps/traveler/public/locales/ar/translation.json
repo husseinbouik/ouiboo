@@ -284,6 +284,8 @@
     "placeholder": "الوجهة أو النشاط أو الكلمة المفتاحية",
     "searchButton": "بحث",
     "filters": "الفلاتر",
+    "moreFilters": "عوامل تصفية إضافية",
+    "fewerFilters": "عوامل تصفية أقل",
     "clearAll": "مسح الكل",
     "clear": "مسح",
     "showing": "عرض",

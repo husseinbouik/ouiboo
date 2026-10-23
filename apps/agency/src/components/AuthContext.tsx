@@ -23,6 +23,8 @@ interface User {
         trialEndsAt?: string;
         subscriptionEndsAt?: string;
         subscriptionTermsVersion?: string;
+        cancelAtPeriodEnd?: boolean;
+        cancellationRequestedAt?: string;
     };
 }
 

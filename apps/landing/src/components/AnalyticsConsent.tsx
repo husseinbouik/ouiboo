@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import Script from 'next/script';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const STORAGE_KEY = 'ouiboo_analytics_consent';
 const PREFERENCES_EVENT = 'ouiboo:open-cookie-preferences';
+const CONSENT_EVENT = 'ouiboo:analytics-consent-changed';
 
 type Consent = 'accepted' | 'declined' | null;
 
@@ -29,28 +30,36 @@ export function CookiePreferencesButton({ className = '' }: { className?: string
   );
 }
 
+function subscribeToConsent(callback: () => void) {
+  window.addEventListener(CONSENT_EVENT, callback);
+  window.addEventListener('storage', callback);
+  return () => {
+    window.removeEventListener(CONSENT_EVENT, callback);
+    window.removeEventListener('storage', callback);
+  };
+}
+
+function readConsent(): Consent {
+  const stored = window.localStorage.getItem(STORAGE_KEY);
+  return stored === 'accepted' || stored === 'declined' ? stored : null;
+}
+
 export default function AnalyticsConsent() {
   const { t } = useTranslation();
   const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
   const clarityProjectId = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
   const analyticsConfigured = Boolean(gaMeasurementId || clarityProjectId);
-  const [consent, setConsent] = useState<Consent>(null);
-  const [showPrompt, setShowPrompt] = useState(false);
+  // localStorage is the external store: the server snapshot is null, so SSR
+  // and the hydration render match, then React re-reads the stored value.
+  const consent = useSyncExternalStore(subscribeToConsent, readConsent, () => null);
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const showPrompt = preferencesOpen || consent === null;
 
   useEffect(() => {
-    if (!analyticsConfigured) return;
-
-    const storedConsent = window.localStorage.getItem(STORAGE_KEY);
-    if (storedConsent === 'accepted' || storedConsent === 'declined') {
-      setConsent(storedConsent);
-    } else {
-      setShowPrompt(true);
-    }
-
-    const openPreferences = () => setShowPrompt(true);
+    const openPreferences = () => setPreferencesOpen(true);
     window.addEventListener(PREFERENCES_EVENT, openPreferences);
     return () => window.removeEventListener(PREFERENCES_EVENT, openPreferences);
-  }, [analyticsConfigured]);
+  }, []);
 
   useEffect(() => {
     if (consent !== 'accepted' || !clarityProjectId) return;
@@ -62,8 +71,8 @@ export default function AnalyticsConsent() {
 
   const saveConsent = (value: Exclude<Consent, null>) => {
     window.localStorage.setItem(STORAGE_KEY, value);
-    setConsent(value);
-    setShowPrompt(false);
+    window.dispatchEvent(new Event(CONSENT_EVENT));
+    setPreferencesOpen(false);
 
     if (gaMeasurementId) {
       (window as unknown as Record<string, boolean>)[`ga-disable-${gaMeasurementId}`] = value !== 'accepted';

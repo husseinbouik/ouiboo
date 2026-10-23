@@ -16,7 +16,7 @@ export class SubscriptionGuard implements CanActivate {
 
         const agency = await this.db.agencyProfile.findUnique({
             where: { userId: user.userId },
-            select: { subscriptionStatus: true, trialEndsAt: true, subscriptionEndsAt: true }
+            select: { subscriptionStatus: true, trialEndsAt: true, subscriptionEndsAt: true, cancelAtPeriodEnd: true }
         });
 
         if (!agency) return false;
@@ -24,6 +24,12 @@ export class SubscriptionGuard implements CanActivate {
         if (agency.subscriptionStatus === 'ACTIVE') {
             const now = new Date();
             if (agency.subscriptionEndsAt && now > agency.subscriptionEndsAt) {
+                if (agency.cancelAtPeriodEnd) {
+                    throw new ForbiddenException({
+                        message: 'SUBSCRIPTION_CANCELLED',
+                        details: 'Your subscription was cancelled and has now ended.'
+                    });
+                }
                 throw new ForbiddenException({
                     message: 'SUBSCRIPTION_EXPIRED',
                     details: 'Your subscription has ended. Please renew to continue.'
@@ -35,6 +41,12 @@ export class SubscriptionGuard implements CanActivate {
         if (agency.subscriptionStatus === 'TRIAL') {
             const now = new Date();
             if (agency.trialEndsAt && now > agency.trialEndsAt) {
+                if (agency.cancelAtPeriodEnd) {
+                    throw new ForbiddenException({
+                        message: 'SUBSCRIPTION_CANCELLED',
+                        details: 'Your subscription was cancelled and has now ended.'
+                    });
+                }
                 throw new ForbiddenException({
                     message: 'TRIAL_EXPIRED',
                     details: 'Your free trial has expired. Please upgrade to continue.'

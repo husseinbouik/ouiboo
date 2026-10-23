@@ -104,7 +104,7 @@ export function MobileFilterDrawer({
         <div className={cn('fixed inset-0 z-50', responsiveClass)}>
           <button
             type="button"
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-black/70"
             aria-label={closeLabel}
             onClick={() => setOpen(false)}
           />

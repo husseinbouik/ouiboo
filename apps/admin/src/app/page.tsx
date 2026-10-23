@@ -75,16 +75,27 @@ export default function AdminDashboard() {
     queryClient.invalidateQueries({ queryKey: ['admin-overview-counts'] });
   };
 
-  useEffect(() => {
-    const requestedTab = searchParams.get('tab');
-    if (isAdminTab(requestedTab) && requestedTab !== activeTab) {
-      setActiveTab(requestedTab);
+  // Sync the active tab from the ?tab= URL param (deep links, back/forward
+  // navigation). State is adjusted during render, per React docs, instead of
+  // in an effect. The guard tracks the last param seen so a local tab change
+  // (which writes the same param via history.replaceState) is not reapplied.
+  const requestedTabParam = searchParams.get('tab');
+  const [syncedTabParam, setSyncedTabParam] = useState<string | null>(null);
+  if (requestedTabParam !== syncedTabParam) {
+    setSyncedTabParam(requestedTabParam);
+    if (isAdminTab(requestedTabParam)) {
+      setActiveTab(requestedTabParam);
     }
-  }, [activeTab, searchParams]);
+  }
 
-  useEffect(() => {
+  // Reset pagination whenever the tab or the debounced search changes,
+  // adjusted during render for the same reason.
+  const [lastResetKey, setLastResetKey] = useState('');
+  const resetKey = `${activeTab}|${debouncedQuery}`;
+  if (resetKey !== lastResetKey) {
+    setLastResetKey(resetKey);
     setCurrentPage(1);
-  }, [activeTab, debouncedQuery]);
+  }
 
   const handleTabChange = (nextTab: AdminTab) => {
     setActiveTab(nextTab);

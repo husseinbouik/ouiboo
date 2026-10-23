@@ -284,6 +284,8 @@
     "placeholder": "Destination, activity or keyword",
     "searchButton": "Search",
     "filters": "Filters",
+    "moreFilters": "More filters",
+    "fewerFilters": "Fewer filters",
     "clearAll": "Clear all",
     "clear": "Clear",
     "showing": "Showing",

@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";import {
   X,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { Button, Input, Badge, MobileFilterDrawer, TripCardSkeletonGrid } from "@ouiboo/ui";
 import { motion, AnimatePresence } from "framer-motion";
@@ -60,6 +61,9 @@ export default function SearchClient({
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   const [filters, setFilters] = useState<SearchFilters>(initialFilters);
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
+  const hasAdvancedFilters = Boolean(filters.dateFrom || filters.dateTo || filters.priceMin || filters.priceMax || filters.availabilityOnly);
+  const advancedVisible = advancedFiltersOpen || hasAdvancedFilters;
 
   // Initialize search query from URL ?q= parameter (e.g. from homepage hero search)
   useEffect(() => {
@@ -104,7 +108,7 @@ export default function SearchClient({
       return nextFilters;
     });
     setCurrentPage(1);
-  }, [router]);
+  }, [router, setCurrentPage]);
 
   // Debounce local input -> sync to filters.searchQuery
   useEffect(() => {
@@ -180,8 +184,7 @@ export default function SearchClient({
     return chips;
   }, [filters, updateFilter]);
 
-  const renderFilterControls = () => (
-    <div className="space-y-6">
+  const renderCategoryGroup = () => (
       <div className="space-y-3">
         <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.travelStyles')}</p>
         <div className="grid gap-2">
@@ -193,7 +196,7 @@ export default function SearchClient({
               aria-pressed={filters.category === category.value}
               className={cn(
                 "px-3 py-2 rounded-lg text-sm text-left",
-                filters.category === category.value ? "bg-sunset-orange/10 text-sunset-orange" : "bg-muted",
+                filters.category === category.value ? "bg-sunset-orange/10 text-sunset-orange-dark" : "bg-muted",
               )}
             >
               {category.label}
@@ -201,13 +204,17 @@ export default function SearchClient({
           ))}
         </div>
       </div>
+  );
 
+  const renderDatesGroup = () => (
       <div className="space-y-3">
         <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.dates')}</p>
         <Input type="date" aria-label={t('search.startDate')} value={filters.dateFrom} onChange={(event) => updateFilter("dateFrom", event.target.value)} />
         <Input type="date" aria-label={t('search.endDate')} value={filters.dateTo} onChange={(event) => updateFilter("dateTo", event.target.value)} />
       </div>
+  );
 
+  const renderPriceGroup = () => (
       <div className="space-y-3">
         <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.price')}</p>
         <div className="grid grid-cols-2 gap-2">
@@ -215,12 +222,16 @@ export default function SearchClient({
           <Input type="number" min="0" aria-label={t('search.maxPrice')} placeholder={t('search.max')} value={filters.priceMax} onChange={(event) => updateFilter("priceMax", event.target.value)} />
         </div>
       </div>
+  );
 
+  const renderAvailabilityGroup = () => (
       <div className="space-y-3">
         <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.availability')}</p>
         <button type="button" onClick={() => updateFilter("availabilityOnly", !filters.availabilityOnly)} aria-pressed={filters.availabilityOnly} className={cn("px-3 py-2 rounded-lg w-full", filters.availabilityOnly ? "bg-success/10 text-success" : "bg-muted")}>{t('search.availabilityOnly')}</button>
       </div>
+  );
 
+  const renderSortGroup = () => (
       <div className="space-y-3">
         <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.sort')}</p>
         <div className="grid gap-2">
@@ -233,6 +244,45 @@ export default function SearchClient({
             <button key={option.value} type="button" onClick={() => setSortBy(option.value as SortBy)} aria-pressed={sortBy === option.value} className={cn("px-3 py-2 rounded-lg", sortBy === option.value ? "bg-sunset-orange/10" : "bg-muted")}>{option.label}</button>
           ))}
         </div>
+      </div>
+    
+  );
+
+  const renderFilterControls = () => (
+    <div className="space-y-6">
+      {renderCategoryGroup()}
+      {renderDatesGroup()}
+      {renderPriceGroup()}
+      {renderAvailabilityGroup()}
+      {renderSortGroup()}
+    </div>
+  );
+
+  // Desktop sidebar (#330 choice overload): travel styles + sort stay visible;
+  // dates/price/availability collapse behind one toggle (auto-open when any
+  // of them is active). The mobile drawer keeps the full set — it is already
+  // behind a deliberate tap.
+  const renderSidebarFilterControls = () => (
+    <div className="space-y-6">
+      {renderCategoryGroup()}
+      {renderSortGroup()}
+      <div>
+        <button
+          type="button"
+          onClick={() => setAdvancedFiltersOpen((value) => !value)}
+          aria-expanded={advancedVisible}
+          className="flex w-full items-center justify-between rounded-lg bg-muted px-3 py-2 text-sm font-semibold"
+        >
+          {advancedVisible ? t('search.fewerFilters') : t('search.moreFilters')}
+          <ChevronDown className={cn("h-4 w-4 transition-transform", advancedVisible && "rotate-180")} />
+        </button>
+        {advancedVisible && (
+          <div className="mt-6 space-y-6">
+            {renderDatesGroup()}
+            {renderPriceGroup()}
+            {renderAvailabilityGroup()}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -294,7 +344,7 @@ export default function SearchClient({
                 {activeFiltersCount > 0 && <button onClick={clearAllFilters} aria-label={t('search.clearAll')} className="text-sm text-muted-foreground">{t('search.clear')}</button>}
               </div>
 
-              {renderFilterControls()}
+              {renderSidebarFilterControls()}
             </div>
           </aside>
 
@@ -348,7 +398,7 @@ export default function SearchClient({
               <div className="mt-8 flex items-center justify-center gap-3">
                 <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage===1} aria-label="Previous page" className="px-3 py-1 rounded-lg bg-muted"><ChevronLeft /></button>
                 {Array.from({ length: pagination.totalPages }, (_,i)=>i+1).filter(p=>Math.abs(p-currentPage)<=2||p===1||p===pagination.totalPages).map(p=> (
-                  <button key={p} onClick={()=>setCurrentPage(p)} aria-label={`Go to page ${p}`} aria-current={p === currentPage ? 'page' : undefined} className={cn('px-3 py-1 rounded-lg', p===currentPage?'bg-sunset-orange text-white':'bg-muted')}>{p}</button>
+                  <button key={p} onClick={()=>setCurrentPage(p)} aria-label={`Go to page ${p}`} aria-current={p === currentPage ? 'page' : undefined} className={cn('px-3 py-1 rounded-lg', p===currentPage?'bg-sunset-orange-dark text-white':'bg-muted')}>{p}</button>
                 ))}
                 <button onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p+1))} disabled={currentPage===pagination.totalPages} aria-label="Next page" className="px-3 py-1 rounded-lg bg-muted"><ChevronRight /></button>
               </div>
