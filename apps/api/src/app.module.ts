@@ -10,6 +10,7 @@ import { CommonModule } from './common/common.module'
 import { CronModule } from './cron/cron.module'
 import { CurrencyModule } from './currency/currency.module'
 import { CopyrightModule } from './copyright/copyright.module'
+import { InvoicesModule } from './invoices/invoices.module'
 import { DatabaseModule } from './database/database.module'
 import { EmailModule } from './email/email.module'
 import { HealthModule } from './health/health.module'
@@ -49,6 +50,7 @@ import { WishlistModule } from './wishlist/wishlist.module'
     AnalyticsModule,
     CurrencyModule,
     CopyrightModule,
+    InvoicesModule,
     MessagesModule,
   ],
 })
