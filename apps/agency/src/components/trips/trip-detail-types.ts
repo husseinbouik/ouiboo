@@ -14,6 +14,7 @@ export type TripDetail = {
   durationNights: number;
   description: string;
   images?: string[];
+  imageAlts?: string[];
   sessions?: SessionItem[];
 };
 

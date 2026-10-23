@@ -85,9 +85,16 @@ const server = createServer((req, res) => {
   const { pathname } = url;
   const method = req.method;
 
-  // Preflight: allow everything (tests only).
+  // Preflight: allow everything (tests only). Echo the requested headers
+  // explicitly — for credentialed requests Chromium rejects a wildcard
+  // Access-Control-Allow-Headers, which blocked real POSTs (e.g. booking
+  // creation) from browsers that are not shielded by Playwright's
+  // page.route interception (#332 walkthrough found this).
   if (method === 'OPTIONS') {
-    res.writeHead(204, corsHeaders(req));
+    const headers = { ...corsHeaders(req) };
+    const requested = req.headers['access-control-request-headers'];
+    if (requested) headers['Access-Control-Allow-Headers'] = requested;
+    res.writeHead(204, headers);
     res.end();
     return;
   }

@@ -200,6 +200,10 @@ model TripTemplate {
   exclusions         String[]
   checklist          String[]
   images             String[]
+  // #332: optional agency-provided alt text per photo, aligned by index
+  // with `images`. Empty/missing entries fall back to the generated
+  // "title · startLocation" pattern at render time.
+  imageAlts          String[]       @default([])
   status             TripStatus     @default(DRAFT)
   featured           Boolean        @default(false)
   currency           String         @default("MAD")

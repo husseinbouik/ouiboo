@@ -153,6 +153,8 @@ export interface TripTemplate {
     exclusions: string[];
     checklist: string[];
     images: string[];
+    /** #332: optional alt text per image, aligned by index with `images`. */
+    imageAlts?: string[];
     status: TripStatus;
     currency: string;
     startingPrice?: DecimalString | null;
@@ -226,6 +228,8 @@ export interface BookingTemplateSummary {
     agencyId: string;
     id: string;
     images: string[];
+    /** #332: alt text per image (index-aligned); may be absent. */
+    imageAlts?: string[];
     startLocation: string;
     title: string;
 }

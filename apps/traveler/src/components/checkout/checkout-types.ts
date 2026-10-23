@@ -19,6 +19,8 @@ export type CheckoutTrip = {
     companyName?: string | null;
   } | null;
   images?: string[];
+  /** #332: agency-provided alt text per image (index-aligned); may be absent. */
+  imageAlts?: string[];
   sessions?: CheckoutTripSession[];
   startLocation: string;
   title: string;

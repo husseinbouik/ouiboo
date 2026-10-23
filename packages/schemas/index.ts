@@ -71,6 +71,8 @@ export const TripTemplateSchema = z.object({
     exclusions: z.array(z.string()),
     checklist: z.array(z.string()),
     images: z.array(z.string()).min(1, "At least one image is required"),
+    // #332: optional alt text per image, aligned by index with `images`.
+    imageAlts: z.array(z.string().max(300)).optional(),
     itinerary: z.array(ItineraryDaySchema).optional(),
     status: z.nativeEnum(TripStatus),
     currency: z.string().regex(/^[A-Z]{3}$/, "Currency must be an ISO 4217 code"),

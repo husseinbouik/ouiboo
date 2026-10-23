@@ -37,7 +37,7 @@ export function CheckoutSummary({
       <div className="space-y-6">
         <div className="flex gap-4">
           <div className="h-20 w-20 rounded-2xl overflow-hidden shrink-0 shadow-lg">
-            <Image src={trip.images?.[0] || 'https://images.unsplash.com/photo-1489749798305-4fea3ae63d43?q=80&w=1200&auto=format&fit=crop'} className="w-full h-full object-cover" alt={trip.title} width={80} height={80} />
+            <Image src={trip.images?.[0] || 'https://images.unsplash.com/photo-1489749798305-4fea3ae63d43?q=80&w=1200&auto=format&fit=crop'} className="w-full h-full object-cover" alt={trip.imageAlts?.[0]?.trim() || trip.title} width={80} height={80} />
           </div>
           <div className="space-y-1">
             <h3 className="font-black text-lg leading-tight line-clamp-2">{trip.title}</h3>
@@ -65,7 +65,7 @@ export function CheckoutSummary({
           </div>
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground font-medium">Service Fee</span>
-            <Badge variant="outline" className="border-emerald-500/30 text-success bg-success/10 font-black text-[8px] uppercase tracking-widest">Free</Badge>
+            <Badge variant="outline" className="border-emerald-500/30 text-success-dark bg-success/10 font-black text-[8px] uppercase tracking-widest">Free</Badge>
           </div>
           <div className="flex justify-between items-end pt-4 border-t border-border/50">
             <span className="text-lg font-black font-display tracking-tight text-foreground">Total to pay</span>
@@ -90,7 +90,9 @@ export function CheckoutSummary({
         {isSubmitting ? 'Submitting booking...' : 'Complete Booking'} <CheckCircle2 className="h-6 w-6 ml-4 group-hover:scale-110 transition-transform" />
       </Button>
 
-      <div className="flex items-center justify-center gap-4 pt-4 opacity-50">
+      {/* No opacity on this row (#332): opacity-50 dropped the muted
+          text to ~2.1:1 contrast; the plain muted-foreground is AA. */}
+      <div className="flex items-center justify-center gap-4 pt-4">
         <ShieldCheck className="h-5 w-5" />
         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Moroccan Tourism Protection</span>
       </div>

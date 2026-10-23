@@ -96,6 +96,55 @@ describe('TripsService', () => {
         });
     });
 
+    describe('imageAlts normalization (#332)', () => {
+        beforeEach(() => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.tripTemplate.create.mockResolvedValue(mockTripTemplate);
+            db.tripTemplate.update.mockResolvedValue(mockTripTemplate);
+        });
+
+        it('aligns alt texts to images on create (trim, pad missing)', async () => {
+            await service.createTemplate('agency-123', {
+                title: 'T',
+                images: ['a.jpg', 'b.jpg'],
+                imageAlts: ['  Sunrise hike  '],
+            } as any);
+            const arg = db.tripTemplate.create.mock.calls[0][0];
+            expect(arg.data.imageAlts).toEqual(['Sunrise hike', '']);
+        });
+
+        it('drops extra alt texts and caps length at 300 on create', async () => {
+            await service.createTemplate('agency-123', {
+                title: 'T',
+                images: ['a.jpg'],
+                imageAlts: ['x'.repeat(350), 'extra'],
+            } as any);
+            const arg = db.tripTemplate.create.mock.calls[0][0];
+            expect(arg.data.imageAlts).toEqual(['x'.repeat(300)]);
+        });
+
+        it('leaves imageAlts undefined when none are supplied', async () => {
+            await service.createTemplate('agency-123', {
+                title: 'T',
+                images: ['a.jpg'],
+            } as any);
+            const arg = db.tripTemplate.create.mock.calls[0][0];
+            expect(arg.data.imageAlts).toBeUndefined();
+        });
+
+        it('aligns alt texts to the existing images on update when images are unchanged', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                images: ['a.jpg', 'b.jpg', 'c.jpg'],
+            });
+            await service.updateTemplate('trip-123', 'agency-123', {
+                imageAlts: ['Alt A'],
+            } as any);
+            const arg = db.tripTemplate.update.mock.calls[0][0];
+            expect(arg.data.imageAlts).toEqual(['Alt A', '', '']);
+        });
+    });
+
     describe('deleteTemplate', () => {
         it('should delete a draft template if owned by user', async () => {
             db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });

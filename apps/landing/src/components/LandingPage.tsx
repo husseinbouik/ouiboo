@@ -252,14 +252,16 @@ export default function LandingPage() {
           </div>
           <div className="hidden lg:flex lg:flex-1 lg:justify-end items-center gap-x-4">
             <div className="flex items-center gap-1 rounded-full p-1 ring-1 ring-gray-900/10 bg-white/60 backdrop-blur-sm dark:bg-slate-800/60 dark:ring-white/10">
-              <LanguageSwitcher isTransparent={!isScrolled} />
-              <ThemeToggle isTransparent={!isScrolled} />
+              {/* #332: no isTransparent — the hero is light, so the
+                  transparent (white-text) variant was ~1:1 contrast. */}
+              <LanguageSwitcher />
+              <ThemeToggle />
             </div>
             <div className="flex items-center gap-x-4">
               <a href={`${travelerUrl}/login?lang=${currentLang}`} className="text-sm font-semibold leading-6 text-deep-blue hover:text-sunset-orange transition-colors">
                 {t('nav.travelerLogin')}
               </a>
-              <a href={`${agencyUrl}/login?lang=${currentLang}`} className="rounded-md bg-sunset-orange px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-opacity-90 transition-transform hover:scale-105">
+              <a href={`${agencyUrl}/login?lang=${currentLang}`} className="rounded-md bg-sunset-orange-dark px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-opacity-90 transition-transform hover:scale-105">
                 {t('nav.agencyLogin')}
               </a>
             </div>
@@ -340,7 +342,10 @@ export default function LandingPage() {
                           variants={fadeInUp} 
                           className="text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl text-deep-blue leading-tight"
                         >
-                          <span className="mx-auto mb-4 inline-flex w-fit items-center justify-center rounded-full bg-sunset-orange/10 px-4 py-1 text-sm font-semibold uppercase tracking-widest text-sunset-orange">
+                          {/* #332: orange-800 here — sunset-orange-dark measures
+                              4.41:1 on this badge's deeper /10 tint over the hero
+                              blob; orange-800 clears AA with margin. */}
+                          <span className="mx-auto mb-4 inline-flex w-fit items-center justify-center rounded-full bg-sunset-orange/10 px-4 py-1 text-sm font-semibold uppercase tracking-widest text-orange-800">
                             {t('hero.badge')}
                           </span>
                           <span className="block">{t('hero.title')}</span>
@@ -359,7 +364,7 @@ export default function LandingPage() {
                               href="#waitlist" 
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
-                              className="rounded-md bg-sunset-orange px-6 py-3.5 text-base font-semibold text-white shadow-md hover:shadow-lg hover:bg-orange-600 transition-all duration-300"
+                              className="rounded-md bg-sunset-orange-dark px-6 py-3.5 text-base font-semibold text-white shadow-md hover:shadow-lg hover:bg-orange-800 transition-all duration-300"
                             >
                                 {t('hero.ctaPrimary')}
                             </motion.a>
@@ -391,7 +396,7 @@ export default function LandingPage() {
       <section className="py-16 sm:py-20 bg-white">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="mx-auto max-w-3xl text-center">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-sunset-orange">{t('trusted.title')}</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-sunset-orange-dark">{t('trusted.title')}</h2>
             <p className="mt-3 text-2xl font-bold text-deep-blue sm:text-3xl">{t('trusted.subtitle')}</p>
           </motion.div>
           <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} className="mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-4 text-center sm:grid-cols-4">
@@ -434,7 +439,7 @@ export default function LandingPage() {
       <section id="how-it-works" className="py-24 sm:py-32">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="mx-auto max-w-2xl lg:text-center">
-            <h2 className="text-base font-semibold leading-7 text-sunset-orange uppercase tracking-wide">{t('howItWorks.preTitle')}</h2>
+            <h2 className="text-base font-semibold leading-7 text-sunset-orange-dark uppercase tracking-wide">{t('howItWorks.preTitle')}</h2>
             <p className="mt-2 text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('howItWorks.title')}</p>
             <p className="mt-6 text-lg leading-8 text-gray-600">{t('howItWorks.subtitle')}</p>
           </motion.div>
@@ -481,7 +486,7 @@ export default function LandingPage() {
                 className="lg:pr-8 lg:pt-4"
               >
                 <div className="lg:max-w-lg">
-                  <h2 className="text-base font-semibold leading-7 text-sunset-orange uppercase tracking-wide">{t('travelers.preTitle')}</h2>
+                  <h2 className="text-base font-semibold leading-7 text-sunset-orange-dark uppercase tracking-wide">{t('travelers.preTitle')}</h2>
                   <p className="mt-2 text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('travelers.title')}</p>
                   <p className="mt-6 text-lg leading-8 text-gray-600">{t('travelers.subtitle')}</p>
                   <motion.dl variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mt-10 max-w-xl space-y-6 text-base leading-7 text-gray-600 lg:max-w-none">
@@ -505,7 +510,7 @@ export default function LandingPage() {
                   >
                     <a
                       href={`${travelerUrl}/signup?lang=${currentLang}`}
-                      className="rounded-md bg-sunset-orange px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-orange-600 transition-all duration-300 hover:scale-105"
+                      className="rounded-md bg-sunset-orange-dark px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-orange-800 transition-all duration-300 hover:scale-105"
                     >
                       {t('travelers.cta.getStarted')}
                     </a>
@@ -591,7 +596,7 @@ export default function LandingPage() {
                     viewport={{ once: true, amount: 0.5 }}
                     className="mx-auto max-w-2xl lg:text-center"
                 >
-                    <h2 className="text-base font-semibold leading-7 text-sunset-orange uppercase tracking-wide">{t('principles.preTitle')}</h2>
+                    <h2 className="text-base font-semibold leading-7 text-sunset-orange-dark uppercase tracking-wide">{t('principles.preTitle')}</h2>
                     <p className="mt-2 text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('principles.title')}</p>
                 </motion.div>
                 <motion.div

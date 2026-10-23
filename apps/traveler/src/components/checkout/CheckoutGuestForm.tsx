@@ -76,7 +76,10 @@ export function CheckoutGuestForm({
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge variant="outline" className="text-[10px] font-black">{formatCurrency(session.price, session.currency, language)}</Badge>
-                  <RadioGroupItem value={session.id} />
+                  <RadioGroupItem
+                    value={session.id}
+                    aria-label={`${new Date(session.startDate).toLocaleDateString()} - ${new Date(session.endDate).toLocaleDateString()}, ${session.availableSeats} seats left`}
+                  />
                 </div>
               </div>
             )) : (
@@ -87,8 +90,9 @@ export function CheckoutGuestForm({
           </RadioGroup>
         </div>
         <div>
-          <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Guest Count</Label>
+          <Label htmlFor="guest-count" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Guest Count</Label>
           <Input
+            id="guest-count"
             type="number"
             min={1}
             value={guestCount}
@@ -99,8 +103,9 @@ export function CheckoutGuestForm({
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Full Name</Label>
+          <Label htmlFor="full-name" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Full Name</Label>
           <Input
+            id="full-name"
             name="name"
             autoComplete="name"
             placeholder="Abderrahmane..."
@@ -110,10 +115,11 @@ export function CheckoutGuestForm({
           />
         </div>
         <div className="space-y-2">
-          <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Phone Number</Label>
+          <Label htmlFor="phone-number" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Phone Number</Label>
           <div className="relative">
             <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
+              id="phone-number"
               type="tel"
               name="tel"
               autoComplete="tel"
@@ -125,8 +131,9 @@ export function CheckoutGuestForm({
           </div>
         </div>
         <div className="space-y-2 md:col-span-2">
-          <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">CIN or Passport Number</Label>
+          <Label htmlFor="document-number" className="text-xs font-black uppercase tracking-widest text-muted-foreground">CIN or Passport Number</Label>
           <Input
+            id="document-number"
             name="document-number"
             autoComplete="off"
             placeholder="Enter document number for insurance"

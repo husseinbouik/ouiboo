@@ -8,6 +8,20 @@ import { toMoneyDecimal } from '../common/money.util';
 export class TripsService {
     constructor(private db: DatabaseService) { }
 
+    /**
+     * #332: normalize agency-provided image alt texts — trim, cap the
+     * length, and align with the image list (missing entries become '',
+     * extras are dropped) so `imageAlts[i]` always describes `images[i]`.
+     * Returns undefined when no alt texts were supplied, leaving the
+     * stored value (or the column default) untouched.
+     */
+    private normalizeImageAlts(imageAlts: string[] | undefined, images: string[] | undefined): string[] | undefined {
+        if (!imageAlts) return undefined;
+        const cleaned = imageAlts.map((alt) => (typeof alt === 'string' ? alt.trim().slice(0, 300) : ''));
+        if (!images) return cleaned;
+        return images.map((_, i) => cleaned[i] ?? '');
+    }
+
     async createTemplate(agencyId: string, dto: CreateTripTemplateDto) {
         const agency = await this.db.agencyProfile.findUnique({
             where: { id: agencyId }
@@ -17,10 +31,11 @@ export class TripsService {
             throw new ForbiddenException('Agency profile not found');
         }
 
-        const { itinerary, ...tripData } = dto;
+        const { itinerary, imageAlts, ...tripData } = dto;
 
         const data = {
             ...tripData,
+            imageAlts: this.normalizeImageAlts(imageAlts, dto.images),
             agencyId: agencyId,
             status: TripStatus.DRAFT,
             itinerary: itinerary && itinerary.length > 0 ? {
@@ -241,6 +256,7 @@ export class TripsService {
                 exclusions: true,
                 checklist: true,
                 images: true,
+                imageAlts: true,
                 status: true,
                 featured: true,
                 currency: true,
@@ -413,7 +429,7 @@ export class TripsService {
         const agency = await this.db.agencyProfile.findUnique({ where: { id: agencyId } });
         if (!agency) throw new NotFoundException('Agency profile not found');
 
-        const { itinerary, status: requestedStatus, ...tripData } = dto;
+        const { itinerary, status: requestedStatus, imageAlts, ...tripData } = dto;
 
         // Verify ownership
         const existing = await this.db.tripTemplate.findFirst({
@@ -432,6 +448,7 @@ export class TripsService {
             where: { id },
             data: {
                 ...tripData,
+                imageAlts: this.normalizeImageAlts(imageAlts, dto.images ?? existing.images),
                 status,
                 itinerary: itinerary ? {
                     deleteMany: {},
