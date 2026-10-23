@@ -154,8 +154,9 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: lighthouse-results
-          path: |
-            .lighthouseci
-            keyboard-checkout-walkthrough.md
+          # Not "lighthouse-results": lhci uploads its own artifact under
+          # that name (upload.artifactName in .lighthouserc.json) and a
+          # second upload with the same name fails the job with a 409.
+          name: a11y-walkthrough
+          path: keyboard-checkout-walkthrough.md
           if-no-files-found: ignore
