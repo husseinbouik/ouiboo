@@ -139,6 +139,35 @@ export class ExternalPaymentsService {
     }
 
     /**
+     * #373: record that a provider-reported payment FAILED. The booking is
+     * deliberately NOT touched here: a failure event can never mark a
+     * booking paid (plan §53/§63) — it only moves the payment record to
+     * FAILED and appends a PAYMENT_FAILED ledger entry.
+     */
+    async recordPaymentFailedInTransaction(
+        tx: Prisma.TransactionClient,
+        input: RecordExternalPaymentInput,
+    ) {
+        assertPhase1Custodian(input.custodian);
+        const amount = toMoneyDecimal(input.amount);
+        const payment = await this.upsertExternalPayment(tx, input, {
+            status: ExternalPaymentStatus.FAILED,
+            verifiedAt: null,
+        });
+        await this.appendLedgerEntry(tx, payment.id, input, {
+            type: PaymentLedgerEntryType.PAYMENT_FAILED,
+            amount,
+            status: ExternalPaymentStatus.FAILED,
+            idempotencyKey: ledgerIdempotencyKey(
+                input.bookingId,
+                input.stage ?? ExternalPaymentStage.FULL,
+                PaymentLedgerEntryType.PAYMENT_FAILED,
+            ),
+        });
+        return payment;
+    }
+
+    /**
      * #369: record that a staged booking's deposit became refund-due
      * (the session's minimum group size was not reached by the deadline).
      * The money stays with the agency — OuiBoo only records the obligation;

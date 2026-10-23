@@ -17,6 +17,7 @@ import { HealthModule } from './health/health.module'
 import { MessagesModule } from './messages/messages.module'
 import { NotificationsModule } from './notifications/notifications.module'
 import { PaymentsModule } from './payments/payments.module'
+import { PaymentProvidersModule } from './payment-providers/payment-providers.module'
 import { ReviewsModule } from './reviews/reviews.module'
 import { TripsModule } from './trips/trips.module'
 import { UploadModule } from './upload/upload.module'
@@ -44,6 +45,7 @@ import { WishlistModule } from './wishlist/wishlist.module'
     EmailModule,
     HealthModule,
     PaymentsModule,
+    PaymentProvidersModule,
     NotificationsModule,
     ReviewsModule,
     WishlistModule,

@@ -38,6 +38,42 @@ enum LicenceStatus {
   EXPIRED
 }
 
+enum AgencyPaymentOnboardingStatus {
+  NOT_STARTED
+  PENDING_VERIFICATION
+  CONNECTED
+  DISABLED
+}
+
+enum PaymentAttemptStatus {
+  CREATED
+  PENDING
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+enum WebhookProcessingStatus {
+  RECEIVED
+  PROCESSED
+  DUPLICATE
+  REJECTED
+  MISMATCH
+  FAILED
+}
+
+enum PaymentReconciliationMismatchType {
+  STATUS_MISMATCH
+  AMOUNT_MISMATCH
+  MERCHANT_MISMATCH
+  MISSING_WEBHOOK
+}
+
+enum PaymentReconciliationStatus {
+  OPEN
+  RESOLVED
+}
+
 enum TripStatus {
   ACTIVE
   DRAFT
@@ -277,6 +313,9 @@ model AgencyProfile {
   cancellationRequestedAt     DateTime?
   invoices                    Invoice[]
   externalPayments            ExternalPayment[]
+  paymentProfile              AgencyPaymentProfile?
+  paymentAttempts             PaymentAttempt[]
+  paymentReconciliationMismatches PaymentReconciliationMismatch[]
 
   // #371: legal identity + Law 11-16 travel licence. companyName stays
   // the commercial/trade name; legalName is the registered legal name
@@ -416,6 +455,7 @@ model Booking {
   paymentTransactions         PaymentTransaction[]
   invoiceLineItems            InvoiceLineItem[]
   externalPayments            ExternalPayment[]
+  paymentAttempts             PaymentAttempt[]
   paymentPlan                 BookingPaymentPlan?
 
   @@index([travelerId])
@@ -464,6 +504,7 @@ model ExternalPayment {
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
   ledgerEntries     PaymentStatusLedgerEntry[]
+  paymentAttempts   PaymentAttempt[]
 
   @@unique([bookingId, stage])
   @@index([agencyId, status, createdAt])
@@ -809,4 +850,88 @@ model InvoiceLineItem {
 model InvoiceSequence {
   year      Int @id
   lastValue Int @default(0)
+}
+
+model AgencyPaymentProfile {
+  id                  String                        @id @default(cuid())
+  agencyId            String                        @unique
+  agency              AgencyProfile                 @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  // Adapter key of the connected provider ('manual', 'sandbox', ...).
+  provider            String
+  externalMerchantId  String
+  onboardingStatus    AgencyPaymentOnboardingStatus @default(NOT_STARTED)
+  paymentEnabled      Boolean                       @default(false)
+  refundEnabled       Boolean                       @default(false)
+  currency            String                        @default("MAD")
+  lastVerifiedAt      DateTime?
+  webhookSecretRef    String?
+  createdAt           DateTime                      @default(now())
+  updatedAt           DateTime                      @updatedAt
+  paymentAttempts     PaymentAttempt[]
+
+  @@index([provider, onboardingStatus])
+}
+
+model PaymentAttempt {
+  id                    String             @id @default(cuid())
+  bookingId             String
+  booking               Booking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  agencyId              String
+  agency                AgencyProfile      @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  paymentProfileId      String
+  paymentProfile        AgencyPaymentProfile @relation(fields: [paymentProfileId], references: [id], onDelete: Cascade)
+  stage                 ExternalPaymentStage
+  amount                Decimal            @db.Decimal(18, 2)
+  currency              String             @default("MAD")
+  provider              String
+  // The provider's own payment identifier (null for the manual flow until
+  // the proof review supplies a reference).
+  providerPaymentId     String?
+  hostedUrl             String?
+  idempotencyKey        String             @unique
+  status                PaymentAttemptStatus @default(CREATED)
+  externalPaymentId     String?
+  externalPayment       ExternalPayment?   @relation(fields: [externalPaymentId], references: [id])
+  createdAt             DateTime           @default(now())
+  capturedAt            DateTime?
+  failedAt              DateTime?
+  updatedAt             DateTime           @updatedAt
+
+  @@unique([provider, providerPaymentId])
+  @@index([bookingId, stage])
+  @@index([agencyId, status, createdAt])
+}
+
+model WebhookInboxEntry {
+  id                 String                @id @default(cuid())
+  provider           String
+  providerEventId    String
+  eventType          String
+  signatureValidated Boolean               @default(false)
+  processingStatus   WebhookProcessingStatus @default(RECEIVED)
+  failureReason      String?
+  payload            Json?
+  receivedAt         DateTime              @default(now())
+  processedAt        DateTime?
+
+  @@unique([provider, providerEventId])
+  @@index([processingStatus, receivedAt])
+}
+
+model PaymentReconciliationMismatch {
+  id               String                            @id @default(cuid())
+  provider         String
+  type             PaymentReconciliationMismatchType
+  status           PaymentReconciliationStatus       @default(OPEN)
+  agencyId         String?
+  agency           AgencyProfile?                    @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+  bookingId        String?
+  paymentAttemptId String?
+  externalPaymentId String?
+  details          Json?
+  createdAt        DateTime                          @default(now())
+  resolvedAt       DateTime?
+
+  @@index([status, type, createdAt])
+  @@index([paymentAttemptId, type, status])
 }
