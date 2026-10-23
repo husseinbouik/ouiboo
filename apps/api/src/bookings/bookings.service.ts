@@ -4,10 +4,10 @@ import { DatabaseService } from '../database/database.service';
 import { CreateBookingDto, PaymentMethodEnum } from './dto/create-booking.dto';
 import { EmailService } from '../email/email.service';
 import { UploadService } from '../upload/upload.service';
-import { BookingPaymentStatus, PaymentMethod, TransactionType } from '@ouiboo/database';
+import { BookingPaymentStatus, PaymentCustodian, PaymentLedgerSource, PaymentMethod } from '@ouiboo/database';
 import { mapBookingDetails } from './booking-response.util';
 import { multiplyMoney } from '../common/money.util';
-import { WalletsService } from '../wallets/wallets.service';
+import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 
 const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
 
@@ -17,7 +17,7 @@ export class BookingsService {
         private db: DatabaseService,
         private emailService: EmailService,
         private uploadService: UploadService,
-        private walletsService: WalletsService,
+        private externalPaymentsService: ExternalPaymentsService,
     ) { }
 
     async create(travelerId: string, dto: CreateBookingDto) {
@@ -476,18 +476,24 @@ export class BookingsService {
             const newStatus = approved ? 'CONFIRMED' : 'REJECTED';
             const confirmedAt = approved ? new Date() : null;
 
+            // #368: approving a payment proof records the verified fact that
+            // the traveller paid the AGENCY directly. It must never credit a
+            // withdrawable OuiBoo balance.
+            const paymentRecord = {
+                bookingId,
+                agencyId: booking.session.template.agencyId,
+                travelerId: booking.travelerId,
+                amount: booking.totalAmount,
+                currency: booking.currency,
+                method: PaymentMethod.MANUAL,
+                externalReference: paymentProofId,
+                custodian: PaymentCustodian.AGENCY,
+                source: PaymentLedgerSource.MANUAL_PROOF_REVIEW,
+            };
             if (approved) {
-                await this.walletsService.creditWalletInTransaction(
-                    tx,
-                    booking.session.template.agencyId,
-                    booking.totalAmount,
-                    `Manual payment confirmed for booking ${bookingId}`,
-                    {
-                        idempotencyKey: `booking:${bookingId}:manual-payment-credit`,
-                        referenceId: bookingId,
-                        type: TransactionType.BOOKING,
-                    },
-                );
+                await this.externalPaymentsService.recordPaymentVerifiedInTransaction(tx, paymentRecord);
+            } else {
+                await this.externalPaymentsService.recordPaymentRejectedInTransaction(tx, paymentRecord);
             }
 
             const claimedBooking = await tx.booking.updateMany({

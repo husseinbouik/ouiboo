@@ -5,7 +5,7 @@ import { AdminController } from '../admin/admin.controller';
 import { DatabaseService } from '../database/database.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { WalletsService } from '../wallets/wallets.service';
+import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { EmailService } from '../email/email.service';
 import { AuditLogService } from '../admin/audit-log.service';
 import { PaymentsService } from '../payments/payments.service';
@@ -26,8 +26,9 @@ describe('Admin audit smoke', () => {
         },
     };
 
-    const walletsService = {
-        creditWallet: jest.fn(),
+    const externalPaymentsService = {
+        recordPaymentVerifiedInTransaction: jest.fn(),
+        recordPaymentRejectedInTransaction: jest.fn(),
     };
 
     const emailService = {
@@ -47,7 +48,7 @@ describe('Admin audit smoke', () => {
             controllers: [AdminController],
             providers: [
                 { provide: DatabaseService, useValue: databaseService },
-                { provide: WalletsService, useValue: walletsService },
+                { provide: ExternalPaymentsService, useValue: externalPaymentsService },
                 { provide: EmailService, useValue: emailService },
                 { provide: AuditLogService, useValue: auditLogService },
                 { provide: PaymentsService, useValue: paymentsService },

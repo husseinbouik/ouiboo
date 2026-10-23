@@ -1,0 +1,277 @@
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { DatabaseService } from '../database/database.service';
+import { MoneyInput, toMoneyDecimal, toMoneyString } from '../common/money.util';
+import {
+    ExternalPaymentStatus,
+    PaymentCustodian,
+    PaymentLedgerEntryType,
+    PaymentLedgerSource,
+    PaymentMethod,
+    Prisma,
+} from '@ouiboo/database';
+import { randomUUID } from 'node:crypto';
+
+/**
+ * #368 — Phase 1 payment-status model.
+ *
+ * Traveller money is paid directly to the agency or to the agency's payment
+ * provider. OuiBoo never holds it, so this service records FACTS about
+ * external payments (an ExternalPayment plus an append-only
+ * PaymentStatusLedgerEntry) instead of crediting a withdrawable balance.
+ * There is deliberately no method here that creates, increments, or pays out
+ * a balance.
+ */
+
+const PHASE_1_CUSTODIANS: ReadonlySet<string> = new Set<string>([
+    PaymentCustodian.AGENCY,
+    PaymentCustodian.AGENCY_PSP,
+]);
+
+/**
+ * Hard invariant (plan §53): during Phase 1 the custodian of traveller funds
+ * is the agency or its payment provider — never OuiBoo.
+ */
+export function assertPhase1Custodian(custodian: string): asserts custodian is PaymentCustodian {
+    if (!PHASE_1_CUSTODIANS.has(custodian)) {
+        throw new BadRequestException(
+            `Payment custodian "${custodian}" is not permitted in Phase 1: traveller funds are held by the agency or its payment provider, never by OuiBoo`,
+        );
+    }
+}
+
+export interface RecordExternalPaymentInput {
+    bookingId: string;
+    agencyId: string;
+    travelerId: string;
+    amount: MoneyInput;
+    currency?: string;
+    method: PaymentMethod;
+    provider?: string | null;
+    externalReference?: string | null;
+    externalTransactionId?: string | null;
+    custodian: PaymentCustodian;
+    source: PaymentLedgerSource;
+    correlationId?: string | null;
+}
+
+@Injectable()
+export class ExternalPaymentsService {
+    constructor(private db: DatabaseService) { }
+
+    /**
+     * Record that a traveller payment was verified/captured with the agency
+     * (or its PSP) as custodian. Sets the booking's ExternalPayment to
+     * VERIFIED and appends a ledger entry. Idempotent per booking.
+     */
+    async recordPaymentVerifiedInTransaction(
+        tx: Prisma.TransactionClient,
+        input: RecordExternalPaymentInput,
+        entryType: PaymentLedgerEntryType = PaymentLedgerEntryType.PAYMENT_VERIFIED,
+    ) {
+        assertPhase1Custodian(input.custodian);
+        const amount = toMoneyDecimal(input.amount);
+        const payment = await this.upsertExternalPayment(tx, input, {
+            status: ExternalPaymentStatus.VERIFIED,
+            verifiedAt: new Date(),
+        });
+        await this.appendLedgerEntry(tx, payment.id, input, {
+            type: entryType,
+            amount,
+            status: ExternalPaymentStatus.VERIFIED,
+            idempotencyKey: `booking:${input.bookingId}:${entryType === PaymentLedgerEntryType.PAYMENT_CAPTURED ? 'payment-captured' : 'payment-verified'}`,
+        });
+        return payment;
+    }
+
+    /**
+     * Record that a traveller payment proof was rejected. The booking's
+     * ExternalPayment moves to REJECTED; no money is owed or held by OuiBoo.
+     */
+    async recordPaymentRejectedInTransaction(
+        tx: Prisma.TransactionClient,
+        input: RecordExternalPaymentInput,
+    ) {
+        assertPhase1Custodian(input.custodian);
+        const amount = toMoneyDecimal(input.amount);
+        const payment = await this.upsertExternalPayment(tx, input, {
+            status: ExternalPaymentStatus.REJECTED,
+            verifiedAt: null,
+        });
+        await this.appendLedgerEntry(tx, payment.id, input, {
+            type: PaymentLedgerEntryType.PAYMENT_REJECTED,
+            amount,
+            status: ExternalPaymentStatus.REJECTED,
+            idempotencyKey: `booking:${input.bookingId}:payment-rejected`,
+        });
+        return payment;
+    }
+
+    /**
+     * Record a completed refund executed by the agency's payment provider.
+     * The refund returns to the traveller from the provider/agency — OuiBoo
+     * only records the fact and never debits a balance it does not hold.
+     */
+    async recordRefundInTransaction(
+        tx: Prisma.TransactionClient,
+        input: RecordExternalPaymentInput,
+    ) {
+        assertPhase1Custodian(input.custodian);
+        const amount = toMoneyDecimal(input.amount);
+        const payment = await this.upsertExternalPayment(tx, input, {
+            status: ExternalPaymentStatus.REFUNDED,
+        });
+        await this.appendLedgerEntry(tx, payment.id, input, {
+            type: PaymentLedgerEntryType.REFUND_COMPLETED,
+            amount,
+            status: ExternalPaymentStatus.REFUNDED,
+            idempotencyKey: `booking:${input.bookingId}:refund-completed:${input.externalTransactionId ?? input.externalReference ?? 'manual'}`,
+        });
+        return payment;
+    }
+
+    async recordRefund(input: RecordExternalPaymentInput) {
+        return this.db.$transaction((tx) => this.recordRefundInTransaction(tx, input));
+    }
+
+    /**
+     * Agency payments overview: totals derived from the append-only ledger
+     * (money received by the agency's own merchant account / PSP), plus the
+     * payments still awaiting verification. No balance is stored or implied.
+     */
+    async getAgencyPaymentsOverview(agencyId: string) {
+        const [received, refunded, pendingPayments, latestPayment] = await Promise.all([
+            this.db.paymentStatusLedgerEntry.aggregate({
+                where: {
+                    agencyId,
+                    type: { in: [PaymentLedgerEntryType.PAYMENT_VERIFIED, PaymentLedgerEntryType.PAYMENT_CAPTURED] },
+                },
+                _sum: { amount: true },
+            }),
+            this.db.paymentStatusLedgerEntry.aggregate({
+                where: { agencyId, type: PaymentLedgerEntryType.REFUND_COMPLETED },
+                _sum: { amount: true },
+            }),
+            this.db.externalPayment.findMany({
+                where: { agencyId, status: ExternalPaymentStatus.PENDING_VERIFICATION },
+                select: { amount: true },
+            }),
+            this.db.externalPayment.findFirst({
+                where: { agencyId },
+                orderBy: { createdAt: 'desc' },
+                select: { currency: true },
+            }),
+        ]);
+
+        const pendingAmount = pendingPayments.reduce(
+            (total, payment) => total.add(toMoneyDecimal(payment.amount)),
+            toMoneyDecimal(0),
+        );
+
+        return {
+            currency: latestPayment?.currency || 'MAD',
+            totalReceived: toMoneyString(received._sum.amount) || '0.00',
+            totalRefunded: toMoneyString(refunded._sum.amount) || '0.00',
+            pendingVerificationCount: pendingPayments.length,
+            pendingVerificationAmount: toMoneyString(pendingAmount) || '0.00',
+        };
+    }
+
+    async listAgencyPayments(agencyId: string, page = 1, limit = 20) {
+        const safeLimit = Math.min(100, Math.max(1, Math.floor(limit) || 20));
+        const safePage = Math.max(1, Math.floor(page) || 1);
+        const where = { agencyId };
+        const [payments, total] = await Promise.all([
+            this.db.externalPayment.findMany({
+                where,
+                include: {
+                    booking: {
+                        select: {
+                            id: true,
+                            guestsCount: true,
+                            traveler: { select: { name: true, email: true } },
+                            session: {
+                                select: {
+                                    startDate: true,
+                                    template: { select: { title: true } },
+                                },
+                            },
+                        },
+                    },
+                },
+                orderBy: { updatedAt: 'desc' },
+                skip: (safePage - 1) * safeLimit,
+                take: safeLimit,
+            }),
+            this.db.externalPayment.count({ where }),
+        ]);
+
+        return {
+            data: payments.map((payment) => ({
+                ...payment,
+                amount: toMoneyString(payment.amount) || '0.00',
+            })),
+            pagination: {
+                total,
+                page: safePage,
+                limit: safeLimit,
+                totalPages: Math.ceil(total / safeLimit),
+            },
+        };
+    }
+
+    private async upsertExternalPayment(
+        tx: Prisma.TransactionClient,
+        input: RecordExternalPaymentInput,
+        outcome: { status: ExternalPaymentStatus; verifiedAt?: Date | null },
+    ) {
+        const amount = toMoneyDecimal(input.amount);
+        return tx.externalPayment.upsert({
+            where: { bookingId: input.bookingId },
+            create: {
+                bookingId: input.bookingId,
+                agencyId: input.agencyId,
+                travelerId: input.travelerId,
+                amount,
+                currency: input.currency || 'MAD',
+                method: input.method,
+                provider: input.provider ?? null,
+                externalReference: input.externalReference ?? null,
+                custodian: input.custodian,
+                status: outcome.status,
+                verifiedAt: outcome.verifiedAt ?? null,
+            },
+            update: {
+                amount,
+                currency: input.currency || 'MAD',
+                method: input.method,
+                provider: input.provider ?? null,
+                externalReference: input.externalReference ?? null,
+                custodian: input.custodian,
+                status: outcome.status,
+                ...(outcome.verifiedAt !== undefined ? { verifiedAt: outcome.verifiedAt } : {}),
+            },
+        });
+    }
+
+    private async appendLedgerEntry(
+        tx: Prisma.TransactionClient,
+        externalPaymentId: string,
+        input: RecordExternalPaymentInput,
+        entry: {
+            type: PaymentLedgerEntryType;
+            amount: Prisma.Decimal;
+            status: ExternalPaymentStatus;
+            idempotencyKey: string;
+        },
+    ) {
+        // Same idempotent-insert pattern the wallet ledger used: a duplicate
+        // event for the same booking transition inserts nothing.
+        await tx.$executeRaw`
+            INSERT INTO "PaymentStatusLedgerEntry"
+                ("id", "externalPaymentId", "bookingId", "agencyId", "travelerId", "type", "amount", "currency", "custodian", "provider", "externalTransactionId", "status", "source", "idempotencyKey", "correlationId", "occurredAt", "createdAt")
+            VALUES
+                (${randomUUID()}, ${externalPaymentId}, ${input.bookingId}, ${input.agencyId}, ${input.travelerId}, ${entry.type}::"PaymentLedgerEntryType", ${entry.amount}, ${input.currency || 'MAD'}, ${input.custodian}::"PaymentCustodian", ${input.provider ?? null}, ${input.externalTransactionId ?? null}, ${entry.status}::"ExternalPaymentStatus", ${input.source}::"PaymentLedgerSource", ${entry.idempotencyKey}, ${input.correlationId ?? null}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT ("idempotencyKey") DO NOTHING
+        `;
+    }
+}

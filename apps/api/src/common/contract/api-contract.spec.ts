@@ -12,7 +12,7 @@ import { TenantGuard } from '../../auth/guards/tenant.guard';
 import { SubscriptionGuard } from '../../auth/subscription.guard';
 import { RateLimitGuard } from '../../common/rate-limit.guard';
 import { DatabaseService } from '../../database/database.service';
-import { WalletsService } from '../../wallets/wallets.service';
+import { ExternalPaymentsService } from '../../external-payments/external-payments.service';
 import { EmailService } from '../../email/email.service';
 import { AuditLogService } from '../../admin/audit-log.service';
 import { PaymentsService } from '../../payments/payments.service';
@@ -57,7 +57,7 @@ describe('API contract', () => {
                 { provide: AuthService, useValue: authService },
                 // Admin controller deps — stubbed; guards block unauthenticated access anyway
                 { provide: DatabaseService, useValue: {} },
-                { provide: WalletsService, useValue: {} },
+                { provide: ExternalPaymentsService, useValue: {} },
                 { provide: EmailService, useValue: {} },
                 { provide: AuditLogService, useValue: {} },
                 { provide: PaymentsService, useValue: {} },

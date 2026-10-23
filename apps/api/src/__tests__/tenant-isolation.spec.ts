@@ -7,7 +7,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { UserRole } from '@ouiboo/types';
-import { WalletsService } from '../wallets/wallets.service';
+import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 
 describe('Tenant isolation (agency scope)', () => {
     let app: INestApplication;
@@ -47,8 +47,9 @@ describe('Tenant isolation (agency scope)', () => {
             count: jest.fn(({ where }) => bookings.filter((booking) => booking.session.template.agencyId === where.session.template.agencyId).length),
         },
     };
-    const walletsService = {
-        requestPayout: jest.fn(),
+    const externalPaymentsService = {
+        getAgencyPaymentsOverview: jest.fn(),
+        listAgencyPayments: jest.fn(),
     };
 
     beforeAll(async () => {
@@ -57,7 +58,7 @@ describe('Tenant isolation (agency scope)', () => {
             providers: [
                 TenantGuard,
                 { provide: DatabaseService, useValue: dbMock },
-                { provide: WalletsService, useValue: walletsService },
+                { provide: ExternalPaymentsService, useValue: externalPaymentsService },
             ],
         })
             .overrideGuard(JwtAuthGuard)

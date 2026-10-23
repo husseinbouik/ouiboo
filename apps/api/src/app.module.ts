@@ -21,7 +21,7 @@ import { ReviewsModule } from './reviews/reviews.module'
 import { TripsModule } from './trips/trips.module'
 import { UploadModule } from './upload/upload.module'
 import { UsersModule } from './users/users.module'
-import { WalletsModule } from './wallets/wallets.module'
+import { ExternalPaymentsModule } from './external-payments/external-payments.module'
 import { WishlistModule } from './wishlist/wishlist.module'
 
 @Module({
@@ -40,7 +40,7 @@ import { WishlistModule } from './wishlist/wishlist.module'
     BookingsModule,
     AgencyModule,
     AdminModule,
-    WalletsModule,
+    ExternalPaymentsModule,
     EmailModule,
     HealthModule,
     PaymentsModule,

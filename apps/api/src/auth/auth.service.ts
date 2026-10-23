@@ -187,7 +187,10 @@ export class AuthService {
                 });
 
                 if (dto.role === 'AGENCY') {
-                    const profile = await tx.agencyProfile.create({
+                    // #368: agencies no longer get a wallet. Traveller payments
+                    // are recorded as ExternalPayment facts when they happen;
+                    // there is no OuiBoo-held balance to open at signup.
+                    await tx.agencyProfile.create({
                         data: {
                             userId: newUser.id,
                             companyName: dto.name, // Use name as initial company name
@@ -198,12 +201,6 @@ export class AuthService {
                             subscriptionTermsVersion: CURRENT_SUBSCRIPTION_TERMS_VERSION,
                             subscriptionTermsAcceptedAt: new Date(),
                             trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days trial
-                        }
-                    });
-
-                    await tx.wallet.create({
-                        data: {
-                            agencyId: profile.id,
                         }
                     });
                 }

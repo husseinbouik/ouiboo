@@ -4,7 +4,7 @@ import { DatabaseService } from '../database/database.service';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { UploadService } from '../upload/upload.service';
 import { EmailService } from '../email/email.service';
-import { WalletsService } from '../wallets/wallets.service';
+import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 
 const mockBooking = {
     id: 'booking-123',
@@ -59,8 +59,9 @@ const mockEmailService = {
     sendPaymentConfirmation: jest.fn(),
 };
 
-const mockWalletsService = {
-    creditWalletInTransaction: jest.fn(),
+const mockExternalPaymentsService = {
+    recordPaymentVerifiedInTransaction: jest.fn(),
+    recordPaymentRejectedInTransaction: jest.fn(),
 };
 
 describe('BookingsService', () => {
@@ -85,8 +86,8 @@ describe('BookingsService', () => {
                     useValue: mockUploadService,
                 },
                 {
-                    provide: WalletsService,
-                    useValue: mockWalletsService,
+                    provide: ExternalPaymentsService,
+                    useValue: mockExternalPaymentsService,
                 },
             ],
         }).compile();
