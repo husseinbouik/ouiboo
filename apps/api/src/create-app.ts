@@ -17,6 +17,7 @@ const REQUIRED_ENV_VARS = [
   'JWT_REFRESH_SECRET',
   'CORS_ORIGINS',
   'DATABASE_URL',
+  'REDIS_URL',
   'SMTP_HOST',
   'SMTP_PORT',
   'SMTP_USER',
@@ -139,3 +140,4 @@ export async function createApp(): Promise<INestApplication> {
 
   return app
 }
+
