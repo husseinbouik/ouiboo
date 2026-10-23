@@ -65,6 +65,53 @@ export enum BookingPaymentStatus {
     Paid = "PAID",
     Refunded = "REFUNDED",
     Failed = "FAILED",
+    /** #369: staged payments — deposit verified, balance outstanding. */
+    PartiallyPaid = "PARTIALLY_PAID",
+}
+
+/** #369: session-level minimum-group outcome for staged payments. */
+export enum SessionGroupStatus {
+    NotRequired = "NOT_REQUIRED",
+    PendingMinimum = "PENDING_MINIMUM",
+    Confirmed = "CONFIRMED",
+    NotConfirmed = "NOT_CONFIRMED",
+}
+
+export type SessionGroupStatusType = SessionGroupStatus;
+
+/** #369: lifecycle of a booking's staged payment plan. */
+export enum BookingPaymentPlanStatus {
+    DepositDue = "DEPOSIT_DUE",
+    DepositPaid = "DEPOSIT_PAID",
+    BalanceDue = "BALANCE_DUE",
+    FullyPaid = "FULLY_PAID",
+    RefundDue = "REFUND_DUE",
+    Refunded = "REFUNDED",
+    Cancelled = "CANCELLED",
+}
+
+export type BookingPaymentPlanStatusType = BookingPaymentPlanStatus;
+
+/**
+ * #369: a booking's staged payment plan. Amounts are owed to / held by the
+ * agency — never a OuiBoo balance. Present only on staged bookings.
+ */
+export interface BookingPaymentPlan {
+    id: string;
+    bookingId: string;
+    sessionId: string;
+    agencyId: string;
+    totalAmount: DecimalString;
+    depositAmount: DecimalString;
+    balanceAmount: DecimalString;
+    currency: string;
+    minimumParticipants: number;
+    confirmationDeadline: string;
+    balanceDueAt?: string;
+    groupConfirmedAt?: string;
+    status: BookingPaymentPlanStatus;
+    paymentPolicyVersion: string;
+    refundPolicyVersion: string;
 }
 
 export type BookingPaymentStatusType = BookingPaymentStatus;
@@ -176,6 +223,12 @@ export interface TripSession {
     availableSeats: number;
     status: SessionStatus;
     currency: string;
+    /** #369: minimum group size for staged payments; absent on older payloads. */
+    minBookings?: number;
+    /** #369: staged payments — deadline for the minimum to be reached. */
+    confirmationDeadline?: string;
+    /** #369: staged payments — minimum-group outcome for this session. */
+    groupStatus?: SessionGroupStatus;
 }
 
 export enum BookingStatus {
@@ -185,6 +238,10 @@ export enum BookingStatus {
     Rejected = "REJECTED",
     Cancelled = "CANCELLED",
     Completed = "COMPLETED",
+    /** #369: staged payments — deposit verified, waiting for group confirmation. */
+    PendingMinimum = "PENDING_MINIMUM",
+    /** #369: staged payments — group minimum not reached by the deadline. */
+    NotConfirmed = "NOT_CONFIRMED",
 }
 
 export type BookingStatusType = BookingStatus;
@@ -240,6 +297,8 @@ export interface BookingSessionSummary extends TripSession {
 
 export interface BookingDetails extends Booking {
     paymentProof?: PaymentProof;
+    /** #369: staged payment plan; absent/null on single-payment bookings. */
+    paymentPlan?: BookingPaymentPlan | null;
     review?: {
         id: string;
     };

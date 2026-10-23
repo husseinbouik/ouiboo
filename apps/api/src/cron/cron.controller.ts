@@ -9,6 +9,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { NotificationJobsService } from '../notifications/notification-jobs.service';
 import { CurrencyService } from '../currency/currency.service';
+import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
 
 /**
  * Serverless-compatible cron endpoint (#216).
@@ -29,6 +30,7 @@ export class CronController {
   constructor(
     private readonly notificationJobs: NotificationJobsService,
     private readonly currencyService: CurrencyService,
+    private readonly stagedPaymentsService: StagedPaymentsService,
   ) {}
 
   private validateCronSecret(authorization?: string): void {
@@ -91,6 +93,10 @@ export class CronController {
     );
     await run('subscriptionRenewalReminders', () =>
       this.notificationJobs.sendSubscriptionRenewalReminders(),
+    );
+    // #369: fail/confirm staged sessions whose confirmation deadline passed.
+    await run('groupConfirmationDeadlines', () =>
+      this.stagedPaymentsService.evaluateConfirmationDeadlines(),
     );
 
     return { ranAt: new Date().toISOString(), results };

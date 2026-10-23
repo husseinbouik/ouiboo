@@ -265,7 +265,7 @@ describe('E2E: payment records replace the traveller-money wallet', () => {
         // duplicate the ledger entry.
         await db.$transaction((tx) => externalPayments.recordPaymentVerifiedInTransaction(tx, record));
 
-        const payment = await db.externalPayment.findUniqueOrThrow({ where: { bookingId: BOOKING_ID } });
+        const payment = await db.externalPayment.findUniqueOrThrow({ where: { bookingId_stage: { bookingId: BOOKING_ID, stage: 'FULL' } } });
         expect(payment.status).toBe('VERIFIED');
         expect(payment.custodian).toBe('AGENCY');
         expect(payment.amount.toNumber()).toBe(780);

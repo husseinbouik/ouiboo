@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { CurrencyService } from '../currency/currency.service';
 import { NotificationJobsService } from '../notifications/notification-jobs.service';
+import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
 import { MAINTENANCE_QUEUE, MaintenanceJobName } from './worker-queue.constants';
 
 @Injectable()
@@ -13,6 +14,7 @@ export class MaintenanceProcessor extends WorkerHost {
   constructor(
     private readonly notificationJobs: NotificationJobsService,
     private readonly currencyService: CurrencyService,
+    private readonly stagedPaymentsService: StagedPaymentsService,
   ) {
     super();
   }
@@ -33,6 +35,8 @@ export class MaintenanceProcessor extends WorkerHost {
         return this.currencyService.updateExchangeRates();
       case MaintenanceJobName.CompleteFinishedBookings:
         return this.notificationJobs.completeFinishedBookings();
+      case MaintenanceJobName.GroupConfirmationDeadlines:
+        return this.stagedPaymentsService.evaluateConfirmationDeadlines();
       default:
         throw new Error(`Unknown maintenance job: ${job.name}`);
     }

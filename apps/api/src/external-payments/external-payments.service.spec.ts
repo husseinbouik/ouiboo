@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { Prisma } from '@ouiboo/database';
 import {
+    ExternalPaymentStage,
     ExternalPaymentStatus,
     PaymentCustodian,
     PaymentLedgerEntryType,
@@ -58,7 +59,11 @@ describe('ExternalPaymentsService', () => {
 
             expect(payment.id).toBe('ext-payment-1');
             const upsertArgs = tx.externalPayment.upsert.mock.calls[0][0];
-            expect(upsertArgs.where).toEqual({ bookingId: 'booking-1' });
+            // #369: the upsert is scoped by (bookingId, stage); FULL is the default stage.
+            expect(upsertArgs.where).toEqual({
+                bookingId_stage: { bookingId: 'booking-1', stage: ExternalPaymentStage.FULL },
+            });
+            expect(upsertArgs.create.stage).toBe(ExternalPaymentStage.FULL);
             expect(upsertArgs.create.status).toBe(ExternalPaymentStatus.VERIFIED);
             expect(upsertArgs.create.custodian).toBe(PaymentCustodian.AGENCY);
             expect(upsertArgs.create.verifiedAt).toBeInstanceOf(Date);
@@ -156,6 +161,8 @@ describe('ExternalPaymentsService', () => {
             expect(receivedQuery.where.type.in).toEqual([
                 PaymentLedgerEntryType.PAYMENT_VERIFIED,
                 PaymentLedgerEntryType.PAYMENT_CAPTURED,
+                PaymentLedgerEntryType.DEPOSIT_CAPTURED,
+                PaymentLedgerEntryType.BALANCE_CAPTURED,
             ]);
         });
 
@@ -177,6 +184,63 @@ describe('ExternalPaymentsService', () => {
             expect(overview.totalRefunded).toBe('0.00');
             expect(overview.pendingVerificationCount).toBe(0);
             expect(overview.pendingVerificationAmount).toBe('0.00');
+        });
+    });
+
+    describe('staged payments (#369)', () => {
+        it('scopes the upsert to the DEPOSIT stage for a deposit capture', async () => {
+            const tx = makeTx();
+            const service = new ExternalPaymentsService({} as any);
+
+            await service.recordPaymentVerifiedInTransaction(
+                tx,
+                { ...baseInput, amount: 240, stage: ExternalPaymentStage.DEPOSIT },
+                PaymentLedgerEntryType.DEPOSIT_CAPTURED,
+            );
+
+            const upsertArgs = tx.externalPayment.upsert.mock.calls[0][0];
+            expect(upsertArgs.where).toEqual({
+                bookingId_stage: { bookingId: 'booking-1', stage: ExternalPaymentStage.DEPOSIT },
+            });
+            expect(upsertArgs.create.stage).toBe(ExternalPaymentStage.DEPOSIT);
+            expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
+        });
+
+        it('recordRefundDueInTransaction appends a REFUND_DUE entry against the deposit', async () => {
+            const tx = {
+                ...makeTx(),
+                externalPayment: {
+                    upsert: jest.fn(),
+                    findFirst: jest.fn(async () => ({
+                        id: 'deposit-payment-1',
+                        amount: new Prisma.Decimal('240.00'),
+                        currency: 'MAD',
+                    })),
+                },
+            } as any;
+            const service = new ExternalPaymentsService({} as any);
+
+            const deposit = await service.recordRefundDueInTransaction(tx, baseInput);
+
+            expect(deposit?.id).toBe('deposit-payment-1');
+            expect(tx.externalPayment.upsert).not.toHaveBeenCalled();
+            expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
+        });
+
+        it('recordRefundDueInTransaction is a no-op without a deposit payment', async () => {
+            const tx = {
+                ...makeTx(),
+                externalPayment: {
+                    upsert: jest.fn(),
+                    findFirst: jest.fn(async () => null),
+                },
+            } as any;
+            const service = new ExternalPaymentsService({} as any);
+
+            const deposit = await service.recordRefundDueInTransaction(tx, baseInput);
+
+            expect(deposit).toBeNull();
+            expect(tx.$executeRaw).not.toHaveBeenCalled();
         });
     });
 });

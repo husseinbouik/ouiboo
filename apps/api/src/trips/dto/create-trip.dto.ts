@@ -137,6 +137,26 @@ export class CreateTripSessionDto {
     @IsOptional()
     @Matches(/^[A-Z]{3}$/)
     currency?: string;
+
+    /**
+     * #369: minimum participants for the trip to be confirmed. When > 1
+     * and a deposit is set, the session uses staged payments (deposit
+     * first, balance after confirmation).
+     */
+    @ApiProperty({ example: 6, required: false })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    minBookings?: number;
+
+    /**
+     * #369: deadline by which the minimum group size must be reached.
+     * Required for staged sessions (minBookings > 1 with a deposit).
+     */
+    @ApiProperty({ example: '2025-01-01T00:00:00Z', required: false })
+    @IsOptional()
+    @IsDateString()
+    confirmationDeadline?: string;
 }
 
 export class UpdateTripSessionDto extends PartialType(CreateTripSessionDto) { }

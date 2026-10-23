@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { MoneyInput, toMoneyDecimal, toMoneyString } from '../common/money.util';
 import {
+    ExternalPaymentStage,
     ExternalPaymentStatus,
     PaymentCustodian,
     PaymentLedgerEntryType,
@@ -52,6 +53,29 @@ export interface RecordExternalPaymentInput {
     custodian: PaymentCustodian;
     source: PaymentLedgerSource;
     correlationId?: string | null;
+    /**
+     * #369: which payment stage this record belongs to. FULL (default)
+     * preserves the single-payment behaviour; staged bookings record one
+     * DEPOSIT and one BALANCE payment per booking.
+     */
+    stage?: ExternalPaymentStage;
+}
+
+/**
+ * Ledger idempotency keys. The FULL-stage keys keep their historical
+ * format (`booking:{id}:payment-verified`) so events recorded before
+ * #369 stay deduplicated; staged payments get stage-scoped keys.
+ */
+function ledgerIdempotencyKey(
+    bookingId: string,
+    stage: ExternalPaymentStage,
+    entryType: PaymentLedgerEntryType,
+): string {
+    const suffix = entryType.toLowerCase().replace(/_/g, '-');
+    if (stage === ExternalPaymentStage.FULL) {
+        return `booking:${bookingId}:${suffix}`;
+    }
+    return `booking:${bookingId}:${stage.toLowerCase()}:${suffix}`;
 }
 
 @Injectable()
@@ -78,7 +102,11 @@ export class ExternalPaymentsService {
             type: entryType,
             amount,
             status: ExternalPaymentStatus.VERIFIED,
-            idempotencyKey: `booking:${input.bookingId}:${entryType === PaymentLedgerEntryType.PAYMENT_CAPTURED ? 'payment-captured' : 'payment-verified'}`,
+            idempotencyKey: ledgerIdempotencyKey(
+                input.bookingId,
+                input.stage ?? ExternalPaymentStage.FULL,
+                entryType,
+            ),
         });
         return payment;
     }
@@ -101,9 +129,54 @@ export class ExternalPaymentsService {
             type: PaymentLedgerEntryType.PAYMENT_REJECTED,
             amount,
             status: ExternalPaymentStatus.REJECTED,
-            idempotencyKey: `booking:${input.bookingId}:payment-rejected`,
+            idempotencyKey: ledgerIdempotencyKey(
+                input.bookingId,
+                input.stage ?? ExternalPaymentStage.FULL,
+                PaymentLedgerEntryType.PAYMENT_REJECTED,
+            ),
         });
         return payment;
+    }
+
+    /**
+     * #369: record that a staged booking's deposit became refund-due
+     * (the session's minimum group size was not reached by the deadline).
+     * The money stays with the agency — OuiBoo only records the obligation;
+     * the refund workflow itself is #370. Appends a REFUND_DUE entry
+     * against the booking's DEPOSIT payment; a no-op when the booking has
+     * no verified deposit.
+     */
+    async recordRefundDueInTransaction(
+        tx: Prisma.TransactionClient,
+        input: RecordExternalPaymentInput,
+    ) {
+        assertPhase1Custodian(input.custodian);
+        const deposit = await tx.externalPayment.findFirst({
+            where: {
+                bookingId: input.bookingId,
+                stage: ExternalPaymentStage.DEPOSIT,
+            },
+        });
+        if (!deposit) {
+            return null;
+        }
+        const amount = toMoneyDecimal(deposit.amount);
+        await this.appendLedgerEntry(tx, deposit.id, {
+            ...input,
+            amount,
+            currency: deposit.currency,
+            stage: ExternalPaymentStage.DEPOSIT,
+        }, {
+            type: PaymentLedgerEntryType.REFUND_DUE,
+            amount,
+            status: ExternalPaymentStatus.VERIFIED,
+            idempotencyKey: ledgerIdempotencyKey(
+                input.bookingId,
+                ExternalPaymentStage.DEPOSIT,
+                PaymentLedgerEntryType.REFUND_DUE,
+            ),
+        });
+        return deposit;
     }
 
     /**
@@ -143,7 +216,16 @@ export class ExternalPaymentsService {
             this.db.paymentStatusLedgerEntry.aggregate({
                 where: {
                     agencyId,
-                    type: { in: [PaymentLedgerEntryType.PAYMENT_VERIFIED, PaymentLedgerEntryType.PAYMENT_CAPTURED] },
+                    type: {
+                        in: [
+                            PaymentLedgerEntryType.PAYMENT_VERIFIED,
+                            PaymentLedgerEntryType.PAYMENT_CAPTURED,
+                            // #369: staged deposit/balance captures are also
+                            // money received by the agency's merchant account.
+                            PaymentLedgerEntryType.DEPOSIT_CAPTURED,
+                            PaymentLedgerEntryType.BALANCE_CAPTURED,
+                        ],
+                    },
                 },
                 _sum: { amount: true },
             }),
@@ -225,8 +307,9 @@ export class ExternalPaymentsService {
         outcome: { status: ExternalPaymentStatus; verifiedAt?: Date | null },
     ) {
         const amount = toMoneyDecimal(input.amount);
+        const stage = input.stage ?? ExternalPaymentStage.FULL;
         return tx.externalPayment.upsert({
-            where: { bookingId: input.bookingId },
+            where: { bookingId_stage: { bookingId: input.bookingId, stage } },
             create: {
                 bookingId: input.bookingId,
                 agencyId: input.agencyId,
@@ -239,6 +322,7 @@ export class ExternalPaymentsService {
                 custodian: input.custodian,
                 status: outcome.status,
                 verifiedAt: outcome.verifiedAt ?? null,
+                stage,
             },
             update: {
                 amount,
@@ -248,6 +332,7 @@ export class ExternalPaymentsService {
                 externalReference: input.externalReference ?? null,
                 custodian: input.custodian,
                 status: outcome.status,
+                stage,
                 ...(outcome.verifiedAt !== undefined ? { verifiedAt: outcome.verifiedAt } : {}),
             },
         });

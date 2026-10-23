@@ -6,6 +6,7 @@ import { DatabaseService } from '../database/database.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
+import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
 import { EmailService } from '../email/email.service';
 import { AuditLogService } from '../admin/audit-log.service';
 import { PaymentsService } from '../payments/payments.service';
@@ -49,6 +50,7 @@ describe('Admin audit smoke', () => {
             providers: [
                 { provide: DatabaseService, useValue: databaseService },
                 { provide: ExternalPaymentsService, useValue: externalPaymentsService },
+                { provide: StagedPaymentsService, useValue: {} },
                 { provide: EmailService, useValue: emailService },
                 { provide: AuditLogService, useValue: auditLogService },
                 { provide: PaymentsService, useValue: paymentsService },
