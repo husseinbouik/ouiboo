@@ -47,7 +47,6 @@
       "agencies": "إدارة الوكالات",
       "bookings": "حجوزات النظام",
       "paymentProofs": "إثباتات الدفع",
-      "payouts": "طلبات السحب",
       "audit": "سجل التدقيق",
       "invoices": "الفواتير"
     },
@@ -72,11 +71,6 @@
         "description": "وافق أو ارفض إيصالات الدفع المرفوعة.",
         "searchPlaceholder": "ابحث في إثباتات الدفع بالمسافر أو الحجز..."
       },
-      "payouts": {
-        "title": "طلبات السحب",
-        "description": "راجع طلبات سحب الوكالات قبل تحويل الأموال.",
-        "searchPlaceholder": "ابحث عن طلبات السحب باسم الوكالة..."
-      },
       "audit": {
         "title": "سجل التدقيق",
         "description": "ابحث في نشاط المشغلين، وصدّر السجلات، وطبّق تنظيف الاحتفاظ.",
@@ -94,7 +88,6 @@
       "allAgencies": "إدارة جميع الوكالات",
       "bookingMonitor": "مراقبة الحجوزات العامة",
       "pendingPaymentProofs": "إثباتات الدفع المنتظرة",
-      "payoutRequests": "طلبات السحب",
       "auditTrail": "مسار التدقيق"
     },
     "table": {
@@ -117,8 +110,6 @@
       "approve": "موافقة",
       "activate": "تفعيل",
       "deactivate": "إيقاف",
-      "approvePayout": "الموافقة على السحب",
-      "rejectPayout": "رفض السحب",
       "approveAgency": "الموافقة على الوكالة",
       "rejectAgency": "رفض الوكالة",
       "refund": "استرداد"
@@ -128,13 +119,11 @@
       "joined": "انضم في",
       "request": "الطلب",
       "requestId": "طلب رقم {{id}}",
-      "agencyPayout": "سحب الوكالة",
       "agency": "الوكالة",
       "requested": "مطلوب",
       "amount": "المبلغ",
       "currency": "MAD",
       "bankDetails": "بيانات بنك الوكالة",
-      "payoutDetails": "تفاصيل السحب",
       "selected": "المحدد",
       "contact": "التواصل",
       "status": "الحالة",
@@ -150,8 +139,6 @@
     "messages": {
       "noBankDetails": "لا توجد بيانات بنكية محفوظة.",
       "noPaymentProofs": "لا توجد إثباتات دفع بانتظار المراجعة.",
-      "noPayoutRequests": "لا توجد طلبات سحب بانتظار المراجعة.",
-      "selectPayoutPrompt": "اختر طلب سحب لمراجعة بيانات البنك والموافقة أو الرفض.",
       "reviewVerification": "راجع تفاصيل التحقق ثم وافق أو ارفض.",
       "notProvided": "غير مقدم",
       "noEmail": "لا يوجد بريد إلكتروني",
@@ -172,9 +159,6 @@
       "paymentProofRejected": "تم رفض إثبات الدفع بنجاح.",
       "paymentProofUpdateError": "تعذر تحديث إثبات الدفع. حاول مرة أخرى.",
       "paymentProofLoadError": "تعذر تحميل إثبات الدفع.",
-      "payoutPaid": "تم تعليم السحب كمدفوع بنجاح.",
-      "payoutRejected": "تم رفض طلب السحب بنجاح.",
-      "payoutUpdateError": "تعذر تحديث طلب السحب. حاول مرة أخرى.",
       "refundProcessed": "تمت معالجة الاسترداد بنجاح.",
       "refundError": "تعذر معالجة الاسترداد الآن.",
       "auditPruneError": "تعذر تقليم سجلات التدقيق الآن.",
@@ -262,9 +246,9 @@
       "payoutPaidLabel": "مدفوع",
       "payoutPaidHelper": "تم التحويل",
       "payoutRejectedLabel": "مرفوض",
-      "payoutRejectedHelper": "أُعيدت الأموال إلى محفظة الوكالة",
+      "payoutRejectedHelper": "أُعيدت الأموال إلى الوكالة",
       "payoutApprovedLabel": "موافق عليه",
-      "payoutApprovedHelper": "تمت الموافقة وبانتظار معالجة السحب",
+      "payoutApprovedHelper": "تمت الموافقة وبانتظار المعالجة",
       "payoutPendingLabel": "قيد الانتظار",
       "payoutPendingHelper": "بانتظار مراجعة المسؤول"
     },

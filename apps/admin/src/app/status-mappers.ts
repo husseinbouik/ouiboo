@@ -108,7 +108,7 @@ export const getAdminPayoutBadgeMeta = (status: PayoutStatusType, t?: Translate)
   if (status === PayoutStatus.Rejected) {
     return {
       className: 'bg-danger/15 text-danger',
-      helperText: t ? t('dashboard.status.payoutRejectedHelper') : 'Funds returned to the agency wallet',
+      helperText: t ? t('dashboard.status.payoutRejectedHelper') : 'Funds returned to the agency',
       label: t ? t('dashboard.status.payoutRejectedLabel') : 'Rejected',
     };
   }
@@ -116,7 +116,7 @@ export const getAdminPayoutBadgeMeta = (status: PayoutStatusType, t?: Translate)
   if (status === PayoutStatus.Approved) {
     return {
       className: 'bg-secondary text-secondary-foreground',
-      helperText: t ? t('dashboard.status.payoutApprovedHelper') : 'Approved and waiting for payout processing',
+      helperText: t ? t('dashboard.status.payoutApprovedHelper') : 'Approved and waiting for processing',
       label: t ? t('dashboard.status.payoutApprovedLabel') : 'Approved',
     };
   }
