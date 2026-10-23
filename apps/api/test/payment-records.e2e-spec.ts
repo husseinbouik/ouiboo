@@ -20,6 +20,7 @@ import {
     ExternalPaymentsModule,
 } from '../src/external-payments/external-payments.module';
 import { ExternalPaymentsService } from '../src/external-payments/external-payments.service';
+import { StagedPaymentsModule } from '../src/staged-payments/staged-payments.module';
 import { PaymentCustodian, PaymentLedgerSource, PaymentMethod } from '@ouiboo/database';
 
 jest.setTimeout(60_000);
@@ -46,7 +47,7 @@ describe('E2E: payment records replace the traveller-money wallet', () => {
 
     beforeAll(async () => {
         const moduleRef = await Test.createTestingModule({
-            imports: [DatabaseModule, ExternalPaymentsModule],
+            imports: [DatabaseModule, ExternalPaymentsModule, StagedPaymentsModule],
             controllers: [AgencyController, AdminController],
             providers: [
                 RolesGuard,

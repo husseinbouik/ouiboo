@@ -739,7 +739,10 @@
     "cancel": "Cancel",
     "creating": "Creating Sessions...",
     "createCount_one": "Create {{count}} Session",
-    "createCount_other": "Create {{count}} Sessions"
+    "createCount_other": "Create {{count}} Sessions",
+    "minGroupSize": "Minimum group size",
+    "confirmationDeadline": "Confirmation deadline",
+    "stagedHint": "Minimum group above 1 = staged payments: travellers pay the deposit first (max 30% of the price), the balance only after confirmation."
   },
   "editSession": {
     "validation": "Start date, end date, and a price greater than zero are required.",
@@ -767,7 +770,10 @@
     "totalSeatsReadOnly": "Total Seats (Read-only)",
     "seatsNote": "Note: Total seats cannot be changed after creation. To modify capacity, delete and recreate the session.",
     "saving": "Saving...",
-    "saveChanges": "Save Changes"
+    "saveChanges": "Save Changes",
+    "minGroupSize": "Minimum group size",
+    "confirmationDeadline": "Confirmation deadline",
+    "stagedHint": "With a minimum group size above 1, travellers pay only the deposit first (maximum 30% of the price). The balance is requested only after the trip is confirmed; if the minimum is not reached by the deadline, deposits are refunded."
   },
   "charts": {
     "topTrips": {

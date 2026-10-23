@@ -7,6 +7,7 @@ import { BookingsService } from '../src/bookings/bookings.service';
 import { AdminController } from '../src/admin/admin.controller';
 import { DatabaseService } from '../src/database/database.service';
 import { ExternalPaymentsService } from '../src/external-payments/external-payments.service';
+import { StagedPaymentsService } from '../src/staged-payments/staged-payments.service';
 import { EmailService } from '../src/email/email.service';
 import { AuditLogService } from '../src/admin/audit-log.service';
 import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
@@ -59,6 +60,7 @@ describe('E2E: booking + payment approval flow', () => {
                 { provide: BookingsService, useValue: bookingsService },
                 { provide: DatabaseService, useValue: dbMock },
                 { provide: ExternalPaymentsService, useValue: externalPaymentsService },
+                { provide: StagedPaymentsService, useValue: { applyProofDecisionInTransaction: jest.fn() } },
                 { provide: EmailService, useValue: emailService },
                 { provide: AuditLogService, useValue: auditLogService },
                 { provide: PaymentsService, useValue: paymentsService },

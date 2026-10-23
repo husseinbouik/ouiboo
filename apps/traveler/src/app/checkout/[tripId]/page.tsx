@@ -8,7 +8,7 @@ import { useAuth } from '@/components/AuthContext';
 import { type BookingDetails } from '@ouiboo/types';
 import { Card, CardContent } from '@ouiboo/ui';
 import { useTranslation } from 'react-i18next';
-import type { CheckoutTrip } from '@/components/checkout/checkout-types';
+import { getStagedAmounts, isStagedSession, type CheckoutTrip } from '@/components/checkout/checkout-types';
 import { CheckoutHeader } from '@/components/checkout/CheckoutHeader';
 import { CheckoutGuestForm } from '@/components/checkout/CheckoutGuestForm';
 import { CheckoutPayment } from '@/components/checkout/CheckoutPayment';
@@ -81,6 +81,10 @@ export default function CheckoutPage() {
   const selectedSession = trip?.sessions?.find((session) => session.id === selectedSessionId);
   const sessionPrice = Number(selectedSession?.price ?? 0);
   const totalPrice = sessionPrice * guestCount;
+  // #369: staged sessions collect only the deposit at checkout; the
+  // balance is requested after the trip is confirmed.
+  const stagedSession = isStagedSession(selectedSession) ? selectedSession : null;
+  const stagedAmounts = stagedSession ? getStagedAmounts(stagedSession, guestCount) : null;
   const selectedCurrency = selectedSession?.currency;
   const bankDetails = trip?.agency?.bankDetails?.trim() ?? '';
   const hasBankDetails = bankDetails.length > 0;
@@ -163,6 +167,14 @@ export default function CheckoutPage() {
                   onClearProof={clearProof}
                   proofFile={proofFile}
                   isUploading={createBookingMutation.isPending}
+                  stagedInfo={stagedAmounts && stagedSession ? {
+                    depositDue: stagedAmounts.depositDue,
+                    agencyName: trip.agency?.companyName || 'the agency',
+                    minimumParticipants: stagedSession.minBookings ?? 0,
+                    confirmationDeadline: stagedSession.confirmationDeadline ?? null,
+                    currency: selectedCurrency,
+                    language: i18n.language,
+                  } : null}
                 />
               </CardContent>
             </Card>
@@ -183,6 +195,7 @@ export default function CheckoutPage() {
               isSubmitting={createBookingMutation.isPending}
               canSubmit={canSubmit}
               onSubmit={() => createBookingMutation.mutate()}
+              stagedAmounts={stagedAmounts}
             />
           </div>
         </div>

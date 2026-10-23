@@ -18,6 +18,8 @@ type CheckoutSummaryProps = {
   isSubmitting: boolean;
   canSubmit: boolean;
   onSubmit: () => void;
+  /** #369: staged amounts when the session is a minimum-group trip. */
+  stagedAmounts?: { depositDue: number; balanceDue: number; total: number } | null;
 };
 
 export function CheckoutSummary({
@@ -31,6 +33,7 @@ export function CheckoutSummary({
   isSubmitting,
   canSubmit,
   onSubmit,
+  stagedAmounts,
 }: CheckoutSummaryProps) {
   return (
     <Card className="border-none shadow-2xl shadow-black/10 rounded-[3rem] overflow-hidden p-10 space-y-8 bg-card ring-1 ring-border/50">
@@ -67,12 +70,27 @@ export function CheckoutSummary({
             <span className="text-muted-foreground font-medium">Service Fee</span>
             <Badge variant="outline" className="border-emerald-500/30 text-success-dark bg-success/10 font-black text-[8px] uppercase tracking-widest">Free</Badge>
           </div>
-          <div className="flex justify-between items-end pt-4 border-t border-border/50">
-            <span className="text-lg font-black font-display tracking-tight text-foreground">Total to pay</span>
-            <div className="text-right">
-              <span className="text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatCurrency(totalPrice, selectedCurrency, language)}</span>
+          {stagedAmounts ? (
+            <>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground font-medium">Balance due after trip confirmation</span>
+                <span className="font-bold">{formatCurrency(stagedAmounts.balanceDue, selectedCurrency, language)}</span>
+              </div>
+              <div className="flex justify-between items-end pt-4 border-t border-border/50">
+                <span className="text-lg font-black font-display tracking-tight text-foreground">Deposit to pay now</span>
+                <div className="text-right">
+                  <span className="text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatCurrency(stagedAmounts.depositDue, selectedCurrency, language)}</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex justify-between items-end pt-4 border-t border-border/50">
+              <span className="text-lg font-black font-display tracking-tight text-foreground">Total to pay</span>
+              <div className="text-right">
+                <span className="text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatCurrency(totalPrice, selectedCurrency, language)}</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { BookingStatus, type BookingDetails } from '@ouiboo/types';
+import { BookingPaymentPlanStatus, BookingStatus, type BookingDetails } from '@ouiboo/types';
 import { Button, Badge, Card, Pagination } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import { toPaginatedList } from '@ouiboo/utils';
@@ -201,6 +201,48 @@ export default function MyBookingsPage() {
                                                     </div>
                                                 </div>
                                             </div>
+
+                                            {/* #369: staged payment plan strip (plan §42 copy) */}
+                                            {booking.paymentPlan && (
+                                                <div className="rounded-2xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 px-5 py-4 space-y-2">
+                                                    {booking.paymentPlan.status === BookingPaymentPlanStatus.DepositDue && (
+                                                        <p className="text-sm font-semibold text-foreground">
+                                                            Deposit due: {booking.paymentPlan.depositAmount} {booking.paymentPlan.currency} — pay the deposit to {booking.session.template.agency?.companyName || 'the agency'} to secure your spot. This trip needs at least {booking.paymentPlan.minimumParticipants} participants by {format(new Date(booking.paymentPlan.confirmationDeadline), 'MMM dd, yyyy')}.
+                                                        </p>
+                                                    )}
+                                                    {booking.paymentPlan.status === BookingPaymentPlanStatus.DepositPaid && (
+                                                        <p className="text-sm font-semibold text-foreground">
+                                                            Deposit paid to {booking.session.template.agency?.companyName || 'the agency'}. Waiting for trip confirmation — this trip needs at least {booking.paymentPlan.minimumParticipants} participants by {format(new Date(booking.paymentPlan.confirmationDeadline), 'MMM dd, yyyy')}. If the minimum is not reached, your deposit is refunded.
+                                                        </p>
+                                                    )}
+                                                    {booking.paymentPlan.status === BookingPaymentPlanStatus.BalanceDue && (
+                                                        <>
+                                                            <p className="text-sm font-semibold text-foreground">
+                                                                Trip confirmed — remaining balance due: {booking.paymentPlan.balanceAmount} {booking.paymentPlan.currency}
+                                                                {booking.paymentPlan.balanceDueAt ? <> (pay before {format(new Date(booking.paymentPlan.balanceDueAt), 'MMM dd, yyyy')})</> : null}.
+                                                            </p>
+                                                            {booking.status === BookingStatus.Confirmed && (
+                                                                <label className="cursor-pointer inline-block">
+                                                                    <input type="file" className="sr-only" onChange={(e) => handleFileUpload(e, booking.id)} disabled={!!uploadingId} />
+                                                                    <Button disabled={!!uploadingId} className="h-11 px-6 bg-sunset-orange hover:bg-orange-600 border-none rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-orange-900/10 active:scale-95 transition-all">
+                                                                        {uploadingId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4 mr-2" /> Upload Balance Receipt</>}
+                                                                    </Button>
+                                                                </label>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                    {booking.paymentPlan.status === BookingPaymentPlanStatus.RefundDue && (
+                                                        <p className="text-sm font-semibold text-foreground">
+                                                            This trip was not confirmed — the minimum group size was not reached. Your deposit of {booking.paymentPlan.depositAmount} {booking.paymentPlan.currency} is refundable; {booking.session.template.agency?.companyName || 'the agency'} will process your refund.
+                                                        </p>
+                                                    )}
+                                                    {booking.paymentPlan.status === BookingPaymentPlanStatus.FullyPaid && (
+                                                        <p className="text-sm font-semibold text-foreground">
+                                                            Paid in full — deposit and balance received by {booking.session.template.agency?.companyName || 'the agency'}.
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )}
 
                                             <div className="pt-8 border-t border-border/50 flex flex-wrap justify-between items-center gap-6">
                                                 <div className="flex flex-wrap items-center gap-6">
