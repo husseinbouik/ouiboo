@@ -56,9 +56,12 @@ type AgencyStatsResponse = {
   revenue: number;
   totalBookings: number;
   totalCustomers: number;
-  wallet: {
-    availableBalance: number;
-    pendingBalance: number;
+  payments: {
+    currency: string;
+    totalReceived: string;
+    totalRefunded: string;
+    pendingVerificationCount: number;
+    pendingVerificationAmount: string;
   };
 };
 
@@ -127,7 +130,7 @@ export default function AgencyDashboard() {
     activeTrips: 0,
     totalBookings: 0,
     totalCustomers: 0,
-    wallet: { availableBalance: 0, pendingBalance: 0 },
+    payments: { currency: 'MAD', totalReceived: '0', totalRefunded: '0', pendingVerificationCount: 0, pendingVerificationAmount: '0' },
   };
 
   const pendingPaymentReviews = recentBookings.filter(
@@ -141,8 +144,8 @@ export default function AgencyDashboard() {
 
   const summaryCards = [
     {
-      label: t('dashboard.availableBalance'),
-      value: formatCurrency(stats.wallet.availableBalance || 0),
+      label: t('dashboard.paymentsReceived'),
+      value: formatCurrency(Number(stats.payments.totalReceived || 0)),
       currency: t('dashboard.currency'),
       icon: Wallet,
       color: 'bg-success',
@@ -150,8 +153,8 @@ export default function AgencyDashboard() {
       trendUp: true,
     },
     {
-      label: t('dashboard.pendingEscrow'),
-      value: formatCurrency(stats.wallet.pendingBalance || 0),
+      label: t('dashboard.paymentsPending'),
+      value: formatCurrency(Number(stats.payments.pendingVerificationAmount || 0)),
       currency: t('dashboard.currency'),
       icon: Clock,
       color: 'bg-warning',
@@ -233,7 +236,7 @@ export default function AgencyDashboard() {
             href="/dashboard/wallet"
             className="inline-flex items-center justify-center rounded-xl font-black h-12 px-8 bg-primary text-primary-foreground hover:bg-primary/90"
           >
-            {t('dashboard.requestPayout')}
+            {t('dashboard.viewPayments')}
           </Link>
         </div>
       </div>

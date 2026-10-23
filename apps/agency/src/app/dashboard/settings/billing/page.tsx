@@ -32,9 +32,9 @@ import { apiClient } from '@/lib/api-client';
 type AgencyStatsResponse = {
   revenue?: number;
   totalBookings?: number;
-  wallet?: {
-    availableBalance?: number;
-    pendingBalance?: number;
+  payments?: {
+    totalReceived?: string;
+    pendingVerificationAmount?: string;
     currency?: string;
   };
 };
@@ -383,7 +383,7 @@ export default function BillingSettingsPage() {
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('settings.billing.available')}</span>
             </div>
             <p className="text-3xl font-black text-foreground">
-              {formatCurrency(Number(statsData?.wallet?.availableBalance || 0), statsData?.wallet?.currency, i18n.language)}
+              {formatCurrency(Number(statsData?.payments?.totalReceived || 0), statsData?.payments?.currency, i18n.language)}
             </p>
             <p className="text-sm text-muted-foreground">{t('settings.billing.availableHint')}</p>
           </CardContent>
@@ -396,7 +396,7 @@ export default function BillingSettingsPage() {
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('settings.billing.pending')}</span>
             </div>
             <p className="text-3xl font-black text-foreground">
-              {formatCurrency(Number(statsData?.wallet?.pendingBalance || 0), statsData?.wallet?.currency, i18n.language)}
+              {formatCurrency(Number(statsData?.payments?.pendingVerificationAmount || 0), statsData?.payments?.currency, i18n.language)}
             </p>
             <p className="text-sm text-muted-foreground">{t('settings.billing.pendingHint')}</p>
           </CardContent>
@@ -409,7 +409,7 @@ export default function BillingSettingsPage() {
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('settings.billing.revenue')}</span>
             </div>
             <p className="text-3xl font-black text-foreground">
-              {formatCurrency(Number(statsData?.revenue || 0), statsData?.wallet?.currency, i18n.language)}
+              {formatCurrency(Number(statsData?.revenue || 0), statsData?.payments?.currency, i18n.language)}
             </p>
             <p className="text-sm text-muted-foreground">{t('settings.billing.revenueHint', { count: statsData?.totalBookings || 0 })}</p>
           </CardContent>

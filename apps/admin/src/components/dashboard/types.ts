@@ -1,11 +1,10 @@
 import type {
   BookingDetails,
-  PayoutDetails,
   TripStatusType,
   VerificationStatusType,
 } from '@ouiboo/types';
 
-export type AdminTab = 'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'PAYMENT_PROOFS' | 'PAYOUTS' | 'AUDIT' | 'INVOICES';
+export type AdminTab = 'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'PAYMENT_PROOFS' | 'AUDIT' | 'INVOICES';
 
 export type AdminInvoiceLineItem = {
   id: string;
@@ -81,8 +80,6 @@ export type AdminPaymentProof = {
   booking?: AdminBooking | null;
 };
 
-export type AdminPayoutRequest = PayoutDetails;
-
 export type BankDetailsMap = Record<string, unknown>;
 
 export type AdminAuditLog = {
@@ -103,7 +100,6 @@ export type AdminOverviewCounts = {
   bookings: number;
   bookingsToday: number;
   pendingPaymentProofs: number;
-  pendingPayouts: number;
   auditLogs: number;
 };
 

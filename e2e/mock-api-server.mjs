@@ -200,17 +200,54 @@ const server = createServer((req, res) => {
     return json(req, res, 200, {
       revenue: 12000,
       totalBookings: 14,
-      wallet: { availableBalance: 4500, pendingBalance: 900 },
+      activeTrips: 3,
+      totalCustomers: 9,
+      payments: {
+        currency: 'MAD',
+        totalReceived: '1800.00',
+        totalRefunded: '0.00',
+        pendingVerificationCount: 0,
+        pendingVerificationAmount: '0.00',
+      },
     });
   }
-  if (path === '/agency/payouts' && method === 'GET') {
-    return json(req, res, 200, { data: [], pagination: { total: 0, page: 1, limit: 10, totalPages: 0 } });
+  if (path === '/agency/payments/overview' && method === 'GET') {
+    return json(req, res, 200, {
+      currency: 'MAD',
+      totalReceived: '1800.00',
+      totalRefunded: '0.00',
+      pendingVerificationCount: 0,
+      pendingVerificationAmount: '0.00',
+    });
   }
-  if (path === '/agency/payouts' && method === 'POST') {
-    return json(req, res, 201, { id: 'payout-1', status: 'PENDING' });
-  }
-  if (path === '/agency/wallet' && method === 'GET') {
-    return json(req, res, 200, { data: { balance: 4500, currency: 'MAD', payouts: [] } });
+  if (path === '/agency/payments' && method === 'GET') {
+    return json(req, res, 200, {
+      data: [
+        {
+          id: 'ext-payment-1',
+          bookingId: 'booking-1',
+          amount: '1800.00',
+          currency: 'MAD',
+          method: 'MANUAL',
+          provider: null,
+          status: 'VERIFIED',
+          custodian: 'AGENCY',
+          verifiedAt: '2026-04-22T10:00:00.000Z',
+          createdAt: '2026-04-22T10:00:00.000Z',
+          updatedAt: '2026-04-22T10:00:00.000Z',
+          booking: {
+            id: 'booking-1',
+            guestsCount: 1,
+            traveler: { name: 'Launch Traveler', email: 'traveler@example.com' },
+            session: {
+              startDate: '2026-05-10T00:00:00.000Z',
+              template: { title: 'Atlas Weekend Escape' },
+            },
+          },
+        },
+      ],
+      pagination: { total: 1, page: 1, limit: 10, totalPages: 1 },
+    });
   }
   if (path === '/agency/bookings' && method === 'GET') {
     return json(req, res, 200, [
@@ -275,27 +312,8 @@ const server = createServer((req, res) => {
   if (path === '/admin/pending-payments' && method === 'GET') {
     return json(req, res, 200, { data: [], pagination: { total: 0, page: 1, limit: 25, totalPages: 0 } });
   }
-  if (path === '/admin/payout-requests' && method === 'GET') {
-    return json(req, res, 200, {
-      data: [
-        {
-          id: 'payout-1',
-          amount: 900,
-          status: 'PENDING',
-          requestedAt: '2026-04-22T10:00:00.000Z',
-          processedAt: null,
-          bankDetails: '{"rib":"1234567890"}',
-          agency: { id: 'agency-1', companyName: 'Atlas Agency', user: { email: 'agency@example.com' } },
-        },
-      ],
-      pagination: { total: 1, page: 1, limit: 25, totalPages: 1 },
-    });
-  }
   if (path === '/admin/bookings/booking-1/refund' && method === 'POST') {
     return json(req, res, 201, { status: 'REFUNDED' });
-  }
-  if (path === '/admin/payouts/payout-1/process' && method === 'POST') {
-    return json(req, res, 201, { id: 'payout-1', status: 'PAID' });
   }
   if (path === '/admin/audit-logs' && method === 'GET') {
     return json(req, res, 200, {
