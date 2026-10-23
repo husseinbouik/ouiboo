@@ -207,6 +207,39 @@ describe('TripsService', () => {
         });
     });
 
+    describe('findOneTemplate agency bankDetails (#380)', () => {
+        it('selects agency.bankDetails and returns it in the trip detail', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                agency: {
+                    id: 'agency-123',
+                    companyName: 'Atlas Adventures SARL',
+                    logo: null,
+                    verificationStatus: 'VERIFIED',
+                    bankDetails: 'CIH Bank — RIB 230 780 0000000000000001 67',
+                },
+            });
+
+            const result = await service.findOneTemplate('trip-123');
+
+            expect(db.tripTemplate.findFirst).toHaveBeenCalled();
+            const args = db.tripTemplate.findFirst.mock.calls[0][0];
+            // Checkout computes hasBankDetails from trip.agency.bankDetails and
+            // blocks every booking when it is missing; if it is dropped from
+            // the select again, checkout is permanently blocked (#380).
+            expect(args.select.agency.select.bankDetails).toBe(true);
+            expect((result as any).agency.bankDetails).toBe(
+                'CIH Bank — RIB 230 780 0000000000000001 67',
+            );
+        });
+
+        it('throws NotFoundException when the template does not exist', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue(null);
+
+            await expect(service.findOneTemplate('trip-999')).rejects.toThrow(NotFoundException);
+        });
+    });
+
     describe('findAllTemplates public catalog gate (#317)', () => {
         it('restricts the public catalog to VERIFIED agencies and selects agency.verificationStatus', async () => {
             db.tripTemplate.findMany.mockResolvedValue([]);

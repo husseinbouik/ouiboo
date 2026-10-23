@@ -279,6 +279,11 @@ export class TripsService {
                         companyName: true,
                         logo: true,
                         verificationStatus: true,
+                        // #380: checkout renders the agency's official bank
+                        // instructions from this field and blocks booking when
+                        // it is empty; without it in the select, checkout read
+                        // undefined and refused every booking.
+                        bankDetails: true,
                     },
                 },
                 itinerary: {
