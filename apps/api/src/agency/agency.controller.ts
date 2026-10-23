@@ -259,8 +259,11 @@ export class AgencyController {
         const agencyId = req.tenantId;
         const take = clampListLimit(limit);
         const skip = (parsePage(page) - 1) * take;
+        // #393: rating aggregates and lists count VISIBLE reviews only;
+        // HIDDEN / REMOVED reviews are excluded everywhere.
         const where = {
-            tripTemplate: { agencyId }
+            tripTemplate: { agencyId },
+            status: 'VISIBLE' as const
         };
 
         const [reviews, aggregate, pendingResponses] = await Promise.all([
@@ -333,8 +336,10 @@ export class AgencyController {
     @ApiOperation({ summary: 'Get agency review statistics' })
     async getReviewStats(@Request() req) {
         const agencyId = req.tenantId;
+        // #393: VISIBLE reviews only (see getReviews above).
         const where = {
-            tripTemplate: { agencyId }
+            tripTemplate: { agencyId },
+            status: 'VISIBLE' as const
         };
         const [aggregate, pendingResponses] = await Promise.all([
             this.prisma.review.aggregate({
