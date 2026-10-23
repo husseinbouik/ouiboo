@@ -13,7 +13,7 @@ test.describe('agency launch flow', () => {
     await page.goto('/dashboard/wallet', { waitUntil: 'domcontentloaded' });
 
     await expect(page.getByRole('heading', { name: /^payments$/i })).toBeVisible();
-    await expect(page.getByText(/received by your merchant account/i)).toBeVisible();
+    await expect(page.getByText('Received by your merchant account', { exact: true })).toBeVisible();
     await expect(page.getByText(/payment received/i)).toBeVisible();
     // #368: traveller money is paid directly to the agency — there is no
     // OuiBoo balance and no payout request UI anymore.
