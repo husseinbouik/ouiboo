@@ -12,6 +12,12 @@ const START = new Date('2027-03-10T09:00:00.000Z');
 const DEADLINE = new Date('2027-03-01T09:00:00.000Z');
 const NOW = new Date('2027-02-01T09:00:00.000Z');
 
+function makeRefunds() {
+    return {
+        createRefundDueCaseInTransaction: jest.fn(async () => ({ id: 'refund-case-1' })),
+    };
+}
+
 function makeExternalPayments() {
     return {
         recordPaymentVerifiedInTransaction: jest.fn(async () => ({})),
@@ -179,7 +185,7 @@ describe('resolveStagedSessionConfig (#369)', () => {
 describe('StagedPaymentsService (#369)', () => {
     it('creates a plan with the deposit/balance split snapshotted from the session', async () => {
         const external = makeExternalPayments();
-        const service = new StagedPaymentsService({} as any, external as any);
+        const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
         const tx = makeTx();
 
         const plan = await service.createPlanInTransaction(tx, {
@@ -201,7 +207,7 @@ describe('StagedPaymentsService (#369)', () => {
 
     it('approving a deposit records only the deposit amount and waits for the minimum', async () => {
         const external = makeExternalPayments();
-        const service = new StagedPaymentsService({} as any, external as any);
+        const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
         const tx = makeTx({
             countedPlans: [{ booking: { id: 'booking-1', guestsCount: 2, status: 'PENDING_MINIMUM' } }],
             planAfter: makePlan({ status: 'DEPOSIT_PAID' }),
@@ -237,7 +243,7 @@ describe('StagedPaymentsService (#369)', () => {
 
     it('reaching the minimum confirms the group and makes the balance due', async () => {
         const external = makeExternalPayments();
-        const service = new StagedPaymentsService({} as any, external as any);
+        const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
         const tx = makeTx({
             countedPlans: [
                 { booking: { id: 'booking-1', guestsCount: 2, status: 'PENDING_MINIMUM' } },
@@ -275,7 +281,7 @@ describe('StagedPaymentsService (#369)', () => {
 
     it('approving the balance fully pays the booking', async () => {
         const external = makeExternalPayments();
-        const service = new StagedPaymentsService({} as any, external as any);
+        const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
         const tx = makeTx();
 
         const result = await service.applyProofDecisionInTransaction(tx, {
@@ -299,7 +305,7 @@ describe('StagedPaymentsService (#369)', () => {
 
     it('rejects a payment decision when the plan is not awaiting one (no balance before confirmation)', async () => {
         const external = makeExternalPayments();
-        const service = new StagedPaymentsService({} as any, external as any);
+        const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
         const tx = makeTx();
 
         await expect(service.applyProofDecisionInTransaction(tx, {
@@ -314,7 +320,7 @@ describe('StagedPaymentsService (#369)', () => {
 
     it('rejecting a deposit proof fails the booking and keeps the plan at DEPOSIT_DUE', async () => {
         const external = makeExternalPayments();
-        const service = new StagedPaymentsService({} as any, external as any);
+        const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
         const tx = makeTx();
 
         const result = await service.applyProofDecisionInTransaction(tx, {
@@ -332,7 +338,7 @@ describe('StagedPaymentsService (#369)', () => {
 
     it('rejecting a balance proof keeps the booking confirmed with the deposit paid', async () => {
         const external = makeExternalPayments();
-        const service = new StagedPaymentsService({} as any, external as any);
+        const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
         const tx = makeTx();
 
         const result = await service.applyProofDecisionInTransaction(tx, {
@@ -353,7 +359,7 @@ describe('StagedPaymentsService (#369)', () => {
 
     it('a deposit approved after the group failed becomes refund-due immediately', async () => {
         const external = makeExternalPayments();
-        const service = new StagedPaymentsService({} as any, external as any);
+        const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
         const tx = makeTx({ session: makeSession({ groupStatus: 'NOT_CONFIRMED' }) });
 
         const result = await service.applyProofDecisionInTransaction(tx, {
@@ -394,7 +400,7 @@ describe('StagedPaymentsService (#369)', () => {
             tripSession: { findMany: jest.fn(async () => [{ id: 'session-1' }]) },
             $transaction: jest.fn(async (fn: any) => fn(tx)),
         };
-        const service = new StagedPaymentsService(db, external as any);
+        const service = new StagedPaymentsService(db, external as any, makeRefunds() as any);
 
         const summary = await service.evaluateConfirmationDeadlines(new Date('2027-02-01T09:00:00.000Z'));
 
@@ -427,7 +433,7 @@ describe('StagedPaymentsService (#369)', () => {
             tripSession: { findMany: jest.fn(async () => []) },
             $transaction: jest.fn(),
         };
-        const service = new StagedPaymentsService(db, external as any);
+        const service = new StagedPaymentsService(db, external as any, makeRefunds() as any);
 
         const summary = await service.evaluateConfirmationDeadlines();
         expect(summary).toEqual({ evaluated: 0, confirmed: 0, notConfirmed: 0 });

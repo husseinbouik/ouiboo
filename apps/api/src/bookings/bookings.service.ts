@@ -62,6 +62,12 @@ export class BookingsService {
         if (agency.verificationStatus !== 'VERIFIED' || !subscriptionValid) {
             throw new BadRequestException('This agency is not currently accepting bookings');
         }
+        // #370: refund enforcement ladder (plan §16, level 2) — an agency
+        // with an overdue refund is restricted from NEW bookings until the
+        // refund is resolved. Existing bookings are never affected.
+        if (agency.newBookingsRestrictedAt) {
+            throw new BadRequestException('This agency is temporarily unable to accept new bookings');
+        }
         if (dto.paymentMethod === PaymentMethodEnum.WALLET) {
             throw new BadRequestException('This payment method is not available');
         }

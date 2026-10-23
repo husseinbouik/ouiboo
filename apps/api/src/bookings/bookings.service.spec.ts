@@ -149,6 +149,25 @@ describe('BookingsService', () => {
             expect(db.$transaction).not.toHaveBeenCalled();
         });
 
+        it('rejects new bookings for an agency restricted by an overdue refund (#370)', async () => {
+            db.tripSession.findUnique.mockResolvedValue({
+                ...availableSession,
+                template: {
+                    ...availableSession.template,
+                    agency: {
+                        ...availableSession.template.agency,
+                        newBookingsRestrictedAt: new Date(),
+                        newBookingsRestrictionReason: 'OVERDUE_REFUND',
+                    },
+                },
+            });
+
+            await expect(service.create('user-123', createDto)).rejects.toThrow(
+                'This agency is temporarily unable to accept new bookings',
+            );
+            expect(db.$transaction).not.toHaveBeenCalled();
+        });
+
         it('checks for duplicate bookings after acquiring the session row', async () => {
             db.tripSession.findUnique.mockResolvedValue(availableSession);
             db.tripSession.updateMany.mockResolvedValue({ count: 1 });

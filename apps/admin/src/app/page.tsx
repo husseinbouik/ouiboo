@@ -15,6 +15,7 @@ import {
   FileText,
   LayoutDashboard,
   Receipt,
+  RotateCcw,
 } from 'lucide-react';
 import { ConfirmDialog } from '@ouiboo/ui';
 import { useAuth } from '@/components/AuthContext';
@@ -37,6 +38,7 @@ import type {
   AdminPaymentProof,
   AdminAuditLog,
   AdminInvoice,
+  AdminRefundCase,
   AdminOverviewCounts,
   ApiErrorResponse,
   FeedbackState,
@@ -51,6 +53,7 @@ import BookingsTab from '@/components/dashboard/BookingsTab';
 import PaymentProofsTab from '@/components/dashboard/PaymentProofsTab';
 import AuditTab from '@/components/dashboard/AuditTab';
 import InvoicesTab from '@/components/dashboard/InvoicesTab';
+import RefundsTab from '@/components/dashboard/RefundsTab';
 import AgencyReviewModal from '@/components/dashboard/AgencyReviewModal';
 
 export default function AdminDashboard() {
@@ -148,6 +151,10 @@ export default function AdminDashboard() {
   const invoicesList = useAdminListQuery<AdminInvoice>('/admin/invoices', 'invoices', activeTab === 'INVOICES', activeTab, debouncedQuery, currentPage);
   const invoices = invoicesList.data;
   const invoicesPagination = invoicesList.pagination;
+
+  const refundCasesList = useAdminListQuery<AdminRefundCase>('/admin/refunds', 'refunds', activeTab === 'REFUNDS', activeTab, debouncedQuery, currentPage);
+  const refundCases = refundCasesList.data;
+  const refundCasesPagination = refundCasesList.pagination;
 
   const verifyAgencyMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string, status: VerificationStatusType }) => {
@@ -452,6 +459,11 @@ export default function AdminDashboard() {
       title: t('dashboard.meta.invoices.title'),
       description: t('dashboard.meta.invoices.description'),
       searchPlaceholder: t('dashboard.meta.invoices.searchPlaceholder')
+    },
+    REFUNDS: {
+      title: t('dashboard.meta.refunds.title'),
+      description: t('dashboard.meta.refunds.description'),
+      searchPlaceholder: t('dashboard.meta.refunds.searchPlaceholder')
     }
   } as const;
 
@@ -493,6 +505,12 @@ export default function AdminDashboard() {
       label: t('dashboard.tabs.invoices'),
       icon: Receipt,
       count: invoicesPagination?.total ?? invoices.length,
+    },
+    {
+      key: 'REFUNDS',
+      label: t('dashboard.tabs.refunds'),
+      icon: RotateCcw,
+      count: refundCasesPagination?.total ?? refundCases.length,
     },
   ] as const;
 
@@ -605,6 +623,16 @@ export default function AdminDashboard() {
             t={t}
             invoices={invoices}
             pagination={invoicesPagination}
+            onPageChange={setCurrentPage}
+            paginationLabels={paginationLabels}
+          />
+        )}
+
+        {activeTab === 'REFUNDS' && (
+          <RefundsTab
+            t={t}
+            cases={refundCases}
+            pagination={refundCasesPagination}
             onPageChange={setCurrentPage}
             paginationLabels={paginationLabels}
           />

@@ -4,7 +4,30 @@ import type {
   VerificationStatusType,
 } from '@ouiboo/types';
 
-export type AdminTab = 'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'PAYMENT_PROOFS' | 'AUDIT' | 'INVOICES';
+export type AdminTab = 'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'PAYMENT_PROOFS' | 'AUDIT' | 'INVOICES' | 'REFUNDS';
+
+export type AdminRefundCase = {
+  id: string;
+  bookingId: string;
+  travelerId: string;
+  agencyId: string;
+  status: string;
+  reason: string;
+  requestedAmount: string;
+  approvedAmount: string | null;
+  currency: string;
+  requestedAt: string;
+  refundDueAt: string | null;
+  initiatedAt: string | null;
+  completedAt: string | null;
+  failureReason: string | null;
+  agency?: { id: string; companyName: string } | null;
+  traveler?: { id: string; name: string | null; email: string } | null;
+  booking?: {
+    id: string;
+    session?: { template?: { title?: string | null } | null } | null;
+  } | null;
+};
 
 export type AdminInvoiceLineItem = {
   id: string;

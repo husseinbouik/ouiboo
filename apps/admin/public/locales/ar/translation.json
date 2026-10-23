@@ -48,7 +48,8 @@
       "bookings": "حجوزات النظام",
       "paymentProofs": "إثباتات الدفع",
       "audit": "سجل التدقيق",
-      "invoices": "الفواتير"
+      "invoices": "الفواتير",
+      "refunds": "المبالغ المستردة"
     },
     "meta": {
       "pending": {
@@ -80,6 +81,11 @@
         "title": "فواتير رسوم خدمة المنصة",
         "description": "راجع فواتير رسوم خدمة المنصة الصادرة وأنشئ الفاتورة الشهرية لكل وكالة.",
         "searchPlaceholder": "ابحث في الفواتير برقم الفاتورة أو الوكالة..."
+      },
+      "refunds": {
+        "searchPlaceholder": "ابحث في حالات الاسترداد...",
+        "description": "تتبع حالات استرداد المسافرين عبر الوكالات. تُدفع المبالغ المستردة من قبل الوكالات من حسابات التاجر الخاصة بها — الحالات المتأخرة تقيد الحجوزات الجديدة لتلك الوكالة.",
+        "title": "حالات الاسترداد"
       }
     },
     "sections": {
@@ -273,7 +279,40 @@
     "modal": {
       "agencyReview": "مراجعة الوكالة"
     },
-    "signOut": "تسجيل الخروج"
+    "signOut": "تسجيل الخروج",
+    "refunds": {
+      "emptyHint": "تظهر حالات الاسترداد هنا عندما لا يتم تأكيد رحلة، أو يطلب مسافر استردادًا، أو تلغي وكالة.",
+      "actions": {
+        "review": "بدء المراجعة",
+        "complete": "تحديد كمكتمل",
+        "initiate": "تحديد كمُرسل",
+        "fail": "تحديد كفاشل",
+        "approve": "موافقة",
+        "reject": "رفض"
+      },
+      "status": {
+        "REFUND_APPROVED": "تمت الموافقة",
+        "AGENCY_ACTION_REQUIRED": "يتطلب إجراء الوكالة",
+        "ELIGIBILITY_REVIEW": "قيد المراجعة",
+        "REFUND_INITIATED": "تم البدء",
+        "REFUND_REJECTED": "مرفوض",
+        "REFUND_REQUESTED": "تم الطلب",
+        "REFUND_OVERDUE": "متأخر",
+        "REFUND_FAILED": "فشل",
+        "REFUND_COMPLETED": "اكتمل"
+      },
+      "reason": {
+        "GROUP_MINIMUM_NOT_REACHED": "لم يتم تأكيد الرحلة — لم يتحقق الحد الأدنى للمجموعة",
+        "TRAVELLER_CANCELLATION": "إلغاء من المسافر",
+        "ADMIN_INITIATED": "فتحته الإدارة",
+        "TRAVELLER_REQUEST": "طلب المسافر",
+        "AGENCY_CANCELLATION": "إلغاء من الوكالة"
+      },
+      "failureReason": "الفشل",
+      "empty": "لا توجد حالات استرداد",
+      "dueBy": "يستحق قبل",
+      "requestedAt": "تم الطلب"
+    }
   },
   "meta": {
     "titleDefault": "إدارة المنصة",
