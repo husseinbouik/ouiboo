@@ -6,10 +6,8 @@ import { TenantGuard } from '../auth/guards/tenant.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@ouiboo/types';
 import { DatabaseService } from '../database/database.service';
-import { WalletsService } from '../wallets/wallets.service';
-import { RequestPayoutDto } from './dto/payout-request.dto';
+import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { mapBookingDetails } from '../bookings/booking-response.util';
-import { mapPayoutDetails } from './payout-response.util';
 import { toMoneyString } from '../common/money.util';
 import { UpdateAgencyProfileDto } from './dto/update-profile.dto';
 
@@ -33,7 +31,7 @@ const parsePage = (value?: string) => {
 export class AgencyController {
     constructor(
         private readonly prisma: DatabaseService,
-        private readonly walletsService: WalletsService,
+        private readonly externalPaymentsService: ExternalPaymentsService,
     ) { }
 
     @Post('subscription/cancel')
@@ -83,7 +81,7 @@ export class AgencyController {
     async getStats(@Request() req) {
         const agencyId = req.tenantId;
 
-        const [tripsCount, bookings, wallet] = await Promise.all([
+        const [tripsCount, bookings, payments] = await Promise.all([
             this.prisma.tripTemplate.count({
                 where: { agencyId, status: 'ACTIVE' },
             }),
@@ -95,9 +93,7 @@ export class AgencyController {
                     },
                 },
             }),
-            this.prisma.wallet.findUnique({
-                where: { agencyId }
-            })
+            this.externalPaymentsService.getAgencyPaymentsOverview(agencyId),
         ]);
 
         const [bookingCount, revenueAggregate] = await Promise.all([
@@ -120,13 +116,9 @@ export class AgencyController {
             activeTrips: tripsCount,
             totalBookings: bookingCount,
             totalCustomers: bookings.length,
-            wallet: wallet
-                ? {
-                    ...wallet,
-                    availableBalance: toMoneyString(wallet.availableBalance) || '0.00',
-                    pendingBalance: toMoneyString(wallet.pendingBalance) || '0.00',
-                }
-                : { availableBalance: '0.00', pendingBalance: '0.00' }
+            // #368: payment facts about money held by the agency / its PSP.
+            // There is no OuiBoo balance for traveller money anymore.
+            payments,
         };
     }
 
@@ -244,45 +236,22 @@ export class AgencyController {
             },
         };
     }
-    @Get('payouts')
-    @ApiOperation({ summary: 'Get agency payout history' })
-    async getPayouts(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
-        const agencyId = req.tenantId;
-        const take = clampListLimit(limit, 20);
-        const currentPage = parsePage(page);
-        const skip = (currentPage - 1) * take;
-
-        const [payouts, total] = await Promise.all([
-            this.prisma.payoutRequest.findMany({
-                where: { agencyId },
-                include: {
-                    agency: {
-                        include: {
-                            user: {
-                                select: {
-                                    email: true,
-                                },
-                            },
-                        },
-                    },
-                },
-                orderBy: { requestedAt: 'desc' },
-                skip,
-                take,
-            }),
-            this.prisma.payoutRequest.count({ where: { agencyId } }),
-        ]);
-
-        return {
-            data: payouts.map(mapPayoutDetails),
-            pagination: {
-                total,
-                page: currentPage,
-                limit: take,
-                totalPages: Math.ceil(total / take),
-            },
-        };
+    @Get('payments/overview')
+    @ApiOperation({ summary: 'Get agency payments overview (external payment facts, no OuiBoo balance)' })
+    async getPaymentsOverview(@Request() req) {
+        return this.externalPaymentsService.getAgencyPaymentsOverview(req.tenantId);
     }
+
+    @Get('payments')
+    @ApiOperation({ summary: 'List agency external payments (traveller payments held by the agency / its PSP)' })
+    async getPayments(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
+        return this.externalPaymentsService.listAgencyPayments(
+            req.tenantId,
+            parsePage(page),
+            clampListLimit(limit, 20),
+        );
+    }
+
     @Get('reviews')
     @ApiOperation({ summary: 'Get agency reviews' })
     async getReviews(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
@@ -389,12 +358,6 @@ export class AgencyController {
             responseRate
         };
     }
-    @Post('payouts')
-    @ApiOperation({ summary: 'Request a payout' })
-    async requestPayout(@Request() req, @Body() dto: RequestPayoutDto) {
-        return this.walletsService.requestPayout(req.tenantId, dto.amount, dto.bankDetails);
-    }
-
     @Patch('profile') // Use Patch/Put, no ID param needed as we use req.user
     @ApiOperation({ summary: 'Update agency profile' })
     async updateProfile(@Request() req, @Body() data: UpdateAgencyProfileDto) {

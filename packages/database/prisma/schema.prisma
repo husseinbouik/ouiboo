@@ -112,6 +112,38 @@ enum PaymentTransactionStatus {
   PENDING
 }
 
+// #368: Phase 1 payment-status model. Traveller money is held by the agency
+// or by the agency's payment provider — never by OuiBoo — so there is
+// deliberately no OUIBOO custodian value in this enum.
+enum PaymentCustodian {
+  AGENCY
+  AGENCY_PSP
+}
+
+enum ExternalPaymentStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentLedgerEntryType {
+  PAYMENT_VERIFIED
+  PAYMENT_CAPTURED
+  PAYMENT_REJECTED
+  PAYMENT_FAILED
+  REFUND_INITIATED
+  REFUND_COMPLETED
+}
+
+enum PaymentLedgerSource {
+  MANUAL_PROOF_REVIEW
+  ADMIN_PROOF_REVIEW
+  GATEWAY_WEBHOOK
+  GATEWAY_REFUND
+}
+
 model User {
   id                      String                  @id @default(cuid())
   name                    String?
@@ -183,6 +215,7 @@ model AgencyProfile {
   cancelAtPeriodEnd           Boolean   @default(false)
   cancellationRequestedAt     DateTime?
   invoices                    Invoice[]
+  externalPayments            ExternalPayment[]
 }
 
 model TripTemplate {
@@ -299,6 +332,7 @@ model Booking {
   updatedAt                   DateTime             @updatedAt
   paymentTransactions         PaymentTransaction[]
   invoiceLineItems            InvoiceLineItem[]
+  externalPayment             ExternalPayment?
 
   @@index([travelerId])
   @@index([sessionId])
@@ -319,6 +353,61 @@ model PaymentProof {
   uploadedAt      DateTime           @default(now())
   rejectionReason String?
   status          VerificationStatus @default(PENDING)
+}
+
+// #368: A factual record of a traveller payment held OUTSIDE OuiBoo — by the
+// agency itself or by the agency's payment provider. This is evidence and
+// status only; it is never a balance that OuiBoo holds or that anyone can
+// withdraw from OuiBoo.
+model ExternalPayment {
+  id                String                @id @default(cuid())
+  bookingId         String                @unique
+  booking           Booking               @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  agencyId          String
+  agency            AgencyProfile         @relation(fields: [agencyId], references: [id])
+  travelerId        String
+  amount            Decimal               @db.Decimal(18, 2)
+  currency          String                @default("MAD")
+  method            PaymentMethod         @default(MANUAL)
+  provider          String?
+  externalReference String?
+  custodian         PaymentCustodian
+  status            ExternalPaymentStatus @default(PENDING_VERIFICATION)
+  verifiedAt        DateTime?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  ledgerEntries     PaymentStatusLedgerEntry[]
+
+  @@index([agencyId, status, createdAt])
+  @@index([travelerId])
+}
+
+// #368: Append-only log of external payment events. Amounts describe money
+// held by the custodian (the agency or its payment provider), never money
+// held by OuiBoo.
+model PaymentStatusLedgerEntry {
+  id                    String                 @id @default(cuid())
+  externalPaymentId     String
+  externalPayment       ExternalPayment        @relation(fields: [externalPaymentId], references: [id], onDelete: Cascade)
+  bookingId             String
+  agencyId              String
+  travelerId            String
+  type                  PaymentLedgerEntryType
+  amount                Decimal                @db.Decimal(18, 2)
+  currency              String                 @default("MAD")
+  custodian             PaymentCustodian
+  provider              String?
+  externalTransactionId String?
+  status                ExternalPaymentStatus
+  source                PaymentLedgerSource
+  idempotencyKey        String?                @unique
+  correlationId         String?
+  occurredAt            DateTime               @default(now())
+  createdAt             DateTime               @default(now())
+
+  @@index([bookingId, createdAt])
+  @@index([agencyId, createdAt])
+  @@index([externalPaymentId, createdAt])
 }
 
 model Wallet {
