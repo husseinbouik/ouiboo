@@ -458,13 +458,13 @@ export class BookingsService {
             throw new BadRequestException('No payment proof uploaded');
         }
 
-        if (await this.uploadService.isLocal()) {
-            const filePath = await this.uploadService.getFilePath(booking.paymentProof.imageUrl);
-            return { kind: 'local' as const, filePath };
-        }
-
+        // #390: never resolve a filesystem path for the controller to hand to
+        // res.sendFile. Both storage backends serve the proof as bytes through
+        // UploadService.readFile, which resolves the stored (server-generated)
+        // key through the provider's canonicalized, containment-checked path
+        // handling.
         const { data, contentType } = await this.uploadService.readFile(booking.paymentProof.imageUrl);
-        return { kind: 'remote' as const, buffer: data, contentType };
+        return { buffer: data, contentType };
     }
 
     isLocal() {

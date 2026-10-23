@@ -252,19 +252,25 @@ describe('BookingsService', () => {
 
             const result = await service.getPaymentProofFile('booking-123', 'user-123', 'TRAVELER');
 
-            expect(result).toEqual({ kind: 'remote', buffer: Buffer.from([1, 2, 3]), contentType: 'image/png' });
+            expect(result).toEqual({ buffer: Buffer.from([1, 2, 3]), contentType: 'image/png' });
             expect(uploadService.readFile).toHaveBeenCalledWith('private/payment-proofs/booking-123/proof.png');
             expect(uploadService.getFilePath).not.toHaveBeenCalled();
         });
 
-        it('keeps serving local private files by path', async () => {
+        it('serves local private files as bytes without exposing a filesystem path (#390)', async () => {
             uploadService.isLocal.mockResolvedValue(true);
-            uploadService.getFilePath.mockResolvedValue('/app/private-uploads/payment-proofs/booking-123/proof.png');
+            uploadService.readFile.mockResolvedValue({
+                data: Buffer.from([4, 5, 6]),
+                contentType: 'image/png',
+            });
 
             const result = await service.getPaymentProofFile('booking-123', 'user-123', 'TRAVELER');
 
-            expect(result).toEqual({ kind: 'local', filePath: '/app/private-uploads/payment-proofs/booking-123/proof.png' });
-            expect(uploadService.readFile).not.toHaveBeenCalled();
+            expect(result).toEqual({ buffer: Buffer.from([4, 5, 6]), contentType: 'image/png' });
+            expect(uploadService.readFile).toHaveBeenCalledWith('private/payment-proofs/booking-123/proof.png');
+            // No filesystem path may leak to the controller for res.sendFile.
+            expect(uploadService.getFilePath).not.toHaveBeenCalled();
+            expect(result).not.toHaveProperty('filePath');
         });
 
         it('rejects a user who is not owner, agency, or admin', async () => {

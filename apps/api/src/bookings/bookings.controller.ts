@@ -108,13 +108,9 @@ export class BookingsController {
     ) {
         const result = await this.bookingsService.getPaymentProofFile(id, req.user.userId, req.user?.role);
 
-        if (result.kind === 'remote') {
-            res.setHeader('Content-Type', result.contentType);
-            res.setHeader('Content-Disposition', 'inline');
-            return res.send(result.buffer);
-        }
-
-        return res.sendFile(result.filePath);
+        res.setHeader('Content-Type', result.contentType);
+        res.setHeader('Content-Disposition', 'inline');
+        return res.send(result.buffer);
     }
 
     @Patch(':id/cancel')
