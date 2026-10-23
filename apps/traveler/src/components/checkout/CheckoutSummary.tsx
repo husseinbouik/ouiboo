@@ -6,6 +6,7 @@ import { Card, CardContent, Button, Badge } from '@ouiboo/ui';
 import { MapPin, Calendar, Users, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '@ouiboo/utils';
 import type { CheckoutTrip } from './checkout-types';
+import SellerIdentity from '../SellerIdentity';
 
 type CheckoutSummaryProps = {
   trip: CheckoutTrip;
@@ -47,6 +48,8 @@ export function CheckoutSummary({
             <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
               <MapPin className="h-3 w-3 text-sunset-orange" /> {trip.startLocation}
             </div>
+            {/* #371: seller of record + verified travel licence */}
+            <SellerIdentity agency={trip.agency} className="pt-1 normal-case tracking-normal" />
           </div>
         </div>
 

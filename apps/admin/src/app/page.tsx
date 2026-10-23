@@ -21,9 +21,11 @@ import { useAuth } from '@/components/AuthContext';
 import { toPaginatedList } from '@ouiboo/utils';
 import {
   BookingPaymentStatus,
+  LicenceStatus,
   PaymentMethod,
   TripStatus,
   VerificationStatus,
+  type LicenceStatusType,
   type VerificationStatusType,
 } from '@ouiboo/types';
 import { useTranslation } from 'react-i18next';
@@ -166,6 +168,29 @@ export default function AdminDashboard() {
       setAgencyFeedback({
         type: 'error',
         message: getErrorMessage(error, t('dashboard.feedback.agencyUpdateError'))
+      });
+    }
+  });
+
+  // #371: travel licence verification (Law 11-16) — separate from identity.
+  const verifyLicenceMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string, status: LicenceStatusType }) => {
+      return apiClient.post(`/admin/agencies/${id}/licence/verify`, { status });
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
+      queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
+      setAgencyFeedback({
+        type: 'success',
+        message: variables.status === LicenceStatus.Verified
+          ? t('dashboard.feedback.licenceVerified')
+          : t('dashboard.feedback.licenceRejected')
+      });
+    },
+    onError: (error: AxiosError<ApiErrorResponse>) => {
+      setAgencyFeedback({
+        type: 'error',
+        message: getErrorMessage(error, t('dashboard.feedback.licenceUpdateError'))
       });
     }
   });
@@ -609,8 +634,10 @@ export default function AdminDashboard() {
           agency={selectedAgency}
           agencyFeedback={agencyFeedback}
           isVerifying={verifyAgencyMutation.isPending}
+          isVerifyingLicence={verifyLicenceMutation.isPending}
           onClose={() => setSelectedAgency(null)}
           onVerify={(id, status) => verifyAgencyMutation.mutate({ id, status })}
+          onVerifyLicence={(id, status) => verifyLicenceMutation.mutate({ id, status })}
         />
       )}
     </>

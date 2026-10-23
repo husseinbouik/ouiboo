@@ -25,6 +25,18 @@ interface User {
         subscriptionTermsVersion?: string;
         cancelAtPeriodEnd?: boolean;
         cancellationRequestedAt?: string;
+        // #371: legal identity + Law 11-16 travel licence
+        legalName?: string;
+        rc?: string;
+        taxId?: string;
+        legalRepresentative?: string;
+        businessAddress?: string;
+        travelLicenceType?: string;
+        travelLicenceNumber?: string;
+        travelLicenceStatus?: string;
+        licenceVerifiedAt?: string;
+        licenceExpiry?: string;
+        licenceRejectionReason?: string;
     };
 }
 

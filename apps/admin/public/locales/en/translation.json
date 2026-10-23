@@ -121,7 +121,9 @@
       "rejectPayout": "Reject payout",
       "approveAgency": "Approve agency",
       "rejectAgency": "Reject agency",
-      "refund": "Refund"
+      "refund": "Refund",
+      "verifyLicence": "Verify licence",
+      "rejectLicence": "Reject licence"
     },
     "labels": {
       "ice": "ICE",
@@ -145,7 +147,15 @@
       "system": "System",
       "noActorId": "No actor id",
       "noTargetId": "No target id",
-      "agencyLogo": "{{name}} logo"
+      "agencyLogo": "{{name}} logo",
+      "travelLicence": "Travel licence (Law 11-16)",
+      "legalName": "Legal name",
+      "legalRepresentative": "Legal representative",
+      "rc": "Trade register (RC)",
+      "taxId": "Tax ID (IF)",
+      "licenceExpiry": "Licence expiry",
+      "licenceVerifiedAt": "Licence verified on",
+      "licenceRejectionReason": "Rejection reason"
     },
     "messages": {
       "noBankDetails": "No bank details on file.",
@@ -180,7 +190,10 @@
       "auditPruneError": "Unable to prune audit logs right now.",
       "auditExportSuccess": "Audit log export downloaded successfully.",
       "auditExportError": "Unable to export audit logs right now.",
-      "retentionDaysInvalid": "Retention days must be a positive number."
+      "retentionDaysInvalid": "Retention days must be a positive number.",
+      "licenceVerified": "Travel licence verified",
+      "licenceRejected": "Travel licence rejected",
+      "licenceUpdateError": "Could not update the travel licence"
     },
     "aria": {
       "mainNavigation": "Main navigation",
@@ -266,7 +279,12 @@
       "payoutApprovedLabel": "Approved",
       "payoutApprovedHelper": "Approved and waiting for payout processing",
       "payoutPendingLabel": "Pending",
-      "payoutPendingHelper": "Pending admin review"
+      "payoutPendingHelper": "Pending admin review",
+      "licenceNotSubmitted": "Licence not submitted",
+      "licencePendingReview": "Licence under review",
+      "licenceVerified": "Licence verified",
+      "licenceRejected": "Licence rejected",
+      "licenceExpired": "Licence expired"
     },
     "modal": {
       "agencyReview": "Agency Review"
