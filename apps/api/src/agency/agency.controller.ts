@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request, Patch, Body, Post, Query, Param, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request, Patch, Body, Post, Query, Param, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -10,6 +10,7 @@ import { ExternalPaymentsService } from '../external-payments/external-payments.
 import { mapBookingDetails } from '../bookings/booking-response.util';
 import { toMoneyString } from '../common/money.util';
 import { UpdateAgencyProfileDto } from './dto/update-profile.dto';
+import { getAgencyActivationBlock } from '../common/agency-licence.util';
 
 const clampListLimit = (value?: string, fallback = 50, max = 200) => {
     const parsed = Number(value);
@@ -363,12 +364,26 @@ export class AgencyController {
     async updateProfile(@Request() req, @Body() data: UpdateAgencyProfileDto) {
         const existing = await this.prisma.agencyProfile.findUnique({
             where: { id: req.tenantId },
-            select: { bankDetails: true, verificationStatus: true },
+            select: {
+                bankDetails: true,
+                verificationStatus: true,
+                travelLicenceStatus: true,
+                licenceExpiry: true,
+            },
         });
         if (!existing) throw new NotFoundException('Agency profile not found');
         const bankDetails = data.bankDetails?.trim();
         const bankDetailsChanged = data.bankDetails !== undefined
             && bankDetails !== (existing.bankDetails || '');
+
+        // #371: setting payment instructions is payment activation. It
+        // requires a verified identity AND a verified travel licence, so
+        // no agency can start receiving traveller payments by bypassing
+        // onboarding. Clearing the instructions (deactivation) stays open.
+        if (bankDetailsChanged && bankDetails) {
+            const block = getAgencyActivationBlock(existing);
+            if (block) throw new ForbiddenException(block);
+        }
 
         return this.prisma.agencyProfile.update({
             where: { id: req.tenantId },
@@ -376,6 +391,11 @@ export class AgencyController {
                 companyName: data.companyName?.trim(),
                 bio: data.bio?.trim(),
                 logo: data.logo?.trim(),
+                legalName: data.legalName?.trim(),
+                rc: data.rc?.trim(),
+                taxId: data.taxId?.trim(),
+                legalRepresentative: data.legalRepresentative?.trim(),
+                businessAddress: data.businessAddress?.trim(),
                 bankDetails,
                 verificationStatus: bankDetailsChanged && existing.verificationStatus === 'VERIFIED'
                     ? 'PENDING'

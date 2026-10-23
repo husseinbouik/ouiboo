@@ -22,6 +22,7 @@ import { Response } from 'express';
 import { mapBookingDetails } from '../bookings/booking-response.util';
 import { PaymentsService } from '../payments/payments.service';
 import { type MoneyInput } from '../common/money.util';
+import { effectiveLicenceStatus, getAgencyActivationBlock } from '../common/agency-licence.util';
 
 const parseEnumQuery = <T extends string>(value: string | undefined, allowedValues: readonly T[]) => {
     if (!value) {
@@ -368,7 +369,15 @@ export class AdminController {
             }),
             this.db.agencyProfile.count({ where }),
         ]);
-        return { data: agencies, pagination: buildPaginationMeta(total, safePage, safeLimit) };
+        // #371: surface the derived licence status so an expired licence is
+        // flagged in admin even when the stored value still says VERIFIED.
+        return {
+            data: agencies.map((agency) => ({
+                ...agency,
+                effectiveLicenceStatus: effectiveLicenceStatus(agency),
+            })),
+            pagination: buildPaginationMeta(total, safePage, safeLimit),
+        };
     }
 
     @Post('agencies/:id/verify')
@@ -388,6 +397,51 @@ export class AdminController {
             targetType: 'AgencyProfile',
             targetId: id,
             metadata: { status },
+        }).catch((err) => console.error('Audit log failed', err));
+        return updated;
+    }
+
+    @Post('agencies/:id/licence/verify')
+    @ApiOperation({ summary: 'Verify or reject an agency travel licence (#371)' })
+    async verifyAgencyLicence(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() body: { status?: 'VERIFIED' | 'REJECTED'; reason?: string },
+    ) {
+        const status = body?.status;
+        if (!status || !['VERIFIED', 'REJECTED'].includes(status)) {
+            throw new BadRequestException('Invalid licence verification status');
+        }
+        const agency = await this.db.agencyProfile.findUnique({
+            where: { id },
+            select: { id: true, travelLicenceNumber: true, travelLicenceStatus: true, licenceExpiry: true },
+        });
+        if (!agency) {
+            throw new BadRequestException('Agency not found');
+        }
+        if (status === 'VERIFIED') {
+            if (!agency.travelLicenceNumber) {
+                throw new BadRequestException('Agency has not submitted a travel licence number');
+            }
+            if (agency.licenceExpiry && agency.licenceExpiry.getTime() <= Date.now()) {
+                throw new BadRequestException('Travel licence has already expired; ask the agency to renew it before verification');
+            }
+        }
+        const updated = await this.db.agencyProfile.update({
+            where: { id },
+            data: {
+                travelLicenceStatus: status,
+                licenceVerifiedAt: status === 'VERIFIED' ? new Date() : null,
+                licenceRejectionReason: status === 'REJECTED' ? (body.reason?.trim() || null) : null,
+            },
+        });
+        this.auditLogService.log({
+            actorId: req?.user?.userId,
+            actorEmail: req?.user?.email,
+            action: status === 'VERIFIED' ? 'AGENCY_LICENCE_VERIFIED' : 'AGENCY_LICENCE_REJECTED',
+            targetType: 'AgencyProfile',
+            targetId: id,
+            metadata: { status, licenceNumber: agency.travelLicenceNumber },
         }).catch((err) => console.error('Audit log failed', err));
         return updated;
     }
@@ -444,6 +498,12 @@ export class AdminController {
             if (trip.agency.verificationStatus !== 'VERIFIED' || !subscriptionValid) {
                 throw new BadRequestException('Agency must be verified with an active subscription or trial');
             }
+            // #371: publishing also requires a verified, unexpired travel
+            // licence (Law 11-16) — identity verification alone is not enough.
+            const licenceBlock = getAgencyActivationBlock(trip.agency);
+            if (licenceBlock) {
+                throw new BadRequestException(licenceBlock);
+            }
         }
         const updated = await this.db.tripTemplate.update({
             where: { id },
@@ -495,7 +555,14 @@ export class AdminController {
             }),
             this.db.agencyProfile.count({ where }),
         ]);
-        return { data: agencies, pagination: buildPaginationMeta(total, safePage, safeLimit) };
+        // #371: derived licence status (expired licences flagged on read).
+        return {
+            data: agencies.map((agency) => ({
+                ...agency,
+                effectiveLicenceStatus: effectiveLicenceStatus(agency),
+            })),
+            pagination: buildPaginationMeta(total, safePage, safeLimit),
+        };
     }
 
     @Patch('agencies/:id/status')

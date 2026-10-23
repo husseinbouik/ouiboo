@@ -1,6 +1,7 @@
 import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { DatabaseService } from '../database/database.service';
+import { effectiveLicenceStatus } from '../common/agency-licence.util';
 
 @ApiTags('Agency Public')
 @Controller('agencies')
@@ -18,6 +19,13 @@ export class AgencyPublicController {
                 bio: true,
                 logo: true,
                 verificationStatus: true,
+                // #371: seller-of-record display. The licence number itself
+                // is only exposed while the licence is verified (Law 11-16
+                // requires verified agents to display it publicly).
+                legalName: true,
+                travelLicenceNumber: true,
+                travelLicenceStatus: true,
+                licenceExpiry: true,
             }
         });
 
@@ -25,6 +33,17 @@ export class AgencyPublicController {
             throw new NotFoundException('Agency not found');
         }
 
-        return agency;
+        const licenceVerified = effectiveLicenceStatus(agency) === 'VERIFIED';
+
+        return {
+            id: agency.id,
+            companyName: agency.companyName,
+            bio: agency.bio,
+            logo: agency.logo,
+            verificationStatus: agency.verificationStatus,
+            legalName: agency.legalName,
+            licenceVerified,
+            travelLicenceNumber: licenceVerified ? agency.travelLicenceNumber : null,
+        };
     }
 }

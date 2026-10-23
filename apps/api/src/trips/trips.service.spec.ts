@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TripsService } from './trips.service';
 import { DatabaseService } from '../database/database.service';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import { NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 
 const mockTripTemplate = {
     id: 'trip-123',
@@ -323,6 +323,129 @@ describe('TripsService', () => {
             expect(data.minBookings).toBe(1);
             expect(data.groupStatus).toBe('NOT_REQUIRED');
             expect(data.confirmationDeadline).toBeNull();
+        });
+    });
+
+    describe('publish gate: identity + travel licence (#371)', () => {
+        const verifiedAgency = {
+            id: 'agency-123',
+            verificationStatus: 'VERIFIED',
+            travelLicenceStatus: 'VERIFIED',
+            licenceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        };
+
+        beforeEach(() => {
+            db.tripTemplate.update.mockResolvedValue({ ...mockTripTemplate, status: 'ACTIVE' });
+        });
+
+        it('blocks re-activation when the travel licence was never submitted', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                travelLicenceStatus: 'NOT_SUBMITTED',
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(ForbiddenException);
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/licence must be submitted and verified/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks re-activation when identity is not verified, even with a verified licence', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                verificationStatus: 'PENDING',
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/identity must be verified/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks re-activation when the licence has expired', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                licenceExpiry: new Date(Date.now() - 24 * 60 * 60 * 1000),
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/licence has expired/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('allows re-activation for a verified agency with a verified licence', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue(verifiedAgency);
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            const result = await service.activateTemplate('trip-123', 'agency-123');
+
+            expect(db.tripTemplate.update).toHaveBeenCalledWith({
+                where: { id: 'trip-123' },
+                data: { status: 'ACTIVE' },
+            });
+            expect(result.status).toBe('ACTIVE');
+        });
+
+        it('blocks restore of an archived trip when the licence is rejected', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                travelLicenceStatus: 'REJECTED',
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'ARCHIVED' });
+
+            await expect(service.restoreTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(ForbiddenException);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks a PATCH transition into ACTIVE without a verified licence', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                travelLicenceStatus: 'PENDING_REVIEW',
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'DRAFT' });
+
+            await expect(service.updateTemplate('trip-123', 'agency-123', { status: 'ACTIVE' } as any))
+                .rejects.toThrow(/licence must be submitted and verified/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('does not gate edits that keep an already-ACTIVE trip active', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                id: 'agency-123',
+                verificationStatus: 'VERIFIED',
+                travelLicenceStatus: 'NOT_SUBMITTED',
+                licenceExpiry: null,
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'ACTIVE' });
+
+            await service.updateTemplate('trip-123', 'agency-123', { title: 'Renamed' } as any);
+
+            expect(db.tripTemplate.update).toHaveBeenCalled();
+        });
+
+        it('selects the seller licence fields in the trip detail (#371)', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                agency: {
+                    id: 'agency-123',
+                    companyName: 'Atlas Adventures SARL',
+                    legalName: 'Atlas Adventures SARL',
+                    travelLicenceNumber: 'AV-2024-0187',
+                    travelLicenceStatus: 'VERIFIED',
+                },
+            });
+
+            await service.findOneTemplate('trip-123');
+
+            const args = db.tripTemplate.findFirst.mock.calls[0][0];
+            expect(args.select.agency.select.legalName).toBe(true);
+            expect(args.select.agency.select.travelLicenceNumber).toBe(true);
+            expect(args.select.agency.select.travelLicenceStatus).toBe(true);
+            expect(args.select.agency.select.licenceExpiry).toBe(true);
         });
     });
 });

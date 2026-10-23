@@ -8,6 +8,7 @@ import {
     RefundStatus,
     SessionStatus,
     SubscriptionStatus,
+    TravelLicenceType,
     TripCategory,
     TripStatus,
     UserRole,
@@ -41,6 +42,17 @@ export const AgencyProfileSchema = z.object({
     subscriptionStatus: z.nativeEnum(SubscriptionStatus).optional(),
     trialEndsAt: z.string().datetime().optional(),
     subscriptionEndsAt: z.string().datetime().optional(),
+    // #371: legal identity + Law 11-16 travel licence (submitted by the
+    // agency; licence status fields themselves are server-managed and are
+    // not accepted from the client).
+    legalName: z.string().optional(),
+    rc: z.string().optional(),
+    taxId: z.string().optional(),
+    legalRepresentative: z.string().optional(),
+    businessAddress: z.string().optional(),
+    travelLicenceType: z.nativeEnum(TravelLicenceType).optional(),
+    travelLicenceNumber: z.string().optional(),
+    licenceExpiry: z.string().datetime().optional(),
 });
 
 export const ItineraryDaySchema = z.object({
