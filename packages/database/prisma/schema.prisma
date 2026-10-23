@@ -276,6 +276,7 @@ model User {
   bookings                Booking[]
   refundCases             RefundCase[]
   reviews                 Review[]
+  moderatedReviews        Review[]                @relation("ReviewModerator")
   wishlist                Wishlist[]
   travelerConversations   Conversation[]          @relation("TravelerConversations")
   notificationPreferences NotificationPreference?
@@ -704,6 +705,12 @@ model AuditLog {
 }
 
 // Reviews & Ratings
+enum ReviewStatus {
+  VISIBLE
+  HIDDEN
+  REMOVED
+}
+
 model Review {
   id                String       @id @default(cuid())
   bookingId         String       @unique
@@ -716,12 +723,19 @@ model Review {
   comment           String?      @db.Text
   response          String?      @db.Text
   isVerifiedBooking Boolean      @default(true)
+  status            ReviewStatus @default(VISIBLE)
+  moderatedById     String?
+  moderatedBy       User?        @relation("ReviewModerator", fields: [moderatedById], references: [id], onDelete: SetNull)
+  moderatedAt       DateTime?
+  moderationReason  String?      @db.Text
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
   @@index([tripTemplateId])
   @@index([travelerId])
   @@index([tripTemplateId, rating])
+  @@index([tripTemplateId, status])
+  @@index([moderatedById])
 }
 
 // Wishlist
