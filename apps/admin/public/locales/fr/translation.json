@@ -47,7 +47,6 @@
       "agencies": "Gérer les agences",
       "bookings": "Réservations système",
       "paymentProofs": "Justificatifs de paiement",
-      "payouts": "Demandes de paiement",
       "audit": "Journal d'audit",
       "invoices": "Factures"
     },
@@ -72,11 +71,6 @@
         "description": "Approuver ou rejeter les reçus de paiement téléchargés.",
         "searchPlaceholder": "Rechercher des justificatifs par voyageur ou réservation..."
       },
-      "payouts": {
-        "title": "Demandes de paiement",
-        "description": "Examiner les demandes de paiement des agences avant de libérer les fonds.",
-        "searchPlaceholder": "Rechercher des demandes de paiement par agence..."
-      },
       "audit": {
         "title": "Journal d'audit",
         "description": "Rechercher l'activité des opérateurs, exporter les enregistrements et appliquer le nettoyage de rétention.",
@@ -94,7 +88,6 @@
       "allAgencies": "Gestion de toutes les agences",
       "bookingMonitor": "Suivi des réservations système",
       "pendingPaymentProofs": "Justificatifs de paiement en attente",
-      "payoutRequests": "Demandes de paiement",
       "auditTrail": "Piste d'audit"
     },
     "table": {
@@ -117,8 +110,6 @@
       "approve": "Approuver",
       "activate": "Activer",
       "deactivate": "Désactiver",
-      "approvePayout": "Approuver le paiement",
-      "rejectPayout": "Rejeter le paiement",
       "approveAgency": "Approuver l'agence",
       "rejectAgency": "Rejeter l'agence",
       "refund": "Rembourser",
@@ -130,13 +121,11 @@
       "joined": "Inscrit le",
       "request": "Demande",
       "requestId": "Demande #{{id}}",
-      "agencyPayout": "Paiement agence",
       "agency": "Agence",
       "requested": "Demandé le",
       "amount": "Montant",
       "currency": "MAD",
       "bankDetails": "Coordonnées bancaires de l'agence",
-      "payoutDetails": "Détails du paiement",
       "selected": "Sélectionné",
       "contact": "Contact",
       "status": "Statut",
@@ -160,8 +149,6 @@
     "messages": {
       "noBankDetails": "Aucune coordonnée bancaire enregistrée.",
       "noPaymentProofs": "Aucun justificatif de paiement en attente.",
-      "noPayoutRequests": "Aucune demande de paiement en attente.",
-      "selectPayoutPrompt": "Sélectionnez une demande de paiement pour consulter les coordonnées bancaires et approuver ou rejeter.",
       "reviewVerification": "Vérifiez les détails et approuvez ou rejetez.",
       "notProvided": "Non renseigné",
       "noEmail": "Aucun email enregistré",
@@ -182,9 +169,6 @@
       "paymentProofRejected": "Justificatif de paiement rejeté avec succès.",
       "paymentProofUpdateError": "Impossible de mettre à jour le justificatif de paiement. Réessayez.",
       "paymentProofLoadError": "Impossible de charger le justificatif de paiement.",
-      "payoutPaid": "Paiement marqué comme payé avec succès.",
-      "payoutRejected": "Paiement rejeté avec succès.",
-      "payoutUpdateError": "Impossible de mettre à jour la demande de paiement. Réessayez.",
       "refundProcessed": "Remboursement traité avec succès.",
       "refundError": "Impossible de traiter le remboursement pour le moment.",
       "auditPruneError": "Impossible d'élaguer les journaux d'audit pour le moment.",
@@ -275,7 +259,7 @@
       "payoutPaidLabel": "Payé",
       "payoutPaidHelper": "Virement effectué",
       "payoutRejectedLabel": "Rejeté",
-      "payoutRejectedHelper": "Fonds renvoyés au portefeuille de l'agence",
+      "payoutRejectedHelper": "Fonds renvoyés à l'agence",
       "payoutApprovedLabel": "Approuvé",
       "payoutApprovedHelper": "Approuvé et en attente de traitement du paiement",
       "payoutPendingLabel": "En attente",

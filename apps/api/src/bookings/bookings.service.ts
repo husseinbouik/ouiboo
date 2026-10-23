@@ -63,7 +63,7 @@ export class BookingsService {
             throw new BadRequestException('This agency is not currently accepting bookings');
         }
         if (dto.paymentMethod === PaymentMethodEnum.WALLET) {
-            throw new BadRequestException('Traveler wallet payments are not available');
+            throw new BadRequestException('This payment method is not available');
         }
 
         // #369 staged payments: minimum-group trips collect a deposit first.

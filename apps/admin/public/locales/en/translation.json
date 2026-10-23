@@ -47,7 +47,6 @@
       "agencies": "Manage Agencies",
       "bookings": "System Bookings",
       "paymentProofs": "Payment Proofs",
-      "payouts": "Payout Requests",
       "audit": "Audit Log",
       "invoices": "Invoices"
     },
@@ -72,11 +71,6 @@
         "description": "Approve or reject uploaded payment receipts.",
         "searchPlaceholder": "Search payment proofs by traveler or booking..."
       },
-      "payouts": {
-        "title": "Payout Requests",
-        "description": "Review agency payout requests before releasing funds.",
-        "searchPlaceholder": "Search payout requests by agency..."
-      },
       "audit": {
         "title": "Audit Log",
         "description": "Search operator activity, export records, and apply retention cleanup.",
@@ -94,7 +88,6 @@
       "allAgencies": "All Agencies Management",
       "bookingMonitor": "System-wide Booking Monitor",
       "pendingPaymentProofs": "Pending Payment Proofs",
-      "payoutRequests": "Payout Requests",
       "auditTrail": "Audit trail"
     },
     "table": {
@@ -117,8 +110,6 @@
       "approve": "Approve",
       "activate": "Activate",
       "deactivate": "Deactivate",
-      "approvePayout": "Approve payout",
-      "rejectPayout": "Reject payout",
       "approveAgency": "Approve agency",
       "rejectAgency": "Reject agency",
       "refund": "Refund",
@@ -130,13 +121,11 @@
       "joined": "Joined",
       "request": "Request",
       "requestId": "Request #{{id}}",
-      "agencyPayout": "Agency payout",
       "agency": "Agency",
       "requested": "Requested",
       "amount": "Amount",
       "currency": "MAD",
       "bankDetails": "Agency Bank Details",
-      "payoutDetails": "Payout Details",
       "selected": "Selected",
       "contact": "Contact",
       "status": "Status",
@@ -160,8 +149,6 @@
     "messages": {
       "noBankDetails": "No bank details on file.",
       "noPaymentProofs": "No payment proofs are waiting for review.",
-      "noPayoutRequests": "No payout requests are waiting for review.",
-      "selectPayoutPrompt": "Select a payout request to review agency bank details and approve or reject.",
       "reviewVerification": "Review verification details and approve or reject.",
       "notProvided": "Not provided",
       "noEmail": "No email on file",
@@ -182,9 +169,6 @@
       "paymentProofRejected": "Payment proof rejected successfully.",
       "paymentProofUpdateError": "Unable to update payment proof. Please try again.",
       "paymentProofLoadError": "Unable to load payment proof.",
-      "payoutPaid": "Payout marked as paid successfully.",
-      "payoutRejected": "Payout rejected successfully.",
-      "payoutUpdateError": "Unable to update payout request. Please try again.",
       "refundProcessed": "Refund processed successfully.",
       "refundError": "Unable to process refund right now.",
       "auditPruneError": "Unable to prune audit logs right now.",
@@ -275,9 +259,9 @@
       "payoutPaidLabel": "Paid",
       "payoutPaidHelper": "Transfer completed",
       "payoutRejectedLabel": "Rejected",
-      "payoutRejectedHelper": "Funds returned to the agency wallet",
+      "payoutRejectedHelper": "Funds returned to the agency",
       "payoutApprovedLabel": "Approved",
-      "payoutApprovedHelper": "Approved and waiting for payout processing",
+      "payoutApprovedHelper": "Approved and waiting for processing",
       "payoutPendingLabel": "Pending",
       "payoutPendingHelper": "Pending admin review",
       "licenceNotSubmitted": "Licence not submitted",
