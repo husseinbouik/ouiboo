@@ -48,7 +48,8 @@
       "bookings": "Réservations système",
       "paymentProofs": "Justificatifs de paiement",
       "audit": "Journal d'audit",
-      "invoices": "Factures"
+      "invoices": "Factures",
+      "refunds": "Remboursements"
     },
     "meta": {
       "pending": {
@@ -80,6 +81,11 @@
         "title": "Factures de frais de service plateforme",
         "description": "Consultez les factures de frais de service plateforme émises et générez la facture mensuelle par agence.",
         "searchPlaceholder": "Rechercher une facture par numéro ou agence..."
+      },
+      "refunds": {
+        "searchPlaceholder": "Rechercher des dossiers de remboursement...",
+        "description": "Suivez les dossiers de remboursement des voyageurs pour toutes les agences. Les remboursements sont payés par les agences depuis leurs propres comptes marchands — les dossiers en retard restreignent les nouvelles réservations de l'agence.",
+        "title": "Dossiers de remboursement"
       }
     },
     "sections": {
@@ -273,7 +279,40 @@
     "modal": {
       "agencyReview": "Revue d'agence"
     },
-    "signOut": "Se déconnecter"
+    "signOut": "Se déconnecter",
+    "refunds": {
+      "emptyHint": "Les dossiers apparaissent ici lorsqu'un voyage n'est pas confirmé, qu'un voyageur demande un remboursement ou qu'une agence annule.",
+      "actions": {
+        "review": "Commencer l'examen",
+        "complete": "Marquer comme terminé",
+        "initiate": "Marquer comme envoyé",
+        "fail": "Marquer comme échoué",
+        "approve": "Approuver",
+        "reject": "Rejeter"
+      },
+      "status": {
+        "REFUND_APPROVED": "Approuvé",
+        "AGENCY_ACTION_REQUIRED": "Action de l'agence requise",
+        "ELIGIBILITY_REVIEW": "En cours d'examen",
+        "REFUND_INITIATED": "Initié",
+        "REFUND_REJECTED": "Rejeté",
+        "REFUND_REQUESTED": "Demandé",
+        "REFUND_OVERDUE": "En retard",
+        "REFUND_FAILED": "Échoué",
+        "REFUND_COMPLETED": "Terminé"
+      },
+      "reason": {
+        "GROUP_MINIMUM_NOT_REACHED": "Voyage non confirmé — groupe minimum non atteint",
+        "TRAVELLER_CANCELLATION": "Annulation par le voyageur",
+        "ADMIN_INITIATED": "Ouvert par l'administration",
+        "TRAVELLER_REQUEST": "Demande du voyageur",
+        "AGENCY_CANCELLATION": "Annulation par l'agence"
+      },
+      "failureReason": "Échec",
+      "empty": "Aucun dossier de remboursement",
+      "dueBy": "Échéance",
+      "requestedAt": "Demandé le"
+    }
   },
   "meta": {
     "titleDefault": "Administration de la plateforme",

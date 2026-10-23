@@ -14,6 +14,7 @@ import {
   Map,
   PlusCircle,
   Receipt,
+  RotateCcw,
   Settings,
   ShieldCheck,
   Star,
@@ -43,6 +44,8 @@ export function AgencySidebar() {
     { name: t('sidebar.bookings'), href: '/dashboard/bookings', icon: Calendar },
     { name: t('sidebar.reviews'), href: '/dashboard/reviews', icon: Star },
     { name: t('sidebar.wallet'), href: '/dashboard/wallet', icon: CreditCard },
+    // #370: refund cases the agency must act on (SLA-tracked).
+    { name: t('sidebar.refunds'), href: '/dashboard/refunds', icon: RotateCcw },
     // #374: the billing page (subscription + platform service fee invoices)
     // existed but was not linked from anywhere; surface it in the sidebar.
     { name: t('sidebar.billing'), href: '/dashboard/settings/billing', icon: Receipt },

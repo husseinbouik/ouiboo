@@ -11,6 +11,7 @@ import { CronModule } from './cron/cron.module'
 import { CurrencyModule } from './currency/currency.module'
 import { CopyrightModule } from './copyright/copyright.module'
 import { InvoicesModule } from './invoices/invoices.module'
+import { RefundsModule } from './refunds/refunds.module'
 import { DatabaseModule } from './database/database.module'
 import { EmailModule } from './email/email.module'
 import { HealthModule } from './health/health.module'
@@ -53,6 +54,7 @@ import { WishlistModule } from './wishlist/wishlist.module'
     CurrencyModule,
     CopyrightModule,
     InvoicesModule,
+    RefundsModule,
     MessagesModule,
   ],
 })

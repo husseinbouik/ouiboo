@@ -48,7 +48,8 @@
       "bookings": "System Bookings",
       "paymentProofs": "Payment Proofs",
       "audit": "Audit Log",
-      "invoices": "Invoices"
+      "invoices": "Invoices",
+      "refunds": "Refunds"
     },
     "meta": {
       "pending": {
@@ -80,6 +81,11 @@
         "title": "Platform Service Fee Invoices",
         "description": "Review issued platform service fee invoices and generate the monthly invoice per agency.",
         "searchPlaceholder": "Search invoices by number or agency..."
+      },
+      "refunds": {
+        "searchPlaceholder": "Search refund cases...",
+        "description": "Track traveller refund cases across agencies. Refunds are paid by agencies from their own merchant accounts — overdue cases restrict new bookings for that agency.",
+        "title": "Refund Cases"
       }
     },
     "sections": {
@@ -273,7 +279,40 @@
     "modal": {
       "agencyReview": "Agency Review"
     },
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "refunds": {
+      "emptyHint": "Refund cases appear here when a trip is not confirmed, a traveller requests a refund, or an agency cancels.",
+      "actions": {
+        "review": "Start review",
+        "complete": "Mark completed",
+        "initiate": "Mark sent",
+        "fail": "Mark failed",
+        "approve": "Approve",
+        "reject": "Reject"
+      },
+      "status": {
+        "REFUND_APPROVED": "Approved",
+        "AGENCY_ACTION_REQUIRED": "Agency action required",
+        "ELIGIBILITY_REVIEW": "Under review",
+        "REFUND_INITIATED": "Initiated",
+        "REFUND_REJECTED": "Rejected",
+        "REFUND_REQUESTED": "Requested",
+        "REFUND_OVERDUE": "Overdue",
+        "REFUND_FAILED": "Failed",
+        "REFUND_COMPLETED": "Completed"
+      },
+      "reason": {
+        "GROUP_MINIMUM_NOT_REACHED": "Trip not confirmed — minimum group not reached",
+        "TRAVELLER_CANCELLATION": "Traveller cancellation",
+        "ADMIN_INITIATED": "Opened by admin",
+        "TRAVELLER_REQUEST": "Traveller request",
+        "AGENCY_CANCELLATION": "Agency cancellation"
+      },
+      "failureReason": "Failure",
+      "empty": "No refund cases",
+      "dueBy": "Due by",
+      "requestedAt": "Requested"
+    }
   },
   "meta": {
     "titleDefault": "Platform administration",

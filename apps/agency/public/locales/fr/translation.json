@@ -54,7 +54,8 @@
     "createNew": "Créer nouveau",
     "signOut": "Se déconnecter",
     "expandSidebar": "Déplier la barre latérale",
-    "collapseSidebar": "Replier la barre latérale"
+    "collapseSidebar": "Replier la barre latérale",
+    "refunds": "Remboursements"
   },
   "login": {
     "title": "Portail agence",
@@ -928,5 +929,43 @@
     "invalidOtp": "Ce code est incorrect. Vérifiez et réessayez.",
     "otpResendCooldown": "Vous avez demandé un nouveau code récemment. Veuillez patienter un instant avant de réessayer.",
     "enterAllDigits": "Veuillez saisir les 6 chiffres."
+  },
+  "refunds": {
+    "actions": {
+      "review": "Commencer l'examen",
+      "reject": "Rejeter",
+      "initiate": "Marquer comme envoyé",
+      "approve": "Approuver",
+      "fail": "Marquer comme échoué",
+      "complete": "Marquer comme terminé"
+    },
+    "status": {
+      "REFUND_FAILED": "Échoué — à réessayer",
+      "REFUND_REJECTED": "Rejeté",
+      "REFUND_APPROVED": "Approuvé",
+      "ELIGIBILITY_REVIEW": "En cours d'examen",
+      "REFUND_OVERDUE": "En retard",
+      "REFUND_INITIATED": "Initié",
+      "REFUND_REQUESTED": "Demandé",
+      "AGENCY_ACTION_REQUIRED": "Action requise",
+      "REFUND_COMPLETED": "Terminé"
+    },
+    "reason": {
+      "TRAVELLER_CANCELLATION": "Annulation par le voyageur",
+      "ADMIN_INITIATED": "Ouvert par le support OuiBoo",
+      "TRAVELLER_REQUEST": "Demande du voyageur",
+      "GROUP_MINIMUM_NOT_REACHED": "Voyage non confirmé — groupe minimum non atteint",
+      "AGENCY_CANCELLATION": "Annulation par l'agence"
+    },
+    "listTitle": "Dossiers de remboursement",
+    "actionRequiredBanner": "{{count}} dossier(s) de remboursement requièrent votre action. Les remboursements en retard peuvent restreindre les nouvelles réservations jusqu'à leur résolution.",
+    "honestNote": "Les remboursements sont payés depuis votre propre compte marchand — OuiBoo ne détient jamais les paiements des voyageurs.",
+    "subtitle": "Dossiers de remboursement pour les paiements effectués directement par les voyageurs auprès de votre agence. C'est vous qui effectuez le remboursement — OuiBoo suit le dossier et son échéance.",
+    "dueBy": "Remboursement dû avant le {{date}}",
+    "empty": "Aucun dossier de remboursement pour le moment.",
+    "failReasonPlaceholder": "Pourquoi le remboursement a-t-il échoué ?",
+    "bookingFallback": "Réservation",
+    "failureReason": "Dernière tentative échouée",
+    "title": "Remboursements"
   }
 }

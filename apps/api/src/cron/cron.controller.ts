@@ -10,6 +10,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { NotificationJobsService } from '../notifications/notification-jobs.service';
 import { CurrencyService } from '../currency/currency.service';
 import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
+import { RefundsService } from '../refunds/refunds.service';
 import { PaymentReconciliationService } from '../payment-providers/reconciliation.service';
 
 /**
@@ -32,6 +33,7 @@ export class CronController {
     private readonly notificationJobs: NotificationJobsService,
     private readonly currencyService: CurrencyService,
     private readonly stagedPaymentsService: StagedPaymentsService,
+    private readonly refundsService: RefundsService,
     private readonly paymentReconciliationService: PaymentReconciliationService,
   ) {}
 
@@ -99,6 +101,16 @@ export class CronController {
     // #369: fail/confirm staged sessions whose confirmation deadline passed.
     await run('groupConfirmationDeadlines', () =>
       this.stagedPaymentsService.evaluateConfirmationDeadlines(),
+    );
+    // #370: backstop — create RefundCases for any REFUND_DUE plan that
+    // does not have one yet (e.g. flipped before #370 shipped).
+    await run('refundDueCaseSync', () =>
+      this.refundsService.syncRefundDueCases(),
+    );
+    // #370: flip actionable refund cases past their SLA deadline to
+    // REFUND_OVERDUE and apply the new-bookings restriction ladder.
+    await run('refundOverdueSweep', () =>
+      this.refundsService.markOverdueCases(),
     );
     // #373: compare provider-reported payment statuses against OuiBoo's
     // records; disagreements become reconciliation alert records.

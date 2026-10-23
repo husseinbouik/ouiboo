@@ -54,7 +54,8 @@
     "createNew": "Create New",
     "signOut": "Sign Out",
     "expandSidebar": "Expand sidebar",
-    "collapseSidebar": "Collapse sidebar"
+    "collapseSidebar": "Collapse sidebar",
+    "refunds": "Refunds"
   },
   "login": {
     "title": "Agency Portal",
@@ -928,5 +929,43 @@
     "invalidOtp": "That code is incorrect. Double-check and try again.",
     "otpResendCooldown": "You requested a new code recently. Please wait a moment before trying again.",
     "enterAllDigits": "Please enter all 6 digits."
+  },
+  "refunds": {
+    "actions": {
+      "review": "Start review",
+      "reject": "Reject",
+      "initiate": "Mark refund sent",
+      "approve": "Approve",
+      "fail": "Mark failed",
+      "complete": "Mark completed"
+    },
+    "status": {
+      "REFUND_FAILED": "Failed — retry",
+      "REFUND_REJECTED": "Rejected",
+      "REFUND_APPROVED": "Approved",
+      "ELIGIBILITY_REVIEW": "Under review",
+      "REFUND_OVERDUE": "Overdue",
+      "REFUND_INITIATED": "Initiated",
+      "REFUND_REQUESTED": "Requested",
+      "AGENCY_ACTION_REQUIRED": "Action required",
+      "REFUND_COMPLETED": "Completed"
+    },
+    "reason": {
+      "TRAVELLER_CANCELLATION": "Traveller cancellation",
+      "ADMIN_INITIATED": "Opened by OuiBoo support",
+      "TRAVELLER_REQUEST": "Traveller request",
+      "GROUP_MINIMUM_NOT_REACHED": "Trip not confirmed — minimum group not reached",
+      "AGENCY_CANCELLATION": "Agency cancellation"
+    },
+    "listTitle": "Refund cases",
+    "actionRequiredBanner": "{{count}} refund case(s) need your action. Overdue refunds can restrict new bookings until they are resolved.",
+    "honestNote": "Refunds are paid from your own merchant account — OuiBoo never holds traveller payments.",
+    "subtitle": "Refund cases for payments travellers made directly to your agency. You process the refund — OuiBoo tracks the case and its deadline.",
+    "dueBy": "Refund due by {{date}}",
+    "empty": "No refund cases yet.",
+    "failReasonPlaceholder": "Why did the refund fail?",
+    "bookingFallback": "Booking",
+    "failureReason": "Last attempt failed",
+    "title": "Refunds"
   }
 }

@@ -54,7 +54,8 @@
     "createNew": "إنشاء جديد",
     "signOut": "تسجيل الخروج",
     "expandSidebar": "توسيع الشريط الجانبي",
-    "collapseSidebar": "طي الشريط الجانبي"
+    "collapseSidebar": "طي الشريط الجانبي",
+    "refunds": "المبالغ المستردة"
   },
   "login": {
     "title": "بوابة الوكالات",
@@ -935,5 +936,43 @@
     "invalidOtp": "هذا الرمز غير صحيح. تحقق جيداً وحاول مرة أخرى.",
     "otpResendCooldown": "لقد طلبت رمزاً جديداً مؤخراً. يرجى الانتظار قليلاً قبل المحاولة مرة أخرى.",
     "enterAllDigits": "يرجى إدخال الأرقام الستة."
+  },
+  "refunds": {
+    "actions": {
+      "review": "بدء المراجعة",
+      "reject": "رفض",
+      "initiate": "تحديد كمُرسل",
+      "approve": "موافقة",
+      "fail": "تحديد كفاشل",
+      "complete": "تحديد كمكتمل"
+    },
+    "status": {
+      "REFUND_FAILED": "فشل — أعد المحاولة",
+      "REFUND_REJECTED": "مرفوض",
+      "REFUND_APPROVED": "تمت الموافقة",
+      "ELIGIBILITY_REVIEW": "قيد المراجعة",
+      "REFUND_OVERDUE": "متأخر",
+      "REFUND_INITIATED": "تم البدء",
+      "REFUND_REQUESTED": "تم الطلب",
+      "AGENCY_ACTION_REQUIRED": "يتطلب إجراءً",
+      "REFUND_COMPLETED": "اكتمل"
+    },
+    "reason": {
+      "TRAVELLER_CANCELLATION": "إلغاء من المسافر",
+      "ADMIN_INITIATED": "فتحه دعم OuiBoo",
+      "TRAVELLER_REQUEST": "طلب المسافر",
+      "GROUP_MINIMUM_NOT_REACHED": "لم يتم تأكيد الرحلة — لم يتحقق الحد الأدنى للمجموعة",
+      "AGENCY_CANCELLATION": "إلغاء من الوكالة"
+    },
+    "listTitle": "حالات الاسترداد",
+    "actionRequiredBanner": "{{count}} حالة استرداد تتطلب إجراءً منكم. قد تقيد المبالغ المستردة المتأخرة الحجوزات الجديدة حتى يتم حلها.",
+    "honestNote": "تُدفع المبالغ المستردة من حساب التاجر الخاص بكم — OuiBoo لا يحتفظ أبدًا بمدفوعات المسافرين.",
+    "subtitle": "حالات الاسترداد للمدفوعات التي دفعها المسافرون مباشرة إلى وكالتكم. أنتم من ينفذ الاسترداد — OuiBoo يتتبع الحالة وموعدها النهائي.",
+    "dueBy": "الاسترداد مستحق قبل {{date}}",
+    "empty": "لا توجد حالات استرداد بعد.",
+    "failReasonPlaceholder": "لماذا فشل الاسترداد؟",
+    "bookingFallback": "حجز",
+    "failureReason": "فشلت المحاولة الأخيرة",
+    "title": "المبالغ المستردة"
   }
 }

@@ -232,6 +232,22 @@ enum BookingPaymentPlanStatus {
   CANCELLED
 }
 
+// #370: RefundCase lifecycle (plan §§13–16). A refund case tracks money the
+// AGENCY (or its payment provider) owes the traveller. OuiBoo never holds
+// the money, so a case is an obligation record with a measurable SLA —
+// never a balance and never a guarantee by OuiBoo.
+enum RefundCaseStatus {
+  REFUND_REQUESTED
+  ELIGIBILITY_REVIEW
+  REFUND_APPROVED
+  AGENCY_ACTION_REQUIRED
+  REFUND_INITIATED
+  REFUND_COMPLETED
+  REFUND_REJECTED
+  REFUND_FAILED
+  REFUND_OVERDUE
+}
+
 // #369: which stage of a booking's payments an ExternalPayment records.
 // FULL preserves the pre-#369 single-payment behaviour (one record per
 // booking); staged bookings get one DEPOSIT and one BALANCE record.
@@ -258,6 +274,7 @@ model User {
   refreshTokens           RefreshToken[]
   agencyProfile           AgencyProfile?
   bookings                Booking[]
+  refundCases             RefundCase[]
   reviews                 Review[]
   wishlist                Wishlist[]
   travelerConversations   Conversation[]          @relation("TravelerConversations")
@@ -331,6 +348,13 @@ model AgencyProfile {
   licenceVerifiedAt      DateTime?
   licenceExpiry          DateTime?
   licenceRejectionReason String?
+  refundCases                 RefundCase[]
+  // #370: refund enforcement ladder (plan §16, level 2). Set while the
+  // agency has an overdue refund case: NEW bookings are refused, existing
+  // bookings are never touched. Null = not restricted.
+  newBookingsRestrictedAt     DateTime?
+  newBookingsRestrictionReason String?
+
 }
 
 model TripTemplate {
@@ -457,6 +481,7 @@ model Booking {
   externalPayments            ExternalPayment[]
   paymentAttempts             PaymentAttempt[]
   paymentPlan                 BookingPaymentPlan?
+  refundCases                 RefundCase[]
 
   @@index([travelerId])
   @@index([sessionId])
@@ -504,6 +529,7 @@ model ExternalPayment {
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
   ledgerEntries     PaymentStatusLedgerEntry[]
+  refundCases       RefundCase[]
   paymentAttempts   PaymentAttempt[]
 
   @@unique([bookingId, stage])
@@ -539,6 +565,59 @@ model BookingPaymentPlan {
   @@index([sessionId, status])
   @@index([agencyId, status])
   @@index([status, confirmationDeadline])
+}
+
+// #370: a first-class refund obligation (plan §14). Created when a refund
+// becomes due (minimum group not reached), when a traveller requests one,
+// or when an agency/admin opens one for a cancelled paid booking. The money
+// stays with the agency / its provider at all times; the case tracks the
+// obligation, the SLA deadline (refundDueAt) and every audited transition.
+// No raw card data is ever stored here.
+model RefundCase {
+  id                       String           @id @default(cuid())
+  bookingId                String
+  booking                  Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  travelerId               String
+  traveler                 User             @relation(fields: [travelerId], references: [id])
+  agencyId                 String
+  agency                   AgencyProfile    @relation(fields: [agencyId], references: [id])
+  // The traveller payment this refund returns (deposit stage for staged
+  // bookings). Nullable: a case can be opened before the payment record is
+  // matched, and the payment may later be deleted independently.
+  originalPaymentId        String?
+  originalPayment          ExternalPayment? @relation(fields: [originalPaymentId], references: [id], onDelete: SetNull)
+  externalPaymentReference String?
+  requestedAmount          Decimal          @db.Decimal(18, 2)
+  approvedAmount           Decimal?         @db.Decimal(18, 2)
+  currency                 String           @default("MAD")
+  // Machine-readable trigger: GROUP_MINIMUM_NOT_REACHED,
+  // TRAVELLER_CANCELLATION, AGENCY_CANCELLATION, ADMIN_INITIATED, or a
+  // traveller-supplied free-text reason prefixed with TRAVELLER_REQUEST.
+  reason                   String
+  eligibilityRule          String?
+  policyVersion            String
+  status                   RefundCaseStatus @default(REFUND_REQUESTED)
+  requestedAt              DateTime         @default(now())
+  approvedAt               DateTime?
+  agencyNotifiedAt         DateTime?
+  refundDueAt              DateTime?
+  initiatedAt              DateTime?
+  completedAt              DateTime?
+  providerRefundId         String?
+  providerStatus           String?
+  failureReason            String?
+  disputeReason            String?
+  // Idempotency guard for system-created cases (e.g. "refund-due:<bookingId>").
+  dedupeKey                String?          @unique
+  createdBy                String?
+  updatedBy                String?
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
+
+  @@index([bookingId])
+  @@index([travelerId, status])
+  @@index([agencyId, status])
+  @@index([status, refundDueAt])
 }
 
 // #368: Append-only log of external payment events. Amounts describe money

@@ -13,6 +13,7 @@ import {
 } from '@ouiboo/database';
 import { DatabaseService } from '../database/database.service';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
+import { RefundsService } from '../refunds/refunds.service';
 import { multiplyMoney } from '../common/money.util';
 import {
     GROUP_MINIMUM_NOT_REACHED_REASON,
@@ -97,6 +98,7 @@ export class StagedPaymentsService {
     constructor(
         private db: DatabaseService,
         private externalPaymentsService: ExternalPaymentsService,
+        private refundsService: RefundsService,
     ) { }
 
     /** Whether a session row uses staged payments. */
@@ -511,7 +513,7 @@ export class StagedPaymentsService {
             where: { id: args.planId },
             data: { status: BookingPaymentPlanStatus.REFUND_DUE },
         });
-        await this.externalPaymentsService.recordRefundDueInTransaction(tx, {
+        const depositPayment = await this.externalPaymentsService.recordRefundDueInTransaction(tx, {
             bookingId: args.bookingId,
             agencyId: args.plan.agencyId,
             travelerId: args.travelerId,
@@ -522,6 +524,22 @@ export class StagedPaymentsService {
             source: args.source,
             stage: ExternalPaymentStage.DEPOSIT,
         });
+        if (depositPayment) {
+            // #370: the refund obligation becomes a first-class RefundCase
+            // in the same transaction, so it can never be lost between the
+            // REFUND_DUE ledger entry and the refund workflow.
+            await this.refundsService.createRefundDueCaseInTransaction(tx, {
+                bookingId: args.bookingId,
+                agencyId: args.plan.agencyId,
+                travelerId: args.travelerId,
+                payment: {
+                    id: depositPayment.id,
+                    amount: depositPayment.amount,
+                    currency: depositPayment.currency,
+                    externalReference: depositPayment.externalReference,
+                },
+            });
+        }
         if (args.restoreSeats) {
             await tx.tripSession.update({
                 where: { id: args.sessionId },
