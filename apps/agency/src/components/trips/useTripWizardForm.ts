@@ -69,6 +69,18 @@ export function useTripWizardForm(options: UseTripWizardFormOptions = {}) {
   });
 
   const watchedImages = watch('images') || [];
+  const watchedImageAlts = watch('imageAlts') || [];
+
+  // #332: keep `imageAlts` index-aligned with `images` whenever either
+  // changes, padding with '' (no custom alt) where none was provided.
+  const alignImageAlts = (images: string[], alts: string[]) =>
+    images.map((_, i) => alts[i] ?? '');
+
+  const handleImageAltChange = (index: number, value: string) => {
+    const aligned = alignImageAlts(watchedImages, watchedImageAlts);
+    aligned[index] = value;
+    setValue('imageAlts', aligned, { shouldValidate: true });
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -95,7 +107,10 @@ export function useTripWizardForm(options: UseTripWizardFormOptions = {}) {
       const imageUrl = response.data.url;
 
       const currentImages = watch('images') || [];
-      setValue('images', [...currentImages, imageUrl], { shouldValidate: true });
+      const newImages = [...currentImages, imageUrl];
+      setValue('images', newImages, { shouldValidate: true });
+      // New photo starts with no custom alt ('' = generated fallback).
+      setValue('imageAlts', [...alignImageAlts(currentImages, watch('imageAlts') || []), ''], { shouldValidate: true });
     } catch (error: unknown) {
       if (translateUploadErrors) {
         const apiError = error as ApiError;
@@ -167,6 +182,8 @@ export function useTripWizardForm(options: UseTripWizardFormOptions = {}) {
     itineraryFields,
     appendDay,
     watchedImages,
+    watchedImageAlts,
+    handleImageAltChange,
     uploading,
     uploadError,
     submissionError,

@@ -298,6 +298,9 @@
       "addImage": "Add Image",
       "imageHint": "Upload clear, high-resolution pictures to attract more travelers. At least one image is required to publish.",
       "imageAlt": "{{name}} - image {{index}}",
+      "imageAltLabel": "Alt text (optional, for screen readers)",
+      "imageAltPlaceholder": "Describe this photo, e.g. Travelers hiking toward the Atlas summit at sunrise",
+      "imageAltHint": "Alt text helps blind travelers and search engines understand your photos. Leave it empty and we will use the trip name and departure city instead.",
       "includedTitle": "Included in the trip",
       "includedSubtitle": "List everything the traveler gets",
       "includedPlaceholder": "e.g. Comfy transport",
@@ -466,6 +469,7 @@
     "actionCenter": "Action Center",
     "actionCenterSubtitle": "Focus on the tasks that move revenue this week.",
     "openBookings": "Open bookings",
+    "viewBooking": "View booking",
     "quickActions": {
       "verifiedTitle": "Agency verified",
       "verifiedDescription": "Your agency is verified. Keep your profile complete to stay payout-ready.",

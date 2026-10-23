@@ -76,8 +76,11 @@ export function CheckoutPayment({
           <p className="text-xs font-black text-foreground uppercase tracking-widest">3. Upload Proof of Payment</p>
           <Badge variant="outline" className="text-[8px] font-black border-primary/20 text-primary">Upload within 24h</Badge>
         </div>
-        <label className="h-44 border-4 border-dashed border-muted rounded-[2rem] flex flex-col items-center justify-center gap-4 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-pointer group">
-          <input type="file" className="hidden" onChange={onProofUpload} disabled={isUploading} accept="image/*,application/pdf" />
+        <label className="h-44 border-4 border-dashed border-muted rounded-[2rem] flex flex-col items-center justify-center gap-4 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-pointer group focus-within:ring-2 focus-within:ring-primary focus-within:border-primary/40">
+          {/* #332: sr-only (not display:none) so the input stays in the
+              Tab order and keyboard users can open the file picker; the
+              label shows the focus ring via focus-within. */}
+          <input type="file" className="sr-only" onChange={onProofUpload} disabled={isUploading} accept="image/*,application/pdf" />
           <AnimatePresence mode="wait">
             {proofPreview ? (
               <motion.div

@@ -65,6 +65,8 @@ type BookingMapperInput = {
       title: string;
       startLocation: string;
       images: string[];
+      /** #332: alt text per image (index-aligned); absent on pre-migration rows. */
+      imageAlts?: string[];
       agency?: {
         id: string;
         companyName: string;
@@ -147,6 +149,7 @@ export const mapBookingDetails = (booking: BookingMapperInput): BookingDetails =
       title: booking.session.template.title,
       startLocation: booking.session.template.startLocation,
       images: booking.session.template.images,
+      imageAlts: booking.session.template.imageAlts,
       agency: {
         id: booking.session.template.agency?.id || booking.session.template.agencyId || '',
         companyName: booking.session.template.agency?.companyName || '',

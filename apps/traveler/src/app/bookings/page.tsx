@@ -153,7 +153,7 @@ export default function MyBookingsPage() {
                                             <div className="absolute inset-0 bg-muted animate-pulse" />
                                             <Image
                                                 src={tripImage}
-                                                alt="Trip"
+                                                alt={booking.session.template.imageAlts?.[0]?.trim() || booking.session.template.title}
                                                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                                 fill
                                                 sizes="(max-width: 768px) 100vw, 18rem"

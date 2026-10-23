@@ -1,5 +1,5 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsString, IsEnum, IsPositive, IsInt, Min, IsArray, MinLength, IsOptional, ValidateNested, IsDateString, Matches } from 'class-validator';
+import { IsString, IsEnum, IsPositive, IsInt, Min, IsArray, MinLength, IsOptional, ValidateNested, IsDateString, Matches, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TripCategory, TripStatus } from '@ouiboo/types';
 import { IsDecimalMoney } from '../../common/validators/is-decimal-money.decorator';
@@ -85,6 +85,16 @@ export class CreateTripTemplateDto {
     @IsArray()
     @IsString({ each: true })
     images!: string[];
+
+    // #332: optional alt text per image, aligned by index with `images`.
+    // Entries may be empty strings (no custom alt); renderers fall back to
+    // the generated "title - startLocation" pattern.
+    @ApiProperty({ example: ['Travelers hiking toward the Atlas summit at sunrise'], required: false })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    @MaxLength(300, { each: true })
+    imageAlts?: string[];
 
     @ApiProperty({ enum: TripStatus, example: TripStatus.Draft })
     @IsEnum(TripStatus)

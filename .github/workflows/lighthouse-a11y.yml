@@ -8,6 +8,20 @@
 # text and interactive surfaces. The Lighthouse CI step stays report-only
 # because its budgets bundle performance scores with accessibility; the
 # a11y gate is enforced by the axe + keyboard steps below.
+#
+# Coverage (#332 extension, 2026-10-23) — all checks run against the e2e
+# mock API (e2e/mock-api-server.mjs, trip-1 / booking-1 fixtures):
+#   traveler (3001): /, /search, /login, /signup, /trip/trip-1,
+#                    /checkout/trip-1        (axe desktop+mobile, keyboard)
+#   landing  (3004): /                       (axe desktop+mobile, keyboard)
+#   agency   (3002): /login + / (dashboard shell, test session cookie)
+#   admin    (3003): /login + / (dashboard shell, test session cookie)
+#   plus the keyboard-only checkout walkthrough
+#   (keyboard-checkout-walkthrough.mjs): search → trip → checkout →
+#   confirmation with zero traps; the recorded checklist from the manual
+#   run is committed at .github/lighthouse/KEYBOARD_CHECKOUT_WALKTHROUGH.md.
+# Authed shells use the signed test-cookie pattern from e2e/helpers.ts
+# (SESSION_SECRET below is the same test-only value as browser-e2e.yml).
 name: Lighthouse & Accessibility
 
 on:
@@ -27,13 +41,19 @@ concurrency:
 jobs:
   lighthouse-a11y:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    # Non-blocking initially (issue #213): report results without failing PRs
-    # Note: continue-on-error is on the Lighthouse step (not job level) so
-    # subsequent axe steps still run even if budgets are exceeded.
+    timeout-minutes: 45
+    # continue-on-error is on the Lighthouse step only (not job level) so
+    # the blocking axe/keyboard steps still run if budgets are exceeded.
     env:
       NEXT_PUBLIC_API_URL: http://127.0.0.1:3000/api
       NEXT_PUBLIC_MEDIA_URL: http://127.0.0.1:3000/api/v1/media
+      # Landing build guard (#347): the landing build fails without these.
+      NEXT_PUBLIC_TRAVELER_URL: http://localhost:3001
+      NEXT_PUBLIC_AGENCY_URL: http://localhost:3002
+      # Test-only session signing secret (same value as browser-e2e.yml).
+      # The a11y scripts sign their own ouiboo_session cookies with it to
+      # scan the authenticated agency/admin shells. Never a real secret.
+      SESSION_SECRET: e2e-test-secret
 
     steps:
       - uses: actions/checkout@v4
@@ -47,15 +67,28 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build traveler app
-        # Traveler is the highest-conversion surface (AGENTS.md); keep the
-        # job scoped to it until budgets are proven, then extend to agency/admin.
-        run: npm run build --workspace apps/traveler
+      - name: Start mock API server
+        # Serves the e2e fixtures (trip-1 etc.) for SSR + browser fetches,
+        # so trip detail and checkout render real content during the scans.
+        run: |
+          node e2e/mock-api-server.mjs 3000 &
+          npx --yes wait-on http://localhost:3000/api/trips --timeout 60000
 
-      - name: Start traveler app
+      - name: Build apps
+        # Build separately so failures are visible per app.
+        run: |
+          npm run build --workspace apps/traveler
+          npm run build --workspace apps/agency
+          npm run build --workspace apps/admin
+          npm run build --workspace apps/landing
+
+      - name: Start apps
         run: |
           npm run start --workspace apps/traveler &
-          npx --yes wait-on http://localhost:3001/login --timeout 120000
+          npm run start --workspace apps/agency &
+          npm run start --workspace apps/admin &
+          PORT=3004 npm run start --workspace apps/landing &
+          npx --yes wait-on http://localhost:3001/login http://localhost:3002/login http://localhost:3003/login http://localhost:3004/ --timeout 180000
 
       - name: Run Lighthouse CI
         continue-on-error: true
@@ -65,6 +98,8 @@ jobs:
             http://localhost:3001/
             http://localhost:3001/search
             http://localhost:3001/login
+            http://localhost:3001/trip/trip-1
+            http://localhost:3001/checkout/trip-1
           uploadArtifacts: true
           temporaryPublicStorage: true
           runs: 1
@@ -78,23 +113,49 @@ jobs:
           npm install --no-save @axe-core/playwright
           npx playwright install chromium
 
-      - name: Run axe accessibility checks
-        run: node .github/lighthouse/axe-check.mjs http://localhost:3001
+      - name: Run axe accessibility checks (desktop)
+        run: |
+          node .github/lighthouse/axe-check.mjs http://localhost:3001 "/,/search,/login,/signup,/trip/trip-1,/checkout/trip-1"
+          node .github/lighthouse/axe-check.mjs http://localhost:3004 "/"
+          node .github/lighthouse/axe-check.mjs http://localhost:3002 "/login"
+          node .github/lighthouse/axe-check.mjs http://localhost:3002 "/" --role=AGENCY
+          # Admin /login is scanned with --mock-unauthenticated: AdminShell
+          # hides the form whenever a user object exists, and the mock API
+          # returns one unconditionally — the flag restores the production
+          # tokenless 401 so the real logged-out form is what gets scanned.
+          node .github/lighthouse/axe-check.mjs http://localhost:3003 "/login" --mock-unauthenticated
+          node .github/lighthouse/axe-check.mjs http://localhost:3003 "/" --role=ADMIN
 
       - name: Run axe accessibility checks (mobile viewport)
-        # #213: mobile viewport regression coverage. Blocking since the
-        # #332 contrast fix landed (see header).
-        run: node .github/lighthouse/axe-check-mobile.mjs http://localhost:3001
+        # Blocking since the #332 contrast fix landed (see header).
+        run: |
+          node .github/lighthouse/axe-check-mobile.mjs http://localhost:3001 "/,/search,/login,/signup,/trip/trip-1,/checkout/trip-1"
+          node .github/lighthouse/axe-check-mobile.mjs http://localhost:3004 "/"
 
       - name: Run keyboard navigation checks
         # #213: basic keyboard-navigation regression coverage (tab order,
         # visible focus, no keyboard traps). Blocking since #332.
-        run: node .github/lighthouse/keyboard-nav-check.mjs http://localhost:3001
+        run: |
+          node .github/lighthouse/keyboard-nav-check.mjs http://localhost:3001 "/,/search,/login,/signup,/trip/trip-1,/checkout/trip-1"
+          node .github/lighthouse/keyboard-nav-check.mjs http://localhost:3004 "/"
+          node .github/lighthouse/keyboard-nav-check.mjs http://localhost:3002 "/login"
+          node .github/lighthouse/keyboard-nav-check.mjs http://localhost:3002 "/" --role=AGENCY
+          node .github/lighthouse/keyboard-nav-check.mjs http://localhost:3003 "/login" --mock-unauthenticated
+          node .github/lighthouse/keyboard-nav-check.mjs http://localhost:3003 "/" --role=ADMIN
 
-      - name: Upload Lighthouse results
+      - name: Run keyboard-only checkout walkthrough
+        # #332: the money flow completed with Tab/Enter/typing alone —
+        # zero traps, focus visible at every stop, booking submitted.
+        env:
+          WALKTHROUGH_OUT: keyboard-checkout-walkthrough.md
+        run: node .github/lighthouse/keyboard-checkout-walkthrough.mjs http://localhost:3001
+
+      - name: Upload Lighthouse + walkthrough results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse-results
-          path: .lighthouseci
+          path: |
+            .lighthouseci
+            keyboard-checkout-walkthrough.md
           if-no-files-found: ignore

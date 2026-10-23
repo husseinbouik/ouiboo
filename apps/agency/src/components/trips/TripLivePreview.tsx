@@ -13,7 +13,7 @@ type Props = {
 
 /** Sticky live-preview card shown beside the wizard on large screens. */
 export function TripLivePreview({ t, form, mode }: Props) {
-  const { watch, watchedImages } = form;
+  const { watch, watchedImages, watchedImageAlts } = form;
 
   return (
     <div className="hidden lg:block">
@@ -25,7 +25,7 @@ export function TripLivePreview({ t, form, mode }: Props) {
         )}>
           <div className="relative h-48 bg-muted">
             {watchedImages[0] ? (
-              <Image src={watchedImages[0]} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={watch('title') || t('trips.create.untitledAdventure')} fill sizes="(min-width: 1024px) 20vw, 100vw" />
+              <Image src={watchedImages[0]} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={watchedImageAlts[0]?.trim() || watch('title') || t('trips.create.untitledAdventure')} fill sizes="(min-width: 1024px) 20vw, 100vw" />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                 <ImageIcon className="h-12 w-12" />

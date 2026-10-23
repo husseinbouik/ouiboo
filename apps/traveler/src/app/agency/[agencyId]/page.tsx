@@ -17,6 +17,7 @@ interface Trip {
   title: string;
   description: string;
   images: string[];
+  imageAlts?: string[];
   durationDays: number;
   startLocation: string;
   sessions: Array<{
@@ -91,7 +92,7 @@ export default async function AgencyPage({ params }: { params: Promise<{ agencyI
                     <a key={trip.id} href={`/trip/${trip.id}`} className="group block bg-card rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-border">
                         <div className="relative aspect-[4/3]">
                             {trip.images[0] ? (
-                                <Image src={trip.images[0]} alt={trip.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                                <Image src={trip.images[0]} alt={trip.imageAlts?.[0]?.trim() || trip.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
                             ) : (
                                 <div className="w-full h-full bg-muted" />
                             )}
