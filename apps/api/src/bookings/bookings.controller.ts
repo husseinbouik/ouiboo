@@ -10,7 +10,7 @@ import { UserRole } from '@ouiboo/types';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { ALLOWED_MIME_TYPES_REGEX, MAX_UPLOAD_SIZE_BYTES } from '../upload/upload.constants';
-import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
+import { RateLimit, RateLimitGuard, RateLimitSensitive } from '../common/rate-limit.guard';
 
 @ApiTags('Bookings')
 @Controller('bookings')
@@ -49,6 +49,7 @@ export class BookingsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard, RateLimitGuard)
     @RateLimit({ points: 6, windowMs: 10 * 60_000, keyPrefix: 'bookings:payment-proof' })
+    @RateLimitSensitive()
     @ApiOperation({ summary: 'Upload payment proof for a booking' })
     @ApiConsumes('multipart/form-data')
     @ApiBody({
@@ -88,6 +89,7 @@ export class BookingsController {
     @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, RateLimitGuard)
     @Roles(UserRole.Agency)
     @RateLimit({ points: 30, windowMs: 60_000, keyPrefix: 'bookings:verify-payment' })
+    @RateLimitSensitive()
     @ApiOperation({ summary: 'Approve or reject a manual payment proof for an agency-owned booking' })
     verifyPayment(
         @Request() req,
@@ -130,5 +132,6 @@ export class BookingsController {
         return this.bookingsService.cancelBooking(id, req.user.userId);
     }
 }
+
 
 

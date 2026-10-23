@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, RefreshTokenDto, VerifyEmailDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 import { Request as ExpressRequest, Response } from 'express';
-import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
+import { RateLimit, RateLimitGuard, RateLimitSensitive } from '../common/rate-limit.guard';
 import { CsrfGuard } from './guards/csrf.guard';
 
 const REFRESH_COOKIE_NAME = 'refresh_token';
@@ -18,6 +18,7 @@ export class AuthController {
 
     @Post('login')
     @RateLimit({ points: 8, windowMs: 60_000, keyPrefix: 'auth:login' })
+    @RateLimitSensitive()
     @ApiOperation({ summary: 'Login and get JWT token' })
     async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
         const user = await this.authService.validateUser(loginDto.email, loginDto.password);
@@ -31,6 +32,7 @@ export class AuthController {
 
     @Post('register')
     @RateLimit({ points: 5, windowMs: 60_000, keyPrefix: 'auth:register' })
+    @RateLimitSensitive()
     @ApiOperation({ summary: 'Register a new user' })
     async register(@Body() registerDto: RegisterDto) {
         return this.authService.register(registerDto);
@@ -86,6 +88,7 @@ export class AuthController {
 
     @Post('verify-email')
     @RateLimit({ points: 10, windowMs: 60_000, keyPrefix: 'auth:verify-email' })
+    @RateLimitSensitive()
     @ApiOperation({ summary: 'Verify email with OTP' })
     async verifyEmail(@Body() dto: VerifyEmailDto, @Res({ passthrough: true }) res: Response) {
         const tokens = await this.authService.verifyEmail(dto.email, dto.otp);
@@ -95,6 +98,7 @@ export class AuthController {
 
     @Post('resend-otp')
     @RateLimit({ points: 3, windowMs: 60_000, keyPrefix: 'auth:resend-otp' })
+    @RateLimitSensitive()
     @ApiOperation({ summary: 'Resend verification OTP' })
     async resendOtp(@Body() dto: ResendOtpDto) {
         return this.authService.resendOTP(dto.email);
@@ -102,6 +106,7 @@ export class AuthController {
 
     @Post('forgot-password')
     @RateLimit({ points: 3, windowMs: 60_000, keyPrefix: 'auth:forgot-password' })
+    @RateLimitSensitive()
     @ApiOperation({ summary: 'Request password reset email' })
     async forgotPassword(@Body() dto: ForgotPasswordDto) {
         return this.authService.requestPasswordReset(dto.email);
@@ -109,6 +114,7 @@ export class AuthController {
 
     @Post('reset-password')
     @RateLimit({ points: 5, windowMs: 60_000, keyPrefix: 'auth:reset-password' })
+    @RateLimitSensitive()
     @ApiOperation({ summary: 'Reset password using token' })
     async resetPassword(@Body() dto: ResetPasswordDto) {
         return this.authService.resetPassword(dto.email, dto.token, dto.newPassword);
@@ -150,3 +156,4 @@ export class AuthController {
         return cookies[REFRESH_COOKIE_NAME] ?? tokenFromBody;
     }
 }
+

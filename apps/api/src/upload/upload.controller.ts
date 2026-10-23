@@ -23,12 +23,13 @@ import { UploadFileDto } from './dto/upload-file.dto';
 import { SignedUrlQueryDto } from './dto/signed-url-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ALLOWED_MIME_TYPES_REGEX, MAX_UPLOAD_SIZE_BYTES, type UploadIntent } from './upload.constants';
-import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
+import { RateLimit, RateLimitGuard, RateLimitSensitive } from '../common/rate-limit.guard';
 
 @ApiTags('Upload')
 @Controller('upload')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RateLimitGuard)
+@RateLimitSensitive()
 export class UploadController {
     constructor(private readonly uploadService: UploadService) { }
 
@@ -128,3 +129,4 @@ export class UploadController {
         res.send(data);
     }
 }
+
