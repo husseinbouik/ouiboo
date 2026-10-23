@@ -198,6 +198,14 @@
       "generateHint": "Generation is idempotent: an existing invoice for the same agency and month is returned unchanged.",
       "generated": "Invoice {{number}} is ready.",
       "generateError": "Could not generate the invoice. Check the agency, period, and fee rate.",
+      "errors": {
+        "noBillableBookings": "No paid bookings were confirmed for this agency in that period, so there is nothing to invoice yet.",
+        "rateNotConfigured": "No fee rate was entered and no default fee rate is configured on the server.",
+        "rateOutOfRange": "The fee rate must be greater than 0 and at most 100%.",
+        "mixedCurrencies": "This agency's paid bookings for that period use more than one currency, so a single invoice cannot be generated.",
+        "notReady": "Invoice storage is not available yet (database migration pending).",
+        "agencyNotFound": "That agency could not be found. Refresh the agency list and try again."
+      },
       "downloadError": "Could not download the invoice PDF.",
       "empty": "No invoices issued yet.",
       "number": "Invoice",

@@ -42,7 +42,7 @@ export default function AgenciesTab({
 <div className="space-y-6 animate-in fade-in duration-500">
   <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
      <Users className="h-5 w-5 text-sunset-orange" />
-     {t('dashboard.sections.agencies')} ({pagination?.total ?? agencies.length})
+     {t('dashboard.sections.allAgencies')} ({pagination?.total ?? agencies.length})
   </h2>
   <div className="grid grid-cols-1 gap-4">
      {agencies.map((agency) => (

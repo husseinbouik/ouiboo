@@ -13,6 +13,7 @@ import {
   LogOut,
   Map,
   PlusCircle,
+  Receipt,
   Settings,
   ShieldCheck,
   Star,
@@ -42,6 +43,9 @@ export function AgencySidebar() {
     { name: t('sidebar.bookings'), href: '/dashboard/bookings', icon: Calendar },
     { name: t('sidebar.reviews'), href: '/dashboard/reviews', icon: Star },
     { name: t('sidebar.wallet'), href: '/dashboard/wallet', icon: CreditCard },
+    // #374: the billing page (subscription + platform service fee invoices)
+    // existed but was not linked from anywhere; surface it in the sidebar.
+    { name: t('sidebar.billing'), href: '/dashboard/settings/billing', icon: Receipt },
     { name: t('sidebar.compliance'), href: '/dashboard/onboarding', icon: ShieldCheck },
     { name: t('sidebar.settings'), href: '/dashboard/settings', icon: Settings },
   ];

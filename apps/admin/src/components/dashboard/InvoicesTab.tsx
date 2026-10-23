@@ -8,6 +8,7 @@ import { toPaginatedList, type PaginationMeta } from '@ouiboo/utils';
 import { apiClient } from '@/lib/api-client';
 import type { AdminAgency, AdminInvoice, FeedbackState } from './types';
 import { formatDateTime } from './formatters';
+import { resolveInvoiceGenerateErrorKey } from './dashboard-utils';
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -61,8 +62,10 @@ export default function InvoicesTab({ t, invoices, pagination, onPageChange, pag
       setFeedback({ type: 'success', message: t('dashboard.invoices.generated', { number: invoice.number }) });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
     },
-    onError: () => {
-      setFeedback({ type: 'error', message: t('dashboard.invoices.generateError') });
+    onError: (error) => {
+      // #374: surface the API's specific failure (e.g. no billable bookings
+      // for the period) instead of one generic message for every failure.
+      setFeedback({ type: 'error', message: t(resolveInvoiceGenerateErrorKey(error)) });
     },
   });
 
