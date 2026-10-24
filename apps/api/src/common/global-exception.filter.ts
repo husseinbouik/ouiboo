@@ -91,6 +91,30 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     if (!problem.errors) delete problem.errors
 
+    // Structured, searchable error log line (issue #399): one JSON object
+    // per error response, so runtime logs (Vercel dashboard on the free
+    // plan) can be filtered by event/status/path. Never logs request
+    // bodies, headers, or query strings — signed download tokens travel
+    // in query parameters, so the path is stripped at '?'.
+    const logLine = JSON.stringify({
+      event: 'http_error',
+      timestamp: problem.timestamp,
+      method: request.method,
+      path: (request.originalUrl || request.url || '').split('?')[0],
+      status,
+      error:
+        exception instanceof Error
+          ? exception.name
+          : statusTitles[status] || 'Error',
+      correlationId: (request as Request & { correlationId?: string })
+        .correlationId,
+    })
+    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      this.logger.error(logLine)
+    } else {
+      this.logger.warn(logLine)
+    }
+
     response
       .status(status)
       .type('application/problem+json')
