@@ -1,5 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import * as PDFDocument from 'pdfkit';
+// pdfkit 0.20 loads the metrics for its built-in fonts lazily, the first
+// time doc.font('Helvetica') runs, through package-internal imports that
+// resolve to js/standard-fonts/*.cjs inside the pdfkit package. Vercel's
+// file tracer does not follow those internal imports, so the files were
+// missing from the deployed serverless bundle and every invoice PDF
+// download failed with MODULE_NOT_FOUND (HTTP 500) while working locally.
+// Importing the two fonts the layout below uses through pdfkit's public
+// subpath exports makes the tracer include them in the bundle. (#359)
+import 'pdfkit/standard-fonts/Helvetica';
+import 'pdfkit/standard-fonts/HelveticaBold';
 import type { serializeInvoice } from './invoices.service';
 
 export type InvoicePdfData = ReturnType<typeof serializeInvoice>;
