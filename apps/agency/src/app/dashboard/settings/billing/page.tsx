@@ -9,6 +9,8 @@ import {
   ArrowUpRight,
   BadgeCheck,
   CreditCard,
+  Download,
+  Receipt,
   ShieldCheck,
   Wallet,
 } from 'lucide-react';
@@ -30,11 +32,20 @@ import { apiClient } from '@/lib/api-client';
 type AgencyStatsResponse = {
   revenue?: number;
   totalBookings?: number;
-  wallet?: {
-    availableBalance?: number;
-    pendingBalance?: number;
+  payments?: {
+    totalReceived?: string;
+    pendingVerificationAmount?: string;
     currency?: string;
   };
+};
+
+type AgencyInvoice = {
+  id: string;
+  number: string;
+  periodStart: string;
+  currency: string;
+  totalAmount: string;
+  issuedAt: string;
 };
 
 export default function BillingSettingsPage() {
@@ -50,6 +61,41 @@ export default function BillingSettingsPage() {
       return response.data;
     },
   });
+
+  // #359: platform service fee invoices (billing history). The endpoint
+  // returns an empty list until invoices exist, so this card never breaks
+  // the page; a hard error only swaps in an "unavailable" note.
+  const { data: invoicesData, isError: invoicesError } = useQuery<{ data: AgencyInvoice[] }>({
+    queryKey: ['agency-invoices'],
+    queryFn: async () => {
+      const response = await apiClient.get('/agency/invoices', { params: { page: 1, limit: 24 } });
+      return response.data;
+    },
+  });
+  const invoices = invoicesData?.data ?? [];
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<string | null>(null);
+  const downloadInvoice = async (invoice: AgencyInvoice) => {
+    setDownloadingInvoiceId(invoice.id);
+    try {
+      const response = await apiClient.get(`/agency/invoices/${invoice.id}/pdf`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: 'application/pdf' }),
+      );
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${invoice.number}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      // Keep the page stable; the button simply re-enables.
+    } finally {
+      setDownloadingInvoiceId(null);
+    }
+  };
 
   const getSubscriptionMeta = (status?: string) => {
     switch (status) {
@@ -246,6 +292,57 @@ export default function BillingSettingsPage() {
         </Card>
       )}
 
+      <Card className="border-none shadow-sm bg-card border border-border">
+        <CardHeader className="border-b border-border bg-muted/30">
+          <CardTitle className="flex items-center gap-2">
+            <Receipt className="h-5 w-5 text-accent" />
+            {t('settings.billing.invoicesTitle')}
+          </CardTitle>
+          <CardDescription>{t('settings.billing.invoicesSubtitle')}</CardDescription>
+        </CardHeader>
+        <CardContent className="p-6">
+          {invoicesError ? (
+            <p className="text-sm text-muted-foreground">{t('settings.billing.invoicesUnavailable')}</p>
+          ) : invoices.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t('settings.billing.invoicesEmpty')}</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {invoices.map((invoice) => (
+                <li key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{invoice.number}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Intl.DateTimeFormat(i18n.language, { month: 'long', year: 'numeric' }).format(new Date(invoice.periodStart))}
+                      {' · '}
+                      {t('settings.billing.invoiceIssuedOn', {
+                        date: formatLocalDate(new Date(invoice.issuedAt), i18n.language, { dateStyle: 'medium' }),
+                      })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <p className="text-sm font-bold text-foreground">
+                      {formatCurrency(Number(invoice.totalAmount || 0), invoice.currency, i18n.language)}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => downloadInvoice(invoice)}
+                      disabled={downloadingInvoiceId === invoice.id}
+                    >
+                      <Download className="h-4 w-4" />
+                      {downloadingInvoiceId === invoice.id
+                        ? t('settings.billing.invoiceDownloading')
+                        : t('settings.billing.invoiceDownload')}
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
       <ConfirmDialog
         open={cancelDialogOpen}
         onOpenChange={setCancelDialogOpen}
@@ -286,7 +383,7 @@ export default function BillingSettingsPage() {
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('settings.billing.available')}</span>
             </div>
             <p className="text-3xl font-black text-foreground">
-              {formatCurrency(Number(statsData?.wallet?.availableBalance || 0), statsData?.wallet?.currency, i18n.language)}
+              {formatCurrency(Number(statsData?.payments?.totalReceived || 0), statsData?.payments?.currency, i18n.language)}
             </p>
             <p className="text-sm text-muted-foreground">{t('settings.billing.availableHint')}</p>
           </CardContent>
@@ -299,7 +396,7 @@ export default function BillingSettingsPage() {
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('settings.billing.pending')}</span>
             </div>
             <p className="text-3xl font-black text-foreground">
-              {formatCurrency(Number(statsData?.wallet?.pendingBalance || 0), statsData?.wallet?.currency, i18n.language)}
+              {formatCurrency(Number(statsData?.payments?.pendingVerificationAmount || 0), statsData?.payments?.currency, i18n.language)}
             </p>
             <p className="text-sm text-muted-foreground">{t('settings.billing.pendingHint')}</p>
           </CardContent>
@@ -312,7 +409,7 @@ export default function BillingSettingsPage() {
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('settings.billing.revenue')}</span>
             </div>
             <p className="text-3xl font-black text-foreground">
-              {formatCurrency(Number(statsData?.revenue || 0), statsData?.wallet?.currency, i18n.language)}
+              {formatCurrency(Number(statsData?.revenue || 0), statsData?.payments?.currency, i18n.language)}
             </p>
             <p className="text-sm text-muted-foreground">{t('settings.billing.revenueHint', { count: statsData?.totalBookings || 0 })}</p>
           </CardContent>

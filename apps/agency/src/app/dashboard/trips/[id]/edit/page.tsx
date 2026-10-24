@@ -5,20 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { type TripStatusType } from '@ouiboo/types';
 import type { CreateTripInput } from '@ouiboo/schemas';
 import { useTripWizardForm } from '@/components/trips/useTripWizardForm';
 import { TripForm } from '@/components/trips/TripForm';
-
-type TripEditorData = CreateTripInput & {
-  title: string;
-  description: string;
-  category: CreateTripInput['category'];
-  startLocation: string;
-  durationDays: number;
-  durationNights: number;
-  status: TripStatusType;
-};
+import { tripToFormValues, type TripEditorData } from '@/components/trips/trip-form-values';
 
 export default function EditTripPage() {
   const { id } = useParams();
@@ -39,22 +29,7 @@ export default function EditTripPage() {
 
   useEffect(() => {
     if (trip) {
-      resetForm({
-        title: trip.title,
-        description: trip.description,
-        category: trip.category,
-        startLocation: trip.startLocation,
-        endLocation: trip.endLocation,
-        durationDays: trip.durationDays,
-        durationNights: trip.durationNights,
-        inclusions: trip.inclusions || [],
-        exclusions: trip.exclusions || [],
-        checklist: trip.checklist || [],
-        images: trip.images || [],
-        itinerary: trip.itinerary || [],
-        status: trip.status,
-        currency: trip.currency || 'MAD',
-      });
+      resetForm(tripToFormValues(trip));
     }
   }, [trip, resetForm]);
 

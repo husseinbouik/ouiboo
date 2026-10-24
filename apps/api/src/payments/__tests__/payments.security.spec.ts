@@ -5,15 +5,15 @@ import { DatabaseService } from '../../database/database.service';
 import { EmailService } from '../../email/email.service';
 import { PaymentProviderFactory } from '../providers/payment-provider.factory';
 import { InitiatePaymentDto } from '../dto/payment.dto';
-import { BookingStatus, BookingPaymentStatus, PaymentMethod, TransactionType } from '@ouiboo/database';
-import { WalletsService } from '../../wallets/wallets.service';
+import { BookingStatus, BookingPaymentStatus, PaymentMethod, PaymentCustodian, PaymentLedgerEntryType } from '@ouiboo/database';
+import { ExternalPaymentsService } from '../../external-payments/external-payments.service';
 
 describe('PaymentsService - Security Tests', () => {
   let service: PaymentsService;
   let prismaService: DatabaseService;
   let emailService: EmailService;
   let providerFactory: PaymentProviderFactory;
-  let walletsService: WalletsService;
+  let externalPaymentsService: ExternalPaymentsService;
 
   const mockBooking = {
     id: 'booking-123',
@@ -106,9 +106,11 @@ describe('PaymentsService - Security Tests', () => {
           },
         },
         {
-          provide: WalletsService,
+          provide: ExternalPaymentsService,
           useValue: {
-            creditWalletInTransaction: jest.fn(),
+            recordPaymentVerifiedInTransaction: jest.fn(),
+            recordPaymentRejectedInTransaction: jest.fn(),
+            recordRefund: jest.fn(),
           },
         },
       ],
@@ -118,7 +120,7 @@ describe('PaymentsService - Security Tests', () => {
     prismaService = module.get<DatabaseService>(DatabaseService);
     emailService = module.get<EmailService>(EmailService);
     providerFactory = module.get<PaymentProviderFactory>(PaymentProviderFactory);
-    walletsService = module.get<WalletsService>(WalletsService);
+    externalPaymentsService = module.get<ExternalPaymentsService>(ExternalPaymentsService);
   });
 
   describe('initiatePayment - Amount Validation Security', () => {
@@ -314,8 +316,8 @@ describe('PaymentsService - Security Tests', () => {
     });
   });
 
-  describe('verifyPayment - Booking and wallet finalization', () => {
-    it('credits the agency wallet when a gateway payment verifies successfully', async () => {
+  describe('verifyPayment - Booking and payment-record finalization', () => {
+    it('records a verified external payment (custodian AGENCY_PSP) and never touches a wallet', async () => {
       const providerResult = {
         status: 'success' as const,
         metadata: { provider: 'CASHPLUS', paid: true },
@@ -343,18 +345,13 @@ describe('PaymentsService - Security Tests', () => {
               id: 'template-1',
               agencyId: 'agency-123',
               title: 'Sahara Escape',
-              agency: { id: 'agency-123', wallet: null },
+              agency: { id: 'agency-123' },
             },
           },
         } as any);
 
       jest.spyOn(prismaService.booking, 'updateMany').mockResolvedValue({ count: 1 } as any);
       jest.spyOn(prismaService.paymentTransaction, 'updateMany').mockResolvedValue({ count: 1 } as any);
-      jest.spyOn(prismaService.wallet, 'upsert').mockResolvedValue({
-        id: 'wallet-123',
-        agencyId: 'agency-123',
-      } as any);
-      jest.spyOn(prismaService.walletTransaction, 'create').mockResolvedValue({ id: 'wallet-tx-1' } as any);
       jest.spyOn(prismaService.notificationLog, 'create').mockResolvedValue({ id: 'notif-1' } as any);
       jest.spyOn(emailService, 'sendPaymentConfirmation').mockResolvedValue(undefined);
 
@@ -364,16 +361,21 @@ describe('PaymentsService - Security Tests', () => {
         transactionId: 'gateway-tx-1',
       }, 'traveler-123');
 
-      expect(walletsService.creditWalletInTransaction).toHaveBeenCalledWith(
+      // #368: the payment is recorded as a fact with the agency's PSP as
+      // custodian. No wallet is created, credited, or even read.
+      expect(externalPaymentsService.recordPaymentVerifiedInTransaction).toHaveBeenCalledWith(
         expect.anything(),
-        'agency-123',
-        mockBooking.totalAmount,
-        'Payment received for booking booking-123',
         expect.objectContaining({
-          idempotencyKey: 'booking:booking-123:payment-credit',
-          type: TransactionType.BOOKING,
+          bookingId: 'booking-123',
+          agencyId: 'agency-123',
+          custodian: PaymentCustodian.AGENCY_PSP,
+          source: 'GATEWAY_WEBHOOK',
         }),
+        PaymentLedgerEntryType.PAYMENT_CAPTURED,
       );
+      expect(prismaService.wallet.upsert).not.toHaveBeenCalled();
+      expect(prismaService.wallet.update).not.toHaveBeenCalled();
+      expect(prismaService.walletTransaction.create).not.toHaveBeenCalled();
     });
 
     it('rejects gateway verification for a booking owned by another traveler', async () => {
@@ -471,7 +473,7 @@ describe('PaymentsService - Security Tests', () => {
       }));
     });
 
-    it('debits the agency wallet when a refund succeeds', async () => {
+    it('records the refund as an external payment event and never debits a wallet', async () => {
       const provider = {
         verifyPayment: jest.fn(),
         initiatePayment: jest.fn(),
@@ -486,18 +488,13 @@ describe('PaymentsService - Security Tests', () => {
         paymentStatus: BookingPaymentStatus.PAID,
       } as any);
       jest.spyOn(prismaService.booking, 'update').mockResolvedValue({ ...mockBooking } as any);
+      // The agency has NO wallet — refunds must not require one (#368).
       jest.spyOn(prismaService.tripSession, 'findUnique').mockResolvedValue({
         id: 'session-123',
         template: {
-          agency: {
-            wallet: {
-              id: 'wallet-123',
-            },
-          },
+          agencyId: 'agency-123',
         },
       } as any);
-      jest.spyOn(prismaService.wallet, 'update').mockResolvedValue({ id: 'wallet-123' } as any);
-      jest.spyOn(prismaService.walletTransaction, 'create').mockResolvedValue({ id: 'wallet-tx-2' } as any);
 
       await service.processRefund({
         bookingId: 'booking-123',
@@ -506,14 +503,16 @@ describe('PaymentsService - Security Tests', () => {
         amount: 120,
       });
 
-      const walletUpdate = (prismaService.wallet.update as jest.Mock).mock.calls[0][0];
-      expect(walletUpdate.where).toEqual({ id: 'wallet-123' });
-      expect(walletUpdate.data.availableBalance.decrement.toString()).toBe('120');
-
-      const walletTx = (prismaService.walletTransaction.create as jest.Mock).mock.calls[0][0];
-      expect(walletTx.data.walletId).toBe('wallet-123');
-      expect(walletTx.data.amount.toString()).toBe('-120');
-      expect(walletTx.data.type).toBe(TransactionType.REFUND);
+      expect(externalPaymentsService.recordRefund).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bookingId: 'booking-123',
+          agencyId: 'agency-123',
+          custodian: PaymentCustodian.AGENCY_PSP,
+          externalReference: 'refund-1',
+        }),
+      );
+      expect(prismaService.wallet.update).not.toHaveBeenCalled();
+      expect(prismaService.walletTransaction.create).not.toHaveBeenCalled();
     });
 
     it('derives the provider transaction when refunding by booking id', async () => {

@@ -48,11 +48,59 @@ export class UsersService {
     }
 
     async updateAgencyProfile(userId: string, data: any) {
+        // #371: licence status fields are server-managed — an agency can
+        // submit licence details, but only an admin verification can mark
+        // them VERIFIED. Strip any client-supplied status fields.
+        const {
+            travelLicenceStatus: _ignoredStatus,
+            licenceVerifiedAt: _ignoredVerifiedAt,
+            licenceRejectionReason: _ignoredReason,
+            ...safeData
+        } = data ?? {};
+
+        const existing = await this.db.agencyProfile.findUnique({
+            where: { userId },
+            select: {
+                travelLicenceType: true,
+                travelLicenceNumber: true,
+                licenceExpiry: true,
+                travelLicenceStatus: true,
+            },
+        });
+
+        const licenceTouched = ['travelLicenceType', 'travelLicenceNumber', 'licenceExpiry']
+            .some((key) => safeData[key] !== undefined);
+        if (licenceTouched) {
+            const nextNumber = safeData.travelLicenceNumber !== undefined
+                ? (safeData.travelLicenceNumber || null)
+                : existing?.travelLicenceNumber ?? null;
+            const nextType = safeData.travelLicenceType !== undefined
+                ? (safeData.travelLicenceType || null)
+                : existing?.travelLicenceType ?? null;
+            const nextExpiry = safeData.licenceExpiry !== undefined
+                ? (safeData.licenceExpiry ? new Date(safeData.licenceExpiry) : null)
+                : existing?.licenceExpiry ?? null;
+            const changed = !existing
+                || nextNumber !== (existing.travelLicenceNumber ?? null)
+                || nextType !== (existing.travelLicenceType ?? null)
+                || (nextExpiry?.getTime() ?? null) !== (existing.licenceExpiry?.getTime() ?? null);
+            if (changed) {
+                // New or changed licence details always go (back) to review;
+                // clearing the licence number withdraws the submission.
+                safeData.travelLicenceStatus = nextNumber ? 'PENDING_REVIEW' : 'NOT_SUBMITTED';
+                safeData.licenceVerifiedAt = null;
+                safeData.licenceRejectionReason = null;
+            }
+            if (safeData.licenceExpiry !== undefined) {
+                safeData.licenceExpiry = nextExpiry;
+            }
+        }
+
         return this.db.agencyProfile.upsert({
             where: { userId },
-            update: data,
+            update: safeData,
             create: {
-                ...data,
+                ...safeData,
                 userId,
             },
         });

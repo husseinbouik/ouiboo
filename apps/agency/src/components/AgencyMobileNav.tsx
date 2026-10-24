@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Sheet, SheetContent, SheetTrigger, buttonVariants, Logo } from '@ouiboo/ui';
-import { Menu, LayoutDashboard, Map, BookOpen, Wallet, Settings } from 'lucide-react';
+import { Menu, LayoutDashboard, Map, BookOpen, Wallet, Receipt, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@ouiboo/ui/utils';
@@ -19,6 +19,7 @@ export function AgencyMobileNav() {
     { name: t('sidebar.myTrips'), href: '/dashboard/trips', icon: Map },
     { name: t('sidebar.bookings'), href: '/dashboard/bookings', icon: BookOpen },
     { name: t('sidebar.wallet'), href: '/dashboard/wallet', icon: Wallet },
+    { name: t('sidebar.billing'), href: '/dashboard/settings/billing', icon: Receipt },
     { name: t('sidebar.settings'), href: '/dashboard/settings', icon: Settings },
   ];
 

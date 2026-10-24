@@ -21,6 +21,8 @@ export class MaintenanceSchedulerService implements OnModuleInit {
       this.upsertRecurring(MaintenanceJobName.TripReminders1Day, '0 8 * * *'),
       this.upsertRecurring(MaintenanceJobName.ExchangeRateRefresh, '0 0 * * *'),
       this.upsertRecurring(MaintenanceJobName.CompleteFinishedBookings, '15 * * * *'),
+      // #369: evaluate staged-payment confirmation deadlines hourly.
+      this.upsertRecurring(MaintenanceJobName.GroupConfirmationDeadlines, '5 * * * *'),
     ]);
   }
 

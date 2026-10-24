@@ -8,6 +8,7 @@ import {
     RefundStatus,
     SessionStatus,
     SubscriptionStatus,
+    TravelLicenceType,
     TripCategory,
     TripStatus,
     UserRole,
@@ -41,6 +42,18 @@ export const AgencyProfileSchema = z.object({
     subscriptionStatus: z.nativeEnum(SubscriptionStatus).optional(),
     trialEndsAt: z.string().datetime().optional(),
     subscriptionEndsAt: z.string().datetime().optional(),
+    // #371: legal identity + Law 11-16 travel licence (submitted by the
+    // agency; licence status fields themselves are server-managed and are
+    // not accepted from the client).
+    legalName: z.string().optional(),
+    rc: z.string().optional(),
+    taxId: z.string().optional(),
+    legalRepresentative: z.string().optional(),
+    businessAddress: z.string().optional(),
+    travelLicenceType: z.nativeEnum(TravelLicenceType).optional(),
+    travelLicenceNumber: z.string().optional(),
+    // Date (YYYY-MM-DD from the onboarding form) or full ISO datetime.
+    licenceExpiry: z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Invalid licence expiry date").optional(),
 });
 
 export const ItineraryDaySchema = z.object({
@@ -71,6 +84,8 @@ export const TripTemplateSchema = z.object({
     exclusions: z.array(z.string()),
     checklist: z.array(z.string()),
     images: z.array(z.string()).min(1, "At least one image is required"),
+    // #332: optional alt text per image, aligned by index with `images`.
+    imageAlts: z.array(z.string().max(300)).optional(),
     itinerary: z.array(ItineraryDaySchema).optional(),
     status: z.nativeEnum(TripStatus),
     currency: z.string().regex(/^[A-Z]{3}$/, "Currency must be an ISO 4217 code"),

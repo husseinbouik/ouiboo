@@ -21,6 +21,59 @@ enum VerificationStatus {
   REJECTED
 }
 
+// #371: Law 11-16 travel-agent licence categories.
+enum TravelLicenceType {
+  ODV // Organisateur-distributeur de voyages
+  DV  // Distributeur de voyages
+}
+
+// #371: lifecycle of an agency's travel licence on the platform.
+// EXPIRED is normally derived on read from licenceExpiry; it is stored
+// only when an admin or a future job records the lapse explicitly.
+enum LicenceStatus {
+  NOT_SUBMITTED
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum AgencyPaymentOnboardingStatus {
+  NOT_STARTED
+  PENDING_VERIFICATION
+  CONNECTED
+  DISABLED
+}
+
+enum PaymentAttemptStatus {
+  CREATED
+  PENDING
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+enum WebhookProcessingStatus {
+  RECEIVED
+  PROCESSED
+  DUPLICATE
+  REJECTED
+  MISMATCH
+  FAILED
+}
+
+enum PaymentReconciliationMismatchType {
+  STATUS_MISMATCH
+  AMOUNT_MISMATCH
+  MERCHANT_MISMATCH
+  MISSING_WEBHOOK
+}
+
+enum PaymentReconciliationStatus {
+  OPEN
+  RESOLVED
+}
+
 enum TripStatus {
   ACTIVE
   DRAFT
@@ -43,6 +96,12 @@ enum BookingStatus {
   REJECTED
   CANCELLED
   COMPLETED
+  // #369: staged payments — deposit verified, waiting for the session's
+  // minimum group size to be confirmed.
+  PENDING_MINIMUM
+  // #369: staged payments — the confirmation deadline passed without the
+  // minimum group size; the deposit is refund-due (see BookingPaymentPlan).
+  NOT_CONFIRMED
 }
 
 enum PayoutStatus {
@@ -91,6 +150,9 @@ enum BookingPaymentStatus {
   PAID
   REFUNDED
   FAILED
+  // #369: staged payments — deposit verified with the agency, balance
+  // still outstanding.
+  PARTIALLY_PAID
 }
 
 enum SessionStatus {
@@ -112,6 +174,89 @@ enum PaymentTransactionStatus {
   PENDING
 }
 
+// #368: Phase 1 payment-status model. Traveller money is held by the agency
+// or by the agency's payment provider — never by OuiBoo — so there is
+// deliberately no OUIBOO custodian value in this enum.
+enum PaymentCustodian {
+  AGENCY
+  AGENCY_PSP
+}
+
+enum ExternalPaymentStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentLedgerEntryType {
+  PAYMENT_VERIFIED
+  PAYMENT_CAPTURED
+  PAYMENT_REJECTED
+  PAYMENT_FAILED
+  REFUND_INITIATED
+  REFUND_COMPLETED
+  // #369: staged payments (plan §22 example types).
+  DEPOSIT_CAPTURED
+  BALANCE_CAPTURED
+  REFUND_DUE
+}
+
+enum PaymentLedgerSource {
+  MANUAL_PROOF_REVIEW
+  ADMIN_PROOF_REVIEW
+  GATEWAY_WEBHOOK
+  GATEWAY_REFUND
+}
+
+// #369: staged payments. A session is "staged" when it requires a minimum
+// group size (minBookings > 1) and collects a deposit first. groupStatus
+// tracks the session-level minimum-group outcome.
+enum SessionGroupStatus {
+  NOT_REQUIRED
+  PENDING_MINIMUM
+  CONFIRMED
+  NOT_CONFIRMED
+}
+
+// #369: lifecycle of one booking's staged payment plan (plan §27). Only
+// staged bookings have a plan; single-payment bookings have none.
+enum BookingPaymentPlanStatus {
+  DEPOSIT_DUE
+  DEPOSIT_PAID
+  BALANCE_DUE
+  FULLY_PAID
+  REFUND_DUE
+  REFUNDED
+  CANCELLED
+}
+
+// #370: RefundCase lifecycle (plan §§13–16). A refund case tracks money the
+// AGENCY (or its payment provider) owes the traveller. OuiBoo never holds
+// the money, so a case is an obligation record with a measurable SLA —
+// never a balance and never a guarantee by OuiBoo.
+enum RefundCaseStatus {
+  REFUND_REQUESTED
+  ELIGIBILITY_REVIEW
+  REFUND_APPROVED
+  AGENCY_ACTION_REQUIRED
+  REFUND_INITIATED
+  REFUND_COMPLETED
+  REFUND_REJECTED
+  REFUND_FAILED
+  REFUND_OVERDUE
+}
+
+// #369: which stage of a booking's payments an ExternalPayment records.
+// FULL preserves the pre-#369 single-payment behaviour (one record per
+// booking); staged bookings get one DEPOSIT and one BALANCE record.
+enum ExternalPaymentStage {
+  FULL
+  DEPOSIT
+  BALANCE
+}
+
 model User {
   id                      String                  @id @default(cuid())
   name                    String?
@@ -129,7 +274,9 @@ model User {
   refreshTokens           RefreshToken[]
   agencyProfile           AgencyProfile?
   bookings                Booking[]
+  refundCases             RefundCase[]
   reviews                 Review[]
+  moderatedReviews        Review[]                @relation("ReviewModerator")
   wishlist                Wishlist[]
   travelerConversations   Conversation[]          @relation("TravelerConversations")
   notificationPreferences NotificationPreference?
@@ -182,6 +329,33 @@ model AgencyProfile {
   // #324: self-serve cancellation — takes effect at the period boundary
   cancelAtPeriodEnd           Boolean   @default(false)
   cancellationRequestedAt     DateTime?
+  invoices                    Invoice[]
+  externalPayments            ExternalPayment[]
+  paymentProfile              AgencyPaymentProfile?
+  paymentAttempts             PaymentAttempt[]
+  paymentReconciliationMismatches PaymentReconciliationMismatch[]
+
+  // #371: legal identity + Law 11-16 travel licence. companyName stays
+  // the commercial/trade name; legalName is the registered legal name
+  // (raison sociale) shown to travellers as the seller of record.
+  legalName              String?
+  rc                     String?
+  taxId                  String?
+  legalRepresentative    String?
+  businessAddress        String?
+  travelLicenceType      TravelLicenceType?
+  travelLicenceNumber    String?
+  travelLicenceStatus    LicenceStatus      @default(NOT_SUBMITTED)
+  licenceVerifiedAt      DateTime?
+  licenceExpiry          DateTime?
+  licenceRejectionReason String?
+  refundCases                 RefundCase[]
+  // #370: refund enforcement ladder (plan §16, level 2). Set while the
+  // agency has an overdue refund case: NEW bookings are refused, existing
+  // bookings are never touched. Null = not restricted.
+  newBookingsRestrictedAt     DateTime?
+  newBookingsRestrictionReason String?
+
 }
 
 model TripTemplate {
@@ -199,6 +373,10 @@ model TripTemplate {
   exclusions         String[]
   checklist          String[]
   images             String[]
+  // #332: optional agency-provided alt text per photo, aligned by index
+  // with `images`. Empty/missing entries fall back to the generated
+  // "title · startLocation" pattern at render time.
+  imageAlts          String[]       @default([])
   status             TripStatus     @default(DRAFT)
   featured           Boolean        @default(false)
   currency           String         @default("MAD")
@@ -250,6 +428,12 @@ model TripSession {
   currency           String        @default("MAD")
   cancellationReason String?
   minBookings        Int           @default(1)
+  // #369: staged payments — for sessions with minBookings > 1 and a
+  // deposit, the deadline by which the minimum group size must be reached
+  // and the tracked outcome of that requirement.
+  confirmationDeadline DateTime?
+  groupStatus          SessionGroupStatus @default(NOT_REQUIRED)
+  paymentPlans         BookingPaymentPlan[]
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -257,6 +441,7 @@ model TripSession {
   @@index([endDate])
   @@index([templateId, status, startDate])
   @@index([status, startDate])
+  @@index([groupStatus, confirmationDeadline])
 }
 
 model Booking {
@@ -293,6 +478,11 @@ model Booking {
   createdAt                   DateTime             @default(now())
   updatedAt                   DateTime             @updatedAt
   paymentTransactions         PaymentTransaction[]
+  invoiceLineItems            InvoiceLineItem[]
+  externalPayments            ExternalPayment[]
+  paymentAttempts             PaymentAttempt[]
+  paymentPlan                 BookingPaymentPlan?
+  refundCases                 RefundCase[]
 
   @@index([travelerId])
   @@index([sessionId])
@@ -313,6 +503,150 @@ model PaymentProof {
   uploadedAt      DateTime           @default(now())
   rejectionReason String?
   status          VerificationStatus @default(PENDING)
+}
+
+// #368: A factual record of a traveller payment held OUTSIDE OuiBoo — by the
+// agency itself or by the agency's payment provider. This is evidence and
+// status only; it is never a balance that OuiBoo holds or that anyone can
+// withdraw from OuiBoo.
+model ExternalPayment {
+  id                String                @id @default(cuid())
+  bookingId         String
+  booking           Booking               @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  agencyId          String
+  agency            AgencyProfile         @relation(fields: [agencyId], references: [id])
+  travelerId        String
+  amount            Decimal               @db.Decimal(18, 2)
+  currency          String                @default("MAD")
+  method            PaymentMethod         @default(MANUAL)
+  provider          String?
+  externalReference String?
+  custodian         PaymentCustodian
+  status            ExternalPaymentStatus @default(PENDING_VERIFICATION)
+  verifiedAt        DateTime?
+  // #369: FULL = the booking's single payment (pre-staged behaviour);
+  // staged bookings hold one DEPOSIT and one BALANCE record instead.
+  stage             ExternalPaymentStage  @default(FULL)
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  ledgerEntries     PaymentStatusLedgerEntry[]
+  refundCases       RefundCase[]
+  paymentAttempts   PaymentAttempt[]
+
+  @@unique([bookingId, stage])
+  @@index([agencyId, status, createdAt])
+  @@index([travelerId])
+}
+
+// #369: the staged payment plan of one booking (plan §25). Amounts are
+// snapshotted at booking time from the session configuration, so later
+// session edits can never rewrite what a traveller owes. The plan tracks
+// money owed to / held by the AGENCY — never a OuiBoo balance.
+model BookingPaymentPlan {
+  id                    String                   @id @default(cuid())
+  bookingId             String                   @unique
+  booking               Booking                  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  sessionId             String
+  session               TripSession              @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  agencyId              String
+  totalAmount           Decimal                  @db.Decimal(18, 2)
+  depositAmount         Decimal                  @db.Decimal(18, 2)
+  balanceAmount         Decimal                  @db.Decimal(18, 2)
+  currency              String                   @default("MAD")
+  minimumParticipants   Int
+  confirmationDeadline  DateTime
+  balanceDueAt          DateTime?
+  groupConfirmedAt      DateTime?
+  status                BookingPaymentPlanStatus @default(DEPOSIT_DUE)
+  paymentPolicyVersion  String
+  refundPolicyVersion   String
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+
+  @@index([sessionId, status])
+  @@index([agencyId, status])
+  @@index([status, confirmationDeadline])
+}
+
+// #370: a first-class refund obligation (plan §14). Created when a refund
+// becomes due (minimum group not reached), when a traveller requests one,
+// or when an agency/admin opens one for a cancelled paid booking. The money
+// stays with the agency / its provider at all times; the case tracks the
+// obligation, the SLA deadline (refundDueAt) and every audited transition.
+// No raw card data is ever stored here.
+model RefundCase {
+  id                       String           @id @default(cuid())
+  bookingId                String
+  booking                  Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  travelerId               String
+  traveler                 User             @relation(fields: [travelerId], references: [id])
+  agencyId                 String
+  agency                   AgencyProfile    @relation(fields: [agencyId], references: [id])
+  // The traveller payment this refund returns (deposit stage for staged
+  // bookings). Nullable: a case can be opened before the payment record is
+  // matched, and the payment may later be deleted independently.
+  originalPaymentId        String?
+  originalPayment          ExternalPayment? @relation(fields: [originalPaymentId], references: [id], onDelete: SetNull)
+  externalPaymentReference String?
+  requestedAmount          Decimal          @db.Decimal(18, 2)
+  approvedAmount           Decimal?         @db.Decimal(18, 2)
+  currency                 String           @default("MAD")
+  // Machine-readable trigger: GROUP_MINIMUM_NOT_REACHED,
+  // TRAVELLER_CANCELLATION, AGENCY_CANCELLATION, ADMIN_INITIATED, or a
+  // traveller-supplied free-text reason prefixed with TRAVELLER_REQUEST.
+  reason                   String
+  eligibilityRule          String?
+  policyVersion            String
+  status                   RefundCaseStatus @default(REFUND_REQUESTED)
+  requestedAt              DateTime         @default(now())
+  approvedAt               DateTime?
+  agencyNotifiedAt         DateTime?
+  refundDueAt              DateTime?
+  initiatedAt              DateTime?
+  completedAt              DateTime?
+  providerRefundId         String?
+  providerStatus           String?
+  failureReason            String?
+  disputeReason            String?
+  // Idempotency guard for system-created cases (e.g. "refund-due:<bookingId>").
+  dedupeKey                String?          @unique
+  createdBy                String?
+  updatedBy                String?
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
+
+  @@index([bookingId])
+  @@index([travelerId, status])
+  @@index([agencyId, status])
+  @@index([status, refundDueAt])
+}
+
+// #368: Append-only log of external payment events. Amounts describe money
+// held by the custodian (the agency or its payment provider), never money
+// held by OuiBoo.
+model PaymentStatusLedgerEntry {
+  id                    String                 @id @default(cuid())
+  externalPaymentId     String
+  externalPayment       ExternalPayment        @relation(fields: [externalPaymentId], references: [id], onDelete: Cascade)
+  bookingId             String
+  agencyId              String
+  travelerId            String
+  type                  PaymentLedgerEntryType
+  amount                Decimal                @db.Decimal(18, 2)
+  currency              String                 @default("MAD")
+  custodian             PaymentCustodian
+  provider              String?
+  externalTransactionId String?
+  status                ExternalPaymentStatus
+  source                PaymentLedgerSource
+  idempotencyKey        String?                @unique
+  correlationId         String?
+  occurredAt            DateTime               @default(now())
+  createdAt             DateTime               @default(now())
+
+  @@index([bookingId, createdAt])
+  @@index([agencyId, createdAt])
+  @@index([externalPaymentId, createdAt])
 }
 
 model Wallet {
@@ -371,6 +705,12 @@ model AuditLog {
 }
 
 // Reviews & Ratings
+enum ReviewStatus {
+  VISIBLE
+  HIDDEN
+  REMOVED
+}
+
 model Review {
   id                String       @id @default(cuid())
   bookingId         String       @unique
@@ -383,12 +723,19 @@ model Review {
   comment           String?      @db.Text
   response          String?      @db.Text
   isVerifiedBooking Boolean      @default(true)
+  status            ReviewStatus @default(VISIBLE)
+  moderatedById     String?
+  moderatedBy       User?        @relation("ReviewModerator", fields: [moderatedById], references: [id], onDelete: SetNull)
+  moderatedAt       DateTime?
+  moderationReason  String?      @db.Text
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
   @@index([tripTemplateId])
   @@index([travelerId])
   @@index([tripTemplateId, rating])
+  @@index([tripTemplateId, status])
+  @@index([moderatedById])
 }
 
 // Wishlist
@@ -534,4 +881,150 @@ model CopyrightReport {
   createdAt     DateTime              @default(now())
   resolvedAt    DateTime?
   resolvedBy    String?
+}
+
+enum InvoiceStatus {
+  ISSUED
+}
+
+// #359: monthly commission invoices Ouiboo issues to each agency. Ouiboo is
+// technology-only (the agency is the seller; travelers pay the agency
+// directly), so this is Ouiboo's own billing document for the commission on
+// the agency's paid bookings in the period. Issuer/agency legal details are
+// snapshotted at issuance so a stored invoice (and its PDF) is reproducible
+// even after profiles or env config change. Line items are stored as
+// structured rows for the same reason.
+model Invoice {
+  id             String        @id @default(cuid())
+  number         String        @unique
+  agencyId       String
+  agency         AgencyProfile @relation(fields: [agencyId], references: [id])
+  periodStart    DateTime
+  periodEnd      DateTime
+  currency       String        @default("MAD")
+  commissionRate Decimal       @db.Decimal(5, 2)
+  subtotalAmount Decimal       @db.Decimal(18, 2)
+  totalAmount    Decimal       @db.Decimal(18, 2)
+  status         InvoiceStatus @default(ISSUED)
+  issuerName     String?
+  issuerIce      String?
+  issuerRc       String?
+  issuerAddress  String?       @db.Text
+  agencyName     String
+  agencyIce      String
+  lineItems      InvoiceLineItem[]
+  issuedAt       DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+
+  @@unique([agencyId, periodStart, periodEnd])
+  @@index([agencyId, issuedAt])
+  @@index([issuedAt])
+}
+
+model InvoiceLineItem {
+  id               String  @id @default(cuid())
+  invoiceId        String
+  invoice          Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  bookingId        String
+  booking          Booking @relation(fields: [bookingId], references: [id])
+  description      String
+  bookingDate      DateTime
+  grossAmount      Decimal @db.Decimal(18, 2)
+  commissionRate   Decimal @db.Decimal(5, 2)
+  commissionAmount Decimal @db.Decimal(18, 2)
+
+  @@index([invoiceId])
+  @@index([bookingId])
+}
+
+// #359: per-year sequence backing the sequential invoice numbers
+// (INV-<year>-<seq>). Incremented atomically inside the generation
+// transaction (INSERT ... ON CONFLICT DO UPDATE ... RETURNING).
+model InvoiceSequence {
+  year      Int @id
+  lastValue Int @default(0)
+}
+
+model AgencyPaymentProfile {
+  id                  String                        @id @default(cuid())
+  agencyId            String                        @unique
+  agency              AgencyProfile                 @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  // Adapter key of the connected provider ('manual', 'sandbox', ...).
+  provider            String
+  externalMerchantId  String
+  onboardingStatus    AgencyPaymentOnboardingStatus @default(NOT_STARTED)
+  paymentEnabled      Boolean                       @default(false)
+  refundEnabled       Boolean                       @default(false)
+  currency            String                        @default("MAD")
+  lastVerifiedAt      DateTime?
+  webhookSecretRef    String?
+  createdAt           DateTime                      @default(now())
+  updatedAt           DateTime                      @updatedAt
+  paymentAttempts     PaymentAttempt[]
+
+  @@index([provider, onboardingStatus])
+}
+
+model PaymentAttempt {
+  id                    String             @id @default(cuid())
+  bookingId             String
+  booking               Booking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  agencyId              String
+  agency                AgencyProfile      @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  paymentProfileId      String
+  paymentProfile        AgencyPaymentProfile @relation(fields: [paymentProfileId], references: [id], onDelete: Cascade)
+  stage                 ExternalPaymentStage
+  amount                Decimal            @db.Decimal(18, 2)
+  currency              String             @default("MAD")
+  provider              String
+  // The provider's own payment identifier (null for the manual flow until
+  // the proof review supplies a reference).
+  providerPaymentId     String?
+  hostedUrl             String?
+  idempotencyKey        String             @unique
+  status                PaymentAttemptStatus @default(CREATED)
+  externalPaymentId     String?
+  externalPayment       ExternalPayment?   @relation(fields: [externalPaymentId], references: [id])
+  createdAt             DateTime           @default(now())
+  capturedAt            DateTime?
+  failedAt              DateTime?
+  updatedAt             DateTime           @updatedAt
+
+  @@unique([provider, providerPaymentId])
+  @@index([bookingId, stage])
+  @@index([agencyId, status, createdAt])
+}
+
+model WebhookInboxEntry {
+  id                 String                @id @default(cuid())
+  provider           String
+  providerEventId    String
+  eventType          String
+  signatureValidated Boolean               @default(false)
+  processingStatus   WebhookProcessingStatus @default(RECEIVED)
+  failureReason      String?
+  payload            Json?
+  receivedAt         DateTime              @default(now())
+  processedAt        DateTime?
+
+  @@unique([provider, providerEventId])
+  @@index([processingStatus, receivedAt])
+}
+
+model PaymentReconciliationMismatch {
+  id               String                            @id @default(cuid())
+  provider         String
+  type             PaymentReconciliationMismatchType
+  status           PaymentReconciliationStatus       @default(OPEN)
+  agencyId         String?
+  agency           AgencyProfile?                    @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+  bookingId        String?
+  paymentAttemptId String?
+  externalPaymentId String?
+  details          Json?
+  createdAt        DateTime                          @default(now())
+  resolvedAt       DateTime?
+
+  @@index([status, type, createdAt])
+  @@index([paymentAttemptId, type, status])
 }

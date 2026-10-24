@@ -18,7 +18,7 @@ export function CheckoutHeader() {
   return (
     <div className="mb-12">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={() => router.back()} className="rounded-xl h-12 w-12 p-0">
+        <Button variant="ghost" onClick={() => router.back()} className="rounded-xl h-12 w-12 p-0" aria-label="Go back">
           <ChevronLeft className="h-6 w-6" />
         </Button>
         <div>

@@ -1,5 +1,5 @@
 /**
- * Mobile-viewport axe-core accessibility check for key traveler pages.
+ * Mobile-viewport axe-core accessibility check for key pages.
  *
  * Companion to axe-check.mjs (#213). Runs the same serious/critical
  * axe-core scan with a 375x667 mobile viewport (touch emulation) so
@@ -9,15 +9,15 @@
  * Run in CI after `@axe-core/playwright` is installed with
  * `npm install --no-save @axe-core/playwright` (kept out of package.json).
  *
- * Usage: node .github/lighthouse/axe-check-mobile.mjs [baseUrl]
+ * Usage: node .github/lighthouse/axe-check-mobile.mjs [baseUrl] [pagesCsv] [--role=ROLE]
+ * A page that cannot be analyzed at all FAILS the check (#332), same as
+ * the desktop script.
  */
 import { chromium } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
+import { parseTargetArgs, addSessionCookies, scrollThroughPage } from './a11y-common.mjs';
 
-const baseUrl = process.argv[2] || 'http://localhost:3001';
-
-// Key traveler journeys (highest-conversion surface)
-const pages = ['/', '/search', '/login', '/signup'];
+const { baseUrl, pages, role } = parseTargetArgs();
 
 const browser = await chromium.launch();
 const context = await browser.newContext({
@@ -26,6 +26,7 @@ const context = await browser.newContext({
   hasTouch: true,
   deviceScaleFactor: 2,
 });
+if (role) await addSessionCookies(context, baseUrl, role);
 const page = await context.newPage();
 
 let failures = 0;
@@ -34,8 +35,10 @@ for (const path of pages) {
   const url = `${baseUrl}${path}`;
   try {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    // Let client-side translations/hydration settle
-    await page.waitForTimeout(2500);
+    // Let client-side translations/hydration settle, then reveal
+    // scroll-triggered content so the scan covers the full page.
+    await page.waitForTimeout(2000);
+    await scrollThroughPage(page);
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
@@ -63,7 +66,8 @@ for (const path of pages) {
       );
     }
   } catch (err) {
-    console.log(`⚠️  [mobile] ${url}: could not analyze (${err.message})`);
+    failures += 1;
+    console.log(`❌ [mobile] ${url}: could not analyze (${err.message})`);
   }
 }
 

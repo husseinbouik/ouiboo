@@ -143,7 +143,7 @@ export default function WaitlistSection() {
                 disabled={loading}
                 whileHover={{ scale: loading ? 1 : 1.02 }}
                 whileTap={{ scale: loading ? 1 : 0.98 }}
-                className="w-full flex-none rounded-md bg-sunset-orange px-3.5 py-2.5 text-sm font-semibold text-white shadow-md hover:shadow-lg hover:bg-orange-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex-none rounded-md bg-sunset-orange-dark px-3.5 py-2.5 text-sm font-semibold text-white shadow-md hover:shadow-lg hover:bg-orange-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? t('waitlist.form.submitting') : t('waitlist.form.submit')}
               </motion.button>

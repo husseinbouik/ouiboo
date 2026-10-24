@@ -4,6 +4,7 @@ import { DatabaseModule } from '../database/database.module';
 import { EmailModule } from '../email/email.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { CurrencyModule } from '../currency/currency.module';
+import { StagedPaymentsModule } from '../staged-payments/staged-payments.module';
 import { getRedisConnectionOptions } from './redis-connection';
 import { MAINTENANCE_QUEUE } from './worker-queue.constants';
 import { MaintenanceProcessor } from './maintenance.processor';
@@ -21,6 +22,7 @@ import { MaintenanceSchedulerService } from './maintenance-scheduler.service';
     EmailModule,
     NotificationsModule,
     CurrencyModule,
+    StagedPaymentsModule,
   ],
   providers: [MaintenanceProcessor, MaintenanceSchedulerService],
 })

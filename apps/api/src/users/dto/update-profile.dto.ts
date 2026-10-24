@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, MinLength, IsUrl } from 'class-validator';
+import { IsString, IsOptional, MinLength, IsUrl, IsEnum, IsDateString, MaxLength } from 'class-validator';
+
+// #371: mirrors the Prisma TravelLicenceType enum (Law 11-16 categories).
+export enum TravelLicenceTypeDto {
+    ODV = 'ODV',
+    DV = 'DV',
+}
 
 export class UpdateAgencyProfileDto {
     @ApiProperty({ example: 'Atlas Voyages' })
@@ -30,4 +36,53 @@ export class UpdateAgencyProfileDto {
     @IsUrl()
     @IsOptional()
     logo?: string;
+
+    // #371: legal identity (plan §6). Only genuinely necessary compliance
+    // data is collected. Licence status/verified-at are server-managed and
+    // are deliberately NOT part of this DTO.
+    @ApiProperty({ example: 'Atlas Adventures SARL', required: false })
+    @IsString()
+    @IsOptional()
+    @MaxLength(160)
+    legalName?: string;
+
+    @ApiProperty({ example: '123456', required: false, description: 'Registre de commerce number' })
+    @IsString()
+    @IsOptional()
+    @MaxLength(60)
+    rc?: string;
+
+    @ApiProperty({ example: '12345678', required: false, description: 'Tax identifier (identifiant fiscal)' })
+    @IsString()
+    @IsOptional()
+    @MaxLength(60)
+    taxId?: string;
+
+    @ApiProperty({ example: 'Sara Bennani', required: false })
+    @IsString()
+    @IsOptional()
+    @MaxLength(120)
+    legalRepresentative?: string;
+
+    @ApiProperty({ example: '12 Avenue Mohammed V, Marrakech', required: false })
+    @IsString()
+    @IsOptional()
+    @MaxLength(300)
+    businessAddress?: string;
+
+    @ApiProperty({ enum: TravelLicenceTypeDto, required: false })
+    @IsEnum(TravelLicenceTypeDto)
+    @IsOptional()
+    travelLicenceType?: TravelLicenceTypeDto;
+
+    @ApiProperty({ example: 'AV-2024-0187', required: false })
+    @IsString()
+    @IsOptional()
+    @MaxLength(80)
+    travelLicenceNumber?: string;
+
+    @ApiProperty({ example: '2028-05-31', required: false, description: 'Licence expiry date (ISO 8601)' })
+    @IsDateString()
+    @IsOptional()
+    licenceExpiry?: string;
 }

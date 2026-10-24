@@ -52,7 +52,7 @@ export default function PricingSection() {
           viewport={{ once: true }}
           className="mx-auto max-w-4xl text-center"
         >
-          <h2 className="text-base font-semibold leading-7 text-sunset-orange uppercase tracking-wide">{t('pricing.preTitle')}</h2>
+          <h2 className="text-base font-semibold leading-7 text-sunset-orange-dark uppercase tracking-wide">{t('pricing.preTitle')}</h2>
           <p className="mt-2 text-4xl font-bold tracking-tight text-deep-blue sm:text-5xl">
             {t('pricing.title')}
           </p>
@@ -125,7 +125,7 @@ export default function PricingSection() {
               transition={{ type: "spring", stiffness: 200 }}
               className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2"
             >
-              <span className="inline-flex items-center rounded-full bg-sunset-orange px-4 py-1 text-sm font-medium text-white shadow-md">
+              <span className="inline-flex items-center rounded-full bg-sunset-orange-dark px-4 py-1 text-sm font-medium text-white shadow-md">
                 {t('pricing.waitlist.badge')}
               </span>
             </motion.div>
@@ -135,12 +135,12 @@ export default function PricingSection() {
               <span className="text-5xl font-bold tracking-tight text-deep-blue">{t('pricing.pro.price')}</span>
               <span className="text-sm font-semibold leading-6 text-gray-600">{t('pricing.pro.currency')}</span>
             </p>
-            <p className="mt-2 text-xs text-sunset-orange font-semibold">{t('pricing.pro.commission')}</p>
+            <p className="mt-2 text-xs text-sunset-orange-dark font-semibold">{t('pricing.pro.commission')}</p>
             <motion.a
               href="#waitlist"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="mt-8 block rounded-md bg-sunset-orange px-3 py-2 text-center text-sm font-semibold leading-6 text-white shadow-md hover:shadow-lg hover:bg-orange-600 transition-all duration-300"
+              className="mt-8 block rounded-md bg-sunset-orange-dark px-3 py-2 text-center text-sm font-semibold leading-6 text-white shadow-md hover:shadow-lg hover:bg-orange-800 transition-all duration-300"
             >
               {t('pricing.pro.button')}
             </motion.a>

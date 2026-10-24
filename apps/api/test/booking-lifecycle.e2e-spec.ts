@@ -89,6 +89,8 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
 
     async function clearDatabase() {
         if (!db) return;
+        await db.paymentStatusLedgerEntry.deleteMany();
+        await db.externalPayment.deleteMany();
         await db.walletTransaction.deleteMany();
         await db.wallet.deleteMany();
         await db.payoutRequest.deleteMany();
@@ -247,7 +249,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         expect(updatedProof?.status).toBe('VERIFIED');
     });
 
-    it('Credits the agency wallet exactly once under concurrent manual payment approval', async () => {
+    it('Records the agency external payment exactly once under concurrent manual payment approval (#368)', async () => {
         const { session, traveler, agency } = await seedTestData();
         const booking = await db.booking.create({
             data: {
@@ -280,15 +282,31 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const responses = await Promise.all([approve(), approve()]);
 
         expect(responses.map((response) => response.status).sort()).toEqual([200, 400]);
-        const wallet = await db.wallet.findUniqueOrThrow({
-            where: { agencyId: agency.id },
-            include: { transactions: true },
+
+        // #368: approval records ONE verified external payment held by the
+        // agency — it must never credit a withdrawable OuiBoo wallet.
+        const externalPayment = await db.externalPayment.findUniqueOrThrow({
+            // #369: payments are unique per (booking, stage); this is the
+            // single full payment.
+            where: { bookingId_stage: { bookingId: booking.id, stage: 'FULL' } },
         });
-        expect(wallet.availableBalance.toNumber()).toBe(780);
-        expect(wallet.transactions).toHaveLength(1);
-        expect(wallet.transactions[0].idempotencyKey).toBe(
-            `booking:${booking.id}:manual-payment-credit`,
+        expect(externalPayment.status).toBe('VERIFIED');
+        expect(externalPayment.custodian).toBe('AGENCY');
+        expect(externalPayment.amount.toNumber()).toBe(780);
+
+        const ledgerEntries = await db.paymentStatusLedgerEntry.findMany({
+            where: { externalPaymentId: externalPayment.id },
+        });
+        expect(ledgerEntries).toHaveLength(1);
+        expect(ledgerEntries[0].type).toBe('PAYMENT_VERIFIED');
+        expect(ledgerEntries[0].idempotencyKey).toBe(
+            `booking:${booking.id}:payment-verified`,
         );
+
+        const wallet = await db.wallet.findUnique({
+            where: { agencyId: agency.id },
+        });
+        expect(wallet).toBeNull();
         expect(mockEmailService.sendPaymentConfirmation).toHaveBeenCalledTimes(1);
     });
 

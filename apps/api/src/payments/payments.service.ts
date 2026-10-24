@@ -3,9 +3,9 @@ import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
 import { PaymentProviderFactory } from './providers/payment-provider.factory';
 import { InitiatePaymentDto, VerifyPaymentDto, ProcessRefundDto } from './dto/payment.dto';
-import { PaymentMethod, BookingStatus, BookingPaymentStatus, RefundStatus, TransactionType } from '@ouiboo/database';
-import { MoneyInput, decimalAbs, decimalEqualsMoney, multiplyMoney, toMoneyDecimal, toMoneyString } from '../common/money.util';
-import { WalletsService } from '../wallets/wallets.service';
+import { PaymentMethod, BookingStatus, BookingPaymentStatus, RefundStatus, PaymentCustodian, PaymentLedgerEntryType, PaymentLedgerSource } from '@ouiboo/database';
+import { MoneyInput, decimalEqualsMoney, multiplyMoney, toMoneyDecimal, toMoneyString } from '../common/money.util';
+import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 
 @Injectable()
 export class PaymentsService {
@@ -15,7 +15,7 @@ export class PaymentsService {
     private prisma: DatabaseService,
     private paymentProviderFactory: PaymentProviderFactory,
     private emailService: EmailService,
-    private walletsService: WalletsService,
+    private externalPaymentsService: ExternalPaymentsService,
   ) { }
 
   /**
@@ -196,39 +196,31 @@ export class PaymentsService {
         },
       });
 
-      // Create refund transaction
+      // #368: record the refund as an external payment event. The provider
+      // returns the money to the traveller from the agency's merchant
+      // account; OuiBoo never held it, so there is no OuiBoo balance to
+      // debit and no agency wallet is required.
       if (booking.sessionId) {
         const session = await this.prisma.tripSession.findUnique({
           where: { id: booking.sessionId },
-          include: { template: { include: { agency: { include: { wallet: true } } } } },
+          include: { template: { select: { agencyId: true } } },
         });
 
-        // Ensure agency wallet is loaded
-        const agencyWallet = session?.template?.agency?.wallet;
-        if (!agencyWallet) {
-          throw new BadRequestException('Agency missing wallet');
+        if (session?.template?.agencyId) {
+          await this.externalPaymentsService.recordRefund({
+            bookingId: dto.bookingId,
+            agencyId: session.template.agencyId,
+            travelerId: booking.travelerId,
+            amount: dto.amount,
+            currency: booking.currency,
+            method: PaymentMethod.GATEWAY,
+            provider: dto.provider,
+            externalReference: refundResult.refundId || null,
+            externalTransactionId: dto.transactionId,
+            custodian: PaymentCustodian.AGENCY_PSP,
+            source: PaymentLedgerSource.GATEWAY_REFUND,
+          });
         }
-
-        await this.prisma.wallet.update({
-          where: { id: agencyWallet.id },
-          data: {
-            availableBalance: {
-              decrement: decimalAbs(dto.amount),
-            },
-          },
-        });
-
-        // Create refund transaction (debit agency wallet)
-        await this.prisma.walletTransaction.create({
-          data: {
-            walletId: agencyWallet.id,
-            amount: decimalAbs(dto.amount).neg(),
-            type: TransactionType.REFUND,
-            reason: `Refund for booking ${dto.bookingId}`,
-            referenceId: refundResult.refundId || null,
-          },
-        });
-
       }
 
       this.logger.log(`Refund processed for booking ${dto.bookingId}: ${refundResult.refundId}`);
@@ -848,16 +840,24 @@ export class PaymentsService {
         return { booking, transitioned: false };
       }
 
-      await this.walletsService.creditWalletInTransaction(
+      // #368: record the captured payment as a fact — the money sits with
+      // the agency's payment provider (custodian AGENCY_PSP), never in a
+      // withdrawable OuiBoo balance.
+      await this.externalPaymentsService.recordPaymentVerifiedInTransaction(
         tx,
-        booking.session.template.agencyId,
-        booking.totalAmount,
-        `Payment received for booking ${bookingId}`,
         {
-          idempotencyKey: `booking:${bookingId}:payment-credit`,
-          referenceId: bookingId,
-          type: TransactionType.BOOKING,
+          bookingId,
+          agencyId: booking.session.template.agencyId,
+          travelerId: booking.travelerId,
+          amount: booking.totalAmount,
+          currency: booking.currency,
+          method: PaymentMethod.GATEWAY,
+          provider: paymentMetadata?.provider ?? null,
+          externalTransactionId: paymentMetadata?.transactionId ?? null,
+          custodian: PaymentCustodian.AGENCY_PSP,
+          source: PaymentLedgerSource.GATEWAY_WEBHOOK,
         },
+        PaymentLedgerEntryType.PAYMENT_CAPTURED,
       );
 
       return { booking, transitioned: true };

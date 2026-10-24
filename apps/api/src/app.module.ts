@@ -10,17 +10,20 @@ import { CommonModule } from './common/common.module'
 import { CronModule } from './cron/cron.module'
 import { CurrencyModule } from './currency/currency.module'
 import { CopyrightModule } from './copyright/copyright.module'
+import { InvoicesModule } from './invoices/invoices.module'
+import { RefundsModule } from './refunds/refunds.module'
 import { DatabaseModule } from './database/database.module'
 import { EmailModule } from './email/email.module'
 import { HealthModule } from './health/health.module'
 import { MessagesModule } from './messages/messages.module'
 import { NotificationsModule } from './notifications/notifications.module'
 import { PaymentsModule } from './payments/payments.module'
+import { PaymentProvidersModule } from './payment-providers/payment-providers.module'
 import { ReviewsModule } from './reviews/reviews.module'
 import { TripsModule } from './trips/trips.module'
 import { UploadModule } from './upload/upload.module'
 import { UsersModule } from './users/users.module'
-import { WalletsModule } from './wallets/wallets.module'
+import { ExternalPaymentsModule } from './external-payments/external-payments.module'
 import { WishlistModule } from './wishlist/wishlist.module'
 
 @Module({
@@ -39,16 +42,19 @@ import { WishlistModule } from './wishlist/wishlist.module'
     BookingsModule,
     AgencyModule,
     AdminModule,
-    WalletsModule,
+    ExternalPaymentsModule,
     EmailModule,
     HealthModule,
     PaymentsModule,
+    PaymentProvidersModule,
     NotificationsModule,
     ReviewsModule,
     WishlistModule,
     AnalyticsModule,
     CurrencyModule,
     CopyrightModule,
+    InvoicesModule,
+    RefundsModule,
     MessagesModule,
   ],
 })

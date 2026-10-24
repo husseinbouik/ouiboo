@@ -58,7 +58,10 @@ export function useTripActions({ tripId, tripStatus }: UseTripActionsOptions) {
             price: session.price,
             deposit: session.deposit || 0,
             totalSeats: session.totalSeats,
-            currency: session.currency
+            currency: session.currency,
+            // #369: staged-payment configuration (validated server-side).
+            ...(session.minBookings ? { minBookings: session.minBookings } : {}),
+            ...(session.confirmationDeadline ? { confirmationDeadline: session.confirmationDeadline } : {}),
           })
         )
       );

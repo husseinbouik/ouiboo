@@ -47,8 +47,9 @@
       "agencies": "Gérer les agences",
       "bookings": "Réservations système",
       "paymentProofs": "Justificatifs de paiement",
-      "payouts": "Demandes de paiement",
-      "audit": "Journal d'audit"
+      "audit": "Journal d'audit",
+      "invoices": "Factures",
+      "refunds": "Remboursements"
     },
     "meta": {
       "pending": {
@@ -71,15 +72,20 @@
         "description": "Approuver ou rejeter les reçus de paiement téléchargés.",
         "searchPlaceholder": "Rechercher des justificatifs par voyageur ou réservation..."
       },
-      "payouts": {
-        "title": "Demandes de paiement",
-        "description": "Examiner les demandes de paiement des agences avant de libérer les fonds.",
-        "searchPlaceholder": "Rechercher des demandes de paiement par agence..."
-      },
       "audit": {
         "title": "Journal d'audit",
         "description": "Rechercher l'activité des opérateurs, exporter les enregistrements et appliquer le nettoyage de rétention.",
         "searchPlaceholder": "Rechercher par action, email de l'acteur, type de cible ou id de cible"
+      },
+      "invoices": {
+        "title": "Factures de frais de service plateforme",
+        "description": "Consultez les factures de frais de service plateforme émises et générez la facture mensuelle par agence.",
+        "searchPlaceholder": "Rechercher une facture par numéro ou agence..."
+      },
+      "refunds": {
+        "searchPlaceholder": "Rechercher des dossiers de remboursement...",
+        "description": "Suivez les dossiers de remboursement des voyageurs pour toutes les agences. Les remboursements sont payés par les agences depuis leurs propres comptes marchands — les dossiers en retard restreignent les nouvelles réservations de l'agence.",
+        "title": "Dossiers de remboursement"
       }
     },
     "sections": {
@@ -88,7 +94,6 @@
       "allAgencies": "Gestion de toutes les agences",
       "bookingMonitor": "Suivi des réservations système",
       "pendingPaymentProofs": "Justificatifs de paiement en attente",
-      "payoutRequests": "Demandes de paiement",
       "auditTrail": "Piste d'audit"
     },
     "table": {
@@ -111,24 +116,22 @@
       "approve": "Approuver",
       "activate": "Activer",
       "deactivate": "Désactiver",
-      "approvePayout": "Approuver le paiement",
-      "rejectPayout": "Rejeter le paiement",
       "approveAgency": "Approuver l'agence",
       "rejectAgency": "Rejeter l'agence",
-      "refund": "Rembourser"
+      "refund": "Rembourser",
+      "verifyLicence": "Vérifier la licence",
+      "rejectLicence": "Rejeter la licence"
     },
     "labels": {
       "ice": "ICE",
       "joined": "Inscrit le",
       "request": "Demande",
       "requestId": "Demande #{{id}}",
-      "agencyPayout": "Paiement agence",
       "agency": "Agence",
       "requested": "Demandé le",
       "amount": "Montant",
       "currency": "MAD",
       "bankDetails": "Coordonnées bancaires de l'agence",
-      "payoutDetails": "Détails du paiement",
       "selected": "Sélectionné",
       "contact": "Contact",
       "status": "Statut",
@@ -139,13 +142,19 @@
       "system": "Système",
       "noActorId": "Aucun id d'acteur",
       "noTargetId": "Aucun id de cible",
-      "agencyLogo": "Logo de {{name}}"
+      "agencyLogo": "Logo de {{name}}",
+      "travelLicence": "Licence de voyage (loi 11-16)",
+      "legalName": "Raison sociale",
+      "legalRepresentative": "Représentant légal",
+      "rc": "Registre de commerce (RC)",
+      "taxId": "Identifiant fiscal (IF)",
+      "licenceExpiry": "Expiration de la licence",
+      "licenceVerifiedAt": "Licence vérifiée le",
+      "licenceRejectionReason": "Motif du rejet"
     },
     "messages": {
       "noBankDetails": "Aucune coordonnée bancaire enregistrée.",
       "noPaymentProofs": "Aucun justificatif de paiement en attente.",
-      "noPayoutRequests": "Aucune demande de paiement en attente.",
-      "selectPayoutPrompt": "Sélectionnez une demande de paiement pour consulter les coordonnées bancaires et approuver ou rejeter.",
       "reviewVerification": "Vérifiez les détails et approuvez ou rejetez.",
       "notProvided": "Non renseigné",
       "noEmail": "Aucun email enregistré",
@@ -166,19 +175,48 @@
       "paymentProofRejected": "Justificatif de paiement rejeté avec succès.",
       "paymentProofUpdateError": "Impossible de mettre à jour le justificatif de paiement. Réessayez.",
       "paymentProofLoadError": "Impossible de charger le justificatif de paiement.",
-      "payoutPaid": "Paiement marqué comme payé avec succès.",
-      "payoutRejected": "Paiement rejeté avec succès.",
-      "payoutUpdateError": "Impossible de mettre à jour la demande de paiement. Réessayez.",
       "refundProcessed": "Remboursement traité avec succès.",
       "refundError": "Impossible de traiter le remboursement pour le moment.",
       "auditPruneError": "Impossible d'élaguer les journaux d'audit pour le moment.",
       "auditExportSuccess": "Export du journal d'audit téléchargé avec succès.",
       "auditExportError": "Impossible d'exporter les journaux d'audit pour le moment.",
-      "retentionDaysInvalid": "Le nombre de jours de rétention doit être un nombre positif."
+      "retentionDaysInvalid": "Le nombre de jours de rétention doit être un nombre positif.",
+      "licenceVerified": "Licence de voyage vérifiée",
+      "licenceRejected": "Licence de voyage rejetée",
+      "licenceUpdateError": "Impossible de mettre à jour la licence de voyage"
     },
     "aria": {
       "mainNavigation": "Navigation principale",
       "adminAvatar": "Avatar administrateur"
+    },
+    "invoices": {
+      "title": "Factures de frais de service plateforme ({{total}})",
+      "generateTitle": "Générer la facture mensuelle",
+      "agency": "Agence",
+      "selectAgency": "Sélectionner une agence",
+      "month": "Mois",
+      "year": "Année",
+      "rate": "Taux des frais (%)",
+      "generate": "Générer la facture",
+      "generateHint": "La génération est idempotente : une facture existante pour la même agence et le même mois est renvoyée inchangée.",
+      "generated": "La facture {{number}} est prête.",
+      "generateError": "Impossible de générer la facture. Vérifiez l'agence, la période et le taux des frais.",
+      "errors": {
+        "noBillableBookings": "Aucune réservation payée n'a été confirmée pour cette agence sur cette période : il n'y a encore rien à facturer.",
+        "rateNotConfigured": "Aucun taux de frais n'a été saisi et aucun taux par défaut n'est configuré sur le serveur.",
+        "rateOutOfRange": "Le taux de frais doit être supérieur à 0 et au maximum de 100 %.",
+        "mixedCurrencies": "Les réservations payées de cette agence pour cette période utilisent plusieurs devises : une facture unique ne peut pas être générée.",
+        "notReady": "Le stockage des factures n'est pas encore disponible (migration de la base de données en attente).",
+        "agencyNotFound": "Cette agence est introuvable. Actualisez la liste des agences et réessayez."
+      },
+      "downloadError": "Impossible de télécharger le PDF de la facture.",
+      "empty": "Aucune facture émise pour le moment.",
+      "number": "Facture",
+      "period": "Période",
+      "issued": "Émise le",
+      "gross": "Réservations brutes",
+      "fee": "Frais de service plateforme",
+      "download": "PDF"
     },
     "audit": {
       "trail": "Piste d'audit ({{total}})",
@@ -227,16 +265,54 @@
       "payoutPaidLabel": "Payé",
       "payoutPaidHelper": "Virement effectué",
       "payoutRejectedLabel": "Rejeté",
-      "payoutRejectedHelper": "Fonds renvoyés au portefeuille de l'agence",
+      "payoutRejectedHelper": "Fonds renvoyés à l'agence",
       "payoutApprovedLabel": "Approuvé",
       "payoutApprovedHelper": "Approuvé et en attente de traitement du paiement",
       "payoutPendingLabel": "En attente",
-      "payoutPendingHelper": "En attente de révision par l'admin"
+      "payoutPendingHelper": "En attente de révision par l'admin",
+      "licenceNotSubmitted": "Licence non envoyée",
+      "licencePendingReview": "Licence en examen",
+      "licenceVerified": "Licence vérifiée",
+      "licenceRejected": "Licence rejetée",
+      "licenceExpired": "Licence expirée"
     },
     "modal": {
       "agencyReview": "Revue d'agence"
     },
-    "signOut": "Se déconnecter"
+    "signOut": "Se déconnecter",
+    "refunds": {
+      "emptyHint": "Les dossiers apparaissent ici lorsqu'un voyage n'est pas confirmé, qu'un voyageur demande un remboursement ou qu'une agence annule.",
+      "actions": {
+        "review": "Commencer l'examen",
+        "complete": "Marquer comme terminé",
+        "initiate": "Marquer comme envoyé",
+        "fail": "Marquer comme échoué",
+        "approve": "Approuver",
+        "reject": "Rejeter"
+      },
+      "status": {
+        "REFUND_APPROVED": "Approuvé",
+        "AGENCY_ACTION_REQUIRED": "Action de l'agence requise",
+        "ELIGIBILITY_REVIEW": "En cours d'examen",
+        "REFUND_INITIATED": "Initié",
+        "REFUND_REJECTED": "Rejeté",
+        "REFUND_REQUESTED": "Demandé",
+        "REFUND_OVERDUE": "En retard",
+        "REFUND_FAILED": "Échoué",
+        "REFUND_COMPLETED": "Terminé"
+      },
+      "reason": {
+        "GROUP_MINIMUM_NOT_REACHED": "Voyage non confirmé — groupe minimum non atteint",
+        "TRAVELLER_CANCELLATION": "Annulation par le voyageur",
+        "ADMIN_INITIATED": "Ouvert par l'administration",
+        "TRAVELLER_REQUEST": "Demande du voyageur",
+        "AGENCY_CANCELLATION": "Annulation par l'agence"
+      },
+      "failureReason": "Échec",
+      "empty": "Aucun dossier de remboursement",
+      "dueBy": "Échéance",
+      "requestedAt": "Demandé le"
+    }
   },
   "meta": {
     "titleDefault": "Administration de la plateforme",

@@ -332,5 +332,10 @@
     "emptyTitle": "Vous êtes à jour",
     "emptyBody": "Aucune nouvelle notification.",
     "title": "Notifications"
+  },
+  "seller": {
+    "organisedAndSoldBy": "Organisé et vendu par {{name}}",
+    "licence": "Licence d'agent de voyages : {{number}}",
+    "poweredBy": "Propulsé par OuiBoo"
   }
 }

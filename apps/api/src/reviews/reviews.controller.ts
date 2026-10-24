@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto, UpdateReviewDto, ReviewResponseDto } from './dto/create-review.dto';
+import { ModerateReviewDto } from './dto/moderate-review.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -111,5 +112,32 @@ export class ReviewDetailController {
     @Request() req: any,
   ) {
     return this.reviewsService.deleteReview(reviewId, req.user.id, req.user.role);
+  }
+}
+
+/**
+ * Admin review moderation (#393) — POST /admin/reviews/:id/moderate.
+ * Guarded exactly like the rest of the admin surface: a valid JWT plus
+ * the ADMIN role. Travelers and agencies receive 403 from RolesGuard.
+ */
+@Controller('admin/reviews')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.Admin)
+export class AdminReviewsController {
+  constructor(private reviewsService: ReviewsService) {}
+
+  @Post(':id/moderate')
+  @HttpCode(HttpStatus.OK)
+  async moderateReview(
+    @Param('id') reviewId: string,
+    @Body() dto: ModerateReviewDto,
+    @Request() req: any,
+  ) {
+    return this.reviewsService.moderateReview(
+      reviewId,
+      { id: req.user.id ?? req.user.userId, email: req.user.email },
+      dto.action,
+      dto.reason,
+    );
   }
 }

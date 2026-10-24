@@ -332,5 +332,10 @@
     "emptyTitle": "You're all caught up",
     "emptyBody": "No new notifications.",
     "title": "Notifications"
+  },
+  "seller": {
+    "organisedAndSoldBy": "Organised and sold by {{name}}",
+    "licence": "Travel-agent licence: {{number}}",
+    "poweredBy": "Powered by OuiBoo"
   }
 }

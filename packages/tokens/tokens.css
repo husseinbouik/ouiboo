@@ -25,10 +25,13 @@
   --color-destructive: var(--destructive);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-success-dark: var(--success-dark);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-warning-dark: var(--warning-dark);
   --color-danger: var(--danger);
   --color-danger-foreground: var(--danger-foreground);
+  --color-danger-dark: var(--danger-dark);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -117,8 +120,18 @@
   --destructive: #e11d48;
   --success: #059669;
   --success-foreground: #ffffff;
+  /* AA-safe shades for small text on light/tinted surfaces (#332, same
+     pattern as --sunset-orange-dark): #059669 on its /15 tint is 3.13:1
+     and #d97706 on its /15 tint is 2.85:1 — both below the 4.5:1 AA
+     minimum for text. These are ~5.5:1+ on white and on the tints.
+     Filled/display use keeps --success / --warning. */
+  --success-dark: #047857;
   --warning: #d97706;
   --warning-foreground: #0a192f;
+  /* #b45309 measured 4.49:1 on the warning/10 chip tint — one step
+     darker clears AA with margin. */
+  --warning-dark: #9a3412;
+  --danger-dark: #be123c;
   --danger: #e11d48;
   --danger-foreground: #ffffff;
   --border: rgba(10, 25, 47, 0.12);
@@ -157,8 +170,13 @@
   --destructive: #fb7185;
   --success: #34d399;
   --success-foreground: #052e1b;
+  /* On dark surfaces the base shades already meet AA for text, so the
+     -dark text variants resolve to them (see light-theme note, #332). */
+  --success-dark: #34d399;
   --warning: #fbbf24;
   --warning-foreground: #231a05;
+  --warning-dark: #fbbf24;
+  --danger-dark: #fb7185;
   --danger: #fb7185;
   --danger-foreground: #3f0713;
   --border: rgba(226, 232, 240, 0.14);

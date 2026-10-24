@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
 import { useAuth } from '@/components/AuthContext';
 import { ReviewList } from '@/components/ReviewList';
+import SellerIdentity from '@/components/SellerIdentity';
 import { SessionStatus, type SessionStatusType } from '@ouiboo/types';
 import { formatCurrency } from '@ouiboo/utils';
 
@@ -42,7 +43,15 @@ type TripSession = {
   currency: string;
   availableSeats: number;
   status: SessionStatusType;
+  /** #369: staged-payment configuration (minimum-group trips). */
+  minBookings?: number;
+  confirmationDeadline?: string | null;
+  groupStatus?: string;
 };
+
+/** #369: a session is staged when it needs a minimum group and a deposit. */
+const isStagedSession = (session: TripSession) =>
+  (session.minBookings ?? 1) > 1 && Number(session.deposit ?? 0) > 0;
 
 type TripDetails = {
   id: string;
@@ -53,6 +62,17 @@ type TripDetails = {
   durationNights: number;
   description: string;
   images?: string[];
+  /** #332: agency-provided alt text per image (index-aligned); may be absent. */
+  imageAlts?: string[];
+  /** #371: seller of record (legal name + verified licence) from GET /trips/:id. */
+  agency?: {
+    id?: string;
+    companyName?: string | null;
+    legalName?: string | null;
+    travelLicenceNumber?: string | null;
+    travelLicenceStatus?: string | null;
+    licenceExpiry?: string | null;
+  } | null;
   sessions?: TripSession[];
   itinerary?: TripDay[];
   inclusions?: string[];
@@ -236,16 +256,19 @@ export default function TripDetailsClient({
                 <Image 
                     src={trip.images?.[activeImage] || 'https://images.unsplash.com/photo-1489749798305-4fea3ae63d43'} 
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                    alt={trip.title} 
+                    alt={trip.imageAlts?.[activeImage]?.trim() || trip.title}
                     fill
                     sizes="(min-width: 1024px) 60vw, 100vw"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
                 <div className="absolute bottom-6 left-6 flex gap-2">
                     {trip.images?.map((_, idx: number) => (
-                        <button 
+                        <button
                             key={idx}
+                            type="button"
                             onClick={() => setActiveImage(idx)}
+                            aria-label={`View image ${idx + 1}`}
+                            aria-current={activeImage === idx || undefined}
                             className={cn(
                                 "h-1.5 rounded-full transition-all duration-300 backdrop-blur-md",
                                 activeImage === idx ? "bg-white w-8" : "bg-white/40 hover:bg-white/80 w-4"
@@ -259,7 +282,7 @@ export default function TripDetailsClient({
               <div className="flex lg:hidden gap-3 overflow-x-auto pb-1" aria-label="Trip photos">
                   {galleryTiles.map(({ src, index }) => (
                       <button key={index} type="button" className="relative h-20 w-28 shrink-0 rounded-2xl overflow-hidden shadow-md border border-border/50" onClick={() => setActiveImage(index)} aria-label={`View image ${index + 1}`}>
-                          <Image src={src} className="w-full h-full object-cover" alt={`${trip.title} - image ${index + 1}`} fill sizes="112px" />
+                          <Image src={src} className="w-full h-full object-cover" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - image ${index + 1}`} fill sizes="112px" />
                       </button>
                   ))}
               </div>
@@ -273,7 +296,7 @@ export default function TripDetailsClient({
               >
                   {desktopTiles.map(({ src, index }) => (
                       <button key={index} type="button" className="relative min-h-36 rounded-[1.5rem] overflow-hidden shadow-lg border border-border/50 group" onClick={() => setActiveImage(index)} aria-label={`View image ${index + 1}`}>
-                          <Image src={src} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={`${trip.title} - image ${index + 1}`} fill sizes="20vw" />
+                          <Image src={src} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - image ${index + 1}`} fill sizes="20vw" />
                           <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                       </button>
                   ))}
@@ -297,7 +320,7 @@ export default function TripDetailsClient({
              <div className="space-y-6">
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
                     <div className="flex flex-wrap items-center gap-3 mb-6">
-                        <Badge className="bg-sunset-orange/10 text-sunset-orange border-sunset-orange/20 px-3 py-1 rounded-full font-bold uppercase text-[10px] tracking-wider">
+                        <Badge className="bg-sunset-orange/10 text-sunset-orange-dark border-sunset-orange/20 px-3 py-1 rounded-full font-bold uppercase text-[10px] tracking-wider">
                             {trip.category ? t(`categories.${trip.category.toLowerCase()}`) : t('categories.adventure')}
                         </Badge>
                         <span className="text-border mx-1">|</span>
@@ -313,10 +336,13 @@ export default function TripDetailsClient({
                     <div className="flex items-center gap-6">
                         <div className="flex items-center gap-1.5 bg-yellow-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span className="font-bold text-sm text-yellow-600 dark:text-yellow-400">{reviewStats?.totalReviews ? (reviewStats.averageRating ?? 0).toFixed(1) : 'New'}</span>
-                            <span className="text-xs text-yellow-600/70 dark:text-yellow-400/70 font-medium">({reviewStats?.totalReviews || 0} reviews)</span>
+                            <span className="font-bold text-sm text-amber-700 dark:text-yellow-400">{reviewStats?.totalReviews ? (reviewStats.averageRating ?? 0).toFixed(1) : 'New'}</span>
+                            <span className="text-xs text-amber-700 dark:text-yellow-400/70 font-medium">({reviewStats?.totalReviews || 0} reviews)</span>
                         </div>
                     </div>
+
+                    {/* #371: seller of record + verified travel licence */}
+                    <SellerIdentity agency={trip.agency} className="mt-4" />
                 </motion.div>
 
                 {/* Quick Stats Grid */}
@@ -584,7 +610,7 @@ export default function TripDetailsClient({
                                           <span className="font-bold text-foreground text-sm">
                                               {new Date(session.startDate).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })} - {new Date(session.endDate).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })}
                                           </span>
-                                          <span className={cn("text-[10px] font-bold mt-1", session.availableSeats < 5 ? "text-amber-500" : "text-emerald-500")}>
+                                          <span className={cn("text-[10px] font-bold mt-1", session.availableSeats < 5 ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400")}>
                                               {session.availableSeats} spots left
                                           </span>
                                       </div>
@@ -595,13 +621,34 @@ export default function TripDetailsClient({
                                     
                                     {selectedSession === session.id && (
                                       <div className="pt-3 border-t border-sunset-orange/20 flex flex-col gap-1.5">
-                                        <div className="flex justify-between text-[11px] font-bold">
-                                          <span className="text-sunset-orange uppercase tracking-tighter">Total due at checkout</span>
-                                          <span className="text-foreground">{formatCurrency(session.price, session.currency, i18n.language)}</span>
-                                        </div>
-                                        <p className="text-[10px] text-muted-foreground">
-                                          Split-deposit payments are not enabled; the full amount is required.
-                                        </p>
+                                        {isStagedSession(session) ? (
+                                          <>
+                                            <div className="flex justify-between text-[11px] font-bold">
+                                              <span className="text-sunset-orange uppercase tracking-tighter">Deposit due at checkout</span>
+                                              <span className="text-foreground">{formatCurrency(session.deposit, session.currency, i18n.language)}</span>
+                                            </div>
+                                            <div className="flex justify-between text-[11px] font-bold">
+                                              <span className="text-muted-foreground uppercase tracking-tighter">Balance after confirmation</span>
+                                              <span className="text-foreground">{formatCurrency(Number(session.price) - Number(session.deposit), session.currency, i18n.language)}</span>
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground">
+                                              This trip needs at least {session.minBookings} participants to run.
+                                              {session.confirmationDeadline
+                                                ? ` Confirmed by ${new Date(session.confirmationDeadline).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' })} — if the minimum is not reached, your deposit is refunded.`
+                                                : ' If the minimum is not reached, your deposit is refunded.'}
+                                            </p>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <div className="flex justify-between text-[11px] font-bold">
+                                              <span className="text-sunset-orange uppercase tracking-tighter">Total due at checkout</span>
+                                              <span className="text-foreground">{formatCurrency(session.price, session.currency, i18n.language)}</span>
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground">
+                                              The full amount is required at checkout.
+                                            </p>
+                                          </>
+                                        )}
                                       </div>
                                     )}
                                 </div>
