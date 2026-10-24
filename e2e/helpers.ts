@@ -426,6 +426,15 @@ export const mockAdminApi = async (page: Page) => {
       });
     }
 
+    if (pathname === '/users/me' && method === 'GET') {
+      return jsonResponse(route, 200, {
+        id: 'admin-1',
+        name: 'Launch Admin',
+        email: 'admin@example.com',
+        role: 'ADMIN',
+      });
+    }
+
     if (pathname === '/admin/pending-agencies' && method === 'GET') {
       return jsonResponse(route, 200, {
         data: [],
