@@ -7,4 +7,5 @@ export const MaintenanceJobName = {
   AutoCancelUnpaidBookings: 'auto-cancel-unpaid-bookings',
   ExchangeRateRefresh: 'exchange-rate-refresh',
   CompleteFinishedBookings: 'complete-finished-bookings',
+  GroupConfirmationDeadlines: 'group-confirmation-deadlines',
 } as const;

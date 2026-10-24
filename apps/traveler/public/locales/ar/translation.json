@@ -332,5 +332,10 @@
     "emptyTitle": "أنت على اطلاع كامل",
     "emptyBody": "لا توجد إشعارات جديدة.",
     "title": "الإشعارات"
+  },
+  "seller": {
+    "organisedAndSoldBy": "منظَّم ومباع من طرف {{name}}",
+    "licence": "رخصة وكيل الأسفار: {{number}}",
+    "poweredBy": "مدعوم من OuiBoo"
   }
 }

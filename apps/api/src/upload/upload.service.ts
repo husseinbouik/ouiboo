@@ -98,7 +98,7 @@ export class UploadService {
      * The token itself is the credential: valid signature + purpose + expiry
      * is sufficient; no session is required.
      */
-    async readPrivateFileByToken(token: string): Promise<{ data: Buffer; contentType: string }> {
+    async readPrivateFileByToken(token: string): Promise<{ data: Buffer; contentType: string; key: string }> {
         let payload: { key?: unknown; purpose?: unknown };
         try {
             payload = await this.jwtService.verifyAsync(token);
@@ -117,7 +117,8 @@ export class UploadService {
 
         const provider = await this.getStorageProvider();
         try {
-            return await provider.read(safeKey);
+            const file = await provider.read(safeKey);
+            return { ...file, key: safeKey };
         } catch {
             throw new NotFoundException('File not found');
         }

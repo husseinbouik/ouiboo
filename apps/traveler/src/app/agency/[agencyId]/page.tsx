@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 import { getServerTranslations } from '@/lib/server-translations';
+import SellerIdentity from '@/components/SellerIdentity';
 
 interface AgencyPublicProfile {
   id: string;
@@ -10,6 +11,10 @@ interface AgencyPublicProfile {
   bio: string | null;
   logo: string | null;
   verificationStatus: VerificationStatusType;
+  // #371: seller-of-record fields from GET /agencies/:id/public
+  legalName?: string | null;
+  licenceVerified?: boolean;
+  travelLicenceNumber?: string | null;
 }
 
 interface Trip {
@@ -17,6 +22,7 @@ interface Trip {
   title: string;
   description: string;
   images: string[];
+  imageAlts?: string[];
   durationDays: number;
   startLocation: string;
   sessions: Array<{
@@ -82,6 +88,8 @@ export default async function AgencyPage({ params }: { params: Promise<{ agencyI
                 )}
             </h1>
             {agency.bio && <p className="text-muted-foreground max-w-2xl">{agency.bio}</p>}
+            {/* #371: seller of record + verified travel licence */}
+            <SellerIdentity agency={agency} className="mt-4" />
         </div>
 
         {/* Trips Grid */}
@@ -91,7 +99,7 @@ export default async function AgencyPage({ params }: { params: Promise<{ agencyI
                     <a key={trip.id} href={`/trip/${trip.id}`} className="group block bg-card rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-border">
                         <div className="relative aspect-[4/3]">
                             {trip.images[0] ? (
-                                <Image src={trip.images[0]} alt={trip.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                                <Image src={trip.images[0]} alt={trip.imageAlts?.[0]?.trim() || trip.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
                             ) : (
                                 <div className="w-full h-full bg-muted" />
                             )}

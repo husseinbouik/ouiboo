@@ -78,6 +78,9 @@ jobs:
       - name: Check for launch placeholders
         run: npm run check:placeholders
 
+      - name: Check Phase 1 terminology
+        run: npm run check:terminology
+
       - name: Lint
         run: npm run lint
 

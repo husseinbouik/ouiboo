@@ -2,6 +2,39 @@ import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/com
 import { DatabaseService } from '../database/database.service';
 import { CreateReviewDto, UpdateReviewDto, ReviewResponseDto } from './dto/create-review.dto';
 
+export type ReviewStatusValue = 'VISIBLE' | 'HIDDEN' | 'REMOVED';
+export type ReviewModerationAction = 'HIDE' | 'REMOVE' | 'RESTORE';
+
+const MODERATION_TARGETS: Record<ReviewModerationAction, ReviewStatusValue> = {
+  HIDE: 'HIDDEN',
+  REMOVE: 'REMOVED',
+  RESTORE: 'VISIBLE',
+};
+
+/** Allowed status transitions. REMOVED is terminal. */
+const MODERATION_TRANSITIONS: Record<ReviewStatusValue, ReviewStatusValue[]> = {
+  VISIBLE: ['HIDDEN', 'REMOVED'],
+  HIDDEN: ['VISIBLE', 'REMOVED'],
+  REMOVED: [],
+};
+
+function normalizeModerationAction(
+  action: ReviewModerationAction | 'approve' | 'reject',
+): ReviewModerationAction {
+  switch (action) {
+    case 'HIDE':
+    case 'REMOVE':
+    case 'RESTORE':
+      return action;
+    case 'approve':
+      return 'RESTORE';
+    case 'reject':
+      return 'REMOVE';
+    default:
+      throw new BadRequestException(`Invalid moderation action: ${String(action)}`);
+  }
+}
+
 @Injectable()
 export class ReviewsService {
   constructor(private prisma: DatabaseService) {}
@@ -82,14 +115,14 @@ export class ReviewsService {
 
     const [reviews, total] = await Promise.all([
       this.prisma.review.findMany({
-        where: { tripTemplateId: tripId },
+        where: { tripTemplateId: tripId, status: 'VISIBLE' },
         include: { traveler: { select: { id: true, name: true, avatar: true } } },
         orderBy,
         skip,
         take: normalizedLimit,
       }),
       this.prisma.review.count({
-        where: { tripTemplateId: tripId },
+        where: { tripTemplateId: tripId, status: 'VISIBLE' },
       }),
     ]);
 
@@ -106,7 +139,7 @@ export class ReviewsService {
    */
   async getReviewStats(tripId: string) {
     const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    const where = { tripTemplateId: tripId };
+    const where = { tripTemplateId: tripId, status: 'VISIBLE' as const };
     const [aggregate, groupedRatings] = await Promise.all([
       this.prisma.review.aggregate({
         where,
@@ -230,15 +263,92 @@ export class ReviewsService {
   }
 
   /**
-   * Moderate review (admin only)
+   * Moderate review (admin only) — #393.
+   *
+   * Lifecycle: reviews start VISIBLE (the pre-moderation behaviour, so
+   * existing rows keep showing). An admin may HIDE a VISIBLE review,
+   * REMOVE a VISIBLE or HIDDEN review, or RESTORE a HIDDEN review back
+   * to VISIBLE. REMOVED is terminal: a removed review cannot be
+   * restored through this endpoint (its content is retained in the
+   * database for audit purposes only). Legacy action names from the
+   * original stub are still accepted: 'approve' = restore to VISIBLE,
+   * 'reject' = REMOVED.
+   *
+   * Every action stamps moderatedById / moderatedAt / moderationReason
+   * on the review and writes an AuditLog row (action REVIEW_MODERATED)
+   * so the decision is attributable after the fact. HIDE and REMOVE
+   * require a reason. Public lists and rating aggregates only count
+   * VISIBLE reviews, and the trip's stored rating is recalculated after
+   * each moderation action.
    */
-  async moderateReview(reviewId: string, action: 'approve' | 'reject') {
-    // TODO: Implement review moderation logic
-    // For now, we'll just return the review
-    void action;
-    return this.prisma.review.findUnique({
+  async moderateReview(
+    reviewId: string,
+    actor: { id?: string; userId?: string; email?: string },
+    action: ReviewModerationAction | 'approve' | 'reject',
+    reason?: string,
+  ) {
+    const normalizedAction = normalizeModerationAction(action);
+    const targetStatus = MODERATION_TARGETS[normalizedAction];
+    const trimmedReason = reason?.trim() || null;
+
+    if (
+      (normalizedAction === 'HIDE' || normalizedAction === 'REMOVE') &&
+      !trimmedReason
+    ) {
+      throw new BadRequestException(
+        `A reason is required to ${normalizedAction.toLowerCase()} a review`,
+      );
+    }
+
+    const review = await this.prisma.review.findUnique({
       where: { id: reviewId },
     });
+
+    if (!review) {
+      throw new BadRequestException('Review not found');
+    }
+
+    const currentStatus: ReviewStatusValue = review.status ?? 'VISIBLE';
+    const allowed = MODERATION_TRANSITIONS[currentStatus] ?? [];
+    if (!allowed.includes(targetStatus)) {
+      throw new BadRequestException(
+        `Cannot ${normalizedAction.toLowerCase()} a review in status ${currentStatus}`,
+      );
+    }
+
+    const actorId = actor?.id ?? actor?.userId ?? null;
+    const updated = await this.prisma.review.update({
+      where: { id: reviewId },
+      data: {
+        status: targetStatus,
+        moderatedById: actorId,
+        moderatedAt: new Date(),
+        moderationReason: trimmedReason,
+      },
+    });
+
+    await this.prisma.auditLog
+      .create({
+        data: {
+          actorId,
+          actorEmail: actor?.email,
+          action: 'REVIEW_MODERATED',
+          targetType: 'Review',
+          targetId: reviewId,
+          metadata: {
+            moderationAction: normalizedAction,
+            fromStatus: currentStatus,
+            toStatus: targetStatus,
+            reason: trimmedReason,
+          },
+        },
+      })
+      .catch((err: unknown) => console.error('Audit log failed', err));
+
+    // Keep the trip's stored rating in sync with VISIBLE-only stats.
+    await this.updateTripRating(review.tripTemplateId);
+
+    return updated;
   }
 
   /**

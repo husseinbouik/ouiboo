@@ -17,6 +17,12 @@ const eslintConfig = defineConfig([
       "sonarjs/no-nested-conditional": "warn",
     },
   },
+  {
+    files: ["*.config.{js,cjs,mjs,ts}", "jest.config.js"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

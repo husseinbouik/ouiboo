@@ -1,5 +1,5 @@
 import React from 'react';
-import { TripStatus, VerificationStatus, type TripStatusType, type VerificationStatusType } from '@ouiboo/types';
+import { LicenceStatus, TripStatus, VerificationStatus, type LicenceStatusType, type TripStatusType, type VerificationStatusType } from '@ouiboo/types';
 import type { BankDetailsMap } from './types';
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
@@ -54,6 +54,9 @@ export const renderAuditMetadata = (metadata: Record<string, unknown> | null | u
 
 export const canApproveAgency = (status?: VerificationStatusType) => status !== VerificationStatus.Verified;
 export const canRejectAgency = (status?: VerificationStatusType) => status !== VerificationStatus.Rejected;
+// #371: only a licence awaiting review can be verified or rejected.
+export const canVerifyLicence = (status?: LicenceStatusType) => status === LicenceStatus.PendingReview;
+export const canRejectLicence = (status?: LicenceStatusType) => status === LicenceStatus.PendingReview;
 export const canApproveTrip = (status?: TripStatusType) => status !== TripStatus.Active;
 export const canRejectTrip = (status?: TripStatusType) => status !== TripStatus.Archived;
 export const canApprovePaymentProof = (status?: VerificationStatusType) => status !== VerificationStatus.Verified;

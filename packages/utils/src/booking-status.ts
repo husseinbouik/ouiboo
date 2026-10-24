@@ -18,9 +18,13 @@ export const getTravelerBookingStatusTone = (status: BookingStatusType) => {
     case BookingStatus.AwaitingValidation:
       return 'bg-ocean-500 text-white';
     case BookingStatus.Pending:
+    // #369: deposit paid, waiting for the group minimum outcome.
+    case BookingStatus.PendingMinimum:
       return 'bg-amber-500 text-white';
     case BookingStatus.Cancelled:
     case BookingStatus.Rejected:
+    // #369: the trip was not confirmed (minimum not reached).
+    case BookingStatus.NotConfirmed:
       return 'bg-rose-500 text-white';
     default:
       return 'bg-gray-500 text-white';
@@ -53,6 +57,14 @@ export const getTravelerPaymentStatusMeta = (
   paymentStatus: BookingPaymentStatusType,
   refundStatus?: RefundStatusType,
 ) => {
+  // #369: staged booking — deposit verified, balance still outstanding.
+  if (paymentStatus === BookingPaymentStatus.PartiallyPaid) {
+    return {
+      label: 'Deposit paid',
+      className: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+    };
+  }
+
   if (paymentStatus === BookingPaymentStatus.Paid) {
     return {
       label: 'Paid',
@@ -129,6 +141,22 @@ export const getAgencyBookingStatusMeta = (status: BookingStatusType) => {
     };
   }
 
+  // #369: deposit paid, waiting for the group minimum outcome.
+  if (status === BookingStatus.PendingMinimum) {
+    return {
+      className: 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-400/20',
+      icon: 'pending',
+    };
+  }
+
+  // #369: the trip was not confirmed (minimum not reached).
+  if (status === BookingStatus.NotConfirmed) {
+    return {
+      className: 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-900/20 dark:text-rose-400 dark:ring-rose-400/20',
+      icon: 'rejected',
+    };
+  }
+
   return {
     className: 'bg-slate-100 text-slate-700 ring-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700',
     icon: 'default',
@@ -172,6 +200,14 @@ export const getAgencyProofStatusLabel = (status?: VerificationStatusType | null
 };
 
 export const getAgencyPaymentStatusMeta = (status: BookingPaymentStatusType) => {
+  // #369: staged booking — deposit verified, balance still outstanding.
+  if (status === BookingPaymentStatus.PartiallyPaid) {
+    return {
+      label: 'Deposit paid',
+      className: 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-400/20',
+    };
+  }
+
   if (status === BookingPaymentStatus.Paid) {
     return {
       label: 'Paid',

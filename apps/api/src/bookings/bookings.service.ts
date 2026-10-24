@@ -4,10 +4,11 @@ import { DatabaseService } from '../database/database.service';
 import { CreateBookingDto, PaymentMethodEnum } from './dto/create-booking.dto';
 import { EmailService } from '../email/email.service';
 import { UploadService } from '../upload/upload.service';
-import { BookingPaymentStatus, PaymentMethod, TransactionType } from '@ouiboo/database';
+import { BookingPaymentPlanStatus, BookingPaymentStatus, PaymentCustodian, PaymentLedgerSource, PaymentMethod, SessionGroupStatus } from '@ouiboo/database';
 import { mapBookingDetails } from './booking-response.util';
 import { multiplyMoney } from '../common/money.util';
-import { WalletsService } from '../wallets/wallets.service';
+import { ExternalPaymentsService } from '../external-payments/external-payments.service';
+import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
 
 const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
 
@@ -17,7 +18,8 @@ export class BookingsService {
         private db: DatabaseService,
         private emailService: EmailService,
         private uploadService: UploadService,
-        private walletsService: WalletsService,
+        private externalPaymentsService: ExternalPaymentsService,
+        private stagedPaymentsService: StagedPaymentsService,
     ) { }
 
     async create(travelerId: string, dto: CreateBookingDto) {
@@ -60,8 +62,33 @@ export class BookingsService {
         if (agency.verificationStatus !== 'VERIFIED' || !subscriptionValid) {
             throw new BadRequestException('This agency is not currently accepting bookings');
         }
+        // #370: refund enforcement ladder (plan §16, level 2) — an agency
+        // with an overdue refund is restricted from NEW bookings until the
+        // refund is resolved. Existing bookings are never affected.
+        if (agency.newBookingsRestrictedAt) {
+            throw new BadRequestException('This agency is temporarily unable to accept new bookings');
+        }
         if (dto.paymentMethod === PaymentMethodEnum.WALLET) {
-            throw new BadRequestException('Traveler wallet payments are not available');
+            throw new BadRequestException('This payment method is not available');
+        }
+
+        // #369 staged payments: minimum-group trips collect a deposit first.
+        const staged = this.stagedPaymentsService.isStagedSession(session);
+        if (staged) {
+            if (session.groupStatus === SessionGroupStatus.NOT_CONFIRMED) {
+                throw new BadRequestException('This trip was not confirmed because the minimum group size was not reached');
+            }
+            if (session.groupStatus !== SessionGroupStatus.CONFIRMED
+                && session.confirmationDeadline
+                && session.confirmationDeadline <= now) {
+                throw new BadRequestException('The confirmation deadline for this trip has passed');
+            }
+            // Phase 1: staged trips are paid by manual bank transfer only.
+            // A one-shot gateway payment would make an unconfirmed trip
+            // fully payable, which the staged model forbids (plan §53).
+            if (dto.paymentMethod && dto.paymentMethod !== PaymentMethodEnum.BANK_TRANSFER) {
+                throw new BadRequestException('Only bank transfer payment is available for this trip until it is confirmed');
+            }
         }
 
         const transactionResult = await this.db.$transaction(async (tx) => {
@@ -152,6 +179,7 @@ export class BookingsService {
                         },
                     },
                     paymentProof: true,
+                    paymentPlan: true,
                     review: {
                         select: {
                             id: true,
@@ -159,6 +187,19 @@ export class BookingsService {
                     },
                 },
             });
+
+            // #369: snapshot the staged payment plan (deposit/balance split,
+            // minimum, deadline) for minimum-group sessions.
+            if (staged) {
+                const plan = await this.stagedPaymentsService.createPlanInTransaction(tx, {
+                    bookingId: booking.id,
+                    agencyId: session.template.agencyId,
+                    guestsCount: dto.guestsCount,
+                    totalAmount,
+                    session,
+                });
+                booking.paymentPlan = plan as typeof booking.paymentPlan;
+            }
 
             const traveler = await tx.user.findUnique({ where: { id: travelerId } });
             const agencyUser = await tx.user.findUnique({ where: { id: sessionWithInfo.template.agency.userId } });
@@ -209,6 +250,7 @@ export class BookingsService {
                         },
                     },
                     paymentProof: true,
+                    paymentPlan: true,
                     review: {
                         select: {
                             id: true,
@@ -244,6 +286,7 @@ export class BookingsService {
             where: { id: bookingId },
             include: {
                 paymentProof: true,
+                paymentPlan: true,
                 session: {
                     include: {
                         template: {
@@ -288,6 +331,7 @@ export class BookingsService {
             where: { id: bookingId },
             include: {
                 session: { include: { template: true } },
+                paymentPlan: true,
             },
         });
 
@@ -299,12 +343,37 @@ export class BookingsService {
             throw new ForbiddenException('Forbidden');
         }
 
+        // #369 staged payments: the plan decides which payment step a proof
+        // belongs to. A balance proof before confirmation is rejected here
+        // (invariant), as is any proof once the deposit is refund-due.
+        const plan = booking.paymentPlan;
+        let isInitialStage = true;
+        if (plan) {
+            if (plan.status === BookingPaymentPlanStatus.BALANCE_DUE) {
+                isInitialStage = false;
+                if (!['CONFIRMED', 'REJECTED', 'AWAITING_VALIDATION'].includes(booking.status)) {
+                    throw new BadRequestException('Booking is not awaiting a balance payment proof');
+                }
+            } else if (plan.status === BookingPaymentPlanStatus.DEPOSIT_DUE) {
+                if (booking.session.groupStatus === SessionGroupStatus.NOT_CONFIRMED) {
+                    throw new BadRequestException('This trip was not confirmed because the minimum group size was not reached');
+                }
+                if (!['PENDING', 'REJECTED', 'AWAITING_VALIDATION'].includes(booking.status)) {
+                    throw new BadRequestException('Booking is not awaiting a deposit payment proof');
+                }
+            } else {
+                throw new BadRequestException('This booking is not awaiting a payment proof');
+            }
+        }
+
         const allowedStatuses = new Set(['PENDING', 'REJECTED', 'AWAITING_VALIDATION']);
-        if (!allowedStatuses.has(booking.status)) {
+        if (isInitialStage && !allowedStatuses.has(booking.status)) {
             throw new BadRequestException('Booking cannot accept payment proof');
         }
 
-        if (booking.status !== 'AWAITING_VALIDATION' && this.isPaymentProofExpired(booking.bookingDate)) {
+        // The submission window applies to the initial payment step only;
+        // the balance step opens at confirmation (plan §26).
+        if (isInitialStage && booking.status !== 'AWAITING_VALIDATION' && this.isPaymentProofExpired(booking.bookingDate)) {
             await this.db.$transaction(async (tx) => {
                 await tx.tripSession.update({
                     where: { id: booking.sessionId },
@@ -362,6 +431,7 @@ export class BookingsService {
             where: { id: bookingId },
             include: {
                 paymentProof: true,
+                paymentPlan: true,
                 session: { include: { template: true } },
             },
         });
@@ -388,13 +458,13 @@ export class BookingsService {
             throw new BadRequestException('No payment proof uploaded');
         }
 
-        if (await this.uploadService.isLocal()) {
-            const filePath = await this.uploadService.getFilePath(booking.paymentProof.imageUrl);
-            return { kind: 'local' as const, filePath };
-        }
-
+        // #390: never resolve a filesystem path for the controller to hand to
+        // res.sendFile. Both storage backends serve the proof as bytes through
+        // UploadService.readFile, which resolves the stored (server-generated)
+        // key through the provider's canonicalized, containment-checked path
+        // handling.
         const { data, contentType } = await this.uploadService.readFile(booking.paymentProof.imageUrl);
-        return { kind: 'remote' as const, buffer: data, contentType };
+        return { buffer: data, contentType };
     }
 
     isLocal() {
@@ -427,6 +497,7 @@ export class BookingsService {
             include: {
                 session: { include: { template: true } },
                 paymentProof: true,
+                paymentPlan: true,
                 traveler: { select: { email: true } },
             }
         });
@@ -473,21 +544,42 @@ export class BookingsService {
                 throw new BadRequestException('Payment proof has already been reviewed');
             }
 
+            // #369: staged bookings follow the plan state machine (deposit
+            // stage, then balance after confirmation). Only the stage amount
+            // is recorded; the booking is fully paid at the balance stage.
+            if (booking.paymentPlan) {
+                const decision = await this.stagedPaymentsService.applyProofDecisionInTransaction(tx, {
+                    booking,
+                    plan: booking.paymentPlan,
+                    approved,
+                    source: PaymentLedgerSource.MANUAL_PROOF_REVIEW,
+                    externalReference: paymentProofId,
+                });
+                const updated = await tx.booking.findUniqueOrThrow({ where: { id: bookingId } });
+                return { booking: updated, fullyPaid: decision.fullyPaid };
+            }
+
             const newStatus = approved ? 'CONFIRMED' : 'REJECTED';
             const confirmedAt = approved ? new Date() : null;
 
+            // #368: approving a payment proof records the verified fact that
+            // the traveller paid the AGENCY directly. It must never credit a
+            // withdrawable OuiBoo balance.
+            const paymentRecord = {
+                bookingId,
+                agencyId: booking.session.template.agencyId,
+                travelerId: booking.travelerId,
+                amount: booking.totalAmount,
+                currency: booking.currency,
+                method: PaymentMethod.MANUAL,
+                externalReference: paymentProofId,
+                custodian: PaymentCustodian.AGENCY,
+                source: PaymentLedgerSource.MANUAL_PROOF_REVIEW,
+            };
             if (approved) {
-                await this.walletsService.creditWalletInTransaction(
-                    tx,
-                    booking.session.template.agencyId,
-                    booking.totalAmount,
-                    `Manual payment confirmed for booking ${bookingId}`,
-                    {
-                        idempotencyKey: `booking:${bookingId}:manual-payment-credit`,
-                        referenceId: bookingId,
-                        type: TransactionType.BOOKING,
-                    },
-                );
+                await this.externalPaymentsService.recordPaymentVerifiedInTransaction(tx, paymentRecord);
+            } else {
+                await this.externalPaymentsService.recordPaymentRejectedInTransaction(tx, paymentRecord);
             }
 
             const claimedBooking = await tx.booking.updateMany({
@@ -502,17 +594,20 @@ export class BookingsService {
                 throw new BadRequestException('Booking is not awaiting payment validation');
             }
 
-            return tx.booking.findUniqueOrThrow({ where: { id: bookingId } });
+            const updated = await tx.booking.findUniqueOrThrow({ where: { id: bookingId } });
+            return { booking: updated, fullyPaid: approved };
         });
 
-        if (approved && booking.traveler?.email) {
+        // The "payment confirmed" email means fully paid; a staged deposit
+        // approval does not send it (the balance is still outstanding).
+        if (updatedBooking.fullyPaid && booking.traveler?.email) {
             this.emailService.sendPaymentConfirmation(
                 booking.traveler.email,
                 booking.session.template.title,
             ).catch(() => undefined);
         }
 
-        return updatedBooking;
+        return updatedBooking.booking;
     }
 
     async cancelBooking(bookingId: string, travelerId: string) {
@@ -552,6 +647,14 @@ export class BookingsService {
             if (cancelled.count !== 1) {
                 throw new BadRequestException('Booking cannot be cancelled');
             }
+
+            // #369: an unpaid staged booking's plan dies with the booking.
+            // (Deposit-paid bookings are not traveller-cancellable here —
+            // they follow the refund workflow.)
+            await tx.bookingPaymentPlan.updateMany({
+                where: { bookingId, status: BookingPaymentPlanStatus.DEPOSIT_DUE },
+                data: { status: BookingPaymentPlanStatus.CANCELLED },
+            });
 
             await tx.tripSession.update({
                 where: { id: booking.sessionId },

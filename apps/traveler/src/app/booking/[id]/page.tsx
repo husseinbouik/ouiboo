@@ -146,7 +146,7 @@ export default function BookingDetailsPage() {
             <div className="w-full lg:w-96 h-64 lg:h-auto overflow-hidden relative">
               <Image
                 src={tripImage}
-                alt={booking.session.template.title}
+                alt={booking.session.template.imageAlts?.[0]?.trim() || booking.session.template.title}
                 className="absolute inset-0 w-full h-full object-cover"
                 fill
                 sizes="(max-width: 1024px) 100vw, 24rem"

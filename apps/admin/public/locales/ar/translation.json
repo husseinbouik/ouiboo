@@ -47,8 +47,9 @@
       "agencies": "إدارة الوكالات",
       "bookings": "حجوزات النظام",
       "paymentProofs": "إثباتات الدفع",
-      "payouts": "طلبات السحب",
-      "audit": "سجل التدقيق"
+      "audit": "سجل التدقيق",
+      "invoices": "الفواتير",
+      "refunds": "المبالغ المستردة"
     },
     "meta": {
       "pending": {
@@ -71,15 +72,20 @@
         "description": "وافق أو ارفض إيصالات الدفع المرفوعة.",
         "searchPlaceholder": "ابحث في إثباتات الدفع بالمسافر أو الحجز..."
       },
-      "payouts": {
-        "title": "طلبات السحب",
-        "description": "راجع طلبات سحب الوكالات قبل تحويل الأموال.",
-        "searchPlaceholder": "ابحث عن طلبات السحب باسم الوكالة..."
-      },
       "audit": {
         "title": "سجل التدقيق",
         "description": "ابحث في نشاط المشغلين، وصدّر السجلات، وطبّق تنظيف الاحتفاظ.",
         "searchPlaceholder": "ابحث بالإجراء أو بريد المنفذ أو نوع الهدف أو معرف الهدف"
+      },
+      "invoices": {
+        "title": "فواتير رسوم خدمة المنصة",
+        "description": "راجع فواتير رسوم خدمة المنصة الصادرة وأنشئ الفاتورة الشهرية لكل وكالة.",
+        "searchPlaceholder": "ابحث في الفواتير برقم الفاتورة أو الوكالة..."
+      },
+      "refunds": {
+        "searchPlaceholder": "ابحث في حالات الاسترداد...",
+        "description": "تتبع حالات استرداد المسافرين عبر الوكالات. تُدفع المبالغ المستردة من قبل الوكالات من حسابات التاجر الخاصة بها — الحالات المتأخرة تقيد الحجوزات الجديدة لتلك الوكالة.",
+        "title": "حالات الاسترداد"
       }
     },
     "sections": {
@@ -88,7 +94,6 @@
       "allAgencies": "إدارة جميع الوكالات",
       "bookingMonitor": "مراقبة الحجوزات العامة",
       "pendingPaymentProofs": "إثباتات الدفع المنتظرة",
-      "payoutRequests": "طلبات السحب",
       "auditTrail": "مسار التدقيق"
     },
     "table": {
@@ -111,24 +116,22 @@
       "approve": "موافقة",
       "activate": "تفعيل",
       "deactivate": "إيقاف",
-      "approvePayout": "الموافقة على السحب",
-      "rejectPayout": "رفض السحب",
       "approveAgency": "الموافقة على الوكالة",
       "rejectAgency": "رفض الوكالة",
-      "refund": "استرداد"
+      "refund": "استرداد",
+      "verifyLicence": "التحقق من الرخصة",
+      "rejectLicence": "رفض الرخصة"
     },
     "labels": {
       "ice": "ICE",
       "joined": "انضم في",
       "request": "الطلب",
       "requestId": "طلب رقم {{id}}",
-      "agencyPayout": "سحب الوكالة",
       "agency": "الوكالة",
       "requested": "مطلوب",
       "amount": "المبلغ",
       "currency": "MAD",
       "bankDetails": "بيانات بنك الوكالة",
-      "payoutDetails": "تفاصيل السحب",
       "selected": "المحدد",
       "contact": "التواصل",
       "status": "الحالة",
@@ -139,13 +142,19 @@
       "system": "النظام",
       "noActorId": "لا يوجد معرف منفذ",
       "noTargetId": "لا يوجد معرف هدف",
-      "agencyLogo": "شعار {{name}}"
+      "agencyLogo": "شعار {{name}}",
+      "travelLicence": "رخصة الأسفار (القانون 11-16)",
+      "legalName": "الاسم القانوني",
+      "legalRepresentative": "الممثل القانوني",
+      "rc": "السجل التجاري (RC)",
+      "taxId": "التعريف الضريبي (IF)",
+      "licenceExpiry": "انتهاء الرخصة",
+      "licenceVerifiedAt": "تم التحقق من الرخصة في",
+      "licenceRejectionReason": "سبب الرفض"
     },
     "messages": {
       "noBankDetails": "لا توجد بيانات بنكية محفوظة.",
       "noPaymentProofs": "لا توجد إثباتات دفع بانتظار المراجعة.",
-      "noPayoutRequests": "لا توجد طلبات سحب بانتظار المراجعة.",
-      "selectPayoutPrompt": "اختر طلب سحب لمراجعة بيانات البنك والموافقة أو الرفض.",
       "reviewVerification": "راجع تفاصيل التحقق ثم وافق أو ارفض.",
       "notProvided": "غير مقدم",
       "noEmail": "لا يوجد بريد إلكتروني",
@@ -166,19 +175,48 @@
       "paymentProofRejected": "تم رفض إثبات الدفع بنجاح.",
       "paymentProofUpdateError": "تعذر تحديث إثبات الدفع. حاول مرة أخرى.",
       "paymentProofLoadError": "تعذر تحميل إثبات الدفع.",
-      "payoutPaid": "تم تعليم السحب كمدفوع بنجاح.",
-      "payoutRejected": "تم رفض طلب السحب بنجاح.",
-      "payoutUpdateError": "تعذر تحديث طلب السحب. حاول مرة أخرى.",
       "refundProcessed": "تمت معالجة الاسترداد بنجاح.",
       "refundError": "تعذر معالجة الاسترداد الآن.",
       "auditPruneError": "تعذر تقليم سجلات التدقيق الآن.",
       "auditExportSuccess": "تم تنزيل تصدير سجل التدقيق بنجاح.",
       "auditExportError": "تعذر تصدير سجلات التدقيق الآن.",
-      "retentionDaysInvalid": "يجب أن يكون عدد أيام الاحتفاظ رقمًا موجبًا."
+      "retentionDaysInvalid": "يجب أن يكون عدد أيام الاحتفاظ رقمًا موجبًا.",
+      "licenceVerified": "تم التحقق من رخصة الأسفار",
+      "licenceRejected": "تم رفض رخصة الأسفار",
+      "licenceUpdateError": "تعذّر تحديث رخصة الأسفار"
     },
     "aria": {
       "mainNavigation": "التنقل الرئيسي",
       "adminAvatar": "صورة المسؤول"
+    },
+    "invoices": {
+      "title": "فواتير رسوم خدمة المنصة ({{total}})",
+      "generateTitle": "إنشاء الفاتورة الشهرية",
+      "agency": "الوكالة",
+      "selectAgency": "اختر وكالة",
+      "month": "الشهر",
+      "year": "السنة",
+      "rate": "نسبة الرسوم (%)",
+      "generate": "إنشاء الفاتورة",
+      "generateHint": "الإنشاء آمن عند التكرار: تُعاد الفاتورة الموجودة لنفس الوكالة والشهر دون تغيير.",
+      "generated": "الفاتورة {{number}} جاهزة.",
+      "generateError": "تعذر إنشاء الفاتورة. تحقق من الوكالة والفترة ونسبة الرسوم.",
+      "errors": {
+        "noBillableBookings": "لا توجد حجوزات مدفوعة مؤكدة لهذه الوكالة في تلك الفترة، لذا لا يوجد ما يمكن فوترته بعد.",
+        "rateNotConfigured": "لم يتم إدخال نسبة رسوم ولا توجد نسبة افتراضية مضبوطة على الخادم.",
+        "rateOutOfRange": "يجب أن تكون نسبة الرسوم أكبر من 0 وبحد أقصى 100٪.",
+        "mixedCurrencies": "تستخدم الحجوزات المدفوعة لهذه الوكالة في تلك الفترة أكثر من عملة واحدة، لذا لا يمكن إنشاء فاتورة واحدة.",
+        "notReady": "تخزين الفواتير غير متاح بعد (ترحيل قاعدة البيانات قيد الانتظار).",
+        "agencyNotFound": "تعذر العثور على هذه الوكالة. حدّث قائمة الوكالات وحاول مرة أخرى."
+      },
+      "downloadError": "تعذر تنزيل ملف PDF للفاتورة.",
+      "empty": "لم يتم إصدار أي فاتورة بعد.",
+      "number": "الفاتورة",
+      "period": "الفترة",
+      "issued": "تاريخ الإصدار",
+      "gross": "إجمالي الحجوزات",
+      "fee": "رسوم خدمة المنصة",
+      "download": "PDF"
     },
     "audit": {
       "trail": "مسار التدقيق ({{total}})",
@@ -227,16 +265,54 @@
       "payoutPaidLabel": "مدفوع",
       "payoutPaidHelper": "تم التحويل",
       "payoutRejectedLabel": "مرفوض",
-      "payoutRejectedHelper": "أُعيدت الأموال إلى محفظة الوكالة",
+      "payoutRejectedHelper": "أُعيدت الأموال إلى الوكالة",
       "payoutApprovedLabel": "موافق عليه",
-      "payoutApprovedHelper": "تمت الموافقة وبانتظار معالجة السحب",
+      "payoutApprovedHelper": "تمت الموافقة وبانتظار المعالجة",
       "payoutPendingLabel": "قيد الانتظار",
-      "payoutPendingHelper": "بانتظار مراجعة المسؤول"
+      "payoutPendingHelper": "بانتظار مراجعة المسؤول",
+      "licenceNotSubmitted": "الرخصة غير مُرسلة",
+      "licencePendingReview": "الرخصة قيد المراجعة",
+      "licenceVerified": "الرخصة موثّقة",
+      "licenceRejected": "الرخصة مرفوضة",
+      "licenceExpired": "الرخصة منتهية"
     },
     "modal": {
       "agencyReview": "مراجعة الوكالة"
     },
-    "signOut": "تسجيل الخروج"
+    "signOut": "تسجيل الخروج",
+    "refunds": {
+      "emptyHint": "تظهر حالات الاسترداد هنا عندما لا يتم تأكيد رحلة، أو يطلب مسافر استردادًا، أو تلغي وكالة.",
+      "actions": {
+        "review": "بدء المراجعة",
+        "complete": "تحديد كمكتمل",
+        "initiate": "تحديد كمُرسل",
+        "fail": "تحديد كفاشل",
+        "approve": "موافقة",
+        "reject": "رفض"
+      },
+      "status": {
+        "REFUND_APPROVED": "تمت الموافقة",
+        "AGENCY_ACTION_REQUIRED": "يتطلب إجراء الوكالة",
+        "ELIGIBILITY_REVIEW": "قيد المراجعة",
+        "REFUND_INITIATED": "تم البدء",
+        "REFUND_REJECTED": "مرفوض",
+        "REFUND_REQUESTED": "تم الطلب",
+        "REFUND_OVERDUE": "متأخر",
+        "REFUND_FAILED": "فشل",
+        "REFUND_COMPLETED": "اكتمل"
+      },
+      "reason": {
+        "GROUP_MINIMUM_NOT_REACHED": "لم يتم تأكيد الرحلة — لم يتحقق الحد الأدنى للمجموعة",
+        "TRAVELLER_CANCELLATION": "إلغاء من المسافر",
+        "ADMIN_INITIATED": "فتحته الإدارة",
+        "TRAVELLER_REQUEST": "طلب المسافر",
+        "AGENCY_CANCELLATION": "إلغاء من الوكالة"
+      },
+      "failureReason": "الفشل",
+      "empty": "لا توجد حالات استرداد",
+      "dueBy": "يستحق قبل",
+      "requestedAt": "تم الطلب"
+    }
   },
   "meta": {
     "titleDefault": "إدارة المنصة",

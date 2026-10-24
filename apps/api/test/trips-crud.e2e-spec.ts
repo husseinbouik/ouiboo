@@ -126,7 +126,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             data: {
                 id: 'agency-profile-123',
                 userId: agencyUser1.id,
-                companyName: 'Test Agency', ice: 'ICE100004', patente: 'PAT100004', rib: 'RIB100004', verificationStatus: 'VERIFIED',
+                companyName: 'Test Agency', ice: 'ICE100004', patente: 'PAT100004', rib: 'RIB100004', verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', travelLicenceNumber: 'LIC-100004', licenceExpiry: new Date('2030-01-01T00:00:00.000Z'),
             } as any,
         });
 
@@ -147,7 +147,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             data: {
                 id: 'agency-profile-456',
                 userId: agencyUser2.id,
-                companyName: 'Other Agency', ice: 'ICE100005', patente: 'PAT100005', rib: 'RIB100005', verificationStatus: 'VERIFIED',
+                companyName: 'Other Agency', ice: 'ICE100005', patente: 'PAT100005', rib: 'RIB100005', verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', travelLicenceNumber: 'LIC-100005', licenceExpiry: new Date('2030-01-01T00:00:00.000Z'),
             } as any,
         });
 

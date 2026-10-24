@@ -1,11 +1,13 @@
 import {
   BookingPaymentStatus,
   BookingStatus,
+  LicenceStatus,
   PayoutStatus,
   SubscriptionStatus,
   VerificationStatus,
   type BookingPaymentStatusType,
   type BookingStatusType,
+  type LicenceStatusType,
   type PayoutStatusType,
   type VerificationStatusType,
 } from '@ouiboo/types';
@@ -16,6 +18,15 @@ const VERIFICATION_STATUS_KEYS: Record<string, string> = {
   [VerificationStatus.Pending]: 'dashboard.status.verificationPending',
   [VerificationStatus.Verified]: 'dashboard.status.verificationVerified',
   [VerificationStatus.Rejected]: 'dashboard.status.verificationRejected',
+};
+
+// #371: Law 11-16 travel licence lifecycle.
+const LICENCE_STATUS_KEYS: Record<string, string> = {
+  [LicenceStatus.NotSubmitted]: 'dashboard.status.licenceNotSubmitted',
+  [LicenceStatus.PendingReview]: 'dashboard.status.licencePendingReview',
+  [LicenceStatus.Verified]: 'dashboard.status.licenceVerified',
+  [LicenceStatus.Rejected]: 'dashboard.status.licenceRejected',
+  [LicenceStatus.Expired]: 'dashboard.status.licenceExpired',
 };
 
 const SUBSCRIPTION_STATUS_KEYS: Record<string, string> = {
@@ -65,6 +76,43 @@ export const getAdminVerificationBadgeLabel = (status?: VerificationStatusType, 
   return statusLabel(status, VERIFICATION_STATUS_KEYS, t ? t('dashboard.status.verificationPending') : 'Pending', t);
 };
 
+// #371: licence status derivation mirrors the API — prefer the
+// server-provided effective status; fall back to deriving expiry locally.
+export const getEffectiveLicenceStatus = (agency: {
+  travelLicenceStatus?: string | null;
+  effectiveLicenceStatus?: string | null;
+  licenceExpiry?: string | null;
+}): LicenceStatusType => {
+  if (agency.effectiveLicenceStatus) {
+    return agency.effectiveLicenceStatus as LicenceStatusType;
+  }
+  const status = (agency.travelLicenceStatus || LicenceStatus.NotSubmitted) as LicenceStatusType;
+  if (status === LicenceStatus.Verified && agency.licenceExpiry && new Date(agency.licenceExpiry).getTime() <= Date.now()) {
+    return LicenceStatus.Expired;
+  }
+  return status;
+};
+
+export const getAdminLicenceBadgeClass = (status?: LicenceStatusType) => {
+  if (status === LicenceStatus.Verified) {
+    return 'bg-success/15 text-success';
+  }
+
+  if (status === LicenceStatus.Rejected || status === LicenceStatus.Expired) {
+    return 'bg-danger/15 text-danger';
+  }
+
+  if (status === LicenceStatus.PendingReview) {
+    return 'bg-warning/15 text-warning';
+  }
+
+  return 'bg-muted text-muted-foreground';
+};
+
+export const getAdminLicenceBadgeLabel = (status?: LicenceStatusType, t?: Translate) => {
+  return statusLabel(status, LICENCE_STATUS_KEYS, t ? t('dashboard.status.licenceNotSubmitted') : 'Not submitted', t);
+};
+
 export const getAdminSubscriptionBadgeLabel = (status?: string | null, t?: Translate) => {
   return statusLabel(status ?? undefined, SUBSCRIPTION_STATUS_KEYS, t ? t('dashboard.status.subscriptionTrial') : 'Trial', t);
 };
@@ -108,7 +156,7 @@ export const getAdminPayoutBadgeMeta = (status: PayoutStatusType, t?: Translate)
   if (status === PayoutStatus.Rejected) {
     return {
       className: 'bg-danger/15 text-danger',
-      helperText: t ? t('dashboard.status.payoutRejectedHelper') : 'Funds returned to the agency wallet',
+      helperText: t ? t('dashboard.status.payoutRejectedHelper') : 'Funds returned to the agency',
       label: t ? t('dashboard.status.payoutRejectedLabel') : 'Rejected',
     };
   }
@@ -116,7 +164,7 @@ export const getAdminPayoutBadgeMeta = (status: PayoutStatusType, t?: Translate)
   if (status === PayoutStatus.Approved) {
     return {
       className: 'bg-secondary text-secondary-foreground',
-      helperText: t ? t('dashboard.status.payoutApprovedHelper') : 'Approved and waiting for payout processing',
+      helperText: t ? t('dashboard.status.payoutApprovedHelper') : 'Approved and waiting for processing',
       label: t ? t('dashboard.status.payoutApprovedLabel') : 'Approved',
     };
   }

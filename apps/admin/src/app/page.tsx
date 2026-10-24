@@ -14,16 +14,19 @@ import {
   CalendarClock,
   FileText,
   LayoutDashboard,
+  Receipt,
+  RotateCcw,
 } from 'lucide-react';
 import { ConfirmDialog } from '@ouiboo/ui';
 import { useAuth } from '@/components/AuthContext';
 import { toPaginatedList } from '@ouiboo/utils';
 import {
   BookingPaymentStatus,
+  LicenceStatus,
   PaymentMethod,
-  PayoutStatus,
   TripStatus,
   VerificationStatus,
+  type LicenceStatusType,
   type VerificationStatusType,
 } from '@ouiboo/types';
 import { useTranslation } from 'react-i18next';
@@ -33,8 +36,9 @@ import type {
   AdminTrip,
   AdminBooking,
   AdminPaymentProof,
-  AdminPayoutRequest,
   AdminAuditLog,
+  AdminInvoice,
+  AdminRefundCase,
   AdminOverviewCounts,
   ApiErrorResponse,
   FeedbackState,
@@ -47,22 +51,21 @@ import PendingTab from '@/components/dashboard/PendingTab';
 import AgenciesTab from '@/components/dashboard/AgenciesTab';
 import BookingsTab from '@/components/dashboard/BookingsTab';
 import PaymentProofsTab from '@/components/dashboard/PaymentProofsTab';
-import PayoutsTab from '@/components/dashboard/PayoutsTab';
 import AuditTab from '@/components/dashboard/AuditTab';
+import InvoicesTab from '@/components/dashboard/InvoicesTab';
+import RefundsTab from '@/components/dashboard/RefundsTab';
 import AgencyReviewModal from '@/components/dashboard/AgencyReviewModal';
 
 export default function AdminDashboard() {
   const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>('PENDING');
   const [selectedAgency, setSelectedAgency] = useState<AdminAgency | null>(null);
-  const [selectedPayout, setSelectedPayout] = useState<AdminPayoutRequest | null>(null);
   const [viewingProofId, setViewingProofId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [agencyFeedback, setAgencyFeedback] = useState<FeedbackState | null>(null);
   const [paymentProofFeedback, setPaymentProofFeedback] = useState<FeedbackState | null>(null);
-  const [payoutFeedback, setPayoutFeedback] = useState<FeedbackState | null>(null);
   const [bookingFeedback, setBookingFeedback] = useState<FeedbackState | null>(null);
   const [auditFeedback, setAuditFeedback] = useState<FeedbackState | null>(null);
   const [retentionDays, setRetentionDays] = useState('90');
@@ -145,9 +148,13 @@ export default function AdminDashboard() {
   const pendingPaymentProofs = pendingPaymentProofsList.data;
   const pendingPaymentProofsPagination = pendingPaymentProofsList.pagination;
 
-  const payoutRequestsList = useAdminListQuery<AdminPayoutRequest>('/admin/payout-requests', 'payout-requests', activeTab === 'PAYOUTS', activeTab, debouncedQuery, currentPage);
-  const payoutRequests = payoutRequestsList.data;
-  const payoutRequestsPagination = payoutRequestsList.pagination;
+  const invoicesList = useAdminListQuery<AdminInvoice>('/admin/invoices', 'invoices', activeTab === 'INVOICES', activeTab, debouncedQuery, currentPage);
+  const invoices = invoicesList.data;
+  const invoicesPagination = invoicesList.pagination;
+
+  const refundCasesList = useAdminListQuery<AdminRefundCase>('/admin/refunds', 'refunds', activeTab === 'REFUNDS', activeTab, debouncedQuery, currentPage);
+  const refundCases = refundCasesList.data;
+  const refundCasesPagination = refundCasesList.pagination;
 
   const verifyAgencyMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string, status: VerificationStatusType }) => {
@@ -168,6 +175,29 @@ export default function AdminDashboard() {
       setAgencyFeedback({
         type: 'error',
         message: getErrorMessage(error, t('dashboard.feedback.agencyUpdateError'))
+      });
+    }
+  });
+
+  // #371: travel licence verification (Law 11-16) — separate from identity.
+  const verifyLicenceMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string, status: LicenceStatusType }) => {
+      return apiClient.post(`/admin/agencies/${id}/licence/verify`, { status });
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
+      queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
+      setAgencyFeedback({
+        type: 'success',
+        message: variables.status === LicenceStatus.Verified
+          ? t('dashboard.feedback.licenceVerified')
+          : t('dashboard.feedback.licenceRejected')
+      });
+    },
+    onError: (error: AxiosError<ApiErrorResponse>) => {
+      setAgencyFeedback({
+        type: 'error',
+        message: getErrorMessage(error, t('dashboard.feedback.licenceUpdateError'))
       });
     }
   });
@@ -236,28 +266,6 @@ export default function AdminDashboard() {
       setPaymentProofFeedback({
         type: 'error',
         message: getErrorMessage(error, t('dashboard.feedback.paymentProofUpdateError'))
-      });
-    }
-  });
-
-  const processPayoutMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string, status: string }) => {
-      return apiClient.post(`/admin/payouts/${id}/process`, { status });
-    },
-    onSuccess: (_data, variables) => {
-      invalidateOverviewCounts();
-      queryClient.invalidateQueries({ queryKey: ['payout-requests'] });
-      setPayoutFeedback({
-        type: 'success',
-        message: variables.status === PayoutStatus.Paid
-          ? t('dashboard.feedback.payoutPaid')
-          : t('dashboard.feedback.payoutRejected')
-      });
-    },
-    onError: (error: AxiosError<ApiErrorResponse>) => {
-      setPayoutFeedback({
-        type: 'error',
-        message: getErrorMessage(error, t('dashboard.feedback.payoutUpdateError'))
       });
     }
   });
@@ -441,15 +449,21 @@ export default function AdminDashboard() {
       description: t('dashboard.meta.paymentProofs.description'),
       searchPlaceholder: t('dashboard.meta.paymentProofs.searchPlaceholder')
     },
-    PAYOUTS: {
-      title: t('dashboard.meta.payouts.title'),
-      description: t('dashboard.meta.payouts.description'),
-      searchPlaceholder: t('dashboard.meta.payouts.searchPlaceholder')
-    },
     AUDIT: {
       title: t('dashboard.meta.audit.title'),
       description: t('dashboard.meta.audit.description'),
       searchPlaceholder: t('dashboard.meta.audit.searchPlaceholder')
+    }
+,
+    INVOICES: {
+      title: t('dashboard.meta.invoices.title'),
+      description: t('dashboard.meta.invoices.description'),
+      searchPlaceholder: t('dashboard.meta.invoices.searchPlaceholder')
+    },
+    REFUNDS: {
+      title: t('dashboard.meta.refunds.title'),
+      description: t('dashboard.meta.refunds.description'),
+      searchPlaceholder: t('dashboard.meta.refunds.searchPlaceholder')
     }
   } as const;
 
@@ -481,16 +495,22 @@ export default function AdminDashboard() {
       count: overviewCounts?.pendingPaymentProofs ?? pendingPaymentProofs.length,
     },
     {
-      key: 'PAYOUTS',
-      label: t('dashboard.tabs.payouts'),
-      icon: CalendarClock,
-      count: overviewCounts?.pendingPayouts ?? payoutRequests.length,
-    },
-    {
       key: 'AUDIT',
       label: t('dashboard.tabs.audit'),
       icon: FileText,
       count: overviewCounts?.auditLogs ?? auditLogs.length,
+    },
+    {
+      key: 'INVOICES',
+      label: t('dashboard.tabs.invoices'),
+      icon: Receipt,
+      count: invoicesPagination?.total ?? invoices.length,
+    },
+    {
+      key: 'REFUNDS',
+      label: t('dashboard.tabs.refunds'),
+      icon: RotateCcw,
+      count: refundCasesPagination?.total ?? refundCases.length,
     },
   ] as const;
 
@@ -581,20 +601,6 @@ export default function AdminDashboard() {
             onVerifyPayment={(id, status) => verifyPaymentMutation.mutate({ id, status })}
           />
         )}
-        {activeTab === 'PAYOUTS' && (
-          <PayoutsTab
-            t={t}
-            payouts={payoutRequests}
-            pagination={payoutRequestsPagination}
-            onPageChange={setCurrentPage}
-            paginationLabels={paginationLabels}
-            payoutFeedback={payoutFeedback}
-            selectedPayout={selectedPayout}
-            isProcessing={processPayoutMutation.isPending}
-            onSelectPayout={setSelectedPayout}
-            onProcessPayout={(id, status) => processPayoutMutation.mutate({ id, status })}
-          />
-        )}
         {activeTab === 'AUDIT' && (
           <AuditTab
             t={t}
@@ -609,6 +615,26 @@ export default function AdminDashboard() {
             isPruning={pruneAuditLogsMutation.isPending}
             onExportAuditLogs={handleExportAuditLogs}
             onPruneAuditLogs={handlePruneAuditLogs}
+          />
+        )}
+
+        {activeTab === 'INVOICES' && (
+          <InvoicesTab
+            t={t}
+            invoices={invoices}
+            pagination={invoicesPagination}
+            onPageChange={setCurrentPage}
+            paginationLabels={paginationLabels}
+          />
+        )}
+
+        {activeTab === 'REFUNDS' && (
+          <RefundsTab
+            t={t}
+            cases={refundCases}
+            pagination={refundCasesPagination}
+            onPageChange={setCurrentPage}
+            paginationLabels={paginationLabels}
           />
         )}
       </DashboardShell>
@@ -636,8 +662,10 @@ export default function AdminDashboard() {
           agency={selectedAgency}
           agencyFeedback={agencyFeedback}
           isVerifying={verifyAgencyMutation.isPending}
+          isVerifyingLicence={verifyLicenceMutation.isPending}
           onClose={() => setSelectedAgency(null)}
           onVerify={(id, status) => verifyAgencyMutation.mutate({ id, status })}
+          onVerifyLicence={(id, status) => verifyLicenceMutation.mutate({ id, status })}
         />
       )}
     </>

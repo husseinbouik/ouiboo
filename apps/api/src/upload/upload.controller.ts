@@ -22,13 +22,15 @@ import { UploadResponseDto } from './dto/upload-response.dto';
 import { UploadFileDto } from './dto/upload-file.dto';
 import { SignedUrlQueryDto } from './dto/signed-url-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 import { ALLOWED_MIME_TYPES_REGEX, MAX_UPLOAD_SIZE_BYTES, type UploadIntent } from './upload.constants';
-import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
+import { RateLimit, RateLimitGuard, RateLimitSensitive } from '../common/rate-limit.guard';
 
 @ApiTags('Upload')
 @Controller('upload')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RateLimitGuard)
+@RateLimitSensitive()
 export class UploadController {
     constructor(private readonly uploadService: UploadService) { }
 
@@ -107,24 +109,42 @@ export class UploadController {
         });
     }
 
+    /**
+     * Token-bearer <redacted> (#391): this route is intentionally session-free.
+     * The short-lived signed token issued by GET /upload/signed-url IS the
+     * credential — UploadService.readPrivateFileByToken verifies its
+     * signature, purpose, and expiry, and only serves private/ keys.
+     * Ownership is enforced at issuance time (file owner or admin only),
+     * not here. JwtAuthGuard is skipped for this handler only via @Public();
+     * RateLimitGuard still applies.
+     */
     @Get('file')
+    @Public()
     @UseGuards(RateLimitGuard)
     @RateLimit({ points: 60, windowMs: 60_000, keyPrefix: 'upload:file-token' })
     @ApiOperation({ summary: 'Serve a private file via a signed token (no session required)' })
     @ApiQuery({ name: 'token', description: 'Token from the signed-url endpoint' })
     @ApiResponse({ status: 200, description: 'File content' })
     @ApiResponse({ status: 401, description: 'Invalid or expired token' })
+    @ApiResponse({ status: 403, description: 'Token does not reference a private file' })
     async servePrivateFile(@Query('token') token: string, @Res() res: Response) {
         if (!token) {
             throw new BadRequestException('Missing token');
         }
-        const { data, contentType } = await this.uploadService.readPrivateFileByToken(token);
+        const { data, contentType, key } = await this.uploadService.readPrivateFileByToken(token);
         res.set({
             'Content-Type': contentType,
             'Content-Length': data.length.toString(),
-            // Short-lived token URLs must not be cached publicly
-            'Cache-Control': 'private, max-age=300',
+            // The token URL is a credential: never store the response, never
+            // leak the URL via Referer, and force a safe download.
+            'Cache-Control': 'private, no-store',
+            'Referrer-Policy': 'no-referrer',
+            'X-Content-Type-Options': 'nosniff',
+            // Key segments are restricted to [a-zA-Z0-9._-] by the service's
+            // assertSafeKey, so the basename is safe to quote here.
+            'Content-Disposition': `attachment; filename="${key.split('/').pop()}"`,
         });
         res.send(data);
     }
 }
+

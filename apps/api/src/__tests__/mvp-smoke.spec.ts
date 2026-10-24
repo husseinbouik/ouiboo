@@ -42,6 +42,19 @@ describe('MVP smoke: auth + booking flow', () => {
         user: { findUnique: jest.fn() },
     };
 
+    // Redis is required in production (#392) and sensitive routes fail closed
+    // without it, so this module models an available in-memory client. The
+    // outage policy itself is covered in common/rate-limit.guard.spec.ts.
+    const redisCounts = new Map<string, number>();
+    const redisClient = {
+        incr: jest.fn(async (key: string) => {
+            const next = (redisCounts.get(key) ?? 0) + 1;
+            redisCounts.set(key, next);
+            return next;
+        }),
+        pexpire: jest.fn(async () => 1),
+    };
+
     beforeAll(async () => {
         const moduleRef = await Test.createTestingModule({
             controllers: [AuthController, BookingsController, UsersController],
@@ -52,7 +65,7 @@ describe('MVP smoke: auth + booking flow', () => {
                 { provide: EmailService, useValue: emailService },
                 { provide: UploadService, useValue: uploadService },
                 { provide: DatabaseService, useValue: databaseService },
-                { provide: RedisService, useValue: { getClient: jest.fn(() => null) } },
+                { provide: RedisService, useValue: { getClient: jest.fn(() => redisClient) } },
             ],
         })
             .overrideGuard(JwtAuthGuard)
@@ -179,3 +192,4 @@ describe('MVP smoke: auth + booking flow', () => {
             });
     });
 });
+

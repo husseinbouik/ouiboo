@@ -6,24 +6,23 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import {
     type BookingStatusType,
-    type PayoutStatusType,
     type SubscriptionStatusType,
     UserRole,
     VerificationStatus,
     type VerificationStatusType,
     SubscriptionStatus,
     BookingStatus,
-    PayoutStatus,
 } from '@ouiboo/types';
-import { WalletsService } from '../wallets/wallets.service';
+import { ExternalPaymentsService } from '../external-payments/external-payments.service';
+import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
 import { EmailService } from '../email/email.service';
-import { Prisma } from '@ouiboo/database';
+import { PaymentCustodian, PaymentLedgerSource, PaymentMethod, Prisma } from '@ouiboo/database';
 import { AuditLogService } from './audit-log.service';
 import { Response } from 'express';
 import { mapBookingDetails } from '../bookings/booking-response.util';
-import { mapPayoutDetails } from '../agency/payout-response.util';
 import { PaymentsService } from '../payments/payments.service';
 import { type MoneyInput } from '../common/money.util';
+import { effectiveLicenceStatus, getAgencyActivationBlock } from '../common/agency-licence.util';
 
 const parseEnumQuery = <T extends string>(value: string | undefined, allowedValues: readonly T[]) => {
     if (!value) {
@@ -119,7 +118,6 @@ const escapeCsvValue = (value: unknown) => {
 const VERIFICATION_STATUSES = Object.values(VerificationStatus) as VerificationStatusType[];
 const SUBSCRIPTION_STATUSES = Object.values(SubscriptionStatus) as SubscriptionStatusType[];
 const BOOKING_STATUSES = Object.values(BookingStatus) as BookingStatusType[];
-const PAYOUT_STATUSES = Object.values(PayoutStatus) as PayoutStatusType[];
 
 @ApiTags('Admin')
 @Controller('admin')
@@ -129,7 +127,8 @@ const PAYOUT_STATUSES = Object.values(PayoutStatus) as PayoutStatusType[];
 export class AdminController {
     constructor(
         private db: DatabaseService,
-        private walletsService: WalletsService,
+        private externalPaymentsService: ExternalPaymentsService,
+        private stagedPaymentsService: StagedPaymentsService,
         private emailService: EmailService,
         private auditLogService: AuditLogService,
         private paymentsService: PaymentsService,
@@ -200,7 +199,7 @@ export class AdminController {
         const result = await this.db.$transaction(async (tx) => {
             const proof = await tx.paymentProof.findUnique({
                 where: { id },
-                include: { booking: { include: { session: { include: { template: true } }, traveler: true } } }
+                include: { booking: { include: { session: { include: { template: true } }, traveler: true, paymentPlan: true } } }
             });
 
             if (!proof) {
@@ -223,6 +222,27 @@ export class AdminController {
                 }
             });
 
+            // #369: staged bookings follow the plan state machine (deposit
+            // stage, then balance after confirmation); only the stage
+            // amount is recorded and the booking is fully paid at the
+            // balance stage.
+            if (proof.booking.paymentPlan) {
+                const decision = await this.stagedPaymentsService.applyProofDecisionInTransaction(tx, {
+                    booking: proof.booking,
+                    plan: proof.booking.paymentPlan,
+                    approved: status === 'VERIFIED',
+                    source: PaymentLedgerSource.ADMIN_PROOF_REVIEW,
+                    externalReference: proof.id,
+                });
+                return {
+                    updatedProof,
+                    bookingId: proof.bookingId,
+                    travelerEmail: proof.booking.traveler?.email,
+                    tripTitle: proof.booking.session.template.title,
+                    fullyPaid: decision.fullyPaid,
+                };
+            }
+
             const updatedBooking = await tx.booking.update({
                 where: { id: proof.bookingId },
                 data: {
@@ -233,18 +253,24 @@ export class AdminController {
                 include: { session: { include: { template: true } } }
             });
 
+            // #368: verifying a payment proof records the verified fact that
+            // the traveller paid the AGENCY directly. It must never credit a
+            // withdrawable OuiBoo balance.
+            const paymentRecord = {
+                bookingId: updatedBooking.id,
+                agencyId: updatedBooking.session.template.agencyId,
+                travelerId: proof.booking.travelerId,
+                amount: updatedBooking.totalAmount,
+                currency: updatedBooking.currency,
+                method: updatedBooking.paymentMethod ?? PaymentMethod.MANUAL,
+                externalReference: proof.id,
+                custodian: PaymentCustodian.AGENCY,
+                source: PaymentLedgerSource.ADMIN_PROOF_REVIEW,
+            };
             if (status === 'VERIFIED') {
-                await this.walletsService.creditWalletInTransaction(
-                    tx,
-                    updatedBooking.session.template.agencyId,
-                    updatedBooking.totalAmount,
-                    `Booking #${updatedBooking.id} confirmed`,
-                    {
-                        idempotencyKey: `booking:${updatedBooking.id}:payment-credit`,
-                        referenceId: updatedBooking.id,
-                        type: 'BOOKING',
-                    },
-                );
+                await this.externalPaymentsService.recordPaymentVerifiedInTransaction(tx, paymentRecord);
+            } else {
+                await this.externalPaymentsService.recordPaymentRejectedInTransaction(tx, paymentRecord);
             }
 
             return {
@@ -252,10 +278,11 @@ export class AdminController {
                 bookingId: proof.bookingId,
                 travelerEmail: proof.booking.traveler?.email,
                 tripTitle: updatedBooking.session.template.title,
+                fullyPaid: status === 'VERIFIED',
             };
         });
 
-        if (status === 'VERIFIED' && result.travelerEmail) {
+        if (result.fullyPaid && result.travelerEmail) {
             this.emailService.sendPaymentConfirmation(
                 result.travelerEmail,
                 result.tripTitle,
@@ -290,7 +317,6 @@ export class AdminController {
             bookings,
             bookingsToday,
             pendingPaymentProofs,
-            pendingPayouts,
             auditLogs,
         ] = await Promise.all([
             this.db.agencyProfile.count({ where: { verificationStatus: 'PENDING' } }),
@@ -299,7 +325,6 @@ export class AdminController {
             this.db.booking.count(),
             this.db.booking.count({ where: { bookingDate: { gte: startOfToday } } }),
             this.db.paymentProof.count({ where: { status: 'PENDING' } }),
-            this.db.payoutRequest.count({ where: { status: 'PENDING' } }),
             this.db.auditLog.count(),
         ]);
 
@@ -310,7 +335,6 @@ export class AdminController {
             bookings,
             bookingsToday,
             pendingPaymentProofs,
-            pendingPayouts,
             auditLogs,
         };
     }
@@ -345,7 +369,15 @@ export class AdminController {
             }),
             this.db.agencyProfile.count({ where }),
         ]);
-        return { data: agencies, pagination: buildPaginationMeta(total, safePage, safeLimit) };
+        // #371: surface the derived licence status so an expired licence is
+        // flagged in admin even when the stored value still says VERIFIED.
+        return {
+            data: agencies.map((agency) => ({
+                ...agency,
+                effectiveLicenceStatus: effectiveLicenceStatus(agency),
+            })),
+            pagination: buildPaginationMeta(total, safePage, safeLimit),
+        };
     }
 
     @Post('agencies/:id/verify')
@@ -365,6 +397,51 @@ export class AdminController {
             targetType: 'AgencyProfile',
             targetId: id,
             metadata: { status },
+        }).catch((err) => console.error('Audit log failed', err));
+        return updated;
+    }
+
+    @Post('agencies/:id/licence/verify')
+    @ApiOperation({ summary: 'Verify or reject an agency travel licence (#371)' })
+    async verifyAgencyLicence(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() body: { status?: 'VERIFIED' | 'REJECTED'; reason?: string },
+    ) {
+        const status = body?.status;
+        if (!status || !['VERIFIED', 'REJECTED'].includes(status)) {
+            throw new BadRequestException('Invalid licence verification status');
+        }
+        const agency = await this.db.agencyProfile.findUnique({
+            where: { id },
+            select: { id: true, travelLicenceNumber: true, travelLicenceStatus: true, licenceExpiry: true },
+        });
+        if (!agency) {
+            throw new BadRequestException('Agency not found');
+        }
+        if (status === 'VERIFIED') {
+            if (!agency.travelLicenceNumber) {
+                throw new BadRequestException('Agency has not submitted a travel licence number');
+            }
+            if (agency.licenceExpiry && agency.licenceExpiry.getTime() <= Date.now()) {
+                throw new BadRequestException('Travel licence has already expired; ask the agency to renew it before verification');
+            }
+        }
+        const updated = await this.db.agencyProfile.update({
+            where: { id },
+            data: {
+                travelLicenceStatus: status,
+                licenceVerifiedAt: status === 'VERIFIED' ? new Date() : null,
+                licenceRejectionReason: status === 'REJECTED' ? (body.reason?.trim() || null) : null,
+            },
+        });
+        this.auditLogService.log({
+            actorId: req?.user?.userId,
+            actorEmail: req?.user?.email,
+            action: status === 'VERIFIED' ? 'AGENCY_LICENCE_VERIFIED' : 'AGENCY_LICENCE_REJECTED',
+            targetType: 'AgencyProfile',
+            targetId: id,
+            metadata: { status, licenceNumber: agency.travelLicenceNumber },
         }).catch((err) => console.error('Audit log failed', err));
         return updated;
     }
@@ -421,6 +498,12 @@ export class AdminController {
             if (trip.agency.verificationStatus !== 'VERIFIED' || !subscriptionValid) {
                 throw new BadRequestException('Agency must be verified with an active subscription or trial');
             }
+            // #371: publishing also requires a verified, unexpired travel
+            // licence (Law 11-16) — identity verification alone is not enough.
+            const licenceBlock = getAgencyActivationBlock(trip.agency);
+            if (licenceBlock) {
+                throw new BadRequestException(licenceBlock);
+            }
         }
         const updated = await this.db.tripTemplate.update({
             where: { id },
@@ -472,7 +555,14 @@ export class AdminController {
             }),
             this.db.agencyProfile.count({ where }),
         ]);
-        return { data: agencies, pagination: buildPaginationMeta(total, safePage, safeLimit) };
+        // #371: derived licence status (expired licences flagged on read).
+        return {
+            data: agencies.map((agency) => ({
+                ...agency,
+                effectiveLicenceStatus: effectiveLicenceStatus(agency),
+            })),
+            pagination: buildPaginationMeta(total, safePage, safeLimit),
+        };
     }
 
     @Patch('agencies/:id/status')
@@ -590,110 +680,6 @@ export class AdminController {
         }).catch((err) => console.error('Audit log failed', err));
 
         return result;
-    }
-
-    @Get('payout-requests')
-    @ApiOperation({ summary: 'Get all payout requests' })
-    async getPayoutRequests(
-        @Query('q') q?: string,
-        @Query('status') status?: string,
-        @Query('page') page?: string,
-        @Query('limit') limit?: string,
-    ) {
-        const search = q?.trim();
-        const statusFilter = parseEnumQuery(status, PAYOUT_STATUSES);
-        const { page: safePage, limit: safeLimit } = parsePaginationQuery(page, limit);
-        const where: Prisma.PayoutRequestWhereInput = {
-            ...(statusFilter ? { status: statusFilter } : {}),
-            ...(search ? {
-                OR: [
-                    { id: { contains: search, mode: 'insensitive' } },
-                    { agency: { companyName: { contains: search, mode: 'insensitive' } } },
-                    { agency: { user: { email: { contains: search, mode: 'insensitive' } } } },
-                ],
-            } : {}),
-        };
-        const [payouts, total] = await Promise.all([
-            this.db.payoutRequest.findMany({
-                where,
-                include: { agency: { select: { id: true, companyName: true, verificationStatus: true, user: { select: { id: true, email: true } } } } },
-                orderBy: { requestedAt: 'desc' },
-                skip: (safePage - 1) * safeLimit,
-                take: safeLimit,
-            }),
-            this.db.payoutRequest.count({ where }),
-        ]);
-
-        return {
-            data: payouts.map(mapPayoutDetails),
-            pagination: buildPaginationMeta(total, safePage, safeLimit),
-        };
-    }
-
-    @Post('payouts/:id/process')
-    @ApiOperation({ summary: 'Mark payout as paid or rejected' })
-    async processPayout(@Request() req, @Param('id') id: string, @Body('status') status: 'PAID' | 'REJECTED') {
-        if (!['PAID', 'REJECTED'].includes(status)) {
-            throw new BadRequestException('Invalid payout status');
-        }
-        const updated = await this.db.$transaction(async (tx) => {
-            const payout = await tx.payoutRequest.findUnique({
-                where: { id },
-                include: {
-                    agency: {
-                        include: {
-                            wallet: true,
-                        },
-                    },
-                },
-            });
-
-            if (!payout) {
-                throw new BadRequestException('Payout request not found');
-            }
-
-            if (payout.status !== PayoutStatus.Pending) {
-                throw new BadRequestException('Payout request has already been processed');
-            }
-
-            const claimed = await tx.payoutRequest.updateMany({
-                where: { id, status: PayoutStatus.Pending },
-                data: {
-                    status,
-                    processedAt: new Date(),
-                },
-            });
-            if (claimed.count !== 1) {
-                throw new BadRequestException('Payout request has already been processed');
-            }
-
-            const processedPayout = await tx.payoutRequest.findUniqueOrThrow({ where: { id } });
-
-            if (status === 'REJECTED') {
-                await this.walletsService.creditWalletInTransaction(
-                    tx,
-                    payout.agencyId,
-                    payout.amount,
-                    `Payout request ${payout.id} rejected and funds restored`,
-                    {
-                        idempotencyKey: `payout:${payout.id}:rejection-credit`,
-                        referenceId: payout.id,
-                        type: 'CREDIT',
-                    },
-                );
-            }
-
-            return processedPayout;
-        });
-        this.auditLogService.log({
-            actorId: req?.user?.userId,
-            actorEmail: req?.user?.email,
-            action: 'PAYOUT_PROCESSED',
-            targetType: 'PayoutRequest',
-            targetId: id,
-            metadata: { status },
-        }).catch((err) => console.error('Audit log failed', err));
-        return updated;
     }
 
     @Get('audit-logs')

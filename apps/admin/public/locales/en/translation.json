@@ -47,8 +47,9 @@
       "agencies": "Manage Agencies",
       "bookings": "System Bookings",
       "paymentProofs": "Payment Proofs",
-      "payouts": "Payout Requests",
-      "audit": "Audit Log"
+      "audit": "Audit Log",
+      "invoices": "Invoices",
+      "refunds": "Refunds"
     },
     "meta": {
       "pending": {
@@ -71,15 +72,20 @@
         "description": "Approve or reject uploaded payment receipts.",
         "searchPlaceholder": "Search payment proofs by traveler or booking..."
       },
-      "payouts": {
-        "title": "Payout Requests",
-        "description": "Review agency payout requests before releasing funds.",
-        "searchPlaceholder": "Search payout requests by agency..."
-      },
       "audit": {
         "title": "Audit Log",
         "description": "Search operator activity, export records, and apply retention cleanup.",
         "searchPlaceholder": "Search by action, actor email, target type, or target id"
+      },
+      "invoices": {
+        "title": "Platform Service Fee Invoices",
+        "description": "Review issued platform service fee invoices and generate the monthly invoice per agency.",
+        "searchPlaceholder": "Search invoices by number or agency..."
+      },
+      "refunds": {
+        "searchPlaceholder": "Search refund cases...",
+        "description": "Track traveller refund cases across agencies. Refunds are paid by agencies from their own merchant accounts — overdue cases restrict new bookings for that agency.",
+        "title": "Refund Cases"
       }
     },
     "sections": {
@@ -88,7 +94,6 @@
       "allAgencies": "All Agencies Management",
       "bookingMonitor": "System-wide Booking Monitor",
       "pendingPaymentProofs": "Pending Payment Proofs",
-      "payoutRequests": "Payout Requests",
       "auditTrail": "Audit trail"
     },
     "table": {
@@ -111,24 +116,22 @@
       "approve": "Approve",
       "activate": "Activate",
       "deactivate": "Deactivate",
-      "approvePayout": "Approve payout",
-      "rejectPayout": "Reject payout",
       "approveAgency": "Approve agency",
       "rejectAgency": "Reject agency",
-      "refund": "Refund"
+      "refund": "Refund",
+      "verifyLicence": "Verify licence",
+      "rejectLicence": "Reject licence"
     },
     "labels": {
       "ice": "ICE",
       "joined": "Joined",
       "request": "Request",
       "requestId": "Request #{{id}}",
-      "agencyPayout": "Agency payout",
       "agency": "Agency",
       "requested": "Requested",
       "amount": "Amount",
       "currency": "MAD",
       "bankDetails": "Agency Bank Details",
-      "payoutDetails": "Payout Details",
       "selected": "Selected",
       "contact": "Contact",
       "status": "Status",
@@ -139,13 +142,19 @@
       "system": "System",
       "noActorId": "No actor id",
       "noTargetId": "No target id",
-      "agencyLogo": "{{name}} logo"
+      "agencyLogo": "{{name}} logo",
+      "travelLicence": "Travel licence (Law 11-16)",
+      "legalName": "Legal name",
+      "legalRepresentative": "Legal representative",
+      "rc": "Trade register (RC)",
+      "taxId": "Tax ID (IF)",
+      "licenceExpiry": "Licence expiry",
+      "licenceVerifiedAt": "Licence verified on",
+      "licenceRejectionReason": "Rejection reason"
     },
     "messages": {
       "noBankDetails": "No bank details on file.",
       "noPaymentProofs": "No payment proofs are waiting for review.",
-      "noPayoutRequests": "No payout requests are waiting for review.",
-      "selectPayoutPrompt": "Select a payout request to review agency bank details and approve or reject.",
       "reviewVerification": "Review verification details and approve or reject.",
       "notProvided": "Not provided",
       "noEmail": "No email on file",
@@ -166,19 +175,48 @@
       "paymentProofRejected": "Payment proof rejected successfully.",
       "paymentProofUpdateError": "Unable to update payment proof. Please try again.",
       "paymentProofLoadError": "Unable to load payment proof.",
-      "payoutPaid": "Payout marked as paid successfully.",
-      "payoutRejected": "Payout rejected successfully.",
-      "payoutUpdateError": "Unable to update payout request. Please try again.",
       "refundProcessed": "Refund processed successfully.",
       "refundError": "Unable to process refund right now.",
       "auditPruneError": "Unable to prune audit logs right now.",
       "auditExportSuccess": "Audit log export downloaded successfully.",
       "auditExportError": "Unable to export audit logs right now.",
-      "retentionDaysInvalid": "Retention days must be a positive number."
+      "retentionDaysInvalid": "Retention days must be a positive number.",
+      "licenceVerified": "Travel licence verified",
+      "licenceRejected": "Travel licence rejected",
+      "licenceUpdateError": "Could not update the travel licence"
     },
     "aria": {
       "mainNavigation": "Main navigation",
       "adminAvatar": "Admin avatar"
+    },
+    "invoices": {
+      "title": "Platform service fee invoices ({{total}})",
+      "generateTitle": "Generate monthly invoice",
+      "agency": "Agency",
+      "selectAgency": "Select an agency",
+      "month": "Month",
+      "year": "Year",
+      "rate": "Fee rate (%)",
+      "generate": "Generate invoice",
+      "generateHint": "Generation is idempotent: an existing invoice for the same agency and month is returned unchanged.",
+      "generated": "Invoice {{number}} is ready.",
+      "generateError": "Could not generate the invoice. Check the agency, period, and fee rate.",
+      "errors": {
+        "noBillableBookings": "No paid bookings were confirmed for this agency in that period, so there is nothing to invoice yet.",
+        "rateNotConfigured": "No fee rate was entered and no default fee rate is configured on the server.",
+        "rateOutOfRange": "The fee rate must be greater than 0 and at most 100%.",
+        "mixedCurrencies": "This agency's paid bookings for that period use more than one currency, so a single invoice cannot be generated.",
+        "notReady": "Invoice storage is not available yet (database migration pending).",
+        "agencyNotFound": "That agency could not be found. Refresh the agency list and try again."
+      },
+      "downloadError": "Could not download the invoice PDF.",
+      "empty": "No invoices issued yet.",
+      "number": "Invoice",
+      "period": "Period",
+      "issued": "Issued",
+      "gross": "Gross bookings",
+      "fee": "Platform service fee",
+      "download": "PDF"
     },
     "audit": {
       "trail": "Audit trail ({{total}})",
@@ -227,16 +265,54 @@
       "payoutPaidLabel": "Paid",
       "payoutPaidHelper": "Transfer completed",
       "payoutRejectedLabel": "Rejected",
-      "payoutRejectedHelper": "Funds returned to the agency wallet",
+      "payoutRejectedHelper": "Funds returned to the agency",
       "payoutApprovedLabel": "Approved",
-      "payoutApprovedHelper": "Approved and waiting for payout processing",
+      "payoutApprovedHelper": "Approved and waiting for processing",
       "payoutPendingLabel": "Pending",
-      "payoutPendingHelper": "Pending admin review"
+      "payoutPendingHelper": "Pending admin review",
+      "licenceNotSubmitted": "Licence not submitted",
+      "licencePendingReview": "Licence under review",
+      "licenceVerified": "Licence verified",
+      "licenceRejected": "Licence rejected",
+      "licenceExpired": "Licence expired"
     },
     "modal": {
       "agencyReview": "Agency Review"
     },
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "refunds": {
+      "emptyHint": "Refund cases appear here when a trip is not confirmed, a traveller requests a refund, or an agency cancels.",
+      "actions": {
+        "review": "Start review",
+        "complete": "Mark completed",
+        "initiate": "Mark sent",
+        "fail": "Mark failed",
+        "approve": "Approve",
+        "reject": "Reject"
+      },
+      "status": {
+        "REFUND_APPROVED": "Approved",
+        "AGENCY_ACTION_REQUIRED": "Agency action required",
+        "ELIGIBILITY_REVIEW": "Under review",
+        "REFUND_INITIATED": "Initiated",
+        "REFUND_REJECTED": "Rejected",
+        "REFUND_REQUESTED": "Requested",
+        "REFUND_OVERDUE": "Overdue",
+        "REFUND_FAILED": "Failed",
+        "REFUND_COMPLETED": "Completed"
+      },
+      "reason": {
+        "GROUP_MINIMUM_NOT_REACHED": "Trip not confirmed — minimum group not reached",
+        "TRAVELLER_CANCELLATION": "Traveller cancellation",
+        "ADMIN_INITIATED": "Opened by admin",
+        "TRAVELLER_REQUEST": "Traveller request",
+        "AGENCY_CANCELLATION": "Agency cancellation"
+      },
+      "failureReason": "Failure",
+      "empty": "No refund cases",
+      "dueBy": "Due by",
+      "requestedAt": "Requested"
+    }
   },
   "meta": {
     "titleDefault": "Platform administration",

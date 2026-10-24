@@ -19,10 +19,11 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@ouiboo/types';
-import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
+import { RateLimit, RateLimitGuard, RateLimitSensitive } from '../common/rate-limit.guard';
 
 @Controller('payments')
 @UseGuards(RateLimitGuard)
+@RateLimitSensitive()
 export class PaymentsController {
   private readonly logger = new Logger(PaymentsController.name);
 
@@ -99,3 +100,4 @@ export class PaymentsController {
     return this.paymentsService.handleWebhookCallback(provider, payload, signature);
   }
 }
+

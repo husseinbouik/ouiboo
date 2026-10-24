@@ -21,6 +21,8 @@ export interface TripCardTrip {
   startLocation?: string;
   durationDays?: number;
   images?: string[];
+  /** #332: agency-provided alt text per image (index-aligned); may be absent. */
+  imageAlts?: string[];
   averageRating?: number | null;
   reviewCount?: number;
   sessions?: Array<{
@@ -158,7 +160,7 @@ export function TripCard({ trip }: TripCardProps) {
             <Image
               src={images[currentImage]}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              alt={trip.startLocation ? `${trip.title} · ${trip.startLocation}` : trip.title}
+              alt={trip.imageAlts?.[currentImage]?.trim() || (trip.startLocation ? `${trip.title} · ${trip.startLocation}` : trip.title)}
               fill
               sizes="(min-width: 1024px) 33vw, 100vw"
             />
@@ -213,7 +215,7 @@ export function TripCard({ trip }: TripCardProps) {
           </Badge>
           <Badge className={cn(
             "text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none flex items-center gap-1",
-            nextSession ? "bg-success/15 text-success" : "bg-warning/15 text-warning"
+            nextSession ? "bg-success/15 text-success-dark" : "bg-warning/15 text-warning-dark"
           )}>
             <Zap className="h-3 w-3" />
             {nextSession ? t('tripCard.spots', { count: nextSession.availableSeats }) : t('tripCard.soldOut')}
@@ -229,7 +231,7 @@ export function TripCard({ trip }: TripCardProps) {
             <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-tight">{trip.title}</h3>
             <div className="flex items-center gap-1 shrink-0 bg-warning/10 px-2 py-0.5 rounded-md">
               <Star className={cn("h-3.5 w-3.5 text-warning", trip.reviewCount ? "fill-warning" : "fill-none")} />
-              <span className="text-xs font-bold text-warning">
+              <span className="text-xs font-bold text-warning-dark">
                 {trip.reviewCount ? Number(trip.averageRating || 0).toFixed(1) : t('tripCard.new')}
               </span>
             </div>
@@ -240,7 +242,7 @@ export function TripCard({ trip }: TripCardProps) {
               rejected, or unknown state renders no badge at all. */}
           {isAgencyVerified && (
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="border-none text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 bg-success/15 text-success">
+              <Badge className="border-none text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 bg-success/15 text-success-dark">
                 <ShieldCheck className="h-3 w-3" />
                 {t('tripCard.verifiedAgency')}
               </Badge>

@@ -1,9 +1,12 @@
 import {
   type BookingDetails,
+  type BookingPaymentPlan,
+  type BookingPaymentPlanStatusType,
   type BookingPaymentStatusType,
   type BookingStatusType,
   type PaymentMethodType,
   type RefundStatusType,
+  type SessionGroupStatusType,
   type SessionStatusType,
   type VerificationStatusType,
 } from '@ouiboo/types';
@@ -41,6 +44,21 @@ type BookingMapperInput = {
     status: string;
     rejectionReason?: string | null;
   } | null;
+  /** #369: staged payment plan snapshot; null for non-staged bookings. */
+  paymentPlan?: {
+    id: string;
+    status: string;
+    totalAmount: MoneyInput;
+    depositAmount: MoneyInput;
+    balanceAmount: MoneyInput;
+    currency: string;
+    minimumParticipants: number;
+    confirmationDeadline: Date | string;
+    balanceDueAt?: NullableDate;
+    groupConfirmedAt?: NullableDate;
+    paymentPolicyVersion: string;
+    refundPolicyVersion: string;
+  } | null;
   review?: {
     id: string;
   } | null;
@@ -59,12 +77,18 @@ type BookingMapperInput = {
     availableSeats: number;
     status: string;
     currency?: string;
+    /** #369: staged-payment session configuration. */
+    minBookings?: number;
+    confirmationDeadline?: NullableDate;
+    groupStatus?: string;
     template: {
       agencyId?: string;
       id: string;
       title: string;
       startLocation: string;
       images: string[];
+      /** #332: alt text per image (index-aligned); absent on pre-migration rows. */
+      imageAlts?: string[];
       agency?: {
         id: string;
         companyName: string;
@@ -122,6 +146,26 @@ export const mapBookingDetails = (booking: BookingMapperInput): BookingDetails =
         rejectionReason: booking.paymentProof.rejectionReason || undefined,
       }
     : undefined,
+  paymentPlan: (booking.paymentPlan
+    ? {
+        id: booking.paymentPlan.id,
+        bookingId: booking.id,
+        sessionId: booking.sessionId,
+        agencyId: booking.session.template.agencyId || booking.session.template.agency?.id || '',
+        status: booking.paymentPlan.status as BookingPaymentPlanStatusType,
+        totalAmount: toMoneyString(booking.paymentPlan.totalAmount) || '0.00',
+        depositAmount: toMoneyString(booking.paymentPlan.depositAmount) || '0.00',
+        balanceAmount: toMoneyString(booking.paymentPlan.balanceAmount) || '0.00',
+        currency: booking.paymentPlan.currency || 'MAD',
+        minimumParticipants: booking.paymentPlan.minimumParticipants,
+        confirmationDeadline:
+          toIsoString(booking.paymentPlan.confirmationDeadline) || new Date(0).toISOString(),
+        balanceDueAt: toIsoString(booking.paymentPlan.balanceDueAt),
+        groupConfirmedAt: toIsoString(booking.paymentPlan.groupConfirmedAt),
+        paymentPolicyVersion: booking.paymentPlan.paymentPolicyVersion,
+        refundPolicyVersion: booking.paymentPlan.refundPolicyVersion,
+      }
+    : null) as BookingPaymentPlan | null,
   review: booking.review
     ? {
         id: booking.review.id,
@@ -142,11 +186,15 @@ export const mapBookingDetails = (booking: BookingMapperInput): BookingDetails =
     availableSeats: booking.session.availableSeats,
     status: booking.session.status as SessionStatusType,
     currency: booking.session.currency || 'MAD',
+    minBookings: booking.session.minBookings,
+    confirmationDeadline: toIsoString(booking.session.confirmationDeadline),
+    groupStatus: booking.session.groupStatus as SessionGroupStatusType | undefined,
     template: {
       id: booking.session.template.id,
       title: booking.session.template.title,
       startLocation: booking.session.template.startLocation,
       images: booking.session.template.images,
+      imageAlts: booking.session.template.imageAlts,
       agency: {
         id: booking.session.template.agency?.id || booking.session.template.agencyId || '',
         companyName: booking.session.template.agency?.companyName || '',

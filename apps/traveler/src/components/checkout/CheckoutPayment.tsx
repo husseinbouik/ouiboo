@@ -6,6 +6,7 @@ import { Badge } from '@ouiboo/ui';
 import { Calendar, Info, ShieldCheck, Banknote, UploadCloud, CheckCircle2, X, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
+import { formatCurrency } from '@ouiboo/utils';
 
 type CheckoutPaymentProps = {
   bankDetails: string;
@@ -15,6 +16,15 @@ type CheckoutPaymentProps = {
   onClearProof: () => void;
   proofFile: File | null;
   isUploading: boolean;
+  /** #369: staged-payment info for minimum-group trips (plan §42 copy). */
+  stagedInfo?: {
+    depositDue: number;
+    agencyName: string;
+    minimumParticipants: number;
+    confirmationDeadline: string | null;
+    currency: string | undefined;
+    language: string;
+  } | null;
 };
 
 export function CheckoutPayment({
@@ -25,6 +35,7 @@ export function CheckoutPayment({
   onClearProof,
   proofFile,
   isUploading,
+  stagedInfo,
 }: CheckoutPaymentProps) {
   return (
     <div className="space-y-8 pt-10 border-t">
@@ -71,13 +82,33 @@ export function CheckoutPayment({
         )}
       </div>
 
+      {stagedInfo && hasBankDetails && (
+        <div className="p-6 rounded-[2rem] border-2 border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 space-y-3">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="h-6 w-6 text-amber-600" />
+            <h4 className="font-black text-base">Deposit paid to {stagedInfo.agencyName}</h4>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            You pay a deposit of {formatCurrency(stagedInfo.depositDue, stagedInfo.currency, stagedInfo.language)} directly to {stagedInfo.agencyName} now.
+            This trip needs at least {stagedInfo.minimumParticipants} participants to run
+            {stagedInfo.confirmationDeadline
+              ? <> — the group is confirmed by {new Date(stagedInfo.confirmationDeadline).toLocaleDateString(stagedInfo.language, { day: '2-digit', month: 'long', year: 'numeric' })}</>
+              : null}
+            . The remaining balance is only requested after the trip is confirmed. If the minimum is not reached, your deposit is refunded.
+          </p>
+        </div>
+      )}
+
       <div className="space-y-4 pt-4">
         <div className="flex justify-between items-end">
           <p className="text-xs font-black text-foreground uppercase tracking-widest">3. Upload Proof of Payment</p>
           <Badge variant="outline" className="text-[8px] font-black border-primary/20 text-primary">Upload within 24h</Badge>
         </div>
-        <label className="h-44 border-4 border-dashed border-muted rounded-[2rem] flex flex-col items-center justify-center gap-4 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-pointer group">
-          <input type="file" className="hidden" onChange={onProofUpload} disabled={isUploading} accept="image/*,application/pdf" />
+        <label className="h-44 border-4 border-dashed border-muted rounded-[2rem] flex flex-col items-center justify-center gap-4 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-pointer group focus-within:ring-2 focus-within:ring-primary focus-within:border-primary/40">
+          {/* #332: sr-only (not display:none) so the input stays in the
+              Tab order and keyboard users can open the file picker; the
+              label shows the focus ring via focus-within. */}
+          <input type="file" className="sr-only" onChange={onProofUpload} disabled={isUploading} accept="image/*,application/pdf" />
           <AnimatePresence mode="wait">
             {proofPreview ? (
               <motion.div
