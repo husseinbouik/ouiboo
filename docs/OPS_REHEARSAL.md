@@ -45,6 +45,8 @@ Assign primary/secondary owners and escalation contacts for API availability/lat
 
 Acceptance evidence: dashboard URLs, alert rule export, ownership roster, notification-test timestamps, incident timeline, communication sample, retrospective actions.
 
+**Implemented (issue #399):** uptime checks and alerting run from the `Uptime Monitor` GitHub Actions workflow (every 15 minutes, production + staging), and API errors are emitted as structured `http_error` JSON log lines — see `docs/OPERATIONS_MONITORING.md`. An external log drain remains a Pro-gated follow-up (owner decision, 2026-10-23).
+
 ## Operator-only remaining work
 
 - Run all five sections with sanitized or provider-controlled resources.
