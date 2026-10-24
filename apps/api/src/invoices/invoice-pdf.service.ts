@@ -1,16 +1,40 @@
 import { Injectable } from '@nestjs/common';
-import * as PDFDocument from 'pdfkit';
-// pdfkit 0.20 loads the metrics for its built-in fonts lazily, the first
-// time doc.font('Helvetica') runs, through package-internal imports that
-// resolve to js/standard-fonts/*.cjs inside the pdfkit package. Vercel's
-// file tracer does not follow those internal imports, so the files were
-// missing from the deployed serverless bundle and every invoice PDF
-// download failed with MODULE_NOT_FOUND (HTTP 500) while working locally.
-// Importing the two fonts the layout below uses through pdfkit's public
-// subpath exports makes the tracer include them in the bundle. (#359)
+import * as PDFDocumentModule from 'pdfkit';
+// Keep the public standard-font imports from the round-1 fix. Once the
+// constructor resolves, pdfkit still needs the Helvetica metrics available
+// in the Vercel bundle when the layout selects those fonts. (#359)
 import 'pdfkit/standard-fonts/Helvetica';
 import 'pdfkit/standard-fonts/HelveticaBold';
 import type { serializeInvoice } from './invoices.service';
+
+export type PDFDocumentConstructor = {
+    new (options?: PDFKit.PDFDocumentOptions): PDFKit.PDFDocument;
+};
+
+type PDFDocumentModuleShape = {
+    default?: unknown;
+    PDFDocument?: unknown;
+};
+
+/**
+ * pdfkit's package exports do not present one module shape to every
+ * loader. Nest's CommonJS build receives the constructor directly, while
+ * the Vercel bundle can expose pdfkit's ESM namespace, where the same
+ * constructor is available as `default` (and as the named `PDFDocument`
+ * export). The deployed service failed with "PDFDocument is not a
+ * constructor" when it treated that namespace object as the class.
+ * Resolve all supported shapes once, at module load.
+ */
+export const resolvePDFDocumentConstructor = (moduleValue: unknown): PDFDocumentConstructor => {
+    const shape = moduleValue as PDFDocumentModuleShape | null | undefined;
+    const candidate = shape?.default ?? shape?.PDFDocument ?? moduleValue;
+    if (typeof candidate !== 'function') {
+        throw new TypeError('pdfkit did not resolve to a PDF document constructor');
+    }
+    return candidate as PDFDocumentConstructor;
+};
+
+export const PDFDocument = resolvePDFDocumentConstructor(PDFDocumentModule);
 
 export type InvoicePdfData = ReturnType<typeof serializeInvoice>;
 
