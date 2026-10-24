@@ -1,19 +1,48 @@
 import * as Helvetica from 'pdfkit/standard-fonts/Helvetica';
 import * as HelveticaBold from 'pdfkit/standard-fonts/HelveticaBold';
-import { InvoicePdfService } from './invoice-pdf.service';
+import {
+    InvoicePdfService,
+    PDFDocument,
+    resolvePDFDocumentConstructor,
+} from './invoice-pdf.service';
 
 /**
  * Regression coverage for the invoice PDF download 500s (#359).
  *
- * pdfkit 0.20 resolves its built-in font metrics lazily from
- * js/standard-fonts/*.cjs inside the pdfkit package. Those files were
- * missing from the Vercel serverless bundle, so rendering threw
- * MODULE_NOT_FOUND in the deployed environment while passing locally.
- * invoice-pdf.service.ts imports the two fonts used by the invoice
- * layout through pdfkit's public subpath exports so they are traced
- * into the bundle; these tests lock that contract in.
+ * The deployed runtime logs disproved the round-1 font-only diagnosis:
+ * before rendering reached font selection, the Vercel bundle exposed
+ * pdfkit as an ESM namespace object and the service treated that object
+ * as the class, throwing "PDFDocument is not a constructor". The
+ * standard-font imports remain as protection for the next step in the
+ * render path; the constructor interop is locked separately below.
  */
-describe('InvoicePdfService font bundle contract (#359)', () => {
+describe('InvoicePdfService PDF bundle contracts (#359)', () => {
+    it('resolves pdfkit to a constructor function', () => {
+        expect(typeof PDFDocument).toBe('function');
+        const doc = new PDFDocument({ size: 'A4', margin: 50 });
+        expect(doc).toBeInstanceOf(PDFDocument);
+        doc.end();
+    });
+
+    it('unwraps namespace-shaped pdfkit modules', () => {
+        class NamespacePDFDocument {}
+        class NamedPDFDocument {}
+
+        expect(resolvePDFDocumentConstructor({ default: NamespacePDFDocument })).toBe(
+            NamespacePDFDocument,
+        );
+        expect(resolvePDFDocumentConstructor({ PDFDocument: NamedPDFDocument })).toBe(
+            NamedPDFDocument,
+        );
+        expect(resolvePDFDocumentConstructor(NamespacePDFDocument)).toBe(NamespacePDFDocument);
+    });
+
+    it('rejects module shapes that do not contain a constructor', () => {
+        expect(() => resolvePDFDocumentConstructor({ default: {} })).toThrow(
+            'pdfkit did not resolve to a PDF document constructor',
+        );
+    });
+
     it('resolves the standard-font metrics for the fonts the layout uses', () => {
         expect(Helvetica.name).toBe('Helvetica');
         expect(Array.isArray(Helvetica.glyphWidths)).toBe(true);
