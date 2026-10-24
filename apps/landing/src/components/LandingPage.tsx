@@ -369,14 +369,6 @@ export default function LandingPage() {
                                 {t('hero.ctaPrimary')}
                             </motion.a>
                             <motion.a 
-                              href={`${travelerUrl}/search?lang=${currentLang}`} 
-                              whileHover={{ x: 5 }}
-                              
-                              className="text-sm font-semibold leading-6 group text-deep-blue hover:text-sunset-orange transition-colors duration-300"
-                            >
-                                {t('hero.ctaSecondary')} <span aria-hidden="true">→</span>
-                            </motion.a>
-                            <motion.a 
                               href="#how-it-works" 
                               whileHover={{ x: 5 }}
                               className="text-sm font-semibold leading-6 group text-deep-blue hover:text-sunset-orange transition-colors duration-300"

@@ -59,12 +59,12 @@
     "discoverTrips": "اكتشف الرحلات"
   },
   "trust": {
-    "secureTitle": "مدفوعات آمنة",
-    "secureDescription": "مدفوعاتك محمية بمعايير أمان عالية.",
-    "verifiedTitle": "خبراء موثقون",
-    "verifiedDescription": "نراجع كل وكالة لضمان تجارب عالية الجودة.",
-    "instantTitle": "حجز فوري",
-    "instantDescription": "احجز رحلتك بسهولة وبدون رسوم مخفية."
+    "secureTitle": "دفع مباشر",
+    "secureDescription": "تدفع للوكالة مباشرة — Ouiboo لا تحتفظ بأموالك أبداً.",
+    "verifiedTitle": "تفاصيل ترخيص الوكالة",
+    "verifiedDescription": "رقم الترخيص مقدم من الوكالة — لم تتحقق منه Ouiboo بشكل مستقل.",
+    "instantTitle": "طلبات الحجز",
+    "instantDescription": "أرسل طلب حجز وستؤكد الوكالة التوفر. لا رسوم مخفية."
   },
   "footer": {
     "rights": "حقوق النشر {{year}} Ouiboo. جميع الحقوق محفوظة."
@@ -151,7 +151,7 @@
     "sectionThreeTitle": "الحجوزات والإلغاء",
     "sectionThreeBody": "راجع سياسات الرحلة قبل الحجز وتواصل مع الدعم إذا تغيرت خططك.",
     "sectionFourTitle": "الدعم",
-    "sectionFourBody": "نحن هنا للمساعدة عبر الدردشة داخل التطبيق والبريد الإلكتروني."
+    "sectionFourBody": "نحن هنا للمساعدة عبر البريد الإلكتروني."
   },
   "privacy": {
     "backToSignup": "العودة إلى التسجيل",
@@ -201,7 +201,7 @@
     "spots_one": "مقعد واحد",
     "spots_other": "{{count}} مقاعد",
     "soldOut": "مكتمل",
-    "verifiedAgency": "وكالة موثقة",
+    "verifiedAgency": "رقم الترخيص مقدم من الوكالة — لم يتم التحقق منه بشكل مستقل",
     "agencyPending": "وكالة قيد المراجعة",
     "days_one": "يوم واحد",
     "days_other": "{{count}} أيام",
@@ -228,7 +228,7 @@
   },
   "agency": {
     "notFoundTitle": "الوكالة غير موجودة",
-    "verifiedTitle": "وكالة موثقة",
+    "verifiedTitle": "رقم الترخيص مقدم من الوكالة — لم يتم التحقق منه بشكل مستقل",
     "noTrips": "لا توجد رحلات نشطة لهذه الوكالة."
   },
   "featuredPage": {

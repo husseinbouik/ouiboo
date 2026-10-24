@@ -59,12 +59,12 @@
     "discoverTrips": "Découvrir les voyages"
   },
   "trust": {
-    "secureTitle": "Paiements sécurisés",
-    "secureDescription": "Vos paiements sont protégés par une sécurité de niveau professionnel.",
-    "verifiedTitle": "Experts vérifiés",
-    "verifiedDescription": "Chaque agence est vérifiée pour garantir des expériences de qualité.",
-    "instantTitle": "Réservation instantanée",
-    "instantDescription": "Réservez votre voyage sans frais cachés."
+    "secureTitle": "Paiements directs",
+    "secureDescription": "Vous payez l'agence directement — Ouiboo ne détient jamais votre argent.",
+    "verifiedTitle": "Détails de la licence de l'agence",
+    "verifiedDescription": "Numéro de licence fourni par l'agence — non vérifié de manière indépendante par Ouiboo.",
+    "instantTitle": "Demandes de réservation",
+    "instantDescription": "Envoyez une demande de réservation et l'agence confirmera la disponibilité. Aucun frais caché."
   },
   "footer": {
     "rights": "Copyright {{year}} Ouiboo. Tous droits réservés."
@@ -151,7 +151,7 @@
     "sectionThreeTitle": "Réservations et annulations",
     "sectionThreeBody": "Consultez les politiques avant de réserver et contactez l'assistance en cas de changement.",
     "sectionFourTitle": "Assistance",
-    "sectionFourBody": "Nous sommes là pour vous aider via le chat et l'e-mail."
+    "sectionFourBody": "Nous sommes là pour vous aider par e-mail."
   },
   "privacy": {
     "backToSignup": "Retour à l'inscription",
@@ -201,7 +201,7 @@
     "spots_one": "{{count}} place",
     "spots_other": "{{count}} places",
     "soldOut": "Complet",
-    "verifiedAgency": "Agence vérifiée",
+    "verifiedAgency": "Numéro de licence fourni par l'agence — non vérifié de manière indépendante",
     "agencyPending": "Agence en attente",
     "days_one": "{{count}} jour",
     "days_other": "{{count}} jours",
@@ -228,7 +228,7 @@
   },
   "agency": {
     "notFoundTitle": "Agence introuvable",
-    "verifiedTitle": "Agence vérifiée",
+    "verifiedTitle": "Numéro de licence fourni par l'agence — non vérifié de manière indépendante",
     "noTrips": "Aucun voyage actif trouvé pour cette agence."
   },
   "featuredPage": {

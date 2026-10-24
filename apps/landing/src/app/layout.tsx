@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     title: "Ouiboo — Travel experiences, made personal",
     description: "Discover memorable trips from local travel experts and manage every booking with confidence.",
   },
-robots: { index: true, follow: true },
+robots: { index: false, follow: false },
 };
 
 export default async function RootLayout({

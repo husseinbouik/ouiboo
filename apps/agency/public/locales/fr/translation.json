@@ -76,7 +76,7 @@
     "noAccount": "Nouvelle agence ?",
     "signUpLink": "Enregistrer votre entreprise",
     "heroTitle": "Développez votre activité de voyage.",
-    "heroSubtitle": "Accédez à des outils puissants, des analyses et un réseau mondial de voyageurs pour faire évoluer votre agence.",
+    "heroSubtitle": "Accédez à des outils pour gérer les voyages, les réservations et les paiements de votre agence.",
     "heroAlt": "Bureau moderne",
     "loggingIn": "Connexion...",
     "emailRequired": "L'e-mail est requis",
@@ -155,7 +155,7 @@
     "sectionThreeTitle": "Paiements et politiques",
     "sectionThreeBody": "Consultez les politiques de réservation, frais et annulations avant confirmation.",
     "sectionFourTitle": "Support partenaires",
-    "sectionFourBody": "Contactez notre équipe partenaire via chat ou e-mail."
+    "sectionFourBody": "Contactez notre équipe partenaire par e-mail."
   },
   "privacy": {
     "backToSignup": "Retour à l'inscription",
