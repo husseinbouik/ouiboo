@@ -46,6 +46,8 @@ export function EditSessionModal({
       session.status,
       session.currency,
       session.cancellationReason ?? '',
+      session.minBookings ?? '',
+      session.confirmationDeadline ?? '',
     ].join('|');
   }, [session]);
   const [draftState, setDraftState] = useState<{ key: string; value: Partial<AgencyTripSession> }>({
@@ -217,6 +219,38 @@ export function EditSessionModal({
                       </div>
                     </div>
                   </div>
+
+                  {/* #369: staged payments — shown when a deposit is set */}
+                  {(formData.deposit ?? 0) > 0 && (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">{t('editSession.minGroupSize')}</Label>
+                          <Input
+                            type="number"
+                            value={formData.minBookings || ''}
+                            onChange={(e) => updateFormData({ ...formData, minBookings: parseInt(e.target.value) || undefined })}
+                            className="h-10"
+                            min="1"
+                            disabled={isLoading}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">{t('editSession.confirmationDeadline')}</Label>
+                          <Input
+                            type="date"
+                            value={formData.confirmationDeadline?.split('T')[0] || ''}
+                            onChange={(e) => updateFormData({ ...formData, confirmationDeadline: e.target.value })}
+                            className="h-10"
+                            disabled={isLoading}
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {t('editSession.stagedHint')}
+                      </p>
+                    </>
+                  )}
 
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">{t('editSession.status')}</Label>

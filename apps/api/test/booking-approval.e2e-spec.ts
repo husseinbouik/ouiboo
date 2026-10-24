@@ -6,7 +6,8 @@ import { BookingsController } from '../src/bookings/bookings.controller';
 import { BookingsService } from '../src/bookings/bookings.service';
 import { AdminController } from '../src/admin/admin.controller';
 import { DatabaseService } from '../src/database/database.service';
-import { WalletsService } from '../src/wallets/wallets.service';
+import { ExternalPaymentsService } from '../src/external-payments/external-payments.service';
+import { StagedPaymentsService } from '../src/staged-payments/staged-payments.service';
 import { EmailService } from '../src/email/email.service';
 import { AuditLogService } from '../src/admin/audit-log.service';
 import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
@@ -35,8 +36,9 @@ describe('E2E: booking + payment approval flow', () => {
         $transaction: jest.fn((cb: any) => cb(dbMock)),
     };
 
-    const walletsService = {
-        creditWalletInTransaction: jest.fn(),
+    const externalPaymentsService = {
+        recordPaymentVerifiedInTransaction: jest.fn(),
+        recordPaymentRejectedInTransaction: jest.fn(),
     };
 
     const emailService = {
@@ -57,7 +59,8 @@ describe('E2E: booking + payment approval flow', () => {
             providers: [
                 { provide: BookingsService, useValue: bookingsService },
                 { provide: DatabaseService, useValue: dbMock },
-                { provide: WalletsService, useValue: walletsService },
+                { provide: ExternalPaymentsService, useValue: externalPaymentsService },
+                { provide: StagedPaymentsService, useValue: { applyProofDecisionInTransaction: jest.fn() } },
                 { provide: EmailService, useValue: emailService },
                 { provide: AuditLogService, useValue: auditLogService },
                 { provide: PaymentsService, useValue: paymentsService },
@@ -152,7 +155,12 @@ describe('E2E: booking + payment approval flow', () => {
                 expect(body).toMatchObject({ id: 'proof-123', status: 'VERIFIED' });
             });
 
-        expect(walletsService.creditWalletInTransaction).toHaveBeenCalled();
+        // #368: approval records the payment as VERIFIED with the agency as
+        // custodian — it must not credit any withdrawable OuiBoo balance.
+        expect(externalPaymentsService.recordPaymentVerifiedInTransaction).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({ bookingId: 'booking-123', custodian: 'AGENCY' }),
+        );
         expect(emailService.sendPaymentConfirmation).toHaveBeenCalled();
         expect(auditLogService.log).toHaveBeenCalled();
     });

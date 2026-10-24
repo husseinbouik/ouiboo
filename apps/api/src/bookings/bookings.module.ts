@@ -2,10 +2,11 @@ import { Module } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { BookingsController } from './bookings.controller';
 import { UploadModule } from '../upload/upload.module';
-import { WalletsModule } from '../wallets/wallets.module';
+import { ExternalPaymentsModule } from '../external-payments/external-payments.module';
+import { StagedPaymentsModule } from '../staged-payments/staged-payments.module';
 
 @Module({
-    imports: [UploadModule, WalletsModule],
+    imports: [UploadModule, ExternalPaymentsModule, StagedPaymentsModule],
     controllers: [BookingsController],
     providers: [BookingsService],
 })

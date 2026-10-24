@@ -56,9 +56,12 @@ type AgencyStatsResponse = {
   revenue: number;
   totalBookings: number;
   totalCustomers: number;
-  wallet: {
-    availableBalance: number;
-    pendingBalance: number;
+  payments: {
+    currency: string;
+    totalReceived: string;
+    totalRefunded: string;
+    pendingVerificationCount: number;
+    pendingVerificationAmount: string;
   };
 };
 
@@ -70,7 +73,7 @@ const formatCurrency = (amount: number) => amount.toLocaleString(undefined, {
 const getBookingStatusMeta = (status: BookingStatus, t: TFunction) => {
   if (status === BookingStatus.Confirmed || status === BookingStatus.Completed) {
     return {
-      className: 'bg-success/10 text-success',
+      className: 'bg-success/10 text-success-dark',
       icon: CheckCircle2,
       label: status === BookingStatus.Completed ? t('dashboard.status.completed') : t('dashboard.status.confirmed'),
     };
@@ -78,7 +81,7 @@ const getBookingStatusMeta = (status: BookingStatus, t: TFunction) => {
 
   if (status === BookingStatus.AwaitingValidation) {
     return {
-      className: 'bg-warning/10 text-warning',
+      className: 'bg-warning/10 text-warning-dark',
       icon: Clock,
       label: t('dashboard.status.pendingVerification'),
     };
@@ -86,7 +89,7 @@ const getBookingStatusMeta = (status: BookingStatus, t: TFunction) => {
 
   if (status === BookingStatus.Rejected || status === BookingStatus.Cancelled) {
     return {
-      className: 'bg-danger/10 text-danger',
+      className: 'bg-danger/10 text-danger-dark',
       icon: AlertCircle,
       label: status === BookingStatus.Rejected ? t('dashboard.status.rejected') : t('dashboard.status.cancelled'),
     };
@@ -127,7 +130,7 @@ export default function AgencyDashboard() {
     activeTrips: 0,
     totalBookings: 0,
     totalCustomers: 0,
-    wallet: { availableBalance: 0, pendingBalance: 0 },
+    payments: { currency: 'MAD', totalReceived: '0', totalRefunded: '0', pendingVerificationCount: 0, pendingVerificationAmount: '0' },
   };
 
   const pendingPaymentReviews = recentBookings.filter(
@@ -141,8 +144,8 @@ export default function AgencyDashboard() {
 
   const summaryCards = [
     {
-      label: t('dashboard.availableBalance'),
-      value: formatCurrency(stats.wallet.availableBalance || 0),
+      label: t('dashboard.paymentsReceived'),
+      value: formatCurrency(Number(stats.payments.totalReceived || 0)),
       currency: t('dashboard.currency'),
       icon: Wallet,
       color: 'bg-success',
@@ -150,8 +153,8 @@ export default function AgencyDashboard() {
       trendUp: true,
     },
     {
-      label: t('dashboard.pendingEscrow'),
-      value: formatCurrency(stats.wallet.pendingBalance || 0),
+      label: t('dashboard.paymentsPending'),
+      value: formatCurrency(Number(stats.payments.pendingVerificationAmount || 0)),
       currency: t('dashboard.currency'),
       icon: Clock,
       color: 'bg-warning',
@@ -233,7 +236,7 @@ export default function AgencyDashboard() {
             href="/dashboard/wallet"
             className="inline-flex items-center justify-center rounded-xl font-black h-12 px-8 bg-primary text-primary-foreground hover:bg-primary/90"
           >
-            {t('dashboard.requestPayout')}
+            {t('dashboard.viewPayments')}
           </Link>
         </div>
       </div>
@@ -256,7 +259,7 @@ export default function AgencyDashboard() {
                   {stat.trendUp !== null ? (
                     <div className={cn(
                       'flex items-center gap-1 text-xs font-black rounded-full px-3 py-1',
-                      stat.trendUp ? 'text-success bg-success/10' : 'text-muted-foreground bg-muted',
+                      stat.trendUp ? 'text-success-dark bg-success/10' : 'text-muted-foreground bg-muted',
                     )}>
                       {stat.trendUp ? <ArrowUpRight className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
                       {stat.trend}
@@ -379,7 +382,7 @@ export default function AgencyDashboard() {
                       </TableCell>
                       <TableCell className="pe-10 text-end">
                         <Button asChild variant="ghost" size="icon" className="rounded-xl bg-muted/50 hover:bg-primary hover:text-primary-foreground transition-all">
-              <Link href="/dashboard/bookings"><Eye className="h-5 w-5" /></Link>
+              <Link href="/dashboard/bookings" aria-label={t('dashboard.viewBooking')}><Eye className="h-5 w-5" /></Link>
             </Button>
                       </TableCell>
                     </TableRow>

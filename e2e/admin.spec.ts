@@ -19,7 +19,7 @@ test.describe('admin launch flow', () => {
     await expect(page.getByText(/deleted 2 audit logs older than/i)).toBeVisible();
   });
 
-  test('admin can process refunds and payouts from launch surfaces', async ({ page }) => {
+  test('admin can process refunds from launch surfaces', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     await page.getByRole('button', { name: /system bookings/i }).click();
@@ -29,10 +29,5 @@ test.describe('admin launch flow', () => {
     await page.getByRole('button', { name: /process refund/i }).click();
     await expect(page.getByText(/refund processed successfully/i)).toBeVisible();
 
-    await page.getByRole('button', { name: /payout requests/i }).click();
-    await expect(page.getByRole('button', { name: /details/i }).first()).toBeVisible();
-    await page.getByRole('button', { name: /details/i }).click();
-    await page.getByRole('button', { name: /approve payout/i }).click();
-    await expect(page.getByText(/payout marked as paid successfully/i)).toBeVisible();
   });
 });

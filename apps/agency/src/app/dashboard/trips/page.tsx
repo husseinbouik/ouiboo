@@ -40,6 +40,7 @@ type AgencyTripSummary = {
   durationNights: number;
   createdAt?: string;
   images?: string[] | null;
+  imageAlts?: string[] | null;
   sessions?: AgencyTripSessionSummary[];
 };
 
@@ -204,7 +205,7 @@ export default function AgencyTripsPage() {
               <div className="relative h-48 overflow-hidden">
                  <Image
                    src={trip.images?.[0] || `https://ui-avatars.com/api/?name=${encodeURIComponent(trip.title)}&background=0A192F&color=fff`}
-                   alt={trip.title}
+                   alt={trip.imageAlts?.[0]?.trim() || trip.title}
                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                    fill
                    sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"

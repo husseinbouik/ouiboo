@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TripsService } from './trips.service';
 import { DatabaseService } from '../database/database.service';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import { NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 
 const mockTripTemplate = {
     id: 'trip-123',
@@ -96,6 +96,55 @@ describe('TripsService', () => {
         });
     });
 
+    describe('imageAlts normalization (#332)', () => {
+        beforeEach(() => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.tripTemplate.create.mockResolvedValue(mockTripTemplate);
+            db.tripTemplate.update.mockResolvedValue(mockTripTemplate);
+        });
+
+        it('aligns alt texts to images on create (trim, pad missing)', async () => {
+            await service.createTemplate('agency-123', {
+                title: 'T',
+                images: ['a.jpg', 'b.jpg'],
+                imageAlts: ['  Sunrise hike  '],
+            } as any);
+            const arg = db.tripTemplate.create.mock.calls[0][0];
+            expect(arg.data.imageAlts).toEqual(['Sunrise hike', '']);
+        });
+
+        it('drops extra alt texts and caps length at 300 on create', async () => {
+            await service.createTemplate('agency-123', {
+                title: 'T',
+                images: ['a.jpg'],
+                imageAlts: ['x'.repeat(350), 'extra'],
+            } as any);
+            const arg = db.tripTemplate.create.mock.calls[0][0];
+            expect(arg.data.imageAlts).toEqual(['x'.repeat(300)]);
+        });
+
+        it('leaves imageAlts undefined when none are supplied', async () => {
+            await service.createTemplate('agency-123', {
+                title: 'T',
+                images: ['a.jpg'],
+            } as any);
+            const arg = db.tripTemplate.create.mock.calls[0][0];
+            expect(arg.data.imageAlts).toBeUndefined();
+        });
+
+        it('aligns alt texts to the existing images on update when images are unchanged', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                images: ['a.jpg', 'b.jpg', 'c.jpg'],
+            });
+            await service.updateTemplate('trip-123', 'agency-123', {
+                imageAlts: ['Alt A'],
+            } as any);
+            const arg = db.tripTemplate.update.mock.calls[0][0];
+            expect(arg.data.imageAlts).toEqual(['Alt A', '', '']);
+        });
+    });
+
     describe('deleteTemplate', () => {
         it('should delete a draft template if owned by user', async () => {
             db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
@@ -158,6 +207,39 @@ describe('TripsService', () => {
         });
     });
 
+    describe('findOneTemplate agency bankDetails (#380)', () => {
+        it('selects agency.bankDetails and returns it in the trip detail', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                agency: {
+                    id: 'agency-123',
+                    companyName: 'Atlas Adventures SARL',
+                    logo: null,
+                    verificationStatus: 'VERIFIED',
+                    bankDetails: 'CIH Bank — RIB 230 780 0000000000000001 67',
+                },
+            });
+
+            const result = await service.findOneTemplate('trip-123');
+
+            expect(db.tripTemplate.findFirst).toHaveBeenCalled();
+            const args = db.tripTemplate.findFirst.mock.calls[0][0];
+            // Checkout computes hasBankDetails from trip.agency.bankDetails and
+            // blocks every booking when it is missing; if it is dropped from
+            // the select again, checkout is permanently blocked (#380).
+            expect(args.select.agency.select.bankDetails).toBe(true);
+            expect((result as any).agency.bankDetails).toBe(
+                'CIH Bank — RIB 230 780 0000000000000001 67',
+            );
+        });
+
+        it('throws NotFoundException when the template does not exist', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue(null);
+
+            await expect(service.findOneTemplate('trip-999')).rejects.toThrow(NotFoundException);
+        });
+    });
+
     describe('findAllTemplates public catalog gate (#317)', () => {
         it('restricts the public catalog to VERIFIED agencies and selects agency.verificationStatus', async () => {
             db.tripTemplate.findMany.mockResolvedValue([]);
@@ -173,6 +255,197 @@ describe('TripsService', () => {
             // The traveler card derives its verified badge from this field; if it
             // is dropped from the select again, every card is mislabeled (#317).
             expect(args.include.agency.select.verificationStatus).toBe(true);
+        });
+    });
+    describe('session staged-payment configuration (#369)', () => {
+        const future = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+
+        beforeEach(() => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.tripTemplate.findFirst.mockResolvedValue({ id: 'trip-123', currency: 'MAD' });
+            db.tripSession.create.mockImplementation(async ({ data }: any) => ({ id: 'session-new', ...data }));
+            db.tripSession.aggregate.mockResolvedValue({ _min: { price: null } });
+            db.tripTemplate.update.mockResolvedValue({});
+        });
+
+        it('persists minBookings, deadline and PENDING_MINIMUM for a staged session', async () => {
+            const deadline = future(20);
+            await service.createSession('agency-123', 'trip-123', {
+                startDate: future(30),
+                endDate: future(34),
+                price: 1000,
+                deposit: 200,
+                totalSeats: 12,
+                minBookings: 6,
+                confirmationDeadline: deadline,
+            } as any);
+
+            const data = db.tripSession.create.mock.calls[0][0].data;
+            expect(data.minBookings).toBe(6);
+            expect(data.groupStatus).toBe('PENDING_MINIMUM');
+            expect(data.confirmationDeadline).toEqual(new Date(deadline));
+        });
+
+        it('rejects a deposit above the 30% platform cap for minimum-group trips', async () => {
+            await expect(service.createSession('agency-123', 'trip-123', {
+                startDate: future(30),
+                endDate: future(34),
+                price: 1000,
+                deposit: 900,
+                totalSeats: 12,
+                minBookings: 6,
+                confirmationDeadline: future(20),
+            } as any)).rejects.toThrow('cannot exceed 30%');
+            expect(db.tripSession.create).not.toHaveBeenCalled();
+        });
+
+        it('rejects a staged session without a confirmation deadline', async () => {
+            await expect(service.createSession('agency-123', 'trip-123', {
+                startDate: future(30),
+                endDate: future(34),
+                price: 1000,
+                deposit: 200,
+                totalSeats: 12,
+                minBookings: 6,
+            } as any)).rejects.toThrow('confirmation deadline is required');
+        });
+
+        it('keeps non-staged sessions NOT_REQUIRED even with a large deposit', async () => {
+            await service.createSession('agency-123', 'trip-123', {
+                startDate: future(30),
+                endDate: future(34),
+                price: 1000,
+                deposit: 900,
+                totalSeats: 12,
+            } as any);
+
+            const data = db.tripSession.create.mock.calls[0][0].data;
+            expect(data.minBookings).toBe(1);
+            expect(data.groupStatus).toBe('NOT_REQUIRED');
+            expect(data.confirmationDeadline).toBeNull();
+        });
+    });
+
+    describe('publish gate: identity + travel licence (#371)', () => {
+        const verifiedAgency = {
+            id: 'agency-123',
+            verificationStatus: 'VERIFIED',
+            travelLicenceStatus: 'VERIFIED',
+            licenceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        };
+
+        beforeEach(() => {
+            db.tripTemplate.update.mockResolvedValue({ ...mockTripTemplate, status: 'ACTIVE' });
+        });
+
+        it('blocks re-activation when the travel licence was never submitted', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                travelLicenceStatus: 'NOT_SUBMITTED',
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(ForbiddenException);
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/licence must be submitted and verified/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks re-activation when identity is not verified, even with a verified licence', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                verificationStatus: 'PENDING',
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/identity must be verified/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks re-activation when the licence has expired', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                licenceExpiry: new Date(Date.now() - 24 * 60 * 60 * 1000),
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/licence has expired/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('allows re-activation for a verified agency with a verified licence', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue(verifiedAgency);
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            const result = await service.activateTemplate('trip-123', 'agency-123');
+
+            expect(db.tripTemplate.update).toHaveBeenCalledWith({
+                where: { id: 'trip-123' },
+                data: { status: 'ACTIVE' },
+            });
+            expect(result.status).toBe('ACTIVE');
+        });
+
+        it('blocks restore of an archived trip when the licence is rejected', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                travelLicenceStatus: 'REJECTED',
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'ARCHIVED' });
+
+            await expect(service.restoreTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(ForbiddenException);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks a PATCH transition into ACTIVE without a verified licence', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                travelLicenceStatus: 'PENDING_REVIEW',
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'DRAFT' });
+
+            await expect(service.updateTemplate('trip-123', 'agency-123', { status: 'ACTIVE' } as any))
+                .rejects.toThrow(/licence must be submitted and verified/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('does not gate edits that keep an already-ACTIVE trip active', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                id: 'agency-123',
+                verificationStatus: 'VERIFIED',
+                travelLicenceStatus: 'NOT_SUBMITTED',
+                licenceExpiry: null,
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'ACTIVE' });
+
+            await service.updateTemplate('trip-123', 'agency-123', { title: 'Renamed' } as any);
+
+            expect(db.tripTemplate.update).toHaveBeenCalled();
+        });
+
+        it('selects the seller licence fields in the trip detail (#371)', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                agency: {
+                    id: 'agency-123',
+                    companyName: 'Atlas Adventures SARL',
+                    legalName: 'Atlas Adventures SARL',
+                    travelLicenceNumber: 'AV-2024-0187',
+                    travelLicenceStatus: 'VERIFIED',
+                },
+            });
+
+            await service.findOneTemplate('trip-123');
+
+            const args = db.tripTemplate.findFirst.mock.calls[0][0];
+            expect(args.select.agency.select.legalName).toBe(true);
+            expect(args.select.agency.select.travelLicenceNumber).toBe(true);
+            expect(args.select.agency.select.travelLicenceStatus).toBe(true);
+            expect(args.select.agency.select.licenceExpiry).toBe(true);
         });
     });
 });

@@ -1,5 +1,5 @@
 /**
- * Basic keyboard-navigation regression check for key traveler pages (#213).
+ * Basic keyboard-navigation regression check for key pages (#213).
  *
  * Tabs through each page and verifies:
  *  1. At least one focusable element exists (keyboard users can operate the page).
@@ -11,24 +11,28 @@
  * `npm install --no-save @axe-core/playwright` + `npx playwright install chromium`
  * (same prerequisites as axe-check.mjs).
  *
- * Usage: node .github/lighthouse/keyboard-nav-check.mjs [baseUrl]
+ * Usage: node .github/lighthouse/keyboard-nav-check.mjs [baseUrl] [pagesCsv] [--role=ROLE]
+ * #332: page sets are per-app (see lighthouse-a11y.yml); --role signs a
+ * test BFF session cookie for authed shells (see a11y-common.mjs). A page
+ * that cannot be loaded at all now FAILS instead of warning.
  */
 import { chromium } from 'playwright';
+import {
+  parseTargetArgs,
+  addSessionCookies,
+  describeFocus,
+  readFocusInPage,
+  mockUnauthenticated,
+} from './a11y-common.mjs';
 
-const baseUrl = process.argv[2] || 'http://localhost:3001';
-
-// Key traveler journeys (highest-conversion surface)
-const pages = ['/', '/search', '/login', '/signup'];
+const { baseUrl, pages, role, mockUnauthenticated: forceUnauth } = parseTargetArgs();
 const MAX_TABS = 40;
 
-function describe(el) {
-  if (!el) return '<none>';
-  const label = (el.ariaLabel || el.text || '').trim().slice(0, 40);
-  return `<${el.tag}${el.id ? `#${el.id}` : ''}>${label ? ` "${label}"` : ''}`;
-}
-
 const browser = await chromium.launch();
-const page = await browser.newPage();
+const context = await browser.newContext();
+if (role) await addSessionCookies(context, baseUrl, role);
+const page = await context.newPage();
+if (forceUnauth) await mockUnauthenticated(page);
 
 let failures = 0;
 
@@ -54,24 +58,7 @@ for (const path of pages) {
       await page.keyboard.press('Tab');
       await page.waitForTimeout(120);
 
-      const info = await page.evaluate(() => {
-        const el = document.activeElement;
-        if (!el || el === document.body) return null;
-        const rect = el.getBoundingClientRect();
-        const style = window.getComputedStyle(el);
-        return {
-          tag: el.tagName.toLowerCase(),
-          type: (el.getAttribute('type') || '').toLowerCase(),
-          id: el.id || '',
-          ariaLabel:
-            el.getAttribute('aria-label') ||
-            (el.innerText || el.value || '').trim().slice(0, 60),
-          text: (el.innerText || el.value || '').trim().slice(0, 60),
-          visible: rect.width > 0 && rect.height > 0,
-          hiddenByCss:
-            style.visibility === 'hidden' || style.display === 'none',
-        };
-      });
+      const info = await page.evaluate(readFocusInPage);
 
       if (!info) {
         // Focus landed on body (or nowhere) — keep tabbing; only a
@@ -94,7 +81,7 @@ for (const path of pages) {
           info.tag === 'input' && DATE_TIME_TYPES.includes(info.type) ? 6 : 3;
         if (stuckCount >= stuckLimit) {
           pageFailures.push(
-            `focus stuck on ${describe(info)} after ${i + 1} tabs (keyboard trap?)`,
+            `focus stuck on ${describeFocus(info)} after ${i + 1} tabs (keyboard trap?)`,
           );
           break;
         }
@@ -105,7 +92,7 @@ for (const path of pages) {
 
       if (!info.visible || info.hiddenByCss) {
         pageFailures.push(
-          `focused element is not visible: ${describe(info)}`,
+          `focused element is not visible: ${describeFocus(info)}`,
         );
       }
     }
@@ -124,7 +111,8 @@ for (const path of pages) {
       );
     }
   } catch (err) {
-    console.log(`⚠️  [keyboard] ${url}: could not analyze (${err.message})`);
+    failures += 1;
+    console.log(`❌ [keyboard] ${url}: could not analyze (${err.message})`);
   }
 }
 

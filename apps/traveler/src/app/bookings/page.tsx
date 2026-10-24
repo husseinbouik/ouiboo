@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { BookingStatus, type BookingDetails } from '@ouiboo/types';
+import { BookingPaymentPlanStatus, BookingPaymentStatus, BookingStatus, type BookingDetails } from '@ouiboo/types';
 import { Button, Badge, Card, Pagination } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import { toPaginatedList } from '@ouiboo/utils';
@@ -21,6 +21,62 @@ import {
     getTravelerProofStatus,
     shouldShowUploadAction,
 } from '@ouiboo/utils';
+
+/** #370: refund case as returned by GET /refunds/mine (amounts are strings). */
+interface TravelerRefundCase {
+    id: string;
+    bookingId: string;
+    status: string;
+    requestedAmount: string;
+    approvedAmount: string | null;
+    currency: string;
+    refundDueAt: string | null;
+    completedAt: string | null;
+    failureReason: string | null;
+}
+
+const REFUND_ACTIVE_STATUSES = new Set([
+    'REFUND_REQUESTED',
+    'ELIGIBILITY_REVIEW',
+    'REFUND_APPROVED',
+    'AGENCY_ACTION_REQUIRED',
+    'REFUND_INITIATED',
+    'REFUND_FAILED',
+    'REFUND_OVERDUE',
+]);
+
+/**
+ * #370 plan §42: traveller-facing refund copy. Refunds are paid by the
+ * organiser (agency) that received the payment — never promise that
+ * OuiBoo guarantees or pays the refund.
+ */
+function refundCaseCopy(refundCase: TravelerRefundCase, agencyName: string): string {
+    const amount = `${refundCase.approvedAmount ?? refundCase.requestedAmount} ${refundCase.currency}`;
+    const due = refundCase.refundDueAt
+        ? ` Expected by ${format(new Date(refundCase.refundDueAt), 'MMM dd, yyyy')}.`
+        : '';
+    switch (refundCase.status) {
+        case 'REFUND_REQUESTED':
+            return `Refund of ${amount} requested. ${agencyName} will review your request.`;
+        case 'ELIGIBILITY_REVIEW':
+            return `Your refund of ${amount} is under review.`;
+        case 'REFUND_APPROVED':
+        case 'AGENCY_ACTION_REQUIRED':
+            return `Refund of ${amount} approved. ${agencyName} will process your refund.${due}`;
+        case 'REFUND_INITIATED':
+            return `Your refund of ${amount} is on its way from ${agencyName}.`;
+        case 'REFUND_COMPLETED':
+            return `Refund of ${amount} completed by ${agencyName}.`;
+        case 'REFUND_REJECTED':
+            return `Your refund request of ${amount} was not approved. You can contact ${agencyName} for details.`;
+        case 'REFUND_FAILED':
+            return `A refund attempt by ${agencyName} failed. Your case stays open and ${agencyName} must retry.`;
+        case 'REFUND_OVERDUE':
+            return `Your refund of ${amount} is overdue. We are following up with ${agencyName}.`;
+        default:
+            return `Refund status: ${refundCase.status.replaceAll('_', ' ')}.`;
+    }
+}
 
 export default function MyBookingsPage() {
     const { user } = useAuth();
@@ -43,6 +99,38 @@ export default function MyBookingsPage() {
         placeholderData: (prev: unknown) => prev,
     });
     const { data: bookings = [], pagination: bookingsPagination } = toPaginatedList<BookingDetails>(rawBookings);
+
+    // #370: refund cases for this traveller, latest case per booking.
+    const { data: rawRefundCases } = useQuery<unknown>({
+        queryKey: ['my-refunds'],
+        queryFn: async () => {
+            const response = await apiClient.get('/refunds/mine', { params: { limit: 100 } });
+            return response.data;
+        },
+        enabled: !!user,
+    });
+    const { data: myRefundCases = [] } = toPaginatedList<TravelerRefundCase>(rawRefundCases);
+    const refundByBooking = new Map<string, TravelerRefundCase>();
+    for (const refundCase of myRefundCases) {
+        if (!refundByBooking.has(refundCase.bookingId)) {
+            refundByBooking.set(refundCase.bookingId, refundCase);
+        }
+    }
+
+    const [requestingRefundId, setRequestingRefundId] = useState<string | null>(null);
+    const requestRefundMutation = useMutation({
+        mutationFn: async (bookingId: string) => {
+            await apiClient.post('/refunds/request', { bookingId });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['my-refunds'] });
+            queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+            setRequestingRefundId(null);
+        },
+        onError: () => {
+            setRequestingRefundId(null);
+        },
+    });
 
     const uploadProofMutation = useMutation({
         mutationFn: async ({ bookingId, file }: { bookingId: string; file: File }) => {
@@ -143,6 +231,10 @@ export default function MyBookingsPage() {
                             const proofStatus = getTravelerProofStatus(booking.paymentProof?.status);
                             const paymentStatus = getTravelerPaymentStatusMeta(booking.paymentStatus, booking.refundStatus);
                             const hasPaymentProof = Boolean(booking.paymentProof);
+                            const refundCase = refundByBooking.get(booking.id);
+                            const canRequestRefund = !refundCase
+                                && (booking.paymentStatus === BookingPaymentStatus.Paid
+                                    || booking.paymentStatus === BookingPaymentStatus.PartiallyPaid);
                             const retryHref = `/checkout/${booking.session.template.id}?session=${booking.session.id}&guests=${booking.guestsCount}&retryBooking=${booking.id}`;
                             const showRetryPayment = canRetryTravelerPayment(booking);
 
@@ -153,7 +245,7 @@ export default function MyBookingsPage() {
                                             <div className="absolute inset-0 bg-muted animate-pulse" />
                                             <Image
                                                 src={tripImage}
-                                                alt="Trip"
+                                                alt={booking.session.template.imageAlts?.[0]?.trim() || booking.session.template.title}
                                                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                                 fill
                                                 sizes="(max-width: 768px) 100vw, 18rem"
@@ -201,6 +293,84 @@ export default function MyBookingsPage() {
                                                     </div>
                                                 </div>
                                             </div>
+
+                                            {/* #369: staged payment plan strip (plan §42 copy) */}
+                                            {booking.paymentPlan && (
+                                                <div className="rounded-2xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 px-5 py-4 space-y-2">
+                                                    {booking.paymentPlan.status === BookingPaymentPlanStatus.DepositDue && (
+                                                        <p className="text-sm font-semibold text-foreground">
+                                                            Deposit due: {booking.paymentPlan.depositAmount} {booking.paymentPlan.currency} — pay the deposit to {booking.session.template.agency?.companyName || 'the agency'} to secure your spot. This trip needs at least {booking.paymentPlan.minimumParticipants} participants by {format(new Date(booking.paymentPlan.confirmationDeadline), 'MMM dd, yyyy')}.
+                                                        </p>
+                                                    )}
+                                                    {booking.paymentPlan.status === BookingPaymentPlanStatus.DepositPaid && (
+                                                        <p className="text-sm font-semibold text-foreground">
+                                                            Deposit paid to {booking.session.template.agency?.companyName || 'the agency'}. Waiting for trip confirmation — this trip needs at least {booking.paymentPlan.minimumParticipants} participants by {format(new Date(booking.paymentPlan.confirmationDeadline), 'MMM dd, yyyy')}. If the minimum is not reached, your deposit is refunded.
+                                                        </p>
+                                                    )}
+                                                    {booking.paymentPlan.status === BookingPaymentPlanStatus.BalanceDue && (
+                                                        <>
+                                                            <p className="text-sm font-semibold text-foreground">
+                                                                Trip confirmed — remaining balance due: {booking.paymentPlan.balanceAmount} {booking.paymentPlan.currency}
+                                                                {booking.paymentPlan.balanceDueAt ? <> (pay before {format(new Date(booking.paymentPlan.balanceDueAt), 'MMM dd, yyyy')})</> : null}.
+                                                            </p>
+                                                            {booking.status === BookingStatus.Confirmed && (
+                                                                <label className="cursor-pointer inline-block">
+                                                                    <input type="file" className="sr-only" onChange={(e) => handleFileUpload(e, booking.id)} disabled={!!uploadingId} />
+                                                                    <Button disabled={!!uploadingId} className="h-11 px-6 bg-sunset-orange hover:bg-orange-600 border-none rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-orange-900/10 active:scale-95 transition-all">
+                                                                        {uploadingId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4 mr-2" /> Upload Balance Receipt</>}
+                                                                    </Button>
+                                                                </label>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                    {booking.paymentPlan.status === BookingPaymentPlanStatus.RefundDue && (
+                                                        <p className="text-sm font-semibold text-foreground">
+                                                            This trip was not confirmed — the minimum group size was not reached. Your deposit of {booking.paymentPlan.depositAmount} {booking.paymentPlan.currency} is refundable; {booking.session.template.agency?.companyName || 'the agency'} will process your refund.
+                                                        </p>
+                                                    )}
+                                                    {booking.paymentPlan.status === BookingPaymentPlanStatus.FullyPaid && (
+                                                        <p className="text-sm font-semibold text-foreground">
+                                                            Paid in full — deposit and balance received by {booking.session.template.agency?.companyName || 'the agency'}.
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* #370: refund case panel (plan §42 copy) */}
+                                            {(refundCase || canRequestRefund) && (
+                                                <div className="rounded-2xl border border-border/60 bg-muted/20 px-5 py-4 space-y-2">
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                                        Refund {refundCase ? `· ${refundCase.status.replaceAll('_', ' ')}` : ''}
+                                                    </p>
+                                                    {refundCase ? (
+                                                        <p className="text-sm font-semibold text-foreground">
+                                                            {refundCaseCopy(refundCase, booking.session.template.agency?.companyName || 'The organiser')}
+                                                        </p>
+                                                    ) : (
+                                                        <>
+                                                            <p className="text-sm font-semibold text-foreground">
+                                                                Need a refund for this booking? Refunds are handled by {booking.session.template.agency?.companyName || 'the organiser'}, which received your payment.
+                                                            </p>
+                                                            <Button
+                                                                variant="outline"
+                                                                className="h-10 px-5 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                                                                disabled={requestingRefundId === booking.id}
+                                                                onClick={() => {
+                                                                    setRequestingRefundId(booking.id);
+                                                                    requestRefundMutation.mutate(booking.id);
+                                                                }}
+                                                            >
+                                                                {requestingRefundId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Request refund'}
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                    {refundCase && REFUND_ACTIVE_STATUSES.has(refundCase.status) && (
+                                                        <p className="text-xs text-muted-foreground">
+                                                            We track this refund until the organiser completes it.
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )}
 
                                             <div className="pt-8 border-t border-border/50 flex flex-wrap justify-between items-center gap-6">
                                                 <div className="flex flex-wrap items-center gap-6">

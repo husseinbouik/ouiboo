@@ -14,6 +14,9 @@ interface BulkSessionInput {
   deposit?: number;
   totalSeats: number;
   currency: string;
+  /** #369: staged-payment configuration (minimum-group trips). */
+  minBookings?: number;
+  confirmationDeadline?: string;
 }
 
 interface BulkSessionCreationModalProps {
@@ -225,6 +228,43 @@ export function BulkSessionCreationModal({
                             min="1"
                           />
                         </div>
+
+                        {/* #369: staged payments — shown when a deposit is set */}
+                        {(session.deposit ?? 0) > 0 && (
+                          <>
+                            <div className="space-y-2">
+                              <Label htmlFor={`min-group-${session.id}`} className="text-sm font-medium">
+                                {t('bulkSession.minGroupSize')}
+                              </Label>
+                              <Input
+                                id={`min-group-${session.id}`}
+                                type="number"
+                                value={session.minBookings || ''}
+                                onChange={(e) => updateSession(session.id, 'minBookings', parseInt(e.target.value) || undefined)}
+                                placeholder="1"
+                                className="h-10"
+                                disabled={isLoading}
+                                min="1"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`deadline-${session.id}`} className="text-sm font-medium">
+                                {t('bulkSession.confirmationDeadline')}
+                              </Label>
+                              <Input
+                                id={`deadline-${session.id}`}
+                                type="date"
+                                value={session.confirmationDeadline || ''}
+                                onChange={(e) => updateSession(session.id, 'confirmationDeadline', e.target.value)}
+                                className="h-10"
+                                disabled={isLoading}
+                              />
+                            </div>
+                            <p className="text-xs text-muted-foreground md:col-span-2">
+                              {t('bulkSession.stagedHint')}
+                            </p>
+                          </>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

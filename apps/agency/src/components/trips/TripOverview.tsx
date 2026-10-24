@@ -19,7 +19,7 @@ export function TripOverview({ trip }: TripOverviewProps) {
     <div className="lg:col-span-1 space-y-6">
       <Card className="border border-border shadow-sm overflow-hidden bg-card">
         <div className="h-48 bg-muted">
-          <Image src={trip.images?.[0] || "https://images.unsplash.com/photo-1539650116574-8efeb43e2750?q=80&w=2070&auto=format&fit=crop"} alt={t('trips.detail.altTrip')} className="w-full h-full object-cover" width={800} height={400} />
+          <Image src={trip.images?.[0] || "https://images.unsplash.com/photo-1539650116574-8efeb43e2750?q=80&w=2070&auto=format&fit=crop"} alt={trip.imageAlts?.[0]?.trim() || t('trips.detail.altTrip')} className="w-full h-full object-cover" width={800} height={400} />
         </div>
         <CardContent className="p-6 space-y-4">
           <div>

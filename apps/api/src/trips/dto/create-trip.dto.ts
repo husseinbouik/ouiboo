@@ -1,5 +1,5 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsString, IsEnum, IsPositive, IsInt, Min, IsArray, MinLength, IsOptional, ValidateNested, IsDateString, Matches } from 'class-validator';
+import { IsString, IsEnum, IsPositive, IsInt, Min, IsArray, MinLength, IsOptional, ValidateNested, IsDateString, Matches, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TripCategory, TripStatus } from '@ouiboo/types';
 import { IsDecimalMoney } from '../../common/validators/is-decimal-money.decorator';
@@ -86,6 +86,16 @@ export class CreateTripTemplateDto {
     @IsString({ each: true })
     images!: string[];
 
+    // #332: optional alt text per image, aligned by index with `images`.
+    // Entries may be empty strings (no custom alt); renderers fall back to
+    // the generated "title - startLocation" pattern.
+    @ApiProperty({ example: ['Travelers hiking toward the Atlas summit at sunrise'], required: false })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    @MaxLength(300, { each: true })
+    imageAlts?: string[];
+
     @ApiProperty({ enum: TripStatus, example: TripStatus.Draft })
     @IsEnum(TripStatus)
     status!: TripStatus;
@@ -127,6 +137,26 @@ export class CreateTripSessionDto {
     @IsOptional()
     @Matches(/^[A-Z]{3}$/)
     currency?: string;
+
+    /**
+     * #369: minimum participants for the trip to be confirmed. When > 1
+     * and a deposit is set, the session uses staged payments (deposit
+     * first, balance after confirmation).
+     */
+    @ApiProperty({ example: 6, required: false })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    minBookings?: number;
+
+    /**
+     * #369: deadline by which the minimum group size must be reached.
+     * Required for staged sessions (minBookings > 1 with a deposit).
+     */
+    @ApiProperty({ example: '2025-01-01T00:00:00Z', required: false })
+    @IsOptional()
+    @IsDateString()
+    confirmationDeadline?: string;
 }
 
 export class UpdateTripSessionDto extends PartialType(CreateTripSessionDto) { }

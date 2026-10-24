@@ -7,7 +7,7 @@ import { Button, Card, Badge, Pagination } from '@ouiboo/ui';
 import { VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 import type { PaginationMeta } from '@ouiboo/utils';
 import type { AdminAgency } from './types';
-import { getAdminVerificationBadgeClass, getAdminVerificationBadgeLabel, getAdminSubscriptionBadgeLabel } from '../../app/status-mappers';
+import { getAdminVerificationBadgeClass, getAdminVerificationBadgeLabel, getAdminSubscriptionBadgeLabel, getAdminLicenceBadgeClass, getAdminLicenceBadgeLabel, getEffectiveLicenceStatus } from '../../app/status-mappers';
 import { canApproveAgency, canRejectAgency } from './formatters';
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
@@ -42,7 +42,7 @@ export default function AgenciesTab({
 <div className="space-y-6 animate-in fade-in duration-500">
   <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
      <Users className="h-5 w-5 text-sunset-orange" />
-     {t('dashboard.sections.agencies')} ({pagination?.total ?? agencies.length})
+     {t('dashboard.sections.allAgencies')} ({pagination?.total ?? agencies.length})
   </h2>
   <div className="grid grid-cols-1 gap-4">
      {agencies.map((agency) => (
@@ -57,6 +57,8 @@ export default function AgenciesTab({
                     <div className="flex gap-2">
                        <Badge className={getAdminVerificationBadgeClass(agency.verificationStatus)}>{getAdminVerificationBadgeLabel(agency.verificationStatus, t)}</Badge>
                        <Badge variant="outline">{getAdminSubscriptionBadgeLabel(agency.subscriptionStatus, t)}</Badge>
+                       {/* #371: travel licence status (expired licences flagged) */}
+                       <Badge className={getAdminLicenceBadgeClass(getEffectiveLicenceStatus(agency))}>{getAdminLicenceBadgeLabel(getEffectiveLicenceStatus(agency), t)}</Badge>
                     </div>
                  </div>
               </div>
