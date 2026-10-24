@@ -215,8 +215,12 @@ export class AuthService {
             throw error;
         }
 
-        // Do not block signup on SMTP. If sending fails, users can request a resend.
-        void this.sendRegistrationOtp(dto.email, otp);
+        // Await the OTP send: on serverless an un-awaited promise races the
+        // instance freeze after the response returns, which made the first
+        // verification email arrive minutes late (or not at all) while the
+        // awaited resend worked instantly (#409). The helper swallows SMTP
+        // errors, so signup still never fails because of email.
+        await this.sendRegistrationOtp(dto.email, otp);
 
         return {
             email: user.email,

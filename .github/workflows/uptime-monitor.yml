@@ -1,0 +1,76 @@
+name: Uptime Monitor
+
+# External uptime monitoring + alerting for the Ouiboo API and frontends.
+# Issue #399: before this workflow, an API outage or error spike was only
+# discovered when a user reported it.
+#
+# How alerting works: if any check fails after retries, this run fails.
+# GitHub notifies the workflow owner about failed scheduled runs, and the
+# step summary names exactly which target failed. Redirects are
+# followed (-L): the admin apps answer 307 -> /login when healthy. See
+# docs/OPERATIONS_MONITORING.md.
+
+on:
+  schedule:
+    # Every 15 minutes.
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uptime-monitor
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check API health and frontends
+        run: |
+          set -u
+          failures=0
+
+          check_url() {
+            local name="$1" url="$2" expect_body="${3:-}"
+            local attempt code body_file
+            for attempt in 1 2; do
+              body_file=$(mktemp)
+              code=$(curl -sSL -o "$body_file" -w '%{http_code}' --max-time 30 "$url" || echo '000')
+              if [ "$code" = "200" ] && { [ -z "$expect_body" ] || grep -q "$expect_body" "$body_file"; }; then
+                echo "OK   $name -> 200 (attempt $attempt)"
+                rm -f "$body_file"
+                return 0
+              fi
+              echo "FAIL $name -> HTTP $code (attempt $attempt)"
+              rm -f "$body_file"
+              if [ "$attempt" = "1" ]; then sleep 10; fi
+            done
+            echo "- FAIL: **$name** — $url did not return 200${expect_body:+ with the expected health payload} after 2 attempts" >> "$GITHUB_STEP_SUMMARY"
+            failures=$((failures + 1))
+          }
+
+          echo '## Uptime monitor' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+
+          # API health: HTTP 200 AND the payload must report the database up.
+          check_url 'API (production)' 'https://ouiboo-api.vercel.app/api/v1/health' '"database":"ok"'
+          check_url 'API (staging)' 'https://ouiboo-api-staging.vercel.app/api/v1/health' '"database":"ok"'
+
+          # Frontends: HTTP 200.
+          check_url 'Landing (production)' 'https://ouiboo.vercel.app/'
+          check_url 'Traveler (production)' 'https://ouiboo-traveler.vercel.app/'
+          check_url 'Agency (production)' 'https://ouiboo-agency.vercel.app/'
+          check_url 'Admin (production)' 'https://ouiboo-admin.vercel.app/'
+          check_url 'Landing (staging)' 'https://ouiboo-landing-staging.vercel.app/'
+          check_url 'Traveler (staging)' 'https://ouiboo-traveler-staging.vercel.app/'
+          check_url 'Agency (staging)' 'https://ouiboo-agency-staging.vercel.app/'
+          check_url 'Admin (staging)' 'https://ouiboo-admin-staging.vercel.app/'
+
+          if [ "$failures" -gt 0 ]; then
+            echo "$failures uptime check(s) failed - see the step summary above."
+            exit 1
+          fi
+          echo 'All 10 uptime checks passed.'
