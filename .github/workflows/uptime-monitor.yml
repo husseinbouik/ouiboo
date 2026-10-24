@@ -6,7 +6,8 @@ name: Uptime Monitor
 #
 # How alerting works: if any check fails after retries, this run fails.
 # GitHub notifies the workflow owner about failed scheduled runs, and the
-# step summary names exactly which target failed. See
+# step summary names exactly which target failed. Redirects are
+# followed (-L): the admin apps answer 307 -> /login when healthy. See
 # docs/OPERATIONS_MONITORING.md.
 
 on:
@@ -37,7 +38,7 @@ jobs:
             local attempt code body_file
             for attempt in 1 2; do
               body_file=$(mktemp)
-              code=$(curl -sS -o "$body_file" -w '%{http_code}' --max-time 30 "$url" || echo '000')
+              code=$(curl -sSL -o "$body_file" -w '%{http_code}' --max-time 30 "$url" || echo '000')
               if [ "$code" = "200" ] && { [ -z "$expect_body" ] || grep -q "$expect_body" "$body_file"; }; then
                 echo "OK   $name -> 200 (attempt $attempt)"
                 rm -f "$body_file"
