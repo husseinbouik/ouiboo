@@ -23,6 +23,7 @@ export * from './Input';
 export * from './Label';
 export * from './RadioGroup';
 export * from './Select';
+export * from './ShareTripButton';
 export * from './Sheet';
 export * from './Skeleton';
 export * from './LoadingSkeletons';

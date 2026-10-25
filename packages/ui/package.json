@@ -5,6 +5,7 @@
     "types": "./index.tsx",
     "dependencies": {
         "@hookform/resolvers": "5.2.2",
+        "@ouiboo/utils": "*",
         "@radix-ui/react-avatar": "^1.1.11",
         "@radix-ui/react-dialog": "^1.1.15",
         "@radix-ui/react-dropdown-menu": "^2.1.16",

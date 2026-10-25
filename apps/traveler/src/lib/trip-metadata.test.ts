@@ -1,5 +1,5 @@
 import { buildTripMetadata, resolveTripCoverImage } from './trip-metadata';
-import { SITE_DESCRIPTION } from './site';
+import { SITE_DESCRIPTION, absoluteTravelerUrl } from './site';
 
 describe('buildTripMetadata (#468)', () => {
   it('marks a missing trip as not found and noindex', () => {
@@ -76,7 +76,7 @@ describe('resolveTripCoverImage', () => {
       'https://a.example/i.jpg',
     );
     expect(resolveTripCoverImage({ id: 'x', title: 'X', images: ['/media/i.jpg'] })).toBe(
-      'http://localhost:3001/media/i.jpg',
+      absoluteTravelerUrl('/media/i.jpg'),
     );
   });
 

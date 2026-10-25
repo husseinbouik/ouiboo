@@ -1,7 +1,8 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ShareTripButton from './ShareTripButton';
+import { ShareTripButton } from '@ouiboo/ui';
+import { TRAVELER_URL } from '@/lib/site';
 
 // The traveler jest setup mocks react-i18next globally (t returns the key),
 // so labels below are asserted by translation key.
@@ -14,7 +15,9 @@ global.ResizeObserver = class {
 };
 window.HTMLElement.prototype.scrollIntoView = () => {};
 
-const SHARE_URL = 'http://localhost:3001/trip/trip-1?src=share';
+// Derived from the same source the component uses — CI sets
+// NEXT_PUBLIC_TRAVELER_URL, so the default must not be hard-coded here.
+const SHARE_URL = `${TRAVELER_URL}/trip/trip-1?src=share`;
 
 describe('ShareTripButton (#468, traveler)', () => {
   afterEach(() => {
@@ -25,7 +28,7 @@ describe('ShareTripButton (#468, traveler)', () => {
 
   it('opens the fallback menu with the four network intents when native share is unavailable', async () => {
     const user = userEvent.setup();
-    render(<ShareTripButton tripId="trip-1" tripTitle="Sahara Trek" />);
+    render(<ShareTripButton tripId="trip-1" tripTitle="Sahara Trek" travelerBaseUrl={TRAVELER_URL} />);
 
     await user.click(screen.getByRole('button', { name: 'share.button' }));
 
@@ -55,7 +58,7 @@ describe('ShareTripButton (#468, traveler)', () => {
     const writeText = jest.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
 
-    render(<ShareTripButton tripId="trip-1" tripTitle="Sahara Trek" />);
+    render(<ShareTripButton tripId="trip-1" tripTitle="Sahara Trek" travelerBaseUrl={TRAVELER_URL} />);
     await user.click(screen.getByRole('button', { name: 'share.button' }));
     await user.click(await screen.findByRole('menuitem', { name: /share\.copyLink/ }));
 
@@ -68,7 +71,7 @@ describe('ShareTripButton (#468, traveler)', () => {
     const share = jest.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'share', { value: share, configurable: true });
 
-    render(<ShareTripButton tripId="trip-1" tripTitle="Sahara Trek" />);
+    render(<ShareTripButton tripId="trip-1" tripTitle="Sahara Trek" travelerBaseUrl={TRAVELER_URL} />);
     await user.click(screen.getByRole('button', { name: 'share.button' }));
 
     expect(share).toHaveBeenCalledWith({

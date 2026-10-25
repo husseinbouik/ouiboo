@@ -4,20 +4,19 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Check, Link2, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@ouiboo/ui';
-import {
   buildSharePayload,
   canUseNativeShare,
   copyShareLink,
   getShareTargets,
   type ShareTargetId,
 } from '@ouiboo/utils';
-import { TRAVELER_URL } from '@/lib/site';
+import { Button } from './Button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './DropdownMenu';
 
 const TARGET_LABEL_KEYS: Record<ShareTargetId, string> = {
   whatsapp: 'share.whatsapp',
@@ -26,22 +25,36 @@ const TARGET_LABEL_KEYS: Record<ShareTargetId, string> = {
   telegram: 'share.telegram',
 };
 
-/**
- * #468: share a trip. On devices with the Web Share API (mobile — the
- * sheet is also the only route to Instagram, which has no web share
- * intent) the button opens the native share sheet directly; everywhere
- * else it opens a menu with WhatsApp / Facebook / X / Telegram intents
- * and a copy-link action with visible confirmation.
- */
-export default function ShareTripButton({
-  tripId,
-  tripTitle,
-  className,
-}: {
+export interface ShareTripButtonProps {
   tripId: string;
   tripTitle: string;
+  /** Origin of the traveller app — the share link always points there. */
+  travelerBaseUrl: string;
+  /** Value of the `src` parameter on the shared URL (attribution). */
+  source?: string;
+  iconOnly?: boolean;
+  size?: 'default' | 'sm';
   className?: string;
-}) {
+}
+
+/**
+ * #468: share a trip via its public traveller-facing URL. On devices with
+ * the Web Share API the button opens the native share sheet directly (the
+ * sheet is also the only route to Instagram, which has no web share
+ * intent); everywhere else it opens a menu with WhatsApp / Facebook / X /
+ * Telegram intents and a copy-link action with visible confirmation.
+ * Shared by the traveller and agency apps — the apps only supply their
+ * base URL and share source.
+ */
+export function ShareTripButton({
+  tripId,
+  tripTitle,
+  travelerBaseUrl,
+  source,
+  iconOnly = false,
+  size = 'default',
+  className,
+}: ShareTripButtonProps) {
   const { t } = useTranslation();
   const [nativeShare, setNativeShare] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -61,10 +74,11 @@ export default function ShareTripButton({
   );
 
   const payload = buildSharePayload({
-    travelerBaseUrl: TRAVELER_URL,
+    travelerBaseUrl,
     tripId,
     tripTitle,
     textTemplate: t('share.text'),
+    source,
   });
 
   const handleNativeShare = async () => {
@@ -84,17 +98,24 @@ export default function ShareTripButton({
     copiedTimer.current = window.setTimeout(() => setCopied(false), 2000);
   };
 
+  const label = (
+    <>
+      <Share2 className="h-4 w-4" />
+      {!iconOnly && <span className="ms-2">{t('share.button')}</span>}
+    </>
+  );
+
   if (nativeShare) {
     return (
       <Button
         type="button"
         variant="outline"
+        size={size}
         className={className}
         onClick={() => void handleNativeShare()}
         aria-label={t('share.button')}
       >
-        <Share2 className="h-4 w-4 me-2" />
-        {t('share.button')}
+        {label}
       </Button>
     );
   }
@@ -102,9 +123,14 @@ export default function ShareTripButton({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button type="button" variant="outline" className={className} aria-label={t('share.button')}>
-          <Share2 className="h-4 w-4 me-2" />
-          {t('share.button')}
+        <Button
+          type="button"
+          variant="outline"
+          size={size}
+          className={className}
+          aria-label={t('share.button')}
+        >
+          {label}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-52">

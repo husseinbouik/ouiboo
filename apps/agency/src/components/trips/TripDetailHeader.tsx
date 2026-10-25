@@ -4,10 +4,10 @@ import React from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, Settings, Trash, CheckCircle2 } from 'lucide-react';
-import { Button } from '@ouiboo/ui';
+import { Button, ShareTripButton } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import { TripStatus, type TripStatusType } from '@ouiboo/types';
-import ShareTripButton from '@/components/ShareTripButton';
+import { TRAVELER_URL } from '@/lib/site';
 
 type TripDetailHeaderProps = {
   tripId: string;
@@ -50,7 +50,7 @@ export function TripDetailHeader({
         {/* #468: share the public traveller URL — active trips only, their
             public page exists; drafts/inactive/archived ones do not. */}
         {tripStatus === TripStatus.Active && tripTitle && (
-          <ShareTripButton tripId={tripId} tripTitle={tripTitle} />
+          <ShareTripButton tripId={tripId} tripTitle={tripTitle} travelerBaseUrl={TRAVELER_URL} source="agency-share" size="sm" />
         )}
         {/* Deactivate/Activate toggle - always safe, keeps bookings */}
         {(tripStatus === TripStatus.Active || tripStatus === TripStatus.Inactive) && (

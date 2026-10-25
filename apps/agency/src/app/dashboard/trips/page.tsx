@@ -13,7 +13,7 @@ import {
   Filter,
   ArrowUpDown
 } from 'lucide-react';
-import { Button, Card, CardContent, Input } from '@ouiboo/ui';
+import { Button, Card, CardContent, Input, ShareTripButton } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -21,7 +21,7 @@ import { apiClient } from '@/lib/api-client';
 import { formatCurrency } from '@ouiboo/utils';
 
 import { DeleteConfirmation } from '@/components/DeleteConfirmation';
-import ShareTripButton from '@/components/ShareTripButton';
+import { TRAVELER_URL } from '@/lib/site';
 
 type AgencyTripSessionSummary = {
   id: string;
@@ -258,6 +258,9 @@ export default function AgencyTripsPage() {
                         <ShareTripButton
                           tripId={trip.id}
                           tripTitle={trip.title}
+                          travelerBaseUrl={TRAVELER_URL}
+                          source="agency-share"
+                          size="sm"
                           iconOnly
                           className="h-auto border-none bg-transparent p-2 text-muted-foreground shadow-none hover:bg-muted hover:text-primary rounded-lg"
                         />

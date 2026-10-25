@@ -16,7 +16,7 @@ import {
   X,
   ClipboardList
 } from 'lucide-react';
-import { Button, Badge } from '@ouiboo/ui';
+import { Button, Badge, ShareTripButton } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -24,7 +24,7 @@ import { cn } from '@ouiboo/ui/utils';
 import { useAuth } from '@/components/AuthContext';
 import { ReviewList } from '@/components/ReviewList';
 import SellerIdentity from '@/components/SellerIdentity';
-import ShareTripButton from '@/components/ShareTripButton';
+import { TRAVELER_URL } from '@/lib/site';
 import { SessionStatus, type SessionStatusType } from '@ouiboo/types';
 import { formatCurrency } from '@ouiboo/utils';
 
@@ -341,7 +341,7 @@ export default function TripDetailsClient({
                             <span className="text-xs text-amber-700 dark:text-yellow-400/70 font-medium">({reviewStats?.totalReviews || 0} reviews)</span>
                         </div>
                         {/* #468: share this trip (native sheet / intent menu) */}
-                        <ShareTripButton tripId={trip.id} tripTitle={trip.title} className="rounded-full" />
+                        <ShareTripButton tripId={trip.id} tripTitle={trip.title} travelerBaseUrl={TRAVELER_URL} className="rounded-full" />
                     </div>
 
                     {/* #371: seller of record + verified travel licence */}

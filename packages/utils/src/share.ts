@@ -22,7 +22,11 @@ export interface ShareTarget {
   intentUrl: string;
 }
 
-const trimTrailingSlashes = (value: string) => value.replace(/\/+$/, '');
+const trimTrailingSlashes = (value: string) => {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === '/') end -= 1;
+  return value.slice(0, end);
+};
 
 /**
  * Canonical public trip URL on the traveller app: `/trip/{id}` (the same
