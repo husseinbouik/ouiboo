@@ -1,7 +1,7 @@
 import { Controller, HttpCode, Post, Get, Body, UseGuards, Request, Param, Patch, UploadedFile, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Res, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
-import { CreateBookingDto, VerifyManualPaymentDto } from './dto/create-booking.dto';
+import { ConfirmBankPaymentDto, CreateBookingDto, VerifyManualPaymentDto } from './dto/create-booking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
@@ -97,6 +97,21 @@ export class BookingsController {
         @Body() dto: VerifyManualPaymentDto,
     ) {
         return this.bookingsService.verifyPayment(id, req.tenantId, dto.approved, dto.rejectionReason);
+    }
+
+    @Patch(':id/confirm-bank-payment')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, RateLimitGuard)
+    @Roles(UserRole.Agency)
+    @RateLimit({ points: 30, windowMs: 60_000, keyPrefix: 'bookings:confirm-bank-payment' })
+    @RateLimitSensitive()
+    @ApiOperation({ summary: 'Confirm an accepted proof against the agency bank account (settles the payment, #422)' })
+    confirmBankPayment(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() dto: ConfirmBankPaymentDto,
+    ) {
+        return this.bookingsService.confirmBankPayment(id, req.tenantId, req.user.userId, dto);
     }
 
     @Get(':id/payment-proof/download')

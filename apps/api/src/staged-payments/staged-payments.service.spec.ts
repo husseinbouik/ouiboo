@@ -205,7 +205,7 @@ describe('StagedPaymentsService (#369)', () => {
         expect(plan.refundPolicyVersion).toBe('phase1-v1');
     });
 
-    it('approving a deposit records only the deposit amount and waits for the minimum', async () => {
+    it('bank-confirming a deposit records only the confirmed deposit amount and waits for the minimum', async () => {
         const external = makeExternalPayments();
         const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
         const tx = makeTx({
@@ -214,19 +214,25 @@ describe('StagedPaymentsService (#369)', () => {
             bookingAfter: { status: 'PENDING_MINIMUM' },
         });
 
-        const result = await service.applyProofDecisionInTransaction(tx, {
+        const result = await service.applyBankConfirmationInTransaction(tx, {
             booking: makeBooking(),
             plan: makePlan(),
-            approved: true,
             source: 'MANUAL_PROOF_REVIEW' as any,
             externalReference: 'proof-1',
+            confirmedAmount: D('200.00'),
+            bankReference: 'BANK-REF-DEP',
+            bankConfirmedBy: 'agency-user-1',
         });
 
         expect(external.recordPaymentVerifiedInTransaction).toHaveBeenCalledTimes(1);
         const [recordTx, recordInput, entryType] = external.recordPaymentVerifiedInTransaction.mock.calls[0] as any;
         expect(recordTx).toBe(tx);
         expect(recordInput.stage).toBe('DEPOSIT');
+        // #422: the recorded amount is the confirmed bank credit, bound to
+        // its bank reference — not merely the expected stage amount.
         expect(recordInput.amount.toString()).toBe('200');
+        expect(recordInput.bankReference).toBe('BANK-REF-DEP');
+        expect(recordInput.bankConfirmedBy).toBe('agency-user-1');
         expect(entryType).toBe('DEPOSIT_CAPTURED');
         expect(result.bookingStatus).toBe('PENDING_MINIMUM');
         expect(result.planStatus).toBe('DEPOSIT_PAID');
@@ -256,12 +262,14 @@ describe('StagedPaymentsService (#369)', () => {
             bookingAfter: { status: 'CONFIRMED' },
         });
 
-        const result = await service.applyProofDecisionInTransaction(tx, {
+        const result = await service.applyBankConfirmationInTransaction(tx, {
             booking: makeBooking(),
             plan: makePlan(),
-            approved: true,
             source: 'MANUAL_PROOF_REVIEW' as any,
             externalReference: 'proof-1',
+            confirmedAmount: D('200.00'),
+            bankReference: 'BANK-REF-DEP',
+            bankConfirmedBy: 'agency-user-1',
         });
 
         expect(tx.tripSession.updateMany).toHaveBeenCalledWith(
@@ -279,22 +287,25 @@ describe('StagedPaymentsService (#369)', () => {
         expect(result.planStatus).toBe('BALANCE_DUE');
     });
 
-    it('approving the balance fully pays the booking', async () => {
+    it('bank-confirming the balance fully pays the booking', async () => {
         const external = makeExternalPayments();
         const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
         const tx = makeTx();
 
-        const result = await service.applyProofDecisionInTransaction(tx, {
+        const result = await service.applyBankConfirmationInTransaction(tx, {
             booking: makeBooking({ status: 'AWAITING_VALIDATION' }),
             plan: makePlan({ status: 'BALANCE_DUE' }),
-            approved: true,
-            source: 'ADMIN_PROOF_REVIEW' as any,
+            source: 'MANUAL_PROOF_REVIEW' as any,
             externalReference: 'proof-2',
+            confirmedAmount: D('1000.00'),
+            bankReference: 'BANK-REF-BAL',
+            bankConfirmedBy: 'agency-user-1',
         });
 
         const [, recordInput, entryType] = external.recordPaymentVerifiedInTransaction.mock.calls[0] as any;
         expect(recordInput.stage).toBe('BALANCE');
         expect(recordInput.amount.toString()).toBe('1000');
+        expect(recordInput.bankReference).toBe('BANK-REF-BAL');
         expect(entryType).toBe('BALANCE_CAPTURED');
         expect(result.fullyPaid).toBe(true);
         const bookingWrites = tx.booking.updateMany.mock.calls.map((c: any) => c[0].data);
@@ -308,10 +319,18 @@ describe('StagedPaymentsService (#369)', () => {
         const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
         const tx = makeTx();
 
-        await expect(service.applyProofDecisionInTransaction(tx, {
+        await expect(service.applyBankConfirmationInTransaction(tx, {
             booking: makeBooking(),
             plan: makePlan({ status: 'DEPOSIT_PAID' }),
-            approved: true,
+            source: 'MANUAL_PROOF_REVIEW' as any,
+            externalReference: 'proof-x',
+            confirmedAmount: D('200.00'),
+            bankReference: 'BANK-REF-X',
+            bankConfirmedBy: 'agency-user-1',
+        })).rejects.toThrow('not awaiting a staged payment');
+        await expect(service.applyProofRejectionInTransaction(tx, {
+            booking: makeBooking(),
+            plan: makePlan({ status: 'DEPOSIT_PAID' }),
             source: 'MANUAL_PROOF_REVIEW' as any,
             externalReference: 'proof-x',
         })).rejects.toThrow('not awaiting a staged payment');
@@ -323,10 +342,9 @@ describe('StagedPaymentsService (#369)', () => {
         const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
         const tx = makeTx();
 
-        const result = await service.applyProofDecisionInTransaction(tx, {
+        const result = await service.applyProofRejectionInTransaction(tx, {
             booking: makeBooking(),
             plan: makePlan(),
-            approved: false,
             source: 'MANUAL_PROOF_REVIEW' as any,
             externalReference: 'proof-1',
         });
@@ -341,10 +359,9 @@ describe('StagedPaymentsService (#369)', () => {
         const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
         const tx = makeTx();
 
-        const result = await service.applyProofDecisionInTransaction(tx, {
+        const result = await service.applyProofRejectionInTransaction(tx, {
             booking: makeBooking(),
             plan: makePlan({ status: 'BALANCE_DUE' }),
-            approved: false,
             source: 'MANUAL_PROOF_REVIEW' as any,
             externalReference: 'proof-2',
         });
@@ -357,17 +374,19 @@ describe('StagedPaymentsService (#369)', () => {
         );
     });
 
-    it('a deposit approved after the group failed becomes refund-due immediately', async () => {
+    it('a deposit bank-confirmed after the group failed becomes refund-due immediately', async () => {
         const external = makeExternalPayments();
         const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
         const tx = makeTx({ session: makeSession({ groupStatus: 'NOT_CONFIRMED' }) });
 
-        const result = await service.applyProofDecisionInTransaction(tx, {
+        const result = await service.applyBankConfirmationInTransaction(tx, {
             booking: makeBooking(),
             plan: makePlan(),
-            approved: true,
             source: 'MANUAL_PROOF_REVIEW' as any,
             externalReference: 'proof-late',
+            confirmedAmount: D('200.00'),
+            bankReference: 'BANK-REF-LATE',
+            bankConfirmedBy: 'agency-user-1',
         });
 
         expect(result.bookingStatus).toBe('NOT_CONFIRMED');

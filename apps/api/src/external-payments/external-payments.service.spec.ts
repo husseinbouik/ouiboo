@@ -95,6 +95,60 @@ describe('ExternalPaymentsService', () => {
         });
     });
 
+    describe('recordPaymentVerifiedInTransaction bank confirmation (#422)', () => {
+        it('stamps the bank-confirmation facts that bind VERIFIED to the bank credit', async () => {
+            const tx = makeTx();
+            const service = new ExternalPaymentsService({} as any);
+
+            await service.recordPaymentVerifiedInTransaction(tx, {
+                ...baseInput,
+                bankReference: 'TRX-2026-000123',
+                bankConfirmedBy: 'agency-user-1',
+            });
+
+            const upsertArgs = tx.externalPayment.upsert.mock.calls[0][0];
+            expect(upsertArgs.create.status).toBe(ExternalPaymentStatus.VERIFIED);
+            expect(upsertArgs.create.confirmedAmount.toString()).toBe('780');
+            expect(upsertArgs.create.bankReference).toBe('TRX-2026-000123');
+            expect(upsertArgs.create.bankConfirmedAt).toBeInstanceOf(Date);
+            expect(upsertArgs.create.bankConfirmedBy).toBe('agency-user-1');
+            expect(upsertArgs.update.bankReference).toBe('TRX-2026-000123');
+        });
+
+        it('leaves bank-confirmation facts untouched for PSP/webhook records', async () => {
+            const tx = makeTx();
+            const service = new ExternalPaymentsService({} as any);
+
+            await service.recordPaymentVerifiedInTransaction(tx, baseInput);
+
+            const upsertArgs = tx.externalPayment.upsert.mock.calls[0][0];
+            expect(upsertArgs.create).not.toHaveProperty('bankReference');
+            expect(upsertArgs.update).not.toHaveProperty('confirmedAmount');
+        });
+    });
+
+    describe('recordPaymentPendingInTransaction (#422)', () => {
+        it('creates the stage payment as PENDING_VERIFICATION with no ledger entry and no bank facts', async () => {
+            const tx = makeTx();
+            const service = new ExternalPaymentsService({} as any);
+
+            const payment = await service.recordPaymentPendingInTransaction(tx, baseInput);
+
+            expect(payment.id).toBe('ext-payment-1');
+            const upsertArgs = tx.externalPayment.upsert.mock.calls[0][0];
+            expect(upsertArgs.create.status).toBe(ExternalPaymentStatus.PENDING_VERIFICATION);
+            expect(upsertArgs.create.verifiedAt).toBeNull();
+            // A fresh proof supersedes any earlier bank confirmation.
+            expect(upsertArgs.create.confirmedAmount).toBeNull();
+            expect(upsertArgs.create.bankReference).toBeNull();
+            expect(upsertArgs.create.bankConfirmedAt).toBeNull();
+            expect(upsertArgs.create.bankConfirmedBy).toBeNull();
+            expect(upsertArgs.update.status).toBe(ExternalPaymentStatus.PENDING_VERIFICATION);
+            // Pending is not settlement: the append-only ledger is untouched.
+            expect(tx.$executeRaw).not.toHaveBeenCalled();
+        });
+    });
+
     describe('recordPaymentRejectedInTransaction', () => {
         it('sets the ExternalPayment to REJECTED and clears verifiedAt', async () => {
             const tx = makeTx();

@@ -63,13 +63,16 @@ const mockEmailService = {
 const mockExternalPaymentsService = {
     recordPaymentVerifiedInTransaction: jest.fn(),
     recordPaymentRejectedInTransaction: jest.fn(),
+    recordPaymentPendingInTransaction: jest.fn(),
 };
 
 // #369: default mock = non-staged sessions; staged tests override these.
+// #422: proof decisions split into rejection vs bank confirmation.
 const mockStagedPaymentsService = {
     isStagedSession: jest.fn(() => false),
     createPlanInTransaction: jest.fn(),
-    applyProofDecisionInTransaction: jest.fn(),
+    applyProofRejectionInTransaction: jest.fn(),
+    applyBankConfirmationInTransaction: jest.fn(),
 };
 
 describe('BookingsService', () => {
@@ -211,6 +214,16 @@ describe('BookingsService', () => {
             });
             expect(db.paymentProof.upsert).toHaveBeenCalled();
             expect(db.booking.update).toHaveBeenCalled();
+            // #422: upload creates the stage payment record as
+            // PENDING_VERIFICATION — a real "proof received" record that
+            // settles nothing.
+            expect(mockExternalPaymentsService.recordPaymentPendingInTransaction).toHaveBeenCalledTimes(1);
+            const pendingInput = mockExternalPaymentsService.recordPaymentPendingInTransaction.mock.calls[0][1];
+            expect(pendingInput).toEqual(expect.objectContaining({
+                bookingId: 'booking-123',
+                agencyId: 'agency-123',
+                stage: 'FULL',
+            }));
         });
 
         it('should throw error if booking not found', async () => {
@@ -439,8 +452,8 @@ describe('BookingsService', () => {
                 bookingDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
                 sessionId: 'session-123',
                 guestsCount: 2,
-                session: { groupStatus: 'CONFIRMED' },
-                paymentPlan: { status: 'BALANCE_DUE' },
+                session: { groupStatus: 'CONFIRMED', template: { agencyId: 'agency-123' } },
+                paymentPlan: { status: 'BALANCE_DUE', depositAmount: '100.00', balanceAmount: '400.00' },
             });
             db.paymentProof.upsert.mockResolvedValue({ id: 'proof-9' });
             db.booking.update.mockResolvedValue({});
@@ -458,6 +471,14 @@ describe('BookingsService', () => {
             } as Express.Multer.File);
 
             expect(db.paymentProof.upsert).toHaveBeenCalled();
+            // #422: the BALANCE stage gets its own pending record with the
+            // expected balance amount.
+            const pendingInput = mockExternalPaymentsService.recordPaymentPendingInTransaction.mock.calls[0][1];
+            expect(pendingInput).toEqual(expect.objectContaining({
+                bookingId: 'booking-123',
+                stage: 'BALANCE',
+                amount: '400.00',
+            }));
         });
 
         it('rejects any proof once the plan is fully paid', async () => {
@@ -474,7 +495,7 @@ describe('BookingsService', () => {
                 .rejects.toThrow('not awaiting a payment proof');
         });
 
-        it('delegates staged proof decisions to StagedPaymentsService and emails only when fully paid', async () => {
+        it('accepting a staged proof settles nothing (#422): proof ACCEPTED, no payment effects, no email', async () => {
             const stagedBooking = {
                 id: 'booking-123',
                 travelerId: 'user-123',
@@ -488,8 +509,71 @@ describe('BookingsService', () => {
             db.booking.findUnique.mockResolvedValue(stagedBooking);
             db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
             db.paymentProof.updateMany.mockResolvedValue({ count: 1 });
+            db.booking.findUniqueOrThrow.mockResolvedValue({ id: 'booking-123', status: 'AWAITING_VALIDATION' });
+
+            const emailService: any = (service as any).emailService;
+            const result: any = await service.verifyPayment('booking-123', 'agency-123', true);
+
+            // The proof claim moved PENDING -> ACCEPTED only.
+            expect(db.paymentProof.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: { id: 'proof-1', status: 'PENDING' },
+                data: expect.objectContaining({ status: 'ACCEPTED' }),
+            }));
+            // No settlement effects at accept time.
+            expect(mockStagedPaymentsService.applyProofRejectionInTransaction).not.toHaveBeenCalled();
+            expect(mockStagedPaymentsService.applyBankConfirmationInTransaction).not.toHaveBeenCalled();
+            expect(mockExternalPaymentsService.recordPaymentVerifiedInTransaction).not.toHaveBeenCalled();
+            expect(db.booking.updateMany).not.toHaveBeenCalled();
+            expect(emailService.sendPaymentConfirmation).not.toHaveBeenCalled();
+            expect(result.status).toBe('AWAITING_VALIDATION');
+        });
+
+        it('rejecting a staged proof delegates to applyProofRejectionInTransaction', async () => {
+            const stagedBooking = {
+                id: 'booking-123',
+                travelerId: 'user-123',
+                status: 'AWAITING_VALIDATION',
+                paymentProofId: 'proof-1',
+                paymentProof: { id: 'proof-1', status: 'PENDING' },
+                paymentPlan: { id: 'plan-1', status: 'DEPOSIT_DUE' },
+                session: { template: { agencyId: 'agency-123', title: 'Atlas Escape' } },
+                traveler: { email: 'traveler@example.com' },
+            };
+            db.booking.findUnique.mockResolvedValue(stagedBooking);
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.paymentProof.updateMany.mockResolvedValue({ count: 1 });
+            db.booking.findUniqueOrThrow.mockResolvedValue({ id: 'booking-123', status: 'REJECTED' });
+            mockStagedPaymentsService.applyProofRejectionInTransaction.mockResolvedValue({
+                stage: 'DEPOSIT',
+                fullyPaid: false,
+                bookingStatus: 'REJECTED',
+                planStatus: 'DEPOSIT_DUE',
+            });
+
+            await service.verifyPayment('booking-123', 'agency-123', false, 'Bank details do not match');
+
+            expect(mockStagedPaymentsService.applyProofRejectionInTransaction).toHaveBeenCalledTimes(1);
+            const rejectionArgs = mockStagedPaymentsService.applyProofRejectionInTransaction.mock.calls[0][1];
+            expect(rejectionArgs.plan).toEqual(stagedBooking.paymentPlan);
+            expect(mockStagedPaymentsService.applyBankConfirmationInTransaction).not.toHaveBeenCalled();
+        });
+
+        it('bank confirmation delegates to StagedPaymentsService with the confirmed amount and bank reference (#422)', async () => {
+            const stagedBooking = {
+                id: 'booking-123',
+                travelerId: 'user-123',
+                status: 'AWAITING_VALIDATION',
+                paymentProofId: 'proof-1',
+                paymentProof: { id: 'proof-1', status: 'ACCEPTED' },
+                paymentPlan: { id: 'plan-1', status: 'DEPOSIT_DUE', depositAmount: '100.00', balanceAmount: '400.00' },
+                session: { template: { agencyId: 'agency-123', title: 'Atlas Escape' } },
+                traveler: { email: 'traveler@example.com' },
+            };
+            db.booking.findUnique.mockResolvedValue(stagedBooking);
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.paymentProof.updateMany.mockResolvedValue({ count: 1 });
             db.booking.findUniqueOrThrow.mockResolvedValue({ id: 'booking-123', status: 'PENDING_MINIMUM' });
-            mockStagedPaymentsService.applyProofDecisionInTransaction.mockResolvedValue({
+            mockStagedPaymentsService.applyBankConfirmationInTransaction.mockResolvedValue({
                 stage: 'DEPOSIT',
                 fullyPaid: false,
                 bookingStatus: 'PENDING_MINIMUM',
@@ -497,13 +581,118 @@ describe('BookingsService', () => {
             });
 
             const emailService: any = (service as any).emailService;
-            await service.verifyPayment('booking-123', 'agency-123', true);
+            await service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: 100,
+                bankReference: 'BANK-REF-100',
+            });
 
-            expect(mockStagedPaymentsService.applyProofDecisionInTransaction).toHaveBeenCalledTimes(1);
-            const decisionArgs = mockStagedPaymentsService.applyProofDecisionInTransaction.mock.calls[0][1];
-            expect(decisionArgs.plan).toEqual(stagedBooking.paymentPlan);
-            expect(decisionArgs.approved).toBe(true);
+            expect(mockStagedPaymentsService.applyBankConfirmationInTransaction).toHaveBeenCalledTimes(1);
+            const confirmArgs = mockStagedPaymentsService.applyBankConfirmationInTransaction.mock.calls[0][1];
+            expect(confirmArgs.plan).toEqual(stagedBooking.paymentPlan);
+            expect(confirmArgs.confirmedAmount.toString()).toBe('100');
+            expect(confirmArgs.bankReference).toBe('BANK-REF-100');
+            expect(confirmArgs.bankConfirmedBy).toBe('agency-user-1');
+            // A deposit confirmation is not full payment: no email yet.
             expect(emailService.sendPaymentConfirmation).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('proof != settlement (#422)', () => {
+        const reviewBooking = (proofStatus: string) => ({
+            id: 'booking-123',
+            travelerId: 'user-123',
+            status: 'AWAITING_VALIDATION',
+            totalAmount: 780,
+            currency: 'MAD',
+            paymentProofId: 'proof-1',
+            paymentProof: { id: 'proof-1', status: proofStatus },
+            paymentPlan: null,
+            session: { template: { agencyId: 'agency-123', title: 'Atlas Escape' } },
+            traveler: { email: 'traveler@example.com' },
+        });
+
+        beforeEach(() => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.paymentProof.updateMany.mockResolvedValue({ count: 1 });
+            db.booking.updateMany.mockResolvedValue({ count: 1 });
+        });
+
+        it('accepting a proof leaves the booking UNPAID and records no verified payment', async () => {
+            db.booking.findUnique.mockResolvedValue(reviewBooking('PENDING'));
+            db.booking.findUniqueOrThrow.mockResolvedValue({ id: 'booking-123', status: 'AWAITING_VALIDATION', paymentStatus: 'UNPAID' });
+
+            const result: any = await service.verifyPayment('booking-123', 'agency-123', true);
+
+            expect(db.paymentProof.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({ status: 'ACCEPTED' }),
+            }));
+            expect(mockExternalPaymentsService.recordPaymentVerifiedInTransaction).not.toHaveBeenCalled();
+            expect(db.booking.updateMany).not.toHaveBeenCalled();
+            expect(result.paymentStatus).toBe('UNPAID');
+        });
+
+        it('bank confirmation settles a non-staged booking with the confirmed amount and bank reference', async () => {
+            db.booking.findUnique.mockResolvedValue(reviewBooking('ACCEPTED'));
+            db.booking.findUniqueOrThrow.mockResolvedValue({ id: 'booking-123', status: 'CONFIRMED', paymentStatus: 'PAID' });
+
+            const emailService: any = (service as any).emailService;
+            (emailService.sendPaymentConfirmation as jest.Mock).mockResolvedValue(undefined);
+            await service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: '780.00',
+                bankReference: 'TRX-2026-000123',
+            });
+
+            expect(mockExternalPaymentsService.recordPaymentVerifiedInTransaction).toHaveBeenCalledTimes(1);
+            const recordInput = mockExternalPaymentsService.recordPaymentVerifiedInTransaction.mock.calls[0][1];
+            expect(recordInput.amount.toString()).toBe('780');
+            expect(recordInput.bankReference).toBe('TRX-2026-000123');
+            expect(recordInput.bankConfirmedBy).toBe('agency-user-1');
+            expect(db.booking.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({ status: 'CONFIRMED', paymentStatus: 'PAID' }),
+            }));
+            expect(emailService.sendPaymentConfirmation).toHaveBeenCalledWith(
+                'traveler@example.com',
+                'Atlas Escape',
+            );
+        });
+
+        it('bank confirmation requires the proof to be ACCEPTED first', async () => {
+            db.booking.findUnique.mockResolvedValue(reviewBooking('PENDING'));
+
+            await expect(service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: 780,
+                bankReference: 'TRX-1',
+            })).rejects.toThrow('must be accepted before bank confirmation');
+            expect(mockExternalPaymentsService.recordPaymentVerifiedInTransaction).not.toHaveBeenCalled();
+        });
+
+        it('bank confirmation requires a bank reference', async () => {
+            db.booking.findUnique.mockResolvedValue(reviewBooking('ACCEPTED'));
+
+            await expect(service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: 780,
+                bankReference: '  ',
+            })).rejects.toThrow('bank reference is required');
+        });
+
+        it('bank confirmation blocks a short credit (confirmedAmount must equal the expected amount)', async () => {
+            db.booking.findUnique.mockResolvedValue(reviewBooking('ACCEPTED'));
+
+            await expect(service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: 700,
+                bankReference: 'TRX-1',
+            })).rejects.toThrow('does not match the expected payment amount');
+            expect(mockExternalPaymentsService.recordPaymentVerifiedInTransaction).not.toHaveBeenCalled();
+        });
+
+        it('bank confirmation is agency-scoped: another agency cannot confirm', async () => {
+            db.booking.findUnique.mockResolvedValue(reviewBooking('ACCEPTED'));
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-999' });
+
+            await expect(service.confirmBankPayment('booking-123', 'agency-999', 'agency-user-9', {
+                confirmedAmount: 780,
+                bankReference: 'TRX-1',
+            })).rejects.toThrow(ForbiddenException);
         });
     });
 });

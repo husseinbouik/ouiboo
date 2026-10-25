@@ -151,25 +151,8 @@ export class StagedPaymentsService {
         });
     }
 
-    /**
-     * Apply an agency/admin proof decision to a STAGED booking. The caller
-     * has already claimed the PaymentProof (PENDING → VERIFIED/REJECTED)
-     * inside the same transaction; this method records the stage payment
-     * and moves booking + plan state. The stage is derived from the plan
-     * status, so a balance can never be recorded before confirmation.
-     */
-    async applyProofDecisionInTransaction(
-        tx: Tx,
-        args: {
-            booking: BookingForDecision;
-            plan: PlanForDecision;
-            approved: boolean;
-            source: PaymentLedgerSource;
-            externalReference: string;
-        },
-    ): Promise<ProofDecisionResult> {
-        const { booking, plan, approved, source, externalReference } = args;
-
+    /** The stage a plan is currently awaiting payment for, if any. */
+    private stageForPlan(plan: PlanForDecision): ExternalPaymentStage {
         const stage = plan.status === BookingPaymentPlanStatus.DEPOSIT_DUE
             ? ExternalPaymentStage.DEPOSIT
             : plan.status === BookingPaymentPlanStatus.BALANCE_DUE
@@ -178,15 +161,23 @@ export class StagedPaymentsService {
         if (!stage) {
             throw new BadRequestException('Booking is not awaiting a staged payment');
         }
+        return stage;
+    }
 
-        const amount = stage === ExternalPaymentStage.DEPOSIT
-            ? plan.depositAmount
-            : plan.balanceAmount;
-        const recordInput = {
+    private stageRecordInput(
+        booking: BookingForDecision,
+        plan: PlanForDecision,
+        stage: ExternalPaymentStage,
+        source: PaymentLedgerSource,
+        externalReference: string,
+    ) {
+        return {
             bookingId: booking.id,
             agencyId: plan.agencyId,
             travelerId: booking.travelerId,
-            amount,
+            amount: stage === ExternalPaymentStage.DEPOSIT
+                ? plan.depositAmount
+                : plan.balanceAmount,
             currency: plan.currency,
             method: booking.paymentMethod ?? PaymentMethod.MANUAL,
             externalReference,
@@ -194,34 +185,89 @@ export class StagedPaymentsService {
             source,
             stage,
         };
+    }
 
-        if (!approved) {
-            await this.externalPaymentsService.recordPaymentRejectedInTransaction(tx, recordInput);
-            if (stage === ExternalPaymentStage.DEPOSIT) {
-                await this.claimBookingUpdate(tx, booking.id, {
-                    status: BookingStatus.REJECTED,
-                    paymentStatus: BookingPaymentStatus.FAILED,
-                });
-                return {
-                    stage,
-                    fullyPaid: false,
-                    bookingStatus: BookingStatus.REJECTED,
-                    planStatus: plan.status,
-                };
-            }
-            // Balance proof rejected: the booking stays confirmed with the
-            // deposit paid; the traveller may upload a new balance proof.
+    /**
+     * Apply an agency/admin proof REJECTION to a STAGED booking. The caller
+     * has already claimed the PaymentProof (PENDING → REJECTED) inside the
+     * same transaction. Rejection is one-step and safe: no money is treated
+     * as received. (#422 split this from bank confirmation: accepting a
+     * proof image settles nothing, so approval no longer lives here.)
+     */
+    async applyProofRejectionInTransaction(
+        tx: Tx,
+        args: {
+            booking: BookingForDecision;
+            plan: PlanForDecision;
+            source: PaymentLedgerSource;
+            externalReference: string;
+        },
+    ): Promise<ProofDecisionResult> {
+        const { booking, plan, source, externalReference } = args;
+        const stage = this.stageForPlan(plan);
+        const recordInput = this.stageRecordInput(booking, plan, stage, source, externalReference);
+
+        await this.externalPaymentsService.recordPaymentRejectedInTransaction(tx, recordInput);
+        if (stage === ExternalPaymentStage.DEPOSIT) {
             await this.claimBookingUpdate(tx, booking.id, {
-                status: BookingStatus.CONFIRMED,
-                paymentStatus: BookingPaymentStatus.PARTIALLY_PAID,
+                status: BookingStatus.REJECTED,
+                paymentStatus: BookingPaymentStatus.FAILED,
             });
             return {
                 stage,
                 fullyPaid: false,
-                bookingStatus: BookingStatus.CONFIRMED,
+                bookingStatus: BookingStatus.REJECTED,
                 planStatus: plan.status,
             };
         }
+        // Balance proof rejected: the booking stays confirmed with the
+        // deposit paid; the traveller may upload a new balance proof.
+        await this.claimBookingUpdate(tx, booking.id, {
+            status: BookingStatus.CONFIRMED,
+            paymentStatus: BookingPaymentStatus.PARTIALLY_PAID,
+        });
+        return {
+            stage,
+            fullyPaid: false,
+            bookingStatus: BookingStatus.CONFIRMED,
+            planStatus: plan.status,
+        };
+    }
+
+    /**
+     * #422 (Council P0-20): apply an agency BANK CONFIRMATION to a STAGED
+     * booking. The caller has already claimed the PaymentProof
+     * (ACCEPTED → VERIFIED) inside the same transaction and validated that
+     * confirmedAmount equals the stage amount. This performs exactly the
+     * effects proof approval used to perform — stage payment VERIFIED with
+     * a capture ledger entry, plan/booking transitions, group evaluation —
+     * except the recorded amount is the bank credit the agency observed
+     * (confirmedAmount), stamped with its bank reference.
+     * The stage is derived from the plan status, so a balance can never be
+     * recorded before confirmation.
+     */
+    async applyBankConfirmationInTransaction(
+        tx: Tx,
+        args: {
+            booking: BookingForDecision;
+            plan: PlanForDecision;
+            source: PaymentLedgerSource;
+            externalReference: string;
+            confirmedAmount: Prisma.Decimal;
+            bankReference: string;
+            bankConfirmedBy: string;
+        },
+    ): Promise<ProofDecisionResult> {
+        const { booking, plan, source, externalReference } = args;
+
+        const stage = this.stageForPlan(plan);
+
+        const recordInput = {
+            ...this.stageRecordInput(booking, plan, stage, source, externalReference),
+            amount: args.confirmedAmount,
+            bankReference: args.bankReference,
+            bankConfirmedBy: args.bankConfirmedBy,
+        };
 
         const entryType = stage === ExternalPaymentStage.DEPOSIT
             ? PaymentLedgerEntryType.DEPOSIT_CAPTURED
@@ -250,7 +296,7 @@ export class StagedPaymentsService {
             };
         }
 
-        // Deposit approved.
+        // Deposit bank-confirmed.
         await tx.bookingPaymentPlan.update({
             where: { id: plan.id },
             data: { status: BookingPaymentPlanStatus.DEPOSIT_PAID },
@@ -478,7 +524,7 @@ export class StagedPaymentsService {
             }
             // Bookings whose proof is still under review (AWAITING_VALIDATION)
             // or was rejected keep their state: a later approval lands in the
-            // NOT_CONFIRMED branch of applyProofDecisionInTransaction.
+            // NOT_CONFIRMED branch of applyBankConfirmationInTransaction.
         }
 
         if (seatsToRestore > 0) {

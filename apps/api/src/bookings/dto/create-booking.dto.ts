@@ -55,3 +55,22 @@ export class VerifyManualPaymentDto {
     @MaxLength(500)
     rejectionReason?: string;
 }
+
+/**
+ * #422 (Council P0-20): bank confirmation settles an accepted proof. The
+ * amount is the credit the agency actually observed in its bank account
+ * (number or decimal string; validated as money in the service) and the
+ * bank reference is the audit anchor binding it to that credit — both
+ * are required.
+ */
+export class ConfirmBankPaymentDto {
+    @ApiProperty({ example: 780.0, description: 'Amount actually received in the agency bank account' })
+    @IsNotEmpty()
+    confirmedAmount!: string | number;
+
+    @ApiProperty({ example: 'TRX-2026-000123', description: 'Bank transfer reference of the received credit' })
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(120)
+    bankReference!: string;
+}

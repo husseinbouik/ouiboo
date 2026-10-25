@@ -182,7 +182,7 @@ export class AdminController {
     }
 
     @Post('payments/:id/verify')
-    @ApiOperation({ summary: 'Approve or reject payment proof' })
+    @ApiOperation({ summary: 'Accept or reject a payment proof image (acceptance is not settlement, #422)' })
     async verifyPayment(
         @Request() req,
         @Param('id') id: string,
@@ -214,23 +214,39 @@ export class AdminController {
                 throw new BadRequestException('Booking is not awaiting payment validation');
             }
 
+            // #422 (Council P0-20): admin proof review is no longer
+            // settlement either. A VERIFIED decision ACCEPTS the proof
+            // image only — the booking, the plan and the ExternalPayment
+            // stay pending until the AGENCY confirms the credit in its own
+            // bank account (only the agency can see that account, so there
+            // is deliberately no admin bank-confirmation override; founder
+            // decision D3). Rejection stays one-step.
+            const approved = status === 'VERIFIED';
             const updatedProof = await tx.paymentProof.update({
                 where: { id },
                 data: {
-                    status,
-                    rejectionReason: status === 'REJECTED' ? rejectionReason : null,
+                    status: approved ? 'ACCEPTED' : 'REJECTED',
+                    rejectionReason: approved ? null : rejectionReason,
                 }
             });
 
-            // #369: staged bookings follow the plan state machine (deposit
-            // stage, then balance after confirmation); only the stage
-            // amount is recorded and the booking is fully paid at the
-            // balance stage.
+            if (approved) {
+                return {
+                    updatedProof,
+                    bookingId: proof.bookingId,
+                    travelerEmail: proof.booking.traveler?.email,
+                    tripTitle: proof.booking.session.template.title,
+                    fullyPaid: false,
+                };
+            }
+
+            // #369: staged bookings follow the plan state machine on
+            // rejection (deposit stage fails the booking; balance stage
+            // keeps the confirmed booking with the deposit paid).
             if (proof.booking.paymentPlan) {
-                const decision = await this.stagedPaymentsService.applyProofDecisionInTransaction(tx, {
+                await this.stagedPaymentsService.applyProofRejectionInTransaction(tx, {
                     booking: proof.booking,
                     plan: proof.booking.paymentPlan,
-                    approved: status === 'VERIFIED',
                     source: PaymentLedgerSource.ADMIN_PROOF_REVIEW,
                     externalReference: proof.id,
                 });
@@ -239,24 +255,23 @@ export class AdminController {
                     bookingId: proof.bookingId,
                     travelerEmail: proof.booking.traveler?.email,
                     tripTitle: proof.booking.session.template.title,
-                    fullyPaid: decision.fullyPaid,
+                    fullyPaid: false,
                 };
             }
 
             const updatedBooking = await tx.booking.update({
                 where: { id: proof.bookingId },
                 data: {
-                    status: status === 'VERIFIED' ? 'CONFIRMED' : 'REJECTED',
-                    paymentStatus: status === 'VERIFIED' ? 'PAID' : 'FAILED',
-                    confirmedAt: status === 'VERIFIED' ? new Date() : null,
+                    status: 'REJECTED',
+                    paymentStatus: 'FAILED',
+                    confirmedAt: null,
                 },
                 include: { session: { include: { template: true } } }
             });
 
-            // #368: verifying a payment proof records the verified fact that
-            // the traveller paid the AGENCY directly. It must never credit a
-            // withdrawable OuiBoo balance.
-            const paymentRecord = {
+            // #368: rejecting a payment proof records the fact only. It
+            // must never credit a withdrawable OuiBoo balance.
+            await this.externalPaymentsService.recordPaymentRejectedInTransaction(tx, {
                 bookingId: updatedBooking.id,
                 agencyId: updatedBooking.session.template.agencyId,
                 travelerId: proof.booking.travelerId,
@@ -266,19 +281,14 @@ export class AdminController {
                 externalReference: proof.id,
                 custodian: PaymentCustodian.AGENCY,
                 source: PaymentLedgerSource.ADMIN_PROOF_REVIEW,
-            };
-            if (status === 'VERIFIED') {
-                await this.externalPaymentsService.recordPaymentVerifiedInTransaction(tx, paymentRecord);
-            } else {
-                await this.externalPaymentsService.recordPaymentRejectedInTransaction(tx, paymentRecord);
-            }
+            });
 
             return {
                 updatedProof,
                 bookingId: proof.bookingId,
                 travelerEmail: proof.booking.traveler?.email,
                 tripTitle: updatedBooking.session.template.title,
-                fullyPaid: status === 'VERIFIED',
+                fullyPaid: false,
             };
         });
 
@@ -292,7 +302,10 @@ export class AdminController {
         this.auditLogService.log({
             actorId: req?.user?.userId,
             actorEmail: req?.user?.email,
-            action: 'PAYMENT_PROOF_VERIFIED',
+            // #422: the audit action names the step that actually happened
+            // (proof accepted / proof rejected) — never "verified", which
+            // is reserved for bank confirmation.
+            action: status === 'VERIFIED' ? 'PAYMENT_PROOF_ACCEPTED' : 'PAYMENT_PROOF_REJECTED',
             targetType: 'PaymentProof',
             targetId: result.updatedProof.id,
             metadata: {
