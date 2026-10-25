@@ -134,8 +134,12 @@ export default function AgencyDashboard() {
     payments: { currency: 'MAD', totalReceived: '0', totalRefunded: '0', pendingVerificationCount: 0, pendingVerificationAmount: '0' },
   };
 
+  // #422: both PENDING proofs (awaiting image review) and ACCEPTED proofs
+  // (awaiting bank confirmation) still need agency action before settlement.
   const pendingPaymentReviews = recentBookings.filter(
-    (booking) => booking.paymentProof?.status === VerificationStatus.Pending,
+    (booking) =>
+      booking.paymentProof?.status === VerificationStatus.Pending ||
+      booking.paymentProof?.status === VerificationStatus.Accepted,
   ).length;
   const bookingsNeedingAttention = recentBookings.filter(
     (booking) => booking.status === BookingStatus.AwaitingValidation || booking.status === BookingStatus.Pending,

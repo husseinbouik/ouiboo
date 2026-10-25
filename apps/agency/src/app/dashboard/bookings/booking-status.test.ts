@@ -15,6 +15,13 @@ describe('agency booking status helpers', () => {
     expect(getAgencyProofStatusLabel(undefined).displayLabel).toBe('Not Uploaded');
   });
 
+  it('maps an ACCEPTED proof to pending bank confirmation — never to paid/verified (#422)', () => {
+    const accepted = getAgencyProofStatusLabel(VerificationStatus.Accepted);
+    expect(accepted.icon).toBe('accepted');
+    expect(accepted.displayLabel).toBe('Accepted — Pending Bank Confirmation');
+    expect(accepted.displayLabel).not.toBe(getAgencyProofStatusLabel(VerificationStatus.Verified).displayLabel);
+  });
+
   it('maps canonical payment states for the agency booking table', () => {
     expect(getAgencyPaymentStatusMeta(BookingPaymentStatus.Paid).label).toBe('Paid');
     expect(getAgencyPaymentStatusMeta(BookingPaymentStatus.Failed).label).toBe('Payment Failed');

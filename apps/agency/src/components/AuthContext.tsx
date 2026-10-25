@@ -56,6 +56,13 @@ interface User {
         // #415: expiry-sweep auto-pause marker
         verificationPausedAt?: string;
         verificationPauseReason?: string;
+        // #421: bank-destination verification (pending submission + review state)
+        pendingBankDetails?: string;
+        bankAccountHolderName?: string;
+        bankAttestationUrl?: string;
+        bankDetailsStatus?: string;
+        bankDetailsVerifiedAt?: string;
+        bankDetailsRejectionReason?: string;
     };
 }
 

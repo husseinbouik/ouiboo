@@ -56,6 +56,18 @@ export enum LicenceStatus {
 
 export type LicenceStatusType = LicenceStatus;
 
+// #421 (Council P0-19): lifecycle of an agency's bank payment destination.
+// Submitted details sit in pending fields until an admin verifies them
+// against the bank attestation; only VERIFIED details are traveller-live.
+export enum BankDetailsStatus {
+    Unverified = "UNVERIFIED",
+    PendingReview = "PENDING_REVIEW",
+    Verified = "VERIFIED",
+    Rejected = "REJECTED",
+}
+
+export type BankDetailsStatusType = BankDetailsStatus;
+
 export enum SubscriptionStatus {
     Trial = "TRIAL",
     Active = "ACTIVE",
@@ -160,6 +172,8 @@ export interface AgencyProfile {
     ice: string; // Identifiant Commun de l'Entreprise
     patente: string;
     rib: string; // Bank Account details
+    // #421: traveller-live manual payment instructions (verified value)
+    bankDetails?: string;
     verificationStatus: VerificationStatus;
     bio?: string;
     logo?: string;
@@ -199,6 +213,15 @@ export interface AgencyProfile {
     // #415: expiry-sweep auto-pause marker
     verificationPausedAt?: string;
     verificationPauseReason?: string;
+    // #421: bank-destination verification (submitted details pend in
+    // pendingBankDetails until an admin verifies them; bankDetails above
+    // stays the traveller-live value)
+    pendingBankDetails?: string;
+    bankAccountHolderName?: string;
+    bankAttestationUrl?: string;
+    bankDetailsStatus?: BankDetailsStatus;
+    bankDetailsVerifiedAt?: string;
+    bankDetailsRejectionReason?: string;
 }
 
 export enum TripStatus {
