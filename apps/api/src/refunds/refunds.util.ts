@@ -1,4 +1,9 @@
-import { RefundCaseStatus } from '@ouiboo/database';
+import {
+    PaymentLedgerSource,
+    RefundCaseStatus,
+    RefundEvidenceSource,
+    RefundEvidenceTier,
+} from '@ouiboo/database';
 import { REFUND_POLICY_VERSION } from '../staged-payments/staged-payments.util';
 
 export { REFUND_POLICY_VERSION };
@@ -120,3 +125,81 @@ export const REFUND_OVERDUE_ELIGIBLE_STATUSES: RefundCaseStatus[] = [
     RefundCaseStatus.AGENCY_ACTION_REQUIRED,
     RefundCaseStatus.REFUND_FAILED,
 ];
+
+/**
+ * #416 (Council P0-09): the completion gate. A refund case may complete
+ * only on a qualifying evidence set (strongest first):
+ *   tier 1 PSP_CONFIRMATION            — provider/webhook confirmation
+ *   tier 2 BANK_PROVIDER_CONFIRMATION  — bank/provider confirmation doc
+ *   tier 3 BANK_REFERENCE              — bank reference AND retained proof
+ *   tier 5 ADMIN_REVIEW                — an admin's recorded review
+ *   tier 4 TRAVELLER_CONFIRMATION + tier 5 — corroborated completion
+ * Tier 4 alone NEVER qualifies: the traveller's word corroborates, it
+ * does not certify the agency's refund. Returns the qualifying tier, the
+ * honest ledger source for it (provenance derives from the evidence —
+ * never from a typed provider string), and the qualifying row's
+ * reference, or null when no set qualifies.
+ */
+export interface RefundEvidenceLike {
+    tier: RefundEvidenceTier;
+    source?: RefundEvidenceSource | string | null;
+    reference?: string | null;
+    proofUrl?: string | null;
+}
+
+export interface RefundCompletionQualification {
+    tier: RefundEvidenceTier;
+    source: PaymentLedgerSource;
+    reference: string | null;
+}
+
+export function qualifyingRefundCompletion(
+    evidence: RefundEvidenceLike[],
+): RefundCompletionQualification | null {
+    const psp = evidence.find((e) => e.tier === RefundEvidenceTier.PSP_CONFIRMATION);
+    if (psp) {
+        return {
+            tier: RefundEvidenceTier.PSP_CONFIRMATION,
+            source: PaymentLedgerSource.GATEWAY_REFUND,
+            reference: psp.reference ?? null,
+        };
+    }
+    const bankProvider = evidence.find(
+        (e) => e.tier === RefundEvidenceTier.BANK_PROVIDER_CONFIRMATION,
+    );
+    if (bankProvider) {
+        return {
+            tier: RefundEvidenceTier.BANK_PROVIDER_CONFIRMATION,
+            source: PaymentLedgerSource.BANK_CONFIRMATION,
+            reference: bankProvider.reference ?? null,
+        };
+    }
+    const bankReference = evidence.find(
+        (e) =>
+            e.tier === RefundEvidenceTier.BANK_REFERENCE
+            && typeof e.reference === 'string'
+            && e.reference.trim() !== ''
+            && typeof e.proofUrl === 'string'
+            && e.proofUrl.trim() !== '',
+    );
+    if (bankReference) {
+        return {
+            tier: RefundEvidenceTier.BANK_REFERENCE,
+            source: PaymentLedgerSource.BANK_CONFIRMATION,
+            reference: bankReference.reference ?? null,
+        };
+    }
+    const adminReview = evidence.find(
+        (e) =>
+            e.tier === RefundEvidenceTier.ADMIN_REVIEW
+            && e.source === RefundEvidenceSource.ADMIN,
+    );
+    if (adminReview) {
+        return {
+            tier: RefundEvidenceTier.ADMIN_REVIEW,
+            source: PaymentLedgerSource.ADMIN_PROOF_REVIEW,
+            reference: adminReview.reference ?? null,
+        };
+    }
+    return null;
+}

@@ -75,7 +75,7 @@ export class AdminRefundsController {
     }
 
     @Post(':id/complete')
-    @ApiOperation({ summary: 'Mark a refund as completed (#370)' })
+    @ApiOperation({ summary: 'Complete a refund case (#370, #416)', description: 'Completes on the case\'s qualifying evidence; when none exists, the admin\'s completion itself is recorded as tier-5 ADMIN_REVIEW evidence.' })
     complete(@Request() req, @Param('id') id: string, @Body() dto: CompleteRefundDto) {
         return this.refundsService.complete(this.actor(req), 'ADMIN', null, id, dto);
     }

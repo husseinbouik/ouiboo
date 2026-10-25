@@ -52,17 +52,52 @@ export class InitiateRefundDto {
 }
 
 export class CompleteRefundDto {
-    @ApiProperty({ required: false, description: 'Payment provider refund reference.' })
+    @ApiProperty({ required: false, description: 'Payment provider refund reference. Recorded as reported only — since #416 a typed reference never creates gateway provenance; the ledger source derives from the case\'s qualifying completion evidence.' })
     @IsOptional()
     @IsString()
     @MaxLength(200)
     providerRefundId?: string;
 
-    @ApiProperty({ required: false, description: 'Provider-reported refund status.' })
+    @ApiProperty({ required: false, description: 'Provider-reported refund status. Recorded as reported; never inferred or defaulted (since #416).' })
     @IsOptional()
     @IsString()
     @MaxLength(100)
     providerStatus?: string;
+}
+
+/**
+ * #416 (Council P0-09): agency submission of refund completion evidence
+ * (one shape per decision D9). The bank/provider reference is mandatory,
+ * and so is the retained confirmation document: a private storage key
+ * from the identity-document upload intent (private/{userId}/…). The
+ * service records tier BANK_REFERENCE, upgraded to
+ * BANK_PROVIDER_CONFIRMATION when the reference matches a provider
+ * transaction id the system already holds for the booking.
+ */
+export class AddRefundEvidenceDto {
+    @ApiProperty({ example: 'VIR-2026-1042', description: 'Bank transfer reference or provider transaction id for the refund payment (mandatory — it is the audit anchor).' })
+    @IsString()
+    @MinLength(1)
+    @MaxLength(200)
+    reference!: string;
+
+    @ApiProperty({ example: 'private/<userId>/bank-confirmation.pdf', description: 'Private storage key of the retained bank/provider confirmation document (mandatory). Must reference a document uploaded by this agency under private/{userId}/.' })
+    @IsString()
+    @MinLength(1)
+    @MaxLength(500)
+    proofUrl!: string;
+
+    @ApiProperty({ required: false, example: 200, description: 'Amount actually sent, as observed on the confirmation document. Defaults to the case amount when omitted.' })
+    @IsOptional()
+    @IsNumber()
+    @Min(0.01)
+    amount?: number;
+
+    @ApiProperty({ required: false, description: 'Optional note about the confirmation (e.g. bank name, value date).' })
+    @IsOptional()
+    @IsString()
+    @MaxLength(1000)
+    note?: string;
 }
 
 export const REFUND_REPAIR_ACTIONS = ['reopen', 'correct-amount', 'relink-payment'] as const;

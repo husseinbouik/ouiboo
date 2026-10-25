@@ -223,6 +223,11 @@ enum PaymentLedgerSource {
   ADMIN_PROOF_REVIEW
   GATEWAY_WEBHOOK
   GATEWAY_REFUND
+  // #416 (Council P0-09): a refund completion proven by bank evidence
+  // (tiers 2–3: bank/provider confirmation, or bank reference + retained
+  // proof). Replaces the old behaviour where a merely typed provider
+  // string was recorded as GATEWAY_REFUND.
+  BANK_CONFIRMATION
 }
 
 // #369: staged payments. A session is "staged" when it requires a minimum
@@ -261,6 +266,27 @@ enum RefundCaseStatus {
   REFUND_REJECTED
   REFUND_FAILED
   REFUND_OVERDUE
+}
+
+// #416 (Council P0-09): refund completion evidence tiers, strongest first.
+// A RefundCase may only complete on a qualifying evidence set: tier 1, 2,
+// 3 or 5 alone, or tier 4 corroborated by tier 5. Traveller confirmation
+// (tier 4) alone NEVER completes a case — the completing party can no
+// longer certify its own refund.
+enum RefundEvidenceTier {
+  PSP_CONFIRMATION
+  BANK_PROVIDER_CONFIRMATION
+  BANK_REFERENCE
+  TRAVELLER_CONFIRMATION
+  ADMIN_REVIEW
+}
+
+// #416: who recorded a RefundEvidence row.
+enum RefundEvidenceSource {
+  SYSTEM_WEBHOOK
+  AGENCY
+  TRAVELLER
+  ADMIN
 }
 
 // #369: which stage of a booking's payments an ExternalPayment records.
@@ -671,6 +697,18 @@ model RefundCase {
   providerStatus           String?
   failureReason            String?
   disputeReason            String?
+  // #416 (Council P0-09): completion integrity. completionTier records
+  // the strongest qualifying evidence tier at completion (null until the
+  // case completes on evidence). travellerConfirmedAt / disputedAt are
+  // stamped by the traveller confirm/dispute endpoints; auditRequired
+  // flags the case for the risk-based admin audit queue.
+  completionTier           RefundEvidenceTier?
+  travellerConfirmedAt     DateTime?
+  disputedAt               DateTime?
+  auditRequired            Boolean          @default(false)
+  auditedAt                DateTime?
+  auditedBy                String?
+  evidence                 RefundEvidence[]
   // Idempotency guard for system-created cases (e.g. "refund-due:<bookingId>").
   dedupeKey                String?          @unique
   createdBy                String?
@@ -682,6 +720,28 @@ model RefundCase {
   @@index([travelerId, status])
   @@index([agencyId, status])
   @@index([status, refundDueAt])
+}
+
+// #416 (Council P0-09): append-only completion evidence for a RefundCase.
+// Rows are never updated or deleted by application code: each submission
+// is a new row, and RefundCase.completionTier snapshots the strongest
+// qualifying tier when the case completes. proofUrl is a private storage
+// key (private/{userId}/…, identity-document upload intent) — never a
+// public URL, never served by the public media route.
+model RefundEvidence {
+  id           String               @id @default(cuid())
+  refundCaseId String
+  refundCase   RefundCase           @relation(fields: [refundCaseId], references: [id], onDelete: Cascade)
+  tier         RefundEvidenceTier
+  source       RefundEvidenceSource
+  reference    String?
+  proofUrl     String?
+  amount       Decimal?             @db.Decimal(18, 2)
+  note         String?
+  recordedBy   String
+  createdAt    DateTime             @default(now())
+
+  @@index([refundCaseId, tier])
 }
 
 // #368: Append-only log of external payment events. Amounts describe money

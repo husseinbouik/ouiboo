@@ -7,6 +7,7 @@ import { TenantGuard } from '../auth/guards/tenant.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RefundsService } from './refunds.service';
 import {
+    AddRefundEvidenceDto,
     ApproveRefundDto,
     CompleteRefundDto,
     CreateRefundCaseDto,
@@ -84,8 +85,18 @@ export class AgencyRefundsController {
         return this.refundsService.initiate(this.actor(req), 'AGENCY', req.tenantId, id, dto);
     }
 
+    @Post(':id/evidence')
+    @ApiOperation({
+        summary: 'Attach bank/provider completion evidence to a refund case (#416)',
+        description:
+            'Tier 2/3 submission (one shape): the bank reference and the retained confirmation document (private upload key) are both mandatory. The case can only be completed once qualifying evidence is attached.',
+    })
+    addEvidence(@Request() req, @Param('id') id: string, @Body() dto: AddRefundEvidenceDto) {
+        return this.refundsService.addEvidence(this.actor(req), 'AGENCY', req.tenantId, id, dto);
+    }
+
     @Post(':id/complete')
-    @ApiOperation({ summary: 'Mark a refund as completed (#370)' })
+    @ApiOperation({ summary: 'Complete a refund case — requires qualifying completion evidence (#370, #416)' })
     complete(@Request() req, @Param('id') id: string, @Body() dto: CompleteRefundDto) {
         return this.refundsService.complete(this.actor(req), 'AGENCY', req.tenantId, id, dto);
     }

@@ -14,6 +14,8 @@ import {
     PaymentLedgerSource,
     Prisma,
     RefundCaseStatus,
+    RefundEvidenceSource,
+    RefundEvidenceTier,
     RefundStatus,
 } from '@ouiboo/database';
 import { DatabaseService } from '../database/database.service';
@@ -21,6 +23,7 @@ import { EmailService } from '../email/email.service';
 import { escapeHtml, emailHeading, emailParagraph, renderEmail } from '../email/email-template';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { toMoneyDecimal, toMoneyString } from '../common/money.util';
+import { PRIVATE_FILE_PREFIX } from '../upload/upload.constants';
 import { GROUP_MINIMUM_NOT_REACHED_REASON } from '../staged-payments/staged-payments.util';
 import {
     REFUND_ACTIVE_STATUSES,
@@ -34,6 +37,7 @@ import {
     REFUND_RULE_MINIMUM_NOT_REACHED,
     REFUND_SYSTEM_ACTOR,
     canTransitionRefund,
+    qualifyingRefundCompletion,
     refundDueDate,
 } from './refunds.util';
 
@@ -46,6 +50,12 @@ import {
  * every transition, and restricts an agency's NEW bookings when a refund
  * goes overdue. It never moves money, never credits a balance, and never
  * cancels or blocks an existing booking because of a refund.
+ *
+ * #416 (Council P0-09): completion is evidence-gated. A case completes
+ * only on a qualifying RefundEvidence set (see qualifyingRefundCompletion
+ * in refunds.util) — the agency can no longer certify its own refund, so
+ * the overdue restriction can now only lift on an evidence-backed
+ * completion.
  */
 
 type Tx = Prisma.TransactionClient;
@@ -456,6 +466,93 @@ export class RefundsService {
         return serializeRefundCase(updated);
     }
 
+    /**
+     * #416 (Council P0-09): attach completion evidence to an open case —
+     * the agency's tier 2/3 submission (one shape, decision D9). The bank
+     * reference and the retained confirmation document are BOTH
+     * mandatory: a reference without retained proof is an assertion, not
+     * evidence. The proof must be a private upload owned by the agency
+     * (private/{userId}/…, the #415 identity-document pattern) — another
+     * user's key is rejected. The row records tier BANK_REFERENCE,
+     * upgraded to BANK_PROVIDER_CONFIRMATION when the reference matches
+     * a provider transaction id the system already holds for the booking
+     * (a PaymentAttempt.providerPaymentId from the PSP flow) — the
+     * reference is verified against system records, not merely asserted.
+     * Evidence is append-only: rows are never updated or deleted here.
+     */
+    async addEvidence(
+        actor: RefundActor,
+        role: RefundActorRole,
+        tenantAgencyId: string | null,
+        caseId: string,
+        input: { reference?: string; proofUrl?: string; amount?: string | number; note?: string },
+    ) {
+        if (role !== 'AGENCY') {
+            throw new ForbiddenException('Only the agency can submit refund evidence');
+        }
+        const refundCase = await this.loadCaseForActor(caseId, role, tenantAgencyId);
+        if (!REFUND_ACTIVE_STATUSES.includes(refundCase.status)) {
+            throw new BadRequestException(
+                'Evidence can only be attached to an open refund case',
+            );
+        }
+        const reference = input.reference?.trim();
+        if (!reference) {
+            throw new BadRequestException(
+                'A bank reference is required to submit refund evidence',
+            );
+        }
+        const proofUrl = input.proofUrl?.trim();
+        if (!proofUrl) {
+            throw new BadRequestException(
+                'A retained confirmation document is required to submit refund evidence',
+            );
+        }
+        const ownPrefix = `${PRIVATE_FILE_PREFIX}/${actor.id}/`;
+        if (!proofUrl.startsWith(ownPrefix)) {
+            throw new BadRequestException(
+                'proofUrl must reference a private document uploaded by this agency',
+            );
+        }
+        const providerAttempt = await this.db.paymentAttempt.findFirst({
+            where: { bookingId: refundCase.bookingId, providerPaymentId: reference },
+            select: { id: true },
+        });
+        const tier = providerAttempt
+            ? RefundEvidenceTier.BANK_PROVIDER_CONFIRMATION
+            : RefundEvidenceTier.BANK_REFERENCE;
+        const evidence = await this.db.$transaction(async (tx) => {
+            const created = await tx.refundEvidence.create({
+                data: {
+                    refundCaseId: refundCase.id,
+                    tier,
+                    source: RefundEvidenceSource.AGENCY,
+                    reference,
+                    proofUrl,
+                    amount:
+                        input.amount !== undefined
+                            ? toMoneyDecimal(input.amount, 'amount')
+                            : undefined,
+                    note: input.note?.trim() ? input.note.trim().slice(0, 1000) : undefined,
+                    recordedBy: actor.id,
+                },
+            });
+            await this.audit(tx, actor, 'REFUND_EVIDENCE_RECORDED', refundCase.id, {
+                evidenceId: created.id,
+                tier,
+                source: RefundEvidenceSource.AGENCY,
+            });
+            return created;
+        });
+        return {
+            ...evidence,
+            amount:
+                evidence.amount === null || evidence.amount === undefined
+                    ? null
+                    : toMoneyString(evidence.amount),
+        };
+    }
+
     async complete(
         actor: RefundActor,
         role: RefundActorRole,
@@ -466,6 +563,49 @@ export class RefundsService {
         const refundCase = await this.loadCaseForActor(caseId, role, tenantAgencyId);
         const amount = toMoneyDecimal(refundCase.approvedAmount ?? refundCase.requestedAmount);
         const completed = await this.db.$transaction(async (tx) => {
+            // #416 (Council P0-09): the completion gate. Checked inside
+            // the transaction against the case's evidence rows, before
+            // any state moves. An agency can never certify its own
+            // refund: with no qualifying evidence the completion is
+            // refused and nothing is written. An admin completing a case
+            // records their review as tier-5 evidence in the same
+            // transaction — that recorded review IS the qualifying tier
+            // (and the only way tier 4 traveller confirmation, which
+            // never qualifies alone, can corroborate a completion).
+            if (!canTransitionRefund(refundCase.status, RefundCaseStatus.REFUND_COMPLETED)) {
+                throw new BadRequestException(
+                    `Refund case cannot move from ${refundCase.status} to ${RefundCaseStatus.REFUND_COMPLETED}`,
+                );
+            }
+            const evidenceRows = await tx.refundEvidence.findMany({
+                where: { refundCaseId: refundCase.id },
+            });
+            let qualifying = qualifyingRefundCompletion(evidenceRows);
+            if (!qualifying && role === 'ADMIN') {
+                await tx.refundEvidence.create({
+                    data: {
+                        refundCaseId: refundCase.id,
+                        tier: RefundEvidenceTier.ADMIN_REVIEW,
+                        source: RefundEvidenceSource.ADMIN,
+                        recordedBy: actor.id,
+                    },
+                });
+                await this.audit(tx, actor, 'REFUND_EVIDENCE_RECORDED', refundCase.id, {
+                    tier: RefundEvidenceTier.ADMIN_REVIEW,
+                    source: RefundEvidenceSource.ADMIN,
+                    via: 'ADMIN_COMPLETION',
+                });
+                qualifying = {
+                    tier: RefundEvidenceTier.ADMIN_REVIEW,
+                    source: PaymentLedgerSource.ADMIN_PROOF_REVIEW,
+                    reference: null,
+                };
+            }
+            if (!qualifying) {
+                throw new BadRequestException(
+                    'A refund case can only be completed with evidence: a PSP or bank/provider confirmation, a bank reference with a retained proof document, or an admin review (the traveller\u2019s confirmation alone is not sufficient). Attach evidence before completing.',
+                );
+            }
             const updated = await this.transitionInTransaction(
                 tx,
                 refundCase,
@@ -474,15 +614,24 @@ export class RefundsService {
                 {
                     initiatedAt: refundCase.initiatedAt ?? new Date(),
                     completedAt: new Date(),
+                    completionTier: qualifying.tier,
                     providerRefundId:
                         input.providerRefundId?.trim() || refundCase.providerRefundId,
-                    providerStatus: input.providerStatus?.trim() || 'COMPLETED',
+                    // #416: provider status is recorded as reported only —
+                    // the old `?? 'COMPLETED'` default manufactured a
+                    // provider fact out of an empty request.
+                    ...(input.providerStatus?.trim()
+                        ? { providerStatus: input.providerStatus.trim() }
+                        : {}),
                 },
             );
 
             // Record the refund as an external payment fact: the agency /
             // its provider returned the money to the traveller. OuiBoo
-            // only records it (ledger REFUND_COMPLETED).
+            // only records it (ledger REFUND_COMPLETED). #416: the
+            // ledger source derives from the qualifying evidence tier —
+            // a typed providerRefundId no longer manufactures
+            // GATEWAY_REFUND provenance.
             const payment = refundCase.originalPaymentId
                 ? await tx.externalPayment.findUnique({
                     where: { id: refundCase.originalPaymentId },
@@ -502,11 +651,12 @@ export class RefundsService {
                     provider: payment.provider,
                     externalReference: payment.externalReference,
                     externalTransactionId:
-                        input.providerRefundId?.trim() || refundCase.providerRefundId || null,
+                        qualifying.reference
+                        || input.providerRefundId?.trim()
+                        || refundCase.providerRefundId
+                        || null,
                     custodian: payment.custodian,
-                    source: input.providerRefundId || refundCase.providerRefundId
-                        ? PaymentLedgerSource.GATEWAY_REFUND
-                        : PaymentLedgerSource.MANUAL_PROOF_REVIEW,
+                    source: qualifying.source,
                     stage: payment.stage,
                 });
             }
