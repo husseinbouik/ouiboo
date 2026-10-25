@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, Pagination, TableBodySkeleton } from '@ouiboo/ui';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, Pagination } from '@ouiboo/ui';
+import { TableBodySkeleton } from '@/components/Skeletons';
 import { History, CheckCircle2, Clock, AlertCircle, Undo2 } from 'lucide-react';
 import { cn } from '@ouiboo/ui/utils';
 import { formatCurrency, formatLocalDate } from '@ouiboo/utils';

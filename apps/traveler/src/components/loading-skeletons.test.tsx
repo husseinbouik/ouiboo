@@ -5,14 +5,14 @@ import {
   TripCardSkeleton,
   TripCardSkeletonGrid,
   TripDetailSkeleton,
+  CardListSkeleton,
+} from '@ouiboo/ui';
+import {
   BookingListSkeleton,
   BookingDetailSkeleton,
   CheckoutSkeleton,
-  CardListSkeleton,
   ListRowSkeleton,
-  TableBodySkeleton,
-  FormSkeleton,
-} from '@ouiboo/ui';
+} from './Skeletons';
 
 /**
  * #469: skeleton screens mirror the shapes they stand in for, stay
@@ -56,6 +56,11 @@ describe('loading skeletons (#469)', () => {
     const root = container.firstElementChild as HTMLElement;
     expect(root.getAttribute('aria-hidden')).toBe('true');
     expect(root.childElementCount).toBe(2);
+
+    const withDefaults = render(<BookingListSkeleton />);
+    expect(
+      (withDefaults.container.firstElementChild as HTMLElement).childElementCount,
+    ).toBe(3);
   });
 
   it('BookingDetailSkeleton and CheckoutSkeleton render aria-hidden shapes', () => {
@@ -77,26 +82,7 @@ describe('loading skeletons (#469)', () => {
     expect((cards.container.firstElementChild as HTMLElement).childElementCount).toBe(3);
     const rows = render(<ListRowSkeleton rows={2} />);
     expect((rows.container.firstElementChild as HTMLElement).childElementCount).toBe(2);
-  });
-
-  it('TableBodySkeleton renders rows x columns cells for a table body', () => {
-    const { container } = render(
-      <table>
-        <tbody>
-          <TableBodySkeleton rows={2} columns={3} />
-        </tbody>
-      </table>,
-    );
-    expect(container.querySelectorAll('tbody tr')).toHaveLength(2);
-    expect(container.querySelectorAll('tbody td')).toHaveLength(6);
-    expect(container.querySelector('tbody tr')?.getAttribute('aria-hidden')).toBe('true');
-  });
-
-  it('FormSkeleton renders a block per field', () => {
-    const { container } = render(<FormSkeleton fields={4} />);
-    expect(
-      (container.firstElementChild as HTMLElement).getAttribute('aria-hidden'),
-    ).toBe('true');
-    expect(container.querySelectorAll('.h-12.w-full')).toHaveLength(4);
+    const rowsDefault = render(<ListRowSkeleton />);
+    expect((rowsDefault.container.firstElementChild as HTMLElement).childElementCount).toBe(3);
   });
 });

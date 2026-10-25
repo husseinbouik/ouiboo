@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { Badge, Button, ListRowSkeleton } from '@ouiboo/ui';
+import { Badge, Button } from '@ouiboo/ui';
+import { ListRowSkeleton } from '@/components/Skeletons';
 import { Star, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';

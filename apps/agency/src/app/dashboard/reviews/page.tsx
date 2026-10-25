@@ -8,9 +8,9 @@ import {
   Button,
   Input,
   Textarea,
-  Badge,
-  TableBodySkeleton
+  Badge
 } from '@ouiboo/ui';
+import { TableBodySkeleton } from '@/components/Skeletons';
 import {
   Search,
   Star,

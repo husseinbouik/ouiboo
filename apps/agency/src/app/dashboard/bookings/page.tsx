@@ -34,7 +34,8 @@ import Link from 'next/link';
 import { PaymentProofReviewModal } from '@/components/PaymentProofReviewModal';
 import { usePaymentProofReview } from '@/components/usePaymentProofReview';
 import { getAgencyBookingStatusMeta, getAgencyPaymentStatusMeta, getAgencyProofStatusLabel, formatCurrency, formatLocalDate } from '@ouiboo/utils';
-import { Pagination, TableBodySkeleton } from '@ouiboo/ui';
+import { Pagination } from '@ouiboo/ui';
+import { TableBodySkeleton } from '@/components/Skeletons';
 import { toPaginatedList } from '@ouiboo/utils';
 
 export default function BookingsManager() {

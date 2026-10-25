@@ -7,7 +7,8 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookingStatus, VerificationStatus, type BookingDetails } from '@ouiboo/types';
-import { Badge, Button, Card, BookingDetailSkeleton } from '@ouiboo/ui';
+import { Badge, Button, Card } from '@ouiboo/ui';
+import { BookingDetailSkeleton } from '@/components/Skeletons';
 import { cn } from '@ouiboo/ui/utils';
 import {
   Calendar,

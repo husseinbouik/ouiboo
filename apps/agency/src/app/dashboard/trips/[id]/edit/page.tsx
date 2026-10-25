@@ -8,7 +8,7 @@ import { apiClient } from '@/lib/api-client';
 import type { CreateTripInput } from '@ouiboo/schemas';
 import { useTripWizardForm } from '@/components/trips/useTripWizardForm';
 import { TripForm } from '@/components/trips/TripForm';
-import { FormSkeleton } from '@ouiboo/ui';
+import { FormSkeleton } from '@/components/Skeletons';
 import { tripToFormValues, type TripEditorData } from '@/components/trips/trip-form-values';
 
 export default function EditTripPage() {

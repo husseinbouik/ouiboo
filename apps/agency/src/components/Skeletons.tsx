@@ -58,3 +58,61 @@ export function AgencyTripCardSkeletonGrid({
     </>
   );
 }
+
+/**
+ * Skeleton rows for use inside a real <tbody>, so an agency table keeps
+ * its header and column layout while data loads (#469). Pair with
+ * aria-busy="true" on the <table> while loading.
+ */
+export function TableBodySkeleton({
+  rows = 5,
+  columns = 5,
+}: {
+  rows?: number;
+  columns?: number;
+}) {
+  const widths = ['w-3/4', 'w-1/2', 'w-2/3', 'w-1/3', 'w-3/5', 'w-1/2'];
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, rowIndex) => (
+        <tr key={rowIndex} aria-hidden="true">
+          {Array.from({ length: columns }).map((_, colIndex) => (
+            <td key={colIndex} className="px-6 py-5">
+              <Skeleton className={cn('h-4', widths[(rowIndex + colIndex) % widths.length])} />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
+  );
+}
+
+/**
+ * Label + field blocks for form pages that load their initial values
+ * (e.g. the trip edit form) (#469).
+ */
+export function FormSkeleton({
+  fields = 6,
+  className,
+}: {
+  fields?: number;
+  className?: string;
+}) {
+  return (
+    <div className={cn('space-y-8', className)} aria-hidden="true">
+      <div className="space-y-3">
+        <Skeleton className="h-8 w-64 max-w-full" />
+        <Skeleton className="h-4 w-96 max-w-full" />
+      </div>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {Array.from({ length: fields }).map((_, i) => (
+          <div key={i} className="space-y-2">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-12 w-full rounded-xl" />
+          </div>
+        ))}
+      </div>
+      <Skeleton className="h-32 w-full rounded-2xl" />
+    </div>
+  );
+}
