@@ -67,6 +67,8 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  // #416C: refunds tab view — all cases, or the risk-based audit queue.
+  const [refundsAuditQueue, setRefundsAuditQueue] = useState(false);
   const [agencyFeedback, setAgencyFeedback] = useState<FeedbackState | null>(null);
   const [paymentProofFeedback, setPaymentProofFeedback] = useState<FeedbackState | null>(null);
   const [bookingFeedback, setBookingFeedback] = useState<FeedbackState | null>(null);
@@ -159,7 +161,7 @@ export default function AdminDashboard() {
   const invoices = invoicesList.data;
   const invoicesPagination = invoicesList.pagination;
 
-  const refundCasesList = useAdminListQuery<AdminRefundCase>('/admin/refunds', 'refunds', activeTab === 'REFUNDS', activeTab, debouncedQuery, currentPage);
+  const refundCasesList = useAdminListQuery<AdminRefundCase>('/admin/refunds', 'refunds', activeTab === 'REFUNDS', activeTab, debouncedQuery, currentPage, refundsAuditQueue ? { auditQueue: 'true' } : undefined);
   const refundCases = refundCasesList.data;
   const refundCasesPagination = refundCasesList.pagination;
 
@@ -738,6 +740,11 @@ export default function AdminDashboard() {
             pagination={refundCasesPagination}
             onPageChange={setCurrentPage}
             paginationLabels={paginationLabels}
+            auditQueue={refundsAuditQueue}
+            onAuditQueueChange={(value) => {
+              setRefundsAuditQueue(value);
+              setCurrentPage(1);
+            }}
           />
         )}
       </DashboardShell>

@@ -28,14 +28,19 @@ export class AdminRefundsController {
     }
 
     @Get()
-    @ApiOperation({ summary: 'List refund cases across agencies (#370)' })
+    @ApiOperation({
+        summary: 'List refund cases across agencies (#370)',
+        description:
+            'Pass auditQueue=true for the #416 audit queue: completed cases flagged for risk-based audit (auditRequired) that no admin has reviewed yet (auditedAt is null).',
+    })
     list(
         @Query('page') page?: string,
         @Query('limit') limit?: string,
         @Query('status') status?: string,
         @Query('agencyId') agencyId?: string,
+        @Query('auditQueue') auditQueue?: string,
     ) {
-        return this.refundsService.listAdminCases({ page, limit, status, agencyId });
+        return this.refundsService.listAdminCases({ page, limit, status, agencyId, auditQueue });
     }
 
     @Get(':id')

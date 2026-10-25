@@ -337,5 +337,18 @@
     "organisedAndSoldBy": "Organised and sold by {{name}}",
     "licence": "Travel-agent licence: {{number}}",
     "poweredBy": "Powered by OuiBoo"
+  },
+  "refunds": {
+    "confirmReceipt": "Confirm receipt",
+    "confirmReceiptHint": "The organiser says the refund has been sent. If the money has arrived in your account, you can confirm it here. Confirming is optional: it helps close the case, but the refund is only ever marked completed on the bank's or payment provider's confirmation — never on the organiser's word alone, and your confirmation does not replace that check.",
+    "receiptConfirmed": "You confirmed receipt on {{date}}.",
+    "completedBasis": "This refund was marked completed based on the bank's or payment provider's confirmation — not on the organiser's word alone. Your payment went directly to the organiser, and the refund comes from them too; OuiBoo never holds your money.",
+    "dispute": "Report a problem",
+    "disputeHint": "Did the money never arrive? Tell us by {{date}} (within {{days}} days of completion) and we will reopen the case.",
+    "disputeReasonPlaceholder": "What happened? e.g. The money has not arrived in my account",
+    "disputeSubmit": "Reopen my refund case",
+    "disputeWindowClosed": "The {{days}}-day window to report a problem has closed. Please contact the organiser or OuiBoo support.",
+    "disputed": "You reported a problem with this refund — the case has been reopened and is under review.",
+    "actionFailed": "Something went wrong. Please try again."
   }
 }

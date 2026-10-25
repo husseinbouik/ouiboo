@@ -41,6 +41,28 @@ const completedCase: AdminRefundCase = {
   initiatedAt: null,
   completedAt: '2026-10-05T10:00:00.000Z',
   failureReason: null,
+  completionTier: 'BANK_REFERENCE',
+  auditRequired: true,
+  auditedAt: null,
+  auditedBy: null,
+  evidence: [
+    {
+      id: 'ev-1',
+      tier: 'BANK_REFERENCE',
+      source: 'AGENCY',
+      reference: 'VIR-2026-1042',
+      amount: '900',
+      createdAt: '2026-10-04T10:00:00.000Z',
+    },
+    {
+      id: 'ev-2',
+      tier: 'TRAVELLER_CONFIRMATION',
+      source: 'TRAVELLER',
+      reference: null,
+      amount: null,
+      createdAt: '2026-10-05T09:00:00.000Z',
+    },
+  ],
   originalPaymentId: 'pi_original',
   externalPaymentReference: 'EXT-1',
   agency: { id: 'ag-1', companyName: 'Atlas Tours' },
@@ -73,7 +95,10 @@ const overdueCase: AdminRefundCase = {
   refundDueAt: '2026-10-02T10:00:00.000Z',
 };
 
-function renderTab(cases: AdminRefundCase[]) {
+function renderTab(
+  cases: AdminRefundCase[],
+  auditProps?: { auditQueue: boolean; onAuditQueueChange: (value: boolean) => void },
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -85,6 +110,7 @@ function renderTab(cases: AdminRefundCase[]) {
         pagination={null}
         onPageChange={jest.fn()}
         paginationLabels={paginationLabels}
+        {...auditProps}
       />
     </QueryClientProvider>,
   );
@@ -281,5 +307,58 @@ describe('RefundsTab (#370 oversight, #423 repairs)', () => {
     fireEvent.click(modalConfirm());
     expect(await screen.findByText('Case is not repairable')).not.toBeNull();
     expect(screen.getByText('dashboard.interventions.refundRepair.title')).not.toBeNull();
+  });
+});
+
+describe('RefundsTab audit queue (#416C)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    postMock.mockResolvedValue({});
+  });
+
+  it('shows the completion tier, the evidence summary and the audit flag on a completed case', () => {
+    renderTab([completedCase]);
+    expect(screen.getByText(/dashboard\.refunds\.tierLabel/)).not.toBeNull();
+    // The t mock resolves the tier label through its defaultValue fallback.
+    expect(screen.getByText('BANK REFERENCE')).not.toBeNull();
+    expect(screen.getByText('dashboard.refunds.evidenceSummary')).not.toBeNull();
+    expect(screen.getByText('dashboard.refunds.audit.required')).not.toBeNull();
+  });
+
+  it('marks a flagged case audited through the audit endpoint', async () => {
+    renderTab([completedCase]);
+    fireEvent.click(screen.getByRole('button', { name: 'dashboard.refunds.audit.markAudited' }));
+    await waitFor(() => {
+      expect(postMock).toHaveBeenCalledWith('/admin/refunds/case-1/audit');
+    });
+  });
+
+  it('shows the audited stamp and no audit action once a case is audited', () => {
+    renderTab([{ ...completedCase, auditedAt: '2026-10-06T10:00:00.000Z', auditedBy: 'admin-1' }]);
+    expect(screen.getByText('dashboard.refunds.audit.audited')).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'dashboard.refunds.audit.markAudited' })).toBeNull();
+    expect(screen.queryByText('dashboard.refunds.audit.required')).toBeNull();
+  });
+
+  it('does not offer auditing for completions that were never flagged', () => {
+    renderTab([{ ...completedCase, id: 'case-9', auditRequired: false }]);
+    expect(screen.queryByRole('button', { name: 'dashboard.refunds.audit.markAudited' })).toBeNull();
+    expect(screen.queryByText('dashboard.refunds.audit.required')).toBeNull();
+  });
+
+  it('toggles between all cases and the audit queue', () => {
+    const onAuditQueueChange = jest.fn();
+    renderTab([completedCase], { auditQueue: false, onAuditQueueChange });
+    fireEvent.click(screen.getByRole('button', { name: 'dashboard.refunds.audit.queue' }));
+    expect(onAuditQueueChange).toHaveBeenCalledWith(true);
+  });
+
+  it('renders the audit-queue empty state (with the toggle) when the queue is empty', () => {
+    const onAuditQueueChange = jest.fn();
+    renderTab([], { auditQueue: true, onAuditQueueChange });
+    expect(screen.getByText('dashboard.refunds.audit.queueEmpty')).not.toBeNull();
+    expect(screen.getByText('dashboard.refunds.audit.queueEmptyHint')).not.toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'dashboard.refunds.audit.all' }));
+    expect(onAuditQueueChange).toHaveBeenCalledWith(false);
   });
 });

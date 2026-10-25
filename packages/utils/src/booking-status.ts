@@ -110,6 +110,45 @@ export const getTravelerPaymentStatusMeta = (
   };
 };
 
+/**
+ * #416C (Council P0-09): traveller refund receipt actions. Mirrors the
+ * API rules in RefundsService: receipt can be confirmed only while the
+ * refund is REFUND_INITIATED (sent by the agency, arrival pending) and
+ * not yet confirmed; a completed refund can be disputed only within
+ * the dispute window after completion (API REFUND_DISPUTE_WINDOW_DAYS
+ * = 60). The traveller's confirmation is corroboration only — it never
+ * completes the case; completion rests on bank/provider evidence.
+ */
+export const TRAVELER_REFUND_DISPUTE_WINDOW_DAYS = 60;
+
+type TravelerRefundActionCase = {
+  status: string;
+  travellerConfirmedAt?: string | null;
+  completedAt?: string | null;
+  disputedAt?: string | null;
+};
+
+export const canConfirmTravelerRefundReceipt = (refundCase: TravelerRefundActionCase) =>
+  refundCase.status === 'REFUND_INITIATED' && !refundCase.travellerConfirmedAt;
+
+export const travelerRefundDisputeDeadline = (completedAt?: string | null) => {
+  if (!completedAt) return null;
+  const completed = new Date(completedAt);
+  if (Number.isNaN(completed.getTime())) return null;
+  return new Date(completed.getTime() + TRAVELER_REFUND_DISPUTE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+};
+
+export const canDisputeTravelerRefund = (
+  refundCase: TravelerRefundActionCase,
+  now: Date = new Date(),
+) => {
+  if (refundCase.status !== 'REFUND_COMPLETED' || refundCase.disputedAt) {
+    return false;
+  }
+  const deadline = travelerRefundDisputeDeadline(refundCase.completedAt);
+  return deadline !== null && now.getTime() <= deadline.getTime();
+};
+
 type TravelerRetryBooking = {
   paymentMethod: PaymentMethodType;
   paymentStatus: BookingPaymentStatusType;

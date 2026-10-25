@@ -16,15 +16,17 @@ export const useAdminListQuery = <T,>(
   activeTab: AdminTab,
   debouncedQuery: string,
   currentPage: number,
+  extraParams?: Record<string, string>,
 ) => {
   const { data: raw } = useQuery<unknown>({
-    queryKey: [queryKeyKey, activeTab, debouncedQuery, currentPage],
+    queryKey: [queryKeyKey, activeTab, debouncedQuery, currentPage, extraParams],
     queryFn: async () => {
       const resp = await apiClient.get(path, {
         params: {
           page: currentPage,
           limit: ADMIN_PAGE_LIMIT,
           ...(debouncedQuery ? { q: debouncedQuery } : {}),
+          ...(extraParams ?? {}),
         },
       });
       return resp.data as AdminListResponse;

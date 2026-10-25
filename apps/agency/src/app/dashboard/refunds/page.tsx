@@ -7,6 +7,7 @@ import { apiClient } from '@/lib/api-client';
 import { toPaginatedList } from '@ouiboo/utils';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Pagination } from '@ouiboo/ui';
 import { AlertTriangle, Loader2 } from 'lucide-react';
+import { RefundEvidenceForm, RefundEvidenceList, type RefundEvidenceRow } from '@/components/RefundEvidenceForm';
 
 /**
  * #370: agency refund cases. Refunds are paid by the agency (which
@@ -26,9 +27,22 @@ interface AgencyRefundCase {
   initiatedAt: string | null;
   completedAt: string | null;
   failureReason: string | null;
+  completionTier?: string | null;
+  evidence?: RefundEvidenceRow[];
   traveler?: { name: string | null; email: string } | null;
   booking?: { session?: { template?: { title?: string | null } | null } | null } | null;
 }
+
+/** Mirrors the API: evidence can only be attached while a case is open. */
+const EVIDENCE_OPEN_STATUSES = new Set([
+  'REFUND_REQUESTED',
+  'ELIGIBILITY_REVIEW',
+  'REFUND_APPROVED',
+  'AGENCY_ACTION_REQUIRED',
+  'REFUND_INITIATED',
+  'REFUND_FAILED',
+  'REFUND_OVERDUE',
+]);
 
 const PAGE_LIMIT = 10;
 
@@ -177,6 +191,24 @@ export default function RefundsPage() {
                     <p className="text-xs text-destructive">
                       {t('refunds.failureReason')}: {refundCase.failureReason}
                     </p>
+                  )}
+
+                  <RefundEvidenceList
+                    evidence={refundCase.evidence}
+                    currency={refundCase.currency}
+                    status={refundCase.status}
+                    completionTier={refundCase.completionTier}
+                  />
+
+                  {EVIDENCE_OPEN_STATUSES.has(refundCase.status) && (
+                    <RefundEvidenceForm
+                      caseId={refundCase.id}
+                      expectedAmount={refundCase.approvedAmount ?? refundCase.requestedAmount}
+                      currency={refundCase.currency}
+                      onSubmitted={() => {
+                        void queryClient.invalidateQueries({ queryKey: ['agency-refunds'] });
+                      }}
+                    />
                   )}
 
                   {actions.length > 0 && (

@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthContext';
 import { ReviewForm } from '@/components/ReviewForm';
+import { TravelerRefundActions } from '@/components/TravelerRefundActions';
 import {
     canRetryTravelerPayment,
     canCancelTravelerBooking,
@@ -33,6 +34,9 @@ interface TravelerRefundCase {
     refundDueAt: string | null;
     completedAt: string | null;
     failureReason: string | null;
+    /** #416B/#416C: traveller receipt confirmation / dispute stamps. */
+    travellerConfirmedAt?: string | null;
+    disputedAt?: string | null;
 }
 
 const REFUND_ACTIVE_STATUSES = new Set([
@@ -377,6 +381,8 @@ export default function MyBookingsPage() {
                                                             </Button>
                                                         </>
                                                     )}
+                                                    {/* #416C: traveller receipt actions (confirm / dispute) — see TravelerRefundActions. */}
+                                                    {refundCase && <TravelerRefundActions refundCase={refundCase} />}
                                                     {refundCase && REFUND_ACTIVE_STATUSES.has(refundCase.status) && (
                                                         <p className="text-xs text-muted-foreground">
                                                             We track this refund until the organiser completes it.
