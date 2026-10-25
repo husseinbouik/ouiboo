@@ -1,4 +1,14 @@
 {
+  "share": {
+    "button": "Share",
+    "text": "Check out this trip on Ouiboo: {{title}}",
+    "copyLink": "Copy link",
+    "copied": "Link copied!",
+    "whatsapp": "WhatsApp",
+    "facebook": "Facebook",
+    "x": "X",
+    "telegram": "Telegram"
+  },
   "auth": {
     "errors": {
       "invalidCredentials": "Incorrect email or password. Please try again.",

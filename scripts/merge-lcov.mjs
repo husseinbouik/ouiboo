@@ -22,6 +22,8 @@ const suites = [
   'apps/landing',
   'packages/api-client',
   'packages/session',
+  'packages/utils',
+  'packages/ui',
 ];
 
 function resolveSf(suiteDir, sf) {

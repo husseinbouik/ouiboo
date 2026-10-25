@@ -1,4 +1,14 @@
 {
+  "share": {
+    "button": "Partager",
+    "text": "Découvrez ce voyage sur Ouiboo : {{title}}",
+    "copyLink": "Copier le lien",
+    "copied": "Lien copié !",
+    "whatsapp": "WhatsApp",
+    "facebook": "Facebook",
+    "x": "X",
+    "telegram": "Telegram"
+  },
   "auth": {
     "errors": {
       "invalidCredentials": "Email ou mot de passe incorrect. Veuillez réessayer.",

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import TripDetailsClient from '@/components/TripDetailsClient';
+import { buildTripMetadata } from '@/lib/trip-metadata';
 
 // ISR: revalidate trip pages every 60 seconds. First request renders on
 // demand, subsequent requests serve the cached version. The window is short
@@ -40,24 +41,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const trip = await fetchTrip(id);
-  if (!trip) return { title: 'Trip not found — Ouiboo' };
-
-  const title = `${trip.title} — Ouiboo`;
-  const description =
-    trip.description?.slice(0, 160) ||
-    `Book ${trip.title}, a ${trip.durationDays}-day trip from ${trip.startLocation}.`;
-  const image = trip.images?.[0];
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      type: 'website',
-      images: image ? [{ url: image, alt: trip.title }] : undefined,
-    },
-    twitter: { card: 'summary_large_image', title, description },
-  };
+  // #468: shared builder — same result as the segment layout, so the
+  // served OG/Twitter tags never depend on metadata merge order.
+  return buildTripMetadata(trip);
 }
 
 export default async function TripPage({ params }: { params: Promise<{ id: string }> }) {
