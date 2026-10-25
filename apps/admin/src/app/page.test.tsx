@@ -47,6 +47,7 @@ function renderDashboard() {
  * real tab (here: its empty state) replaces it.
  */
 describe('AdminDashboard loading state (#469)', () => {
+  // (see also the cold-load skeleton audit in PR #471)
   beforeEach(() => {
     jest.clearAllMocks();
   });
