@@ -10,7 +10,6 @@ import { TrialBanner } from "@/components/TrialBanner";
 import en from '../../public/locales/en/translation.json';
 import fr from '../../public/locales/fr/translation.json';
 import ar from '../../public/locales/ar/translation.json';
-import { Analytics } from '@vercel/analytics/react';
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -96,7 +95,6 @@ export default async function RootLayout({
           </AgencyShell>
           <TrialBanner />
         </Providers>
-              <Analytics />
       </body>
     </html>
   );

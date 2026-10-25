@@ -187,6 +187,7 @@
   "waitlist": {
     "title": "Be the First to Experience Ouiboo",
     "subtitle": "Join our waitlist for early access and updates on our launch.",
+    "paused": "Waitlist signups are paused while we prepare the closed beta. Please check back soon — no information is collected in the meantime.",
     "form": {
       "name": "Enter your name",
       "email": "Enter your email",
@@ -244,7 +245,7 @@
     },
     "section3": {
       "title": "Optional analytics",
-      "body": "Website analytics are disabled unless you choose to allow them. You can change that choice at any time. Language and security-related storage may still be used because it is necessary to provide the site."
+      "body": "No analytics tracker runs by default on Ouiboo. Always-on analytics have been removed; optional analytics are never loaded unless you explicitly choose to allow them, and you can change that choice at any time. Language and security-related storage may still be used because it is necessary to provide the site."
     },
     "section4": {
       "title": "Sharing and retention",
