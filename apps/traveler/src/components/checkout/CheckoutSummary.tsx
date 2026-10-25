@@ -115,7 +115,7 @@ export function CheckoutSummary({
           text to ~2.1:1 contrast; the plain muted-foreground is AA. */}
       <div className="flex items-center justify-center gap-4 pt-4">
         <ShieldCheck className="h-5 w-5" />
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Moroccan Tourism Protection</span>
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Direct payment to the agency — Ouiboo never holds your money</span>
       </div>
     </Card>
   );

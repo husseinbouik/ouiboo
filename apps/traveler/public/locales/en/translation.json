@@ -59,12 +59,12 @@
     "discoverTrips": "Discover trips"
   },
   "trust": {
-    "secureTitle": "Secure Payments",
-    "secureDescription": "Your payments are protected with enterprise-grade security.",
-    "verifiedTitle": "Verified Experts",
-    "verifiedDescription": "Every agency is vetted to ensure high quality experiences.",
-    "instantTitle": "Instant Booking",
-    "instantDescription": "Book your dream trip instantly with no hidden fees."
+    "secureTitle": "Direct payments",
+    "secureDescription": "You pay the agency directly — Ouiboo never holds your money.",
+    "verifiedTitle": "Agency licence details",
+    "verifiedDescription": "Licence number provided by the agency — not independently verified by Ouiboo.",
+    "instantTitle": "Booking requests",
+    "instantDescription": "Send a booking request and the agency confirms availability. No hidden fees."
   },
   "footer": {
     "rights": "Copyright {{year}} Ouiboo. All rights reserved."
@@ -151,7 +151,7 @@
     "sectionThreeTitle": "Bookings and cancellations",
     "sectionThreeBody": "Review trip policies before booking and contact support if plans change.",
     "sectionFourTitle": "Support",
-    "sectionFourBody": "We are here to help via in-app chat and email."
+    "sectionFourBody": "We are here to help via email."
   },
   "privacy": {
     "backToSignup": "Back to sign up",
@@ -201,7 +201,7 @@
     "spots_one": "{{count}} spot",
     "spots_other": "{{count}} spots",
     "soldOut": "Sold out",
-    "verifiedAgency": "Verified Agency",
+    "verifiedAgency": "Licence number provided by the agency — not independently verified",
     "agencyPending": "Agency Pending",
     "days_one": "{{count}} Day",
     "days_other": "{{count}} Days",
@@ -228,7 +228,7 @@
   },
   "agency": {
     "notFoundTitle": "Agency not found",
-    "verifiedTitle": "Verified Agency",
+    "verifiedTitle": "Licence number provided by the agency — not independently verified",
     "noTrips": "No active trips found for this agency."
   },
   "featuredPage": {

@@ -76,7 +76,7 @@
     "noAccount": "New agency?",
     "signUpLink": "Register your business",
     "heroTitle": "Empower your travel business.",
-    "heroSubtitle": "Access powerful tools, analytics, and a global network of travelers to scale your agency.",
+    "heroSubtitle": "Access tools to manage trips, bookings, and payments for your agency.",
     "heroAlt": "Modern Office",
     "loggingIn": "Logging in...",
     "emailRequired": "Email is required",
@@ -155,7 +155,7 @@
     "sectionThreeTitle": "Payments and policies",
     "sectionThreeBody": "Review booking policies, fees, and cancellations before confirming trips.",
     "sectionFourTitle": "Partner support",
-    "sectionFourBody": "Reach our partner success team via chat or email anytime."
+    "sectionFourBody": "Reach our partner support team via email."
   },
   "privacy": {
     "backToSignup": "Back to sign up",
