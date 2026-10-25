@@ -1378,7 +1378,7 @@ describe('RefundsService audit queue + evidence exposure (#416C)', () => {
         const db = makeFakeDb();
         seedAgency(db);
         const refundCase = seedCase(db, { status: 'REFUND_INITIATED', completedAt: null, completionTier: null });
-        refundCase.evidence = [
+        (refundCase as any).evidence = [
             {
                 id: 'evidence-1', refundCaseId: refundCase.id, tier: 'BANK_REFERENCE',
                 source: 'AGENCY', reference: 'VIR-2026-1042',
@@ -1396,11 +1396,12 @@ describe('RefundsService audit queue + evidence exposure (#416C)', () => {
         const { service } = makeService(db);
 
         const result = await service.getCaseForActor(refundCase.id, 'ADMIN', null);
+        const evidence = (result as any).evidence;
 
-        expect(result.evidence).toHaveLength(2);
-        expect(result.evidence[0].tier).toBe('BANK_REFERENCE');
-        expect(result.evidence[0].reference).toBe('VIR-2026-1042');
-        expect(result.evidence[0].amount).toBe('200.00');
-        expect(result.evidence[1].amount).toBeNull();
+        expect(evidence).toHaveLength(2);
+        expect(evidence[0].tier).toBe('BANK_REFERENCE');
+        expect(evidence[0].reference).toBe('VIR-2026-1042');
+        expect(evidence[0].amount).toBe('200.00');
+        expect(evidence[1].amount).toBeNull();
     });
 });
