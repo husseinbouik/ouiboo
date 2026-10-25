@@ -1,0 +1,163 @@
+/**
+ * @jest-environment jsdom
+ */
+import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { VerificationStatus, type BookingDetails } from '@ouiboo/types';
+import { PaymentProofReviewModal } from './PaymentProofReviewModal';
+
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, opts?: Record<string, unknown>) => {
+      let out = key;
+      if (opts) {
+        for (const v of Object.values(opts)) out += ` ${String(v)}`;
+      }
+      return out;
+    },
+    i18n: { language: 'en' },
+  }),
+}));
+
+jest.mock('framer-motion', () => ({
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  motion: {
+    div: ({
+      children,
+      initial: _initial,
+      animate: _animate,
+      exit: _exit,
+      ...props
+    }: React.HTMLAttributes<HTMLDivElement> & Record<string, unknown>) => (
+      <div {...props}>{children}</div>
+    ),
+  },
+}));
+
+jest.mock('next/image', () => ({
+  __esModule: true,
+  default: ({
+    unoptimized: _unoptimized,
+    ...props
+  }: React.ImgHTMLAttributes<HTMLImageElement> & { unoptimized?: boolean }) => (
+    <img {...props} alt={props.alt} />
+  ),
+}));
+
+const bookingWithProof = (status: VerificationStatus): BookingDetails =>
+  ({
+    id: 'booking-1',
+    status: 'AWAITING_VALIDATION',
+    paymentStatus: 'UNPAID',
+    totalAmount: '1000',
+    currency: 'MAD',
+    fullName: 'Launch Traveler',
+    paymentPlan: null,
+    session: { id: 'session-1', template: { id: 'trip-1', title: 'Atlas Weekend Escape' } },
+    traveler: { id: 'traveler-1', name: 'Launch Traveler' },
+    paymentProof: {
+      id: 'proof-1',
+      bookingId: 'booking-1',
+      imageUrl: 'proof.png',
+      status,
+    },
+  }) as unknown as BookingDetails;
+
+const ACCEPT_KEY = 'paymentProof.acceptProof';
+const CONFIRM_KEY = 'paymentProof.confirmBankReceipt';
+
+describe('PaymentProofReviewModal (#422 two-step flow)', () => {
+  it('step 1 (PENDING): shows accept/reject and no bank-confirmation panel', () => {
+    const onApprove = jest.fn();
+    render(
+      <PaymentProofReviewModal
+        isOpen
+        onClose={jest.fn()}
+        booking={bookingWithProof(VerificationStatus.Pending)}
+        onApprove={onApprove}
+        onReject={jest.fn()}
+        onConfirmBankPayment={jest.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: ACCEPT_KEY }));
+    expect(onApprove).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: CONFIRM_KEY })).toBeNull();
+    expect(screen.queryByText('paymentProof.proofAccepted')).toBeNull();
+  });
+
+  it('step 2 (ACCEPTED): shows the accepted banner and the bank panel, confirm guarded by the bank reference', () => {
+    const onConfirmBankPayment = jest.fn();
+    render(
+      <PaymentProofReviewModal
+        isOpen
+        onClose={jest.fn()}
+        booking={bookingWithProof(VerificationStatus.Accepted)}
+        onApprove={jest.fn()}
+        onReject={jest.fn()}
+        onConfirmBankPayment={onConfirmBankPayment}
+      />,
+    );
+    // Accepted is not settled: banner + panel, no accept action anymore.
+    expect(screen.getByText('paymentProof.proofAccepted')).not.toBeNull();
+    expect(screen.queryByRole('button', { name: ACCEPT_KEY })).toBeNull();
+
+    const confirm = screen.getByRole('button', { name: CONFIRM_KEY }) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText('paymentProof.bankReference'), {
+      target: { value: 'TRX-9' },
+    });
+    expect(confirm.disabled).toBe(false);
+    fireEvent.click(confirm);
+    expect(onConfirmBankPayment).toHaveBeenCalledWith({
+      confirmedAmount: 1000,
+      bankReference: 'TRX-9',
+    });
+  });
+
+  it('final (VERIFIED): bank-confirmed banner and close-only footer', () => {
+    render(
+      <PaymentProofReviewModal
+        isOpen
+        onClose={jest.fn()}
+        booking={bookingWithProof(VerificationStatus.Verified)}
+        onApprove={jest.fn()}
+        onReject={jest.fn()}
+        onConfirmBankPayment={jest.fn()}
+      />,
+    );
+    expect(screen.getByText('paymentProof.paymentVerified')).not.toBeNull();
+    expect(screen.queryByRole('button', { name: ACCEPT_KEY })).toBeNull();
+    expect(screen.queryByRole('button', { name: CONFIRM_KEY })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'paymentProof.rejectPayment' })).toBeNull();
+  });
+
+  it('readOnly forces a view-only modal even for a pending proof', () => {
+    render(
+      <PaymentProofReviewModal
+        isOpen
+        readOnly
+        onClose={jest.fn()}
+        booking={bookingWithProof(VerificationStatus.Pending)}
+        onApprove={jest.fn()}
+        onReject={jest.fn()}
+        onConfirmBankPayment={jest.fn()}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: ACCEPT_KEY })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'paymentProof.rejectPayment' })).toBeNull();
+  });
+
+  it('surfaces an action error inside the modal', () => {
+    render(
+      <PaymentProofReviewModal
+        isOpen
+        onClose={jest.fn()}
+        booking={bookingWithProof(VerificationStatus.Pending)}
+        onApprove={jest.fn()}
+        onReject={jest.fn()}
+        actionError="Server said no"
+      />,
+    );
+    expect(screen.getByRole('alert').textContent).toBe('Server said no');
+  });
+});

@@ -4,6 +4,7 @@ import {
   type BookingDetails,
 } from '@ouiboo/types';
 import {
+  applyProofDecision,
   getExpectedStageAmount,
   getProofReviewStage,
   isBankConfirmationReady,
@@ -83,6 +84,56 @@ describe('paymentProofUtils (#422 two-step review)', () => {
     it('allows confirmation with a positive amount and a bank reference', () => {
       expect(isBankConfirmationReady('1000', 'REF-1')).toBe(true);
       expect(isBankConfirmationReady('999.50', '  REF-1  ')).toBe(true);
+    });
+  });
+
+  describe('applyProofDecision', () => {
+    const loaded = bookingWith({
+      status: 'AWAITING_VALIDATION',
+      paymentStatus: 'UNPAID',
+      session: { id: 'session-1', template: { title: 'Trip' } },
+      traveler: { id: 'traveler-1', name: 'Launch Traveler' },
+      paymentProof: {
+        id: 'proof-1',
+        bookingId: 'booking-1',
+        imageUrl: 'proof.png',
+        status: VerificationStatus.Pending,
+        rejectionReason: 'old reason',
+      },
+    });
+
+    it('marks the proof ACCEPTED on accept, clears the rejection reason, and keeps relations', () => {
+      const next = applyProofDecision(
+        loaded,
+        { status: 'AWAITING_VALIDATION' } as Partial<BookingDetails>,
+        VerificationStatus.Accepted,
+      );
+      expect(next.paymentProof?.status).toBe(VerificationStatus.Accepted);
+      expect(next.paymentProof?.rejectionReason).toBeUndefined();
+      expect(next.session).toBe(loaded.session);
+      expect(next.traveler).toBe(loaded.traveler);
+      // Accepting must not settle: payment status stays whatever the API returned.
+      expect(next.paymentStatus).toBe('UNPAID');
+    });
+
+    it('marks the proof VERIFIED and adopts the settled scalars on bank confirmation', () => {
+      const next = applyProofDecision(
+        loaded,
+        {
+          status: 'CONFIRMED',
+          paymentStatus: 'PAID',
+        } as unknown as Partial<BookingDetails>,
+        VerificationStatus.Verified,
+      );
+      expect(next.paymentProof?.status).toBe(VerificationStatus.Verified);
+      expect(next.status).toBe('CONFIRMED');
+      expect(next.paymentStatus).toBe('PAID');
+    });
+
+    it('leaves a booking without a proof untouched apart from scalars', () => {
+      const bare = bookingWith({});
+      const next = applyProofDecision(bare, {}, VerificationStatus.Accepted);
+      expect(next.paymentProof).toBeUndefined();
     });
   });
 });

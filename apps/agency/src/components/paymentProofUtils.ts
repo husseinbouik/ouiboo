@@ -85,3 +85,33 @@ export const isBankConfirmationReady = (
     bankReference.trim() !== ''
   );
 };
+
+/**
+ * #422: the verify-payment / confirm-bank-payment endpoints return the
+ * bare booking row (no relations), so the review modal's booking state is
+ * refreshed by merging the returned scalars into the loaded booking and
+ * applying the proof transition the API just performed (accept →
+ * ACCEPTED, bank confirmation → VERIFIED). Relations the modal renders
+ * (session, traveler, payment plan) are preserved from the loaded booking;
+ * the bookings list itself refetches via query invalidation.
+ */
+export const applyProofDecision = (
+  booking: BookingDetails,
+  updated: Partial<BookingDetails>,
+  proofStatus: VerificationStatus,
+): BookingDetails => ({
+  ...booking,
+  ...updated,
+  session: booking.session,
+  traveler: booking.traveler,
+  paymentPlan: booking.paymentPlan,
+  paymentProof: booking.paymentProof
+    ? {
+        ...booking.paymentProof,
+        status: proofStatus,
+        ...(proofStatus === VerificationStatus.Accepted
+          ? { rejectionReason: undefined }
+          : {}),
+      }
+    : booking.paymentProof,
+});

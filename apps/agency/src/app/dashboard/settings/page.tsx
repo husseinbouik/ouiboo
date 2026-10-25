@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { BankDetailsStatus } from '@ouiboo/types';
+import { getBankDetailsStatusMeta } from '@/lib/bank-details-status';
 import { useTheme } from 'next-themes';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
@@ -69,18 +70,7 @@ export default function SettingsPage() {
   // submission is PENDING_REVIEW until an admin verifies it against the
   // bank attestation; travellers only ever see the VERIFIED instructions.
   const bankDetailsStatus = user?.agencyProfile?.bankDetailsStatus || BankDetailsStatus.Unverified;
-  const bankStatusMeta = (() => {
-    switch (bankDetailsStatus) {
-      case BankDetailsStatus.Verified:
-        return { className: 'border-success/30 bg-success/10 text-success', text: t('settings.bankStatusVerified') };
-      case BankDetailsStatus.PendingReview:
-        return { className: 'border-warning/30 bg-warning/10 text-warning', text: t('settings.bankStatusPendingReview') };
-      case BankDetailsStatus.Rejected:
-        return { className: 'border-danger/30 bg-danger/10 text-danger', text: t('settings.bankStatusRejected') };
-      default:
-        return { className: 'border-border bg-muted text-muted-foreground', text: t('settings.bankStatusUnverified') };
-    }
-  })();
+  const bankStatusMeta = getBankDetailsStatusMeta(bankDetailsStatus);
 
   const onSubmit = async (data: SettingsFormValues) => {
     try {
@@ -195,7 +185,7 @@ export default function SettingsPage() {
                   className={`rounded-lg border px-3 py-2 text-sm ${bankStatusMeta.className}`}
                 >
                   <p className="font-semibold">{t('settings.bankStatusLabel')}</p>
-                  <p className="mt-0.5">{bankStatusMeta.text}</p>
+                  <p className="mt-0.5">{t(bankStatusMeta.textKey)}</p>
                   {bankDetailsStatus === BankDetailsStatus.Rejected && user?.agencyProfile?.bankDetailsRejectionReason && (
                     <p className="mt-1">
                       {t('settings.bankRejectionReason', { reason: user.agencyProfile.bankDetailsRejectionReason })}

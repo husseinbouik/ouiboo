@@ -28,21 +28,18 @@ import {
   type BookingPaymentStatusType,
   type BookingStatusType,
 } from '@ouiboo/types';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import Link from 'next/link';
 import { PaymentProofReviewModal } from '@/components/PaymentProofReviewModal';
-import type { BankConfirmationPayload } from '@/components/PaymentProofBankConfirmation';
+import { usePaymentProofReview } from '@/components/usePaymentProofReview';
 import { getAgencyBookingStatusMeta, getAgencyPaymentStatusMeta, getAgencyProofStatusLabel, formatCurrency, formatLocalDate } from '@ouiboo/utils';
 import { Pagination } from '@ouiboo/ui';
 import { toPaginatedList } from '@ouiboo/utils';
 
 export default function BookingsManager() {
   const { t, i18n } = useTranslation();
-  const queryClient = useQueryClient();
-  const [reviewingBooking, setReviewingBooking] = useState<BookingDetails | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [actionError, setActionError] = useState<string | null>(null);
 
   const { data: result, isLoading } = useQuery({
     queryKey: ['agency-bookings', currentPage],
@@ -52,87 +49,19 @@ export default function BookingsManager() {
     },
   });
 
-  const extractActionError = (error: unknown) => {
-    const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
-    return typeof message === 'string' && message ? message : t('paymentProof.actionFailed');
-  };
-
-  const invalidateBookingQueries = () => {
-    void queryClient.invalidateQueries({ queryKey: ['agency-bookings'] });
-    void queryClient.invalidateQueries({ queryKey: ['agency-dashboard-bookings'] });
-    void queryClient.invalidateQueries({ queryKey: ['agency-dashboard-stats'] });
-  };
-
-  // #422 step 1: accept/reject the proof image only — accepting does NOT
-  // settle the payment; the modal stays open on the updated booking so the
-  // agency lands on step 2 (bank confirmation). The API returns the bare
-  // booking row (no relations), so the modal state merges its scalars with
-  // the proof transition the API just applied; the list refetches via
-  // invalidation.
-  const reviewMutation = useMutation({
-    mutationFn: async ({ bookingId, approved, rejectionReason }: { bookingId: string; approved: boolean; rejectionReason?: string }) => {
-      const response = await apiClient.patch(`/bookings/${bookingId}/verify-payment`, {
-        approved,
-        ...(rejectionReason ? { rejectionReason } : {}),
-      });
-      return response.data as Partial<BookingDetails>;
-    },
-    onSuccess: (updated, variables) => {
-      invalidateBookingQueries();
-      if (!variables.approved) {
-        setReviewingBooking(null);
-        return;
-      }
-      setReviewingBooking((prev) =>
-        prev
-          ? {
-              ...prev,
-              ...updated,
-              session: prev.session,
-              traveler: prev.traveler,
-              paymentPlan: prev.paymentPlan,
-              paymentProof: prev.paymentProof
-                ? { ...prev.paymentProof, status: VerificationStatus.Accepted, rejectionReason: undefined }
-                : prev.paymentProof,
-            }
-          : prev,
-      );
-    },
-    onError: (error) => setActionError(extractActionError(error)),
-  });
-
-  // #422 step 2: confirm the observed bank credit — the only action that
-  // settles the payment (booking PAID / plan stage paid server-side, proof
-  // moves to VERIFIED).
-  const confirmBankMutation = useMutation({
-    mutationFn: async ({ bookingId, payload }: { bookingId: string; payload: BankConfirmationPayload }) => {
-      const response = await apiClient.patch(`/bookings/${bookingId}/confirm-bank-payment`, payload);
-      return response.data as Partial<BookingDetails>;
-    },
-    onSuccess: (updated) => {
-      invalidateBookingQueries();
-      setReviewingBooking((prev) =>
-        prev
-          ? {
-              ...prev,
-              ...updated,
-              session: prev.session,
-              traveler: prev.traveler,
-              paymentPlan: prev.paymentPlan,
-              paymentProof: prev.paymentProof
-                ? { ...prev.paymentProof, status: VerificationStatus.Verified }
-                : prev.paymentProof,
-            }
-          : prev,
-      );
-    },
-    onError: (error) => setActionError(extractActionError(error)),
-  });
-
-  const handleCloseReview = () => {
-    setReviewingBooking(null);
-    setActionError(null);
-  };
+  // #422: two-step payment proof review (accept image → confirm bank
+  // credit) — state and API wiring live in the hook.
+  const {
+    reviewingBooking,
+    actionError,
+    isReviewing,
+    isConfirming,
+    openReview,
+    closeReview,
+    approveProof,
+    rejectProof,
+    confirmBankPayment,
+  } = usePaymentProofReview();
 
   const bookings = result?.data ?? [];
   const bookingsPagination = result?.pagination ?? null;
@@ -316,10 +245,7 @@ export default function BookingsManager() {
                               ? 'bg-primary hover:bg-primary/90'
                               : ''
                           }`}
-                          onClick={() => {
-                            setActionError(null);
-                            setReviewingBooking(booking);
-                          }}
+                          onClick={() => openReview(booking)}
                         >
                           <Eye className="h-4 w-4" /> {t('bookings.inspectProof')}
                         </Button>
@@ -360,25 +286,13 @@ export default function BookingsManager() {
           credit (only step 2 settles the payment). */}
       <PaymentProofReviewModal
         isOpen={!!reviewingBooking}
-        onClose={handleCloseReview}
+        onClose={closeReview}
         booking={reviewingBooking}
-        onApprove={() => {
-          if (!reviewingBooking) return;
-          setActionError(null);
-          reviewMutation.mutate({ bookingId: reviewingBooking.id, approved: true });
-        }}
-        onReject={(reason) => {
-          if (!reviewingBooking) return;
-          setActionError(null);
-          reviewMutation.mutate({ bookingId: reviewingBooking.id, approved: false, rejectionReason: reason });
-        }}
-        onConfirmBankPayment={(payload) => {
-          if (!reviewingBooking) return;
-          setActionError(null);
-          confirmBankMutation.mutate({ bookingId: reviewingBooking.id, payload });
-        }}
-        isLoading={reviewMutation.isPending}
-        isConfirming={confirmBankMutation.isPending}
+        onApprove={approveProof}
+        onReject={rejectProof}
+        onConfirmBankPayment={confirmBankPayment}
+        isLoading={isReviewing}
+        isConfirming={isConfirming}
         actionError={actionError}
       />
     </div>

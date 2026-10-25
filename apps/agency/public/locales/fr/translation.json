@@ -492,7 +492,7 @@
     "inspectProof": "Inspecter le justificatif",
     "noProof": "Aucun justificatif",
     "importantNotice": "Avis important",
-    "importantNoticeBody": "Les agences peuvent inspecter les justificatifs de virement bancaire téléversés et suivre l'avancement des réservations depuis cet écran. La confirmation du paiement est finalisée par le flux de révision financière de l'admin.",
+    "importantNoticeBody": "Examinez les justificatifs de virement bancaire téléversés depuis cet écran : accepter un justificatif ne vaut pas règlement — un paiement ne compte que lorsque vous confirmez l’argent sur votre compte bancaire avec sa référence bancaire.",
     "schedule": {
       "title": "Planning des départs",
       "subtitle": "Vue opérationnelle de vos prochains départs.",

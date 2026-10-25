@@ -492,7 +492,7 @@
     "inspectProof": "Inspect Proof",
     "noProof": "No Proof",
     "importantNotice": "Important Notice",
-    "importantNoticeBody": "Agencies can inspect uploaded bank-transfer proofs and follow booking progress from this screen. Payment confirmation is finalized by the Admin finance review flow.",
+    "importantNoticeBody": "Review uploaded bank-transfer proofs from this screen: accepting a proof is not settlement — a payment counts only when you confirm the money in your bank account with its bank reference.",
     "schedule": {
       "title": "Trip Schedule",
       "subtitle": "Operational view of your upcoming departures.",
