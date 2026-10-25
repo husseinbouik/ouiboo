@@ -196,8 +196,8 @@ export default function AdminDashboard() {
       });
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
-      queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
+      void queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
+      void queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
       setAgencyFeedback({
         type: 'success',
         message: variables.status === LicenceStatus.Verified
@@ -219,8 +219,8 @@ export default function AdminDashboard() {
       return apiClient.post(`/admin/agencies/${id}/insurance/verify`, { status, reason });
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
-      queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
+      void queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
+      void queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
       setAgencyFeedback({
         type: 'success',
         message: variables.status === LicenceStatus.Verified
@@ -243,8 +243,8 @@ export default function AdminDashboard() {
       return apiClient.post(`/admin/agencies/${id}/bank-details/verify`, { status, reason, overrideReason });
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
-      queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
+      void queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
+      void queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
       setAgencyFeedback({
         type: 'success',
         message: variables.status === VerificationStatus.Verified
