@@ -510,12 +510,13 @@ export class BookingsService {
         return new Date() > expiresAt;
     }
 
-    async verifyPayment(bookingId: string, tenantId: string, approved: boolean, rejectionReason?: string) {
-        if (typeof approved !== 'boolean') {
-            throw new BadRequestException('approved must be a boolean');
-        }
-
-        // 1. Get Booking and verify Agency ownership
+    /**
+     * Shared loading + ownership gate for the manual payment review flow
+     * (#422 steps: proof review in verifyPayment, bank confirmation in
+     * confirmBankPayment). Fails closed on unknown bookings, other
+     * agencies' bookings, and bookings without an uploaded proof.
+     */
+    private async loadPaymentReviewContext(bookingId: string, tenantId: string) {
         const booking = await this.db.booking.findUnique({
             where: { id: bookingId },
             include: {
@@ -538,13 +539,25 @@ export class BookingsService {
         if (!booking.paymentProof) {
             throw new BadRequestException('No payment proof uploaded');
         }
+        const paymentProof = booking.paymentProof;
 
         const paymentProofId = booking.paymentProofId;
         if (!paymentProofId) {
             throw new BadRequestException('No payment proof uploaded');
         }
 
-        if (booking.paymentProof.status !== 'PENDING') {
+        return { booking, paymentProof, paymentProofId };
+    }
+
+    async verifyPayment(bookingId: string, tenantId: string, approved: boolean, rejectionReason?: string) {
+        if (typeof approved !== 'boolean') {
+            throw new BadRequestException('approved must be a boolean');
+        }
+
+        // 1. Get Booking and verify Agency ownership
+        const { booking, paymentProof, paymentProofId } = await this.loadPaymentReviewContext(bookingId, tenantId);
+
+        if (paymentProof.status !== 'PENDING') {
             throw new BadRequestException('Payment proof has already been reviewed');
         }
 
@@ -657,35 +670,9 @@ export class BookingsService {
             throw new BadRequestException('confirmedAmount must be a positive amount');
         }
 
-        const booking = await this.db.booking.findUnique({
-            where: { id: bookingId },
-            include: {
-                session: { include: { template: true } },
-                paymentProof: true,
-                paymentPlan: true,
-                traveler: { select: { email: true } },
-            }
-        });
+        const { booking, paymentProof, paymentProofId } = await this.loadPaymentReviewContext(bookingId, tenantId);
 
-        if (!booking) throw new BadRequestException('Booking not found');
-
-        const agency = await this.db.agencyProfile.findUnique({
-            where: { id: tenantId }
-        });
-        if (!agency || booking.session.template.agencyId !== agency.id) {
-            throw new ForbiddenException('Forbidden');
-        }
-
-        if (!booking.paymentProof) {
-            throw new BadRequestException('No payment proof uploaded');
-        }
-
-        const paymentProofId = booking.paymentProofId;
-        if (!paymentProofId) {
-            throw new BadRequestException('No payment proof uploaded');
-        }
-
-        if (booking.paymentProof.status !== 'ACCEPTED') {
+        if (paymentProof.status !== 'ACCEPTED') {
             throw new BadRequestException('Payment proof must be accepted before bank confirmation');
         }
 

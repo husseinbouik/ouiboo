@@ -685,6 +685,94 @@ describe('BookingsService', () => {
             expect(mockExternalPaymentsService.recordPaymentVerifiedInTransaction).not.toHaveBeenCalled();
         });
 
+        it('bank confirmation rejects an unknown booking', async () => {
+            db.booking.findUnique.mockResolvedValue(null);
+
+            await expect(service.confirmBankPayment('booking-x', 'agency-123', 'agency-user-1', {
+                confirmedAmount: 780,
+                bankReference: 'TRX-1',
+            })).rejects.toThrow('Booking not found');
+        });
+
+        it('bank confirmation requires the confirmed amount', async () => {
+            db.booking.findUnique.mockResolvedValue(reviewBooking('ACCEPTED'));
+
+            await expect(service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                bankReference: 'TRX-1',
+            })).rejects.toThrow('confirmedAmount is required');
+        });
+
+        it('bank confirmation refuses a plan that is not awaiting a stage payment', async () => {
+            const booking = reviewBooking('ACCEPTED');
+            (booking as any).paymentPlan = { id: 'plan-1', status: 'FULLY_PAID', depositAmount: '100.00', balanceAmount: '400.00' };
+            db.booking.findUnique.mockResolvedValue(booking);
+
+            await expect(service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: 400,
+                bankReference: 'TRX-1',
+            })).rejects.toThrow('not awaiting a staged payment');
+        });
+
+        it('bank-confirming a staged BALANCE fully pays and sends the payment email', async () => {
+            const booking = reviewBooking('ACCEPTED');
+            (booking as any).paymentPlan = { id: 'plan-1', status: 'BALANCE_DUE', depositAmount: '100.00', balanceAmount: '400.00' };
+            db.booking.findUnique.mockResolvedValue(booking);
+            db.booking.findUniqueOrThrow.mockResolvedValue({ id: 'booking-123', status: 'CONFIRMED', paymentStatus: 'PAID' });
+            mockStagedPaymentsService.applyBankConfirmationInTransaction.mockResolvedValue({
+                stage: 'BALANCE',
+                fullyPaid: true,
+                bookingStatus: 'CONFIRMED',
+                planStatus: 'FULLY_PAID',
+            });
+
+            const emailService: any = (service as any).emailService;
+            (emailService.sendPaymentConfirmation as jest.Mock).mockResolvedValue(undefined);
+            await service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: 400,
+                bankReference: 'TRX-BALANCE',
+            });
+
+            const confirmArgs = mockStagedPaymentsService.applyBankConfirmationInTransaction.mock.calls[0][1];
+            expect(confirmArgs.confirmedAmount.toString()).toBe('400');
+            expect(confirmArgs.bankReference).toBe('TRX-BALANCE');
+            expect(emailService.sendPaymentConfirmation).toHaveBeenCalledWith(
+                'traveler@example.com',
+                'Atlas Escape',
+            );
+        });
+
+        it('uploading a staged deposit proof records the DEPOSIT stage as pending (#422)', async () => {
+            db.booking.findUnique.mockResolvedValue({
+                id: 'booking-123',
+                travelerId: 'user-123',
+                status: 'PENDING',
+                bookingDate: new Date(),
+                session: { groupStatus: 'PENDING_MINIMUM', template: { agencyId: 'agency-123' } },
+                paymentPlan: { status: 'DEPOSIT_DUE', depositAmount: '100.00', balanceAmount: '400.00' },
+            });
+            db.paymentProof.upsert.mockResolvedValue({ id: 'proof-dep' });
+            db.booking.update.mockResolvedValue({});
+            uploadService.uploadFile.mockResolvedValue({
+                url: 'http://upload.url',
+                filename: 'payment-proofs/booking-123/deposit.png',
+                size: 100,
+            });
+
+            await service.uploadPaymentProof('booking-123', 'user-123', {
+                originalname: 'deposit.png',
+                mimetype: 'image/png',
+                size: 100,
+                buffer: Buffer.from('file'),
+            } as Express.Multer.File);
+
+            const pendingInput = mockExternalPaymentsService.recordPaymentPendingInTransaction.mock.calls[0][1];
+            expect(pendingInput).toEqual(expect.objectContaining({
+                bookingId: 'booking-123',
+                stage: 'DEPOSIT',
+                amount: '100.00',
+            }));
+        });
+
         it('bank confirmation is agency-scoped: another agency cannot confirm', async () => {
             db.booking.findUnique.mockResolvedValue(reviewBooking('ACCEPTED'));
             db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-999' });
