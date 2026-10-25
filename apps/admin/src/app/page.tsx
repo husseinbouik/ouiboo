@@ -337,6 +337,9 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
       setPaymentProofFeedback({
         type: 'success',
+        // #422: the VERIFIED wire value is the API's accept decision — the
+        // feedback copy (paymentProofApproved) says "accepted — pending
+        // bank confirmation", never that the payment is settled.
         message: variables.status === VerificationStatus.Verified
           ? t('dashboard.feedback.paymentProofApproved')
           : t('dashboard.feedback.paymentProofRejected')

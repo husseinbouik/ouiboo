@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { BookingPaymentPlanStatus, BookingPaymentStatus, BookingStatus, type BookingDetails } from '@ouiboo/types';
+import { BookingPaymentPlanStatus, BookingPaymentStatus, BookingStatus, VerificationStatus, type BookingDetails } from '@ouiboo/types';
 import { Button, Badge, Card, Pagination } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import { toPaginatedList } from '@ouiboo/utils';
@@ -304,7 +304,7 @@ export default function MyBookingsPage() {
                                                     )}
                                                     {booking.paymentPlan.status === BookingPaymentPlanStatus.DepositPaid && (
                                                         <p className="text-sm font-semibold text-foreground">
-                                                            Deposit paid to {booking.session.template.agency?.companyName || 'the agency'}. Waiting for trip confirmation — this trip needs at least {booking.paymentPlan.minimumParticipants} participants by {format(new Date(booking.paymentPlan.confirmationDeadline), 'MMM dd, yyyy')}. If the minimum is not reached, your deposit is refunded.
+                                                            Deposit confirmed by {booking.session.template.agency?.companyName || 'the agency'}. Waiting for trip confirmation — this trip needs at least {booking.paymentPlan.minimumParticipants} participants by {format(new Date(booking.paymentPlan.confirmationDeadline), 'MMM dd, yyyy')}. If the minimum is not reached, your deposit is refunded.
                                                         </p>
                                                     )}
                                                     {booking.paymentPlan.status === BookingPaymentPlanStatus.BalanceDue && (
@@ -330,9 +330,22 @@ export default function MyBookingsPage() {
                                                     )}
                                                     {booking.paymentPlan.status === BookingPaymentPlanStatus.FullyPaid && (
                                                         <p className="text-sm font-semibold text-foreground">
-                                                            Paid in full — deposit and balance received by {booking.session.template.agency?.companyName || 'the agency'}.
+                                                            Paid in full — deposit and balance confirmed by {booking.session.template.agency?.companyName || 'the agency'}.
                                                         </p>
                                                     )}
+                                                </div>
+                                            )}
+
+                                            {/* #422 (Council P0-20): proof uploaded/accepted ≠ settled.
+                                                The payment only counts once the agency confirms the
+                                                transfer in its bank account. */}
+                                            {booking.paymentProof && booking.paymentProof.status !== VerificationStatus.Verified && booking.paymentProof.status !== VerificationStatus.Rejected && (
+                                                <div className="rounded-2xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 px-5 py-4">
+                                                    <p className="text-sm font-semibold text-foreground">
+                                                        {booking.paymentProof.status === VerificationStatus.Accepted
+                                                            ? <>Proof accepted by {booking.session.template.agency?.companyName || 'the agency'} — they still have to confirm the transfer in their bank account. Your payment is not settled until then.</>
+                                                            : <>Proof received. {booking.session.template.agency?.companyName || 'The agency'} still has to confirm the transfer in its bank account — your payment is not settled until then.</>}
+                                                    </p>
                                                 </div>
                                             )}
 
@@ -379,7 +392,7 @@ export default function MyBookingsPage() {
                                                         <span className="text-foreground">{booking.guestsCount}</span> Guest(s)
                                                     </div>
                                                     <div className="text-left">
-                                                        <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-0.5">Total Paid</p>
+                                                        <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-0.5">Total</p>
                                                         <span className="text-2xl font-black text-foreground font-display tracking-tight">{booking.totalAmount} <span className="text-xs font-bold text-muted-foreground ml-1">MAD</span></span>
                                                     </div>
                                                 </div>
@@ -410,7 +423,7 @@ export default function MyBookingsPage() {
                                                         <Check className="h-4 w-4" /> {paymentStatus.label}
                                                     </div>
                                                     <div className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border ${proofStatus.className}`}>
-                                                        <Check className="h-4 w-4" /> Proof {proofStatus.label}
+                                                        <Check className="h-4 w-4" /> {proofStatus.label}
                                                     </div>
                                                     {showRetryPayment && (
                                                         <Button

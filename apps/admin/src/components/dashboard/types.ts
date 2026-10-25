@@ -161,6 +161,17 @@ export type AdminPaymentProof = {
   downloadUrl?: string;
   uploadedAt?: string | null;
   booking?: AdminBooking | null;
+  /**
+   * #422 (Council P0-20): read-only bank-confirmation state of the stage's
+   * ExternalPayment, when the API provides it. Display only — bank
+   * confirmation is agency-only; admins never confirm bank receipt.
+   */
+  bankConfirmation?: {
+    confirmedAmount?: string | number | null;
+    bankReference?: string | null;
+    bankConfirmedAt?: string | null;
+    bankConfirmedBy?: string | null;
+  } | null;
 };
 
 export type BankDetailsMap = Record<string, unknown>;

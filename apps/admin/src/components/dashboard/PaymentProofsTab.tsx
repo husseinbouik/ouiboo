@@ -7,6 +7,7 @@ import { VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 import type { PaginationMeta } from '@ouiboo/utils';
 import type { AdminPaymentProof, FeedbackState } from './types';
 import { canApprovePaymentProof, canRejectPaymentProof } from './formatters';
+import { getAdminProofBankConfirmationMeta } from '../../app/status-mappers';
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -71,6 +72,11 @@ export default function PaymentProofsTab({
                const proofStatus = payment.booking?.paymentProof?.status;
                const canApprove = canApprovePaymentProof(proofStatus);
                const canReject = canRejectPaymentProof(proofStatus);
+               // #422: read-only bank-confirmation state — accepting the
+               // image is not settlement, and there is no admin
+               // bank-confirm action (agency-only, decision D3).
+               const bankMeta = getAdminProofBankConfirmationMeta(proofStatus, t);
+               const bankConfirmation = payment.bankConfirmation;
                return (
                   <tr key={payment.id} className="hover:bg-muted/50 transition-colors">
                    <td className="px-6 py-4">
@@ -82,6 +88,27 @@ export default function PaymentProofsTab({
                    </td>
                    <td className="px-6 py-4 text-sm font-semibold">
                      {payment.booking?.totalAmount ?? payment.amount} {payment.booking?.session.currency ?? t('dashboard.labels.currency')}
+                     {bankMeta && (
+                       <div className="mt-2 space-y-1">
+                         <Badge className={`text-[8px] font-black uppercase ${bankMeta.className}`}>{bankMeta.label}</Badge>
+                         {bankConfirmation && (
+                           <div className="text-[11px] font-medium text-muted-foreground space-y-0.5">
+                             {bankConfirmation.confirmedAmount != null && (
+                               <p>{t('dashboard.labels.bankConfirmedAmount')}: {bankConfirmation.confirmedAmount} {payment.booking?.session.currency ?? t('dashboard.labels.currency')}</p>
+                             )}
+                             {bankConfirmation.bankReference && (
+                               <p>{t('dashboard.labels.bankReference')}: {bankConfirmation.bankReference}</p>
+                             )}
+                             {bankConfirmation.bankConfirmedAt && (
+                               <p>{t('dashboard.labels.bankConfirmedAt')}: {new Date(bankConfirmation.bankConfirmedAt).toLocaleString()}</p>
+                             )}
+                             {bankConfirmation.bankConfirmedBy && (
+                               <p>{t('dashboard.labels.bankConfirmedBy')}: {bankConfirmation.bankConfirmedBy}</p>
+                             )}
+                           </div>
+                         )}
+                       </div>
+                     )}
                    </td>
                    <td className="px-6 py-4 text-sm text-muted-foreground">
                       {payment.uploadedAt ? new Date(payment.uploadedAt).toLocaleDateString() : t('dashboard.labels.na')}
@@ -111,13 +138,19 @@ export default function PaymentProofsTab({
                       >
                         {t('dashboard.actions.reject')}
                       </Button>
+                        {/* #422: the wire value stays VERIFIED (the API's
+                            decision value), but the API now treats it as
+                            ACCEPTING the proof image only — the label must
+                            say that, never "approve/verify payment". There
+                            is deliberately no bank-confirm button here:
+                            only the agency can confirm its bank receipt. */}
                         <Button
                           size="sm"
                           className="bg-success text-success-foreground hover:bg-success/90 border-none"
                           disabled={!canApprove || isVerifying}
                           onClick={() => onVerifyPayment(payment.id, VerificationStatus.Verified)}
                         >
-                          {t('dashboard.actions.approve')}
+                          {t('dashboard.actions.acceptProof')}
                         </Button>
                      </td>
                   </tr>

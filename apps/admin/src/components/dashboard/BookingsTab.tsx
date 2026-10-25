@@ -11,7 +11,7 @@ import { apiClient } from '@/lib/api-client';
 import type { AdminBooking, ApiErrorResponse, FeedbackState } from './types';
 import { getErrorMessage } from './dashboard-utils';
 import AdminActionModal from './AdminActionModal';
-import { getAdminBookingBadgeLabel, getAdminBookingPaymentBadgeLabel } from '../../app/status-mappers';
+import { getAdminBookingBadgeLabel, getAdminBookingPaymentBadgeLabel, getAdminProofBankConfirmationMeta } from '../../app/status-mappers';
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -117,6 +117,14 @@ export default function BookingsTab({
                     <Badge variant="outline" className="text-[8px] font-black uppercase">
                       {getAdminBookingPaymentBadgeLabel(booking.paymentStatus, t)}
                     </Badge>
+                    {/* #422: read-only bank-confirmation state of the booking's
+                        proof — an ACCEPTED proof is explicitly not settled. */}
+                    {(() => {
+                      const bankMeta = getAdminProofBankConfirmationMeta(booking.paymentProof?.status, t);
+                      return bankMeta ? (
+                        <Badge className={`text-[8px] font-black uppercase ${bankMeta.className}`}>{bankMeta.label}</Badge>
+                      ) : null;
+                    })()}
                   </div>
                  </td>
                  <td className="px-6 py-4 text-end font-black">{booking.totalAmount} {booking.session.currency}</td>

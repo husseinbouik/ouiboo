@@ -93,6 +93,31 @@ export const getAdminVerificationBadgeLabel = (status?: VerificationStatusType, 
   return statusLabel(status, VERIFICATION_STATUS_KEYS, t ? t('dashboard.status.verificationPending') : 'Pending', t);
 };
 
+// #422 (Council P0-20): read-only bank-confirmation state for a payment
+// proof, derived from the proof status. ACCEPTED means the image was
+// accepted but the payment is NOT settled — settlement is the agency's
+// bank confirmation, and there is deliberately no admin bank-confirm
+// action (founder decision D3: only the agency sees its bank account).
+export const getAdminProofBankConfirmationMeta = (status?: VerificationStatusType | null, t?: Translate) => {
+  if (status === VerificationStatus.Accepted) {
+    return {
+      state: 'AWAITING_BANK_CONFIRMATION' as const,
+      label: t ? t('dashboard.status.proofAwaitingBankConfirmation') : 'Awaiting agency bank confirmation',
+      className: 'bg-warning/15 text-warning',
+    };
+  }
+
+  if (status === VerificationStatus.Verified) {
+    return {
+      state: 'BANK_CONFIRMED' as const,
+      label: t ? t('dashboard.status.proofBankConfirmed') : 'Bank confirmation recorded',
+      className: 'bg-success/15 text-success',
+    };
+  }
+
+  return null;
+};
+
 // #371: licence status derivation mirrors the API — prefer the
 // server-provided effective status; fall back to deriving expiry locally.
 export const getEffectiveLicenceStatus = (agency: {

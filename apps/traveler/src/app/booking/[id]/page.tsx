@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import Image from 'next/image';
-import { BookingStatus, type BookingDetails } from '@ouiboo/types';
+import { BookingStatus, VerificationStatus, type BookingDetails } from '@ouiboo/types';
 import { Badge, Button, Card } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import {
@@ -219,6 +219,16 @@ export default function BookingDetailsPage() {
                 </div>
               </div>
 
+              {/* #422 (Council P0-20): an uploaded or accepted proof is not a
+                  settled payment — settlement is the agency's bank confirmation. */}
+              {booking.paymentProof && booking.paymentProof.status !== VerificationStatus.Verified && booking.paymentProof.status !== VerificationStatus.Rejected && (
+                <div className="rounded-2xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 p-5 text-sm font-semibold text-foreground">
+                  {booking.paymentProof.status === VerificationStatus.Accepted
+                    ? <>Proof accepted by {booking.session.template.agency?.companyName || 'the agency'} — they still have to confirm the transfer in their bank account. Your payment is not settled until then.</>
+                    : <>Proof received. {booking.session.template.agency?.companyName || 'The agency'} still has to confirm the transfer in its bank account — your payment is not settled until then.</>}
+                </div>
+              )}
+
               {(booking.paymentProof?.rejectionReason || booking.refundStatus) && (
                 <div className="rounded-2xl border border-border/60 bg-muted/20 p-5 text-sm text-muted-foreground">
                   {booking.paymentProof?.rejectionReason && (
@@ -260,7 +270,7 @@ export default function BookingDetailsPage() {
                   {cancelling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                 </Button>
                 <div className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border ${proofStatus.className}`}>
-                  <Check className="h-4 w-4" /> Proof {proofStatus.label}
+                  <Check className="h-4 w-4" /> {proofStatus.label}
                 </div>
               </div>
             </div>

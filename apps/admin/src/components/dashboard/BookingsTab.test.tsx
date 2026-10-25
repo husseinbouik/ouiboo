@@ -4,7 +4,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BookingPaymentStatus, BookingStatus, PaymentMethod } from '@ouiboo/types';
+import { BookingPaymentStatus, BookingStatus, PaymentMethod, VerificationStatus } from '@ouiboo/types';
 import BookingsTab from './BookingsTab';
 import { apiClient } from '@/lib/api-client';
 import type { AdminBooking } from './types';
@@ -191,5 +191,39 @@ describe('BookingsTab repair interventions (#423)', () => {
     fireEvent.click(modalConfirm());
     expect(await screen.findByText('Booking is not repairable')).not.toBeNull();
     expect(screen.getByText('dashboard.interventions.bookingRepair.title')).not.toBeNull();
+  });
+});
+
+describe('BookingsTab bank-confirmation state (#422)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    postMock.mockResolvedValue({});
+  });
+
+  it('flags an accepted proof as awaiting agency bank confirmation — not settled', () => {
+    const acceptedBooking = {
+      ...manualBooking,
+      id: 'booking-accepted-1',
+      paymentProof: { status: VerificationStatus.Accepted },
+    } as unknown as AdminBooking;
+    renderTab({ bookings: [acceptedBooking] });
+    expect(screen.getByText('dashboard.status.proofAwaitingBankConfirmation')).not.toBeNull();
+  });
+
+  it('shows the recorded bank confirmation for a verified proof', () => {
+    const verifiedBooking = {
+      ...manualBooking,
+      id: 'booking-verified-1',
+      paymentStatus: BookingPaymentStatus.Paid,
+      paymentProof: { status: VerificationStatus.Verified },
+    } as unknown as AdminBooking;
+    renderTab({ bookings: [verifiedBooking] });
+    expect(screen.getByText('dashboard.status.proofBankConfirmed')).not.toBeNull();
+  });
+
+  it('renders no bank-confirmation badge before any proof review', () => {
+    renderTab();
+    expect(screen.queryByText('dashboard.status.proofAwaitingBankConfirmation')).toBeNull();
+    expect(screen.queryByText('dashboard.status.proofBankConfirmed')).toBeNull();
   });
 });
