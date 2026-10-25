@@ -4,6 +4,7 @@ import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripSessionDto } fro
 import { BookingStatus, SessionStatus, TripStatus } from '@ouiboo/database';
 import { toMoneyDecimal } from '../common/money.util';
 import { getAgencyActivationBlock } from '../common/agency-licence.util';
+import { visibleBankDetails } from '../common/bank-details.util';
 import { resolveStagedSessionConfig } from '../staged-payments/staged-payments.util';
 
 @Injectable()
@@ -296,11 +297,16 @@ export class TripsService {
                         companyName: true,
                         logo: true,
                         verificationStatus: true,
-                        // #380: checkout renders the agency's official bank
+                        // #380: checkout renders the agency's bank
                         // instructions from this field and blocks booking when
                         // it is empty; without it in the select, checkout read
                         // undefined and refused every booking.
                         bankDetails: true,
+                        // #421: the instructions are only exposed when the
+                        // destination is admin-verified (see the mapping
+                        // below); the status fields drive that gate.
+                        bankDetailsStatus: true,
+                        bankDetailsVerifiedAt: true,
                         // #371: seller-of-record display on the trip page and
                         // at checkout (legal name + verified licence number).
                         legalName: true,
@@ -318,7 +324,19 @@ export class TripsService {
             },
         });
         if (!result) throw new NotFoundException('Trip template not found');
-        return result;
+        // #421 (Council P0-19): strip the bank instructions server-side
+        // unless the destination is admin-verified against a bank
+        // attestation. During a replacement review the previously
+        // verified instructions stay live (visibleBankDetails encodes
+        // that rule); the verification stamp itself is not exposed.
+        const { bankDetailsVerifiedAt: _verificationStamp, ...publicAgency } = result.agency;
+        return {
+            ...result,
+            agency: {
+                ...publicAgency,
+                bankDetails: visibleBankDetails(result.agency),
+            },
+        };
     }
 
     async createSession(agencyId: string, templateId: string, dto: CreateTripSessionDto) {

@@ -11,6 +11,8 @@ import { mapBookingDetails } from '../bookings/booking-response.util';
 import { toMoneyString } from '../common/money.util';
 import { UpdateAgencyProfileDto } from './dto/update-profile.dto';
 import { getAgencyActivationBlock } from '../common/agency-licence.util';
+import { isBankDestinationVerified } from '../common/bank-details.util';
+import { Prisma } from '@ouiboo/database';
 
 const clampListLimit = (value?: string, fallback = 50, max = 200) => {
     const parsed = Number(value);
@@ -371,23 +373,60 @@ export class AgencyController {
             where: { id: req.tenantId },
             select: {
                 bankDetails: true,
+                pendingBankDetails: true,
+                bankDetailsStatus: true,
+                bankDetailsVerifiedAt: true,
                 verificationStatus: true,
                 travelLicenceStatus: true,
                 licenceExpiry: true,
             },
         });
         if (!existing) throw new NotFoundException('Agency profile not found');
-        const bankDetails = data.bankDetails?.trim();
-        const bankDetailsChanged = data.bankDetails !== undefined
-            && bankDetails !== (existing.bankDetails || '');
 
-        // #371: setting payment instructions is payment activation. It
-        // requires a verified identity AND a verified travel licence, so
-        // no agency can start receiving traveller payments by bypassing
-        // onboarding. Clearing the instructions (deactivation) stays open.
-        if (bankDetailsChanged && bankDetails) {
-            const block = getAgencyActivationBlock(existing);
-            if (block) throw new ForbiddenException(block);
+        // #421 (Council P0-19): bank details are a payment DESTINATION,
+        // not free text that goes live on save. A submission is stored in
+        // pendingBankDetails (with holder name + bank attestation) and
+        // only an admin verification promotes it to the live bankDetails
+        // travellers see. While a replacement is under review the
+        // previously verified instructions stay live, and a submission no
+        // longer resets the whole-agency verificationStatus — destination
+        // review replaces that side effect.
+        const destination: Prisma.AgencyProfileUpdateInput = {};
+        if (data.bankDetails !== undefined) {
+            const submitted = data.bankDetails.trim();
+            if (!submitted) {
+                // Clearing the instructions deactivates the destination:
+                // nothing remains traveller-visible and the status resets.
+                destination.bankDetails = null;
+                destination.pendingBankDetails = null;
+                destination.bankDetailsStatus = 'UNVERIFIED';
+                destination.bankDetailsVerifiedAt = null;
+                destination.bankDetailsVerifiedBy = null;
+                destination.bankDetailsRejectionReason = null;
+            } else if (
+                submitted !== existing.pendingBankDetails &&
+                !(submitted === existing.bankDetails && isBankDestinationVerified(existing))
+            ) {
+                // #371: the FIRST submission is still payment activation —
+                // it requires a verified identity AND a verified travel
+                // licence, so no agency can start receiving traveller
+                // payments by bypassing onboarding. Replacing an
+                // already-verified destination does not re-gate the
+                // agency; the destination review is the gate there.
+                if (!isBankDestinationVerified(existing)) {
+                    const block = getAgencyActivationBlock(existing);
+                    if (block) throw new ForbiddenException(block);
+                }
+                destination.pendingBankDetails = submitted;
+                destination.bankDetailsStatus = 'PENDING_REVIEW';
+                destination.bankDetailsRejectionReason = null;
+            }
+        }
+        if (data.bankAccountHolderName !== undefined) {
+            destination.bankAccountHolderName = data.bankAccountHolderName.trim() || null;
+        }
+        if (data.bankAttestationUrl !== undefined) {
+            destination.bankAttestationUrl = data.bankAttestationUrl.trim() || null;
         }
 
         return this.prisma.agencyProfile.update({
@@ -401,10 +440,7 @@ export class AgencyController {
                 taxId: data.taxId?.trim(),
                 legalRepresentative: data.legalRepresentative?.trim(),
                 businessAddress: data.businessAddress?.trim(),
-                bankDetails,
-                verificationStatus: bankDetailsChanged && existing.verificationStatus === 'VERIFIED'
-                    ? 'PENDING'
-                    : undefined,
+                ...destination,
             }
         });
     }
