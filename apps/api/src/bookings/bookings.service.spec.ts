@@ -773,6 +773,57 @@ describe('BookingsService', () => {
             }));
         });
 
+        it('verifyPayment validates its inputs and review state', async () => {
+            db.booking.findUnique.mockResolvedValue(reviewBooking('PENDING'));
+            await expect(service.verifyPayment('booking-123', 'agency-123', 'yes' as any)).rejects.toThrow('approved must be a boolean');
+            await expect(service.verifyPayment('booking-123', 'agency-123', false)).rejects.toThrow('Rejection reason is required');
+
+            db.booking.findUnique.mockResolvedValue(reviewBooking('ACCEPTED'));
+            await expect(service.verifyPayment('booking-123', 'agency-123', true)).rejects.toThrow('already been reviewed');
+
+            const notAwaiting = { ...reviewBooking('PENDING'), status: 'CONFIRMED' };
+            db.booking.findUnique.mockResolvedValue(notAwaiting);
+            await expect(service.verifyPayment('booking-123', 'agency-123', true)).rejects.toThrow('not awaiting payment validation');
+
+            db.booking.findUnique.mockResolvedValue(null);
+            await expect(service.verifyPayment('booking-123', 'agency-123', true)).rejects.toThrow('Booking not found');
+        });
+
+        it('rejecting a non-staged proof records the rejection and fails the booking (one step)', async () => {
+            db.booking.findUnique.mockResolvedValue(reviewBooking('PENDING'));
+            db.booking.findUniqueOrThrow.mockResolvedValue({ id: 'booking-123', status: 'REJECTED', paymentStatus: 'FAILED' });
+
+            const result: any = await service.verifyPayment('booking-123', 'agency-123', false, 'Bank details do not match');
+
+            expect(mockExternalPaymentsService.recordPaymentRejectedInTransaction).toHaveBeenCalledTimes(1);
+            expect(mockExternalPaymentsService.recordPaymentVerifiedInTransaction).not.toHaveBeenCalled();
+            expect(db.booking.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({ status: 'REJECTED', paymentStatus: 'FAILED' }),
+            }));
+            expect(result.status).toBe('REJECTED');
+        });
+
+        it('bank confirmation validates the amount shape and the in-transaction proof claim', async () => {
+            db.booking.findUnique.mockResolvedValue(reviewBooking('ACCEPTED'));
+            await expect(service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: 'not-a-number',
+                bankReference: 'TRX-1',
+            })).rejects.toThrow('must be a positive decimal value');
+            await expect(service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: 0,
+                bankReference: 'TRX-1',
+            })).rejects.toThrow('positive amount');
+
+            // The ACCEPTED -> VERIFIED claim is the concurrency guard: if
+            // another confirmation won the race, this one must fail.
+            db.paymentProof.updateMany.mockResolvedValueOnce({ count: 0 });
+            await expect(service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: 780,
+                bankReference: 'TRX-1',
+            })).rejects.toThrow('must be accepted before bank confirmation');
+            expect(mockExternalPaymentsService.recordPaymentVerifiedInTransaction).not.toHaveBeenCalled();
+        });
+
         it('bank confirmation is agency-scoped: another agency cannot confirm', async () => {
             db.booking.findUnique.mockResolvedValue(reviewBooking('ACCEPTED'));
             db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-999' });
