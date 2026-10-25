@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { DatabaseService } from '../database/database.service';
+import { PRIVATE_FILE_PREFIX } from '../upload/upload.constants';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 
 @Injectable()
@@ -47,16 +48,45 @@ export class UsersService {
         return this.sanitizeUser(user);
     }
 
+    /**
+     * #415: verification documents (licence scan, RC certificate) are
+     * private identity-document uploads. The client submits only the
+     * storage key, and it must point at the agency's own private folder
+     * (private/{userId}/…) — arbitrary keys/URLs are rejected so one
+     * agency can never attach another user's document.
+     */
+    private assertOwnPrivateDocumentKey(userId: string, key: unknown, field: string) {
+        if (key === undefined || key === null || key === '') {
+            return;
+        }
+        const prefix = `${PRIVATE_FILE_PREFIX}/${userId}/`;
+        if (typeof key !== 'string' || !key.startsWith(prefix)) {
+            throw new BadRequestException(`${field} must reference a private document uploaded by this agency`);
+        }
+    }
+
     async updateAgencyProfile(userId: string, data: any) {
-        // #371: licence status fields are server-managed — an agency can
-        // submit licence details, but only an admin verification can mark
-        // them VERIFIED. Strip any client-supplied status fields.
+        // #371/#415: licence & insurance status fields are server-managed
+        // — an agency can submit details and documents, but only an admin
+        // verification can mark them VERIFIED, and only an admin action
+        // can stamp the Ministry check or the auto-pause marker. Strip
+        // any client-supplied managed fields.
         const {
             travelLicenceStatus: _ignoredStatus,
             licenceVerifiedAt: _ignoredVerifiedAt,
             licenceRejectionReason: _ignoredReason,
+            licenceMinistryCheckedAt: _ignoredMinistryAt,
+            licenceMinistryCheckedBy: _ignoredMinistryBy,
+            insuranceStatus: _ignoredInsuranceStatus,
+            insuranceVerifiedAt: _ignoredInsuranceVerifiedAt,
+            insuranceRejectionReason: _ignoredInsuranceReason,
+            verificationPausedAt: _ignoredPausedAt,
+            verificationPauseReason: _ignoredPauseReason,
             ...safeData
         } = data ?? {};
+
+        this.assertOwnPrivateDocumentKey(userId, safeData.licenceDocumentKey, 'licenceDocumentKey');
+        this.assertOwnPrivateDocumentKey(userId, safeData.insuranceCertificateKey, 'insuranceCertificateKey');
 
         const existing = await this.db.agencyProfile.findUnique({
             where: { userId },
@@ -65,10 +95,19 @@ export class UsersService {
                 travelLicenceNumber: true,
                 licenceExpiry: true,
                 travelLicenceStatus: true,
+                licenceDocumentKey: true,
+                insuranceInsurer: true,
+                insurancePolicyNumber: true,
+                insuranceInsuredName: true,
+                insuranceValidFrom: true,
+                insuranceExpiry: true,
+                insuranceCoverageLimit: true,
+                insuranceCertificateKey: true,
+                insuranceStatus: true,
             },
         });
 
-        const licenceTouched = ['travelLicenceType', 'travelLicenceNumber', 'licenceExpiry']
+        const licenceTouched = ['travelLicenceType', 'travelLicenceNumber', 'licenceExpiry', 'licenceDocumentKey', 'licenceDocumentName']
             .some((key) => safeData[key] !== undefined);
         if (licenceTouched) {
             const nextNumber = safeData.travelLicenceNumber !== undefined
@@ -80,19 +119,75 @@ export class UsersService {
             const nextExpiry = safeData.licenceExpiry !== undefined
                 ? (safeData.licenceExpiry ? new Date(safeData.licenceExpiry) : null)
                 : existing?.licenceExpiry ?? null;
+            const nextDocumentKey = safeData.licenceDocumentKey !== undefined
+                ? (safeData.licenceDocumentKey || null)
+                : existing?.licenceDocumentKey ?? null;
             const changed = !existing
                 || nextNumber !== (existing.travelLicenceNumber ?? null)
                 || nextType !== (existing.travelLicenceType ?? null)
-                || (nextExpiry?.getTime() ?? null) !== (existing.licenceExpiry?.getTime() ?? null);
+                || (nextExpiry?.getTime() ?? null) !== (existing.licenceExpiry?.getTime() ?? null)
+                || nextDocumentKey !== (existing.licenceDocumentKey ?? null);
             if (changed) {
-                // New or changed licence details always go (back) to review;
-                // clearing the licence number withdraws the submission.
-                safeData.travelLicenceStatus = nextNumber ? 'PENDING_REVIEW' : 'NOT_SUBMITTED';
+                // #415: a licence submission is reviewable only when it
+                // is complete — number + type + expiry + uploaded
+                // document. Clearing the number withdraws the
+                // submission; an incomplete submission stays
+                // NOT_SUBMITTED. Any change also voids the previous
+                // Ministry-check stamp (it attested the old details).
+                const complete = Boolean(nextNumber && nextType && nextExpiry && nextDocumentKey);
+                safeData.travelLicenceStatus = complete ? 'PENDING_REVIEW' : 'NOT_SUBMITTED';
                 safeData.licenceVerifiedAt = null;
                 safeData.licenceRejectionReason = null;
+                safeData.licenceMinistryCheckedAt = null;
+                safeData.licenceMinistryCheckedBy = null;
             }
             if (safeData.licenceExpiry !== undefined) {
                 safeData.licenceExpiry = nextExpiry;
+            }
+        }
+
+        const insuranceFields = [
+            'insuranceInsurer', 'insurancePolicyNumber', 'insuranceInsuredName',
+            'insuranceValidFrom', 'insuranceExpiry', 'insuranceCoverageLimit',
+            'insuranceCertificateKey',
+        ] as const;
+        const insuranceTouched = insuranceFields.some((key) => safeData[key] !== undefined);
+        if (insuranceTouched) {
+            const next = {} as Record<(typeof insuranceFields)[number], any>;
+            for (const key of insuranceFields) {
+                if (safeData[key] !== undefined) {
+                    next[key] = (key === 'insuranceValidFrom' || key === 'insuranceExpiry')
+                        ? (safeData[key] ? new Date(safeData[key]) : null)
+                        : (safeData[key] ?? null);
+                } else {
+                    next[key] = existing?.[key] ?? null;
+                }
+            }
+            const toTime = (v: any) => (v instanceof Date ? v.getTime() : v ?? null);
+            const changed = !existing || insuranceFields.some((key) => {
+                const a = next[key];
+                const b = existing?.[key] ?? null;
+                return (a instanceof Date || b instanceof Date) ? toTime(a) !== toTime(b) : String(a ?? '') !== String(b ?? '');
+            });
+            if (changed) {
+                // #415: same lifecycle as the licence — complete
+                // submissions (insurer + policy number + insured name +
+                // expiry + certificate) go to PENDING_REVIEW; clearing
+                // the policy number or submitting a partial artefact
+                // leaves the insurance NOT_SUBMITTED.
+                const complete = Boolean(
+                    next.insuranceInsurer && next.insurancePolicyNumber
+                    && next.insuranceInsuredName && next.insuranceExpiry
+                    && next.insuranceCertificateKey,
+                );
+                safeData.insuranceStatus = complete ? 'PENDING_REVIEW' : 'NOT_SUBMITTED';
+                safeData.insuranceVerifiedAt = null;
+                safeData.insuranceRejectionReason = null;
+            }
+            for (const key of ['insuranceValidFrom', 'insuranceExpiry'] as const) {
+                if (safeData[key] !== undefined) {
+                    safeData[key] = next[key];
+                }
             }
         }
 

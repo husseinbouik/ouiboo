@@ -349,6 +349,32 @@ model AgencyProfile {
   licenceVerifiedAt      DateTime?
   licenceExpiry          DateTime?
   licenceRejectionReason String?
+  // #415 (Council P0-08): the licence is proven by an uploaded document
+  // (private identity-document upload, key only — never a public URL)
+  // plus a manual Ministry-list check attested by an admin. Verification
+  // stamps who checked and when; the stamp is cleared whenever the
+  // licence details change.
+  licenceDocumentKey        String?
+  licenceDocumentName       String?
+  licenceMinistryCheckedAt  DateTime?
+  licenceMinistryCheckedBy  String?
+  // #415: RC (responsabilité civile) insurance artefact. Same lifecycle
+  // as the licence (LicenceStatus), expiry derived on read. The
+  // certificate is a private identity-document upload (key only).
+  insuranceStatus           LicenceStatus @default(NOT_SUBMITTED)
+  insuranceInsurer          String?
+  insurancePolicyNumber     String?
+  insuranceInsuredName      String?
+  insuranceValidFrom        DateTime?
+  insuranceExpiry           DateTime?
+  insuranceCoverageLimit    Decimal?      @db.Decimal(18, 2)
+  insuranceCertificateKey   String?
+  insuranceVerifiedAt       DateTime?
+  insuranceRejectionReason  String?
+  // #415: set by the expiry sweep (later PR) when a licence/insurance
+  // lapse pauses the agency; explains to admin/agency surfaces why.
+  verificationPausedAt      DateTime?
+  verificationPauseReason   String?
   refundCases                 RefundCase[]
   // #370: refund enforcement ladder (plan §16, level 2). Set while the
   // agency has an overdue refund case: NEW bookings are refused, existing

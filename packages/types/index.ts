@@ -177,6 +177,25 @@ export interface AgencyProfile {
     licenceVerifiedAt?: string;
     licenceExpiry?: string;
     licenceRejectionReason?: string;
+    // #415: licence document (private upload key) + Ministry-check stamp
+    licenceDocumentKey?: string;
+    licenceDocumentName?: string;
+    licenceMinistryCheckedAt?: string;
+    licenceMinistryCheckedBy?: string;
+    // #415: RC insurance artefact (same LicenceStatus lifecycle)
+    insuranceStatus?: LicenceStatus;
+    insuranceInsurer?: string;
+    insurancePolicyNumber?: string;
+    insuranceInsuredName?: string;
+    insuranceValidFrom?: string;
+    insuranceExpiry?: string;
+    insuranceCoverageLimit?: DecimalString;
+    insuranceCertificateKey?: string;
+    insuranceVerifiedAt?: string;
+    insuranceRejectionReason?: string;
+    // #415: expiry-sweep auto-pause marker
+    verificationPausedAt?: string;
+    verificationPauseReason?: string;
 }
 
 export enum TripStatus {

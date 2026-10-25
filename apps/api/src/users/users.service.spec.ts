@@ -134,6 +134,7 @@ describe('UsersService', () => {
                 travelLicenceType: 'ODV',
                 travelLicenceNumber: 'AV-2024-0187',
                 licenceExpiry: '2028-05-31',
+                licenceDocumentKey: 'private/user-9/licence.pdf',
             });
 
             expect(db.agencyProfile.upsert).toHaveBeenCalledWith(expect.objectContaining({
@@ -150,7 +151,10 @@ describe('UsersService', () => {
 
             await service.updateAgencyProfile('user-9', {
                 ...baseProfile,
+                travelLicenceType: 'ODV',
                 travelLicenceNumber: 'AV-2024-0187',
+                licenceExpiry: '2028-05-31',
+                licenceDocumentKey: 'private/user-9/licence.pdf',
                 travelLicenceStatus: 'VERIFIED',
                 licenceVerifiedAt: new Date(),
             });
@@ -166,6 +170,7 @@ describe('UsersService', () => {
                 travelLicenceNumber: 'AV-2024-0187',
                 licenceExpiry: new Date('2028-05-31'),
                 travelLicenceStatus: 'VERIFIED',
+                licenceDocumentKey: 'private/user-9/licence.pdf',
             });
 
             await service.updateAgencyProfile('user-9', {
@@ -212,6 +217,157 @@ describe('UsersService', () => {
 
             const call = db.agencyProfile.upsert.mock.calls[0][0];
             expect(call.update.travelLicenceStatus).toBe('NOT_SUBMITTED');
+        });
+    });
+
+    describe('updateAgencyProfile verification documents & insurance (#415)', () => {
+        const createLicenceService = (existing: any) => {
+            const db = {
+                agencyProfile: {
+                    findUnique: jest.fn().mockResolvedValue(existing),
+                    upsert: jest.fn().mockImplementation(async (args: any) => args),
+                },
+            };
+            return { db, service: new UsersService(db as any) };
+        };
+
+        const baseProfile = {
+            companyName: 'Atlas Adventures',
+            ice: '123456789012345',
+            patente: 'P1234567',
+            rib: '123456789012345678901234',
+        };
+
+        it('keeps an incomplete licence submission (no document) NOT_SUBMITTED', async () => {
+            const { db, service } = createLicenceService(null);
+
+            await service.updateAgencyProfile('user-9', {
+                ...baseProfile,
+                travelLicenceType: 'ODV',
+                travelLicenceNumber: 'AV-2024-0187',
+                licenceExpiry: '2028-05-31',
+            });
+
+            const call = db.agencyProfile.upsert.mock.calls[0][0];
+            expect(call.create.travelLicenceStatus).toBe('NOT_SUBMITTED');
+        });
+
+        it('rejects a licence document key outside the agency private folder', async () => {
+            const { service } = createLicenceService(null);
+
+            await expect(service.updateAgencyProfile('user-9', {
+                ...baseProfile,
+                licenceDocumentKey: 'private/someone-else/licence.pdf',
+            })).rejects.toThrow(/must reference a private document/);
+
+            await expect(service.updateAgencyProfile('user-9', {
+                ...baseProfile,
+                licenceDocumentKey: 'https://example.com/licence.pdf',
+            })).rejects.toThrow(/must reference a private document/);
+        });
+
+        it('rejects an insurance certificate key outside the agency private folder', async () => {
+            const { service } = createLicenceService(null);
+
+            await expect(service.updateAgencyProfile('user-9', {
+                ...baseProfile,
+                insuranceCertificateKey: 'public/cert.pdf',
+            })).rejects.toThrow(/must reference a private document/);
+        });
+
+        it('never lets an agency stamp its own Ministry check or pause marker', async () => {
+            const { db, service } = createLicenceService(null);
+
+            await service.updateAgencyProfile('user-9', {
+                ...baseProfile,
+                travelLicenceType: 'ODV',
+                travelLicenceNumber: 'AV-2024-0187',
+                licenceExpiry: '2028-05-31',
+                licenceDocumentKey: 'private/user-9/licence.pdf',
+                licenceMinistryCheckedAt: new Date(),
+                licenceMinistryCheckedBy: 'admin-1',
+                verificationPausedAt: new Date(),
+            } as any);
+
+            const call = db.agencyProfile.upsert.mock.calls[0][0];
+            expect(call.create.licenceMinistryCheckedAt).toBeNull();
+            expect(call.create.licenceMinistryCheckedBy).toBeNull();
+            expect(call.create).not.toHaveProperty('verificationPausedAt');
+        });
+
+        it('moves a complete insurance submission to PENDING_REVIEW and converts dates', async () => {
+            const { db, service } = createLicenceService(null);
+
+            await service.updateAgencyProfile('user-9', {
+                ...baseProfile,
+                insuranceInsurer: 'AXA Assurance Maroc',
+                insurancePolicyNumber: 'RC-2026-00421',
+                insuranceInsuredName: 'Atlas Adventures SARL',
+                insuranceValidFrom: '2026-01-01',
+                insuranceExpiry: '2026-12-31',
+                insuranceCoverageLimit: 1000000,
+                insuranceCertificateKey: 'private/user-9/rc.pdf',
+            });
+
+            const call = db.agencyProfile.upsert.mock.calls[0][0];
+            expect(call.create.insuranceStatus).toBe('PENDING_REVIEW');
+            expect(call.create.insuranceVerifiedAt).toBeNull();
+            expect(call.create.insuranceExpiry).toEqual(new Date('2026-12-31'));
+            expect(call.create.insuranceValidFrom).toEqual(new Date('2026-01-01'));
+        });
+
+        it('keeps a partial insurance submission NOT_SUBMITTED', async () => {
+            const { db, service } = createLicenceService(null);
+
+            await service.updateAgencyProfile('user-9', {
+                ...baseProfile,
+                insuranceInsurer: 'AXA Assurance Maroc',
+                insurancePolicyNumber: 'RC-2026-00421',
+            });
+
+            const call = db.agencyProfile.upsert.mock.calls[0][0];
+            expect(call.create.insuranceStatus).toBe('NOT_SUBMITTED');
+        });
+
+        it('never lets an agency set its own insurance status to VERIFIED', async () => {
+            const { db, service } = createLicenceService(null);
+
+            await service.updateAgencyProfile('user-9', {
+                ...baseProfile,
+                insuranceInsurer: 'AXA Assurance Maroc',
+                insurancePolicyNumber: 'RC-2026-00421',
+                insuranceInsuredName: 'Atlas Adventures SARL',
+                insuranceExpiry: '2026-12-31',
+                insuranceCertificateKey: 'private/user-9/rc.pdf',
+                insuranceStatus: 'VERIFIED',
+                insuranceVerifiedAt: new Date(),
+            } as any);
+
+            const call = db.agencyProfile.upsert.mock.calls[0][0];
+            expect(call.create.insuranceStatus).toBe('PENDING_REVIEW');
+            expect(call.create.insuranceVerifiedAt).toBeNull();
+        });
+
+        it('sends changed insurance on a verified agency back to review', async () => {
+            const { db, service } = createLicenceService({
+                insuranceInsurer: 'AXA Assurance Maroc',
+                insurancePolicyNumber: 'RC-2026-00421',
+                insuranceInsuredName: 'Atlas Adventures SARL',
+                insuranceValidFrom: new Date('2026-01-01'),
+                insuranceExpiry: new Date('2026-12-31'),
+                insuranceCoverageLimit: 1000000,
+                insuranceCertificateKey: 'private/user-9/rc.pdf',
+                insuranceStatus: 'VERIFIED',
+            });
+
+            await service.updateAgencyProfile('user-9', {
+                ...baseProfile,
+                insurancePolicyNumber: 'RC-2027-99999',
+            });
+
+            const call = db.agencyProfile.upsert.mock.calls[0][0];
+            expect(call.update.insuranceStatus).toBe('PENDING_REVIEW');
+            expect(call.update.insuranceVerifiedAt).toBeNull();
         });
     });
 });

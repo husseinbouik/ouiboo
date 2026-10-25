@@ -22,7 +22,7 @@ import { Response } from 'express';
 import { mapBookingDetails } from '../bookings/booking-response.util';
 import { PaymentsService } from '../payments/payments.service';
 import { type MoneyInput } from '../common/money.util';
-import { effectiveLicenceStatus, getAgencyActivationBlock } from '../common/agency-licence.util';
+import { effectiveInsuranceStatus, effectiveLicenceStatus, getAgencyActivationBlock } from '../common/agency-licence.util';
 
 const parseEnumQuery = <T extends string>(value: string | undefined, allowedValues: readonly T[]) => {
     if (!value) {
@@ -371,10 +371,12 @@ export class AdminController {
         ]);
         // #371: surface the derived licence status so an expired licence is
         // flagged in admin even when the stored value still says VERIFIED.
+        // #415: same for the RC insurance artefact.
         return {
             data: agencies.map((agency) => ({
                 ...agency,
                 effectiveLicenceStatus: effectiveLicenceStatus(agency),
+                effectiveInsuranceStatus: effectiveInsuranceStatus(agency),
             })),
             pagination: buildPaginationMeta(total, safePage, safeLimit),
         };
@@ -402,11 +404,11 @@ export class AdminController {
     }
 
     @Post('agencies/:id/licence/verify')
-    @ApiOperation({ summary: 'Verify or reject an agency travel licence (#371)' })
+    @ApiOperation({ summary: 'Verify or reject an agency travel licence (#371, hardened by #415)' })
     async verifyAgencyLicence(
         @Request() req,
         @Param('id') id: string,
-        @Body() body: { status?: 'VERIFIED' | 'REJECTED'; reason?: string },
+        @Body() body: { status?: 'VERIFIED' | 'REJECTED'; reason?: string; ministryChecked?: boolean },
     ) {
         const status = body?.status;
         if (!status || !['VERIFIED', 'REJECTED'].includes(status)) {
@@ -414,25 +416,52 @@ export class AdminController {
         }
         const agency = await this.db.agencyProfile.findUnique({
             where: { id },
-            select: { id: true, travelLicenceNumber: true, travelLicenceStatus: true, licenceExpiry: true },
+            select: {
+                id: true,
+                travelLicenceType: true,
+                travelLicenceNumber: true,
+                travelLicenceStatus: true,
+                licenceExpiry: true,
+                licenceDocumentKey: true,
+            },
         });
         if (!agency) {
             throw new BadRequestException('Agency not found');
         }
         if (status === 'VERIFIED') {
+            // #415: verification is evidence-based, not a self-typed
+            // string — the licence document must be on file, an expiry
+            // must be recorded and in the future, and the admin must
+            // attest that the licence was checked against the Ministry
+            // list (manual attestation; the stamp records who/when).
             if (!agency.travelLicenceNumber) {
                 throw new BadRequestException('Agency has not submitted a travel licence number');
             }
-            if (agency.licenceExpiry && agency.licenceExpiry.getTime() <= Date.now()) {
+            if (!agency.travelLicenceType) {
+                throw new BadRequestException('Agency has not submitted a travel licence type (ODV/DV)');
+            }
+            if (!agency.licenceDocumentKey) {
+                throw new BadRequestException('Agency has not uploaded a travel licence document');
+            }
+            if (!agency.licenceExpiry) {
+                throw new BadRequestException('Travel licence expiry is required before verification');
+            }
+            if (agency.licenceExpiry.getTime() <= Date.now()) {
                 throw new BadRequestException('Travel licence has already expired; ask the agency to renew it before verification');
             }
+            if (body.ministryChecked !== true) {
+                throw new BadRequestException('Ministry-list check attestation (ministryChecked) is required to verify a licence');
+            }
         }
+        const verifiedAt = new Date();
         const updated = await this.db.agencyProfile.update({
             where: { id },
             data: {
                 travelLicenceStatus: status,
-                licenceVerifiedAt: status === 'VERIFIED' ? new Date() : null,
+                licenceVerifiedAt: status === 'VERIFIED' ? verifiedAt : null,
                 licenceRejectionReason: status === 'REJECTED' ? (body.reason?.trim() || null) : null,
+                licenceMinistryCheckedAt: status === 'VERIFIED' ? verifiedAt : null,
+                licenceMinistryCheckedBy: status === 'VERIFIED' ? (req?.user?.userId ?? null) : null,
             },
         });
         this.auditLogService.log({
@@ -441,7 +470,83 @@ export class AdminController {
             action: status === 'VERIFIED' ? 'AGENCY_LICENCE_VERIFIED' : 'AGENCY_LICENCE_REJECTED',
             targetType: 'AgencyProfile',
             targetId: id,
-            metadata: { status, licenceNumber: agency.travelLicenceNumber },
+            metadata: {
+                status,
+                licenceNumber: agency.travelLicenceNumber,
+                licenceDocumentKey: agency.licenceDocumentKey,
+                ministryChecked: status === 'VERIFIED' ? true : undefined,
+            },
+        }).catch((err) => console.error('Audit log failed', err));
+        return updated;
+    }
+
+    @Post('agencies/:id/insurance/verify')
+    @ApiOperation({ summary: 'Verify or reject an agency RC insurance artefact (#415)' })
+    async verifyAgencyInsurance(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() body: { status?: 'VERIFIED' | 'REJECTED'; reason?: string },
+    ) {
+        const status = body?.status;
+        if (!status || !['VERIFIED', 'REJECTED'].includes(status)) {
+            throw new BadRequestException('Invalid insurance verification status');
+        }
+        const agency = await this.db.agencyProfile.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                insuranceInsurer: true,
+                insurancePolicyNumber: true,
+                insuranceInsuredName: true,
+                insuranceExpiry: true,
+                insuranceCertificateKey: true,
+            },
+        });
+        if (!agency) {
+            throw new BadRequestException('Agency not found');
+        }
+        if (status === 'VERIFIED') {
+            // #415: mirrors the hardened licence rules — the artefact
+            // must be complete, the certificate on file, and the cover
+            // must have a recorded, future expiry.
+            if (!agency.insurancePolicyNumber) {
+                throw new BadRequestException('Agency has not submitted an insurance policy number');
+            }
+            if (!agency.insuranceInsurer) {
+                throw new BadRequestException('Agency has not submitted an insurer');
+            }
+            if (!agency.insuranceInsuredName) {
+                throw new BadRequestException('Agency has not submitted the insured legal name');
+            }
+            if (!agency.insuranceCertificateKey) {
+                throw new BadRequestException('Agency has not uploaded an RC insurance certificate');
+            }
+            if (!agency.insuranceExpiry) {
+                throw new BadRequestException('Insurance expiry is required before verification');
+            }
+            if (agency.insuranceExpiry.getTime() <= Date.now()) {
+                throw new BadRequestException('RC insurance has already expired; ask the agency to renew it before verification');
+            }
+        }
+        const updated = await this.db.agencyProfile.update({
+            where: { id },
+            data: {
+                insuranceStatus: status,
+                insuranceVerifiedAt: status === 'VERIFIED' ? new Date() : null,
+                insuranceRejectionReason: status === 'REJECTED' ? (body.reason?.trim() || null) : null,
+            },
+        });
+        this.auditLogService.log({
+            actorId: req?.user?.userId,
+            actorEmail: req?.user?.email,
+            action: status === 'VERIFIED' ? 'AGENCY_INSURANCE_VERIFIED' : 'AGENCY_INSURANCE_REJECTED',
+            targetType: 'AgencyProfile',
+            targetId: id,
+            metadata: {
+                status,
+                insurancePolicyNumber: agency.insurancePolicyNumber,
+                insuranceCertificateKey: agency.insuranceCertificateKey,
+            },
         }).catch((err) => console.error('Audit log failed', err));
         return updated;
     }
@@ -556,10 +661,12 @@ export class AdminController {
             this.db.agencyProfile.count({ where }),
         ]);
         // #371: derived licence status (expired licences flagged on read).
+        // #415: derived insurance status alongside it.
         return {
             data: agencies.map((agency) => ({
                 ...agency,
                 effectiveLicenceStatus: effectiveLicenceStatus(agency),
+                effectiveInsuranceStatus: effectiveInsuranceStatus(agency),
             })),
             pagination: buildPaginationMeta(total, safePage, safeLimit),
         };
