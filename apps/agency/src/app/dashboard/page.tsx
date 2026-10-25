@@ -42,6 +42,7 @@ import { cn } from '@ouiboo/ui/utils';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthContext';
+import { VerificationPausedBanner } from '@/components/VerificationPausedBanner';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
@@ -223,6 +224,7 @@ export default function AgencyDashboard() {
 
   return (
     <div className="space-y-12 max-w-7xl mx-auto">
+      <VerificationPausedBanner />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
           <h1 className="text-4xl font-black font-display tracking-tight">{t('dashboard.greeting', { name: companyName })}</h1>

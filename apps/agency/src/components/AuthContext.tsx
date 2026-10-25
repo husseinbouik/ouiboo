@@ -37,6 +37,25 @@ interface User {
         licenceVerifiedAt?: string;
         licenceExpiry?: string;
         licenceRejectionReason?: string;
+        // #415: licence document + Ministry-check stamp
+        licenceDocumentKey?: string;
+        licenceDocumentName?: string;
+        licenceMinistryCheckedAt?: string;
+        licenceMinistryCheckedBy?: string;
+        // #415: RC insurance artefact
+        insuranceStatus?: string;
+        insuranceInsurer?: string;
+        insurancePolicyNumber?: string;
+        insuranceInsuredName?: string;
+        insuranceValidFrom?: string;
+        insuranceExpiry?: string;
+        insuranceCoverageLimit?: string;
+        insuranceCertificateKey?: string;
+        insuranceVerifiedAt?: string;
+        insuranceRejectionReason?: string;
+        // #415: expiry-sweep auto-pause marker
+        verificationPausedAt?: string;
+        verificationPauseReason?: string;
     };
 }
 
