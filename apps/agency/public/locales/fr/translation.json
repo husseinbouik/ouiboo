@@ -738,7 +738,14 @@
       "mvpBody": "L'envoi de notifications est volontairement limité aux alertes e-mail essentielles dans cette version.",
       "mvpHint": "Les contrôles par canal restent masqués jusqu'à ce qu'ils soient gérés de bout en bout de manière fiable.",
       "reviewBookings": "Examiner les réservations"
-    }
+    },
+    "emergencyTitle": "Contact d'urgence du voyage",
+    "emergencySubtitle": "La personne que les voyageurs ayant une réservation joignent en premier pendant un voyage en cours. Affichée uniquement sur leur réservation, jamais publiquement.",
+    "emergencyName": "Nom du contact",
+    "emergencyNamePlaceholder": "Guide ou responsable de permanence",
+    "emergencyPhone": "Téléphone d'urgence",
+    "emergencyPhonePlaceholder": "+XXX XX XX XX XX",
+    "emergencyHint": "Indiquez un numéro réellement joignable pendant les voyages. Si vous le laissez vide, les voyageurs seront invités à vous écrire puis à faire remonter le problème à OuiBoo."
   },
   "analytics": {
     "dashboardTitle": "Tableau de bord analytique",

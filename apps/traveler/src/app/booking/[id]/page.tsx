@@ -28,6 +28,7 @@ import {
   shouldShowUploadAction,
 } from '@ouiboo/utils';
 import { ReviewForm } from '@/components/ReviewForm';
+import { TripContactsCard } from '@/components/TripContactsCard';
 
 export default function BookingDetailsPage() {
   const { id } = useParams();
@@ -276,6 +277,11 @@ export default function BookingDetailsPage() {
             </div>
           </div>
         </Card>
+
+        {/* #419 (Council P0-16): departure pack — agency emergency
+            contact first, OuiBoo escalation during the trip, normal
+            support (48h) for everything else. */}
+        <TripContactsCard booking={booking} />
 
         {(canReviewBooking || booking.review) && (
           <Card className="rounded-[2rem] border border-border shadow-sm bg-card">

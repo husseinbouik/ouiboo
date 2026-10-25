@@ -180,6 +180,10 @@ export interface AgencyProfile {
     subscriptionStatus: SubscriptionStatus;
     trialEndsAt?: string;
     subscriptionEndsAt?: string;
+    // #419: trip emergency contact shown to booked travellers
+    // (departure pack) — first call during an active trip.
+    emergencyContactName?: string;
+    emergencyContactPhone?: string;
     subscriptionTermsVersion?: string;
     subscriptionTermsAcceptedAt?: string;
     // #371: legal identity + Law 11-16 travel licence
@@ -352,6 +356,13 @@ export interface BookingTravelerSummary {
 export interface BookingAgencySummary {
     companyName: string;
     id: string;
+    /**
+     * #419: the agency's trip emergency contact, populated on booking
+     * responses only (the traveller holding the booking is the audience —
+     * the departure pack). Absent when the agency has not provided one.
+     */
+    emergencyContactName?: string;
+    emergencyContactPhone?: string;
 }
 
 export interface BookingTemplateSummary {

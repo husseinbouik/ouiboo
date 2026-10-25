@@ -18,6 +18,7 @@ export default function TravelerTermsPage() {
     { title: t('terms.sectionThreeTitle'), body: t('terms.sectionThreeBody') },
     { title: t('terms.sectionFourTitle'), body: t('terms.sectionFourBody') },
     { title: t('terms.sectionFiveTitle'), body: t('terms.sectionFiveBody') },
+    { title: t('terms.sectionSixTitle'), body: t('terms.sectionSixBody') },
   ];
 
   return (
