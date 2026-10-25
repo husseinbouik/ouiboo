@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthContext';
 import { type BookingDetails } from '@ouiboo/types';
-import { Card, CardContent } from '@ouiboo/ui';
+import { Card, CardContent, CheckoutSkeleton } from '@ouiboo/ui';
 import { useTranslation } from 'react-i18next';
 import { getStagedAmounts, isStagedSession, type CheckoutTrip } from '@/components/checkout/checkout-types';
 import { CheckoutHeader } from '@/components/checkout/CheckoutHeader';
@@ -120,7 +120,14 @@ export default function CheckoutPage() {
     setProofFile(file);
   };
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center font-black animate-pulse">Initializing Security...</div>;
+  if (isLoading) return (
+    <div className="min-h-screen bg-muted/20 pb-40" role="status" aria-label="Initializing Security...">
+      <div className="max-w-7xl mx-auto px-6 pt-32">
+        <CheckoutSkeleton />
+      </div>
+      <span className="sr-only">Initializing Security...</span>
+    </div>
+  );
   if (!trip) return <div className="min-h-screen flex items-center justify-center font-black">Trip not found.</div>;
 
   const canSubmit = Boolean(

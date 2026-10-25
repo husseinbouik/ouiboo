@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { BookingPaymentPlanStatus, BookingPaymentStatus, BookingStatus, VerificationStatus, type BookingDetails } from '@ouiboo/types';
-import { Button, Badge, Card, Pagination } from '@ouiboo/ui';
+import { Button, Badge, Card, Pagination, BookingListSkeleton, Skeleton } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import { toPaginatedList } from '@ouiboo/utils';
 import { Calendar, MapPin, Loader2, Upload, Check, Trash2, Clock, Users, Star } from 'lucide-react';
@@ -181,9 +181,15 @@ export default function MyBookingsPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex flex-col justify-center items-center bg-background gap-4">
-                <Loader2 className="h-8 w-8 animate-spin text-sunset-orange" />
-                <p className="text-sm font-medium text-muted-foreground animate-pulse">Loading your adventures...</p>
+            <div className="min-h-screen bg-background font-sans text-foreground" role="status" aria-label="Loading your adventures...">
+                <div className="max-w-5xl mx-auto px-6 pt-32 pb-20">
+                    <div className="mb-12 space-y-3" aria-hidden="true">
+                        <Skeleton className="h-12 w-64 max-w-full" />
+                        <Skeleton className="h-6 w-80 max-w-full" />
+                    </div>
+                    <BookingListSkeleton count={3} />
+                </div>
+                <span className="sr-only">Loading your adventures...</span>
             </div>
         );
     }

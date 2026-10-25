@@ -18,7 +18,7 @@ import {
   Receipt,
   RotateCcw,
 } from 'lucide-react';
-import { ConfirmDialog } from '@ouiboo/ui';
+import { ConfirmDialog, CardListSkeleton } from '@ouiboo/ui';
 import { useAuth } from '@/components/AuthContext';
 import { toPaginatedList } from '@ouiboo/utils';
 import {
@@ -58,6 +58,20 @@ import AuditTab from '@/components/dashboard/AuditTab';
 import InvoicesTab from '@/components/dashboard/InvoicesTab';
 import RefundsTab from '@/components/dashboard/RefundsTab';
 import AgencyReviewModal from '@/components/dashboard/AgencyReviewModal';
+
+/**
+ * #469: first-load placeholder for a dashboard tab. Shown only while the
+ * tab's list query is cold-loading with nothing to display, so tabs no
+ * longer flash their empty state before data arrives.
+ */
+function AdminTabSkeleton({ label, text }: { label: string; text: string }) {
+  return (
+    <div role="status" aria-label={label}>
+      <CardListSkeleton rows={5} />
+      <span className="sr-only">{text}</span>
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const { logout } = useAuth();
@@ -303,7 +317,7 @@ export default function AdminDashboard() {
     },
   });
 
-  const { data: auditLogsRaw } = useQuery<unknown>({
+  const { data: auditLogsRaw, isLoading: auditLogsLoading } = useQuery<unknown>({
     queryKey: ['audit-logs', debouncedQuery, currentPage],
     queryFn: async () => {
       const resp = await apiClient.get('/admin/audit-logs', {
@@ -612,6 +626,21 @@ export default function AdminDashboard() {
 
   const currentTab = tabMeta[activeTab];
 
+  // #469: a tab shows its skeleton only on a cold load with no rows yet;
+  // with placeholder/cached data the tab itself stays on screen.
+  const showPendingSkeleton =
+    (pendingAgenciesList.isLoading || pendingTripsList.isLoading) &&
+    pendingAgencies.length === 0 &&
+    pendingTrips.length === 0;
+  const showAgenciesSkeleton = allAgenciesList.isLoading && allAgencies.length === 0;
+  const showBookingsSkeleton = allBookingsList.isLoading && allBookings.length === 0;
+  const showGroupsSkeleton = pendingGroupsList.isLoading && pendingGroups.length === 0;
+  const showPaymentProofsSkeleton =
+    pendingPaymentProofsList.isLoading && pendingPaymentProofs.length === 0;
+  const showAuditSkeleton = auditLogsLoading && auditLogs.length === 0;
+  const showInvoicesSkeleton = invoicesList.isLoading && invoices.length === 0;
+  const showRefundsSkeleton = refundCasesList.isLoading && refundCases.length === 0;
+
   const paginationLabels = {
     showing: t('pagination.showing'),
     of: t('pagination.of'),
@@ -634,7 +663,10 @@ export default function AdminDashboard() {
         summaryCards={summaryCards}
         onLogout={logout}
       >
-        {activeTab === 'PENDING' && (
+        {activeTab === 'PENDING' && showPendingSkeleton && (
+          <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
+        )}
+        {activeTab === 'PENDING' && !showPendingSkeleton && (
           <PendingTab
             t={t}
             pendingAgencies={pendingAgencies}
@@ -655,7 +687,10 @@ export default function AdminDashboard() {
             isVerifyingTrip={verifyTripMutation.isPending}
           />
         )}
-        {activeTab === 'AGENCIES' && (
+        {activeTab === 'AGENCIES' && showAgenciesSkeleton && (
+          <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
+        )}
+        {activeTab === 'AGENCIES' && !showAgenciesSkeleton && (
           <AgenciesTab
             t={t}
             agencies={allAgencies}
@@ -671,7 +706,10 @@ export default function AdminDashboard() {
             }
           />
         )}
-        {activeTab === 'BOOKINGS' && (
+        {activeTab === 'BOOKINGS' && showBookingsSkeleton && (
+          <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
+        )}
+        {activeTab === 'BOOKINGS' && !showBookingsSkeleton && (
           <BookingsTab
             t={t}
             bookings={allBookings}
@@ -683,7 +721,10 @@ export default function AdminDashboard() {
             onRequestRefund={(booking) => setPendingConfirmation({ kind: 'refund-booking', booking })}
           />
         )}
-        {activeTab === 'GROUPS' && (
+        {activeTab === 'GROUPS' && showGroupsSkeleton && (
+          <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
+        )}
+        {activeTab === 'GROUPS' && !showGroupsSkeleton && (
           <GroupsTab
             t={t}
             groups={pendingGroups}
@@ -692,7 +733,10 @@ export default function AdminDashboard() {
             paginationLabels={paginationLabels}
           />
         )}
-        {activeTab === 'PAYMENT_PROOFS' && (
+        {activeTab === 'PAYMENT_PROOFS' && showPaymentProofsSkeleton && (
+          <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
+        )}
+        {activeTab === 'PAYMENT_PROOFS' && !showPaymentProofsSkeleton && (
           <PaymentProofsTab
             t={t}
             proofs={pendingPaymentProofs}
@@ -706,7 +750,10 @@ export default function AdminDashboard() {
             onVerifyPayment={(id, status) => verifyPaymentMutation.mutate({ id, status })}
           />
         )}
-        {activeTab === 'AUDIT' && (
+        {activeTab === 'AUDIT' && showAuditSkeleton && (
+          <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
+        )}
+        {activeTab === 'AUDIT' && !showAuditSkeleton && (
           <AuditTab
             t={t}
             logs={auditLogs}
@@ -723,7 +770,10 @@ export default function AdminDashboard() {
           />
         )}
 
-        {activeTab === 'INVOICES' && (
+        {activeTab === 'INVOICES' && showInvoicesSkeleton && (
+          <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
+        )}
+        {activeTab === 'INVOICES' && !showInvoicesSkeleton && (
           <InvoicesTab
             t={t}
             invoices={invoices}
@@ -733,7 +783,10 @@ export default function AdminDashboard() {
           />
         )}
 
-        {activeTab === 'REFUNDS' && (
+        {activeTab === 'REFUNDS' && showRefundsSkeleton && (
+          <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
+        )}
+        {activeTab === 'REFUNDS' && !showRefundsSkeleton && (
           <RefundsTab
             t={t}
             cases={refundCases}

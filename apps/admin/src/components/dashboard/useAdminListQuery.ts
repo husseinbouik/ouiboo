@@ -18,7 +18,7 @@ export const useAdminListQuery = <T,>(
   currentPage: number,
   extraParams?: Record<string, string>,
 ) => {
-  const { data: raw } = useQuery<unknown>({
+  const { data: raw, isLoading } = useQuery<unknown>({
     queryKey: [queryKeyKey, activeTab, debouncedQuery, currentPage, extraParams],
     queryFn: async () => {
       const resp = await apiClient.get(path, {
@@ -34,5 +34,7 @@ export const useAdminListQuery = <T,>(
     enabled,
     placeholderData: (prev: unknown) => prev,
   });
-  return toPaginatedList<T>(raw);
+  // isLoading is true only on a cold load (no cached/placeholder data), so
+  // surfaces can show a skeleton instead of flashing their empty state (#469).
+  return { ...toPaginatedList<T>(raw), isLoading };
 };

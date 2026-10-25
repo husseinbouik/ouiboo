@@ -20,6 +20,9 @@ import {
   TableRow,
   Badge,
   Button,
+  DashboardStatsSkeleton,
+  CardListSkeleton,
+  Skeleton,
 } from '@ouiboo/ui';
 import {
   TrendingUp,
@@ -35,7 +38,6 @@ import {
   FileText,
   CreditCard,
   MessageSquareText,
-  Loader2,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
@@ -217,11 +219,14 @@ export default function AgencyDashboard() {
 
   if (isUserLoading && statsLoading && bookingsLoading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="flex items-center gap-3 text-muted-foreground font-semibold">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          {t('dashboard.loadingCommandCenter')}
+      <div className="space-y-12 max-w-7xl mx-auto" role="status" aria-label={t('dashboard.loadingCommandCenter')}>
+        <div className="space-y-3" aria-hidden="true">
+          <Skeleton className="h-10 w-72 max-w-full" />
+          <Skeleton className="h-5 w-96 max-w-full" />
         </div>
+        <DashboardStatsSkeleton count={3} className="md:grid-cols-3 lg:grid-cols-3" />
+        <CardListSkeleton rows={3} />
+        <span className="sr-only">{t('dashboard.loadingCommandCenter')}</span>
       </div>
     );
   }

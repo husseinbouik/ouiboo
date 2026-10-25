@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookingStatus, VerificationStatus, type BookingDetails } from '@ouiboo/types';
-import { Badge, Button, Card } from '@ouiboo/ui';
+import { Badge, Button, Card, BookingDetailSkeleton } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import {
   Calendar,
@@ -98,9 +98,11 @@ export default function BookingDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-sunset-orange" />
-        <p className="text-sm font-medium text-muted-foreground">Loading your booking...</p>
+      <div className="min-h-screen bg-background px-6 pt-28 pb-20" role="status" aria-label="Loading your booking...">
+        <div className="max-w-5xl mx-auto">
+          <BookingDetailSkeleton />
+        </div>
+        <span className="sr-only">Loading your booking...</span>
       </div>
     );
   }

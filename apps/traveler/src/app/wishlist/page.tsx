@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { TripCard } from '@/components/TripCard';
-import { Button, Badge } from '@ouiboo/ui';
+import { Button, Badge, TripCardSkeletonGrid } from '@ouiboo/ui';
 import { Calendar } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 
@@ -60,10 +60,9 @@ export default function WishlistPage() {
         </div>
 
         {isAuthLoading || isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-80 bg-muted/30 rounded-2xl animate-pulse" />
-            ))}
+          <div role="status" aria-label="Loading your wishlist...">
+            <TripCardSkeletonGrid count={6} />
+            <span className="sr-only">Loading your wishlist...</span>
           </div>
         ) : !user ? (
           <div className="text-center py-28 bg-card/70 rounded-2xl border border-dashed border-border">

@@ -34,7 +34,7 @@ import Link from 'next/link';
 import { PaymentProofReviewModal } from '@/components/PaymentProofReviewModal';
 import { usePaymentProofReview } from '@/components/usePaymentProofReview';
 import { getAgencyBookingStatusMeta, getAgencyPaymentStatusMeta, getAgencyProofStatusLabel, formatCurrency, formatLocalDate } from '@ouiboo/utils';
-import { Pagination } from '@ouiboo/ui';
+import { Pagination, TableBodySkeleton } from '@ouiboo/ui';
 import { toPaginatedList } from '@ouiboo/utils';
 
 export default function BookingsManager() {
@@ -154,7 +154,7 @@ export default function BookingsManager() {
       <Card className="shadow-sm overflow-hidden bg-card border border-border">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-start">
+            <table className="w-full text-sm text-start" aria-busy={isLoading || undefined}>
               <thead className="bg-muted/50 border-b border-border text-muted-foreground uppercase text-[11px] font-bold tracking-wider">
                 <tr>
                   <th className="px-6 py-4">{t('bookings.colTraveler')}</th>
@@ -166,9 +166,7 @@ export default function BookingsManager() {
               </thead>
               <tbody className="divide-y divide-border">
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">{t('bookings.loading')}</td>
-                  </tr>
+                  <TableBodySkeleton rows={5} columns={5} />
                 ) : bookings.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">{t('bookings.empty')}</td>
