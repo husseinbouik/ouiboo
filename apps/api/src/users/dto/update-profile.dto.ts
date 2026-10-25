@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, MinLength, IsUrl, IsEnum, IsDateString, MaxLength } from 'class-validator';
+import { IsString, IsOptional, MinLength, IsUrl, IsEnum, IsDateString, IsNumber, MaxLength } from 'class-validator';
 
 // #371: mirrors the Prisma TravelLicenceType enum (Law 11-16 categories).
 export enum TravelLicenceTypeDto {
@@ -85,4 +85,62 @@ export class UpdateAgencyProfileDto {
     @IsDateString()
     @IsOptional()
     licenceExpiry?: string;
+
+    // #415: licence document — a PRIVATE identity-document upload key
+    // (private/{userId}/…), never a URL. The service validates ownership
+    // of the key. A complete licence submission (number + type + expiry
+    // + document) is required before it can enter PENDING_REVIEW.
+    @ApiProperty({ example: 'private/user-id/licence.pdf', required: false, description: 'Private storage key of the uploaded licence document' })
+    @IsString()
+    @IsOptional()
+    @MaxLength(300)
+    licenceDocumentKey?: string;
+
+    @ApiProperty({ example: 'licence.pdf', required: false })
+    @IsString()
+    @IsOptional()
+    @MaxLength(200)
+    licenceDocumentName?: string;
+
+    // #415: RC insurance artefact. Status/verified-at/rejection fields
+    // are server-managed and deliberately NOT part of this DTO. Any
+    // change resets the insurance to PENDING_REVIEW (when complete).
+    @ApiProperty({ example: 'AXA Assurance Maroc', required: false })
+    @IsString()
+    @IsOptional()
+    @MaxLength(160)
+    insuranceInsurer?: string;
+
+    @ApiProperty({ example: 'RC-2026-00421', required: false })
+    @IsString()
+    @IsOptional()
+    @MaxLength(80)
+    insurancePolicyNumber?: string;
+
+    @ApiProperty({ example: 'Atlas Adventures SARL', required: false, description: 'Insured legal name — must match the agency legal name' })
+    @IsString()
+    @IsOptional()
+    @MaxLength(160)
+    insuranceInsuredName?: string;
+
+    @ApiProperty({ example: '2026-01-01', required: false, description: 'Insurance cover start date (ISO 8601)' })
+    @IsDateString()
+    @IsOptional()
+    insuranceValidFrom?: string;
+
+    @ApiProperty({ example: '2026-12-31', required: false, description: 'Insurance expiry date (ISO 8601)' })
+    @IsDateString()
+    @IsOptional()
+    insuranceExpiry?: string;
+
+    @ApiProperty({ example: 1000000, required: false, description: 'Coverage limit in MAD' })
+    @IsNumber()
+    @IsOptional()
+    insuranceCoverageLimit?: number;
+
+    @ApiProperty({ example: 'private/user-id/rc-certificate.pdf', required: false, description: 'Private storage key of the uploaded RC certificate' })
+    @IsString()
+    @IsOptional()
+    @MaxLength(300)
+    insuranceCertificateKey?: string;
 }
