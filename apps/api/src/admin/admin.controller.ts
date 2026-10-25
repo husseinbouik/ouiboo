@@ -564,6 +564,107 @@ export class AdminController {
         return updated;
     }
 
+    @Post('agencies/:id/bank-details/verify')
+    @ApiOperation({ summary: 'Verify or reject an agency bank payment destination (#421)' })
+    async verifyAgencyBankDetails(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() body: { status?: 'VERIFIED' | 'REJECTED'; reason?: string; overrideReason?: string },
+    ) {
+        const status = body?.status;
+        if (!status || !['VERIFIED', 'REJECTED'].includes(status)) {
+            throw new BadRequestException('Invalid bank details verification status');
+        }
+        const agency = await this.db.agencyProfile.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                bankDetails: true,
+                pendingBankDetails: true,
+                bankAccountHolderName: true,
+                bankAttestationUrl: true,
+                legalName: true,
+                companyName: true,
+                bankDetailsVerifiedAt: true,
+            },
+        });
+        if (!agency) {
+            throw new BadRequestException('Agency not found');
+        }
+        if (!agency.pendingBankDetails) {
+            throw new BadRequestException('Agency has no bank details pending review');
+        }
+
+        if (status === 'VERIFIED') {
+            // #421: the submitted account holder must be the agency
+            // itself. A holder-name mismatch against the legal/trade
+            // name blocks verification (a third-party RIB must fail)
+            // unless the admin records an override reason — trade-name
+            // accounts exist, silent passes do not.
+            const holder = (agency.bankAccountHolderName || '').trim();
+            if (!holder) {
+                throw new BadRequestException('Agency has not submitted a bank account holder name');
+            }
+            const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim();
+            const holderMatches = [agency.legalName, agency.companyName]
+                .filter((name): name is string => !!name && name.trim().length > 0)
+                .some((name) => normalize(name) === normalize(holder));
+            const overrideReason = body.overrideReason?.trim() || null;
+            if (!holderMatches && !overrideReason) {
+                throw new BadRequestException(
+                    'Bank account holder name does not match the agency legal name; record an override reason to verify anyway',
+                );
+            }
+            const updated = await this.db.agencyProfile.update({
+                where: { id },
+                data: {
+                    // Promote the reviewed submission to the live,
+                    // traveller-visible destination.
+                    bankDetails: agency.pendingBankDetails,
+                    pendingBankDetails: null,
+                    bankDetailsStatus: 'VERIFIED',
+                    bankDetailsVerifiedAt: new Date(),
+                    bankDetailsVerifiedBy: req?.user?.userId ?? null,
+                    bankDetailsRejectionReason: null,
+                },
+            });
+            this.auditLogService.log({
+                actorId: req?.user?.userId,
+                actorEmail: req?.user?.email,
+                action: 'AGENCY_BANK_DETAILS_VERIFIED',
+                targetType: 'AgencyProfile',
+                targetId: id,
+                metadata: { status, holderName: holder, holderMatches, overrideReason },
+            }).catch((err) => console.error('Audit log failed', err));
+            return updated;
+        }
+
+        const reason = body.reason?.trim();
+        if (!reason) {
+            throw new BadRequestException('A reason is required to reject bank details');
+        }
+        // A rejected REPLACEMENT does not take a verified destination
+        // offline: the live details and their verified standing remain.
+        const keepsVerifiedDestination = !!agency.bankDetails && !!agency.bankDetailsVerifiedAt;
+        const updated = await this.db.agencyProfile.update({
+            where: { id },
+            data: {
+                pendingBankDetails: null,
+                bankDetailsStatus: keepsVerifiedDestination ? 'VERIFIED' : 'REJECTED',
+                bankDetailsRejectionReason: reason,
+            },
+        });
+        this.auditLogService.log({
+            actorId: req?.user?.userId,
+            actorEmail: req?.user?.email,
+            action: 'AGENCY_BANK_DETAILS_REJECTED',
+            targetType: 'AgencyProfile',
+            targetId: id,
+            metadata: { status, reason, keepsVerifiedDestination },
+        }).catch((err) => console.error('Audit log failed', err));
+        return updated;
+    }
+
     @Get('pending-trips')
     @ApiOperation({ summary: 'Get trips pending verification' })
     async getPendingTrips(

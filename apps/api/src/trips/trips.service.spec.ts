@@ -217,6 +217,9 @@ describe('TripsService', () => {
                     logo: null,
                     verificationStatus: 'VERIFIED',
                     bankDetails: 'CIH Bank — RIB 230 780 0000000000000001 67',
+                    // #421: only an admin-verified destination is exposed.
+                    bankDetailsStatus: 'VERIFIED',
+                    bankDetailsVerifiedAt: new Date('2026-10-20T00:00:00Z'),
                 },
             });
 
@@ -228,6 +231,46 @@ describe('TripsService', () => {
             // blocks every booking when it is missing; if it is dropped from
             // the select again, checkout is permanently blocked (#380).
             expect(args.select.agency.select.bankDetails).toBe(true);
+            expect((result as any).agency.bankDetails).toBe(
+                'CIH Bank — RIB 230 780 0000000000000001 67',
+            );
+        });
+
+        it('strips bankDetails when the destination is not admin-verified (#421)', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                agency: {
+                    id: 'agency-123',
+                    companyName: 'Atlas Adventures SARL',
+                    logo: null,
+                    verificationStatus: 'VERIFIED',
+                    bankDetails: 'CIH Bank — RIB 230 780 0000000000000001 67',
+                    bankDetailsStatus: 'PENDING_REVIEW',
+                    bankDetailsVerifiedAt: null,
+                },
+            });
+
+            const result = await service.findOneTemplate('trip-123');
+
+            expect((result as any).agency.bankDetails).toBeNull();
+        });
+
+        it('keeps the verified instructions live during a replacement review (#421)', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                agency: {
+                    id: 'agency-123',
+                    companyName: 'Atlas Adventures SARL',
+                    logo: null,
+                    verificationStatus: 'VERIFIED',
+                    bankDetails: 'CIH Bank — RIB 230 780 0000000000000001 67',
+                    bankDetailsStatus: 'PENDING_REVIEW',
+                    bankDetailsVerifiedAt: new Date('2026-10-20T00:00:00Z'),
+                },
+            });
+
+            const result = await service.findOneTemplate('trip-123');
+
             expect((result as any).agency.bankDetails).toBe(
                 'CIH Bank — RIB 230 780 0000000000000001 67',
             );

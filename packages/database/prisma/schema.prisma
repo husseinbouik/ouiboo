@@ -42,6 +42,17 @@ enum LicenceStatus {
   EXPIRED
 }
 
+// #421 (Council P0-19): lifecycle of an agency's bank payment
+// destination. Free-text bank details are a submission, never live on
+// save: only an admin verification against a bank attestation promotes
+// them to the traveller-visible bankDetails.
+enum BankDetailsStatus {
+  UNVERIFIED
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
+}
+
 enum AgencyPaymentOnboardingStatus {
   NOT_STARTED
   PENDING_VERIFICATION
@@ -326,6 +337,19 @@ model AgencyProfile {
   trialEndsAt        DateTime?
   subscriptionEndsAt DateTime?
   bankDetails        String?            @db.Text
+  // #421 (Council P0-19): bank-destination verification. bankDetails
+  // stays the LIVE, traveller-visible instructions and is written only
+  // by the admin verify endpoint when it promotes a reviewed
+  // submission; agency edits land in pendingBankDetails (with holder
+  // name + attestation) so a replacement review never takes the
+  // currently verified destination offline.
+  pendingBankDetails          String?           @db.Text
+  bankAccountHolderName       String?
+  bankAttestationUrl          String?
+  bankDetailsStatus           BankDetailsStatus @default(UNVERIFIED)
+  bankDetailsVerifiedAt       DateTime?
+  bankDetailsVerifiedBy       String?
+  bankDetailsRejectionReason String?
   // #324: subscription terms acceptance + pre-renewal reminder marker
   subscriptionTermsVersion    String?
   subscriptionTermsAcceptedAt DateTime?

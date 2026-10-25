@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { AgencyPaymentOnboardingStatus } from '@ouiboo/database';
 import { DatabaseService } from '../database/database.service';
 import { PspAdapterRegistry } from './adapters/psp-adapter.registry';
+import { isBankDestinationVerified } from '../common/bank-details.util';
 
 export interface ConnectPaymentProfileInput {
     provider: string;
@@ -55,15 +56,30 @@ export class PaymentProfilesService {
     }
 
     /**
-     * Mark the connected merchant account as verified. For Phase 1 this is
-     * an explicit agency action (the agency confirms its merchant account
-     * is active with the provider); a provider-side verification call can
-     * replace the body when a real PSP lands.
+     * Mark the connected merchant account as verified.
+     *
+     * #421 (Council P0-19): self-attestation is removed for the `manual`
+     * provider. A manual profile's merchant identity IS the agency's bank
+     * destination, so activation requires that destination to be
+     * admin-verified against a bank attestation first; the profile stays
+     * PENDING_VERIFICATION until then. (A real PSP adapter will replace
+     * this with a provider-side verification call when one lands.)
      */
     async verify(agencyId: string) {
         const profile = await this.getForAgency(agencyId);
         if (!profile) {
             throw new NotFoundException('No payment profile connected for this agency');
+        }
+        if (profile.provider === 'manual') {
+            const agency = await this.db.agencyProfile.findUnique({
+                where: { id: agencyId },
+                select: { bankDetailsStatus: true, bankDetailsVerifiedAt: true },
+            });
+            if (!isBankDestinationVerified(agency)) {
+                throw new BadRequestException(
+                    'Your bank payment destination must be verified by an admin before the manual payment profile can be activated',
+                );
+            }
         }
         return this.db.agencyPaymentProfile.update({
             where: { agencyId },

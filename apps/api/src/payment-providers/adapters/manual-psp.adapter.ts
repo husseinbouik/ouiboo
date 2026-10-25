@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ExternalPaymentStatus, PaymentCustodian } from '@ouiboo/database';
 import { DatabaseService } from '../../database/database.service';
 import { toMoneyString } from '../../common/money.util';
+import { visibleBankDetails } from '../../common/bank-details.util';
 import {
     PspAdapter,
     PspCreatePaymentRequestInput,
@@ -36,12 +37,15 @@ export class ManualPspAdapter implements PspAdapter {
     ): Promise<PspCreatePaymentRequestResult> {
         const agency = await this.db.agencyProfile.findUnique({
             where: { id: profile.agencyId },
-            select: { bankDetails: true },
+            select: { bankDetails: true, bankDetailsStatus: true, bankDetailsVerifiedAt: true },
         });
         return {
             providerPaymentId: null,
             hostedUrl: null,
-            instructions: agency?.bankDetails?.trim() || null,
+            // #421: payment instructions are only handed out for an
+            // admin-verified bank destination; anything else yields no
+            // instructions, exactly like an unconfigured destination.
+            instructions: visibleBankDetails(agency)?.trim() || null,
         };
     }
 

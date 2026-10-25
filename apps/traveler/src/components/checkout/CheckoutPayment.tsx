@@ -53,7 +53,7 @@ export function CheckoutPayment({
           <div>
             <h4 className="font-black text-lg">Virement Bancaire</h4>
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-              {hasBankDetails ? 'Use the verified instructions below' : 'Payment instructions unavailable'}
+              {hasBankDetails ? 'Use the bank transfer instructions below' : 'Payment instructions unavailable'}
             </p>
           </div>
         </div>
@@ -61,7 +61,10 @@ export function CheckoutPayment({
           <>
             <div className="flex items-center gap-2 text-primary">
               <Info className="h-4 w-4" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Official Bank Instructions</span>
+              {/* #421: neutral label — the API only returns admin-verified
+                  destinations, but the UI does not badge free-text
+                  instructions as "official/verified". */}
+              <span className="text-[10px] font-black uppercase tracking-widest">Bank Transfer Instructions</span>
             </div>
             <div className="bg-card/70 p-4 rounded-xl font-mono text-sm whitespace-pre-wrap break-all leading-relaxed">
               {bankDetails}

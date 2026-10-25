@@ -448,12 +448,20 @@ describe('User features E2E (user-features.e2e-spec)', () => {
         await request(app.getHttpServer()).patch('/agency/profile').set('Authorization', 'Bearer agency').send({ companyName: 'New Name', bio: 'Updated bio', logo: 'https://example.com/logo.png', bankDetails: 'IBAN: MA123' }).expect(200);
         const updated = await db.agencyProfile.findUnique({ where: { id: agencyProfile.id } });
         expect(updated?.companyName).toBe('New Name');
-        expect(updated?.rib || updated?.bankDetails || '').toBeDefined();
+        // #421: a bank-details edit is a submission for admin review —
+        // it lands in pendingBankDetails with status PENDING_REVIEW, the
+        // live bankDetails is NOT overwritten, and the agency-level
+        // verificationStatus is no longer reset as a side effect
+        // (destination review replaced that behaviour).
+        expect(updated?.pendingBankDetails).toBe('IBAN: MA123');
+        expect(updated?.bankDetailsStatus).toBe('PENDING_REVIEW');
+        expect(updated?.bankDetails ?? null).not.toBe('IBAN: MA123');
+        expect(updated?.verificationStatus).toBe('VERIFIED');
 
         // attempt to change verificationStatus
         await request(app.getHttpServer()).patch('/agency/profile').set('Authorization', 'Bearer agency').send({ verificationStatus: 'VERIFIED' }).expect(400);
         const after = await db.agencyProfile.findUnique({ where: { id: agencyProfile.id } });
-        expect(after?.verificationStatus).not.toBe('VERIFIED');
+        expect(after?.verificationStatus).toBe('VERIFIED');
     });
 
     it('Tenant isolation for agency updates', async () => {
