@@ -12,6 +12,7 @@ import { CurrencyService } from '../currency/currency.service';
 import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
 import { RefundsService } from '../refunds/refunds.service';
 import { PaymentReconciliationService } from '../payment-providers/reconciliation.service';
+import { AgencyComplianceService } from '../agency/agency-compliance.service';
 
 /**
  * Serverless-compatible cron endpoint (#216).
@@ -35,6 +36,7 @@ export class CronController {
     private readonly stagedPaymentsService: StagedPaymentsService,
     private readonly refundsService: RefundsService,
     private readonly paymentReconciliationService: PaymentReconciliationService,
+    private readonly agencyComplianceService: AgencyComplianceService,
   ) {}
 
   private validateCronSecret(authorization?: string): void {
@@ -116,6 +118,11 @@ export class CronController {
     // records; disagreements become reconciliation alert records.
     await run('paymentReconciliation', () =>
       this.paymentReconciliationService.runReconciliation(),
+    );
+    // #415: persist licence/RC-insurance lapses as EXPIRED, auto-pause
+    // the agency's ACTIVE trips (existing bookings untouched), notify.
+    await run('licenceInsuranceExpirySweep', () =>
+      this.agencyComplianceService.sweepExpiredLicencesAndInsurance(),
     );
 
     return { ranAt: new Date().toISOString(), results };
