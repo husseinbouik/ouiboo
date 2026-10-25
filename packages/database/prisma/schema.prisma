@@ -587,6 +587,13 @@ model Booking {
   // language the traveller booked in. Null = not recorded (pre-#424
   // bookings and non-checkout paths) → emails use the default locale.
   locale                      String?
+  // #481: the version of the traveller booking terms the checkout
+  // displayed and the traveller accepted, plus the server timestamp of
+  // that acceptance — the evidence of which terms this booking was made
+  // under. Null = not recorded (pre-#481 bookings and clients that do
+  // not send a version); a booking is never blocked on recording it.
+  termsVersion                String?
+  termsAcceptedAt             DateTime?
   paymentProofUrl             String?
   paymentProofId              String?              @unique
   paymentProof                PaymentProof?

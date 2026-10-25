@@ -86,6 +86,63 @@ describe('mapBookingDetails', () => {
     expect(mapped).not.toHaveProperty('documentNumber');
   });
 
+  describe('terms acceptance (#481)', () => {
+    const baseInput = {
+      id: 'booking-1',
+      sessionId: 'session-1',
+      travelerId: 'traveler-1',
+      bookingDate: new Date('2026-01-01T00:00:00.000Z'),
+      status: BookingStatus.AwaitingValidation,
+      totalAmount: 1200,
+      guestsCount: 2,
+      paymentMethod: PaymentMethod.Manual,
+      paymentStatus: BookingPaymentStatus.Unpaid,
+      traveler: {
+        email: 'traveler@example.com',
+        name: 'John Doe',
+      },
+      session: {
+        id: 'session-1',
+        templateId: 'template-1',
+        startDate: new Date('2026-02-01T00:00:00.000Z'),
+        endDate: new Date('2026-02-05T00:00:00.000Z'),
+        price: 600,
+        deposit: 100,
+        totalSeats: 12,
+        availableSeats: 10,
+        status: SessionStatus.Open,
+        template: {
+          id: 'template-1',
+          title: 'Atlas Trek',
+          startLocation: 'Marrakech',
+          images: ['cover.jpg'],
+          agency: {
+            id: 'agency-1',
+            companyName: 'Atlas Adventures',
+          },
+        },
+      },
+    };
+
+    it('surfaces the recorded terms version and acceptance time', () => {
+      const mapped = mapBookingDetails({
+        ...baseInput,
+        termsVersion: '1.0',
+        termsAcceptedAt: new Date('2026-01-01T00:05:00.000Z'),
+      });
+
+      expect(mapped.termsVersion).toBe('1.0');
+      expect(mapped.termsAcceptedAt).toBe('2026-01-01T00:05:00.000Z');
+    });
+
+    it('maps an unrecorded acceptance to explicit nulls', () => {
+      const mapped = mapBookingDetails(baseInput);
+
+      expect(mapped.termsVersion).toBeNull();
+      expect(mapped.termsAcceptedAt).toBeNull();
+    });
+  });
+
   describe('bank confirmation (#422 — proof ≠ settlement)', () => {
     const baseBooking = (overrides: Record<string, unknown> = {}) => ({
       id: 'booking-1',

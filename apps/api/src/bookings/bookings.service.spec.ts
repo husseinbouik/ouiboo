@@ -346,6 +346,29 @@ describe('BookingsService', () => {
             expect(createData.locale).toBeNull();
         });
 
+        it('persists the accepted terms version with a server timestamp (#481)', async () => {
+            mockSuccessfulCreate();
+
+            const before = Date.now();
+            await service.create('user-123', { ...createDto, termsVersion: '1.0' });
+
+            const createData = db.booking.create.mock.calls[0][0].data;
+            expect(createData.termsVersion).toBe('1.0');
+            expect(createData.termsAcceptedAt).toBeInstanceOf(Date);
+            expect(createData.termsAcceptedAt.getTime()).toBeGreaterThanOrEqual(before);
+            expect(createData.termsAcceptedAt.getTime()).toBeLessThanOrEqual(Date.now());
+        });
+
+        it('records null terms acceptance when the client sends no version (#481)', async () => {
+            mockSuccessfulCreate();
+
+            await service.create('user-123', createDto);
+
+            const createData = db.booking.create.mock.calls[0][0].data;
+            expect(createData.termsVersion).toBeNull();
+            expect(createData.termsAcceptedAt).toBeNull();
+        });
+
         it('snapshots the platform default cancellation scale onto the booking (#417)', async () => {
             mockSuccessfulCreate();
 

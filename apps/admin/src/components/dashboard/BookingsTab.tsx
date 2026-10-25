@@ -109,6 +109,17 @@ export default function BookingsTab({
                  <td className="px-6 py-4">
                     <p className="font-bold text-sm line-clamp-1">{booking.session.template.title}</p>
                     <p className="text-[10px] text-muted-foreground font-mono italic">#{booking.id.substring(0, 8)}</p>
+                    {/* #481: read-only terms-acceptance evidence — the
+                        version the traveller accepted for this booking
+                        and when the server recorded it. */}
+                    {booking.termsVersion && (
+                      <p className="text-[10px] text-muted-foreground">
+                        {t('dashboard.table.termsAccepted', { version: booking.termsVersion })}
+                        {booking.termsAcceptedAt
+                          ? ` · ${new Date(booking.termsAcceptedAt).toLocaleDateString()}`
+                          : ''}
+                      </p>
+                    )}
                  </td>
                  <td className="px-6 py-4 text-sm font-medium">{booking.traveler.name}</td>
                  <td className="px-6 py-4">

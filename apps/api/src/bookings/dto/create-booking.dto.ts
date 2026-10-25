@@ -51,6 +51,20 @@ export class CreateBookingDto {
     @IsIn(['en', 'fr', 'ar'])
     @IsOptional()
     locale?: string;
+
+    // #481: the version of the booking terms the checkout displayed and
+    // the traveller accepted (CURRENT_BOOKING_TERMS_VERSION in
+    // @ouiboo/types). Persisted on the booking with a server acceptance
+    // timestamp as the evidence of which terms the booking was made
+    // under. Optional — older clients omit it and the booking records
+    // NULL; a booking is never blocked on recording it. The whitelist
+    // pipe requires the field to be declared here for the checkout
+    // payload to be accepted at all.
+    @ApiProperty({ example: '1.0', required: false, description: 'Version of the booking terms accepted at checkout' })
+    @IsString()
+    @IsOptional()
+    @MaxLength(32)
+    termsVersion?: string;
 }
 
 export class VerifyManualPaymentDto {

@@ -352,6 +352,20 @@ export enum BookingStatus {
 
 export type BookingStatusType = BookingStatus;
 
+/**
+ * #481: the current version of the traveller booking terms (the binding
+ * checkout / terms-page wording in en/fr/ar). The checkout sends this
+ * with every booking creation and the API persists it on the booking
+ * with a server acceptance timestamp, so each booking proves which
+ * terms it was made under.
+ *
+ * HYGIENE: bump this constant in the same change whenever binding
+ * terms text changes (the checkout i18n namespace, the terms page, or
+ * the booking-journey email dictionary) — and note the bump in that
+ * PR's description. Never reuse a version for different wording.
+ */
+export const CURRENT_BOOKING_TERMS_VERSION = '1.0';
+
 export interface Booking {
     id: string;
     sessionId: string;
@@ -413,6 +427,14 @@ export interface BookingDetails extends Booking {
     paymentPlan?: BookingPaymentPlan | null;
     /** #417: cancellation scale snapshotted at booking creation (resolved from the template for legacy bookings). */
     cancellationScale?: CancellationScaleSnapshot;
+    /**
+     * #481: the booking-terms version the traveller accepted at
+     * checkout (see CURRENT_BOOKING_TERMS_VERSION) and the server
+     * timestamp of that acceptance. Null when not recorded (pre-#481
+     * bookings and clients that did not send a version).
+     */
+    termsVersion?: string | null;
+    termsAcceptedAt?: string | null;
     review?: {
         id: string;
     };

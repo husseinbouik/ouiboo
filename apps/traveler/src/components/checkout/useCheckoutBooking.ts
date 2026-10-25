@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
+import { CURRENT_BOOKING_TERMS_VERSION } from '@ouiboo/types';
 import type { BookingResponse } from './checkout-types';
 import { getErrorMessage } from './checkout-types';
 
@@ -62,6 +63,11 @@ export function useCheckoutBooking({
           // persists it on the booking so booking-journey emails render
           // in this language.
           locale: (i18n.language || 'en').split('-')[0],
+          // #481: the version of the booking terms this checkout
+          // displays — the API persists it on the booking with a server
+          // acceptance timestamp, so the booking proves which terms it
+          // was made under.
+          termsVersion: CURRENT_BOOKING_TERMS_VERSION,
         });
         bookingId = response.data?.id ?? null;
       }

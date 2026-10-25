@@ -144,7 +144,8 @@
       "when": "Quand",
       "actor": "Acteur",
       "target": "Cible",
-      "metadata": "Métadonnées"
+      "metadata": "Métadonnées",
+      "termsAccepted": "Conditions v{{version}} acceptées"
     },
     "actions": {
       "review": "Examiner",

@@ -71,6 +71,10 @@ type BookingMapperInput = {
   refundStatus?: string | null;
   /** #417: cancellation scale snapshot stored on the booking (Json). */
   cancellationScale?: unknown;
+  /** #481: booking-terms version accepted at checkout (null if unrecorded). */
+  termsVersion?: string | null;
+  /** #481: server timestamp of the terms acceptance (null if unrecorded). */
+  termsAcceptedAt?: NullableDate;
   confirmedAt?: NullableDate;
   cancelledAt?: NullableDate;
   paymentGatewayTransactionId?: string | null;
@@ -247,6 +251,11 @@ export const mapBookingDetails = (booking: BookingMapperInput): BookingDetails =
   cancellationScale: buildCancellationScaleSnapshot(
     booking.cancellationScale ?? booking.session?.template?.cancellationPolicy,
   ),
+  // #481: the terms version this booking was made under + the server
+  // acceptance timestamp. Null (never omitted) when not recorded, so
+  // consumers can distinguish "unrecorded" from a missing field.
+  termsVersion: booking.termsVersion ?? null,
+  termsAcceptedAt: toIsoString(booking.termsAcceptedAt) ?? null,
   cancelledAt: toIsoString(booking.cancelledAt),
   confirmedAt: toIsoString(booking.confirmedAt),
   paymentGatewayTransactionId: booking.paymentGatewayTransactionId || undefined,

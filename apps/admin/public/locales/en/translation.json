@@ -144,7 +144,8 @@
       "when": "When",
       "actor": "Actor",
       "target": "Target",
-      "metadata": "Metadata"
+      "metadata": "Metadata",
+      "termsAccepted": "Terms v{{version}} accepted"
     },
     "actions": {
       "review": "Review",

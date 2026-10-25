@@ -252,6 +252,17 @@ export default function BookingDetailsPage() {
                 </div>
               </div>
 
+              {/* #481: the terms this booking was made under — version +
+                  acceptance time, read-only evidence for the traveller. */}
+              {booking.termsVersion && (
+                <p className="text-xs text-muted-foreground">
+                  Terms accepted: version {booking.termsVersion}
+                  {booking.termsAcceptedAt
+                    ? ` · ${format(new Date(booking.termsAcceptedAt), 'MMM dd, yyyy, HH:mm')}`
+                    : ''}
+                </p>
+              )}
+
               {/* #422 (Council P0-20): an uploaded or accepted proof is not a
                   settled payment — settlement is the agency's bank confirmation. */}
               {booking.paymentProof && booking.paymentProof.status !== VerificationStatus.Verified && booking.paymentProof.status !== VerificationStatus.Rejected && (
