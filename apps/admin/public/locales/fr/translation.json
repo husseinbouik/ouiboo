@@ -32,7 +32,33 @@
     "hidePassword": "Masquer le mot de passe",
     "notAdmin": "Ce compte n'a pas d'accès administrateur.",
     "networkError": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
-    "invalidCredentials": "Email ou mot de passe incorrect. Veuillez réessayer."
+    "invalidCredentials": "Email ou mot de passe incorrect. Veuillez réessayer.",
+    "mfa": {
+      "title": "Authentification à deux facteurs",
+      "subtitle": "Saisissez le code à 6 chiffres de votre application d’authentification.",
+      "recoverySubtitle": "Saisissez l’un des codes de récupération délivrés lors de l’inscription. Chaque code ne fonctionne qu’une fois.",
+      "codeLabel": "Code d’authentification",
+      "recoveryLabel": "Code de récupération",
+      "verify": "Vérifier",
+      "verifying": "Vérification...",
+      "invalid": "Ce code n’a pas été accepté. Vérifiez le code et réessayez.",
+      "useRecovery": "Utiliser un code de récupération",
+      "useAuthenticator": "Utiliser le code d’authentification",
+      "back": "Retour à la connexion",
+      "enrollTitle": "Configurer l’authentification à deux facteurs",
+      "enrollSubtitle": "Les comptes administrateurs doivent inscrire une application d’authentification avant de continuer. Scannez le code, puis saisissez le code à 6 chiffres affiché.",
+      "enrollConfirm": "Confirmer et continuer",
+      "enrollFailed": "Impossible de démarrer l’inscription MFA. Veuillez vous reconnecter.",
+      "qrAlt": "QR code d’inscription à l’authentification",
+      "recoveryTitle": "Enregistrez vos codes de récupération",
+      "recoveryWarning": "Chaque code vous connecte une fois si vous perdez votre authentificateur. Ils ne sont affichés que maintenant — conservez-les en lieu sûr, hors ligne.",
+      "continueButton": "Je les ai enregistrés — continuer",
+      "breakGlassLink": "Authentificateur perdu ? Utilisez un secret d’urgence",
+      "breakGlassTitle": "Connexion d’urgence",
+      "breakGlassSubtitle": "Uniquement en cas de perte de l’authentificateur. Connectez-vous avec votre e-mail, votre mot de passe et le secret d’urgence à usage unique. Son utilisation est consignée dans le journal d’audit et alerte tous les administrateurs.",
+      "breakGlassCodeLabel": "Secret d’urgence",
+      "breakGlassSubmit": "Se connecter avec le secret d’urgence"
+    }
   },
   "dashboard": {
     "brand": "OUIBOO ADMIN",
@@ -50,7 +76,8 @@
       "audit": "Journal d'audit",
       "invoices": "Factures",
       "refunds": "Remboursements",
-      "groups": "Groupes en attente"
+      "groups": "Groupes en attente",
+      "security": "Sécurité"
     },
     "meta": {
       "pending": {
@@ -92,6 +119,11 @@
         "title": "Groupes en attente",
         "description": "Sessions à paiement échelonné en attente de leur groupe minimum. Forcez la confirmation, prolongez le délai ou fermez un groupe — chaque intervention exige un motif et est inscrite au journal d'audit.",
         "searchPlaceholder": "Rechercher des voyages..."
+      },
+      "security": {
+        "title": "Sécurité administrateur",
+        "description": "Authentification à deux facteurs et récupération d’urgence pour les comptes administrateurs.",
+        "searchPlaceholder": "Paramètres de sécurité"
       }
     },
     "sections": {
@@ -456,7 +488,15 @@
       "ADMIN_GROUP_CLOSED": "Groupe fermé par l'administrateur",
       "ADMIN_DEADLINE_EXTENDED": "Date limite de confirmation prolongée par l'administrateur",
       "ADMIN_BOOKING_REPAIRED": "Réservation réparée par l'administrateur",
-      "ADMIN_REFUND_REPAIRED": "Dossier de remboursement réparé par l'administrateur"
+      "ADMIN_REFUND_REPAIRED": "Dossier de remboursement réparé par l'administrateur",
+      "ADMIN_LOGIN_SUCCEEDED": "Administrateur connecté",
+      "ADMIN_LOGIN_FAILED": "Échec de connexion administrateur",
+      "ADMIN_MFA_ENROLLED": "Administrateur inscrit au MFA (TOTP)",
+      "ADMIN_MFA_RECOVERY_USED": "Code de récupération MFA administrateur utilisé",
+      "ADMIN_BREAK_GLASS_CREATED": "Identifiant d’urgence créé",
+      "ADMIN_BREAK_GLASS_USED": "Connexion d’urgence utilisée",
+      "ADMIN_BREAK_GLASS_REVOKED": "Identifiant d’urgence révoqué",
+      "ADMIN_BREAK_GLASS_FAILED": "Échec de connexion d’urgence"
     }
   },
   "meta": {
@@ -488,5 +528,61 @@
   "loading": {
     "label": "Chargement de l'administration",
     "text": "Chargement…"
+  },
+  "security": {
+    "mfaTitle": "Authentification à deux facteurs (TOTP)",
+    "mfaDescription": "La connexion administrateur exige un mot de passe plus un code d’authentification à 6 chiffres. Inscrivez une application d’authentification ici ; une nouvelle inscription remplace le secret et les codes de récupération précédents.",
+    "loading": "Chargement...",
+    "statusLabel": "Statut",
+    "statusEnabled": "Activée",
+    "enrolledAt": "Inscrit le",
+    "recoveryRemaining": "Codes de récupération restants",
+    "noRecoveryCodesWarning": "Il ne vous reste aucun code de récupération. Réinscrivez-vous pour en générer un nouveau jeu et assurez-vous qu’au moins un identifiant d’urgence est actif.",
+    "reEnroll": "Réinscrire l’authentificateur",
+    "currentPassword": "Mot de passe actuel",
+    "startEnrollment": "Démarrer l’inscription",
+    "stepScan": "Scannez le QR code avec votre application d’authentification (ou saisissez le secret manuellement).",
+    "stepConfirm": "Saisissez le code à 6 chiffres affiché par l’application pour confirmer.",
+    "qrAlt": "QR code d’inscription à l’authentification",
+    "manualSecret": "Secret de saisie manuelle",
+    "confirmCode": "Code d’authentification",
+    "confirmEnrollment": "Confirmer l’inscription",
+    "enrollSuccess": "L’authentification à deux facteurs est activée. Votre ancien secret et vos anciens codes de récupération ne fonctionnent plus.",
+    "enrollStartFailed": "Impossible de démarrer l’inscription. Vérifiez votre mot de passe et réessayez.",
+    "enrollConfirmFailed": "Ce code n’a pas été accepté. Vérifiez le code et réessayez.",
+    "recoveryCodesTitle": "Vos codes de récupération — affichés une seule fois",
+    "recoveryCodesWarning": "Chaque code vous connecte une fois si vous perdez votre authentificateur. Conservez-les en lieu sûr, hors ligne ; ils ne pourront plus être affichés.",
+    "copyCodes": "Copier les codes",
+    "downloadCodes": "Télécharger les codes",
+    "codesSaved": "Je les ai enregistrés",
+    "breakGlassTitle": "Identifiants d’urgence",
+    "breakGlassDescription": "Un identifiant d’urgence est un secret distinct à usage unique pour le cas d’un authentificateur perdu : associé au mot de passe administrateur, il permet de se connecter sans le code TOTP. Créez-en un, conservez-le hors ligne (enveloppe scellée ou coffre de mots de passe) et ne le gardez jamais avec le mot de passe. Chaque utilisation est consignée dans le journal d’audit et alerte tous les administrateurs.",
+    "breakGlassSecretTitle": "Nouveau secret d’urgence — « {{label}} »",
+    "breakGlassSecretWarning": "Affiché uniquement maintenant. Conservez-le hors ligne immédiatement. Il expire le {{expiresAt}} et ne fonctionne qu’une seule fois.",
+    "copySecret": "Copier le secret",
+    "downloadSecret": "Télécharger le secret",
+    "breakGlassLabel": "Libellé",
+    "breakGlassLabelPlaceholder": "ex. Enveloppe scellée — coffre du bureau",
+    "breakGlassDays": "Validité (jours)",
+    "createBreakGlass": "Créer l’identifiant",
+    "breakGlassCreated": "Identifiant d’urgence créé. Conservez le secret hors ligne dès maintenant.",
+    "breakGlassCreateFailed": "Impossible de créer l’identifiant. Vérifiez votre mot de passe et réessayez.",
+    "breakGlassRevoked": "Identifiant d’urgence révoqué.",
+    "breakGlassRevokeFailed": "Impossible de révoquer l’identifiant.",
+    "colLabel": "Libellé",
+    "colStatus": "Statut",
+    "colCreated": "Créé le",
+    "colExpires": "Expire le",
+    "colActions": "Actions",
+    "noBreakGlass": "Aucun identifiant d’urgence pour le moment. Créez-en un avant d’en avoir besoin.",
+    "revoke": "Révoquer",
+    "confirmRevoke": "Confirmer la révocation",
+    "cancel": "Annuler",
+    "status": {
+      "active": "Actif",
+      "used": "Utilisé",
+      "revoked": "Révoqué",
+      "expired": "Expiré"
+    }
   }
 }

@@ -4,6 +4,7 @@ import * as request from 'supertest';
 import { AuthController } from '../src/auth/auth.controller';
 import { AuthService } from '../src/auth/auth.service';
 import { RateLimitGuard } from '../src/common/rate-limit.guard';
+import { MfaEnrollmentGuard } from '../src/auth/guards/mfa-enrollment.guard';
 
 describe('E2E: auth login + password reset', () => {
     let app: INestApplication;
@@ -11,6 +12,9 @@ describe('E2E: auth login + password reset', () => {
     const authService = {
         validateUser: jest.fn(),
         login: jest.fn(),
+        // #418: POST /auth/login now enters through beginLogin, which
+        // returns plain tokens for non-admin / non-MFA accounts.
+        beginLogin: jest.fn(),
         requestPasswordReset: jest.fn(),
         resetPassword: jest.fn(),
     };
@@ -21,6 +25,10 @@ describe('E2E: auth login + password reset', () => {
             providers: [{ provide: AuthService, useValue: authService }],
         })
             .overrideGuard(RateLimitGuard)
+            .useValue({ canActivate: () => true })
+            // The enrolment guard needs JwtService, which this module does
+            // not wire; its behaviour is covered in guards/mfa-enrollment.guard.spec.ts.
+            .overrideGuard(MfaEnrollmentGuard)
             .useValue({ canActivate: () => true })
             .compile();
 
@@ -43,6 +51,10 @@ describe('E2E: auth login + password reset', () => {
             role: 'TRAVELER',
         });
         authService.login.mockResolvedValue({
+            accessToken: 'access-token',
+            refreshToken: 'refresh-token',
+        });
+        authService.beginLogin.mockResolvedValue({
             accessToken: 'access-token',
             refreshToken: 'refresh-token',
         });

@@ -312,7 +312,15 @@ model User {
   passwordResetTokenHash  String?                 @unique
   passwordResetExpiresAt  DateTime?
   passwordResetSentAt     DateTime?
+  // #418 (Council P0-13): admin MFA. The TOTP secret is stored AES-256-GCM
+  // encrypted (MFA_ENCRYPTION_KEY), never plaintext; recovery codes are
+  // stored only as bcrypt hashes and burn on use.
+  mfaEnabled              Boolean                 @default(false)
+  mfaTotpSecret           String?
+  mfaRecoveryCodeHashes   Json?
+  mfaEnrolledAt           DateTime?
   refreshTokens           RefreshToken[]
+  breakGlassCredentials   BreakGlassCredential[]  @relation("BreakGlassCreatedBy")
   agencyProfile           AgencyProfile?
   bookings                Booking[]
   refundCases             RefundCase[]
@@ -342,6 +350,30 @@ model RefreshToken {
   replacedTokens    RefreshToken[] @relation("RefreshTokenRotation")
 
   @@index([userId])
+}
+
+// #418 (Council P0-13): break-glass recovery credentials. A break-glass
+// credential is a SEPARATE, one-time recovery secret — it is not a recovery
+// code on the admin account itself. It is created by an authenticated admin,
+// shown exactly once, stored only as a bcrypt hash, expires, and can be
+// revoked. Using it (with the admin email + password) bypasses a lost TOTP
+// factor exactly once; every use is written to AuditLog as
+// ADMIN_BREAK_GLASS_USED and alerted by email. The plaintext is held offline
+// by the founder (see docs/launch-ops/BREAK_GLASS_RUNBOOK.md).
+model BreakGlassCredential {
+  id          String    @id @default(cuid())
+  label       String
+  secretHash  String
+  createdById String
+  createdBy   User      @relation("BreakGlassCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  usedAt      DateTime?
+  usedByEmail String?
+  revokedAt   DateTime?
+
+  @@index([createdById])
+  @@index([expiresAt])
 }
 
 model AgencyProfile {

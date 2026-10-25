@@ -9,6 +9,7 @@ import { UsersController } from '../users/users.controller';
 import { UsersService } from '../users/users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { MfaEnrollmentGuard } from '../auth/guards/mfa-enrollment.guard';
 import { EmailService } from '../email/email.service';
 import { UploadService } from '../upload/upload.service';
 import { DatabaseService } from '../database/database.service';
@@ -19,6 +20,9 @@ describe('MVP smoke: auth + booking flow', () => {
     const authService = {
         validateUser: jest.fn(),
         login: jest.fn(),
+        // #418: POST /auth/login now enters through beginLogin, which
+        // returns plain tokens for non-admin / non-MFA accounts.
+        beginLogin: jest.fn(),
         register: jest.fn(),
     };
     const bookingsService = {
@@ -78,6 +82,10 @@ describe('MVP smoke: auth + booking flow', () => {
             })
             .overrideGuard(RolesGuard)
             .useValue({ canActivate: () => true })
+            // The enrolment guard needs JwtService, which this module does
+            // not wire; its behaviour is covered in guards/mfa-enrollment.guard.spec.ts.
+            .overrideGuard(MfaEnrollmentGuard)
+            .useValue({ canActivate: () => true })
             .compile();
 
         app = moduleRef.createNestApplication();
@@ -101,6 +109,7 @@ describe('MVP smoke: auth + booking flow', () => {
         authService.register.mockResolvedValue({ id: 'user-123', email: 'traveler@example.com' });
         authService.validateUser.mockResolvedValue({ id: 'user-123', email: 'traveler@example.com' });
         authService.login.mockResolvedValue({ accessToken: 'token', refreshToken: 'refresh' });
+        authService.beginLogin.mockResolvedValue({ accessToken: 'token', refreshToken: 'refresh' });
         bookingsService.create.mockResolvedValue({
             id: 'booking-456',
             travelerId: 'user-123',

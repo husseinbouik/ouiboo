@@ -275,6 +275,15 @@ const AUDIT_ACTION_KEYS: Record<string, string> = {
   ADMIN_DEADLINE_EXTENDED: 'dashboard.auditActions.ADMIN_DEADLINE_EXTENDED',
   ADMIN_BOOKING_REPAIRED: 'dashboard.auditActions.ADMIN_BOOKING_REPAIRED',
   ADMIN_REFUND_REPAIRED: 'dashboard.auditActions.ADMIN_REFUND_REPAIRED',
+  // #418: admin identity-hardening events (sign-ins, MFA, break-glass).
+  ADMIN_LOGIN_SUCCEEDED: 'dashboard.auditActions.ADMIN_LOGIN_SUCCEEDED',
+  ADMIN_LOGIN_FAILED: 'dashboard.auditActions.ADMIN_LOGIN_FAILED',
+  ADMIN_MFA_ENROLLED: 'dashboard.auditActions.ADMIN_MFA_ENROLLED',
+  ADMIN_MFA_RECOVERY_USED: 'dashboard.auditActions.ADMIN_MFA_RECOVERY_USED',
+  ADMIN_BREAK_GLASS_CREATED: 'dashboard.auditActions.ADMIN_BREAK_GLASS_CREATED',
+  ADMIN_BREAK_GLASS_USED: 'dashboard.auditActions.ADMIN_BREAK_GLASS_USED',
+  ADMIN_BREAK_GLASS_REVOKED: 'dashboard.auditActions.ADMIN_BREAK_GLASS_REVOKED',
+  ADMIN_BREAK_GLASS_FAILED: 'dashboard.auditActions.ADMIN_BREAK_GLASS_FAILED',
 };
 
 export const getAdminAuditActionLabel = (action: string, t?: Translate) => {

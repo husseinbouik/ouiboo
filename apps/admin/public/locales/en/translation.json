@@ -32,7 +32,33 @@
     "hidePassword": "Hide password",
     "notAdmin": "This account does not have admin access.",
     "networkError": "Cannot reach the server. Please check your connection and try again.",
-    "invalidCredentials": "Incorrect email or password. Please try again."
+    "invalidCredentials": "Incorrect email or password. Please try again.",
+    "mfa": {
+      "title": "Two-factor authentication",
+      "subtitle": "Enter the 6-digit code from your authenticator app.",
+      "recoverySubtitle": "Enter one of the recovery codes issued when you enrolled. Each code works once.",
+      "codeLabel": "Authenticator code",
+      "recoveryLabel": "Recovery code",
+      "verify": "Verify",
+      "verifying": "Verifying...",
+      "invalid": "That code was not accepted. Check the code and try again.",
+      "useRecovery": "Use a recovery code",
+      "useAuthenticator": "Use authenticator code",
+      "back": "Back to sign in",
+      "enrollTitle": "Set up two-factor authentication",
+      "enrollSubtitle": "Admin accounts must enrol an authenticator app before continuing. Scan the code, then enter the 6-digit code it shows.",
+      "enrollConfirm": "Confirm and continue",
+      "enrollFailed": "Could not start MFA enrolment. Please sign in again.",
+      "qrAlt": "Authenticator enrolment QR code",
+      "recoveryTitle": "Save your recovery codes",
+      "recoveryWarning": "Each code signs you in once if you lose your authenticator. They are shown only now — store them somewhere safe and offline.",
+      "continueButton": "I saved them — continue",
+      "breakGlassLink": "Lost your authenticator? Use a break-glass secret",
+      "breakGlassTitle": "Break-glass sign-in",
+      "breakGlassSubtitle": "For a lost authenticator only. Sign in with your email, password, and the one-time break-glass secret. Its use is audit-logged and alerts every admin.",
+      "breakGlassCodeLabel": "Break-glass secret",
+      "breakGlassSubmit": "Sign in with break-glass secret"
+    }
   },
   "dashboard": {
     "brand": "OUIBOO ADMIN",
@@ -50,7 +76,8 @@
       "audit": "Audit Log",
       "invoices": "Invoices",
       "refunds": "Refunds",
-      "groups": "Pending Groups"
+      "groups": "Pending Groups",
+      "security": "Security"
     },
     "meta": {
       "pending": {
@@ -92,6 +119,11 @@
         "title": "Pending Groups",
         "description": "Staged sessions still waiting for their minimum group. Force-confirm, extend the deadline, or close a group — every intervention needs a reason and is written to the audit log.",
         "searchPlaceholder": "Search trips..."
+      },
+      "security": {
+        "title": "Admin Security",
+        "description": "Two-factor authentication and break-glass recovery for admin accounts.",
+        "searchPlaceholder": "Security settings"
       }
     },
     "sections": {
@@ -456,7 +488,15 @@
       "ADMIN_GROUP_CLOSED": "Group closed by admin",
       "ADMIN_DEADLINE_EXTENDED": "Confirmation deadline extended by admin",
       "ADMIN_BOOKING_REPAIRED": "Booking repaired by admin",
-      "ADMIN_REFUND_REPAIRED": "Refund case repaired by admin"
+      "ADMIN_REFUND_REPAIRED": "Refund case repaired by admin",
+      "ADMIN_LOGIN_SUCCEEDED": "Admin signed in",
+      "ADMIN_LOGIN_FAILED": "Admin sign-in failed",
+      "ADMIN_MFA_ENROLLED": "Admin enrolled in MFA (TOTP)",
+      "ADMIN_MFA_RECOVERY_USED": "Admin MFA recovery code used",
+      "ADMIN_BREAK_GLASS_CREATED": "Break-glass credential created",
+      "ADMIN_BREAK_GLASS_USED": "Break-glass sign-in used",
+      "ADMIN_BREAK_GLASS_REVOKED": "Break-glass credential revoked",
+      "ADMIN_BREAK_GLASS_FAILED": "Break-glass sign-in failed"
     }
   },
   "meta": {
@@ -488,5 +528,61 @@
   "loading": {
     "label": "Loading administration",
     "text": "Loading…"
+  },
+  "security": {
+    "mfaTitle": "Two-factor authentication (TOTP)",
+    "mfaDescription": "Admin sign-in requires a password plus a 6-digit authenticator code. Enrol an authenticator app here; re-enrolling replaces the previous secret and recovery codes.",
+    "loading": "Loading...",
+    "statusLabel": "Status",
+    "statusEnabled": "Enabled",
+    "enrolledAt": "Enrolled",
+    "recoveryRemaining": "Recovery codes remaining",
+    "noRecoveryCodesWarning": "You have no recovery codes left. Re-enrol to issue a fresh set, and make sure at least one break-glass credential is active.",
+    "reEnroll": "Re-enrol authenticator",
+    "currentPassword": "Current password",
+    "startEnrollment": "Start enrolment",
+    "stepScan": "Scan the QR code with your authenticator app (or type the secret manually).",
+    "stepConfirm": "Enter the 6-digit code the app shows to confirm.",
+    "qrAlt": "Authenticator enrolment QR code",
+    "manualSecret": "Manual entry secret",
+    "confirmCode": "Authenticator code",
+    "confirmEnrollment": "Confirm enrolment",
+    "enrollSuccess": "Two-factor authentication is now enabled. Your previous secret and recovery codes no longer work.",
+    "enrollStartFailed": "Could not start enrolment. Check your password and try again.",
+    "enrollConfirmFailed": "That code was not accepted. Check the code and try again.",
+    "recoveryCodesTitle": "Your recovery codes — shown once",
+    "recoveryCodesWarning": "Each code signs you in once if you lose your authenticator. Store them somewhere safe and offline; they cannot be shown again.",
+    "copyCodes": "Copy codes",
+    "downloadCodes": "Download codes",
+    "codesSaved": "I saved them",
+    "breakGlassTitle": "Break-glass credentials",
+    "breakGlassDescription": "A break-glass credential is a separate one-time secret for the lost-authenticator emergency: with the admin password it signs in without the TOTP code. Create one, store it offline (sealed envelope or password safe), and never keep it next to the password. Every use is audit-logged and alerts all admins.",
+    "breakGlassSecretTitle": "New break-glass secret — \"{{label}}\"",
+    "breakGlassSecretWarning": "Shown only now. Store it offline immediately. It expires on {{expiresAt}} and works exactly once.",
+    "copySecret": "Copy secret",
+    "downloadSecret": "Download secret",
+    "breakGlassLabel": "Label",
+    "breakGlassLabelPlaceholder": "e.g. Sealed envelope — office safe",
+    "breakGlassDays": "Valid (days)",
+    "createBreakGlass": "Create credential",
+    "breakGlassCreated": "Break-glass credential created. Store the secret offline now.",
+    "breakGlassCreateFailed": "Could not create the credential. Check your password and try again.",
+    "breakGlassRevoked": "Break-glass credential revoked.",
+    "breakGlassRevokeFailed": "Could not revoke the credential.",
+    "colLabel": "Label",
+    "colStatus": "Status",
+    "colCreated": "Created",
+    "colExpires": "Expires",
+    "colActions": "Actions",
+    "noBreakGlass": "No break-glass credentials yet. Create one before you need it.",
+    "revoke": "Revoke",
+    "confirmRevoke": "Confirm revoke",
+    "cancel": "Cancel",
+    "status": {
+      "active": "Active",
+      "used": "Used",
+      "revoked": "Revoked",
+      "expired": "Expired"
+    }
   }
 }

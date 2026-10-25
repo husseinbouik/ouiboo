@@ -1,10 +1,19 @@
-import { Controller, Post, Get, Body, UnauthorizedException, Request, Res, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Param, Body, UnauthorizedException, Request, Res, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto, RefreshTokenDto, VerifyEmailDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
+import {
+    LoginDto, RegisterDto, RefreshTokenDto, VerifyEmailDto, ResendOtpDto, ForgotPasswordDto, ResetPasswordDto,
+    MfaVerifyDto, MfaRecoveryDto, MfaEnrollmentStartDto, MfaEnrollmentConfirmDto,
+    BreakGlassLoginDto, CreateBreakGlassCredentialDto,
+} from './dto/auth.dto';
 import { Request as ExpressRequest, Response } from 'express';
 import { RateLimit, RateLimitGuard, RateLimitSensitive } from '../common/rate-limit.guard';
 import { CsrfGuard } from './guards/csrf.guard';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { Roles } from './decorators/roles.decorator';
+import { MfaEnrollmentGuard } from './guards/mfa-enrollment.guard';
+import { UserRole } from '@ouiboo/types';
 
 const REFRESH_COOKIE_NAME = 'refresh_token';
 const REFRESH_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -25,9 +34,107 @@ export class AuthController {
         if (!user) {
             throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
         }
-        const tokens = await this.authService.login(user);
+        // #418: admins with MFA get a challenge payload instead of tokens;
+        // only a completed MFA step (or break-glass) issues tokens.
+        const result: any = await this.authService.beginLogin(user);
+        if (result?.accessToken && result?.refreshToken) {
+            this.setRefreshCookie(res, result.refreshToken);
+            return this.publicTokenResponse(result);
+        }
+        return result;
+    }
+
+    @Post('mfa/verify')
+    @RateLimit({ points: 10, windowMs: 60_000, keyPrefix: 'auth:mfa-verify' })
+    @RateLimitSensitive()
+    @ApiOperation({ summary: 'Complete an admin MFA challenge with a TOTP code (#418)' })
+    async verifyMfa(@Body() dto: MfaVerifyDto, @Res({ passthrough: true }) res: Response) {
+        const tokens = await this.authService.verifyMfa(dto.challengeToken, dto.code);
         this.setRefreshCookie(res, tokens.refreshToken);
         return this.publicTokenResponse(tokens);
+    }
+
+    @Post('mfa/recovery')
+    @RateLimit({ points: 10, windowMs: 60_000, keyPrefix: 'auth:mfa-recovery' })
+    @RateLimitSensitive()
+    @ApiOperation({ summary: 'Complete an admin MFA challenge with a one-time recovery code (#418)' })
+    async verifyMfaRecovery(@Body() dto: MfaRecoveryDto, @Res({ passthrough: true }) res: Response) {
+        const tokens = await this.authService.verifyMfaRecovery(dto.challengeToken, dto.recoveryCode);
+        this.setRefreshCookie(res, tokens.refreshToken);
+        return this.publicTokenResponse(tokens);
+    }
+
+    @Post('break-glass')
+    @RateLimit({ points: 5, windowMs: 60_000, keyPrefix: 'auth:break-glass' })
+    @RateLimitSensitive()
+    @ApiOperation({ summary: 'Break-glass admin sign-in: password + one-time break-glass secret, bypasses a lost TOTP factor (#418)' })
+    async breakGlass(@Body() dto: BreakGlassLoginDto, @Res({ passthrough: true }) res: Response) {
+        const tokens = await this.authService.useBreakGlass(dto.email, dto.password, dto.code);
+        this.setRefreshCookie(res, tokens.refreshToken);
+        return this.publicTokenResponse(tokens);
+    }
+
+    @Post('mfa/enrollment/start')
+    @UseGuards(MfaEnrollmentGuard)
+    @RateLimit({ points: 5, windowMs: 60_000, keyPrefix: 'auth:mfa-enroll-start' })
+    @RateLimitSensitive()
+    @ApiOperation({ summary: 'Start admin TOTP enrolment (access token + password re-entry, or enrolment challenge token) (#418)' })
+    async startMfaEnrollment(@Body() dto: MfaEnrollmentStartDto, @Request() req: ExpressRequest) {
+        const viaChallenge = (req as any).mfaEnrollmentViaChallenge === true;
+        return this.authService.startMfaEnrollment((req as any).user.id, viaChallenge, dto.password);
+    }
+
+    @Post('mfa/enrollment/confirm')
+    @UseGuards(MfaEnrollmentGuard)
+    @RateLimit({ points: 10, windowMs: 60_000, keyPrefix: 'auth:mfa-enroll-confirm' })
+    @RateLimitSensitive()
+    @ApiOperation({ summary: 'Confirm admin TOTP enrolment; returns one-time recovery codes, plus login tokens when enrolling from the login challenge (#418)' })
+    async confirmMfaEnrollment(
+        @Body() dto: MfaEnrollmentConfirmDto,
+        @Request() req: ExpressRequest,
+        @Res({ passthrough: true }) res: Response,
+    ) {
+        const viaChallenge = (req as any).mfaEnrollmentViaChallenge === true;
+        const result: any = await this.authService.confirmMfaEnrollment((req as any).user.id, viaChallenge, dto.code);
+        if (result?.refreshToken) {
+            this.setRefreshCookie(res, result.refreshToken);
+            return this.publicTokenResponse(result);
+        }
+        return result;
+    }
+
+    @Get('mfa/status')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.Admin)
+    @ApiOperation({ summary: 'Admin MFA status for the Security tab (#418)' })
+    async mfaStatus(@Request() req: ExpressRequest) {
+        return this.authService.getMfaStatus((req as any).user.id);
+    }
+
+    @Post('break-glass/credentials')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.Admin)
+    @RateLimit({ points: 5, windowMs: 60_000, keyPrefix: 'auth:break-glass-create' })
+    @RateLimitSensitive()
+    @ApiOperation({ summary: 'Create a one-time break-glass credential (secret returned once) (#418)' })
+    async createBreakGlassCredential(@Body() dto: CreateBreakGlassCredentialDto, @Request() req: ExpressRequest) {
+        return this.authService.createBreakGlassCredential((req as any).user.id, dto);
+    }
+
+    @Get('break-glass/credentials')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.Admin)
+    @ApiOperation({ summary: 'List break-glass credentials (metadata only) (#418)' })
+    async listBreakGlassCredentials(@Request() req: ExpressRequest) {
+        return this.authService.listBreakGlassCredentials((req as any).user.id);
+    }
+
+    @Delete('break-glass/credentials/:id')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.Admin)
+    @ApiOperation({ summary: 'Revoke a break-glass credential (#418)' })
+    async revokeBreakGlassCredential(@Param('id') id: string, @Request() req: ExpressRequest) {
+        return this.authService.revokeBreakGlassCredential((req as any).user.id, id);
     }
 
     @Post('register')
