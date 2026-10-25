@@ -222,5 +222,60 @@ describe('mapBookingDetails', () => {
         bankConfirmedBy: 'agency-user-1',
       });
     });
+
+    it('falls back to the latest confirmation when the current stage has none yet', () => {
+      const plan = (status: string) => ({
+        id: 'plan-1',
+        status,
+        totalAmount: 1200,
+        depositAmount: 300,
+        balanceAmount: 900,
+        currency: 'MAD',
+        minimumParticipants: 4,
+        confirmationDeadline: new Date('2026-01-20T00:00:00.000Z'),
+        paymentPolicyVersion: 'v1',
+        refundPolicyVersion: 'v1',
+      });
+      const depositPayment = {
+        stage: 'DEPOSIT',
+        confirmedAmount: '300',
+        bankReference: 'DEP-REF-1',
+        bankConfirmedAt: new Date('2026-01-03T12:00:00.000Z'),
+        bankConfirmedBy: 'agency-user-1',
+        updatedAt: new Date('2026-01-03T12:00:00.000Z'),
+      };
+      const balanceUnconfirmed = {
+        stage: 'BALANCE',
+        confirmedAmount: null,
+        bankReference: null,
+        bankConfirmedAt: null,
+        bankConfirmedBy: null,
+        updatedAt: new Date('2026-01-26T09:00:00.000Z'),
+      };
+
+      // Balance stage is due and its proof is under review; the only
+      // bank confirmation on record is still the deposit's.
+      const balanceDue = baseBooking({
+        paymentPlan: plan('BALANCE_DUE'),
+        externalPayments: [depositPayment, balanceUnconfirmed],
+      }) as never;
+      expect(resolveBankConfirmation(balanceDue)?.bankReference).toBe('DEP-REF-1');
+
+      // Terminal plan states with no mapped stage also fall back to the
+      // latest confirmation across stages.
+      const balancePayment = {
+        stage: 'BALANCE',
+        confirmedAmount: '900',
+        bankReference: 'BAL-REF-9',
+        bankConfirmedAt: new Date('2026-01-25T12:00:00.000Z'),
+        bankConfirmedBy: 'agency-user-1',
+        updatedAt: new Date('2026-01-25T12:00:00.000Z'),
+      };
+      const cancelled = baseBooking({
+        paymentPlan: plan('CANCELLED'),
+        externalPayments: [depositPayment, balancePayment],
+      }) as never;
+      expect(resolveBankConfirmation(cancelled)?.bankReference).toBe('BAL-REF-9');
+    });
   });
 });
