@@ -181,7 +181,8 @@
       "agency": "Agency Details",
       "legal": "Legal Documents",
       "payment": "Payment Details",
-      "licence": "Travel Licence (Law 11-16)"
+      "licence": "Travel Licence (Law 11-16)",
+      "insurance": "RC Insurance"
     },
     "submit": "Submit for Verification",
     "documentsRequired": "Required documents for B2B compliance in Morocco.",
@@ -201,6 +202,7 @@
     "success": "Compliance documents submitted for verification!",
     "error": "Update failed. Please check your data.",
     "licenceSectionSubtitle": "Your travel-agent licence must be verified before you can publish trips or activate payments.",
+    "insuranceSectionSubtitle": "Your civil-liability (RC) insurance must be verified before you can publish trips or activate payments.",
     "legalNameLabel": "Legal name (raison sociale)",
     "legalNamePlaceholder": "Registered legal name of the company",
     "rcLabel": "Trade register (RC)",
@@ -220,6 +222,8 @@
       "numberPlaceholder": "Ministry licence number",
       "expiryLabel": "Licence expiry date",
       "expiresOn": "valid until {{date}}",
+      "documentLabel": "Licence document",
+      "documentRequired": "A licence submission is only complete with the licence number, the expiry date and the uploaded licence document.",
       "note": "Submitting or changing licence details sends the licence back for admin review. Trips cannot be published and payments cannot be activated until the licence is verified.",
       "status": {
         "NOT_SUBMITTED": "No travel licence submitted yet.",
@@ -228,7 +232,46 @@
         "REJECTED": "Your travel licence was rejected.",
         "EXPIRED": "Your travel licence has expired. Renew it and resubmit to keep publishing trips."
       }
+    },
+    "insurance": {
+      "insurerLabel": "Insurer",
+      "insurerPlaceholder": "Insurance company name",
+      "policyNumberLabel": "Policy number",
+      "policyNumberPlaceholder": "RC policy number",
+      "insuredNameLabel": "Insured name",
+      "insuredNamePlaceholder": "Must match your legal name",
+      "validFromLabel": "Coverage start date",
+      "expiryLabel": "Insurance expiry date",
+      "expiresOn": "valid until {{date}}",
+      "coverageLimitLabel": "Coverage limit (MAD)",
+      "coverageLimitPlaceholder": "e.g. 500000",
+      "certificateLabel": "Insurance certificate",
+      "certificateRequired": "An insurance submission is only complete with the insurer, the policy number, the insured name, the expiry date and the uploaded certificate.",
+      "note": "Submitting or changing insurance details sends the insurance back for admin review. Trips cannot be published and payments cannot be activated until the insurance is verified.",
+      "status": {
+        "NOT_SUBMITTED": "No RC insurance submitted yet.",
+        "PENDING_REVIEW": "Your RC insurance is under review.",
+        "VERIFIED": "Your RC insurance is verified.",
+        "REJECTED": "Your RC insurance was rejected.",
+        "EXPIRED": "Your RC insurance has expired. Renew it and resubmit the certificate to keep publishing trips."
+      }
+    },
+    "documents": {
+      "upload": "Upload document",
+      "replace": "Replace document",
+      "current": "Current document: {{name}}",
+      "uploading": "Uploading…",
+      "uploadFailed": "Upload failed: {{message}}",
+      "tooLarge": "This file is too large. Choose a file of 5 MB or less.",
+      "hint": "PDF or image, max 5 MB. Stored privately and only visible to our verification team."
     }
+  },
+  "verificationPaused": {
+    "title": "Publishing paused — verification expired",
+    "licenceExpired": "Your travel licence has expired.",
+    "insuranceExpired": "Your RC insurance has expired.",
+    "body": "Your active trips were paused and new bookings are blocked until the renewed document is submitted and verified.",
+    "cta": "Renew verification"
   },
   "trips": {
     "manageTitle": "Manage and monitor your travel packages.",

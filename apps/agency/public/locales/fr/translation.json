@@ -181,7 +181,8 @@
       "agency": "Détails de l'agence",
       "legal": "Documents juridiques",
       "payment": "Détails de paiement",
-      "licence": "Licence de voyage (loi 11-16)"
+      "licence": "Licence de voyage (loi 11-16)",
+      "insurance": "Assurance RC"
     },
     "submit": "Soumettre pour vérification",
     "documentsRequired": "Documents requis pour la conformité B2B au Maroc.",
@@ -201,6 +202,7 @@
     "success": "Documents de conformité soumis pour vérification !",
     "error": "Échec de la mise à jour. Veuillez vérifier vos données.",
     "licenceSectionSubtitle": "Votre licence d’agent de voyages doit être vérifiée avant de pouvoir publier des voyages ou activer les paiements.",
+    "insuranceSectionSubtitle": "Votre assurance responsabilité civile (RC) doit être vérifiée avant de pouvoir publier des voyages ou activer les paiements.",
     "legalNameLabel": "Raison sociale",
     "legalNamePlaceholder": "Dénomination légale enregistrée de la société",
     "rcLabel": "Registre de commerce (RC)",
@@ -220,6 +222,8 @@
       "numberPlaceholder": "Numéro de licence du ministère",
       "expiryLabel": "Date d’expiration de la licence",
       "expiresOn": "valable jusqu’au {{date}}",
+      "documentLabel": "Document de licence",
+      "documentRequired": "Un dossier de licence n’est complet qu’avec le numéro de licence, la date d’expiration et le document de licence téléversé.",
       "note": "L’envoi ou la modification des informations de licence renvoie la licence en examen par l’administration. Les voyages ne peuvent pas être publiés et les paiements ne peuvent pas être activés tant que la licence n’est pas vérifiée.",
       "status": {
         "NOT_SUBMITTED": "Aucune licence de voyage envoyée pour le moment.",
@@ -228,7 +232,46 @@
         "REJECTED": "Votre licence de voyage a été rejetée.",
         "EXPIRED": "Votre licence de voyage a expiré. Renouvelez-la et renvoyez-la pour continuer à publier des voyages."
       }
+    },
+    "insurance": {
+      "insurerLabel": "Assureur",
+      "insurerPlaceholder": "Nom de la compagnie d’assurance",
+      "policyNumberLabel": "Numéro de police",
+      "policyNumberPlaceholder": "Numéro de la police RC",
+      "insuredNameLabel": "Nom de l’assuré",
+      "insuredNamePlaceholder": "Doit correspondre à votre raison sociale",
+      "validFromLabel": "Début de couverture",
+      "expiryLabel": "Date d’expiration de l’assurance",
+      "expiresOn": "valable jusqu’au {{date}}",
+      "coverageLimitLabel": "Plafond de couverture (MAD)",
+      "coverageLimitPlaceholder": "ex. 500000",
+      "certificateLabel": "Certificat d’assurance",
+      "certificateRequired": "Un dossier d’assurance n’est complet qu’avec l’assureur, le numéro de police, le nom de l’assuré, la date d’expiration et le certificat téléversé.",
+      "note": "L’envoi ou la modification des informations d’assurance renvoie l’assurance en examen par l’administration. Les voyages ne peuvent pas être publiés et les paiements ne peuvent pas être activés tant que l’assurance n’est pas vérifiée.",
+      "status": {
+        "NOT_SUBMITTED": "Aucune assurance RC envoyée pour le moment.",
+        "PENDING_REVIEW": "Votre assurance RC est en cours d’examen.",
+        "VERIFIED": "Votre assurance RC est vérifiée.",
+        "REJECTED": "Votre assurance RC a été rejetée.",
+        "EXPIRED": "Votre assurance RC a expiré. Renouvelez-la et renvoyez le certificat pour continuer à publier des voyages."
+      }
+    },
+    "documents": {
+      "upload": "Téléverser un document",
+      "replace": "Remplacer le document",
+      "current": "Document actuel : {{name}}",
+      "uploading": "Téléversement…",
+      "uploadFailed": "Échec du téléversement : {{message}}",
+      "tooLarge": "Ce fichier est trop volumineux. Choisissez un fichier de 5 Mo ou moins.",
+      "hint": "PDF ou image, 5 Mo max. Stocké de manière privée et visible uniquement par notre équipe de vérification."
     }
+  },
+  "verificationPaused": {
+    "title": "Publication suspendue — vérification expirée",
+    "licenceExpired": "Votre licence de voyage a expiré.",
+    "insuranceExpired": "Votre assurance RC a expiré.",
+    "body": "Vos voyages actifs ont été mis en pause et les nouvelles réservations sont bloquées jusqu’à l’envoi et la vérification du document renouvelé.",
+    "cta": "Renouveler la vérification"
   },
   "trips": {
     "manageTitle": "Gérez et suivez vos forfaits voyage.",
