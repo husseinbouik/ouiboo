@@ -86,13 +86,19 @@ function makeFakeDb() {
             }),
             findMany: jest.fn(async ({ where }: any) => {
                 return [...cases.values()].filter((c) =>
-                    (where?.bookingId === undefined || c.bookingId === where.bookingId)
+                    (where?.bookingId === undefined
+                        || (typeof where.bookingId === 'string'
+                            ? c.bookingId === where.bookingId
+                            : where.bookingId.in?.includes(c.bookingId)))
                     && (where?.agencyId === undefined || c.agencyId === where.agencyId)
                     && (where?.travelerId === undefined || c.travelerId === where.travelerId)
                     && (where?.status?.in === undefined || where.status.in.includes(c.status))
                     && (where?.status === undefined || typeof where.status !== 'string' || c.status === where.status)
                     && (where?.refundDueAt?.lt === undefined || (c.refundDueAt && c.refundDueAt < where.refundDueAt.lt))
-                    && (where?.initiatedAt === undefined || where.initiatedAt !== null || c.initiatedAt === null),
+                    && (where?.initiatedAt === undefined || where.initiatedAt !== null || c.initiatedAt === null)
+                    // #419: session traveller-notification sweep filters.
+                    && (where?.dedupeKey === undefined || (where.dedupeKey.not === null ? c.dedupeKey != null : c.dedupeKey === where.dedupeKey))
+                    && (where?.travelerNotifiedAt === undefined || (where.travelerNotifiedAt === null ? c.travelerNotifiedAt == null : true)),
                 );
             }),
             count: jest.fn(async ({ where }: any) => {
@@ -1403,5 +1409,97 @@ describe('RefundsService audit queue + evidence exposure (#416C)', () => {
         expect(evidence[0].reference).toBe('VIR-2026-1042');
         expect(evidence[0].amount).toBe('200.00');
         expect(evidence[1].amount).toBeNull();
+    });
+});
+
+describe('RefundsService traveller notification (#419)', () => {
+    function seedRefundDueCase(db: any, overrides: Record<string, unknown> = {}) {
+        const refundCase = {
+            id: 'case-notify-1',
+            bookingId: 'booking-1',
+            travelerId: 'traveler-1',
+            agencyId: 'agency-1',
+            status: 'AGENCY_ACTION_REQUIRED',
+            dedupeKey: 'refund-due:booking-1',
+            requestedAmount: D('200.00'),
+            approvedAmount: D('200.00'),
+            currency: 'MAD',
+            refundDueAt: new Date('2027-01-22T09:00:00.000Z'),
+            travelerNotifiedAt: null,
+            traveler: { email: 'traveler@example.test', name: 'Sara' },
+            agency: { companyName: 'Atlas Adventures SARL' },
+            booking: { session: { template: { title: 'Atlas Trek' } } },
+            ...overrides,
+        };
+        db._cases.set(refundCase.id, refundCase);
+        return refundCase;
+    }
+
+    it('emails the traveller when an automatic refund case opens, with amount, agency and deadline — once', async () => {
+        const db = makeFakeDb();
+        const refundCase = seedRefundDueCase(db);
+        const { service, email } = makeService(db);
+
+        const sent = await service.notifyTravelerRefundCaseOpened(refundCase.id);
+
+        expect(sent).toBe(true);
+        expect(email.sendEmail).toHaveBeenCalledTimes(1);
+        const [to, subject, html] = (email.sendEmail as jest.Mock).mock.calls[0];
+        expect(to).toBe('traveler@example.test');
+        expect(subject).toBe('Your refund is on its way');
+        expect(html).toContain('Atlas Trek');
+        expect(html).toContain('200');
+        expect(html).toContain('MAD');
+        expect(html).toContain('Atlas Adventures SARL');
+        expect(html).toContain('22 January 2027');
+        expect(html).toContain('48 hours');
+        expect(refundCase.travelerNotifiedAt).toBeInstanceOf(Date);
+
+        // Idempotent: a second call (another cascade path) sends nothing.
+        const again = await service.notifyTravelerRefundCaseOpened(refundCase.id);
+        expect(again).toBe(false);
+        expect(email.sendEmail).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not email when the traveller has no address on file', async () => {
+        const db = makeFakeDb();
+        const refundCase = seedRefundDueCase(db, {
+            traveler: { email: null, name: 'Sara' },
+        });
+        const { service, email } = makeService(db);
+
+        const sent = await service.notifyTravelerRefundCaseOpened(refundCase.id);
+
+        expect(sent).toBe(false);
+        expect(email.sendEmail).not.toHaveBeenCalled();
+        expect(refundCase.travelerNotifiedAt).toBeNull();
+    });
+
+    it('session sweep notifies only unstamped refund-due cases of the session bookings', async () => {
+        const db = makeFakeDb();
+        const due = seedRefundDueCase(db);
+        seedRefundDueCase(db, {
+            id: 'case-notify-2',
+            bookingId: 'booking-2',
+            dedupeKey: 'refund-due:booking-2',
+            travelerNotifiedAt: new Date(),
+        });
+        seedRefundDueCase(db, {
+            id: 'case-notify-3',
+            bookingId: 'booking-3',
+            dedupeKey: null,
+        });
+        db._plans.push(
+            { bookingId: 'booking-1', sessionId: 'session-1', status: 'REFUND_DUE' },
+            { bookingId: 'booking-2', sessionId: 'session-1', status: 'REFUND_DUE' },
+            { bookingId: 'booking-3', sessionId: 'session-1', status: 'REFUND_DUE' },
+        );
+        const { service, email } = makeService(db);
+
+        const notified = await service.notifyTravelersRefundDueForSession('session-1');
+
+        expect(notified).toBe(1);
+        expect(email.sendEmail).toHaveBeenCalledTimes(1);
+        expect(due.travelerNotifiedAt).toBeInstanceOf(Date);
     });
 });

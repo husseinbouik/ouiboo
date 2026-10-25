@@ -1,6 +1,7 @@
 export * from './src/booking-status'
 export * from './src/pagination'
 export * from './src/share'
+export * from './src/support-contact'
 
 export const DEFAULT_CURRENCY = 'MAD'
 export const DEFAULT_LOCALE = 'en-MA'

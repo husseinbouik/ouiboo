@@ -137,6 +137,10 @@ type BookingMapperInput = {
       agency?: {
         id: string;
         companyName: string;
+        /** #419: trip emergency contact (departure pack); optional so
+         * callers that never load it simply omit it. */
+        emergencyContactName?: string | null;
+        emergencyContactPhone?: string | null;
       } | null;
     };
   };
@@ -309,6 +313,17 @@ export const mapBookingDetails = (booking: BookingMapperInput): BookingDetails =
       agency: {
         id: booking.session.template.agency?.id || booking.session.template.agencyId || '',
         companyName: booking.session.template.agency?.companyName || '',
+        // #419: expose the emergency contact on booking responses only —
+        // the audience is the traveller holding this booking (departure
+        // pack), never public trip pages (which use a different mapper).
+        ...(booking.session.template.agency?.emergencyContactPhone
+          ? {
+              emergencyContactPhone: booking.session.template.agency.emergencyContactPhone,
+              ...(booking.session.template.agency.emergencyContactName
+                ? { emergencyContactName: booking.session.template.agency.emergencyContactName }
+                : {}),
+            }
+          : {}),
       },
       agencyId: booking.session.template.agencyId || booking.session.template.agency?.id || '',
     },

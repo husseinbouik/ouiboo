@@ -1,4 +1,9 @@
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+
+// #419: international phone shape — leading '+' or digit, then digits
+// with common separators. Deliberately not country-specific (no +212
+// assumption); the emergency contact may be any reachable number.
+export const EMERGENCY_CONTACT_PHONE_PATTERN = /^\+?[0-9][0-9\s().-]{5,24}$/;
 
 export class UpdateAgencyProfileDto {
   @IsOptional()
@@ -61,4 +66,21 @@ export class UpdateAgencyProfileDto {
   @IsString()
   @MaxLength(300)
   businessAddress?: string;
+
+  // #419 (Council P0-16): trip emergency contact — shown to travellers
+  // holding a booking (departure pack) as the FIRST call during an
+  // active trip. Optional: an agency without one gets the honest
+  // "no emergency contact published" fallback on the traveller side.
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  emergencyContactName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  @Matches(EMERGENCY_CONTACT_PHONE_PATTERN, {
+    message: 'emergencyContactPhone must be a reachable phone number',
+  })
+  emergencyContactPhone?: string;
 }

@@ -161,7 +161,9 @@
     "sectionThreeTitle": "Bookings and cancellations",
     "sectionThreeBody": "Review trip policies before booking and contact support if plans change.",
     "sectionFourTitle": "Support",
-    "sectionFourBody": "We are here to help via email."
+    "sectionFourBody": "We are here to help via email.",
+    "sectionSixTitle": "Support and emergencies",
+    "sectionSixBody": "OuiBoo provides support by email and replies to normal requests within 48 hours. During an active trip, the agency organising your trip is your first contact for on-the-day problems; its emergency contact is shown on your booking. If the agency does not respond during the trip period, OuiBoo support will escalate with the agency on your behalf. OuiBoo does not operate a 24/7 hotline. When a refund is due, the agency must complete it within 7 days of the refund case opening; OuiBoo monitors the deadline and chases overdue refunds."
   },
   "privacy": {
     "backToSignup": "Back to sign up",
@@ -360,5 +362,29 @@
     "disputeWindowClosed": "The {{days}}-day window to report a problem has closed. Please contact the organiser or OuiBoo support.",
     "disputed": "You reported a problem with this refund — the case has been reopened and is under review.",
     "actionFailed": "Something went wrong. Please try again."
+  },
+  "support": {
+    "title": "Support",
+    "intro": "How to reach us — and who to contact first when something happens during your trip.",
+    "backToBookings": "Back to my bookings",
+    "contactsTitle": "Trip contacts",
+    "contactsSubtitle": "Keep these handy for your trip. During the trip, your agency is your first call — OuiBoo is the escalation if they don't respond.",
+    "tripActiveNow": "Your trip is happening now",
+    "agencyFirstTitle": "1 · Your agency — first call",
+    "agencyFirstBody": "For anything during the trip — meeting point, delays, a problem on the day — contact your agency first. They run the trip and can act immediately.",
+    "noAgencyContact": "This agency hasn't published an emergency number yet. Message them through OuiBoo, and if it's urgent during your trip, escalate to OuiBoo below.",
+    "escalationTitle": "2 · OuiBoo escalation",
+    "escalationBody": "If the agency doesn't respond during your trip dates, email OuiBoo support and we will chase the agency for you. Escalation is monitored during active trip periods — it is not a 24/7 hotline.",
+    "normalTitle": "Normal support",
+    "normalBody": "For everything else — bookings, payments, refunds, your account — email us at {{email}}. We reply within {{hours}} hours.",
+    "normalLine": "Anything else? Normal support replies within {{hours}} hours.",
+    "fullSupportPage": "How support works",
+    "emergencyTitle": "Emergencies during your trip",
+    "emergencyBody": "While your trip is running: first call your agency's emergency contact — you'll find it on your booking page. If they don't respond, email OuiBoo support and we will escalate with the agency during your trip period. Outside trip dates, everything goes through normal support.",
+    "refundsTitle": "Refunds",
+    "refundsBody": "When a refund is owed, the agency has {{days}} days to complete it and OuiBoo chases it if it slips. You'll get an email as soon as a refund case is opened for you, and you can follow its status in your bookings.",
+    "complaintsTitle": "Complaints",
+    "complaintsBody": "To complain about a trip, an agency, or OuiBoo itself, email {{email}} with the subject \"Complaint\" and your booking reference. Complaints are answered on the normal support timeline.",
+    "safetyNote": "If anyone is in danger or needs urgent medical help, contact local emergency services first — then your agency."
   }
 }

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, MinLength, IsUrl, IsEnum, IsDateString, IsNumber, MaxLength } from 'class-validator';
+import { IsString, IsOptional, MinLength, IsUrl, IsEnum, IsDateString, IsNumber, Matches, MaxLength } from 'class-validator';
+import { EMERGENCY_CONTACT_PHONE_PATTERN } from '../../agency/dto/update-profile.dto';
 
 // #371: mirrors the Prisma TravelLicenceType enum (Law 11-16 categories).
 export enum TravelLicenceTypeDto {
@@ -69,6 +70,23 @@ export class UpdateAgencyProfileDto {
     @IsOptional()
     @MaxLength(300)
     businessAddress?: string;
+
+    // #419 (Council P0-16): trip emergency contact — the person booked
+    // travellers reach first during an active trip (departure pack).
+    @ApiProperty({ example: 'Yasmine El Fassi', required: false, description: 'Who answers during trips (guide/on-call manager)' })
+    @IsString()
+    @IsOptional()
+    @MaxLength(120)
+    emergencyContactName?: string;
+
+    @ApiProperty({ example: '+212600000000', required: false })
+    @IsString()
+    @IsOptional()
+    @MaxLength(32)
+    @Matches(EMERGENCY_CONTACT_PHONE_PATTERN, {
+        message: 'emergencyContactPhone must be a reachable phone number',
+    })
+    emergencyContactPhone?: string;
 
     @ApiProperty({ enum: TravelLicenceTypeDto, required: false })
     @IsEnum(TravelLicenceTypeDto)

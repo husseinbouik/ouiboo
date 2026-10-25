@@ -172,6 +172,12 @@ export class AdminInterventionsService {
             });
             return outcome;
         });
+        // #419 (Council P0-16): closing the group opened refund cases —
+        // tell the travellers owed money (post-commit, best-effort; the
+        // deadline cascade path notifies the same way).
+        await this.refundsService
+            .notifyTravelersRefundDueForSession(sessionId)
+            .catch(() => undefined);
         return {
             sessionId,
             groupStatus: SessionGroupStatus.NOT_CONFIRMED,

@@ -281,3 +281,62 @@ describe('mapBookingDetails', () => {
     });
   });
 });
+
+describe('mapBookingDetails agency emergency contact (#419)', () => {
+  const baseBooking = (agency: Record<string, unknown>) => ({
+    id: 'booking-1',
+    sessionId: 'session-1',
+    travelerId: 'traveler-1',
+    bookingDate: new Date('2026-01-01T00:00:00.000Z'),
+    status: BookingStatus.Confirmed,
+    totalAmount: 1200,
+    guestsCount: 2,
+    paymentMethod: PaymentMethod.Manual,
+    paymentStatus: BookingPaymentStatus.Paid,
+    traveler: { email: 'traveler@example.com', name: 'John Doe' },
+    session: {
+      id: 'session-1',
+      templateId: 'template-1',
+      startDate: new Date('2026-02-01T00:00:00.000Z'),
+      endDate: new Date('2026-02-05T00:00:00.000Z'),
+      price: 600,
+      deposit: 100,
+      totalSeats: 12,
+      availableSeats: 10,
+      status: SessionStatus.Open,
+      template: {
+        id: 'template-1',
+        title: 'Atlas Trek',
+        startLocation: 'Marrakech',
+        images: ['cover.jpg'],
+        agency,
+      },
+    },
+  }) as any;
+
+  it('exposes the emergency contact when the agency has published one', () => {
+    const mapped = mapBookingDetails(baseBooking({
+      id: 'agency-1',
+      companyName: 'Atlas Adventures',
+      emergencyContactName: 'Yasmine',
+      emergencyContactPhone: '+212 6 12 34 56 78',
+    }));
+
+    expect(mapped.session.template.agency).toMatchObject({
+      emergencyContactName: 'Yasmine',
+      emergencyContactPhone: '+212 6 12 34 56 78',
+    });
+  });
+
+  it('omits the emergency contact keys entirely when the agency has none', () => {
+    const mapped = mapBookingDetails(baseBooking({
+      id: 'agency-1',
+      companyName: 'Atlas Adventures',
+      emergencyContactName: null,
+      emergencyContactPhone: null,
+    }));
+
+    expect(mapped.session.template.agency).not.toHaveProperty('emergencyContactPhone');
+    expect(mapped.session.template.agency).not.toHaveProperty('emergencyContactName');
+  });
+});

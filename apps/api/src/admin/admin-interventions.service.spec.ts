@@ -74,6 +74,8 @@ function makeStaged() {
 function makeRefunds() {
     return {
         createRefundDueCaseInTransaction: jest.fn(async () => ({ id: 'case-new' })),
+        // #419: traveller notification hook for close-group outcomes.
+        notifyTravelersRefundDueForSession: jest.fn(async () => 1),
     };
 }
 
@@ -129,9 +131,13 @@ describe('AdminInterventionsService (#423)', () => {
 
     it('close-group audits the refund cases created and the bookings cancelled', async () => {
         const { db, auditLog } = makeFake(null);
-        const service = new AdminInterventionsService(db, makeStaged() as any, makeRefunds() as any);
+        const refunds = makeRefunds();
+        const service = new AdminInterventionsService(db, makeStaged() as any, refunds as any);
 
         const result = await service.closeGroup(ACTOR, 'session-1', REASON);
+
+        // #419: travellers owed refunds are notified post-commit.
+        expect(refunds.notifyTravelersRefundDueForSession).toHaveBeenCalledWith('session-1');
 
         expect(result).toMatchObject({ groupStatus: 'NOT_CONFIRMED', depositPaidBookings: 1, cancelledBookings: 2 });
         const audits = auditsOf(auditLog, 'ADMIN_GROUP_CLOSED');
