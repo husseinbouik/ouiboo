@@ -1,3 +1,10 @@
+import {
+  emailDirection,
+  emailStrings,
+  normalizeEmailLocale,
+  type EmailLocale,
+} from './email-i18n'
+
 const BRAND = {
   navy: '#071B33',
   slate: '#425466',
@@ -55,14 +62,16 @@ export function emailButton(label: string, url: string): string {
     </table>`
 }
 
-export function emailPanel(content: string, tone: 'neutral' | 'warning' | 'danger' = 'neutral'): string {
+export function emailPanel(content: string, tone: 'neutral' | 'warning' | 'danger' = 'neutral', locale?: EmailLocale | string | null): string {
   const toneStyles = {
     neutral: { background: '#EEF5F8', border: '#177E89', color: BRAND.navy },
     warning: { background: '#FFF7E8', border: '#D97706', color: '#7C2D12' },
     danger: { background: '#FFF0F0', border: '#DC2626', color: '#7F1D1D' },
   }[tone]
 
-  return `<div style="margin:24px 0;padding:18px 20px;background:${toneStyles.background};border-left:4px solid ${toneStyles.border};border-radius:10px;color:${toneStyles.color};font-size:15px;line-height:1.6;">${content}</div>`
+  // #424: in RTL locales the accent border sits on the inline-start side.
+  const borderSide = emailDirection(normalizeEmailLocale(locale)) === 'rtl' ? 'border-right' : 'border-left'
+  return `<div style="margin:24px 0;padding:18px 20px;background:${toneStyles.background};${borderSide}:4px solid ${toneStyles.border};border-radius:10px;color:${toneStyles.color};font-size:15px;line-height:1.6;">${content}</div>`
 }
 
 export function emailStrong(value: string): string {
@@ -74,12 +83,18 @@ type EmailLayoutOptions = {
   preheader: string
   content: string
   footerHtml?: string
+  /** #424: recipient locale — sets <html lang>/dir and localizes the
+   * shell (tagline, default footer). Defaults to English. */
+  locale?: EmailLocale | string | null
 }
 
-export function renderEmail({ title, preheader, content, footerHtml }: EmailLayoutOptions): string {
+export function renderEmail({ title, preheader, content, footerHtml, locale }: EmailLayoutOptions): string {
   const year = new Date().getFullYear()
+  const resolvedLocale = normalizeEmailLocale(locale)
+  const dir = emailDirection(resolvedLocale)
+  const strings = emailStrings(resolvedLocale)
   return `<!doctype html>
-<html lang="en">
+<html lang="${resolvedLocale}" dir="${dir}">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -102,7 +117,7 @@ export function renderEmail({ title, preheader, content, footerHtml }: EmailLayo
             <tr>
               <td class="ouiboo-header" style="padding:24px 32px;background:${BRAND.navy};">
                 <div style="color:${BRAND.white};font-size:24px;font-weight:900;letter-spacing:-0.03em;">Oui<span style="color:#FF8A4C;">boo</span></div>
-                <div style="color:#C9D8E5;font-size:12px;margin-top:4px;letter-spacing:0.04em;">Travel made personal</div>
+                <div style="color:#C9D8E5;font-size:12px;margin-top:4px;letter-spacing:0.04em;">${escapeHtml(strings.layout.tagline)}</div>
               </td>
             </tr>
             <tr>
@@ -110,7 +125,7 @@ export function renderEmail({ title, preheader, content, footerHtml }: EmailLayo
             </tr>
             <tr>
               <td class="ouiboo-footer" style="padding:20px 32px 26px;border-top:1px solid ${BRAND.border};color:#718096;font-size:12px;line-height:1.6;text-align:center;">
-                ${footerHtml ?? `This is a service message from Ouiboo.<br>&copy; ${year} Ouiboo. All rights reserved.`}
+                ${footerHtml ?? `${escapeHtml(strings.layout.serviceFooter)}<br>&copy; ${year} Ouiboo. ${escapeHtml(strings.layout.allRightsReserved)}`}
               </td>
             </tr>
           </table>
@@ -146,9 +161,10 @@ type MarketingEmailOptions = EmailLayoutOptions & {
 // Marketing layout (#322): CAN-SPAM / Law 09-08 / GDPR require a physical
 // postal address and a working unsubscribe in every marketing send. This
 // variant is deliberately separate from the transactional (service) layout.
-export function renderMarketingEmail({ title, preheader, content, unsubscribeUrl, postalAddress }: MarketingEmailOptions): string {
+export function renderMarketingEmail({ title, preheader, content, unsubscribeUrl, postalAddress, locale }: MarketingEmailOptions): string {
   const year = new Date().getFullYear()
+  const strings = emailStrings(locale)
   const addressHtml = escapeHtml(postalAddress).replaceAll('\n', '<br>')
-  const footerHtml = `You are receiving this email because you subscribed to Ouiboo updates.<br>${addressHtml}<br><a href="${safeEmailUrl(unsubscribeUrl)}" style="color:#718096;text-decoration:underline;">Unsubscribe</a> &middot; &copy; ${year} Ouiboo. All rights reserved.`
-  return renderEmail({ title, preheader, content, footerHtml })
+  const footerHtml = `${escapeHtml(strings.layout.marketingReceivedBecause)}<br>${addressHtml}<br><a href="${safeEmailUrl(unsubscribeUrl)}" style="color:#718096;text-decoration:underline;">${escapeHtml(strings.layout.unsubscribe)}</a> &middot; &copy; ${year} Ouiboo. ${escapeHtml(strings.layout.allRightsReserved)}`
+  return renderEmail({ title, preheader, content, footerHtml, locale })
 }

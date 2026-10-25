@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -29,19 +30,20 @@ export function useCheckoutBooking({
   proofFile,
 }: UseCheckoutBookingOptions) {
   const router = useRouter();
+  const { t, i18n } = useTranslation();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const createBookingMutation = useMutation<BookingResponse, Error>({
     mutationFn: async () => {
       setErrorMessage(null);
       if (!selectedSessionId) {
-        throw new Error('Session is required');
+        throw new Error(t('checkout.errors.sessionRequired'));
       }
       if (!fullName.trim() || !phoneNumber.trim()) {
-        throw new Error('Guest contact details are required');
+        throw new Error(t('checkout.errors.guestDetailsRequired'));
       }
       if (!hasBankDetails) {
-        throw new Error('This agency has not configured verified bank transfer instructions yet');
+        throw new Error(t('checkout.errors.bankDetailsMissing'));
       }
 
       // Retry path: a booking already exists (created by a previous attempt whose proof
@@ -56,6 +58,10 @@ export function useCheckoutBooking({
           fullName: fullName.trim(),
           phoneNumber: phoneNumber.trim(),
           paymentMethod: 'BANK_TRANSFER',
+          // #424: the traveller's active checkout locale — the API
+          // persists it on the booking so booking-journey emails render
+          // in this language.
+          locale: (i18n.language || 'en').split('-')[0],
         });
         bookingId = response.data?.id ?? null;
       }
@@ -86,7 +92,7 @@ export function useCheckoutBooking({
         router.push(`/checkout/${tripId}?retryBooking=${failedBookingId}`);
         return;
       }
-      setErrorMessage(getErrorMessage(error, 'Unable to complete booking'));
+      setErrorMessage(getErrorMessage(error, t('checkout.errors.generic')));
     }
   });
 

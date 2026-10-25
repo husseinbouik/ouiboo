@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsString, IsInt, IsPositive, IsEnum, IsOptional, IsNotEmpty, MaxLength } from 'class-validator';
+import { IsBoolean, IsString, IsInt, IsPositive, IsEnum, IsIn, IsOptional, IsNotEmpty, MaxLength } from 'class-validator';
 
 export enum PaymentMethodEnum {
     BANK_TRANSFER = 'BANK_TRANSFER',
@@ -42,6 +42,15 @@ export class CreateBookingDto {
     @IsEnum(PaymentMethodEnum)
     @IsOptional()
     paymentMethod?: PaymentMethodEnum;
+
+    // #424 (Council P0-22): the traveller's active checkout UI locale.
+    // Persisted on the booking so every booking-journey email renders in
+    // the language the traveller booked in. Optional — older clients
+    // omit it and emails fall back to the default locale.
+    @ApiProperty({ enum: ['en', 'fr', 'ar'], example: 'fr', required: false, description: 'Checkout UI locale for transactional emails' })
+    @IsIn(['en', 'fr', 'ar'])
+    @IsOptional()
+    locale?: string;
 }
 
 export class VerifyManualPaymentDto {

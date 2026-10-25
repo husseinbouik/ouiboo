@@ -115,6 +115,7 @@ export class NotificationJobsService {
             booking.session.template.title,
             hoursRemaining,
             bookingDashboardUrl,
+            booking.locale,
           );
 
           await this.prisma.booking.update({
@@ -198,6 +199,7 @@ export class NotificationJobsService {
               7,
               booking.session.template.agency.companyName,
               tripDetailsUrl,
+              booking.locale,
             );
 
             await this.prisma.booking.update({
@@ -279,6 +281,7 @@ export class NotificationJobsService {
               1,
               booking.session.template.agency.companyName,
               tripDetailsUrl,
+              booking.locale,
             );
 
             await this.prisma.booking.update({
@@ -374,6 +377,7 @@ export class NotificationJobsService {
               booking.traveler.email,
               booking.session.template.title,
               booking.id,
+              booking.locale,
             );
 
             await this.createNotificationLog(

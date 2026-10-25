@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Image from 'next/image';
 import { Card, CardContent, Button, Badge } from '@ouiboo/ui';
 import { MapPin, Calendar, Users, ShieldCheck, CheckCircle2 } from 'lucide-react';
@@ -36,6 +37,7 @@ export function CheckoutSummary({
   onSubmit,
   stagedAmounts,
 }: CheckoutSummaryProps) {
+  const { t } = useTranslation();
   return (
     <Card className="border-none shadow-2xl shadow-black/10 rounded-[3rem] overflow-hidden p-10 space-y-8 bg-card ring-1 ring-border/50">
       <div className="space-y-6">
@@ -55,41 +57,41 @@ export function CheckoutSummary({
 
         <div className="space-y-4 pt-6 border-t border-border/50">
           <div className="flex justify-between items-center text-sm">
-            <span className="text-muted-foreground font-medium flex items-center gap-2"><Calendar className="h-4 w-4" /> Selected Date</span>
+            <span className="text-muted-foreground font-medium flex items-center gap-2"><Calendar className="h-4 w-4" /> {t('checkout.selectedDate')}</span>
             <span className="font-black">{sessionDateLabel}</span>
           </div>
           <div className="flex justify-between items-center text-sm">
-            <span className="text-muted-foreground font-medium flex items-center gap-2"><Users className="h-4 w-4" /> Guest Count</span>
-            <span className="font-black">{guestCount} Traveler{guestCount > 1 ? 's' : ''}</span>
+            <span className="text-muted-foreground font-medium flex items-center gap-2"><Users className="h-4 w-4" /> {t('checkout.guestCount')}</span>
+            <span className="font-black">{guestCount}</span>
           </div>
         </div>
 
         <div className="space-y-4 pt-6 border-t border-border/50">
           <div className="flex justify-between items-center">
-            <span className="text-muted-foreground font-medium">Subtotal</span>
+            <span className="text-muted-foreground font-medium">{t('checkout.subtotal')}</span>
             <span className="font-bold">{formatCurrency(totalPrice, selectedCurrency, language)}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-muted-foreground font-medium">Service Fee</span>
-            <Badge variant="outline" className="border-emerald-500/30 text-success-dark bg-success/10 font-black text-[8px] uppercase tracking-widest">Free</Badge>
+            <span className="text-muted-foreground font-medium">{t('checkout.serviceFee')}</span>
+            <Badge variant="outline" className="border-emerald-500/30 text-success-dark bg-success/10 font-black text-[8px] uppercase tracking-widest">{t('checkout.free')}</Badge>
           </div>
           {stagedAmounts ? (
             <>
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground font-medium">Balance due after trip confirmation</span>
+                <span className="text-muted-foreground font-medium">{t('checkout.balanceAfterConfirmation')}</span>
                 <span className="font-bold">{formatCurrency(stagedAmounts.balanceDue, selectedCurrency, language)}</span>
               </div>
               <div className="flex justify-between items-end pt-4 border-t border-border/50">
-                <span className="text-lg font-black font-display tracking-tight text-foreground">Deposit to pay now</span>
-                <div className="text-right">
+                <span className="text-lg font-black font-display tracking-tight text-foreground">{t('checkout.depositToPayNow')}</span>
+                <div className="text-end">
                   <span className="text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatCurrency(stagedAmounts.depositDue, selectedCurrency, language)}</span>
                 </div>
               </div>
             </>
           ) : (
             <div className="flex justify-between items-end pt-4 border-t border-border/50">
-              <span className="text-lg font-black font-display tracking-tight text-foreground">Total to pay</span>
-              <div className="text-right">
+              <span className="text-lg font-black font-display tracking-tight text-foreground">{t('checkout.totalToPay')}</span>
+              <div className="text-end">
                 <span className="text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatCurrency(totalPrice, selectedCurrency, language)}</span>
               </div>
             </div>
@@ -108,14 +110,14 @@ export function CheckoutSummary({
         onClick={onSubmit}
         className="w-full h-20 rounded-[2rem] text-xl font-black bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 border-none group px-10"
       >
-        {isSubmitting ? 'Submitting booking...' : 'Complete Booking'} <CheckCircle2 className="h-6 w-6 ml-4 group-hover:scale-110 transition-transform" />
+        {isSubmitting ? t('checkout.submitting') : t('checkout.completeBooking')} <CheckCircle2 className="h-6 w-6 ms-4 group-hover:scale-110 transition-transform" />
       </Button>
 
       {/* No opacity on this row (#332): opacity-50 dropped the muted
           text to ~2.1:1 contrast; the plain muted-foreground is AA. */}
       <div className="flex items-center justify-center gap-4 pt-4">
         <ShieldCheck className="h-5 w-5" />
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Direct payment to the agency — Ouiboo never holds your money</span>
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('checkout.directPaymentNote')}</span>
       </div>
     </Card>
   );

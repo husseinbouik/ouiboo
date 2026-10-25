@@ -327,6 +327,24 @@ describe('BookingsService', () => {
             expect(createData).not.toHaveProperty('documentNumber');
             expect(JSON.stringify(createData)).not.toContain('AB123456');
         });
+
+        it('persists the checkout locale for booking-journey emails (#424)', async () => {
+            mockSuccessfulCreate();
+
+            await service.create('user-123', { ...createDto, locale: 'fr' });
+
+            const createData = db.booking.create.mock.calls[0][0].data;
+            expect(createData.locale).toBe('fr');
+        });
+
+        it('records a null locale when the client does not send one (#424)', async () => {
+            mockSuccessfulCreate();
+
+            await service.create('user-123', createDto);
+
+            const createData = db.booking.create.mock.calls[0][0].data;
+            expect(createData.locale).toBeNull();
+        });
     });
 
     describe('uploadPaymentProof', () => {
@@ -799,6 +817,9 @@ describe('BookingsService', () => {
             expect(emailService.sendPaymentConfirmation).toHaveBeenCalledWith(
                 'traveler@example.com',
                 'Atlas Escape',
+                // #424: the booking's recorded checkout locale (unset in
+                // these fixtures) is passed through for email rendering.
+                undefined,
             );
         });
 
@@ -884,6 +905,9 @@ describe('BookingsService', () => {
             expect(emailService.sendPaymentConfirmation).toHaveBeenCalledWith(
                 'traveler@example.com',
                 'Atlas Escape',
+                // #424: the booking's recorded checkout locale (unset in
+                // these fixtures) is passed through for email rendering.
+                undefined,
             );
         });
 

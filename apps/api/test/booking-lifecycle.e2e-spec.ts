@@ -201,7 +201,10 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             traveler.email,
             agencyUser.email,
             bookingId,
-            'Mountain Adventure'
+            'Mountain Adventure',
+            // #424: trailing arg is the booking's stored locale (null =
+            // created without one → emails fall back to English).
+            null
         );
 
         // Verify database state
@@ -273,7 +276,8 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         // Verify email confirmation sent
         expect(mockEmailService.sendPaymentConfirmation).toHaveBeenCalledWith(
             traveler.email,
-            'Mountain Adventure'
+            'Mountain Adventure',
+            null // #424: trailing arg = booking locale (none stored here)
         );
 
         // Verify database state
@@ -778,7 +782,8 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             traveler.email,
             agencyUser.email,
             createRes.body.id,
-            'Mountain Adventure'
+            'Mountain Adventure',
+            null // #424: no stored locale on this booking
         );
 
         // Upload proof
@@ -807,7 +812,8 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
 
         expect(mockEmailService.sendPaymentConfirmation).toHaveBeenCalledWith(
             traveler.email,
-            'Mountain Adventure'
+            'Mountain Adventure',
+            null // #424: trailing arg = booking locale (none stored here)
         );
     });
 

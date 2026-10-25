@@ -1,4 +1,10 @@
 import { AgencyComplianceService } from './agency-compliance.service';
+import { EmailService } from '../email/email.service';
+
+// #424: the compliance service builds its notice through EmailService's
+// localized template getters — the stub delegates to a real instance so
+// the specs exercise the shipped copy, keeping sendEmail as the mock.
+const emailTemplates = new EmailService();
 
 /**
  * #415 (Council P0-08) — expiry sweep specs.
@@ -68,6 +74,10 @@ function makeDb(options: {
 
 function makeEmail(fail = false) {
     return {
+        getAgencyVerificationPausedTemplate:
+            emailTemplates.getAgencyVerificationPausedTemplate.bind(emailTemplates),
+        getAgencyVerificationPausedSubject:
+            emailTemplates.getAgencyVerificationPausedSubject.bind(emailTemplates),
         sendEmail: jest.fn(
             async (_to: string, _subject: string, _html: string) => {
                 if (fail) {

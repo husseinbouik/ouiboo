@@ -164,6 +164,7 @@ describe('Email notification jobs E2E', () => {
             trip.title,
             12,
             expect.stringContaining(`/bookings/${booking.id}`),
+            null, // #424: trailing arg = booking locale (none stored here)
         );
         const updated = await db.booking.findUniqueOrThrow({ where: { id: booking.id } });
         expect(updated.lastReminderSentAt).toBeTruthy();
@@ -249,6 +250,7 @@ describe('Email notification jobs E2E', () => {
             days,
             'Email Agency',
             expect.stringContaining(`/trip/${trip.id}`),
+            null, // #424: trailing arg = booking locale (none stored here)
         );
         const updated = await db.booking.findUniqueOrThrow({ where: { id: booking.id } });
         expect((updated.notificationsSent as Record<string, string>)[marker]).toBeTruthy();

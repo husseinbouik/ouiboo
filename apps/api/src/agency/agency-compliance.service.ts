@@ -3,12 +3,6 @@ import { LicenceStatus, TripStatus } from '@ouiboo/database';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
 import {
-    escapeHtml,
-    emailHeading,
-    emailParagraph,
-    renderEmail,
-} from '../email/email-template';
-import {
     effectiveInsuranceStatus,
     effectiveLicenceStatus,
 } from '../common/agency-licence.util';
@@ -227,28 +221,16 @@ export class AgencyComplianceService {
         try {
             const appUrl =
                 process.env.AGENCY_APP_URL || 'https://ouiboo-agency.vercel.app';
-            const tripsLine =
-                tripsPaused > 0
-                    ? `${tripsPaused} active trip(s) have been paused and are hidden from the marketplace until your verification is restored. `
-                    : '';
-            const html = renderEmail({
-                title: 'Your OuiBoo verification has been paused',
-                preheader: 'A verification document has expired and needs renewal.',
-                content:
-                    emailHeading('Your OuiBoo verification has been paused') +
-                    emailParagraph(
-                        `${escapeHtml(reason)}. Until the expired document is renewed ` +
-                            'and re-verified, your agency cannot publish trips or accept new bookings. ' +
-                            tripsLine +
-                            'Existing bookings are not affected and will run their course.',
-                    ) +
-                    emailParagraph(
-                        `Renew your documents here: ${escapeHtml(`${appUrl}/dashboard/onboarding`)}`,
-                    ),
-            });
+            // #424: copy lives in the email locale table (en/fr/ar); the
+            // agency's locale is not recorded yet, so the default applies.
+            const html = this.emailService.getAgencyVerificationPausedTemplate(
+                reason,
+                tripsPaused,
+                `${appUrl}/dashboard/onboarding`,
+            );
             await this.emailService.sendEmail(
                 email,
-                'Your OuiBoo verification has been paused',
+                this.emailService.getAgencyVerificationPausedSubject(),
                 html,
             );
             return true;

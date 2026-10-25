@@ -303,6 +303,7 @@ export class AdminController {
                 bookingId: proof.bookingId,
                 travelerEmail: proof.booking.traveler?.email,
                 tripTitle: updatedBooking.session.template.title,
+                locale: updatedBooking.locale,
                 fullyPaid: false,
             };
         });
@@ -311,6 +312,7 @@ export class AdminController {
             this.emailService.sendPaymentConfirmation(
                 result.travelerEmail,
                 result.tripTitle,
+                result.locale,
             ).catch((err) => console.error('Failed to send payment confirmation email', err));
         }
 
