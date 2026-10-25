@@ -379,6 +379,11 @@ export class AgencyController {
                 verificationStatus: true,
                 travelLicenceStatus: true,
                 licenceExpiry: true,
+                // #415: the activation block also requires verified RC
+                // insurance (first bank-destination submission = payment
+                // activation), so the gate needs the insurance fields.
+                insuranceStatus: true,
+                insuranceExpiry: true,
             },
         });
         if (!existing) throw new NotFoundException('Agency profile not found');
@@ -409,8 +414,9 @@ export class AgencyController {
             ) {
                 // #371: the FIRST submission is still payment activation —
                 // it requires a verified identity AND a verified travel
-                // licence, so no agency can start receiving traveller
-                // payments by bypassing onboarding. Replacing an
+                // licence (#415: and verified RC insurance, via the shared
+                // activation block), so no agency can start receiving
+                // traveller payments by bypassing onboarding. Replacing an
                 // already-verified destination does not re-gate the
                 // agency; the destination review is the gate there.
                 if (!isBankDestinationVerified(existing)) {

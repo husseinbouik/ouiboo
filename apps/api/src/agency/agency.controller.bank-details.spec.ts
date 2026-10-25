@@ -18,6 +18,8 @@ describe('AgencyController.updateProfile bank destination (#421)', () => {
         verificationStatus: 'VERIFIED',
         travelLicenceStatus: 'VERIFIED',
         licenceExpiry: new Date('2027-06-01T00:00:00Z'),
+        insuranceStatus: 'VERIFIED',
+        insuranceExpiry: new Date('2027-06-01T00:00:00Z'),
     };
 
     function makeController(existing: any) {
@@ -60,6 +62,31 @@ describe('AgencyController.updateProfile bank destination (#421)', () => {
         await expect(
             controller.updateProfile(req, { bankDetails: 'RIB 123' } as any),
         ).rejects.toThrow(ForbiddenException);
+        expect(db.agencyProfile.update).not.toHaveBeenCalled();
+    });
+
+    it('blocks the first submission when RC insurance is not verified (#415)', async () => {
+        const { controller, db } = makeController({
+            ...verifiedAgency,
+            insuranceStatus: 'NOT_SUBMITTED',
+            insuranceExpiry: null,
+        });
+
+        await expect(
+            controller.updateProfile(req, { bankDetails: 'RIB 123' } as any),
+        ).rejects.toThrow(/insurance must be submitted and verified/i);
+        expect(db.agencyProfile.update).not.toHaveBeenCalled();
+    });
+
+    it('blocks the first submission when RC insurance has expired (#415)', async () => {
+        const { controller, db } = makeController({
+            ...verifiedAgency,
+            insuranceExpiry: new Date('2026-01-01T00:00:00Z'),
+        });
+
+        await expect(
+            controller.updateProfile(req, { bankDetails: 'RIB 123' } as any),
+        ).rejects.toThrow(/insurance has expired/i);
         expect(db.agencyProfile.update).not.toHaveBeenCalled();
     });
 

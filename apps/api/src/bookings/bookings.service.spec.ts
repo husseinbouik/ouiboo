@@ -133,6 +133,10 @@ describe('BookingsService', () => {
                 agency: {
                     userId: 'agency-user-123',
                     verificationStatus: 'VERIFIED',
+                    travelLicenceStatus: 'VERIFIED',
+                    licenceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+                    insuranceStatus: 'VERIFIED',
+                    insuranceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
                     subscriptionStatus: 'TRIAL',
                     trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
                     subscriptionEndsAt: null,
@@ -167,6 +171,79 @@ describe('BookingsService', () => {
 
             await expect(service.create('user-123', createDto)).rejects.toThrow(
                 'This agency is temporarily unable to accept new bookings',
+            );
+            expect(db.$transaction).not.toHaveBeenCalled();
+        });
+
+        it('rejects new bookings when the agency licence is not effectively verified (#415)', async () => {
+            db.tripSession.findUnique.mockResolvedValue({
+                ...availableSession,
+                template: {
+                    ...availableSession.template,
+                    agency: {
+                        ...availableSession.template.agency,
+                        travelLicenceStatus: 'PENDING_REVIEW',
+                    },
+                },
+            });
+
+            await expect(service.create('user-123', createDto)).rejects.toThrow(
+                'This agency is not currently accepting bookings',
+            );
+            expect(db.$transaction).not.toHaveBeenCalled();
+        });
+
+        it('rejects new bookings when the agency licence has expired (#415)', async () => {
+            db.tripSession.findUnique.mockResolvedValue({
+                ...availableSession,
+                template: {
+                    ...availableSession.template,
+                    agency: {
+                        ...availableSession.template.agency,
+                        licenceExpiry: new Date(Date.now() - 24 * 60 * 60 * 1000),
+                    },
+                },
+            });
+
+            await expect(service.create('user-123', createDto)).rejects.toThrow(
+                'This agency is not currently accepting bookings',
+            );
+            expect(db.$transaction).not.toHaveBeenCalled();
+        });
+
+        it('rejects new bookings when the agency has no verified RC insurance on file (#415)', async () => {
+            db.tripSession.findUnique.mockResolvedValue({
+                ...availableSession,
+                template: {
+                    ...availableSession.template,
+                    agency: {
+                        ...availableSession.template.agency,
+                        insuranceStatus: 'NOT_SUBMITTED',
+                        insuranceExpiry: null,
+                    },
+                },
+            });
+
+            await expect(service.create('user-123', createDto)).rejects.toThrow(
+                'This agency is not currently accepting bookings',
+            );
+            expect(db.$transaction).not.toHaveBeenCalled();
+        });
+
+        it('rejects new bookings when the agency RC insurance has expired (#415)', async () => {
+            db.tripSession.findUnique.mockResolvedValue({
+                ...availableSession,
+                template: {
+                    ...availableSession.template,
+                    agency: {
+                        ...availableSession.template.agency,
+                        insuranceExpiry: new Date(Date.now() - 24 * 60 * 60 * 1000),
+                    },
+                },
+            });
+
+            await expect(service.create('user-123', createDto)).rejects.toThrow(
+                'This agency is not currently accepting bookings',
             );
             expect(db.$transaction).not.toHaveBeenCalled();
         });
@@ -318,6 +395,10 @@ describe('BookingsService', () => {
                     id: 'agency-123',
                     userId: 'agency-user-123',
                     verificationStatus: 'VERIFIED',
+                    travelLicenceStatus: 'VERIFIED',
+                    licenceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+                    insuranceStatus: 'VERIFIED',
+                    insuranceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
                     subscriptionStatus: 'TRIAL',
                     trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
                     subscriptionEndsAt: null,

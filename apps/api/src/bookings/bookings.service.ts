@@ -9,6 +9,7 @@ import { mapBookingDetails } from './booking-response.util';
 import { decimalEqualsMoney, multiplyMoney, toMoneyDecimal } from '../common/money.util';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
+import { isInsuranceVerified, isLicenceVerified } from '../common/agency-licence.util';
 
 const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
 
@@ -67,6 +68,15 @@ export class BookingsService {
         // refund is resolved. Existing bookings are never affected.
         if (agency.newBookingsRestrictedAt) {
             throw new BadRequestException('This agency is temporarily unable to accept new bookings');
+        }
+        // #415 (Council P0-08): a booking is a paid commitment — the
+        // agency's travel licence AND RC insurance must be effectively
+        // verified at booking time. Status is derived on read, so an
+        // expired (or never-verified) artefact blocks new bookings
+        // immediately, without waiting for the expiry sweep. Traveller-
+        // facing wording stays generic, like the identity check above.
+        if (!isLicenceVerified(agency, now) || !isInsuranceVerified(agency, now)) {
+            throw new BadRequestException('This agency is not currently accepting bookings');
         }
         if (dto.paymentMethod === PaymentMethodEnum.WALLET) {
             throw new BadRequestException('This payment method is not available');

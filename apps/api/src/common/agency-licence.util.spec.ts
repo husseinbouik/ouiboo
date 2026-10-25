@@ -73,10 +73,43 @@ describe('agency licence utilities (#371)', () => {
             )).toMatch(/licence has expired/i);
         });
 
-        it('allows a verified agency with a verified, unexpired licence', () => {
+        it('allows a verified agency with a verified, unexpired licence and insurance', () => {
             expect(getAgencyActivationBlock(
-                { verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', licenceExpiry: FUTURE }, NOW,
+                {
+                    verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', licenceExpiry: FUTURE,
+                    insuranceStatus: 'VERIFIED', insuranceExpiry: FUTURE,
+                }, NOW,
             )).toBeNull();
+        });
+
+        it('blocks a verified agency without verified RC insurance (#415 gates)', () => {
+            const base = { verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', licenceExpiry: FUTURE };
+            expect(getAgencyActivationBlock({ ...base, insuranceStatus: 'NOT_SUBMITTED' }, NOW))
+                .toMatch(/insurance must be submitted and verified/i);
+            expect(getAgencyActivationBlock({ ...base, insuranceStatus: 'PENDING_REVIEW' }, NOW))
+                .toMatch(/insurance must be submitted and verified/i);
+            expect(getAgencyActivationBlock({ ...base, insuranceStatus: 'REJECTED' }, NOW))
+                .toMatch(/insurance must be submitted and verified/i);
+            expect(getAgencyActivationBlock({ ...base }, NOW))
+                .toMatch(/insurance must be submitted and verified/i);
+        });
+
+        it('blocks a verified agency whose RC insurance has expired (#415 gates)', () => {
+            expect(getAgencyActivationBlock(
+                {
+                    verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', licenceExpiry: FUTURE,
+                    insuranceStatus: 'VERIFIED', insuranceExpiry: PAST,
+                }, NOW,
+            )).toMatch(/insurance has expired/i);
+        });
+
+        it('blocks a verified agency whose VERIFIED insurance has no expiry on file (#415 gates)', () => {
+            expect(getAgencyActivationBlock(
+                {
+                    verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', licenceExpiry: FUTURE,
+                    insuranceStatus: 'VERIFIED', insuranceExpiry: null,
+                }, NOW,
+            )).toMatch(/insurance must be submitted and verified/i);
         });
 
         it('blocks a verified agency whose VERIFIED licence has no expiry on file (#415)', () => {
