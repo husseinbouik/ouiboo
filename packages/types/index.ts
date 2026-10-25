@@ -23,6 +23,9 @@ export interface User {
 
 export enum VerificationStatus {
     Pending = "PENDING",
+    // #422 (Council P0-20): proof image accepted, bank confirmation pending —
+    // the payment is not settled in this state.
+    Accepted = "ACCEPTED",
     Verified = "VERIFIED",
     Rejected = "REJECTED",
 }

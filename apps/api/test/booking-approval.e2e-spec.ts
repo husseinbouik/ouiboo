@@ -60,7 +60,7 @@ describe('E2E: booking + payment approval flow', () => {
                 { provide: BookingsService, useValue: bookingsService },
                 { provide: DatabaseService, useValue: dbMock },
                 { provide: ExternalPaymentsService, useValue: externalPaymentsService },
-                { provide: StagedPaymentsService, useValue: { applyProofDecisionInTransaction: jest.fn() } },
+                { provide: StagedPaymentsService, useValue: { applyProofRejectionInTransaction: jest.fn(), applyBankConfirmationInTransaction: jest.fn() } },
                 { provide: EmailService, useValue: emailService },
                 { provide: AuditLogService, useValue: auditLogService },
                 { provide: PaymentsService, useValue: paymentsService },
@@ -123,7 +123,7 @@ describe('E2E: booking + payment approval flow', () => {
             });
     });
 
-    it('approves a payment proof and logs the action', async () => {
+    it('accepts a payment proof and logs the action — acceptance is not settlement (#422)', async () => {
         dbMock.paymentProof.findUnique.mockResolvedValue({
             id: 'proof-123',
             status: 'PENDING',
@@ -138,13 +138,7 @@ describe('E2E: booking + payment approval flow', () => {
         });
         dbMock.paymentProof.update.mockResolvedValue({
             id: 'proof-123',
-            status: 'VERIFIED',
-        });
-        dbMock.booking.update.mockResolvedValue({
-            id: 'booking-123',
-            status: 'CONFIRMED',
-            totalAmount: 780,
-            session: { template: { agencyId: 'agency-123', title: 'Atlas Escape' } },
+            status: 'ACCEPTED',
         });
 
         await request(app.getHttpServer())
@@ -152,17 +146,19 @@ describe('E2E: booking + payment approval flow', () => {
             .send({ status: 'VERIFIED' })
             .expect(201)
             .expect(({ body }) => {
-                expect(body).toMatchObject({ id: 'proof-123', status: 'VERIFIED' });
+                expect(body).toMatchObject({ id: 'proof-123', status: 'ACCEPTED' });
             });
 
-        // #368: approval records the payment as VERIFIED with the agency as
-        // custodian — it must not credit any withdrawable OuiBoo balance.
-        expect(externalPaymentsService.recordPaymentVerifiedInTransaction).toHaveBeenCalledWith(
-            expect.anything(),
-            expect.objectContaining({ bookingId: 'booking-123', custodian: 'AGENCY' }),
+        // #422: an admin VERIFIED decision only accepts the proof image.
+        // Settlement (ExternalPayment VERIFIED, booking CONFIRMED, payment
+        // email) happens exclusively at the agency's bank confirmation —
+        // none of it may happen here.
+        expect(externalPaymentsService.recordPaymentVerifiedInTransaction).not.toHaveBeenCalled();
+        expect(dbMock.booking.update).not.toHaveBeenCalled();
+        expect(emailService.sendPaymentConfirmation).not.toHaveBeenCalled();
+        expect(auditLogService.log).toHaveBeenCalledWith(
+            expect.objectContaining({ action: 'PAYMENT_PROOF_ACCEPTED' }),
         );
-        expect(emailService.sendPaymentConfirmation).toHaveBeenCalled();
-        expect(auditLogService.log).toHaveBeenCalled();
     });
 
     it('requires a rejection reason when rejecting a payment proof', async () => {
@@ -227,13 +223,7 @@ describe('E2E: booking + payment approval flow', () => {
         });
         dbMock.paymentProof.update.mockResolvedValue({
             id: 'proof-123',
-            status: 'VERIFIED',
-        });
-        dbMock.booking.update.mockResolvedValue({
-            id: 'booking-123',
-            status: 'CONFIRMED',
-            totalAmount: 780,
-            session: { template: { agencyId: 'agency-123', title: 'Atlas Escape' } },
+            status: 'ACCEPTED',
         });
 
         await request(app.getHttpServer())

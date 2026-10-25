@@ -226,14 +226,42 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         expect(proof).toBeTruthy();
         expect(proof?.status).toBe('PENDING');
 
-        // Step 3: Agency verifies payment
+        // #422: upload also created the stage's ExternalPayment as a real
+        // PENDING_VERIFICATION record (expected amount) — not a settlement.
+        const pendingPayment = await db.externalPayment.findUniqueOrThrow({
+            where: { bookingId_stage: { bookingId, stage: 'FULL' } },
+        });
+        expect(pendingPayment.status).toBe('PENDING_VERIFICATION');
+        expect(pendingPayment.amount.toNumber()).toBe(780);
+
+        // Step 3 (#422): agency accepts the proof image. Accepting settles
+        // NOTHING: booking stays AWAITING_VALIDATION / UNPAID, the payment
+        // record stays PENDING_VERIFICATION, no confirmation email.
         const verifyRes = await request(app.getHttpServer())
             .patch(`/bookings/${bookingId}/verify-payment`)
             .set('Authorization', `Bearer agency-token`)
             .send({ approved: true })
             .expect(200);
 
-        expect(verifyRes.body.status).toBe('CONFIRMED');
+        expect(verifyRes.body.status).toBe('AWAITING_VALIDATION');
+        expect(mockEmailService.sendPaymentConfirmation).not.toHaveBeenCalled();
+
+        booking = await db.booking.findUnique({ where: { id: bookingId } });
+        expect(booking?.status).toBe('AWAITING_VALIDATION');
+        expect(booking?.paymentStatus).toBe('UNPAID');
+
+        const acceptedProof = await db.paymentProof.findUnique({ where: { bookingId } });
+        expect(acceptedProof?.status).toBe('ACCEPTED');
+
+        // Step 4 (#422): agency confirms the credit in its bank account —
+        // only now is the payment settled.
+        const confirmRes = await request(app.getHttpServer())
+            .patch(`/bookings/${bookingId}/confirm-bank-payment`)
+            .set('Authorization', `Bearer agency-token`)
+            .send({ confirmedAmount: 780, bankReference: 'BANK-REF-780' })
+            .expect(200);
+
+        expect(confirmRes.body.status).toBe('CONFIRMED');
 
         // Verify email confirmation sent
         expect(mockEmailService.sendPaymentConfirmation).toHaveBeenCalledWith(
@@ -247,9 +275,17 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
 
         const updatedProof = await db.paymentProof.findUnique({ where: { bookingId } });
         expect(updatedProof?.status).toBe('VERIFIED');
+
+        const settledPayment = await db.externalPayment.findUniqueOrThrow({
+            where: { bookingId_stage: { bookingId, stage: 'FULL' } },
+        });
+        expect(settledPayment.status).toBe('VERIFIED');
+        expect(settledPayment.confirmedAmount?.toNumber()).toBe(780);
+        expect(settledPayment.bankReference).toBe('BANK-REF-780');
+        expect(settledPayment.bankConfirmedAt).toBeTruthy();
     });
 
-    it('Records the agency external payment exactly once under concurrent manual payment approval (#368)', async () => {
+    it('Records the agency external payment exactly once under concurrent bank confirmation (#368, #422)', async () => {
         const { session, traveler, agency } = await seedTestData();
         const booking = await db.booking.create({
             data: {
@@ -279,12 +315,31 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .patch(`/bookings/${booking.id}/verify-payment`)
             .set('Authorization', 'Bearer agency-token')
             .send({ approved: true });
-        const responses = await Promise.all([approve(), approve()]);
+        const acceptResponses = await Promise.all([approve(), approve()]);
 
-        expect(responses.map((response) => response.status).sort()).toEqual([200, 400]);
+        expect(acceptResponses.map((response) => response.status).sort()).toEqual([200, 400]);
 
-        // #368: approval records ONE verified external payment held by the
-        // agency — it must never credit a withdrawable OuiBoo wallet.
+        // #422: proof acceptance alone records NO verified payment and
+        // sends no confirmation email (this booking was seeded directly,
+        // so no pending record exists either).
+        const afterAccept = await db.externalPayment.findUnique({
+            where: { bookingId_stage: { bookingId: booking.id, stage: 'FULL' } },
+        });
+        expect(afterAccept).toBeNull();
+        expect(mockEmailService.sendPaymentConfirmation).not.toHaveBeenCalled();
+
+        // Bank confirmation is the settling step, and it is claim-guarded:
+        // two concurrent confirmations settle exactly once.
+        const confirm = () => request(app.getHttpServer())
+            .patch(`/bookings/${booking.id}/confirm-bank-payment`)
+            .set('Authorization', 'Bearer agency-token')
+            .send({ confirmedAmount: 780, bankReference: 'BANK-REF-CONCURRENT' });
+        const confirmResponses = await Promise.all([confirm(), confirm()]);
+
+        expect(confirmResponses.map((response) => response.status).sort()).toEqual([200, 400]);
+
+        // #368: confirmation records ONE verified external payment held by
+        // the agency — it must never credit a withdrawable OuiBoo wallet.
         const externalPayment = await db.externalPayment.findUniqueOrThrow({
             // #369: payments are unique per (booking, stage); this is the
             // single full payment.
@@ -293,6 +348,9 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         expect(externalPayment.status).toBe('VERIFIED');
         expect(externalPayment.custodian).toBe('AGENCY');
         expect(externalPayment.amount.toNumber()).toBe(780);
+        // #422: and it is bound to the confirmed bank credit.
+        expect(externalPayment.confirmedAmount?.toNumber()).toBe(780);
+        expect(externalPayment.bankReference).toBe('BANK-REF-CONCURRENT');
 
         const ledgerEntries = await db.paymentStatusLedgerEntry.findMany({
             where: { externalPaymentId: externalPayment.id },
@@ -659,11 +717,18 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .attach('file', fixturePath)
             .expect(201);
 
-        // Approve payment (CONFIRMED)
+        // Accept the proof image (settles nothing yet, #422)
         await request(app.getHttpServer())
             .patch(`/bookings/${booking.id}/verify-payment`)
             .set('Authorization', `Bearer agency-token`)
             .send({ approved: true })
+            .expect(200);
+
+        // Confirm the bank credit (booking becomes CONFIRMED)
+        await request(app.getHttpServer())
+            .patch(`/bookings/${booking.id}/confirm-bank-payment`)
+            .set('Authorization', `Bearer agency-token`)
+            .send({ confirmedAmount: 780, bankReference: 'BANK-REF-TRANSITIONS' })
             .expect(200);
 
         // Attempt to upload new proof when CONFIRMED (should fail)
@@ -732,11 +797,20 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .attach('file', fixturePath)
             .expect(201);
 
-        // Approve payment
+        // Accept the proof image: no payment email yet (#422).
         await request(app.getHttpServer())
             .patch(`/bookings/${createRes.body.id}/verify-payment`)
             .set('Authorization', `Bearer agency-token`)
             .send({ approved: true })
+            .expect(200);
+
+        expect(mockEmailService.sendPaymentConfirmation).not.toHaveBeenCalled();
+
+        // The payment confirmation email is sent at bank confirmation.
+        await request(app.getHttpServer())
+            .patch(`/bookings/${createRes.body.id}/confirm-bank-payment`)
+            .set('Authorization', `Bearer agency-token`)
+            .send({ confirmedAmount: 780, bankReference: 'BANK-REF-EMAIL' })
             .expect(200);
 
         expect(mockEmailService.sendPaymentConfirmation).toHaveBeenCalledWith(

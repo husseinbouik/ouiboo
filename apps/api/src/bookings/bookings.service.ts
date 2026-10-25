@@ -4,9 +4,9 @@ import { DatabaseService } from '../database/database.service';
 import { CreateBookingDto, PaymentMethodEnum } from './dto/create-booking.dto';
 import { EmailService } from '../email/email.service';
 import { UploadService } from '../upload/upload.service';
-import { BookingPaymentPlanStatus, BookingPaymentStatus, PaymentCustodian, PaymentLedgerSource, PaymentMethod, SessionGroupStatus } from '@ouiboo/database';
+import { BookingPaymentPlanStatus, BookingPaymentStatus, ExternalPaymentStage, PaymentCustodian, PaymentLedgerSource, PaymentMethod, SessionGroupStatus } from '@ouiboo/database';
 import { mapBookingDetails } from './booking-response.util';
-import { multiplyMoney } from '../common/money.util';
+import { decimalEqualsMoney, multiplyMoney, toMoneyDecimal } from '../common/money.util';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
 
@@ -419,6 +419,30 @@ export class BookingsService {
                 },
             });
 
+            // #422 (Council P0-20): the stage's ExternalPayment exists from
+            // upload in PENDING_VERIFICATION with the EXPECTED stage amount,
+            // so "proof received — pending bank confirmation" is a real
+            // record on every surface. Upload settles nothing: the booking
+            // stays UNPAID until the agency confirms the bank credit.
+            const stage = plan
+                ? (isInitialStage ? ExternalPaymentStage.DEPOSIT : ExternalPaymentStage.BALANCE)
+                : ExternalPaymentStage.FULL;
+            const expectedAmount = plan
+                ? (isInitialStage ? plan.depositAmount : plan.balanceAmount)
+                : booking.totalAmount;
+            await this.externalPaymentsService.recordPaymentPendingInTransaction(tx, {
+                bookingId,
+                agencyId: booking.session.template.agencyId,
+                travelerId: booking.travelerId,
+                amount: expectedAmount,
+                currency: booking.currency,
+                method: booking.paymentMethod ?? PaymentMethod.MANUAL,
+                externalReference: proof.id,
+                custodian: PaymentCustodian.AGENCY,
+                source: PaymentLedgerSource.MANUAL_PROOF_REVIEW,
+                stage,
+            });
+
             return {
                 ...proof,
                 downloadUrl,
@@ -486,12 +510,13 @@ export class BookingsService {
         return new Date() > expiresAt;
     }
 
-    async verifyPayment(bookingId: string, tenantId: string, approved: boolean, rejectionReason?: string) {
-        if (typeof approved !== 'boolean') {
-            throw new BadRequestException('approved must be a boolean');
-        }
-
-        // 1. Get Booking and verify Agency ownership
+    /**
+     * Shared loading + ownership gate for the manual payment review flow
+     * (#422 steps: proof review in verifyPayment, bank confirmation in
+     * confirmBankPayment). Fails closed on unknown bookings, other
+     * agencies' bookings, and bookings without an uploaded proof.
+     */
+    private async loadPaymentReviewContext(bookingId: string, tenantId: string) {
         const booking = await this.db.booking.findUnique({
             where: { id: bookingId },
             include: {
@@ -514,13 +539,25 @@ export class BookingsService {
         if (!booking.paymentProof) {
             throw new BadRequestException('No payment proof uploaded');
         }
+        const paymentProof = booking.paymentProof;
 
         const paymentProofId = booking.paymentProofId;
         if (!paymentProofId) {
             throw new BadRequestException('No payment proof uploaded');
         }
 
-        if (booking.paymentProof.status !== 'PENDING') {
+        return { booking, paymentProof, paymentProofId };
+    }
+
+    async verifyPayment(bookingId: string, tenantId: string, approved: boolean, rejectionReason?: string) {
+        if (typeof approved !== 'boolean') {
+            throw new BadRequestException('approved must be a boolean');
+        }
+
+        // 1. Get Booking and verify Agency ownership
+        const { booking, paymentProof, paymentProofId } = await this.loadPaymentReviewContext(bookingId, tenantId);
+
+        if (paymentProof.status !== 'PENDING') {
             throw new BadRequestException('Payment proof has already been reviewed');
         }
 
@@ -533,10 +570,15 @@ export class BookingsService {
         }
 
         const updatedBooking = await this.db.$transaction(async (tx) => {
+            // #422 (Council P0-20): proof review is no longer settlement.
+            // Approving the image only ACCEPTS the proof; the booking, the
+            // plan and the ExternalPayment stay exactly where upload left
+            // them until the agency confirms the credit in its bank account
+            // (see confirmBankPayment). Rejection stays one-step.
             const claimedProof = await tx.paymentProof.updateMany({
                 where: { id: paymentProofId, status: 'PENDING' },
                 data: {
-                    status: approved ? 'VERIFIED' : 'REJECTED',
+                    status: approved ? 'ACCEPTED' : 'REJECTED',
                     rejectionReason: approved ? null : rejectionReason,
                 }
             });
@@ -544,28 +586,28 @@ export class BookingsService {
                 throw new BadRequestException('Payment proof has already been reviewed');
             }
 
-            // #369: staged bookings follow the plan state machine (deposit
-            // stage, then balance after confirmation). Only the stage amount
-            // is recorded; the booking is fully paid at the balance stage.
+            if (approved) {
+                const updated = await tx.booking.findUniqueOrThrow({ where: { id: bookingId } });
+                return { booking: updated, fullyPaid: false };
+            }
+
+            // #369: staged bookings follow the plan state machine on
+            // rejection (deposit stage fails the booking; balance stage
+            // keeps the confirmed booking with the deposit paid).
             if (booking.paymentPlan) {
-                const decision = await this.stagedPaymentsService.applyProofDecisionInTransaction(tx, {
+                await this.stagedPaymentsService.applyProofRejectionInTransaction(tx, {
                     booking,
                     plan: booking.paymentPlan,
-                    approved,
                     source: PaymentLedgerSource.MANUAL_PROOF_REVIEW,
                     externalReference: paymentProofId,
                 });
                 const updated = await tx.booking.findUniqueOrThrow({ where: { id: bookingId } });
-                return { booking: updated, fullyPaid: decision.fullyPaid };
+                return { booking: updated, fullyPaid: false };
             }
 
-            const newStatus = approved ? 'CONFIRMED' : 'REJECTED';
-            const confirmedAt = approved ? new Date() : null;
-
-            // #368: approving a payment proof records the verified fact that
-            // the traveller paid the AGENCY directly. It must never credit a
-            // withdrawable OuiBoo balance.
-            const paymentRecord = {
+            // #368: rejecting a payment proof records the fact only. It
+            // must never credit a withdrawable OuiBoo balance.
+            await this.externalPaymentsService.recordPaymentRejectedInTransaction(tx, {
                 bookingId,
                 agencyId: booking.session.template.agencyId,
                 travelerId: booking.travelerId,
@@ -575,19 +617,14 @@ export class BookingsService {
                 externalReference: paymentProofId,
                 custodian: PaymentCustodian.AGENCY,
                 source: PaymentLedgerSource.MANUAL_PROOF_REVIEW,
-            };
-            if (approved) {
-                await this.externalPaymentsService.recordPaymentVerifiedInTransaction(tx, paymentRecord);
-            } else {
-                await this.externalPaymentsService.recordPaymentRejectedInTransaction(tx, paymentRecord);
-            }
+            });
 
             const claimedBooking = await tx.booking.updateMany({
                 where: { id: bookingId, status: 'AWAITING_VALIDATION' },
                 data: {
-                    status: newStatus,
-                    paymentStatus: approved ? BookingPaymentStatus.PAID : BookingPaymentStatus.FAILED,
-                    confirmedAt,
+                    status: 'REJECTED',
+                    paymentStatus: BookingPaymentStatus.FAILED,
+                    confirmedAt: null,
                 }
             });
             if (claimedBooking.count !== 1) {
@@ -595,11 +632,135 @@ export class BookingsService {
             }
 
             const updated = await tx.booking.findUniqueOrThrow({ where: { id: bookingId } });
-            return { booking: updated, fullyPaid: approved };
+            return { booking: updated, fullyPaid: false };
+        });
+
+        return updatedBooking.booking;
+    }
+
+    /**
+     * #422 (Council P0-20): bank confirmation — the ONLY step that settles
+     * a manual payment. The agency confirms the credit it actually
+     * observed in its own bank account (amount + bank transfer reference);
+     * only then do the effects proof approval used to perform happen:
+     * ExternalPayment VERIFIED bound to confirmedAmount/bankReference,
+     * booking PAID/PARTIALLY_PAID, plan DEPOSIT_PAID/FULLY_PAID, and the
+     * "payment confirmed" email when fully paid.
+     *
+     * Guards: the proof must be ACCEPTED first, a bank reference is
+     * required, and confirmedAmount must equal the expected stage amount
+     * (a short credit blocks confirmation — the agency rejects the proof
+     * or asks for a top-up instead; founder decision D1, beta behaviour).
+     */
+    async confirmBankPayment(
+        bookingId: string,
+        tenantId: string,
+        confirmedByUserId: string,
+        dto: { confirmedAmount?: unknown; bankReference?: unknown },
+    ) {
+        const bankReference = typeof dto?.bankReference === 'string' ? dto.bankReference.trim() : '';
+        if (!bankReference) {
+            throw new BadRequestException('A bank reference is required to confirm a bank payment');
+        }
+        if (dto?.confirmedAmount === undefined || dto?.confirmedAmount === null || dto?.confirmedAmount === '') {
+            throw new BadRequestException('confirmedAmount is required to confirm a bank payment');
+        }
+        const confirmedAmount = toMoneyDecimal(dto.confirmedAmount as never, 'confirmedAmount');
+        if (confirmedAmount.lessThanOrEqualTo(0)) {
+            throw new BadRequestException('confirmedAmount must be a positive amount');
+        }
+
+        const { booking, paymentProof, paymentProofId } = await this.loadPaymentReviewContext(bookingId, tenantId);
+
+        if (paymentProof.status !== 'ACCEPTED') {
+            throw new BadRequestException('Payment proof must be accepted before bank confirmation');
+        }
+
+        if (booking.status !== 'AWAITING_VALIDATION') {
+            throw new BadRequestException('Booking is not awaiting payment validation');
+        }
+
+        const plan = booking.paymentPlan;
+        const expectedAmount = plan
+            ? (plan.status === BookingPaymentPlanStatus.DEPOSIT_DUE
+                ? plan.depositAmount
+                : plan.status === BookingPaymentPlanStatus.BALANCE_DUE
+                    ? plan.balanceAmount
+                    : null)
+            : booking.totalAmount;
+        if (expectedAmount === null) {
+            throw new BadRequestException('Booking is not awaiting a staged payment');
+        }
+        if (!decimalEqualsMoney(confirmedAmount, expectedAmount as never)) {
+            throw new BadRequestException(
+                'Confirmed amount does not match the expected payment amount; a short credit cannot be confirmed — reject the proof or ask the traveller for a top-up',
+            );
+        }
+
+        const updatedBooking = await this.db.$transaction(async (tx) => {
+            const claimedProof = await tx.paymentProof.updateMany({
+                where: { id: paymentProofId, status: 'ACCEPTED' },
+                data: {
+                    status: 'VERIFIED',
+                    rejectionReason: null,
+                }
+            });
+            if (claimedProof.count !== 1) {
+                throw new BadRequestException('Payment proof must be accepted before bank confirmation');
+            }
+
+            // #369: staged bookings follow the plan state machine (deposit
+            // stage, then balance after confirmation); the recorded amount
+            // is the confirmed bank credit, not the expected amount.
+            if (plan) {
+                const decision = await this.stagedPaymentsService.applyBankConfirmationInTransaction(tx, {
+                    booking,
+                    plan,
+                    source: PaymentLedgerSource.MANUAL_PROOF_REVIEW,
+                    externalReference: paymentProofId,
+                    confirmedAmount,
+                    bankReference,
+                    bankConfirmedBy: confirmedByUserId,
+                });
+                const updated = await tx.booking.findUniqueOrThrow({ where: { id: bookingId } });
+                return { booking: updated, fullyPaid: decision.fullyPaid };
+            }
+
+            // #368: bank confirmation records the verified fact that the
+            // traveller paid the AGENCY directly. It must never credit a
+            // withdrawable OuiBoo balance.
+            await this.externalPaymentsService.recordPaymentVerifiedInTransaction(tx, {
+                bookingId,
+                agencyId: booking.session.template.agencyId,
+                travelerId: booking.travelerId,
+                amount: confirmedAmount,
+                currency: booking.currency,
+                method: PaymentMethod.MANUAL,
+                externalReference: paymentProofId,
+                custodian: PaymentCustodian.AGENCY,
+                source: PaymentLedgerSource.MANUAL_PROOF_REVIEW,
+                bankReference,
+                bankConfirmedBy: confirmedByUserId,
+            });
+
+            const claimedBooking = await tx.booking.updateMany({
+                where: { id: bookingId, status: 'AWAITING_VALIDATION' },
+                data: {
+                    status: 'CONFIRMED',
+                    paymentStatus: BookingPaymentStatus.PAID,
+                    confirmedAt: new Date(),
+                }
+            });
+            if (claimedBooking.count !== 1) {
+                throw new BadRequestException('Booking is not awaiting payment validation');
+            }
+
+            const updated = await tx.booking.findUniqueOrThrow({ where: { id: bookingId } });
+            return { booking: updated, fullyPaid: true };
         });
 
         // The "payment confirmed" email means fully paid; a staged deposit
-        // approval does not send it (the balance is still outstanding).
+        // confirmation does not send it (the balance is still outstanding).
         if (updatedBooking.fullyPaid && booking.traveler?.email) {
             this.emailService.sendPaymentConfirmation(
                 booking.traveler.email,

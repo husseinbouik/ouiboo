@@ -17,6 +17,10 @@ enum UserRole {
 
 enum VerificationStatus {
   PENDING
+  // #422 (Council P0-20): the proof image was accepted by the reviewer, but
+  // the payment is NOT settled until the agency confirms the credit in its
+  // bank account (proof status then moves to VERIFIED).
+  ACCEPTED
   VERIFIED
   REJECTED
 }
@@ -550,6 +554,15 @@ model ExternalPayment {
   custodian         PaymentCustodian
   status            ExternalPaymentStatus @default(PENDING_VERIFICATION)
   verifiedAt        DateTime?
+  // #422 (Council P0-20): bank-confirmation facts for manual payments. A
+  // manual payment may only become VERIFIED when the agency confirms the
+  // credit actually observed in its bank account: the confirmed amount and
+  // the bank transfer reference are the audit anchor that binds the record
+  // to a real bank credit (never to the uploaded screenshot).
+  confirmedAmount   Decimal?              @db.Decimal(18, 2)
+  bankReference     String?
+  bankConfirmedAt   DateTime?
+  bankConfirmedBy   String?
   // #369: FULL = the booking's single payment (pre-staged behaviour);
   // staged bookings hold one DEPOSIT and one BALANCE record instead.
   stage             ExternalPaymentStage  @default(FULL)
