@@ -89,6 +89,12 @@ jobs:
       - name: Coverage — packages/session
         continue-on-error: true
         run: npm run test --workspace=packages/session -- --coverage --coverageReporters=lcov --coverageDirectory=${{ github.workspace }}/packages/session/coverage
+      - name: Coverage — packages/utils
+        continue-on-error: true
+        run: npm run test --workspace=packages/utils -- --coverage --coverageReporters=lcov --coverageDirectory=${{ github.workspace }}/packages/utils/coverage
+      - name: Coverage — packages/ui
+        continue-on-error: true
+        run: npm run test --workspace=packages/ui -- --coverage --coverageReporters=lcov --coverageDirectory=${{ github.workspace }}/packages/ui/coverage
       - name: Merge coverage reports
         if: always()
         run: node scripts/merge-lcov.mjs

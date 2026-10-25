@@ -1,12 +1,1 @@
-{
-    "name": "@ouiboo/utils",
-    "version": "0.0.0",
-    "main": "./index.ts",
-    "types": "./index.ts",
-    "dependencies": {
-        "@ouiboo/types": "*"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0"
-    }
-}
+{"dependencies":{"@ouiboo/types":"*"},"devDependencies":{"@types/jest":"^29.5.14","jest":"^30.5.2","ts-jest":"^29.2.5","typescript":"^5.0.0"},"main":"./index.ts","name":"@ouiboo/utils","scripts":{"test":"jest --runInBand"},"types":"./index.ts","version":"0.0.0"}

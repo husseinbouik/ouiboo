@@ -9,7 +9,7 @@ import {
   canUseNativeShare,
   copyShareLink,
   getShareTargets,
-} from '@ouiboo/utils';
+} from './share';
 
 describe('trip share helpers (#468)', () => {
   describe('buildTripShareUrl', () => {
