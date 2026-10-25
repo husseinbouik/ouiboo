@@ -123,6 +123,14 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 userId: agencyUser.id,
                 companyName: 'Test Agency Ltd', ice: 'ICE100001', patente: 'PAT100001', rib: 'RIB100001',
                 verificationStatus: 'VERIFIED',
+                // #415: compliant agency fixture — verified ODV licence +
+                // verified RC insurance, or the booking gate refuses.
+                travelLicenceType: 'ODV',
+                travelLicenceStatus: 'VERIFIED',
+                travelLicenceNumber: 'LIC-100001',
+                licenceExpiry: new Date('2030-01-01T00:00:00.000Z'),
+                insuranceStatus: 'VERIFIED',
+                insuranceExpiry: new Date('2030-01-01T00:00:00.000Z'),
                 trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             } as any,
         });

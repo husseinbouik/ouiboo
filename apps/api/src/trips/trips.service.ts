@@ -3,7 +3,7 @@ import { DatabaseService } from '../database/database.service';
 import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripSessionDto } from './dto/create-trip.dto';
 import { BookingStatus, SessionStatus, TripStatus } from '@ouiboo/database';
 import { toMoneyDecimal } from '../common/money.util';
-import { getAgencyActivationBlock } from '../common/agency-licence.util';
+import { canOrganise, getAgencyActivationBlock } from '../common/agency-licence.util';
 import { visibleBankDetails } from '../common/bank-details.util';
 import { resolveStagedSessionConfig } from '../staged-payments/staged-payments.util';
 
@@ -30,14 +30,29 @@ export class TripsService {
      * requires a verified agency identity AND a verified, unexpired
      * travel licence. Already-ACTIVE trips are never blocked by this —
      * it only runs on transitions into ACTIVE.
+     * #415: the activation block now also requires verified, unexpired
+     * RC insurance, and a DV (distributeur) agency may never publish —
+     * it does not organise trips.
      */
     private async assertAgencyCanPublish(agencyId: string) {
         const agency = await this.db.agencyProfile.findUnique({
             where: { id: agencyId },
-            select: { verificationStatus: true, travelLicenceStatus: true, licenceExpiry: true },
+            select: {
+                verificationStatus: true,
+                travelLicenceStatus: true,
+                licenceExpiry: true,
+                travelLicenceType: true,
+                insuranceStatus: true,
+                insuranceExpiry: true,
+            },
         });
         const block = agency ? getAgencyActivationBlock(agency) : 'Agency profile not found';
         if (block) throw new ForbiddenException(block);
+        if (agency && !canOrganise(agency)) {
+            throw new ForbiddenException(
+                'A distributor (DV) licence does not permit organising trips — only ODV agencies can publish trips',
+            );
+        }
     }
 
     async createTemplate(agencyId: string, dto: CreateTripTemplateDto) {
@@ -47,6 +62,18 @@ export class TripsService {
 
         if (!agency) {
             throw new ForbiddenException('Agency profile not found');
+        }
+
+        // #415 (Council P0-08): ODV/DV enforcement at creation. A DV
+        // (distributeur) distributes other organisers' trips and may not
+        // organise its own — not even as a draft. The check applies once
+        // a licence type is declared; an agency that has not submitted
+        // its licence yet can still draft (publishing stays fully gated
+        // by assertAgencyCanPublish).
+        if (agency.travelLicenceType && !canOrganise(agency)) {
+            throw new ForbiddenException(
+                'A distributor (DV) licence does not permit organising trips — only ODV agencies can create trips',
+            );
         }
 
         const { itinerary, imageAlts, ...tripData } = dto;

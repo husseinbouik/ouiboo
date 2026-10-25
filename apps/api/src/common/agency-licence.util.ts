@@ -19,12 +19,12 @@
  * missing expiry as proof of validity.
  *
  * Activation gate: an agency may publish trips or activate payments only
- * when BOTH its identity (`verificationStatus`) and its travel licence
- * are verified and the licence has not expired. Existing ACTIVE trips of
+ * when its identity (`verificationStatus`), its travel licence, AND its
+ * RC insurance are all verified and unexpired. Existing ACTIVE trips of
  * already-verified agencies are never retroactively blocked — the gate
  * applies to transitions (publish / restore / payment activation).
- * Insurance gating helpers are provided here for the later gate/sweep
- * PRs; they are not yet wired into the activation gate.
+ * (#415 PR-2 wires insurance into the activation gate; the booking gate
+ * and the expiry sweep build on the same helpers.)
  */
 
 export type LicenceProfileLike = {
@@ -37,10 +37,11 @@ export type InsuranceProfileLike = {
     insuranceExpiry?: Date | string | null;
 };
 
-export type AgencyActivationProfile = LicenceProfileLike & {
-    verificationStatus?: string | null;
-    travelLicenceType?: string | null;
-};
+export type AgencyActivationProfile = LicenceProfileLike &
+    InsuranceProfileLike & {
+        verificationStatus?: string | null;
+        travelLicenceType?: string | null;
+    };
 
 export type EffectiveLicenceStatus =
     | 'NOT_SUBMITTED'
@@ -109,8 +110,8 @@ export function isInsuranceVerified(profile: InsuranceProfileLike, now: Date = n
 /**
  * #415: Law 11-16 licence types — an ODV (organisateur de voyages) may
  * organise trips; a DV (distributeur de voyages) distributes other
- * organisers' trips and may NOT organise its own. Pure helper for the
- * later gate PRs (trip create/publish); not wired into any gate yet.
+ * organisers' trips and may NOT organise its own. Wired into the trip
+ * gates by the #415 gates PR (template creation + publish).
  */
 export function canOrganise(profile: { travelLicenceType?: string | null }): boolean {
     return profile.travelLicenceType === 'ODV';
@@ -118,8 +119,8 @@ export function canOrganise(profile: { travelLicenceType?: string | null }): boo
 
 /**
  * Returns a human-readable reason when the agency's RC insurance blocks
- * it, or null when the insurance is verified and unexpired. Provided for
- * the later gate/sweep PRs; not yet called by any gate.
+ * it, or null when the insurance is verified and unexpired. Used by the
+ * activation gate below (publish / payment activation).
  */
 export function getAgencyInsuranceBlock(
     profile: InsuranceProfileLike,
@@ -153,6 +154,12 @@ export function getAgencyActivationBlock(
     }
     if (licence !== 'VERIFIED') {
         return 'Agency travel licence must be submitted and verified before trips can be published or payments activated';
+    }
+    // #415: RC insurance is a hard gate on the same transitions — publish
+    // and payment activation require a verified, unexpired policy.
+    const insuranceBlock = getAgencyInsuranceBlock(profile, now);
+    if (insuranceBlock) {
+        return `${insuranceBlock} before trips can be published or payments activated`;
     }
     return null;
 }

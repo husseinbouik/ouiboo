@@ -375,6 +375,9 @@ describe('TripsService', () => {
             verificationStatus: 'VERIFIED',
             travelLicenceStatus: 'VERIFIED',
             licenceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            travelLicenceType: 'ODV',
+            insuranceStatus: 'VERIFIED',
+            insuranceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
         };
 
         beforeEach(() => {
@@ -416,6 +419,43 @@ describe('TripsService', () => {
 
             await expect(service.activateTemplate('trip-123', 'agency-123'))
                 .rejects.toThrow(/licence has expired/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks re-activation when RC insurance was never submitted (#415)', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                insuranceStatus: 'NOT_SUBMITTED',
+                insuranceExpiry: null,
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/insurance must be submitted and verified/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks re-activation when RC insurance has expired (#415)', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                insuranceExpiry: new Date(Date.now() - 24 * 60 * 60 * 1000),
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/insurance has expired/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks re-activation for a DV agency even when fully verified (#415)', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                travelLicenceType: 'DV',
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/distributor \(DV\) licence does not permit organising/i);
             expect(db.tripTemplate.update).not.toHaveBeenCalled();
         });
 
@@ -489,6 +529,46 @@ describe('TripsService', () => {
             expect(args.select.agency.select.travelLicenceNumber).toBe(true);
             expect(args.select.agency.select.travelLicenceStatus).toBe(true);
             expect(args.select.agency.select.licenceExpiry).toBe(true);
+        });
+    });
+
+    describe('DV organise block at template creation (#415)', () => {
+        beforeEach(() => {
+            db.tripTemplate.create.mockResolvedValue(mockTripTemplate);
+        });
+
+        it('blocks a DV agency from creating a trip template', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                id: 'agency-123',
+                travelLicenceType: 'DV',
+            });
+
+            await expect(service.createTemplate('agency-123', { title: 'T' } as any))
+                .rejects.toThrow(/distributor \(DV\) licence does not permit organising/i);
+            expect(db.tripTemplate.create).not.toHaveBeenCalled();
+        });
+
+        it('allows an ODV agency to create a trip template', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                id: 'agency-123',
+                travelLicenceType: 'ODV',
+            });
+
+            const result = await service.createTemplate('agency-123', { title: 'T' } as any);
+
+            expect(db.tripTemplate.create).toHaveBeenCalled();
+            expect(result.id).toBe('trip-123');
+        });
+
+        it('allows an agency with no licence type submitted yet to draft', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                id: 'agency-123',
+                travelLicenceType: null,
+            });
+
+            await service.createTemplate('agency-123', { title: 'T' } as any);
+
+            expect(db.tripTemplate.create).toHaveBeenCalled();
         });
     });
 });

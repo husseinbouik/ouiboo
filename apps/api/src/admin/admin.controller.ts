@@ -718,7 +718,9 @@ export class AdminController {
                 throw new BadRequestException('Agency must be verified with an active subscription or trial');
             }
             // #371: publishing also requires a verified, unexpired travel
-            // licence (Law 11-16) — identity verification alone is not enough.
+            // licence (Law 11-16) — identity verification alone is not
+            // enough. #415: the shared activation block also requires
+            // verified, unexpired RC insurance.
             const licenceBlock = getAgencyActivationBlock(trip.agency);
             if (licenceBlock) {
                 throw new BadRequestException(licenceBlock);
