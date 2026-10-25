@@ -17,8 +17,10 @@ stop visible, booking submitted.
 - Search → trip card link → trip detail (session picker is a
   keyboard-operable radio) → "Book Now" → checkout.
 - Checkout: back button (named), session radio (named with dates +
-  seats), guest count, full name, phone, document number — all labelled
-  and reachable in order; the payment-proof file input is in the Tab
+  seats), guest count, full name, phone — all labelled and reachable in
+  order (the document number field was removed in #466; the form now
+  shows an "agency may check ID at departure" note instead, which the
+  CI walkthrough asserts); the payment-proof file input is in the Tab
   order (sr-only, with a visible focus ring on its label — previously
   `hidden`, which removed it from the keyboard flow entirely).
 - Submit via Enter on "Complete Booking" lands on

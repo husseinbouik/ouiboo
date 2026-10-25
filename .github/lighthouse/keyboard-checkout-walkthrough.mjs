@@ -175,8 +175,10 @@ try {
   // One continuous Tab walk through the whole form; we fill each field
   // as it receives focus and stop at the submit button. Tab order on
   // this page is DOM order: session radio → guests → name → phone →
-  // document → proof upload → … → Complete booking.
-  const filled = { name: false, phone: false, document: false };
+  // proof upload → … → Complete booking. (The document/CIN field was
+  // removed in #466; the form now shows an "agency may check ID at
+  // departure" note instead — asserted after the walk below.)
+  const filled = { name: false, phone: false };
   let sawSessionRadio = false;
   let sawGuests = false;
   let sawProofUpload = false;
@@ -218,10 +220,6 @@ try {
       await page.keyboard.type('+212600000000');
       filled.phone = true;
       record('checkout', info, 'typed phone number');
-    } else if (info.tag === 'input' && (info.name === 'document-number' || /document number/i.test(info.placeholder)) && !filled.document) {
-      await page.keyboard.type('AB123456');
-      filled.document = true;
-      record('checkout', info, 'typed document number');
     } else if (info.tag === 'button' && /complete booking/i.test(info.text || info.ariaLabel || '')) {
       submitInfo = info;
     }
@@ -230,8 +228,21 @@ try {
   if (!sawSessionRadio) fail('[checkout] session radio was not in the Tab order');
   if (!sawGuests) fail('[checkout] guest-count input was not in the Tab order');
   if (!sawProofUpload) fail('[checkout] payment-proof file input was not keyboard-focusable');
-  if (!filled.name || !filled.phone || !filled.document) {
+  if (!filled.name || !filled.phone) {
     fail(`[checkout] could not fill all guest fields by keyboard: ${JSON.stringify(filled)}`);
+  }
+  // #466: no ID number is collected online anymore — the guest form
+  // must show the "agency may check ID at departure" note in place of
+  // the removed document field.
+  const idNoteVisible = await page
+    .getByText(/agency may check your ID at departure/i)
+    .first()
+    .isVisible()
+    .catch(() => false);
+  if (!idNoteVisible) {
+    fail('[checkout] "agency may check your ID at departure" note not shown (the #466 replacement for the removed document field)');
+  } else {
+    console.log('   ✓ ID-at-departure note shown (no document field collected)');
   }
   if (!submitInfo) throw new Error('Complete booking button not reachable by keyboard');
 
