@@ -19,7 +19,11 @@ import { EmailService } from '../email/email.service';
 import { PaymentCustodian, PaymentLedgerSource, PaymentMethod, Prisma } from '@ouiboo/database';
 import { AuditLogService } from './audit-log.service';
 import { Response } from 'express';
-import { mapBookingDetails } from '../bookings/booking-response.util';
+import {
+    BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT,
+    mapBookingDetails,
+    resolveBankConfirmation,
+} from '../bookings/booking-response.util';
 import { PaymentsService } from '../payments/payments.service';
 import { type MoneyInput } from '../common/money.util';
 import { effectiveInsuranceStatus, effectiveLicenceStatus, getAgencyActivationBlock } from '../common/agency-licence.util';
@@ -135,7 +139,7 @@ export class AdminController {
     ) { }
 
     @Get('pending-payments')
-    @ApiOperation({ summary: 'Get payment proofs pending verification' })
+    @ApiOperation({ summary: 'Get payment proofs awaiting review or agency bank confirmation' })
     async getPendingPayments(
         @Query('q') q?: string,
         @Query('page') page?: string,
@@ -143,8 +147,12 @@ export class AdminController {
     ) {
         const search = q?.trim();
         const { page: safePage, limit: safeLimit } = parsePaginationQuery(page, limit);
+        // #422 (Council P0-20): ACCEPTED proofs stay listed alongside
+        // PENDING ones — acceptance is not settlement, and the Payment
+        // Proofs tab must show the proof as awaiting the agency's bank
+        // confirmation until that confirmation flips it to VERIFIED.
         const where: Prisma.PaymentProofWhereInput = {
-            status: 'PENDING',
+            status: { in: ['PENDING', 'ACCEPTED'] },
             ...(search ? {
                 OR: [
                     { booking: { id: { contains: search, mode: 'insensitive' } } },
@@ -162,6 +170,9 @@ export class AdminController {
                         include: {
                             traveler: { select: { email: true, name: true } },
                             session: { include: { template: true } },
+                            paymentProof: true,
+                            paymentPlan: true,
+                            externalPayments: { select: BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT },
                         },
                     },
                 },
@@ -176,6 +187,10 @@ export class AdminController {
         const data = proofs.map((proof) => ({
             ...proof,
             booking: mapBookingDetails(proof.booking),
+            // #422: the stage ExternalPayment's bank confirmation, in the
+            // AdminPaymentProof.bankConfirmation shape the tab renders
+            // read-only (null until the agency confirms the bank credit).
+            bankConfirmation: resolveBankConfirmation(proof.booking),
             downloadUrl: `${apiUrl}/bookings/${proof.bookingId}/payment-proof/download`,
         }));
         return { data, pagination: buildPaginationMeta(total, safePage, safeLimit) };
@@ -866,7 +881,12 @@ export class AdminController {
                             },
                         },
                     },
-                    paymentProof: true
+                    paymentProof: true,
+                    // #422: mapBookingDetails reads the plan status and
+                    // the stage ExternalPayments to embed the proof's
+                    // bank-confirmation state in the Bookings tab rows.
+                    paymentPlan: true,
+                    externalPayments: { select: BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT },
                 },
                 orderBy: { bookingDate: 'desc' },
                 skip: (safePage - 1) * safeLimit,

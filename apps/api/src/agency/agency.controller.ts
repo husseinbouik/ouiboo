@@ -7,7 +7,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@ouiboo/types';
 import { DatabaseService } from '../database/database.service';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
-import { mapBookingDetails } from '../bookings/booking-response.util';
+import { BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT, mapBookingDetails } from '../bookings/booking-response.util';
 import { toMoneyString } from '../common/money.util';
 import { UpdateAgencyProfileDto } from './dto/update-profile.dto';
 import { getAgencyActivationBlock } from '../common/agency-licence.util';
@@ -218,7 +218,11 @@ export class AgencyController {
                             email: true,
                         }
                     },
-                    paymentProof: true
+                    paymentProof: true,
+                    paymentPlan: true,
+                    // #422: lets mapBookingDetails embed the proof's
+                    // bank-confirmation state (see booking-response.util).
+                    externalPayments: { select: BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT }
                 },
                 orderBy: {
                     bookingDate: 'desc'
