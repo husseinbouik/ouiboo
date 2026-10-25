@@ -29,6 +29,23 @@ const LICENCE_STATUS_KEYS: Record<string, string> = {
   [LicenceStatus.Expired]: 'dashboard.status.licenceExpired',
 };
 
+// #415: RC insurance artefact — same lifecycle as the licence, own labels.
+const INSURANCE_STATUS_KEYS: Record<string, string> = {
+  [LicenceStatus.NotSubmitted]: 'dashboard.status.insuranceNotSubmitted',
+  [LicenceStatus.PendingReview]: 'dashboard.status.insurancePendingReview',
+  [LicenceStatus.Verified]: 'dashboard.status.insuranceVerified',
+  [LicenceStatus.Rejected]: 'dashboard.status.insuranceRejected',
+  [LicenceStatus.Expired]: 'dashboard.status.insuranceExpired',
+};
+
+// #421: payment-destination (bank details) verification lifecycle.
+const BANK_DETAILS_STATUS_KEYS: Record<string, string> = {
+  UNVERIFIED: 'dashboard.status.bankUnverified',
+  PENDING_REVIEW: 'dashboard.status.bankPendingReview',
+  VERIFIED: 'dashboard.status.bankVerified',
+  REJECTED: 'dashboard.status.bankRejected',
+};
+
 const SUBSCRIPTION_STATUS_KEYS: Record<string, string> = {
   [SubscriptionStatus.Trial]: 'dashboard.status.subscriptionTrial',
   [SubscriptionStatus.Active]: 'dashboard.status.subscriptionActive',
@@ -111,6 +128,52 @@ export const getAdminLicenceBadgeClass = (status?: LicenceStatusType) => {
 
 export const getAdminLicenceBadgeLabel = (status?: LicenceStatusType, t?: Translate) => {
   return statusLabel(status, LICENCE_STATUS_KEYS, t ? t('dashboard.status.licenceNotSubmitted') : 'Not submitted', t);
+};
+
+// #415: insurance status derivation mirrors the licence one exactly —
+// prefer the server-provided effective status; fall back to deriving
+// expiry locally.
+export const getEffectiveInsuranceStatus = (agency: {
+  insuranceStatus?: string | null;
+  effectiveInsuranceStatus?: string | null;
+  insuranceExpiry?: string | null;
+}): LicenceStatusType => {
+  if (agency.effectiveInsuranceStatus) {
+    return agency.effectiveInsuranceStatus as LicenceStatusType;
+  }
+  const status = (agency.insuranceStatus || LicenceStatus.NotSubmitted) as LicenceStatusType;
+  if (status === LicenceStatus.Verified && agency.insuranceExpiry && new Date(agency.insuranceExpiry).getTime() <= Date.now()) {
+    return LicenceStatus.Expired;
+  }
+  return status;
+};
+
+export const getAdminInsuranceBadgeClass = (status?: LicenceStatusType) => getAdminLicenceBadgeClass(status);
+
+export const getAdminInsuranceBadgeLabel = (status?: LicenceStatusType, t?: Translate) => {
+  return statusLabel(status, INSURANCE_STATUS_KEYS, t ? t('dashboard.status.insuranceNotSubmitted') : 'Not submitted', t);
+};
+
+// #421: bank-details badge — verified destination is the only state a
+// traveller may ever see, so it is the only green one.
+export const getAdminBankDetailsBadgeClass = (status?: string | null) => {
+  if (status === 'VERIFIED') {
+    return 'bg-success/15 text-success';
+  }
+
+  if (status === 'REJECTED') {
+    return 'bg-danger/15 text-danger';
+  }
+
+  if (status === 'PENDING_REVIEW') {
+    return 'bg-warning/15 text-warning';
+  }
+
+  return 'bg-muted text-muted-foreground';
+};
+
+export const getAdminBankDetailsBadgeLabel = (status?: string | null, t?: Translate) => {
+  return statusLabel(status ?? undefined, BANK_DETAILS_STATUS_KEYS, t ? t('dashboard.status.bankUnverified') : 'Unverified', t);
 };
 
 export const getAdminSubscriptionBadgeLabel = (status?: string | null, t?: Translate) => {
