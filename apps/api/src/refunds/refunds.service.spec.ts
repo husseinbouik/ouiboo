@@ -201,6 +201,10 @@ function makeService(db: any) {
             emailTemplates.getRefundActionRequiredTemplate.bind(emailTemplates),
         getRefundActionRequiredSubject:
             emailTemplates.getRefundActionRequiredSubject.bind(emailTemplates),
+        getRefundCaseOpenedTemplate:
+            emailTemplates.getRefundCaseOpenedTemplate.bind(emailTemplates),
+        getRefundCaseOpenedSubject:
+            emailTemplates.getRefundCaseOpenedSubject.bind(emailTemplates),
     };
     const service = new RefundsService(db as any, external as any, email as any);
     return { service, external, email };
@@ -1471,6 +1475,54 @@ describe('RefundsService traveller notification (#419)', () => {
         const again = await service.notifyTravelerRefundCaseOpened(refundCase.id);
         expect(again).toBe(false);
         expect(email.sendEmail).toHaveBeenCalledTimes(1);
+    });
+
+    it('renders the traveller email in French when the booking locale is fr (#424)', async () => {
+        const db = makeFakeDb();
+        const refundCase = seedRefundDueCase(db, {
+            booking: { locale: 'fr', session: { template: { title: 'Atlas Trek' } } },
+        });
+        const { service, email } = makeService(db);
+
+        const sent = await service.notifyTravelerRefundCaseOpened(refundCase.id);
+
+        expect(sent).toBe(true);
+        const [, subject, html] = (email.sendEmail as jest.Mock).mock.calls[0];
+        expect(subject).toBe('Votre remboursement est en route');
+        expect(html).toContain('<html lang="fr" dir="ltr">');
+        expect(html).toContain('22 janvier 2027');
+        expect(html).toContain('Atlas Trek');
+        expect(html).not.toContain('Your refund is on its way');
+    });
+
+    it('renders the traveller email in Arabic (RTL) when the booking locale is ar (#424)', async () => {
+        const db = makeFakeDb();
+        const refundCase = seedRefundDueCase(db, {
+            booking: { locale: 'ar', session: { template: { title: 'Atlas Trek' } } },
+        });
+        const { service, email } = makeService(db);
+
+        const sent = await service.notifyTravelerRefundCaseOpened(refundCase.id);
+
+        expect(sent).toBe(true);
+        const [, subject, html] = (email.sendEmail as jest.Mock).mock.calls[0];
+        expect(subject).toBe('استردادك في الطريق إليك');
+        expect(html).toContain('<html lang="ar" dir="rtl">');
+        expect(html).toContain('لم تصل رحلتك');
+        expect(html).not.toContain('Your refund is on its way');
+    });
+
+    it('falls back to English when the booking has no recorded locale (#424)', async () => {
+        const db = makeFakeDb();
+        const refundCase = seedRefundDueCase(db);
+        const { service, email } = makeService(db);
+
+        const sent = await service.notifyTravelerRefundCaseOpened(refundCase.id);
+
+        expect(sent).toBe(true);
+        const [, subject, html] = (email.sendEmail as jest.Mock).mock.calls[0];
+        expect(subject).toBe('Your refund is on its way');
+        expect(html).toContain('<html lang="en" dir="ltr">');
     });
 
     it('does not email when the traveller has no address on file', async () => {

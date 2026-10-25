@@ -20,7 +20,7 @@ import {
 } from '@ouiboo/database';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
-import { escapeHtml, emailHeading, emailParagraph, renderEmail } from '../email/email-template';
+import { normalizeEmailLocale } from '../email/email-i18n';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { toMoneyDecimal, toMoneyString } from '../common/money.util';
 import { PRIVATE_FILE_PREFIX } from '../upload/upload.constants';
@@ -298,6 +298,7 @@ export class RefundsService {
                 agency: { select: { companyName: true } },
                 booking: {
                     select: {
+                        locale: true,
                         session: {
                             select: {
                                 template: { select: { title: true } },
@@ -327,45 +328,40 @@ export class RefundsService {
         const amount = toMoneyString(
             refundCase.approvedAmount ?? refundCase.requestedAmount,
         );
-        const currency = refundCase.currency;
-        const agencyName = refundCase.agency?.companyName || 'the agency';
         const tripTitle = refundCase.booking?.session?.template?.title;
+        // #424 follow-up: the copy lives in the email locale table and
+        // renders in the booking's recorded locale (English when none
+        // was recorded); the deadline label follows the same locale.
+        const emailLocale = normalizeEmailLocale(refundCase.booking?.locale);
         const dueLabel = refundCase.refundDueAt
-            ? new Intl.DateTimeFormat('en-GB', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-            }).format(refundCase.refundDueAt)
+            ? new Intl.DateTimeFormat(
+                { en: 'en-GB', fr: 'fr-FR', ar: 'ar-MA' }[emailLocale],
+                {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                },
+            ).format(refundCase.refundDueAt)
             : null;
         const supportEmail = process.env.SUPPORT_EMAIL || 'support@ouiboo.com';
         const travelerUrl = process.env.TRAVELER_APP_URL || 'https://ouiboo-traveler.vercel.app';
-        const html = renderEmail({
-            title: 'Your refund is on its way',
-            preheader: 'Your trip did not reach its minimum group size, so a refund case has been opened for you.',
-            content:
-                emailHeading('Your refund is on its way') +
-                emailParagraph(
-                    (tripTitle
-                        ? `Your trip "${escapeHtml(tripTitle)}" `
-                        : 'Your trip ') +
-                    'did not reach the minimum group size, so it will not run as planned. ' +
-                    'A refund case has been opened for you automatically — you do not need to do anything.',
-                ) +
-                emailParagraph(
-                    `Amount to be refunded: ${escapeHtml(amount ?? '')} ${escapeHtml(currency)}. ` +
-                    `Your payment went directly to ${escapeHtml(agencyName)}, so the refund comes from them too — OuiBoo never holds your money.`,
-                ) +
-                emailParagraph(
-                    dueLabel
-                        ? `The agency has until ${escapeHtml(dueLabel)} to complete your refund, and we chase it for you if it slips. You can follow the refund status any time in your bookings: ${escapeHtml(`${travelerUrl}/bookings`)}`
-                        : `You can follow the refund status any time in your bookings: ${escapeHtml(`${travelerUrl}/bookings`)}`,
-                ) +
-                emailParagraph(
-                    `Questions? Email OuiBoo support at ${escapeHtml(supportEmail)} — we reply within 48 hours. ` +
-                    'If the refund deadline passes without your money arriving, contact the same address and we will escalate it with the agency.',
-                ),
-        });
-        await this.emailService.sendEmail(email, 'Your refund is on its way', html);
+        const html = this.emailService.getRefundCaseOpenedTemplate(
+            {
+                tripTitle,
+                amount: amount ?? '',
+                currency: refundCase.currency,
+                agencyName: refundCase.agency?.companyName || null,
+                dueDateLabel: dueLabel,
+                bookingsUrl: `${travelerUrl}/bookings`,
+                supportEmail,
+            },
+            emailLocale,
+        );
+        await this.emailService.sendEmail(
+            email,
+            this.emailService.getRefundCaseOpenedSubject(emailLocale),
+            html,
+        );
         return true;
     }
 
