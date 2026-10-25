@@ -198,3 +198,25 @@ describe('EmailService — every template renders in FR and AR (#424)', () => {
         expect(sent[5].subject).toBe(emailStrings('en').subscriptionRenewal.subject);
     });
 });
+
+describe('EmailService — auth sends honor the locale (#424)', () => {
+    it('sendOTP / sendWelcomeEmail / sendPasswordResetEmail use dictionary subjects + lang/dir', async () => {
+        const service = new EmailService();
+        const sent: Array<{ subject?: string; html?: string }> = [];
+        (service as unknown as { transporter: unknown }).transporter = {
+            sendMail: jest.fn(async (opts: { subject?: string; html?: string }) => {
+                sent.push(opts);
+                return { messageId: 'm' };
+            }),
+        };
+        await service.sendOTP('sara@example.com', '123456', 'fr');
+        await service.sendWelcomeEmail('sara@example.com', 'Sara', 'ar');
+        await service.sendPasswordResetEmail('sara@example.com', 'https://x/reset', 'fr');
+        expect(sent).toHaveLength(3);
+        expect(sent[0].subject).toBe(emailStrings('fr').otp.subject);
+        expect(sent[0].html).toContain('lang="fr"');
+        expect(sent[1].subject).toBe(emailStrings('ar').welcome.subject);
+        expect(sent[1].html).toContain('dir="rtl"');
+        expect(sent[2].subject).toBe(emailStrings('fr').passwordReset.subject);
+    });
+});

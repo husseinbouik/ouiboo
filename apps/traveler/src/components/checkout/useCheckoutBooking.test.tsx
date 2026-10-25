@@ -101,4 +101,34 @@ describe('useCheckoutBooking (CIN removal)', () => {
         expect(postMock).not.toHaveBeenCalled();
         expect(result.current.errorMessage).toBe('Guest contact details are required');
     });
+
+    it('rejects without a selected session, with the localized error', async () => {
+        const { result } = renderHook(
+            () => useCheckoutBooking({ ...baseOptions, selectedSessionId: null }),
+            { wrapper },
+        );
+        await act(async () => {
+            result.current.createBookingMutation.mutate();
+        });
+
+        await waitFor(() => expect(result.current.createBookingMutation.isError).toBe(true));
+        expect(postMock).not.toHaveBeenCalled();
+        expect(result.current.errorMessage).toBe('Session is required');
+    });
+
+    it('rejects when the agency has no bank details, with the localized error', async () => {
+        const { result } = renderHook(
+            () => useCheckoutBooking({ ...baseOptions, hasBankDetails: false }),
+            { wrapper },
+        );
+        await act(async () => {
+            result.current.createBookingMutation.mutate();
+        });
+
+        await waitFor(() => expect(result.current.createBookingMutation.isError).toBe(true));
+        expect(postMock).not.toHaveBeenCalled();
+        expect(result.current.errorMessage).toBe(
+            'This agency has not configured verified bank transfer instructions yet',
+        );
+    });
 });
