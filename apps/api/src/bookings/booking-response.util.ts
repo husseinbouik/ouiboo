@@ -10,9 +10,48 @@ import {
   type SessionStatusType,
   type VerificationStatusType,
 } from '@ouiboo/types';
+import { type Prisma } from '@ouiboo/database';
 import { type MoneyInput, toMoneyString } from '../common/money.util';
 
+/**
+ * #422 (Council P0-20): the only ExternalPayment fields booking/payment
+ * responses expose — the bank-confirmation facts rendered read-only by
+ * the admin Payment Proofs tab. Include a booking's `externalPayments`
+ * with this select wherever mapBookingDetails shapes a response.
+ */
+export const BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT = {
+  stage: true,
+  confirmedAmount: true,
+  bankReference: true,
+  bankConfirmedAt: true,
+  bankConfirmedBy: true,
+  updatedAt: true,
+} satisfies Prisma.ExternalPaymentSelect;
+
 type NullableDate = Date | string | null | undefined;
+
+/**
+ * #422 (Council P0-20): the bank-confirmation facts recorded on a stage's
+ * ExternalPayment when the agency confirms the credit in its own bank
+ * account. This is the exact shape the admin Payment Proofs tab renders
+ * read-only (`AdminPaymentProof.bankConfirmation`); every field is null
+ * until a confirmation exists.
+ */
+export type BankConfirmationDetails = {
+  confirmedAmount: string | null;
+  bankReference: string | null;
+  bankConfirmedAt: string | null;
+  bankConfirmedBy: string | null;
+};
+
+type BookingExternalPaymentInput = {
+  stage?: string | null;
+  confirmedAmount?: MoneyInput | null;
+  bankReference?: string | null;
+  bankConfirmedAt?: NullableDate;
+  bankConfirmedBy?: string | null;
+  updatedAt?: NullableDate;
+};
 
 type BookingMapperInput = {
   id: string;
@@ -44,6 +83,13 @@ type BookingMapperInput = {
     status: string;
     rejectionReason?: string | null;
   } | null;
+  /**
+   * #422: the booking's per-stage ExternalPayment records. Only the
+   * bank-confirmation fields are read, to expose them on the mapped
+   * payment proof; callers that never include the relation simply get
+   * `bankConfirmation: null`.
+   */
+  externalPayments?: BookingExternalPaymentInput[] | null;
   /** #369: staged payment plan snapshot; null for non-staged bookings. */
   paymentPlan?: {
     id: string;
@@ -109,6 +155,68 @@ const toIsoString = (value: NullableDate) => {
   return value;
 };
 
+const timeOf = (value: NullableDate) => {
+  if (!value) {
+    return 0;
+  }
+  const time = new Date(value).getTime();
+  return Number.isFinite(time) ? time : 0;
+};
+
+/**
+ * #369 plan status → the ExternalPayment stage that status settles(d).
+ * DEPOSIT_PAID/REFUND_DUE still point at the deposit (the last settled
+ * stage); FULLY_PAID points at the balance. Terminal plan states not
+ * listed here fall back to the latest confirmation on any stage.
+ */
+const STAGE_FOR_PLAN_STATUS: Record<string, string> = {
+  DEPOSIT_DUE: 'DEPOSIT',
+  DEPOSIT_PAID: 'DEPOSIT',
+  REFUND_DUE: 'DEPOSIT',
+  BALANCE_DUE: 'BALANCE',
+  FULLY_PAID: 'BALANCE',
+};
+
+/**
+ * #422 (Council P0-20): resolve the bank confirmation to display for a
+ * booking's payment proof. Prefers the stage the booking's plan is
+ * currently on (FULL for non-staged bookings); otherwise the latest
+ * recorded confirmation across stages. Returns null when no stage has a
+ * bank confirmation yet — accepting a proof image alone never produces
+ * one, because ExternalPaymentsService only stamps these fields at
+ * agency bank confirmation.
+ */
+export const resolveBankConfirmation = (
+  booking: Pick<BookingMapperInput, 'externalPayments' | 'paymentPlan'>,
+): BankConfirmationDetails | null => {
+  const confirmed = (booking.externalPayments ?? []).filter(
+    (payment) => payment && payment.bankConfirmedAt,
+  );
+  if (!confirmed.length) {
+    return null;
+  }
+
+  const targetStage = booking.paymentPlan
+    ? STAGE_FOR_PLAN_STATUS[booking.paymentPlan.status]
+    : 'FULL';
+  const payment =
+    (targetStage ? confirmed.find((entry) => entry.stage === targetStage) : undefined) ??
+    confirmed
+      .slice()
+      .sort(
+        (a, b) =>
+          timeOf(b.bankConfirmedAt) - timeOf(a.bankConfirmedAt) ||
+          timeOf(b.updatedAt) - timeOf(a.updatedAt),
+      )[0];
+
+  return {
+    confirmedAmount: toMoneyString(payment.confirmedAmount) ?? null,
+    bankReference: payment.bankReference ?? null,
+    bankConfirmedAt: toIsoString(payment.bankConfirmedAt) ?? null,
+    bankConfirmedBy: payment.bankConfirmedBy ?? null,
+  };
+};
+
 export const mapBookingDetails = (booking: BookingMapperInput): BookingDetails => ({
   id: booking.id,
   sessionId: booking.sessionId,
@@ -144,6 +252,11 @@ export const mapBookingDetails = (booking: BookingMapperInput): BookingDetails =
         uploadedAt: toIsoString(booking.paymentProof.uploadedAt) || new Date(0).toISOString(),
         status: booking.paymentProof.status as VerificationStatusType,
         rejectionReason: booking.paymentProof.rejectionReason || undefined,
+        // #422: read-only bank-confirmation state of the stage's
+        // ExternalPayment (null until the agency confirms the bank
+        // credit). The admin UI renders this via its AdminPaymentProof
+        // contract; there is no admin action behind it.
+        bankConfirmation: resolveBankConfirmation(booking),
       }
     : undefined,
   paymentPlan: (booking.paymentPlan

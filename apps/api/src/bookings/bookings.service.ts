@@ -5,7 +5,7 @@ import { CreateBookingDto, PaymentMethodEnum } from './dto/create-booking.dto';
 import { EmailService } from '../email/email.service';
 import { UploadService } from '../upload/upload.service';
 import { BookingPaymentPlanStatus, BookingPaymentStatus, ExternalPaymentStage, PaymentCustodian, PaymentLedgerSource, PaymentMethod, SessionGroupStatus } from '@ouiboo/database';
-import { mapBookingDetails } from './booking-response.util';
+import { BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT, mapBookingDetails } from './booking-response.util';
 import { decimalEqualsMoney, multiplyMoney, toMoneyDecimal } from '../common/money.util';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
@@ -261,6 +261,9 @@ export class BookingsService {
                     },
                     paymentProof: true,
                     paymentPlan: true,
+                    // #422: lets mapBookingDetails embed the proof's
+                    // bank-confirmation state (see booking-response.util).
+                    externalPayments: { select: BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT },
                     review: {
                         select: {
                             id: true,
@@ -297,6 +300,8 @@ export class BookingsService {
             include: {
                 paymentProof: true,
                 paymentPlan: true,
+                // #422: see findAllByTraveler — bank-confirmation embedding.
+                externalPayments: { select: BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT },
                 session: {
                     include: {
                         template: {

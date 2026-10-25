@@ -388,6 +388,18 @@ export interface PaymentProof {
     uploadedAt: string;
     status: VerificationStatus;
     rejectionReason?: string;
+    /**
+     * #422 (Council P0-20): read-only bank-confirmation facts of the
+     * stage's ExternalPayment, stamped only when the agency confirms the
+     * credit in its own bank account. Null/absent until then — an
+     * accepted proof image alone never carries one.
+     */
+    bankConfirmation?: {
+        confirmedAmount: string | null;
+        bankReference: string | null;
+        bankConfirmedAt: string | null;
+        bankConfirmedBy: string | null;
+    } | null;
 }
 
 export interface Wallet {
