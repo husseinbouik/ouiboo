@@ -779,7 +779,8 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
             const res = await request(app.getHttpServer())
                 .get(`/media/private/payment-proofs/${BOOKING_PROOF}/ct-proof.png`);
             expect([403, 404]).toContain(res.status);
-            expect(bodyText(res)).not.toContain('ct-proof');
+            // …and what comes back is an error body, never the image bytes.
+            expect(res.headers['content-type'] ?? '').not.toContain('image/png');
         });
 
         it('payment-proof files are not reachable through the public media endpoint either', async () => {
