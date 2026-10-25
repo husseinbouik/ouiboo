@@ -16,6 +16,8 @@ function makeFakeDb() {
     const plans: any[] = [];
     const agencies = new Map<string, any>();
     const bookings = new Map<string, any>();
+    const evidence: any[] = [];
+    const attempts: any[] = [];
     let seq = 0;
 
     const db: any = {
@@ -24,8 +26,36 @@ function makeFakeDb() {
         _plans: plans,
         _agencies: agencies,
         _bookings: bookings,
+        _evidence: evidence,
+        _attempts: attempts,
         auditLog: {
             create: jest.fn(async ({ data }: any) => ({ id: `audit-${++seq}`, ...data })),
+        },
+        refundEvidence: {
+            create: jest.fn(async ({ data }: any) => {
+                const row = {
+                    id: `evidence-${++seq}`,
+                    createdAt: new Date(),
+                    reference: null,
+                    proofUrl: null,
+                    amount: null,
+                    note: null,
+                    ...data,
+                };
+                evidence.push(row);
+                return row;
+            }),
+            findMany: jest.fn(async ({ where }: any) =>
+                evidence.filter((e) => e.refundCaseId === where.refundCaseId),
+            ),
+        },
+        paymentAttempt: {
+            findFirst: jest.fn(async ({ where }: any) =>
+                attempts.find((a) =>
+                    a.bookingId === where.bookingId
+                    && a.providerPaymentId === where.providerPaymentId,
+                ) ?? null,
+            ),
         },
         refundCase: {
             findUnique: jest.fn(async ({ where }: any) => {
@@ -136,7 +166,7 @@ function makeFakeDb() {
 
 function makeService(db: any) {
     const external = {
-        recordRefundInTransaction: jest.fn(async () => ({})),
+        recordRefundInTransaction: jest.fn(async (_tx: any, _input: any) => ({})),
     };
     const email = { sendEmail: jest.fn(async () => undefined) };
     const service = new RefundsService(db as any, external as any, email as any);
@@ -316,6 +346,12 @@ describe('RefundsService (#370)', () => {
             originalPaymentId: payment.id, requestedAmount: D('200.00'), approvedAmount: D('200.00'),
             currency: 'MAD', status: 'REFUND_INITIATED', initiatedAt: new Date(), providerRefundId: null,
         });
+        // #416: completion requires qualifying evidence (tier 3 here).
+        db._evidence.push({
+            id: 'evidence-1', refundCaseId: 'case-1', tier: 'BANK_REFERENCE', source: 'AGENCY',
+            reference: 'VIR-2026-1042', proofUrl: 'private/agency-user-1/bank-confirmation.pdf',
+            amount: D('200.00'), note: null, recordedBy: 'agency-user-1', createdAt: new Date(),
+        });
         const { service, external } = makeService(db);
         // After completion the payment leaves VERIFIED (recorded by the
         // external payments service in real code; mirrored here).
@@ -328,7 +364,9 @@ describe('RefundsService (#370)', () => {
 
         expect(updated.status).toBe('REFUND_COMPLETED');
         expect(updated.completedAt).toBeInstanceOf(Date);
+        expect(updated.completionTier).toBe('BANK_REFERENCE');
         expect(external.recordRefundInTransaction).toHaveBeenCalledTimes(1);
+        expect(external.recordRefundInTransaction.mock.calls[0][1].source).toBe('BANK_CONFIRMATION');
         const booking = db._bookings.get('booking-1');
         expect(booking.refundStatus).toBe('PROCESSED');
         expect(booking.paymentStatus).toBe('REFUNDED');
@@ -423,6 +461,278 @@ describe('RefundsService (#370)', () => {
         await expect(
             service.complete({ id: 'agency-user-1' }, 'AGENCY', 'agency-1', 'case-1', {}),
         ).rejects.toBeInstanceOf(BadRequestException);
+    });
+});
+
+describe('RefundsService completion evidence gate (#416)', () => {
+    const AGENCY_ACTOR = { id: 'agency-user-1' };
+    const ADMIN_ACTOR = { id: 'admin-1' };
+
+    function seedInitiatedCase(db: any, overrides: Record<string, unknown> = {}) {
+        const row = {
+            id: 'case-1', bookingId: 'booking-1', travelerId: 'traveler-1', agencyId: 'agency-1',
+            originalPaymentId: 'payment-1', requestedAmount: D('200.00'), approvedAmount: D('200.00'),
+            currency: 'MAD', status: 'REFUND_INITIATED', initiatedAt: new Date(),
+            providerRefundId: null, providerStatus: null, completionTier: null,
+            ...overrides,
+        };
+        db._cases.set(row.id, row);
+        return row;
+    }
+
+    function seedEvidence(db: any, overrides: Record<string, unknown> = {}) {
+        const row = {
+            id: `evidence-${db._evidence.length + 1}`, refundCaseId: 'case-1',
+            tier: 'BANK_REFERENCE', source: 'AGENCY', reference: 'VIR-2026-1042',
+            proofUrl: 'private/agency-user-1/bank-confirmation.pdf', amount: D('200.00'),
+            note: null, recordedBy: 'agency-user-1', createdAt: new Date(),
+            ...overrides,
+        };
+        db._evidence.push(row);
+        return row;
+    }
+
+    function seedCompleteFixture(db: any) {
+        seedAgency(db);
+        seedDepositPayment(db);
+        db._bookings.set('booking-1', { id: 'booking-1', refundStatus: null });
+        seedInitiatedCase(db);
+    }
+
+    it('council verify case: an agency cannot complete a refund with no evidence', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        const { service, external } = makeService(db);
+
+        await expect(
+            service.complete(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {}),
+        ).rejects.toBeInstanceOf(BadRequestException);
+
+        expect(db._cases.get('case-1').status).toBe('REFUND_INITIATED');
+        expect(external.recordRefundInTransaction).not.toHaveBeenCalled();
+    });
+
+    it('a typed providerRefundId no longer manufactures GATEWAY_REFUND provenance', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        const { service, external } = makeService(db);
+
+        // The typed string alone completes nothing.
+        await expect(
+            service.complete(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', { providerRefundId: 'rf-typed' }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(external.recordRefundInTransaction).not.toHaveBeenCalled();
+
+        // With tier-3 evidence attached, the same typed string is recorded
+        // as reported — but the ledger source comes from the evidence.
+        seedEvidence(db);
+        const updated = await service.complete(
+            AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', { providerRefundId: 'rf-typed' },
+        );
+        expect(updated.status).toBe('REFUND_COMPLETED');
+        expect(updated.providerRefundId).toBe('rf-typed');
+        expect(updated.completionTier).toBe('BANK_REFERENCE');
+        expect(external.recordRefundInTransaction.mock.calls[0][1].source).toBe('BANK_CONFIRMATION');
+    });
+
+    it('tier-3 evidence without the retained proof file does not qualify', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        seedEvidence(db, { proofUrl: null });
+        const { service } = makeService(db);
+        await expect(
+            service.complete(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {}),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(db._cases.get('case-1').status).toBe('REFUND_INITIATED');
+    });
+
+    it('tier-4 traveller confirmation alone never completes', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        seedEvidence(db, {
+            tier: 'TRAVELLER_CONFIRMATION', source: 'TRAVELLER',
+            reference: null, proofUrl: null, recordedBy: 'traveler-1',
+        });
+        const { service } = makeService(db);
+        await expect(
+            service.complete(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {}),
+        ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('tier 4 + tier 5 completes via ADMIN_PROOF_REVIEW', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        seedEvidence(db, {
+            tier: 'TRAVELLER_CONFIRMATION', source: 'TRAVELLER',
+            reference: null, proofUrl: null, recordedBy: 'traveler-1',
+        });
+        seedEvidence(db, {
+            tier: 'ADMIN_REVIEW', source: 'ADMIN',
+            reference: null, proofUrl: null, recordedBy: 'admin-1',
+        });
+        const { service, external } = makeService(db);
+
+        const updated = await service.complete(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {});
+
+        expect(updated.status).toBe('REFUND_COMPLETED');
+        expect(updated.completionTier).toBe('ADMIN_REVIEW');
+        expect(external.recordRefundInTransaction.mock.calls[0][1].source).toBe('ADMIN_PROOF_REVIEW');
+    });
+
+    it('tier-2 bank/provider confirmation completes via BANK_CONFIRMATION', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        seedEvidence(db, { tier: 'BANK_PROVIDER_CONFIRMATION', reference: 'pay_123' });
+        const { service, external } = makeService(db);
+
+        const updated = await service.complete(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {});
+
+        expect(updated.status).toBe('REFUND_COMPLETED');
+        expect(updated.completionTier).toBe('BANK_PROVIDER_CONFIRMATION');
+        const ledgerInput = external.recordRefundInTransaction.mock.calls[0][1];
+        expect(ledgerInput.source).toBe('BANK_CONFIRMATION');
+        expect(ledgerInput.externalTransactionId).toBe('pay_123');
+    });
+
+    it('tier-1 PSP confirmation completes via GATEWAY_REFUND', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        seedEvidence(db, {
+            tier: 'PSP_CONFIRMATION', source: 'SYSTEM_WEBHOOK', reference: 'psp-refund-1',
+            proofUrl: null, recordedBy: 'SYSTEM',
+        });
+        const { service, external } = makeService(db);
+
+        const updated = await service.complete(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {});
+
+        expect(updated.status).toBe('REFUND_COMPLETED');
+        expect(updated.completionTier).toBe('PSP_CONFIRMATION');
+        expect(external.recordRefundInTransaction.mock.calls[0][1].source).toBe('GATEWAY_REFUND');
+    });
+
+    it('an admin completing without evidence records their review as tier-5 evidence', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        const { service, external } = makeService(db);
+
+        const updated = await service.complete(ADMIN_ACTOR, 'ADMIN', null, 'case-1', {});
+
+        expect(updated.status).toBe('REFUND_COMPLETED');
+        expect(updated.completionTier).toBe('ADMIN_REVIEW');
+        const recorded = db._evidence.filter((e: any) => e.tier === 'ADMIN_REVIEW');
+        expect(recorded).toHaveLength(1);
+        expect(recorded[0].source).toBe('ADMIN');
+        expect(recorded[0].recordedBy).toBe('admin-1');
+        expect(external.recordRefundInTransaction.mock.calls[0][1].source).toBe('ADMIN_PROOF_REVIEW');
+    });
+
+    it('providerStatus is recorded as reported and never defaulted to COMPLETED', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        seedEvidence(db);
+        const { service } = makeService(db);
+
+        const updated = await service.complete(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {});
+        expect(updated.providerStatus ?? null).toBeNull();
+
+        const db2 = makeFakeDb();
+        seedCompleteFixture(db2);
+        seedEvidence(db2);
+        const { service: service2 } = makeService(db2);
+        const updated2 = await service2.complete(
+            AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', { providerStatus: 'SETTLED_BY_BANK' },
+        );
+        expect(updated2.providerStatus).toBe('SETTLED_BY_BANK');
+    });
+
+    it('addEvidence requires both a reference and a retained proof document', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        const { service } = makeService(db);
+
+        await expect(
+            service.addEvidence(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', { proofUrl: 'private/agency-user-1/doc.pdf' }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        await expect(
+            service.addEvidence(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', { reference: 'VIR-1' }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(db._evidence).toHaveLength(0);
+    });
+
+    it('addEvidence rejects proof keys outside the agency\u2019s own private folder', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        const { service } = makeService(db);
+
+        await expect(
+            service.addEvidence(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {
+                reference: 'VIR-1', proofUrl: 'private/another-user/doc.pdf',
+            }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        await expect(
+            service.addEvidence(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {
+                reference: 'VIR-1', proofUrl: 'https://example.com/doc.pdf',
+            }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(db._evidence).toHaveLength(0);
+    });
+
+    it('addEvidence records tier BANK_REFERENCE and audits the submission', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        const { service } = makeService(db);
+
+        const created = await service.addEvidence(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {
+            reference: 'VIR-2026-1042',
+            proofUrl: 'private/agency-user-1/bank-confirmation.pdf',
+            amount: 200,
+        });
+
+        expect(created.tier).toBe('BANK_REFERENCE');
+        expect(created.source).toBe('AGENCY');
+        expect(created.reference).toBe('VIR-2026-1042');
+        expect(created.amount).toBe('200.00');
+        expect(db._evidence).toHaveLength(1);
+        const audits = db.auditLog.create.mock.calls
+            .map((c: any) => c[0].data)
+            .filter((d: any) => d.action === 'REFUND_EVIDENCE_RECORDED');
+        expect(audits).toHaveLength(1);
+        expect(audits[0].metadata.tier).toBe('BANK_REFERENCE');
+    });
+
+    it('addEvidence upgrades to BANK_PROVIDER_CONFIRMATION when the reference is a known provider transaction id', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        db._attempts.push({ id: 'attempt-1', bookingId: 'booking-1', providerPaymentId: 'pay_123' });
+        const { service } = makeService(db);
+
+        const created = await service.addEvidence(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {
+            reference: 'pay_123',
+            proofUrl: 'private/agency-user-1/provider-confirmation.pdf',
+        });
+
+        expect(created.tier).toBe('BANK_PROVIDER_CONFIRMATION');
+    });
+
+    it('addEvidence refuses terminal cases and other agencies\u2019 cases', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        db._cases.get('case-1').status = 'REFUND_COMPLETED';
+        const { service } = makeService(db);
+        await expect(
+            service.addEvidence(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {
+                reference: 'VIR-1', proofUrl: 'private/agency-user-1/doc.pdf',
+            }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+
+        const db2 = makeFakeDb();
+        seedCompleteFixture(db2);
+        const { service: service2 } = makeService(db2);
+        await expect(
+            service2.addEvidence(AGENCY_ACTOR, 'AGENCY', 'agency-2', 'case-1', {
+                reference: 'VIR-1', proofUrl: 'private/agency-user-1/doc.pdf',
+            }),
+        ).rejects.toBeInstanceOf(ForbiddenException);
     });
 });
 
