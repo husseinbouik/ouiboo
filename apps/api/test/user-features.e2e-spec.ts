@@ -120,7 +120,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
         const traveler = await db.user.create({ data: { id: 'traveler-user-1', email: 'traveler@test.com', name: 'Traveler', password: 'x', role: UserRole.Traveler, isEmailVerified: true } as any });
         // agency user
         const agencyUser = await db.user.create({ data: { id: 'agency-user-1', email: 'agency@test.com', name: 'Agency', password: 'x', role: UserRole.Agency, isEmailVerified: true } as any });
-        const agencyProfile = await db.agencyProfile.create({ data: { id: 'agency-profile-1', userId: agencyUser.id, companyName: 'Agency Ltd', ice: 'ICE100006', patente: 'PAT100006', rib: 'RIB100006', verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', travelLicenceNumber: 'LIC-100006', licenceExpiry: new Date('2030-01-01T00:00:00.000Z'), subscriptionStatus: 'TRIAL', trialEndsAt: new Date(Date.now() + 7 * 86_400_000) } as any });
+        const agencyProfile = await db.agencyProfile.create({ data: { id: 'agency-profile-1', userId: agencyUser.id, companyName: 'Agency Ltd', ice: 'ICE100006', patente: 'PAT100006', rib: 'RIB100006', verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', travelLicenceNumber: 'LIC-100006', licenceExpiry: new Date('2030-01-01T00:00:00.000Z'), travelLicenceType: 'ODV', insuranceStatus: 'VERIFIED', insuranceExpiry: new Date('2030-01-01T00:00:00.000Z'), subscriptionStatus: 'TRIAL', trialEndsAt: new Date(Date.now() + 7 * 86_400_000) } as any });
 
         // admin
         const adminUser = await db.user.create({ data: { id: 'admin-user', email: 'admin@test.com', name: 'Admin', password: 'x', role: UserRole.Admin, isEmailVerified: true } as any });
