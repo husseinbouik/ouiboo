@@ -19,12 +19,19 @@ function makeFake(booking: any) {
         payments: [] as any[],
         refundCases: [] as any[],
         depositPayment: null as any,
+        existingCase: null as any,
+        activeCase: null as any,
+        groupSessions: [] as any[],
     };
     const auditLog = {
         create: jest.fn(async ({ data }: any) => ({ id: 'audit-1', ...data })),
     };
     const tx: any = {
         auditLog,
+        tripSession: {
+            findMany: jest.fn(async () => state.groupSessions),
+            count: jest.fn(async () => state.groupSessions.length),
+        },
         booking: {
             findUnique: jest.fn(async () => state.booking),
             updateMany: jest.fn(async ({ where, data }: any) => {
@@ -41,8 +48,8 @@ function makeFake(booking: any) {
         },
         refundCase: {
             findMany: jest.fn(async () => state.refundCases),
-            findUnique: jest.fn(async () => null),
-            findFirst: jest.fn(async () => null),
+            findUnique: jest.fn(async () => state.existingCase),
+            findFirst: jest.fn(async () => state.activeCase),
         },
     };
     const db: any = {
@@ -295,6 +302,152 @@ describe('AdminInterventionsService (#423)', () => {
             repairAction: 'open-refund-case',
             refundCaseId: 'case-new',
         });
+    });
+
+    it('listPendingGroups serializes sessions with paid participants vs the minimum', async () => {
+        const { db, state } = makeFake(null);
+        state.groupSessions = [{
+            id: 'session-1',
+            startDate: new Date('2027-03-10T09:00:00.000Z'),
+            confirmationDeadline: new Date('2027-03-01T09:00:00.000Z'),
+            minBookings: 4,
+            currency: 'MAD',
+            template: { title: 'Atlas Trek', agency: { companyName: 'Atlas Adventures SARL' } },
+            paymentPlans: [
+                { status: 'DEPOSIT_PAID', booking: { guestsCount: 2 } },
+                { status: 'DEPOSIT_DUE', booking: { guestsCount: 3 } },
+                { status: 'FULLY_PAID', booking: { guestsCount: 1 } },
+            ],
+        }];
+        const service = new AdminInterventionsService(db, makeStaged() as any, makeRefunds() as any);
+
+        const result = await service.listPendingGroups({});
+
+        expect(result.pagination).toMatchObject({ total: 1, page: 1, limit: 25 });
+        expect(result.data).toEqual([{
+            sessionId: 'session-1',
+            tripTitle: 'Atlas Trek',
+            agencyName: 'Atlas Adventures SARL',
+            startDate: new Date('2027-03-10T09:00:00.000Z'),
+            confirmationDeadline: new Date('2027-03-01T09:00:00.000Z'),
+            minBookings: 4,
+            paidParticipants: 3,
+            depositPaidBookings: 1,
+            currency: 'MAD',
+        }]);
+    });
+
+    it('a staged-service refusal (group not pending) propagates and writes no audit row', async () => {
+        const { db, auditLog } = makeFake(null);
+        const staged = makeStaged();
+        staged.forceConfirmGroupInTransaction.mockRejectedValueOnce(
+            new BadRequestException('Session group is not pending its minimum'),
+        );
+        const service = new AdminInterventionsService(db, staged as any, makeRefunds() as any);
+
+        await expect(service.forceConfirmGroup(ACTOR, 'session-1', REASON))
+            .rejects.toThrow('not pending its minimum');
+        expect(auditLog.create).not.toHaveBeenCalled();
+    });
+
+    it('extend-deadline rejects an unparseable date before opening a transaction', async () => {
+        const { db } = makeFake(null);
+        const service = new AdminInterventionsService(db, makeStaged() as any, makeRefunds() as any);
+
+        await expect(service.extendDeadline(ACTOR, 'session-1', 'not-a-date', REASON))
+            .rejects.toThrow('must be a valid date');
+        expect(db.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('resync-payment-state follows the plan through its remaining states', async () => {
+        const cases: Array<[string, any, any]> = [
+            ['BALANCE_DUE', { status: 'PENDING_MINIMUM', paymentStatus: 'PARTIALLY_PAID' }, { status: 'CONFIRMED', paymentStatus: 'PARTIALLY_PAID' }],
+            ['DEPOSIT_PAID', { status: 'AWAITING_VALIDATION', paymentStatus: 'UNPAID' }, { status: 'PENDING_MINIMUM', paymentStatus: 'PARTIALLY_PAID' }],
+            ['REFUND_DUE', { status: 'PENDING_MINIMUM', paymentStatus: 'PARTIALLY_PAID' }, { status: 'NOT_CONFIRMED', paymentStatus: 'PARTIALLY_PAID' }],
+            ['CANCELLED', { status: 'PENDING', paymentStatus: 'UNPAID' }, { status: 'CANCELLED', paymentStatus: 'UNPAID' }],
+        ];
+        for (const [planStatus, before, expected] of cases) {
+            const booking = {
+                id: 'booking-1',
+                refundStatus: null,
+                travelerId: 'traveler-1',
+                paymentPlan: { status: planStatus, agencyId: 'agency-1' },
+                paymentProof: null,
+                ...before,
+            };
+            const { db } = makeFake(booking);
+            const service = new AdminInterventionsService(db, makeStaged() as any, makeRefunds() as any);
+            const result = await service.repairBooking(ACTOR, 'booking-1', 'resync-payment-state', REASON);
+            expect((result as any).after).toMatchObject(expected);
+        }
+    });
+
+    it('resync-payment-state never resurrects a locked booking status', async () => {
+        const booking = {
+            id: 'booking-1',
+            status: 'CANCELLED',
+            paymentStatus: 'UNPAID',
+            refundStatus: null,
+            travelerId: 'traveler-1',
+            paymentPlan: { status: 'FULLY_PAID', agencyId: 'agency-1' },
+            paymentProof: null,
+        };
+        const { db } = makeFake(booking);
+        const service = new AdminInterventionsService(db, makeStaged() as any, makeRefunds() as any);
+
+        const result = await service.repairBooking(ACTOR, 'booking-1', 'resync-payment-state', REASON);
+
+        // Status stays CANCELLED (locked), but the payment fact is aligned.
+        expect((result as any).after).toEqual({ status: 'CANCELLED', paymentStatus: 'PAID', refundStatus: null });
+    });
+
+    it('requeue-proof-review refuses a reviewed proof and an already-queued booking', async () => {
+        const reviewed = {
+            id: 'booking-1', status: 'PENDING', paymentStatus: 'UNPAID', refundStatus: null,
+            travelerId: 'traveler-1', paymentPlan: null, paymentProof: { status: 'VERIFIED' },
+        };
+        const fakeA = makeFake(reviewed);
+        const serviceA = new AdminInterventionsService(fakeA.db, makeStaged() as any, makeRefunds() as any);
+        await expect(serviceA.repairBooking(ACTOR, 'booking-1', 'requeue-proof-review', REASON))
+            .rejects.toThrow('not pending review');
+
+        const queued = { ...reviewed, status: 'AWAITING_VALIDATION', paymentProof: { status: 'PENDING' } };
+        const fakeB = makeFake(queued);
+        const serviceB = new AdminInterventionsService(fakeB.db, makeStaged() as any, makeRefunds() as any);
+        await expect(serviceB.repairBooking(ACTOR, 'booking-1', 'requeue-proof-review', REASON))
+            .rejects.toThrow('already awaiting payment validation');
+    });
+
+    it('open-refund-case is a no-op when the case already exists, and refuses a conflicting active case', async () => {
+        const booking = {
+            id: 'booking-1', status: 'NOT_CONFIRMED', paymentStatus: 'PARTIALLY_PAID', refundStatus: null,
+            travelerId: 'traveler-1', paymentPlan: { status: 'REFUND_DUE', agencyId: 'agency-1' }, paymentProof: null,
+        };
+        const fakeA = makeFake(booking);
+        fakeA.state.existingCase = { id: 'case-existing' };
+        const refundsA = makeRefunds();
+        const serviceA = new AdminInterventionsService(fakeA.db, makeStaged() as any, refundsA as any);
+        const result = await serviceA.repairBooking(ACTOR, 'booking-1', 'open-refund-case', REASON);
+        expect(result).toMatchObject({ changed: false, refundCaseId: 'case-existing' });
+        expect(refundsA.createRefundDueCaseInTransaction).not.toHaveBeenCalled();
+
+        const fakeB = makeFake(booking);
+        fakeB.state.activeCase = { id: 'case-active' };
+        const serviceB = new AdminInterventionsService(fakeB.db, makeStaged() as any, makeRefunds() as any);
+        await expect(serviceB.repairBooking(ACTOR, 'booking-1', 'open-refund-case', REASON))
+            .rejects.toThrow('already open for this booking');
+
+        const fakeC = makeFake(booking);
+        const serviceC = new AdminInterventionsService(fakeC.db, makeStaged() as any, makeRefunds() as any);
+        await expect(serviceC.repairBooking(ACTOR, 'booking-1', 'open-refund-case', REASON))
+            .rejects.toThrow('No verified deposit payment');
+    });
+
+    it('repairBooking reports a missing booking', async () => {
+        const { db } = makeFake(null);
+        const service = new AdminInterventionsService(db, makeStaged() as any, makeRefunds() as any);
+        await expect(service.repairBooking(ACTOR, 'missing', 'resync-payment-state', REASON))
+            .rejects.toThrow('Booking not found');
     });
 
     it('open-refund-case refuses when the plan is not refund-due', async () => {

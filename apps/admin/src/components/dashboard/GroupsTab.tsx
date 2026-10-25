@@ -81,7 +81,7 @@ export default function GroupsTab({ t, groups, pagination, onPageChange, paginat
       await apiClient.post(`/admin/sessions/${group.sessionId}/${action}`, body);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pending-groups'] });
+      void queryClient.invalidateQueries({ queryKey: ['pending-groups'] });
       setPendingAction(null);
       setModalError(null);
       setFeedback(t('dashboard.groups.success'));

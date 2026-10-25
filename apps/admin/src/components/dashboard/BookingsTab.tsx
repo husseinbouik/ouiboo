@@ -62,7 +62,7 @@ export default function BookingsTab({
       await apiClient.post(`/admin/bookings/${id}/repair`, { action, reason });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['all-bookings'] });
+      void queryClient.invalidateQueries({ queryKey: ['all-bookings'] });
       setRepairTarget(null);
       setRepairError(null);
       setRepairFeedback(t('dashboard.groups.success'));

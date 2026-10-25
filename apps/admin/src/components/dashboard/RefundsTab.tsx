@@ -127,7 +127,7 @@ export default function RefundsTab({ t, cases, pagination, onPageChange, paginat
       await apiClient.post(`/admin/refunds/${id}/repair`, body);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['refunds'] });
+      void queryClient.invalidateQueries({ queryKey: ['refunds'] });
       setRepairTarget(null);
       setRepairError(null);
       setRepairFeedback(t('dashboard.groups.success'));
