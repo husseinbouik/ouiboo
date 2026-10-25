@@ -801,7 +801,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             agencyUser.email,
             createRes.body.id,
             'Mountain Adventure',
-            null // #424: no stored locale on this booking,
+            null, // #424: no stored locale on this booking
             DEFAULT_CANCELLATION_SCALE
         );
 
