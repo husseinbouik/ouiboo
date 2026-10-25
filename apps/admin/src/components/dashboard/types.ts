@@ -4,7 +4,28 @@ import type {
   VerificationStatusType,
 } from '@ouiboo/types';
 
-export type AdminTab = 'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'GROUPS' | 'PAYMENT_PROOFS' | 'AUDIT' | 'INVOICES' | 'REFUNDS';
+export type AdminTab = 'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'GROUPS' | 'PAYMENT_PROOFS' | 'AUDIT' | 'INVOICES' | 'REFUNDS' | 'SECURITY';
+
+/** #418: admin MFA status from GET /auth/mfa/status. */
+export type AdminMfaStatus = {
+  mfaEnabled: boolean;
+  mfaEnrolledAt: string | null;
+  recoveryCodesRemaining: number;
+  adminMfaRequired: boolean;
+};
+
+/** #418: break-glass credential metadata (secrets are never returned). */
+export type AdminBreakGlassCredential = {
+  id: string;
+  label: string;
+  createdById: string;
+  createdAt: string;
+  expiresAt: string;
+  usedAt: string | null;
+  usedByEmail: string | null;
+  revokedAt: string | null;
+  status: 'ACTIVE' | 'USED' | 'REVOKED' | 'EXPIRED';
+};
 
 /** #423: a staged session still waiting for its minimum group. */
 export type AdminPendingGroup = {

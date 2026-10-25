@@ -19,8 +19,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         });
     }
 
-    async validate(payload: { sub?: string }) {
-        if (!payload?.sub) {
+    async validate(payload: { sub?: string; purpose?: string }) {
+        // #418: purpose-scoped tokens (MFA challenge / enrolment challenges)
+        // are single-purpose credentials, never access tokens. Reject any
+        // token that carries a purpose claim on normal API routes.
+        if (!payload?.sub || payload.purpose) {
             throw new UnauthorizedException('Unauthorized');
         }
 

@@ -17,6 +17,7 @@ import {
   Layers,
   Receipt,
   RotateCcw,
+  KeyRound,
 } from 'lucide-react';
 import { ConfirmDialog, CardListSkeleton } from '@ouiboo/ui';
 import { useAuth } from '@/components/AuthContext';
@@ -57,6 +58,7 @@ import PaymentProofsTab from '@/components/dashboard/PaymentProofsTab';
 import AuditTab from '@/components/dashboard/AuditTab';
 import InvoicesTab from '@/components/dashboard/InvoicesTab';
 import RefundsTab from '@/components/dashboard/RefundsTab';
+import SecurityTab from '@/components/dashboard/SecurityTab';
 import AgencyReviewModal from '@/components/dashboard/AgencyReviewModal';
 
 /**
@@ -568,6 +570,11 @@ export default function AdminDashboard() {
       title: t('dashboard.meta.refunds.title'),
       description: t('dashboard.meta.refunds.description'),
       searchPlaceholder: t('dashboard.meta.refunds.searchPlaceholder')
+    },
+    SECURITY: {
+      title: t('dashboard.meta.security.title'),
+      description: t('dashboard.meta.security.description'),
+      searchPlaceholder: t('dashboard.meta.security.searchPlaceholder')
     }
   } as const;
 
@@ -621,6 +628,11 @@ export default function AdminDashboard() {
       label: t('dashboard.tabs.refunds'),
       icon: RotateCcw,
       count: refundCasesPagination?.total ?? refundCases.length,
+    },
+    {
+      key: 'SECURITY',
+      label: t('dashboard.tabs.security'),
+      icon: KeyRound,
     },
   ] as const;
 
@@ -781,6 +793,10 @@ export default function AdminDashboard() {
             onPageChange={setCurrentPage}
             paginationLabels={paginationLabels}
           />
+        )}
+
+        {activeTab === 'SECURITY' && (
+          <SecurityTab t={t} />
         )}
 
         {activeTab === 'REFUNDS' && showRefundsSkeleton && (

@@ -54,6 +54,11 @@ const envSchema = z.object({
   ADMIN_USERNAME: optionalValue(z.string().min(1)),
   ADMIN_PASSWORD: optionalValue(z.string().min(1)),
   ADMIN_SEED_ROTATE: z.enum(['true', 'false']).optional(),
+  // #418: admin MFA. The encryption key guards stored TOTP secrets; the
+  // required flag forces TOTP enrolment for admin sign-in.
+  MFA_ENCRYPTION_KEY: optionalValue(z.string().min(32)),
+  ADMIN_MFA_REQUIRED: z.enum(['true', 'false']).optional(),
+  ADMIN_ALERT_EMAIL: optionalValue(z.string().email()),
   WORKER_HEARTBEAT_INTERVAL_MS: optionalValue(z.coerce.number().int().positive()),
   WORKER_HEARTBEAT_MAX_AGE_MS: optionalValue(z.coerce.number().int().positive()),
 
@@ -172,6 +177,16 @@ const envSchema = z.object({
         message: 'ADMIN_PASSWORD must be at least 15 characters and not a known placeholder when ADMIN_SEED=true in production.',
       });
     }
+  }
+
+  // #418: requiring admin MFA without the TOTP-secret encryption key would
+  // lock every admin out (enrolment fails closed), so refuse that config.
+  if (data.ADMIN_MFA_REQUIRED === 'true' && !data.MFA_ENCRYPTION_KEY) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['MFA_ENCRYPTION_KEY'],
+      message: 'MFA_ENCRYPTION_KEY is required when ADMIN_MFA_REQUIRED=true in production.',
+    });
   }
 
   const productionRequired = [

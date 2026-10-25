@@ -12,7 +12,8 @@ type NavItem = {
   key: AdminTab;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  count: number;
+  /** Optional: tabs without a countable queue (e.g. Security, #418) omit the badge. */
+  count?: number;
 };
 
 type SummaryCard = {
@@ -67,9 +68,11 @@ export default function DashboardShell({
             >
               <item.icon className="h-5 w-5" />
               <span className="font-bold text-sm text-start">{item.label}</span>
-              <span className={`ms-auto text-[10px] font-black px-2 py-0.5 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-white/10 text-white/70"}`}>
-                {item.count}
-              </span>
+              {typeof item.count === 'number' && (
+                <span className={`ms-auto text-[10px] font-black px-2 py-0.5 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-white/10 text-white/70"}`}>
+                  {item.count}
+                </span>
+              )}
             </button>
           );
         })}

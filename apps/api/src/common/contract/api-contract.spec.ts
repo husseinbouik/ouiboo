@@ -8,6 +8,7 @@ import { AuthService } from '../../auth/auth.service';
 import { AdminController } from '../../admin/admin.controller';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
+import { MfaEnrollmentGuard } from '../../auth/guards/mfa-enrollment.guard';
 import { TenantGuard } from '../../auth/guards/tenant.guard';
 import { SubscriptionGuard } from '../../auth/subscription.guard';
 import { RateLimitGuard } from '../../common/rate-limit.guard';
@@ -67,6 +68,8 @@ describe('API contract', () => {
         })
             // Real guards: unauthenticated requests must be rejected
             .overrideGuard(RolesGuard)
+            .useValue({ canActivate: () => true })
+            .overrideGuard(MfaEnrollmentGuard)
             .useValue({ canActivate: () => true })
             .overrideGuard(JwtAuthGuard)
             .useValue({
