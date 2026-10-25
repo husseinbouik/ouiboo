@@ -106,5 +106,8 @@ export const insuranceInsuredNameMatches = (agency: {
 };
 export const canApproveTrip = (status?: TripStatusType) => status !== TripStatus.Active;
 export const canRejectTrip = (status?: TripStatusType) => status !== TripStatus.Archived;
-export const canApprovePaymentProof = (status?: VerificationStatusType) => status !== VerificationStatus.Verified;
-export const canRejectPaymentProof = (status?: VerificationStatusType) => status !== VerificationStatus.Rejected;
+// #422: a proof is reviewable only from PENDING. Accepting moves it to
+// ACCEPTED (not settlement); an ACCEPTED/VERIFIED/REJECTED proof cannot
+// be reviewed again from the admin UI.
+export const canApprovePaymentProof = (status?: VerificationStatusType) => status === VerificationStatus.Pending;
+export const canRejectPaymentProof = (status?: VerificationStatusType) => status === VerificationStatus.Pending;

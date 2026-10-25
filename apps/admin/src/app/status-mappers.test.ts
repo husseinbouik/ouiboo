@@ -9,6 +9,7 @@ import {
   getAdminLicenceBadgeClass,
   getAdminLicenceBadgeLabel,
   getAdminPayoutBadgeMeta,
+  getAdminProofBankConfirmationMeta,
   getAdminVerificationBadgeClass,
   getEffectiveInsuranceStatus,
   getEffectiveLicenceStatus,
@@ -25,6 +26,28 @@ describe('admin status mappers', () => {
     expect(getAdminVerificationBadgeClass(VerificationStatus.Verified)).toContain('success');
     expect(getAdminVerificationBadgeClass(VerificationStatus.Rejected)).toContain('danger');
     expect(getAdminVerificationBadgeClass(VerificationStatus.Pending)).toContain('warning');
+  });
+
+  // #422 (Council P0-20): ACCEPTED is not settlement — it must surface as
+  // awaiting the agency's bank confirmation, never as confirmed/paid.
+  it('maps proof statuses to the read-only bank-confirmation state (#422)', () => {
+    const accepted = getAdminProofBankConfirmationMeta(VerificationStatus.Accepted);
+    expect(accepted?.state).toBe('AWAITING_BANK_CONFIRMATION');
+    expect(accepted?.label).toBe('Awaiting agency bank confirmation');
+    expect(accepted?.className).toContain('warning');
+    expect(accepted?.className).not.toContain('success');
+
+    const verified = getAdminProofBankConfirmationMeta(VerificationStatus.Verified);
+    expect(verified?.state).toBe('BANK_CONFIRMED');
+    expect(verified?.className).toContain('success');
+
+    expect(getAdminProofBankConfirmationMeta(VerificationStatus.Accepted, (key) => key)?.label)
+      .toBe('dashboard.status.proofAwaitingBankConfirmation');
+    expect(getAdminProofBankConfirmationMeta(VerificationStatus.Verified, (key) => key)?.label)
+      .toBe('dashboard.status.proofBankConfirmed');
+    expect(getAdminProofBankConfirmationMeta(VerificationStatus.Pending)).toBeNull();
+    expect(getAdminProofBankConfirmationMeta(VerificationStatus.Rejected)).toBeNull();
+    expect(getAdminProofBankConfirmationMeta(undefined)).toBeNull();
   });
 
   it('identifies rejected payouts using the canonical payout enum', () => {

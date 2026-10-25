@@ -89,7 +89,7 @@ export function CheckoutPayment({
         <div className="p-6 rounded-[2rem] border-2 border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 space-y-3">
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-6 w-6 text-amber-600" />
-            <h4 className="font-black text-base">Deposit paid to {stagedInfo.agencyName}</h4>
+            <h4 className="font-black text-base">Pay the deposit to {stagedInfo.agencyName}</h4>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">
             You pay a deposit of {formatCurrency(stagedInfo.depositDue, stagedInfo.currency, stagedInfo.language)} directly to {stagedInfo.agencyName} now.
@@ -139,6 +139,8 @@ export function CheckoutPayment({
           </AnimatePresence>
         </label>
         <p className="text-[10px] text-muted-foreground text-center font-medium italic">You can upload later from My Bookings. Reservations without proof are canceled after 24 hours.</p>
+        {/* #422 (Council P0-20): uploading a screenshot is not settlement. */}
+        <p className="text-[10px] text-muted-foreground text-center font-medium">Uploading proof does not complete the payment. The agency confirms it from its bank account.</p>
       </div>
 
       <div className="space-y-4 pt-6 border-t border-border/50">
@@ -167,8 +169,8 @@ export function CheckoutPayment({
               <ShieldCheck className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-sm font-black text-foreground">Agency verification</p>
-              <p className="text-[10px] font-medium text-muted-foreground">Confirmation is sent once the agency verifies your payment.</p>
+              <p className="text-sm font-black text-foreground">Bank confirmation</p>
+              <p className="text-[10px] font-medium text-muted-foreground">Your payment is confirmed only when the agency confirms the transfer in its bank account — accepting your proof alone does not settle it.</p>
             </div>
           </div>
         </div>

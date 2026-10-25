@@ -30,10 +30,21 @@ describe('traveler booking status helpers', () => {
   });
 
   it('maps proof verification states to user-facing labels', () => {
-    expect(getTravelerProofStatus(VerificationStatus.Pending).label).toBe('Pending');
-    expect(getTravelerProofStatus(VerificationStatus.Verified).label).toBe('Verified');
+    expect(getTravelerProofStatus(VerificationStatus.Pending).label).toBe('Received — awaiting review');
+    expect(getTravelerProofStatus(VerificationStatus.Verified).label).toBe('Payment confirmed');
     expect(getTravelerProofStatus(VerificationStatus.Rejected).label).toBe('Rejected');
     expect(getTravelerProofStatus(undefined).label).toBe('Not uploaded');
+  });
+
+  // #422 (Council P0-20): an accepted proof is NOT a settled payment —
+  // it must read as pending bank confirmation and never reuse the
+  // confirmed/paid styling.
+  it('never presents an accepted proof as paid or confirmed', () => {
+    const accepted = getTravelerProofStatus(VerificationStatus.Accepted);
+    expect(accepted.label).toBe('Accepted — pending bank confirmation');
+    expect(accepted.label).not.toMatch(/paid/i);
+    expect(accepted.className).not.toContain('success');
+    expect(getTravelerProofStatus(VerificationStatus.Pending).className).not.toContain('success');
   });
 
   it('maps canonical payment and refund states for the traveler booking card', () => {

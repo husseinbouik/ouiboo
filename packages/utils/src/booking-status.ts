@@ -42,15 +42,30 @@ export const getTravelerProofStatus = (status?: VerificationStatusType | null) =
     return { label: 'Not uploaded', className: 'bg-slate-100 text-slate-600 border-slate-200' };
   }
 
+  // #422 (Council P0-20): in the manual bank-transfer flow a proof only
+  // reaches VERIFIED once the agency has confirmed the credit in its bank
+  // account (or a PSP captured it) — so VERIFIED reads as what it now
+  // means: the payment itself is confirmed, not just the image.
   if (status === VerificationStatus.Verified) {
-    return { label: 'Verified', className: 'bg-success/10 text-success border-success/20' };
+    return { label: 'Payment confirmed', className: 'bg-success/10 text-success border-success/20' };
   }
 
   if (status === VerificationStatus.Rejected) {
     return { label: 'Rejected', className: 'bg-rose-500/10 text-rose-600 border-rose-500/20' };
   }
 
-  return { label: 'Pending', className: 'bg-amber-500/10 text-amber-600 border-amber-500/20' };
+  // #422: the agency accepted the proof image, but acceptance is NOT
+  // settlement — the payment stays unsettled until bank confirmation.
+  // This state must never read as paid/confirmed.
+  if (status === VerificationStatus.Accepted) {
+    return {
+      label: 'Accepted — pending bank confirmation',
+      className: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+    };
+  }
+
+  // Uploaded and waiting for the agency to review the image.
+  return { label: 'Received — awaiting review', className: 'bg-amber-500/10 text-amber-600 border-amber-500/20' };
 };
 
 export const getTravelerPaymentStatusMeta = (
@@ -65,6 +80,9 @@ export const getTravelerPaymentStatusMeta = (
     };
   }
 
+  // #422: paymentStatus only flips to PAID/PARTIALLY_PAID at bank
+  // confirmation (or PSP capture), never on proof upload/acceptance —
+  // so these labels are truthful without rewording.
   if (paymentStatus === BookingPaymentStatus.Paid) {
     return {
       label: 'Paid',
