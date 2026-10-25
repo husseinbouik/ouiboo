@@ -405,4 +405,52 @@ export class EmailService {
   getRefundActionRequiredSubject(locale?: EmailLocale | string | null) {
     return emailStrings(locale).refundActionRequired.subject
   }
+
+  /** #419: traveller notice that an automatic refund case has opened.
+   * Copy moved onto the locale table as the #424 follow-up (it was
+   * inline English in RefundsService); renders in the booking's
+   * recorded locale. */
+  getRefundCaseOpenedTemplate(
+    input: {
+      tripTitle?: string | null
+      amount: string
+      currency: string
+      agencyName?: string | null
+      dueDateLabel?: string | null
+      bookingsUrl: string
+      supportEmail: string
+    },
+    locale?: EmailLocale | string | null,
+  ) {
+    const resolved = normalizeEmailLocale(locale)
+    const t = emailStrings(resolved).refundCaseOpened
+    const tripTitle = input.tripTitle?.trim() ? input.tripTitle : null
+    const agencyName = input.agencyName?.trim() ? input.agencyName : t.agencyFallback
+    const content =
+      emailHeading(t.heading) +
+      emailParagraph(
+        tripTitle ? fillEmailCopy(t.bodyWithTrip, { tripTitle }) : t.body,
+      ) +
+      emailParagraph(
+        fillEmailCopy(t.amount, {
+          amount: input.amount,
+          currency: input.currency,
+          agencyName,
+        }),
+      ) +
+      emailParagraph(
+        input.dueDateLabel
+          ? fillEmailCopy(t.dueStatus, {
+              dueDate: input.dueDateLabel,
+              url: input.bookingsUrl,
+            })
+          : fillEmailCopy(t.status, { url: input.bookingsUrl }),
+      ) +
+      emailParagraph(fillEmailCopy(t.support, { supportEmail: input.supportEmail }))
+    return renderEmail({ title: t.title, preheader: t.preheader, content, locale: resolved })
+  }
+
+  getRefundCaseOpenedSubject(locale?: EmailLocale | string | null) {
+    return emailStrings(locale).refundCaseOpened.subject
+  }
 }

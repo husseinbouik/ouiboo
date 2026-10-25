@@ -195,6 +195,25 @@ const en = {
     body: 'A refund case for booking {{bookingId}} needs your action. Traveller payments are made directly to your agency, so the refund is processed by your agency — please review the case and initiate the refund before its deadline to avoid restrictions on new bookings.',
     dashboard: 'Open your refunds dashboard: {{url}}',
   },
+  // #419 traveller notice, moved onto this table as the #424 follow-up:
+  // an automatic refund case (minimum group not reached) has opened.
+  refundCaseOpened: {
+    subject: 'Your refund is on its way',
+    title: 'Your refund is on its way',
+    preheader: 'Your trip did not reach its minimum group size, so a refund case has been opened for you.',
+    heading: 'Your refund is on its way',
+    bodyWithTrip:
+      'Your trip "{{tripTitle}}" did not reach the minimum group size, so it will not run as planned. A refund case has been opened for you automatically — you do not need to do anything.',
+    body: 'Your trip did not reach the minimum group size, so it will not run as planned. A refund case has been opened for you automatically — you do not need to do anything.',
+    amount:
+      'Amount to be refunded: {{amount}} {{currency}}. Your payment went directly to {{agencyName}}, so the refund comes from them too — OuiBoo never holds your money.',
+    agencyFallback: 'the agency',
+    dueStatus:
+      'The agency has until {{dueDate}} to complete your refund, and we chase it for you if it slips. You can follow the refund status any time in your bookings: {{url}}',
+    status: 'You can follow the refund status any time in your bookings: {{url}}',
+    support:
+      'Questions? Email OuiBoo support at {{supportEmail}} — we reply within 48 hours. If the refund deadline passes without your money arriving, contact the same address and we will escalate it with the agency.',
+  },
 }
 
 export type EmailStrings = typeof en
@@ -355,6 +374,24 @@ const fr: EmailStrings = {
     body: "Un dossier de remboursement pour la réservation {{bookingId}} requiert votre action. Les paiements des voyageurs sont effectués directement à votre agence, le remboursement est donc traité par votre agence — veuillez examiner le dossier et initier le remboursement avant son échéance pour éviter des restrictions sur les nouvelles réservations.",
     dashboard: 'Ouvrez votre tableau de bord des remboursements : {{url}}',
   },
+  refundCaseOpened: {
+    subject: 'Votre remboursement est en route',
+    title: 'Votre remboursement est en route',
+    preheader: "Votre voyage n'a pas atteint la taille minimale de groupe, un dossier de remboursement a donc été ouvert pour vous.",
+    heading: 'Votre remboursement est en route',
+    bodyWithTrip:
+      "Votre voyage « {{tripTitle}} » n'a pas atteint la taille minimale de groupe, il n'aura donc pas lieu comme prévu. Un dossier de remboursement a été ouvert automatiquement pour vous — vous n'avez rien à faire.",
+    body: "Votre voyage n'a pas atteint la taille minimale de groupe, il n'aura donc pas lieu comme prévu. Un dossier de remboursement a été ouvert automatiquement pour vous — vous n'avez rien à faire.",
+    amount:
+      "Montant à rembourser : {{amount}} {{currency}}. Votre paiement a été effectué directement à {{agencyName}}, le remboursement viendra donc également de sa part — OuiBoo ne détient jamais votre argent.",
+    agencyFallback: "l'agence",
+    dueStatus:
+      "L'agence a jusqu'au {{dueDate}} pour effectuer votre remboursement, et nous la relançons pour vous en cas de retard. Vous pouvez suivre l'état de votre remboursement à tout moment dans vos réservations : {{url}}",
+    status:
+      "Vous pouvez suivre l'état de votre remboursement à tout moment dans vos réservations : {{url}}",
+    support:
+      "Des questions ? Écrivez à l'assistance OuiBoo à {{supportEmail}} — nous répondons sous 48 heures. Si la date limite de remboursement passe sans que vous ayez reçu votre argent, contactez la même adresse et nous relancerons l'agence.",
+  },
 }
 
 const ar: EmailStrings = {
@@ -498,6 +535,23 @@ const ar: EmailStrings = {
     heading: 'يلزم اتخاذ إجراء بشأن استرداد',
     body: 'تحتاج قضية استرداد للحجز {{bookingId}} إلى إجراء منك. تتم مدفوعات المسافرين مباشرة إلى وكالتك، لذا تتم معالجة الاسترداد من قبل وكالتك — يرجى مراجعة القضية وبدء الاسترداد قبل الموعد النهائي لتجنب قيود على الحجوزات الجديدة.',
     dashboard: 'افتح لوحة تحكم الاستردادات الخاصة بك: {{url}}',
+  },
+  refundCaseOpened: {
+    subject: 'استردادك في الطريق إليك',
+    title: 'استردادك في الطريق إليك',
+    preheader: 'لم تصل رحلتك إلى الحد الأدنى لحجم المجموعة، لذا تم فتح قضية استرداد لك.',
+    heading: 'استردادك في الطريق إليك',
+    bodyWithTrip:
+      'لم تصل رحلتك "{{tripTitle}}" إلى الحد الأدنى لحجم المجموعة، لذا لن تتم كما هو مخطط لها. تم فتح قضية استرداد لك تلقائياً — لست بحاجة إلى فعل أي شيء.',
+    body: 'لم تصل رحلتك إلى الحد الأدنى لحجم المجموعة، لذا لن تتم كما هو مخطط لها. تم فتح قضية استرداد لك تلقائياً — لست بحاجة إلى فعل أي شيء.',
+    amount:
+      'المبلغ المسترد: {{amount}} {{currency}}. تم دفع مبلغك مباشرة إلى {{agencyName}}، لذا سيأتي الاسترداد منها أيضاً — لا تحتفظ OuiBoo بأموالك أبداً.',
+    agencyFallback: 'الوكالة',
+    dueStatus:
+      'أمام الوكالة مهلة حتى {{dueDate}} لإتمام استردادك، وسنتابع الأمر نيابة عنك إذا تأخر. يمكنك متابعة حالة الاسترداد في أي وقت من حجوزاتك: {{url}}',
+    status: 'يمكنك متابعة حالة الاسترداد في أي وقت من حجوزاتك: {{url}}',
+    support:
+      'أسئلة؟ راسل دعم OuiBoo على {{supportEmail}} — نرد خلال 48 ساعة. إذا مر الموعد النهائي للاسترداد دون وصول أموالك، تواصل مع نفس العنوان وسنصعّد الأمر مع الوكالة.',
   },
 }
 

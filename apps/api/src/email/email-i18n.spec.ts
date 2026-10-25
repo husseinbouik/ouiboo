@@ -151,6 +151,8 @@ describe('EmailService — every template renders in FR and AR (#424)', () => {
         ['auto cancellation', (l) => service.getAutoUnpaidCancellationTemplate('Atlas Trek', 'bk-1', l)],
         ['verification paused', (l) => service.getAgencyVerificationPausedTemplate('Licence expired', 2, 'https://x/v', l)],
         ['refund action', (l) => service.getRefundActionRequiredTemplate('bk-1', 'https://x/r', l)],
+        ['refund case opened', (l) => service.getRefundCaseOpenedTemplate({ tripTitle: 'Atlas Trek', amount: '200.00', currency: 'MAD', agencyName: 'Atlas', dueDateLabel: '22 January 2027', bookingsUrl: 'https://x/bookings', supportEmail: 'support@ouiboo.com' }, l)],
+        ['refund case opened bare', (l) => service.getRefundCaseOpenedTemplate({ tripTitle: null, amount: '150.00', currency: 'MAD', agencyName: null, dueDateLabel: null, bookingsUrl: 'https://x/bookings', supportEmail: 'support@ouiboo.com' }, l)],
     ];
 
     it.each(renders)('%s renders in fr and ar with no unresolved placeholders', (_name, render) => {
@@ -167,6 +169,7 @@ describe('EmailService — every template renders in FR and AR (#424)', () => {
         for (const get of [
             (l?: string) => service.getAgencyVerificationPausedSubject(l),
             (l?: string) => service.getRefundActionRequiredSubject(l),
+            (l?: string) => service.getRefundCaseOpenedSubject(l),
         ]) {
             const [en, fr, ar] = [get(), get('fr'), get('ar')];
             expect(fr).not.toBe(en);
