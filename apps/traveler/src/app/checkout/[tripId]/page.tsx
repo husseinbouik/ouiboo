@@ -21,7 +21,7 @@ export default function CheckoutPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const sessionFromQuery = searchParams.get('session');
   const parsedGuestsCount = Number(searchParams.get('guests'));
   const guestsFromQuery = Number.isFinite(parsedGuestsCount) && parsedGuestsCount > 0
@@ -87,8 +87,8 @@ export default function CheckoutPage() {
   const bankDetails = trip?.agency?.bankDetails?.trim() ?? '';
   const hasBankDetails = bankDetails.length > 0;
   const sessionDateLabel = selectedSession
-    ? `${new Date(selectedSession.startDate).toLocaleDateString()} - ${new Date(selectedSession.endDate).toLocaleDateString()}`
-    : 'Select a session';
+    ? `${new Date(selectedSession.startDate).toLocaleDateString(i18n.language)} - ${new Date(selectedSession.endDate).toLocaleDateString(i18n.language)}`
+    : t('checkout.selectSession');
 
   const { createBookingMutation, errorMessage } = useCheckoutBooking({
     tripId,
@@ -120,8 +120,8 @@ export default function CheckoutPage() {
     setProofFile(file);
   };
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center font-black animate-pulse">Initializing Security...</div>;
-  if (!trip) return <div className="min-h-screen flex items-center justify-center font-black">Trip not found.</div>;
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center font-black animate-pulse">{t('checkout.initializing')}</div>;
+  if (!trip) return <div className="min-h-screen flex items-center justify-center font-black">{t('checkout.tripNotFound')}</div>;
 
   const canSubmit = Boolean(
     selectedSessionId &&
@@ -163,7 +163,7 @@ export default function CheckoutPage() {
                   isUploading={createBookingMutation.isPending}
                   stagedInfo={stagedAmounts && stagedSession ? {
                     depositDue: stagedAmounts.depositDue,
-                    agencyName: trip.agency?.companyName || 'the agency',
+                    agencyName: trip.agency?.companyName || t('checkout.fallbackAgencyName'),
                     minimumParticipants: stagedSession.minBookings ?? 0,
                     confirmationDeadline: stagedSession.confirmationDeadline ?? null,
                     currency: selectedCurrency,

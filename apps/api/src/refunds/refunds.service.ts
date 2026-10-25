@@ -20,7 +20,6 @@ import {
 } from '@ouiboo/database';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
-import { escapeHtml, emailHeading, emailParagraph, renderEmail } from '../email/email-template';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { toMoneyDecimal, toMoneyString } from '../common/money.util';
 import { PRIVATE_FILE_PREFIX } from '../upload/upload.constants';
@@ -1657,19 +1656,16 @@ export class RefundsService {
             return;
         }
         const appUrl = process.env.AGENCY_APP_URL || 'https://ouiboo-agency.vercel.app';
-        const html = renderEmail({
-            title: 'Refund action required',
-            preheader: 'A refund case needs your action in OuiBoo.',
-            content:
-                emailHeading('Refund action required') +
-                emailParagraph(
-                    `A refund case for booking ${escapeHtml(bookingId)} needs your action. ` +
-                    'Traveller payments are made directly to your agency, so the refund is ' +
-                    'processed by your agency — please review the case and initiate the refund ' +
-                    'before its deadline to avoid restrictions on new bookings.',
-                ) +
-                emailParagraph(`Open your refunds dashboard: ${escapeHtml(`${appUrl}/dashboard/refunds`)}`),
-        });
-        await this.emailService.sendEmail(email, 'Refund action required', html);
+        // #424: copy lives in the email locale table (en/fr/ar); the
+        // agency's locale is not recorded yet, so the default applies.
+        const html = this.emailService.getRefundActionRequiredTemplate(
+            bookingId,
+            `${appUrl}/dashboard/refunds`,
+        );
+        await this.emailService.sendEmail(
+            email,
+            this.emailService.getRefundActionRequiredSubject(),
+            html,
+        );
     }
 }

@@ -169,6 +169,9 @@ export class BookingsService {
                     status: 'PENDING',
                     fullName: dto.fullName,
                     phoneNumber: dto.phoneNumber,
+                    // #424: persist the checkout locale so booking-journey
+                    // emails render in the traveller's language.
+                    locale: dto.locale ?? null,
                     paymentMethod: persistedPaymentMethod,
                 },
                 include: {
@@ -221,6 +224,7 @@ export class BookingsService {
                         agencyEmail: agencyUser.email,
                         bookingId: booking.id,
                         tripTitle: sessionWithInfo.template.title,
+                        locale: booking.locale,
                     }
                     : null,
             };
@@ -233,6 +237,7 @@ export class BookingsService {
                 notification.agencyEmail,
                 notification.bookingId,
                 notification.tripTitle,
+                notification.locale,
             ).catch(() => undefined);
         }
 
@@ -779,6 +784,7 @@ export class BookingsService {
             this.emailService.sendPaymentConfirmation(
                 booking.traveler.email,
                 booking.session.template.title,
+                booking.locale,
             ).catch(() => undefined);
         }
 

@@ -1,6 +1,12 @@
 import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { Prisma, RefundEvidenceTier } from '@ouiboo/database';
 import { RefundsService } from './refunds.service';
+import { EmailService } from '../email/email.service';
+
+// #424: RefundsService builds its agency notice through EmailService's
+// localized template getters — delegate to a real instance, mock only
+// the send.
+const emailTemplates = new EmailService();
 import { refundAuditRequired, refundAuditSampled } from './refunds.util';
 
 const D = (value: string) => new Prisma.Decimal(value);
@@ -183,7 +189,13 @@ function makeService(db: any) {
     const external = {
         recordRefundInTransaction: jest.fn(async (_tx: any, _input: any) => ({})),
     };
-    const email = { sendEmail: jest.fn(async () => undefined) };
+    const email = {
+        sendEmail: jest.fn(async () => undefined),
+        getRefundActionRequiredTemplate:
+            emailTemplates.getRefundActionRequiredTemplate.bind(emailTemplates),
+        getRefundActionRequiredSubject:
+            emailTemplates.getRefundActionRequiredSubject.bind(emailTemplates),
+    };
     const service = new RefundsService(db as any, external as any, email as any);
     return { service, external, email };
 }

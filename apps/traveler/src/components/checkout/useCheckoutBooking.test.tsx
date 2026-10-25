@@ -2,9 +2,32 @@ import React from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useCheckoutBooking } from './useCheckoutBooking';
+import mockEnTranslations from '../../../public/locales/en/translation.json';
 import { apiClient } from '@/lib/api-client';
 
 const pushMock = jest.fn();
+
+jest.mock('react-i18next', () => {
+    // #424: resolve keys against the real English locale file so the
+    // assertions below read the shipped copy, not raw key names.
+    const lookup = (key: string): unknown =>
+        key.split('.').reduce<any>((acc, part) => acc?.[part], mockEnTranslations);
+    return {
+        useTranslation: () => ({
+            t: (key: string, options?: Record<string, unknown>) => {
+                let value = lookup(key);
+                if (typeof value !== 'string') return key;
+                if (options) {
+                    for (const [name, replacement] of Object.entries(options)) {
+                        value = (value as string).replaceAll(`{{${name}}}`, String(replacement));
+                    }
+                }
+                return value;
+            },
+            i18n: { language: 'en' },
+        }),
+    };
+});
 
 jest.mock('next/navigation', () => ({
     useRouter: () => ({ push: pushMock }),
@@ -57,6 +80,9 @@ describe('useCheckoutBooking (CIN removal)', () => {
             fullName: 'Launch Traveler',
             phoneNumber: '+212600000000',
             paymentMethod: 'BANK_TRANSFER',
+            // #424: the active checkout locale travels with the booking so
+            // booking-journey emails render in the traveller's language.
+            locale: 'en',
         });
         expect(payload).not.toHaveProperty('documentNumber');
         expect(pushMock).toHaveBeenCalledWith('/checkout/confirmation?bookingId=booking-1&proof=0');

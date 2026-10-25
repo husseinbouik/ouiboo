@@ -1,6 +1,30 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { CheckoutGuestForm } from './CheckoutGuestForm';
+import mockEnTranslations from '../../../public/locales/en/translation.json';
+
+jest.mock('react-i18next', () => {
+    // #424: resolve keys against the real English locale file so the
+    // assertions below read the shipped copy, not raw key names.
+    const lookup = (key: string): unknown =>
+        key.split('.').reduce<any>((acc, part) => acc?.[part], mockEnTranslations);
+    return {
+        useTranslation: () => ({
+            t: (key: string, options?: Record<string, unknown>) => {
+                let value = lookup(key);
+                if (typeof value !== 'string') return key;
+                if (options) {
+                    for (const [name, replacement] of Object.entries(options)) {
+                        value = (value as string).replaceAll(`{{${name}}}`, String(replacement));
+                    }
+                }
+                return value;
+            },
+            i18n: { language: 'en' },
+        }),
+    };
+});
+
 
 // CIN removal (founder decision 2026-10-25): the checkout guest form must
 // never ask for an identity-document number; the agency checks ID at

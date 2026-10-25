@@ -875,6 +875,7 @@ export class PaymentsService {
       await this.emailService.sendPaymentConfirmation(
         booking.traveler.email,
         booking.session.template.title,
+        booking.locale,
       );
       this.logger.log(`Payment confirmation email sent to ${booking.traveler.email}`);
     } catch (error) {

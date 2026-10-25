@@ -537,6 +537,11 @@ model Booking {
   guestsCount                 Int
   fullName                    String?
   phoneNumber                 String?
+  // #424: the traveller's checkout UI locale (en/fr/ar) captured at
+  // booking creation so every booking-journey email renders in the
+  // language the traveller booked in. Null = not recorded (pre-#424
+  // bookings and non-checkout paths) → emails use the default locale.
+  locale                      String?
   paymentProofUrl             String?
   paymentProofId              String?              @unique
   paymentProof                PaymentProof?
