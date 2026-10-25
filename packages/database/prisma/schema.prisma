@@ -435,6 +435,13 @@ model AgencyProfile {
   // bookings are never touched. Null = not restricted.
   newBookingsRestrictedAt     DateTime?
   newBookingsRestrictionReason String?
+  // #419 (Council P0-16): trip emergency contact — the person travellers
+  // with a booking reach FIRST during an active trip (departure pack on
+  // the booking). Distinct from the account holder: it is whoever answers
+  // on the day (guide, driver coordinator, on-call manager). Shown only
+  // to travellers holding a booking with this agency, never publicly.
+  emergencyContactName        String?
+  emergencyContactPhone       String?
 
 }
 
@@ -694,6 +701,11 @@ model RefundCase {
   requestedAt              DateTime         @default(now())
   approvedAt               DateTime?
   agencyNotifiedAt         DateTime?
+  // #419 (Council P0-16): stamp of the traveller notification sent when
+  // an automatic (minimum-group) refund case opens — the person owed
+  // money must hear it too, not only the agency. Null = not yet told;
+  // the stamp makes the best-effort notification idempotent.
+  travelerNotifiedAt       DateTime?
   refundDueAt              DateTime?
   initiatedAt              DateTime?
   completedAt              DateTime?

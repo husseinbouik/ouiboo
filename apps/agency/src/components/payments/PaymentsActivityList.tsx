@@ -3,6 +3,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, Pagination } from '@ouiboo/ui';
+import { TableBodySkeleton } from '@/components/Skeletons';
 import { History, CheckCircle2, Clock, AlertCircle, Undo2 } from 'lucide-react';
 import { cn } from '@ouiboo/ui/utils';
 import { formatCurrency, formatLocalDate } from '@ouiboo/utils';
@@ -73,7 +74,7 @@ export function PaymentsActivityList({
       </CardHeader>
       <CardContent className="p-0">
         <div className="relative overflow-x-auto">
-          <table className="w-full text-sm text-start text-muted-foreground">
+          <table className="w-full text-sm text-start text-muted-foreground" aria-busy={isLoading || undefined}>
             <thead className="text-[10px] text-muted-foreground uppercase bg-muted/50 border-b border-border font-bold tracking-widest">
               <tr>
                 <th className="px-6 py-4">{t('payments.colTrip')}</th>
@@ -86,9 +87,7 @@ export function PaymentsActivityList({
             </thead>
             <tbody className="divide-y divide-border">
               {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">{t('payments.loading')}</td>
-                </tr>
+                <TableBodySkeleton rows={5} columns={6} />
               ) : payments.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground italic">{t('payments.noHistory')}</td>

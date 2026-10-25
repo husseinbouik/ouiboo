@@ -38,6 +38,8 @@ type SettingsFormValues = {
   bio: string;
   companyName: string;
   email: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
   name: string;
 };
 
@@ -59,6 +61,9 @@ export default function SettingsPage() {
       bankDetails: user?.agencyProfile?.pendingBankDetails || user?.agencyProfile?.bankDetails || '',
       bankAccountHolderName: user?.agencyProfile?.bankAccountHolderName || '',
       bankAttestationUrl: user?.agencyProfile?.bankAttestationUrl || '',
+      // #419: trip emergency contact (departure pack on traveller bookings).
+      emergencyContactName: user?.agencyProfile?.emergencyContactName || '',
+      emergencyContactPhone: user?.agencyProfile?.emergencyContactPhone || '',
     }
   });
 
@@ -83,7 +88,9 @@ export default function SettingsPage() {
           bio: data.bio,
           bankDetails: data.bankDetails,
           bankAccountHolderName: data.bankAccountHolderName,
-          bankAttestationUrl: data.bankAttestationUrl
+          bankAttestationUrl: data.bankAttestationUrl,
+          emergencyContactName: data.emergencyContactName,
+          emergencyContactPhone: data.emergencyContactPhone
         }),
       ]);
       setFeedback({ type: 'success', text: t('settings.updateSuccess') });
@@ -221,6 +228,35 @@ export default function SettingsPage() {
                   />
                   <p className="text-xs text-muted-foreground">{t('settings.bankAttestationUrlHint')}</p>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-border bg-card shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-xl">{t('settings.emergencyTitle')}</CardTitle>
+                <CardDescription>{t('settings.emergencySubtitle')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="settings-emergency-name">{t('settings.emergencyName')}</Label>
+                    <Input
+                      id="settings-emergency-name"
+                      {...register('emergencyContactName')}
+                      placeholder={t('settings.emergencyNamePlaceholder')}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="settings-emergency-phone">{t('settings.emergencyPhone')}</Label>
+                    <Input
+                      id="settings-emergency-phone"
+                      type="tel"
+                      {...register('emergencyContactPhone')}
+                      placeholder={t('settings.emergencyPhonePlaceholder')}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">{t('settings.emergencyHint')}</p>
               </CardContent>
             </Card>
 

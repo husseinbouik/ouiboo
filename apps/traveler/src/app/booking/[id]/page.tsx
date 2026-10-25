@@ -8,6 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { BookingStatus, VerificationStatus, type BookingDetails } from '@ouiboo/types';
 import { Badge, Button, Card } from '@ouiboo/ui';
+import { BookingDetailSkeleton } from '@/components/Skeletons';
 import { cn } from '@ouiboo/ui/utils';
 import {
   Calendar,
@@ -28,6 +29,7 @@ import {
   shouldShowUploadAction,
 } from '@ouiboo/utils';
 import { ReviewForm } from '@/components/ReviewForm';
+import { TripContactsCard } from '@/components/TripContactsCard';
 
 export default function BookingDetailsPage() {
   const { id } = useParams();
@@ -98,9 +100,11 @@ export default function BookingDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-sunset-orange" />
-        <p className="text-sm font-medium text-muted-foreground">Loading your booking...</p>
+      <div className="min-h-screen bg-background px-6 pt-28 pb-20" role="status" aria-label="Loading your booking...">
+        <div className="max-w-5xl mx-auto">
+          <BookingDetailSkeleton />
+        </div>
+        <span className="sr-only">Loading your booking...</span>
       </div>
     );
   }
@@ -276,6 +280,11 @@ export default function BookingDetailsPage() {
             </div>
           </div>
         </Card>
+
+        {/* #419 (Council P0-16): departure pack — agency emergency
+            contact first, OuiBoo escalation during the trip, normal
+            support (48h) for everything else. */}
+        <TripContactsCard booking={booking} />
 
         {(canReviewBooking || booking.review) && (
           <Card className="rounded-[2rem] border border-border shadow-sm bg-card">

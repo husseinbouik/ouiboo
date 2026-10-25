@@ -21,6 +21,7 @@ import { apiClient } from '@/lib/api-client';
 import { formatCurrency } from '@ouiboo/utils';
 
 import { DeleteConfirmation } from '@/components/DeleteConfirmation';
+import { AgencyTripCardSkeletonGrid } from '@/components/Skeletons';
 import { TRAVELER_URL } from '@/lib/site';
 
 type AgencyTripSessionSummary = {
@@ -199,7 +200,10 @@ export default function AgencyTripsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
-          <div className="col-span-full py-12 flex justify-center text-muted-foreground">{t('trips.loading')}</div>
+          <>
+            <span className="sr-only" role="status">{t('trips.loading')}</span>
+            <AgencyTripCardSkeletonGrid count={3} />
+          </>
         ) : filteredTrips.length > 0 ? (
           filteredTrips.map((trip) => (
             <Card key={trip.id} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden bg-card border border-border flex flex-col">

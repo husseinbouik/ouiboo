@@ -10,6 +10,7 @@ import {
   Textarea,
   Badge
 } from '@ouiboo/ui';
+import { TableBodySkeleton } from '@/components/Skeletons';
 import {
   Search,
   Star,
@@ -194,8 +195,13 @@ export default function ReviewsManager() {
       <Card className="border-none shadow-sm overflow-hidden bg-card border border-border">
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="overflow-x-auto" role="status" aria-label={t('common.loading')}>
+              <table className="w-full text-sm text-start" aria-busy="true">
+                <tbody className="divide-y divide-border">
+                  <TableBodySkeleton rows={5} columns={5} />
+                </tbody>
+              </table>
+              <span className="sr-only">{t('common.loading')}</span>
             </div>
           ) : filteredReviews.length === 0 ? (
             <div className="text-center py-12">

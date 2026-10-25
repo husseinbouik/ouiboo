@@ -20,6 +20,7 @@ import {
 } from '@ouiboo/database';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
+import { escapeHtml, emailHeading, emailParagraph, renderEmail } from '../email/email-template';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { toMoneyDecimal, toMoneyString } from '../common/money.util';
 import { PRIVATE_FILE_PREFIX } from '../upload/upload.constants';
@@ -221,7 +222,7 @@ export class RefundsService {
             },
         });
         let created = 0;
-        const createdCases: Array<{ agencyId: string; bookingId: string }> = [];
+        const createdCases: Array<{ agencyId: string; bookingId: string; caseId: string }> = [];
         for (const plan of plans) {
             const deposit = await this.db.externalPayment.findFirst({
                 where: {
@@ -252,15 +253,159 @@ export class RefundsService {
             });
             if (result.wasCreated) {
                 created += 1;
-                createdCases.push({ agencyId: plan.agencyId, bookingId: plan.bookingId });
+                createdCases.push({
+                    agencyId: plan.agencyId,
+                    bookingId: plan.bookingId,
+                    caseId: result.refundCase.id,
+                });
             }
         }
         for (const entry of createdCases) {
             await this.notifyAgencyRefundAction(entry.agencyId, entry.bookingId).catch(
                 () => undefined,
             );
+            // #419: the traveller hears it too (see
+            // notifyTravelerRefundCaseOpened) — previously only the
+            // agency was ever told a refund case had opened.
+            await this.notifyTravelerRefundCaseOpened(entry.caseId).catch(
+                () => undefined,
+            );
         }
         return { created };
+    }
+
+    /**
+     * #419 (Council P0-16): when an automatic refund case opens (the
+     * minimum-group cascade), the TRAVELLER — the person owed money —
+     * must hear it, not only the agency. Previously the cascade emailed
+     * the agency and the traveller heard nothing.
+     *
+     * Best-effort and idempotent: the case's travelerNotifiedAt stamp is
+     * claimed atomically before sending, so the cascade path, the admin
+     * close-group path and the maintenance backstop can all call this
+     * without double-emailing. Never throws (the caller also guards).
+     * Only automatic refund-due cases (dedupeKey `refund-due:*`) use this
+     * copy: it explains the minimum-group reason, the amount, that the
+     * agency itself refunds (OuiBoo never holds traveller money), the
+     * 7-day deadline the agency works to, and the support split if the
+     * deadline passes.
+     */
+    async notifyTravelerRefundCaseOpened(caseId: string): Promise<boolean> {
+        const refundCase = await this.db.refundCase.findUnique({
+            where: { id: caseId },
+            include: {
+                traveler: { select: { email: true, name: true } },
+                agency: { select: { companyName: true } },
+                booking: {
+                    select: {
+                        session: {
+                            select: {
+                                template: { select: { title: true } },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        if (!refundCase || refundCase.travelerNotifiedAt) {
+            return false;
+        }
+        const email = refundCase.traveler?.email;
+        if (!email) {
+            return false;
+        }
+        // Claim the stamp first: under concurrent callers only one send
+        // wins; a failed send keeps the stamp (the in-app refund view is
+        // the system of record, exactly like agencyNotifiedAt).
+        const claimed = await this.db.refundCase.updateMany({
+            where: { id: refundCase.id, travelerNotifiedAt: null },
+            data: { travelerNotifiedAt: new Date() },
+        });
+        if (claimed.count !== 1) {
+            return false;
+        }
+        const amount = toMoneyString(
+            refundCase.approvedAmount ?? refundCase.requestedAmount,
+        );
+        const currency = refundCase.currency;
+        const agencyName = refundCase.agency?.companyName || 'the agency';
+        const tripTitle = refundCase.booking?.session?.template?.title;
+        const dueLabel = refundCase.refundDueAt
+            ? new Intl.DateTimeFormat('en-GB', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+            }).format(refundCase.refundDueAt)
+            : null;
+        const supportEmail = process.env.SUPPORT_EMAIL || 'support@ouiboo.com';
+        const travelerUrl = process.env.TRAVELER_APP_URL || 'https://ouiboo-traveler.vercel.app';
+        const html = renderEmail({
+            title: 'Your refund is on its way',
+            preheader: 'Your trip did not reach its minimum group size, so a refund case has been opened for you.',
+            content:
+                emailHeading('Your refund is on its way') +
+                emailParagraph(
+                    (tripTitle
+                        ? `Your trip "${escapeHtml(tripTitle)}" `
+                        : 'Your trip ') +
+                    'did not reach the minimum group size, so it will not run as planned. ' +
+                    'A refund case has been opened for you automatically — you do not need to do anything.',
+                ) +
+                emailParagraph(
+                    `Amount to be refunded: ${escapeHtml(amount ?? '')} ${escapeHtml(currency)}. ` +
+                    `Your payment went directly to ${escapeHtml(agencyName)}, so the refund comes from them too — OuiBoo never holds your money.`,
+                ) +
+                emailParagraph(
+                    dueLabel
+                        ? `The agency has until ${escapeHtml(dueLabel)} to complete your refund, and we chase it for you if it slips. You can follow the refund status any time in your bookings: ${escapeHtml(`${travelerUrl}/bookings`)}`
+                        : `You can follow the refund status any time in your bookings: ${escapeHtml(`${travelerUrl}/bookings`)}`,
+                ) +
+                emailParagraph(
+                    `Questions? Email OuiBoo support at ${escapeHtml(supportEmail)} — we reply within 48 hours. ` +
+                    'If the refund deadline passes without your money arriving, contact the same address and we will escalate it with the agency.',
+                ),
+        });
+        await this.emailService.sendEmail(email, 'Your refund is on its way', html);
+        return true;
+    }
+
+    /**
+     * #419: notify the travellers of every unstamped automatic refund
+     * case created for a session's bookings (the minimum-group cascade
+     * outcome). Called post-commit by the deadline job and the admin
+     * close-group intervention; per-case failures are isolated so one
+     * bad address never blocks the others. Returns how many travellers
+     * were notified.
+     */
+    async notifyTravelersRefundDueForSession(sessionId: string): Promise<number> {
+        const plans = await this.db.bookingPaymentPlan.findMany({
+            where: { sessionId, status: BookingPaymentPlanStatus.REFUND_DUE },
+            select: { bookingId: true },
+        });
+        if (!plans.length) {
+            return 0;
+        }
+        const cases = await this.db.refundCase.findMany({
+            where: {
+                bookingId: { in: plans.map((plan) => plan.bookingId) },
+                dedupeKey: { not: null },
+                travelerNotifiedAt: null,
+            },
+            select: { id: true, dedupeKey: true },
+        });
+        let notified = 0;
+        for (const refundCase of cases) {
+            if (!refundCase.dedupeKey?.startsWith('refund-due:')) {
+                continue;
+            }
+            const sent = await this.notifyTravelerRefundCaseOpened(refundCase.id).catch(
+                () => false,
+            );
+            if (sent) {
+                notified += 1;
+            }
+        }
+        return notified;
     }
 
     /**

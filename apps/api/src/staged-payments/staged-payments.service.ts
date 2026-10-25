@@ -408,7 +408,17 @@ export class StagedPaymentsService {
                     this.evaluateSessionGroupInTransaction(tx, session.id, now),
                 );
                 if (outcome === 'confirmed') confirmed += 1;
-                if (outcome === 'not-confirmed') notConfirmed += 1;
+                if (outcome === 'not-confirmed') {
+                    notConfirmed += 1;
+                    // #419 (Council P0-16): the cascade opened refund
+                    // cases — the travellers owed money must hear it
+                    // (previously only the agency was ever notified).
+                    // Post-commit and best-effort: a notification
+                    // failure never fails the deadline evaluation.
+                    await this.refundsService
+                        .notifyTravelersRefundDueForSession(session.id)
+                        .catch(() => undefined);
+                }
             } catch (error) {
                 this.logger.error(
                     `Group confirmation evaluation failed for session ${session.id}`,

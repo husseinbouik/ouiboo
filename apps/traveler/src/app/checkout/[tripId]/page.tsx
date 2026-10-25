@@ -7,6 +7,7 @@ import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthContext';
 import { type BookingDetails } from '@ouiboo/types';
 import { Card, CardContent } from '@ouiboo/ui';
+import { CheckoutSkeleton } from '@/components/Skeletons';
 import { useTranslation } from 'react-i18next';
 import { getStagedAmounts, isStagedSession, type CheckoutTrip } from '@/components/checkout/checkout-types';
 import { CheckoutHeader } from '@/components/checkout/CheckoutHeader';
@@ -120,7 +121,14 @@ export default function CheckoutPage() {
     setProofFile(file);
   };
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center font-black animate-pulse">{t('checkout.initializing')}</div>;
+  if (isLoading) return (
+    <div className="min-h-screen bg-muted/20 pb-40" role="status" aria-label={t('checkout.initializing')}>
+      <div className="max-w-7xl mx-auto px-6 pt-32">
+        <CheckoutSkeleton />
+      </div>
+      <span className="sr-only">{t('checkout.initializing')}</span>
+    </div>
+  );
   if (!trip) return <div className="min-h-screen flex items-center justify-center font-black">{t('checkout.tripNotFound')}</div>;
 
   const canSubmit = Boolean(

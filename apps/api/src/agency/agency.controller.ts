@@ -450,6 +450,17 @@ export class AgencyController {
                 taxId: data.taxId?.trim(),
                 legalRepresentative: data.legalRepresentative?.trim(),
                 businessAddress: data.businessAddress?.trim(),
+                // #419: emergency contact — undefined skips the field,
+                // an empty string clears it (same semantics as the
+                // nullable profile fields above).
+                emergencyContactName:
+                    data.emergencyContactName !== undefined
+                        ? data.emergencyContactName.trim() || null
+                        : undefined,
+                emergencyContactPhone:
+                    data.emergencyContactPhone !== undefined
+                        ? data.emergencyContactPhone.trim() || null
+                        : undefined,
                 ...destination,
             }
         });

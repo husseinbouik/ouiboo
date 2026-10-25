@@ -259,7 +259,9 @@
     "sectionThreeTitle": "Réservations et annulations",
     "sectionThreeBody": "Consultez les politiques avant de réserver et contactez l'assistance en cas de changement.",
     "sectionFourTitle": "Assistance",
-    "sectionFourBody": "Nous sommes là pour vous aider par e-mail."
+    "sectionFourBody": "Nous sommes là pour vous aider par e-mail.",
+    "sectionSixTitle": "Assistance et urgences",
+    "sectionSixBody": "OuiBoo assure l'assistance par e-mail et répond aux demandes normales sous 48 heures. Pendant un voyage en cours, l'agence organisatrice est votre premier contact pour les problèmes du jour même ; son contact d'urgence figure sur votre réservation. Si l'agence ne répond pas pendant la période du voyage, l'assistance OuiBoo fera remonter le problème auprès d'elle pour vous. OuiBoo n'exploite pas de ligne d'urgence 24h/24. Lorsqu'un remboursement est dû, l'agence doit l'effectuer dans les 7 jours suivant l'ouverture du dossier ; OuiBoo surveille ce délai et relance les remboursements en retard."
   },
   "privacy": {
     "backToSignup": "Retour à l'inscription",
@@ -458,5 +460,29 @@
     "disputeWindowClosed": "Le délai de {{days}} jours pour signaler un problème est écoulé. Veuillez contacter l'organisateur ou le support OuiBoo.",
     "disputed": "Vous avez signalé un problème avec ce remboursement — le dossier a été rouvert et est en cours d'examen.",
     "actionFailed": "Une erreur est survenue. Veuillez réessayer."
+  },
+  "support": {
+    "title": "Assistance",
+    "intro": "Comment nous contacter — et qui appeler en premier en cas de problème pendant votre voyage.",
+    "backToBookings": "Retour à mes réservations",
+    "contactsTitle": "Contacts du voyage",
+    "contactsSubtitle": "Gardez ces contacts à portée de main. Pendant le voyage, votre agence est votre premier appel — OuiBoo prend le relais si elle ne répond pas.",
+    "tripActiveNow": "Votre voyage est en cours",
+    "agencyFirstTitle": "1 · Votre agence — premier appel",
+    "agencyFirstBody": "Pour tout ce qui concerne le voyage en cours — point de rendez-vous, retards, problème le jour même — contactez d'abord votre agence. C'est elle qui organise le voyage et peut agir immédiatement.",
+    "noAgencyContact": "Cette agence n'a pas encore publié de numéro d'urgence. Écrivez-lui via OuiBoo et, si c'est urgent pendant votre voyage, faites remonter le problème à OuiBoo ci-dessous.",
+    "escalationTitle": "2 · Escalade OuiBoo",
+    "escalationBody": "Si l'agence ne répond pas pendant les dates de votre voyage, écrivez à l'assistance OuiBoo et nous relancerons l'agence pour vous. L'escalade est suivie pendant les périodes de voyage actif — ce n'est pas une ligne d'urgence 24h/24.",
+    "normalTitle": "Assistance normale",
+    "normalBody": "Pour tout le reste — réservations, paiements, remboursements, votre compte — écrivez-nous à {{email}}. Nous répondons sous {{hours}} heures.",
+    "normalLine": "Autre chose ? L'assistance normale répond sous {{hours}} heures.",
+    "fullSupportPage": "Comment fonctionne l'assistance",
+    "emergencyTitle": "Urgences pendant votre voyage",
+    "emergencyBody": "Pendant votre voyage : appelez d'abord le contact d'urgence de votre agence — il figure sur votre page de réservation. S'il ne répond pas, écrivez à l'assistance OuiBoo et nous ferons remonter le problème auprès de l'agence pendant la période du voyage. En dehors des dates du voyage, tout passe par l'assistance normale.",
+    "refundsTitle": "Remboursements",
+    "refundsBody": "Quand un remboursement est dû, l'agence dispose de {{days}} jours pour l'effectuer et OuiBoo la relance en cas de retard. Vous recevez un e-mail dès qu'un dossier de remboursement est ouvert pour vous, et vous pouvez suivre son état dans vos réservations.",
+    "complaintsTitle": "Réclamations",
+    "complaintsBody": "Pour vous plaindre d'un voyage, d'une agence ou d'OuiBoo, écrivez à {{email}} avec l'objet « Réclamation » et votre référence de réservation. Les réclamations sont traitées dans les délais de l'assistance normale.",
+    "safetyNote": "Si une personne est en danger ou a besoin d'une aide médicale urgente, contactez d'abord les services d'urgence locaux — puis votre agence."
   }
 }

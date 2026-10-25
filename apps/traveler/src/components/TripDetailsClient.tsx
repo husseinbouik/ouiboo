@@ -16,7 +16,7 @@ import {
   X,
   ClipboardList
 } from 'lucide-react';
-import { Button, Badge, ShareTripButton } from '@ouiboo/ui';
+import { Button, Badge, TripDetailSkeleton, ShareTripButton } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -125,9 +125,11 @@ export default function TripDetailsClient({
   });
 
   if (isLoading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center space-y-4 bg-background">
-      <div className="w-16 h-16 border-4 border-sunset-orange border-t-transparent rounded-full animate-spin" />
-      <p className="text-xl font-bold text-foreground animate-pulse font-display">Preparing your adventure...</p>
+    <div className="min-h-screen bg-background pb-32" role="status" aria-label="Preparing your adventure...">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32">
+        <TripDetailSkeleton />
+      </div>
+      <span className="sr-only">Preparing your adventure...</span>
     </div>
   );
 

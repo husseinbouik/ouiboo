@@ -738,7 +738,14 @@
       "mvpBody": "Notification delivery is intentionally limited to essential email alerts in this release.",
       "mvpHint": "Channel-level controls stay hidden until they can be managed reliably end to end.",
       "reviewBookings": "Review bookings"
-    }
+    },
+    "emergencyTitle": "Trip emergency contact",
+    "emergencySubtitle": "The person travellers with a booking reach first during an active trip. Shown only on their booking (departure pack), never publicly.",
+    "emergencyName": "Contact name",
+    "emergencyNamePlaceholder": "Guide or on-call manager",
+    "emergencyPhone": "Emergency phone",
+    "emergencyPhonePlaceholder": "+XXX XX XX XX XX",
+    "emergencyHint": "Use a number that is actually answered during trips. If you leave this empty, travellers are told to message you and escalate to OuiBoo."
   },
   "analytics": {
     "dashboardTitle": "Analytics Dashboard",

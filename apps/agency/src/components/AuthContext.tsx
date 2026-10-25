@@ -63,6 +63,9 @@ interface User {
         bankDetailsStatus?: string;
         bankDetailsVerifiedAt?: string;
         bankDetailsRejectionReason?: string;
+        // #419: trip emergency contact (departure pack for travellers)
+        emergencyContactName?: string;
+        emergencyContactPhone?: string;
     };
 }
 

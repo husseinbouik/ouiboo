@@ -15,6 +15,8 @@ const NOW = new Date('2027-02-01T09:00:00.000Z');
 function makeRefunds() {
     return {
         createRefundDueCaseInTransaction: jest.fn(async () => ({ id: 'refund-case-1' })),
+        // #419: traveller notification hook for the cascade outcome.
+        notifyTravelersRefundDueForSession: jest.fn(async () => 1),
     };
 }
 
@@ -420,11 +422,16 @@ describe('StagedPaymentsService (#369)', () => {
             tripSession: { findMany: jest.fn(async () => [{ id: 'session-1' }]) },
             $transaction: jest.fn(async (fn: any) => fn(tx)),
         };
-        const service = new StagedPaymentsService(db, external as any, makeRefunds() as any);
+        const refunds = makeRefunds();
+        const service = new StagedPaymentsService(db, external as any, refunds as any);
 
         const summary = await service.evaluateConfirmationDeadlines(new Date('2027-02-01T09:00:00.000Z'));
 
         expect(summary).toEqual({ evaluated: 1, confirmed: 0, notConfirmed: 1 });
+        // #419: a not-confirmed outcome notifies the travellers whose
+        // refund cases just opened (previously only the agency heard).
+        expect(refunds.notifyTravelersRefundDueForSession).toHaveBeenCalledTimes(1);
+        expect(refunds.notifyTravelersRefundDueForSession).toHaveBeenCalledWith('session-1');
         expect(tx.tripSession.updateMany).toHaveBeenCalledWith(
             expect.objectContaining({ data: { groupStatus: 'NOT_CONFIRMED' } }),
         );

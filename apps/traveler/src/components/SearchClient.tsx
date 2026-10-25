@@ -376,7 +376,7 @@ export default function SearchClient({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {isLoading ? (
-                <TripCardSkeletonGrid count={4} className="md:col-span-2" />
+                <TripCardSkeletonGrid count={4} className="md:col-span-2 sm:grid-cols-2 lg:grid-cols-2 gap-8" />
               ) : trips.length > 0 ? (
                 <AnimatePresence>
                   {trips.map((trip, idx) => (
