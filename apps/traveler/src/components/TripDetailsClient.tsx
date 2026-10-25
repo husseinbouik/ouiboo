@@ -24,6 +24,7 @@ import { cn } from '@ouiboo/ui/utils';
 import { useAuth } from '@/components/AuthContext';
 import { ReviewList } from '@/components/ReviewList';
 import SellerIdentity from '@/components/SellerIdentity';
+import ShareTripButton from '@/components/ShareTripButton';
 import { SessionStatus, type SessionStatusType } from '@ouiboo/types';
 import { formatCurrency } from '@ouiboo/utils';
 
@@ -333,12 +334,14 @@ export default function TripDetailsClient({
                         {trip.title}
                     </h1>
                     
-                    <div className="flex items-center gap-6">
+                    <div className="flex flex-wrap items-center gap-6">
                         <div className="flex items-center gap-1.5 bg-yellow-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                             <span className="font-bold text-sm text-amber-700 dark:text-yellow-400">{reviewStats?.totalReviews ? (reviewStats.averageRating ?? 0).toFixed(1) : 'New'}</span>
                             <span className="text-xs text-amber-700 dark:text-yellow-400/70 font-medium">({reviewStats?.totalReviews || 0} reviews)</span>
                         </div>
+                        {/* #468: share this trip (native sheet / intent menu) */}
+                        <ShareTripButton tripId={trip.id} tripTitle={trip.title} className="rounded-full" />
                     </div>
 
                     {/* #371: seller of record + verified travel licence */}

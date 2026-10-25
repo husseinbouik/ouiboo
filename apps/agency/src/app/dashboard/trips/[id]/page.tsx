@@ -81,6 +81,7 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
     <div className="space-y-8 animate-in fade-in duration-500">
       <TripDetailHeader
         tripId={params.id}
+        tripTitle={typedTrip.title}
         tripStatus={typedTrip.status}
         isDeleting={deleteTripMutation.isPending}
         isArchiving={archiveTripMutation.isPending}

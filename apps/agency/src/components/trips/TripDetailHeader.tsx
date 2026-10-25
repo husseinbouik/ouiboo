@@ -7,9 +7,11 @@ import { ChevronLeft, Settings, Trash, CheckCircle2 } from 'lucide-react';
 import { Button } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import { TripStatus, type TripStatusType } from '@ouiboo/types';
+import ShareTripButton from '@/components/ShareTripButton';
 
 type TripDetailHeaderProps = {
   tripId: string;
+  tripTitle?: string;
   tripStatus: TripStatusType;
   isDeleting: boolean;
   isArchiving: boolean;
@@ -24,6 +26,7 @@ type TripDetailHeaderProps = {
 
 export function TripDetailHeader({
   tripId,
+  tripTitle,
   tripStatus,
   isDeleting,
   isArchiving,
@@ -44,6 +47,11 @@ export function TripDetailHeader({
         {t('trips.detail.backToTrips')}
       </Link>
       <div className="flex gap-2 flex-wrap">
+        {/* #468: share the public traveller URL — active trips only, their
+            public page exists; drafts/inactive/archived ones do not. */}
+        {tripStatus === TripStatus.Active && tripTitle && (
+          <ShareTripButton tripId={tripId} tripTitle={tripTitle} />
+        )}
         {/* Deactivate/Activate toggle - always safe, keeps bookings */}
         {(tripStatus === TripStatus.Active || tripStatus === TripStatus.Inactive) && (
           <Button

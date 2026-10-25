@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { API_URL, metadataDescription } from '@/lib/site'
+import { API_URL } from '@/lib/site'
+import { buildTripMetadata } from '@/lib/trip-metadata'
 
 type TripMetadata = {
   id: string
@@ -31,34 +32,9 @@ export async function generateMetadata({ params }: TripLayoutProps): Promise<Met
   const { id } = await params
   const trip = await getTrip(id)
 
-  if (!trip) {
-    return {
-      title: 'Trip not found',
-      robots: { index: false, follow: false },
-    }
-  }
-
-  const description = metadataDescription(trip.description)
-  const canonicalPath = `/trip/${encodeURIComponent(trip.id)}`
-
-  return {
-    title: trip.title,
-    description,
-    alternates: { canonical: canonicalPath },
-    openGraph: {
-      type: 'website',
-      title: trip.title,
-      description,
-      url: canonicalPath,
-      images: trip.images?.filter(Boolean).slice(0, 4).map((url) => ({ url, alt: trip.title })),
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: trip.title,
-      description,
-      images: trip.images?.filter(Boolean).slice(0, 1),
-    },
-  }
+  // #468: shared builder — identical to the page's generateMetadata, so
+  // the served OG/Twitter tags never depend on metadata merge order.
+  return buildTripMetadata(trip)
 }
 
 export default function TripLayout({ children }: TripLayoutProps) {

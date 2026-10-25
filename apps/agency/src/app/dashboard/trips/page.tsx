@@ -21,6 +21,7 @@ import { apiClient } from '@/lib/api-client';
 import { formatCurrency } from '@ouiboo/utils';
 
 import { DeleteConfirmation } from '@/components/DeleteConfirmation';
+import ShareTripButton from '@/components/ShareTripButton';
 
 type AgencyTripSessionSummary = {
   id: string;
@@ -252,6 +253,15 @@ export default function AgencyTripsPage() {
                       <p className="text-lg font-bold text-primary">{formatCurrency(trip.sessions?.[0]?.price || 0, undefined, i18n.language)}</p>
                    </div>
                    <div className="flex gap-1">
+                      {/* #468: share the public traveller URL (active trips only) */}
+                      {trip.status === 'ACTIVE' && (
+                        <ShareTripButton
+                          tripId={trip.id}
+                          tripTitle={trip.title}
+                          iconOnly
+                          className="h-auto border-none bg-transparent p-2 text-muted-foreground shadow-none hover:bg-muted hover:text-primary rounded-lg"
+                        />
+                      )}
                       <Link href={`/dashboard/trips/${trip.id}`} aria-label={t('common.edit')} className="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors inline-flex">
                            <Edit className="h-5 w-5" />
                       </Link>
