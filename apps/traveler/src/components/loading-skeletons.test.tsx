@@ -8,6 +8,7 @@ import {
   CardListSkeleton,
 } from '@ouiboo/ui';
 import {
+  BookingCardSkeleton,
   BookingListSkeleton,
   BookingDetailSkeleton,
   CheckoutSkeleton,
@@ -49,6 +50,13 @@ describe('loading skeletons (#469)', () => {
     // Gallery block matches the detail page's responsive gallery heights.
     expect(container.querySelector('.h-\\[280px\\]')).not.toBeNull();
     expect(container.querySelector('.lg\\:h-\\[600px\\]')).not.toBeNull();
+  });
+
+  it('BookingCardSkeleton mirrors the horizontal booking card', () => {
+    const { container } = render(<BookingCardSkeleton />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.getAttribute('aria-hidden')).toBe('true');
+    expect(container.querySelector('.md\\:w-72')).not.toBeNull();
   });
 
   it('BookingListSkeleton renders the requested number of booking cards', () => {
