@@ -187,9 +187,13 @@ export default function AdminDashboard() {
   });
 
   // #371: travel licence verification (Law 11-16) — separate from identity.
+  // #415: verifying now requires the admin's Ministry-list attestation.
   const verifyLicenceMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string, status: LicenceStatusType }) => {
-      return apiClient.post(`/admin/agencies/${id}/licence/verify`, { status });
+    mutationFn: async ({ id, status, ministryChecked }: { id: string, status: LicenceStatusType, ministryChecked?: boolean }) => {
+      return apiClient.post(`/admin/agencies/${id}/licence/verify`, {
+        status,
+        ministryChecked: status === LicenceStatus.Verified ? ministryChecked === true : undefined,
+      });
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
@@ -208,6 +212,75 @@ export default function AdminDashboard() {
       });
     }
   });
+
+  // #415: RC insurance artefact verification — mirrors the licence flow.
+  const verifyInsuranceMutation = useMutation({
+    mutationFn: async ({ id, status, reason }: { id: string, status: LicenceStatusType, reason?: string }) => {
+      return apiClient.post(`/admin/agencies/${id}/insurance/verify`, { status, reason });
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
+      queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
+      setAgencyFeedback({
+        type: 'success',
+        message: variables.status === LicenceStatus.Verified
+          ? t('dashboard.feedback.insuranceVerified')
+          : t('dashboard.feedback.insuranceRejected')
+      });
+    },
+    onError: (error: AxiosError<ApiErrorResponse>) => {
+      setAgencyFeedback({
+        type: 'error',
+        message: getErrorMessage(error, t('dashboard.feedback.insuranceUpdateError'))
+      });
+    }
+  });
+
+  // #421: payment-destination verification — a holder-name mismatch can
+  // only pass with a recorded override reason; rejection needs a reason.
+  const verifyBankDetailsMutation = useMutation({
+    mutationFn: async ({ id, status, reason, overrideReason }: { id: string, status: VerificationStatusType, reason?: string, overrideReason?: string }) => {
+      return apiClient.post(`/admin/agencies/${id}/bank-details/verify`, { status, reason, overrideReason });
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
+      queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
+      setAgencyFeedback({
+        type: 'success',
+        message: variables.status === VerificationStatus.Verified
+          ? t('dashboard.feedback.bankDetailsVerified')
+          : t('dashboard.feedback.bankDetailsRejected')
+      });
+    },
+    onError: (error: AxiosError<ApiErrorResponse>) => {
+      setAgencyFeedback({
+        type: 'error',
+        message: getErrorMessage(error, t('dashboard.feedback.bankDetailsUpdateError'))
+      });
+    }
+  });
+
+  // #415: private verification documents (licence scan, RC certificate)
+  // are only ever opened through a short-lived signed URL — never the
+  // public media route. The API allows admins to mint one for any key.
+  const handleViewPrivateDocument = async (key: string) => {
+    if (!key) {
+      return;
+    }
+    try {
+      const response = await apiClient.get('/upload/signed-url', { params: { key } });
+      const url = response.data?.url as string | undefined;
+      if (!url) {
+        throw new Error('Missing signed URL');
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      setAgencyFeedback({
+        type: 'error',
+        message: getErrorMessage(error as AxiosError<ApiErrorResponse>, t('dashboard.feedback.documentLoadError')),
+      });
+    }
+  };
 
   const updateAgencyStatusMutation = useMutation({
     mutationFn: async ({
@@ -690,9 +763,14 @@ export default function AdminDashboard() {
           agencyFeedback={agencyFeedback}
           isVerifying={verifyAgencyMutation.isPending}
           isVerifyingLicence={verifyLicenceMutation.isPending}
+          isVerifyingInsurance={verifyInsuranceMutation.isPending}
+          isVerifyingBankDetails={verifyBankDetailsMutation.isPending}
           onClose={() => setSelectedAgency(null)}
           onVerify={(id, status) => verifyAgencyMutation.mutate({ id, status })}
-          onVerifyLicence={(id, status) => verifyLicenceMutation.mutate({ id, status })}
+          onVerifyLicence={(id, status, opts) => verifyLicenceMutation.mutate({ id, status, ministryChecked: opts?.ministryChecked })}
+          onVerifyInsurance={(id, status, reason) => verifyInsuranceMutation.mutate({ id, status, reason })}
+          onVerifyBankDetails={(id, status, opts) => verifyBankDetailsMutation.mutate({ id, status, reason: opts?.reason, overrideReason: opts?.overrideReason })}
+          onViewDocument={handleViewPrivateDocument}
         />
       )}
     </>

@@ -1,11 +1,16 @@
 import { BookingStatus, LicenceStatus, PayoutStatus, VerificationStatus } from '@ouiboo/types';
 import {
   getAdminAuditActionLabel,
+  getAdminBankDetailsBadgeClass,
+  getAdminBankDetailsBadgeLabel,
   getAdminBookingBadgeLabel,
+  getAdminInsuranceBadgeClass,
+  getAdminInsuranceBadgeLabel,
   getAdminLicenceBadgeClass,
   getAdminLicenceBadgeLabel,
   getAdminPayoutBadgeMeta,
   getAdminVerificationBadgeClass,
+  getEffectiveInsuranceStatus,
   getEffectiveLicenceStatus,
   isRejectedPayout,
 } from './status-mappers';
@@ -62,6 +67,45 @@ describe('admin status mappers', () => {
       licenceExpiry: '2999-01-01T00:00:00.000Z',
     })).toBe(LicenceStatus.Verified);
     expect(getEffectiveLicenceStatus({})).toBe(LicenceStatus.NotSubmitted);
+  });
+});
+describe('admin insurance + bank-details mappers (#415/#421)', () => {
+  it('derives the effective insurance status mirroring the licence rules', () => {
+    // Server-provided effective status wins.
+    expect(getEffectiveInsuranceStatus({
+      insuranceStatus: 'VERIFIED',
+      effectiveInsuranceStatus: 'EXPIRED',
+      insuranceExpiry: null,
+    })).toBe(LicenceStatus.Expired);
+    // A verified policy past its expiry reads as expired.
+    expect(getEffectiveInsuranceStatus({
+      insuranceStatus: 'VERIFIED',
+      insuranceExpiry: '2020-01-01T00:00:00.000Z',
+    })).toBe(LicenceStatus.Expired);
+    // A verified policy still within validity stays verified.
+    expect(getEffectiveInsuranceStatus({
+      insuranceStatus: 'VERIFIED',
+      insuranceExpiry: '2999-01-01T00:00:00.000Z',
+    })).toBe(LicenceStatus.Verified);
+    expect(getEffectiveInsuranceStatus({})).toBe(LicenceStatus.NotSubmitted);
+  });
+
+  it('maps insurance statuses to badge classes and labels', () => {
+    expect(getAdminInsuranceBadgeClass(LicenceStatus.Verified)).toContain('success');
+    expect(getAdminInsuranceBadgeClass(LicenceStatus.PendingReview)).toContain('warning');
+    expect(getAdminInsuranceBadgeClass(LicenceStatus.Expired)).toContain('danger');
+    expect(getAdminInsuranceBadgeLabel(LicenceStatus.Verified, (key) => key)).toBe('dashboard.status.insuranceVerified');
+    expect(getAdminInsuranceBadgeLabel(LicenceStatus.NotSubmitted)).toBe('NOT_SUBMITTED');
+  });
+
+  it('maps bank-details statuses to badge classes and labels', () => {
+    expect(getAdminBankDetailsBadgeClass('VERIFIED')).toContain('success');
+    expect(getAdminBankDetailsBadgeClass('PENDING_REVIEW')).toContain('warning');
+    expect(getAdminBankDetailsBadgeClass('REJECTED')).toContain('danger');
+    expect(getAdminBankDetailsBadgeClass('UNVERIFIED')).toContain('muted');
+    expect(getAdminBankDetailsBadgeClass(undefined)).toContain('muted');
+    expect(getAdminBankDetailsBadgeLabel('PENDING_REVIEW', (key) => key)).toBe('dashboard.status.bankPendingReview');
+    expect(getAdminBankDetailsBadgeLabel(undefined)).toBe('Unverified');
   });
 });
 describe('admin audit action labels (#423)', () => {

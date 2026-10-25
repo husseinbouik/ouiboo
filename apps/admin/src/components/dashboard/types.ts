@@ -109,6 +109,37 @@ export type AdminAgency = {
   licenceVerifiedAt?: string | null;
   licenceExpiry?: string | null;
   licenceRejectionReason?: string | null;
+  // #415: licence document (private upload) + Ministry-check stamp
+  licenceDocumentKey?: string | null;
+  licenceDocumentName?: string | null;
+  licenceMinistryCheckedAt?: string | null;
+  licenceMinistryCheckedBy?: string | null;
+  // #415: RC insurance artefact (same lifecycle as the licence)
+  insuranceStatus?: string | null;
+  /** Server-derived insurance status (mirrors effectiveLicenceStatus). */
+  effectiveInsuranceStatus?: string | null;
+  insuranceInsurer?: string | null;
+  insurancePolicyNumber?: string | null;
+  insuranceInsuredName?: string | null;
+  insuranceValidFrom?: string | null;
+  insuranceExpiry?: string | null;
+  insuranceCoverageLimit?: string | number | null;
+  insuranceCertificateKey?: string | null;
+  insuranceVerifiedAt?: string | null;
+  insuranceRejectionReason?: string | null;
+  // #415: expiry-sweep auto-pause marker
+  verificationPausedAt?: string | null;
+  verificationPauseReason?: string | null;
+  // #421: payment-destination verification — the live (traveller-visible)
+  // details, the pending replacement awaiting review, and the review state.
+  bankDetails?: string | null;
+  pendingBankDetails?: string | null;
+  bankAccountHolderName?: string | null;
+  bankAttestationUrl?: string | null;
+  bankDetailsStatus?: string | null;
+  bankDetailsVerifiedAt?: string | null;
+  bankDetailsVerifiedBy?: string | null;
+  bankDetailsRejectionReason?: string | null;
 };
 
 export type AdminTrip = {

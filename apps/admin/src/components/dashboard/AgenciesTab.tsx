@@ -7,7 +7,7 @@ import { Button, Card, Badge, Pagination } from '@ouiboo/ui';
 import { VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 import type { PaginationMeta } from '@ouiboo/utils';
 import type { AdminAgency } from './types';
-import { getAdminVerificationBadgeClass, getAdminVerificationBadgeLabel, getAdminSubscriptionBadgeLabel, getAdminLicenceBadgeClass, getAdminLicenceBadgeLabel, getEffectiveLicenceStatus } from '../../app/status-mappers';
+import { getAdminVerificationBadgeClass, getAdminVerificationBadgeLabel, getAdminSubscriptionBadgeLabel, getAdminLicenceBadgeClass, getAdminLicenceBadgeLabel, getEffectiveLicenceStatus, getAdminInsuranceBadgeClass, getAdminInsuranceBadgeLabel, getEffectiveInsuranceStatus, getAdminBankDetailsBadgeClass, getAdminBankDetailsBadgeLabel } from '../../app/status-mappers';
 import { canApproveAgency, canRejectAgency } from './formatters';
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
@@ -59,6 +59,16 @@ export default function AgenciesTab({
                        <Badge variant="outline">{getAdminSubscriptionBadgeLabel(agency.subscriptionStatus, t)}</Badge>
                        {/* #371: travel licence status (expired licences flagged) */}
                        <Badge className={getAdminLicenceBadgeClass(getEffectiveLicenceStatus(agency))}>{getAdminLicenceBadgeLabel(getEffectiveLicenceStatus(agency), t)}</Badge>
+                       {/* #415: RC insurance status alongside the licence */}
+                       <Badge className={getAdminInsuranceBadgeClass(getEffectiveInsuranceStatus(agency))}>{getAdminInsuranceBadgeLabel(getEffectiveInsuranceStatus(agency), t)}</Badge>
+                       {/* #421: payment-destination verification status */}
+                       {agency.bankDetailsStatus && (
+                         <Badge className={getAdminBankDetailsBadgeClass(agency.bankDetailsStatus)}>{getAdminBankDetailsBadgeLabel(agency.bankDetailsStatus, t)}</Badge>
+                       )}
+                       {/* #415: expiry sweep paused this agency's trips */}
+                       {agency.verificationPausedAt && (
+                         <Badge className="bg-danger/15 text-danger">{t('dashboard.labels.verificationPaused')}</Badge>
+                       )}
                     </div>
                  </div>
               </div>
