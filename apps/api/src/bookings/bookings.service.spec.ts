@@ -824,6 +824,49 @@ describe('BookingsService', () => {
             expect(mockExternalPaymentsService.recordPaymentVerifiedInTransaction).not.toHaveBeenCalled();
         });
 
+        it('bank confirmation rejects a non-string bank reference', async () => {
+            db.booking.findUnique.mockResolvedValue(reviewBooking('ACCEPTED'));
+
+            // The DTO fields are deliberately untyped at this boundary: a
+            // JSON number is not a bank reference and must not be coerced
+            // into one.
+            await expect(service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: 780,
+                bankReference: 12345678,
+            })).rejects.toThrow('bank reference is required');
+            expect(mockExternalPaymentsService.recordPaymentVerifiedInTransaction).not.toHaveBeenCalled();
+        });
+
+        it('bank confirmation refuses a booking that is no longer awaiting validation', async () => {
+            // The proof was accepted, but the booking has since moved on
+            // (confirmed or cancelled through another path): settlement
+            // must not run a second time.
+            const booking = { ...reviewBooking('ACCEPTED'), status: 'CONFIRMED' };
+            db.booking.findUnique.mockResolvedValue(booking);
+
+            await expect(service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: 780,
+                bankReference: 'TRX-1',
+            })).rejects.toThrow('Booking is not awaiting payment validation');
+            expect(db.$transaction).not.toHaveBeenCalled();
+            expect(mockExternalPaymentsService.recordPaymentVerifiedInTransaction).not.toHaveBeenCalled();
+        });
+
+        it('bank confirmation fails when the in-transaction booking claim loses the race', async () => {
+            db.booking.findUnique.mockResolvedValue(reviewBooking('ACCEPTED'));
+            // The proof claim succeeds, but a concurrent confirmation
+            // settled the booking first: the AWAITING_VALIDATION claim
+            // matches nothing, so the transaction must fail (and roll
+            // back) instead of settling twice.
+            db.booking.updateMany.mockResolvedValue({ count: 0 });
+
+            await expect(service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: 780,
+                bankReference: 'TRX-1',
+            })).rejects.toThrow('Booking is not awaiting payment validation');
+            expect(mockExternalPaymentsService.recordPaymentVerifiedInTransaction).toHaveBeenCalledTimes(1);
+        });
+
         it('bank confirmation is agency-scoped: another agency cannot confirm', async () => {
             db.booking.findUnique.mockResolvedValue(reviewBooking('ACCEPTED'));
             db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-999' });

@@ -115,6 +115,22 @@ describe('ExternalPaymentsService', () => {
             expect(upsertArgs.update.bankReference).toBe('TRX-2026-000123');
         });
 
+        it('records bankConfirmedBy as null when a bank reference arrives without a named confirmer', async () => {
+            const tx = makeTx();
+            const service = new ExternalPaymentsService({} as any);
+
+            await service.recordPaymentVerifiedInTransaction(tx, {
+                ...baseInput,
+                bankReference: 'TRX-2026-000777',
+            });
+
+            const upsertArgs = tx.externalPayment.upsert.mock.calls[0][0];
+            expect(upsertArgs.create.bankReference).toBe('TRX-2026-000777');
+            expect(upsertArgs.create.bankConfirmedBy).toBeNull();
+            expect(upsertArgs.update.bankReference).toBe('TRX-2026-000777');
+            expect(upsertArgs.update.bankConfirmedBy).toBeNull();
+        });
+
         it('leaves bank-confirmation facts untouched for PSP/webhook records', async () => {
             const tx = makeTx();
             const service = new ExternalPaymentsService({} as any);
