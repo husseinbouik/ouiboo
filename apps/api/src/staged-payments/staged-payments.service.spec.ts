@@ -94,6 +94,7 @@ function makeTx(options: {
         bookingPaymentPlan: {
             create: jest.fn(async ({ data }: any) => ({ id: 'plan-new', ...data })),
             update: jest.fn(async () => ({})),
+            updateMany: jest.fn(async () => ({ count: 2 })),
             findUniqueOrThrow: jest.fn(async () =>
                 options.planAfter ?? makePlan({ status: 'DEPOSIT_PAID' })),
             findMany: jest.fn(async ({ where }: any) => {
@@ -444,6 +445,113 @@ describe('StagedPaymentsService (#369)', () => {
         expect(tx.tripSession.update).toHaveBeenCalledWith(
             expect.objectContaining({ data: { availableSeats: { increment: 3 } } }),
         );
+    });
+
+    it('force-confirm confirms the group below the minimum and before the deadline (#423)', async () => {
+        const external = makeExternalPayments();
+        const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
+        const tx = makeTx({
+            countedPlans: [
+                { booking: { id: 'booking-1', guestsCount: 2, status: 'PENDING_MINIMUM' } },
+            ],
+            waitingPlans: [
+                { id: 'plan-1', bookingId: 'booking-1', booking: { id: 'booking-1', status: 'PENDING_MINIMUM' } },
+            ],
+        });
+
+        const result = await service.forceConfirmGroupInTransaction(tx, 'session-1', NOW);
+
+        // The session minimum is 4, only 2 participants paid: the
+        // intervention deliberately overrides both guards.
+        expect(result).toEqual({ participants: 2, minBookings: 4 });
+        expect(tx.tripSession.updateMany).toHaveBeenCalledWith(
+            expect.objectContaining({ data: { groupStatus: 'CONFIRMED' } }),
+        );
+        const planWrites = tx.bookingPaymentPlan.update.mock.calls.map((c: any) => c[0].data);
+        expect(planWrites).toContainEqual(
+            expect.objectContaining({ status: 'BALANCE_DUE', groupConfirmedAt: NOW }),
+        );
+    });
+
+    it('force-confirm refuses a session that is not pending its minimum (#423)', async () => {
+        const external = makeExternalPayments();
+        const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
+        const tx = makeTx({ session: makeSession({ groupStatus: 'CONFIRMED' }) });
+
+        await expect(service.forceConfirmGroupInTransaction(tx, 'session-1'))
+            .rejects.toThrow('not pending its minimum');
+        expect(tx.tripSession.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('close-group fails the group and creates refund cases in the same transaction (#423)', async () => {
+        const external = makeExternalPayments();
+        const refunds = makeRefunds();
+        const service = new StagedPaymentsService({} as any, external as any, refunds as any);
+        const tx = makeTx({
+            failPlans: [
+                {
+                    id: 'plan-1', bookingId: 'booking-1', status: 'DEPOSIT_PAID',
+                    depositAmount: D('200.00'), balanceAmount: D('1000.00'), currency: 'MAD', agencyId: 'agency-1', sessionId: 'session-1',
+                    booking: { id: 'booking-1', guestsCount: 2, status: 'PENDING_MINIMUM', travelerId: 'traveler-1' },
+                },
+                {
+                    id: 'plan-2', bookingId: 'booking-2', status: 'DEPOSIT_DUE',
+                    depositAmount: D('200.00'), balanceAmount: D('1000.00'), currency: 'MAD', agencyId: 'agency-1', sessionId: 'session-1',
+                    booking: { id: 'booking-2', guestsCount: 1, status: 'PENDING', travelerId: 'traveler-2' },
+                },
+            ],
+        });
+
+        const result = await service.closeGroupInTransaction(tx, 'session-1');
+
+        expect(result).toEqual({ depositPaidBookings: 1, unpaidBookings: 1 });
+        expect(tx.tripSession.updateMany).toHaveBeenCalledWith(
+            expect.objectContaining({ data: { groupStatus: 'NOT_CONFIRMED' } }),
+        );
+        // The refund case is created immediately by the close itself —
+        // not left for the cron backstop to discover later.
+        expect(refunds.createRefundDueCaseInTransaction).toHaveBeenCalledTimes(1);
+        const bookingWrites = tx.booking.updateMany.mock.calls.map((c: any) => c[0]);
+        expect(bookingWrites).toContainEqual(expect.objectContaining({
+            where: { id: 'booking-2', status: 'PENDING' },
+            data: expect.objectContaining({ status: 'CANCELLED' }),
+        }));
+    });
+
+    it('extend-deadline moves the session deadline and every plan snapshot together (#423)', async () => {
+        const external = makeExternalPayments();
+        const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
+        const tx = makeTx();
+        const newDeadline = new Date('2027-03-05T09:00:00.000Z');
+
+        const result = await service.extendConfirmationDeadlineInTransaction(tx, 'session-1', newDeadline, NOW);
+
+        expect(result.previousDeadline).toEqual(DEADLINE);
+        expect(result.newDeadline).toEqual(newDeadline);
+        expect(result.plansUpdated).toBe(2);
+        expect(tx.tripSession.update).toHaveBeenCalledWith(
+            expect.objectContaining({ data: { confirmationDeadline: newDeadline } }),
+        );
+        const [planUpdate] = tx.bookingPaymentPlan.updateMany.mock.calls[0] as any;
+        expect(planUpdate.data).toEqual({ confirmationDeadline: newDeadline });
+        expect(planUpdate.where.sessionId).toBe('session-1');
+        // Terminal plans (REFUNDED / CANCELLED) keep their historical snapshot.
+        expect(planUpdate.where.status.in).not.toContain('REFUNDED');
+        expect(planUpdate.where.status.in).not.toContain('CANCELLED');
+    });
+
+    it('extend-deadline rejects past deadlines and deadlines on/after the session start (#423)', async () => {
+        const external = makeExternalPayments();
+        const service = new StagedPaymentsService({} as any, external as any, makeRefunds() as any);
+        const tx = makeTx();
+
+        await expect(service.extendConfirmationDeadlineInTransaction(
+            tx, 'session-1', new Date('2027-01-01T09:00:00.000Z'), NOW,
+        )).rejects.toThrow('must be in the future');
+        await expect(service.extendConfirmationDeadlineInTransaction(
+            tx, 'session-1', START, NOW,
+        )).rejects.toThrow('start date');
+        expect(tx.tripSession.update).not.toHaveBeenCalled();
     });
 
     it('deadline job is idempotent when nothing is pending', async () => {

@@ -2,12 +2,15 @@
 
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 import { RotateCcw } from 'lucide-react';
 import { Badge, Button, Card, Pagination } from '@ouiboo/ui';
 import type { PaginationMeta } from '@ouiboo/utils';
 import { apiClient } from '@/lib/api-client';
-import type { AdminRefundCase } from './types';
+import type { AdminRefundCase, ApiErrorResponse } from './types';
 import { formatDateTime } from './formatters';
+import { getErrorMessage } from './dashboard-utils';
+import AdminActionModal from './AdminActionModal';
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -27,6 +30,25 @@ type RefundsTabProps = {
 };
 
 type RefundAction = 'review' | 'approve' | 'reject' | 'initiate' | 'complete' | 'fail';
+
+/** #423: admin-only repairs for stuck cases — the only exits from the
+ * terminal states, and the only way to fix a wrong amount or payment
+ * link. Each repair is audit-logged with a mandatory reason. */
+type RefundRepairAction = 'reopen' | 'correct-amount' | 'relink-payment';
+
+function repairActionsFor(status: string): RefundRepairAction[] {
+  switch (status) {
+    case 'REFUND_COMPLETED':
+      return ['reopen', 'correct-amount', 'relink-payment'];
+    case 'REFUND_REJECTED':
+      return ['reopen', 'relink-payment'];
+    case 'REFUND_REQUESTED':
+    case 'ELIGIBILITY_REVIEW':
+      return ['relink-payment'];
+    default:
+      return ['correct-amount', 'relink-payment'];
+  }
+}
 
 function actionsFor(status: string): RefundAction[] {
   switch (status) {
@@ -68,6 +90,13 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | '
 export default function RefundsTab({ t, cases, pagination, onPageChange, paginationLabels }: RefundsTabProps) {
   const queryClient = useQueryClient();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [repairTarget, setRepairTarget] = useState<AdminRefundCase | null>(null);
+  const [repairAction, setRepairAction] = useState<RefundRepairAction>('reopen');
+  const [repairAmount, setRepairAmount] = useState('');
+  const [repairPaymentId, setRepairPaymentId] = useState('');
+  const [repairReference, setRepairReference] = useState('');
+  const [repairError, setRepairError] = useState<string | null>(null);
+  const [repairFeedback, setRepairFeedback] = useState<string | null>(null);
 
   const actionMutation = useMutation({
     mutationFn: async ({ id, action }: { id: string; action: RefundAction }) => {
@@ -81,6 +110,43 @@ export default function RefundsTab({ t, cases, pagination, onPageChange, paginat
     onError: () => setBusyId(null),
   });
 
+  const repairMutation = useMutation({
+    mutationFn: async ({ id, action, reason }: { id: string; action: RefundRepairAction; reason: string }) => {
+      const body: Record<string, unknown> = { action, reason };
+      if (action === 'correct-amount') {
+        body.approvedAmount = Number(repairAmount);
+      }
+      if (action === 'relink-payment') {
+        if (repairPaymentId.trim()) {
+          body.originalPaymentId = repairPaymentId.trim();
+        }
+        if (repairReference.trim()) {
+          body.externalPaymentReference = repairReference.trim();
+        }
+      }
+      await apiClient.post(`/admin/refunds/${id}/repair`, body);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['refunds'] });
+      setRepairTarget(null);
+      setRepairError(null);
+      setRepairFeedback(t('dashboard.groups.success'));
+    },
+    onError: (error: AxiosError<ApiErrorResponse>) => {
+      setRepairError(getErrorMessage(error, t('dashboard.interventions.failed')));
+    },
+  });
+
+  const openRepair = (refundCase: AdminRefundCase) => {
+    setRepairError(null);
+    setRepairFeedback(null);
+    setRepairAmount(refundCase.approvedAmount ?? '');
+    setRepairPaymentId(refundCase.originalPaymentId ?? '');
+    setRepairReference(refundCase.externalPaymentReference ?? '');
+    setRepairAction(repairActionsFor(refundCase.status)[0]);
+    setRepairTarget(refundCase);
+  };
+
   if (cases.length === 0) {
     return (
       <Card className="p-10 text-center space-y-3">
@@ -93,6 +159,7 @@ export default function RefundsTab({ t, cases, pagination, onPageChange, paginat
 
   return (
     <div className="space-y-4">
+      {repairFeedback && <div className="text-sm font-medium text-success">{repairFeedback}</div>}
       {cases.map((refundCase) => {
         const actions = actionsFor(refundCase.status);
         const overdue = refundCase.status === 'REFUND_OVERDUE';
@@ -134,28 +201,126 @@ export default function RefundsTab({ t, cases, pagination, onPageChange, paginat
                 </span>
               )}
             </div>
-            {actions.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {actions.map((action) => (
-                  <Button
-                    key={action}
-                    size="sm"
-                    variant={action === 'reject' || action === 'fail' ? 'outline' : 'default'}
-                    disabled={busyId === refundCase.id}
-                    onClick={() => {
-                      setBusyId(refundCase.id);
-                      actionMutation.mutate({ id: refundCase.id, action });
-                    }}
-                  >
-                    {t(`dashboard.refunds.actions.${action}`)}
-                  </Button>
-                ))}
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {actions.map((action) => (
+                <Button
+                  key={action}
+                  size="sm"
+                  variant={action === 'reject' || action === 'fail' ? 'outline' : 'default'}
+                  disabled={busyId === refundCase.id}
+                  onClick={() => {
+                    setBusyId(refundCase.id);
+                    actionMutation.mutate({ id: refundCase.id, action });
+                  }}
+                >
+                  {t(`dashboard.refunds.actions.${action}`)}
+                </Button>
+              ))}
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={repairMutation.isPending}
+                onClick={() => openRepair(refundCase)}
+              >
+                {t('dashboard.interventions.repair')}
+              </Button>
+            </div>
           </Card>
         );
       })}
       <Pagination pagination={pagination} onPageChange={onPageChange} labels={paginationLabels} />
+
+      {repairTarget && (
+        <AdminActionModal
+          t={t}
+          title={t('dashboard.interventions.refundRepair.title')}
+          description={t('dashboard.interventions.refundRepair.description')}
+          confirmLabel={t('dashboard.interventions.repair')}
+          pending={repairMutation.isPending}
+          error={repairError}
+          onClose={() => setRepairTarget(null)}
+          onSubmit={(reason) => repairMutation.mutate({ id: repairTarget.id, action: repairAction, reason })}
+        >
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <label
+                htmlFor="refund-repair-action"
+                className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                {t('dashboard.interventions.repairActionLabel')}
+              </label>
+              <select
+                id="refund-repair-action"
+                value={repairAction}
+                onChange={(event) => setRepairAction(event.target.value as RefundRepairAction)}
+                className="w-full rounded-xl border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sunset-orange/20"
+              >
+                {repairActionsFor(repairTarget.status).map((action) => (
+                  <option key={action} value={action}>
+                    {t(`dashboard.interventions.refundRepair.${action}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {repairAction === 'correct-amount' && (
+              <div className="space-y-2">
+                <label
+                  htmlFor="refund-repair-amount"
+                  className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                >
+                  {t('dashboard.interventions.refundRepair.amountLabel')} ({repairTarget.currency})
+                </label>
+                <input
+                  id="refund-repair-amount"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={repairAmount}
+                  onChange={(event) => setRepairAmount(event.target.value)}
+                  className="w-full rounded-xl border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sunset-orange/20"
+                />
+              </div>
+            )}
+            {repairAction === 'relink-payment' && (
+              <>
+                <div className="space-y-2">
+                  <label
+                    htmlFor="refund-repair-payment-id"
+                    className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                  >
+                    {t('dashboard.interventions.refundRepair.paymentIdLabel')}
+                  </label>
+                  <input
+                    id="refund-repair-payment-id"
+                    type="text"
+                    value={repairPaymentId}
+                    onChange={(event) => setRepairPaymentId(event.target.value)}
+                    className="w-full rounded-xl border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sunset-orange/20"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t('dashboard.interventions.refundRepair.paymentIdHint')}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <label
+                    htmlFor="refund-repair-reference"
+                    className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                  >
+                    {t('dashboard.interventions.refundRepair.referenceLabel')}
+                  </label>
+                  <input
+                    id="refund-repair-reference"
+                    type="text"
+                    value={repairReference}
+                    onChange={(event) => setRepairReference(event.target.value)}
+                    className="w-full rounded-xl border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sunset-orange/20"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </AdminActionModal>
+      )}
     </div>
   );
 }

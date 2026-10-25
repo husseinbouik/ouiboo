@@ -14,6 +14,7 @@ import {
   CalendarClock,
   FileText,
   LayoutDashboard,
+  Layers,
   Receipt,
   RotateCcw,
 } from 'lucide-react';
@@ -38,6 +39,7 @@ import type {
   AdminPaymentProof,
   AdminAuditLog,
   AdminInvoice,
+  AdminPendingGroup,
   AdminRefundCase,
   AdminOverviewCounts,
   ApiErrorResponse,
@@ -50,6 +52,7 @@ import DashboardShell from '@/components/dashboard/DashboardShell';
 import PendingTab from '@/components/dashboard/PendingTab';
 import AgenciesTab from '@/components/dashboard/AgenciesTab';
 import BookingsTab from '@/components/dashboard/BookingsTab';
+import GroupsTab from '@/components/dashboard/GroupsTab';
 import PaymentProofsTab from '@/components/dashboard/PaymentProofsTab';
 import AuditTab from '@/components/dashboard/AuditTab';
 import InvoicesTab from '@/components/dashboard/InvoicesTab';
@@ -143,6 +146,10 @@ export default function AdminDashboard() {
   const allBookingsList = useAdminListQuery<AdminBooking>('/admin/bookings', 'all-bookings', activeTab === 'BOOKINGS', activeTab, debouncedQuery, currentPage);
   const allBookings = allBookingsList.data;
   const allBookingsPagination = allBookingsList.pagination;
+
+  const pendingGroupsList = useAdminListQuery<AdminPendingGroup>('/admin/groups/pending', 'pending-groups', activeTab === 'GROUPS', activeTab, debouncedQuery, currentPage);
+  const pendingGroups = pendingGroupsList.data;
+  const pendingGroupsPagination = pendingGroupsList.pagination;
 
   const pendingPaymentProofsList = useAdminListQuery<AdminPaymentProof>('/admin/pending-payments', 'pending-payments', activeTab === 'PAYMENT_PROOFS', activeTab, debouncedQuery, currentPage);
   const pendingPaymentProofs = pendingPaymentProofsList.data;
@@ -444,6 +451,11 @@ export default function AdminDashboard() {
       description: t('dashboard.meta.bookings.description'),
       searchPlaceholder: t('dashboard.meta.bookings.searchPlaceholder')
     },
+    GROUPS: {
+      title: t('dashboard.meta.groups.title'),
+      description: t('dashboard.meta.groups.description'),
+      searchPlaceholder: t('dashboard.meta.groups.searchPlaceholder')
+    },
     PAYMENT_PROOFS: {
       title: t('dashboard.meta.paymentProofs.title'),
       description: t('dashboard.meta.paymentProofs.description'),
@@ -487,6 +499,12 @@ export default function AdminDashboard() {
       label: t('dashboard.tabs.bookings'),
       icon: LayoutDashboard,
       count: overviewCounts?.bookings ?? allBookings.length,
+    },
+    {
+      key: 'GROUPS',
+      label: t('dashboard.tabs.groups'),
+      icon: Layers,
+      count: pendingGroupsPagination?.total ?? pendingGroups.length,
     },
     {
       key: 'PAYMENT_PROOFS',
@@ -585,6 +603,15 @@ export default function AdminDashboard() {
             bookingFeedback={bookingFeedback}
             isRefunding={refundBookingMutation.isPending}
             onRequestRefund={(booking) => setPendingConfirmation({ kind: 'refund-booking', booking })}
+          />
+        )}
+        {activeTab === 'GROUPS' && (
+          <GroupsTab
+            t={t}
+            groups={pendingGroups}
+            pagination={pendingGroupsPagination}
+            onPageChange={setCurrentPage}
+            paginationLabels={paginationLabels}
           />
         )}
         {activeTab === 'PAYMENT_PROOFS' && (

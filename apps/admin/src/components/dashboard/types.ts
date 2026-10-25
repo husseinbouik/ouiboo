@@ -4,7 +4,20 @@ import type {
   VerificationStatusType,
 } from '@ouiboo/types';
 
-export type AdminTab = 'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'PAYMENT_PROOFS' | 'AUDIT' | 'INVOICES' | 'REFUNDS';
+export type AdminTab = 'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'GROUPS' | 'PAYMENT_PROOFS' | 'AUDIT' | 'INVOICES' | 'REFUNDS';
+
+/** #423: a staged session still waiting for its minimum group. */
+export type AdminPendingGroup = {
+  sessionId: string;
+  tripTitle: string;
+  agencyName: string | null;
+  startDate: string;
+  confirmationDeadline: string | null;
+  minBookings: number;
+  paidParticipants: number;
+  depositPaidBookings: number;
+  currency: string;
+};
 
 export type AdminRefundCase = {
   id: string;
@@ -21,6 +34,8 @@ export type AdminRefundCase = {
   initiatedAt: string | null;
   completedAt: string | null;
   failureReason: string | null;
+  originalPaymentId?: string | null;
+  externalPaymentReference?: string | null;
   agency?: { id: string; companyName: string } | null;
   traveler?: { id: string; name: string | null; email: string } | null;
   booking?: {

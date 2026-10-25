@@ -575,6 +575,155 @@ export class RefundsService {
     }
 
     // ------------------------------------------------------------------
+    // #423: admin-only repairs of stuck refund cases. These deliberately
+    // bypass REFUND_TRANSITIONS (terminal states have no exits there):
+    // they exist so a wrongly-completed case, a wrong approved amount,
+    // or a wrong payment link never again needs a direct DB edit. Each
+    // repair is claimed atomically and audited in the same transaction.
+    // ------------------------------------------------------------------
+
+    async repairCaseAsAdmin(
+        actor: RefundActor,
+        caseId: string,
+        input: {
+            action: 'reopen' | 'correct-amount' | 'relink-payment';
+            reason: string;
+            approvedAmount?: string | number;
+            originalPaymentId?: string | null;
+            externalPaymentReference?: string;
+        },
+    ) {
+        const reason = input.reason?.trim();
+        if (!reason) {
+            throw new BadRequestException('A reason is required for admin refund repairs');
+        }
+        const refundCase = await this.loadCaseForActor(caseId, 'ADMIN', null);
+        const updated = await this.db.$transaction(async (tx) => {
+            const before = {
+                status: refundCase.status,
+                approvedAmount:
+                    refundCase.approvedAmount === null || refundCase.approvedAmount === undefined
+                        ? null
+                        : toMoneyString(refundCase.approvedAmount),
+                originalPaymentId: refundCase.originalPaymentId ?? null,
+                externalPaymentReference: refundCase.externalPaymentReference ?? null,
+                completedAt: refundCase.completedAt ?? null,
+            };
+            // Unchecked input: the relink repair writes the
+            // originalPaymentId foreign-key scalar, which the checked
+            // update-many input does not expose.
+            const patch: Prisma.RefundCaseUncheckedUpdateManyInput = {};
+            let reopened = false;
+
+            if (input.action === 'reopen') {
+                if (
+                    refundCase.status !== RefundCaseStatus.REFUND_COMPLETED
+                    && refundCase.status !== RefundCaseStatus.REFUND_REJECTED
+                ) {
+                    throw new BadRequestException(
+                        'Only a completed or rejected refund case can be reopened',
+                    );
+                }
+                patch.status = RefundCaseStatus.ELIGIBILITY_REVIEW;
+                patch.completedAt = null;
+                reopened = true;
+            } else if (input.action === 'correct-amount') {
+                if (refundCase.status === RefundCaseStatus.REFUND_REJECTED) {
+                    throw new BadRequestException(
+                        'Reopen the rejected case before correcting its amount',
+                    );
+                }
+                if (input.approvedAmount === undefined) {
+                    throw new BadRequestException(
+                        'approvedAmount is required to correct a refund amount',
+                    );
+                }
+                const approvedAmount = toMoneyDecimal(input.approvedAmount, 'approvedAmount');
+                const requested = toMoneyDecimal(refundCase.requestedAmount);
+                if (approvedAmount.lessThanOrEqualTo(0) || approvedAmount.greaterThan(requested)) {
+                    throw new BadRequestException(
+                        'approvedAmount must be greater than 0 and no more than the requested amount',
+                    );
+                }
+                patch.approvedAmount = approvedAmount;
+                if (refundCase.status === RefundCaseStatus.REFUND_COMPLETED) {
+                    // Correcting a completed case reopens it in the same
+                    // intervention: the recorded completion no longer
+                    // matches the corrected obligation, so the case goes
+                    // back through review instead of silently rewriting
+                    // history. The original completion stays in the audit
+                    // trail (and its ledger entry is a payment fact, not
+                    // rewritten either).
+                    patch.status = RefundCaseStatus.ELIGIBILITY_REVIEW;
+                    patch.completedAt = null;
+                    reopened = true;
+                }
+            } else if (input.action === 'relink-payment') {
+                if (input.originalPaymentId !== undefined) {
+                    if (input.originalPaymentId === null || input.originalPaymentId.trim() === '') {
+                        patch.originalPaymentId = null;
+                        patch.externalPaymentReference =
+                            input.externalPaymentReference?.trim() || null;
+                    } else {
+                        const payment = await tx.externalPayment.findUnique({
+                            where: { id: input.originalPaymentId.trim() },
+                        });
+                        if (!payment) {
+                            throw new BadRequestException('Original payment not found');
+                        }
+                        if (payment.bookingId !== refundCase.bookingId) {
+                            throw new BadRequestException(
+                                'Original payment belongs to a different booking',
+                            );
+                        }
+                        patch.originalPaymentId = payment.id;
+                        patch.externalPaymentReference =
+                            input.externalPaymentReference?.trim() || payment.externalReference;
+                    }
+                } else if (input.externalPaymentReference !== undefined) {
+                    patch.externalPaymentReference = input.externalPaymentReference.trim() || null;
+                } else {
+                    throw new BadRequestException(
+                        'Nothing to relink: provide originalPaymentId or externalPaymentReference',
+                    );
+                }
+            } else {
+                throw new BadRequestException(`Unknown refund repair action: ${input.action}`);
+            }
+
+            const claimed = await tx.refundCase.updateMany({
+                where: { id: refundCase.id, status: refundCase.status },
+                data: { ...patch, updatedBy: actor.id },
+            });
+            if (claimed.count !== 1) {
+                throw new ConflictException('Refund case was modified concurrently');
+            }
+            const after = await tx.refundCase.findUniqueOrThrow({
+                where: { id: refundCase.id },
+                include: CASE_INCLUDE,
+            });
+            await this.audit(tx, actor, 'ADMIN_REFUND_REPAIRED', refundCase.id, {
+                repairAction: input.action,
+                reason: reason.slice(0, 1000),
+                reopened,
+                before,
+                after: {
+                    status: after.status,
+                    approvedAmount:
+                        after.approvedAmount === null || after.approvedAmount === undefined
+                            ? null
+                            : toMoneyString(after.approvedAmount),
+                    originalPaymentId: after.originalPaymentId ?? null,
+                    externalPaymentReference: after.externalPaymentReference ?? null,
+                    completedAt: after.completedAt ?? null,
+                },
+            });
+            return after;
+        });
+        return serializeRefundCase(updated);
+    }
+
+    // ------------------------------------------------------------------
     // SLA sweep + escalation (plan §§15–16)
     // ------------------------------------------------------------------
 

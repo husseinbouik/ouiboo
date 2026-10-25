@@ -425,3 +425,169 @@ describe('RefundsService (#370)', () => {
         ).rejects.toBeInstanceOf(BadRequestException);
     });
 });
+
+describe('RefundsService admin repairs (#423)', () => {
+    const ADMIN = { id: 'admin-1', email: 'admin@example.test' };
+
+    function seedCase(db: any, overrides: Record<string, unknown> = {}) {
+        const row = {
+            id: 'case-1', bookingId: 'booking-1', travelerId: 'traveler-1', agencyId: 'agency-1',
+            requestedAmount: D('200.00'), approvedAmount: D('200.00'), currency: 'MAD',
+            status: 'REFUND_COMPLETED', initiatedAt: new Date(), providerRefundId: 'rf-1',
+            originalPaymentId: 'payment-1', externalPaymentReference: 'proof-1',
+            completedAt: new Date(),
+            ...overrides,
+        };
+        db._cases.set(row.id, row);
+        return row;
+    }
+
+    function repairAudits(db: any) {
+        return db.auditLog.create.mock.calls
+            .map((c: any) => c[0].data)
+            .filter((d: any) => d.action === 'ADMIN_REFUND_REPAIRED');
+    }
+
+    it('reopens a completed case into eligibility review and audits the repair with its reason', async () => {
+        const db = makeFakeDb();
+        seedAgency(db);
+        seedCase(db);
+        const { service } = makeService(db);
+
+        const updated = await service.repairCaseAsAdmin(ADMIN, 'case-1', {
+            action: 'reopen',
+            reason: 'Completed against the wrong booking',
+        });
+
+        expect(updated.status).toBe('ELIGIBILITY_REVIEW');
+        expect(updated.completedAt).toBeNull();
+        const audits = repairAudits(db);
+        expect(audits).toHaveLength(1);
+        expect(audits[0].targetId).toBe('case-1');
+        expect(audits[0].metadata).toMatchObject({
+            repairAction: 'reopen',
+            reason: 'Completed against the wrong booking',
+            reopened: true,
+            before: { status: 'REFUND_COMPLETED' },
+            after: { status: 'ELIGIBILITY_REVIEW', completedAt: null },
+        });
+    });
+
+    it('reopen is an admin repair path only: the public state machine still has no exit from terminal states', async () => {
+        const db = makeFakeDb();
+        seedAgency(db);
+        seedCase(db);
+        const { service } = makeService(db);
+
+        // The whitelisted transition engine refuses to leave REFUND_COMPLETED
+        // for any actor — the repair works precisely because it does not go
+        // through transitionInTransaction.
+        await expect(
+            service.initiate(ADMIN, 'ADMIN', null, 'case-1', {}),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(db._cases.get('case-1').status).toBe('REFUND_COMPLETED');
+    });
+
+    it('reopen refuses a case that is not terminal', async () => {
+        const db = makeFakeDb();
+        seedAgency(db);
+        seedCase(db, { status: 'AGENCY_ACTION_REQUIRED', completedAt: null });
+        const { service } = makeService(db);
+
+        await expect(service.repairCaseAsAdmin(ADMIN, 'case-1', {
+            action: 'reopen',
+            reason: 'Trying to reopen an active case',
+        })).rejects.toThrow('Only a completed or rejected');
+        expect(repairAudits(db)).toHaveLength(0);
+    });
+
+    it('correct-amount on a completed case fixes the amount and reopens it in the same intervention', async () => {
+        const db = makeFakeDb();
+        seedAgency(db);
+        seedCase(db);
+        const { service } = makeService(db);
+
+        const updated = await service.repairCaseAsAdmin(ADMIN, 'case-1', {
+            action: 'correct-amount',
+            reason: 'Approved amount recorded the balance instead of the deposit',
+            approvedAmount: 150,
+        });
+
+        expect(updated.approvedAmount).toBe('150.00');
+        expect(updated.status).toBe('ELIGIBILITY_REVIEW');
+        expect(updated.completedAt).toBeNull();
+        expect(repairAudits(db)[0].metadata).toMatchObject({
+            repairAction: 'correct-amount',
+            reopened: true,
+            before: { approvedAmount: '200.00' },
+            after: { approvedAmount: '150.00' },
+        });
+    });
+
+    it('correct-amount validates the amount and never exceeds the requested amount', async () => {
+        const db = makeFakeDb();
+        seedAgency(db);
+        seedCase(db, { status: 'ELIGIBILITY_REVIEW', completedAt: null });
+        const { service } = makeService(db);
+
+        await expect(service.repairCaseAsAdmin(ADMIN, 'case-1', {
+            action: 'correct-amount',
+            reason: 'Amount above the request',
+            approvedAmount: 250,
+        })).rejects.toThrow('no more than the requested amount');
+        await expect(service.repairCaseAsAdmin(ADMIN, 'case-1', {
+            action: 'correct-amount',
+            reason: 'Missing the amount entirely',
+        })).rejects.toThrow('approvedAmount is required');
+    });
+
+    it('relink-payment points the case at another payment of the same booking', async () => {
+        const db = makeFakeDb();
+        seedAgency(db);
+        seedDepositPayment(db);
+        seedDepositPayment(db, { id: 'payment-2', stage: 'BALANCE', externalReference: 'proof-2' });
+        seedCase(db, { status: 'ELIGIBILITY_REVIEW', completedAt: null });
+        const { service } = makeService(db);
+
+        const updated = await service.repairCaseAsAdmin(ADMIN, 'case-1', {
+            action: 'relink-payment',
+            reason: 'Case was linked to the deposit instead of the balance payment',
+            originalPaymentId: 'payment-2',
+        });
+
+        expect(updated.originalPaymentId).toBe('payment-2');
+        expect(updated.externalPaymentReference).toBe('proof-2');
+        expect(repairAudits(db)[0].metadata).toMatchObject({
+            repairAction: 'relink-payment',
+            before: { originalPaymentId: 'payment-1' },
+            after: { originalPaymentId: 'payment-2', externalPaymentReference: 'proof-2' },
+        });
+    });
+
+    it('relink-payment refuses a payment that belongs to a different booking', async () => {
+        const db = makeFakeDb();
+        seedAgency(db);
+        seedDepositPayment(db, { id: 'payment-9', bookingId: 'booking-2' });
+        seedCase(db, { status: 'ELIGIBILITY_REVIEW', completedAt: null });
+        const { service } = makeService(db);
+
+        await expect(service.repairCaseAsAdmin(ADMIN, 'case-1', {
+            action: 'relink-payment',
+            reason: 'Wrong payment id supplied',
+            originalPaymentId: 'payment-9',
+        })).rejects.toThrow('different booking');
+    });
+
+    it('every repair requires a reason', async () => {
+        const db = makeFakeDb();
+        seedAgency(db);
+        seedCase(db);
+        const { service } = makeService(db);
+
+        await expect(service.repairCaseAsAdmin(ADMIN, 'case-1', {
+            action: 'reopen',
+            reason: '   ',
+        })).rejects.toThrow('reason is required');
+        expect(repairAudits(db)).toHaveLength(0);
+    });
+});

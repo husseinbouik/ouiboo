@@ -1,5 +1,6 @@
 import { BookingStatus, LicenceStatus, PayoutStatus, VerificationStatus } from '@ouiboo/types';
 import {
+  getAdminAuditActionLabel,
   getAdminBookingBadgeLabel,
   getAdminLicenceBadgeClass,
   getAdminLicenceBadgeLabel,
@@ -61,5 +62,35 @@ describe('admin status mappers', () => {
       licenceExpiry: '2999-01-01T00:00:00.000Z',
     })).toBe(LicenceStatus.Verified);
     expect(getEffectiveLicenceStatus({})).toBe(LicenceStatus.NotSubmitted);
+  });
+});
+describe('admin audit action labels (#423)', () => {
+  const t = (key: string) => `translated:${key}`;
+
+  it('maps every intervention audit action to its label key', () => {
+    expect(getAdminAuditActionLabel('ADMIN_GROUP_FORCE_CONFIRMED', t)).toBe(
+      'translated:dashboard.auditActions.ADMIN_GROUP_FORCE_CONFIRMED',
+    );
+    expect(getAdminAuditActionLabel('ADMIN_GROUP_CLOSED', t)).toBe(
+      'translated:dashboard.auditActions.ADMIN_GROUP_CLOSED',
+    );
+    expect(getAdminAuditActionLabel('ADMIN_DEADLINE_EXTENDED', t)).toBe(
+      'translated:dashboard.auditActions.ADMIN_DEADLINE_EXTENDED',
+    );
+    expect(getAdminAuditActionLabel('ADMIN_BOOKING_REPAIRED', t)).toBe(
+      'translated:dashboard.auditActions.ADMIN_BOOKING_REPAIRED',
+    );
+    expect(getAdminAuditActionLabel('ADMIN_REFUND_REPAIRED', t)).toBe(
+      'translated:dashboard.auditActions.ADMIN_REFUND_REPAIRED',
+    );
+  });
+
+  it('keeps unknown actions raw, with or without a translator', () => {
+    expect(getAdminAuditActionLabel('AGENCY_VERIFIED', t)).toBe('AGENCY_VERIFIED');
+    expect(getAdminAuditActionLabel('AGENCY_VERIFIED')).toBe('AGENCY_VERIFIED');
+  });
+
+  it('keeps known actions raw when no translator is provided', () => {
+    expect(getAdminAuditActionLabel('ADMIN_GROUP_CLOSED')).toBe('ADMIN_GROUP_CLOSED');
   });
 });

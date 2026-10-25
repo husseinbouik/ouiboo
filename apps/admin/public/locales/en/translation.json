@@ -49,7 +49,8 @@
       "paymentProofs": "Payment Proofs",
       "audit": "Audit Log",
       "invoices": "Invoices",
-      "refunds": "Refunds"
+      "refunds": "Refunds",
+      "groups": "Pending Groups"
     },
     "meta": {
       "pending": {
@@ -86,6 +87,11 @@
         "searchPlaceholder": "Search refund cases...",
         "description": "Track traveller refund cases across agencies. Refunds are paid by agencies from their own merchant accounts — overdue cases restrict new bookings for that agency.",
         "title": "Refund Cases"
+      },
+      "groups": {
+        "title": "Pending Groups",
+        "description": "Staged sessions still waiting for their minimum group. Force-confirm, extend the deadline, or close a group — every intervention needs a reason and is written to the audit log.",
+        "searchPlaceholder": "Search trips..."
       }
     },
     "sections": {
@@ -312,6 +318,65 @@
       "empty": "No refund cases",
       "dueBy": "Due by",
       "requestedAt": "Requested"
+    },
+    "groups": {
+      "empty": "No groups are waiting",
+      "emptyHint": "Every staged session has either reached its minimum or been decided.",
+      "paidOfMin": "{{paid}} of {{min}} participants paid",
+      "depositPaidBookings": "{{count}} deposit-paid bookings",
+      "deadline": "Confirmation deadline",
+      "starts": "Session starts",
+      "actions": {
+        "forceConfirm": "Force confirm",
+        "extendDeadline": "Extend deadline",
+        "closeGroup": "Close group"
+      },
+      "forceConfirmTitle": "Force-confirm this group?",
+      "forceConfirmDescription": "The minimum and the deadline are ignored: deposit-paid bookings become confirmed and their balances fall due. Travellers were promised the minimum — only do this with the agency's agreement.",
+      "closeTitle": "Close this group?",
+      "closeDescription": "The group is marked not confirmed. Deposit-paid bookings become refund-due and refund cases are created immediately; unpaid bookings are cancelled.",
+      "extendTitle": "Extend the confirmation deadline",
+      "extendDescription": "The session deadline and every booking plan snapshot move together. The new deadline must be before the session start date.",
+      "newDeadline": "New deadline",
+      "newDeadlineRequired": "Please pick the new deadline.",
+      "success": "Intervention applied and recorded in the audit log."
+    },
+    "interventions": {
+      "reasonLabel": "Reason (required)",
+      "reasonPlaceholder": "Why is this intervention needed? This is recorded in the audit log.",
+      "auditNote": "This action is recorded in the audit log together with your reason and the before/after state.",
+      "cancel": "Cancel",
+      "failed": "The intervention failed. Please try again.",
+      "repair": "Repair",
+      "repairActionLabel": "Repair action",
+      "bookingRepair": {
+        "title": "Repair booking",
+        "description": "Named repairs only — there is no free-form status change. The result is recorded in the audit log.",
+        "resync-payment-state": "Resync payment state",
+        "resync-payment-stateHint": "Recompute the booking status and payment status from its payment plan, verified payments, and refund cases.",
+        "requeue-proof-review": "Requeue proof review",
+        "requeue-proof-reviewHint": "A pending payment proof whose booking left the validation queue becomes verifiable again.",
+        "open-refund-case": "Open refund case",
+        "open-refund-caseHint": "Create the missing refund case for a booking whose plan is refund-due."
+      },
+      "refundRepair": {
+        "title": "Repair refund case",
+        "description": "Admin-only repairs for stuck refund cases. The original history stays in the audit log.",
+        "reopen": "Reopen case",
+        "correct-amount": "Correct approved amount",
+        "relink-payment": "Relink original payment",
+        "amountLabel": "Approved amount",
+        "paymentIdLabel": "Original payment ID",
+        "paymentIdHint": "Must be a payment of the same booking. Leave empty to only change the reference.",
+        "referenceLabel": "External payment reference"
+      }
+    },
+    "auditActions": {
+      "ADMIN_GROUP_FORCE_CONFIRMED": "Group force-confirmed by admin",
+      "ADMIN_GROUP_CLOSED": "Group closed by admin",
+      "ADMIN_DEADLINE_EXTENDED": "Confirmation deadline extended by admin",
+      "ADMIN_BOOKING_REPAIRED": "Booking repaired by admin",
+      "ADMIN_REFUND_REPAIRED": "Refund case repaired by admin"
     }
   },
   "meta": {

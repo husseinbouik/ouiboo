@@ -6,6 +6,7 @@ import { Button, Card, Pagination } from '@ouiboo/ui';
 import type { PaginationMeta } from '@ouiboo/utils';
 import type { AdminAuditLog, FeedbackState } from './types';
 import { formatDateTime, renderAuditMetadata } from './formatters';
+import { getAdminAuditActionLabel } from '../../app/status-mappers';
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -97,7 +98,7 @@ export default function AuditTab({
                   <p className="text-muted-foreground">{log.actorId || t('dashboard.labels.noActorId')}</p>
                 </td>
                 <td className="px-6 py-4 text-sm font-semibold text-foreground">
-                  {log.action}
+                  {getAdminAuditActionLabel(log.action, t)}
                 </td>
                 <td className="px-6 py-4 text-sm text-muted-foreground">
                   <p className="font-medium text-foreground">{log.targetType}</p>
