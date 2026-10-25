@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
     BookingPaymentPlanStatus,
     BookingPaymentStatus,
@@ -375,6 +375,129 @@ export class StagedPaymentsService {
             `Group confirmation deadlines evaluated: ${sessions.length} sessions (${confirmed} confirmed, ${notConfirmed} not confirmed)`,
         );
         return { evaluated: sessions.length, confirmed, notConfirmed };
+    }
+
+    // ------------------------------------------------------------------
+    // #423: admin stuck-state interventions. These are thin, guarded
+    // wrappers over the private group state machine below — the admin
+    // layer (AdminInterventionsService) owns the transaction, the
+    // mandatory reason, and the AuditLog row; these methods only move
+    // state, exactly like the proof-decision and deadline paths do.
+    // ------------------------------------------------------------------
+
+    /**
+     * Force-confirm a session still waiting for its minimum group,
+     * deliberately ignoring both the deadline and the minimum count —
+     * that override is the intervention. Effects are the standard
+     * confirmation effects (see confirmGroupInTransaction).
+     */
+    async forceConfirmGroupInTransaction(
+        tx: Tx,
+        sessionId: string,
+        now: Date = new Date(),
+    ): Promise<{ participants: number; minBookings: number }> {
+        const session = await this.loadPendingGroupSession(tx, sessionId);
+        const participants = await this.countGroupParticipants(tx, sessionId);
+        await this.confirmGroupInTransaction(tx, session, now);
+        return { participants, minBookings: session.minBookings };
+    }
+
+    /**
+     * Close a pending-minimum group as NOT_CONFIRMED. Deposit-paid
+     * bookings become refund-due and their RefundCase is created in the
+     * same transaction (via failGroupInTransaction), never left to the
+     * cron backstop; unpaid bookings are cancelled.
+     */
+    async closeGroupInTransaction(
+        tx: Tx,
+        sessionId: string,
+    ): Promise<{ depositPaidBookings: number; unpaidBookings: number }> {
+        const session = await this.loadPendingGroupSession(tx, sessionId);
+        const plans = await tx.bookingPaymentPlan.findMany({
+            where: {
+                sessionId,
+                status: {
+                    in: [
+                        BookingPaymentPlanStatus.DEPOSIT_PAID,
+                        BookingPaymentPlanStatus.DEPOSIT_DUE,
+                    ],
+                },
+            },
+            include: { booking: { select: { status: true } } },
+        });
+        const depositPaidBookings = plans.filter(
+            (plan) => plan.status === BookingPaymentPlanStatus.DEPOSIT_PAID,
+        ).length;
+        const unpaidBookings = plans.filter(
+            (plan) => plan.status === BookingPaymentPlanStatus.DEPOSIT_DUE
+                && plan.booking.status === BookingStatus.PENDING,
+        ).length;
+        await this.failGroupInTransaction(tx, session);
+        return { depositPaidBookings, unpaidBookings };
+    }
+
+    /**
+     * Move a pending group's confirmation deadline. The session row and
+     * every non-terminal plan snapshot move together — the plan snapshot
+     * is what refund/eligibility logic reads, so the two must never
+     * diverge. The new deadline must be in the future and strictly
+     * before the session start date.
+     */
+    async extendConfirmationDeadlineInTransaction(
+        tx: Tx,
+        sessionId: string,
+        newDeadline: Date,
+        now: Date = new Date(),
+    ): Promise<{ previousDeadline: Date | null; newDeadline: Date; plansUpdated: number }> {
+        const session = await this.loadPendingGroupSession(tx, sessionId);
+        if (newDeadline.getTime() <= now.getTime()) {
+            throw new BadRequestException('The new confirmation deadline must be in the future');
+        }
+        if (newDeadline.getTime() >= session.startDate.getTime()) {
+            throw new BadRequestException(
+                'The confirmation deadline cannot be on or after the session start date',
+            );
+        }
+        const previousDeadline = session.confirmationDeadline;
+        await tx.tripSession.update({
+            where: { id: sessionId },
+            data: { confirmationDeadline: newDeadline },
+        });
+        const plans = await tx.bookingPaymentPlan.updateMany({
+            where: {
+                sessionId,
+                status: {
+                    in: [
+                        BookingPaymentPlanStatus.DEPOSIT_DUE,
+                        BookingPaymentPlanStatus.DEPOSIT_PAID,
+                        BookingPaymentPlanStatus.BALANCE_DUE,
+                        BookingPaymentPlanStatus.FULLY_PAID,
+                        BookingPaymentPlanStatus.REFUND_DUE,
+                    ],
+                },
+            },
+            data: { confirmationDeadline: newDeadline },
+        });
+        return { previousDeadline, newDeadline, plansUpdated: plans.count };
+    }
+
+    private async loadPendingGroupSession(tx: Tx, sessionId: string) {
+        const session = await tx.tripSession.findUnique({ where: { id: sessionId } });
+        if (!session) {
+            throw new NotFoundException('Trip session not found');
+        }
+        if (session.groupStatus !== SessionGroupStatus.PENDING_MINIMUM) {
+            throw new BadRequestException('Session group is not pending its minimum');
+        }
+        return session;
+    }
+
+    private async countGroupParticipants(tx: Tx, sessionId: string): Promise<number> {
+        const countedPlans = await tx.bookingPaymentPlan.findMany({
+            where: { sessionId, status: { in: COUNTED_PLAN_STATUSES } },
+            include: { booking: { select: { guestsCount: true } } },
+        });
+        return countedPlans.reduce((sum, plan) => sum + plan.booking.guestsCount, 0);
     }
 
     private async confirmGroupInTransaction(

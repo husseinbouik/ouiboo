@@ -49,7 +49,8 @@
       "paymentProofs": "Justificatifs de paiement",
       "audit": "Journal d'audit",
       "invoices": "Factures",
-      "refunds": "Remboursements"
+      "refunds": "Remboursements",
+      "groups": "Groupes en attente"
     },
     "meta": {
       "pending": {
@@ -86,6 +87,11 @@
         "searchPlaceholder": "Rechercher des dossiers de remboursement...",
         "description": "Suivez les dossiers de remboursement des voyageurs pour toutes les agences. Les remboursements sont payés par les agences depuis leurs propres comptes marchands — les dossiers en retard restreignent les nouvelles réservations de l'agence.",
         "title": "Dossiers de remboursement"
+      },
+      "groups": {
+        "title": "Groupes en attente",
+        "description": "Sessions à paiement échelonné en attente de leur groupe minimum. Forcez la confirmation, prolongez le délai ou fermez un groupe — chaque intervention exige un motif et est inscrite au journal d'audit.",
+        "searchPlaceholder": "Rechercher des voyages..."
       }
     },
     "sections": {
@@ -312,6 +318,65 @@
       "empty": "Aucun dossier de remboursement",
       "dueBy": "Échéance",
       "requestedAt": "Demandé le"
+    },
+    "groups": {
+      "empty": "Aucun groupe en attente",
+      "emptyHint": "Toutes les sessions échelonnées ont atteint leur minimum ou ont été tranchées.",
+      "paidOfMin": "{{paid}} participants sur {{min}} ont payé",
+      "depositPaidBookings": "{{count}} réservations avec acompte payé",
+      "deadline": "Date limite de confirmation",
+      "starts": "Début de la session",
+      "actions": {
+        "forceConfirm": "Forcer la confirmation",
+        "extendDeadline": "Prolonger le délai",
+        "closeGroup": "Fermer le groupe"
+      },
+      "forceConfirmTitle": "Forcer la confirmation de ce groupe ?",
+      "forceConfirmDescription": "Le minimum et le délai sont ignorés : les réservations avec acompte deviennent confirmées et leurs soldes deviennent exigibles. Les voyageurs se sont vu promettre le minimum — ne le faites qu'avec l'accord de l'agence.",
+      "closeTitle": "Fermer ce groupe ?",
+      "closeDescription": "Le groupe est marqué non confirmé. Les réservations avec acompte deviennent remboursables et les dossiers de remboursement sont créés immédiatement ; les réservations impayées sont annulées.",
+      "extendTitle": "Prolonger la date limite de confirmation",
+      "extendDescription": "Le délai de la session et l'instantané de chaque plan de réservation changent ensemble. La nouvelle date limite doit précéder la date de début de la session.",
+      "newDeadline": "Nouvelle date limite",
+      "newDeadlineRequired": "Veuillez choisir la nouvelle date limite.",
+      "success": "Intervention appliquée et inscrite au journal d'audit."
+    },
+    "interventions": {
+      "reasonLabel": "Motif (obligatoire)",
+      "reasonPlaceholder": "Pourquoi cette intervention est-elle nécessaire ? Elle sera inscrite au journal d'audit.",
+      "auditNote": "Cette action est inscrite au journal d'audit avec votre motif et l'état avant/après.",
+      "cancel": "Annuler",
+      "failed": "L'intervention a échoué. Veuillez réessayer.",
+      "repair": "Réparer",
+      "repairActionLabel": "Action de réparation",
+      "bookingRepair": {
+        "title": "Réparer la réservation",
+        "description": "Réparations nommées uniquement — aucune modification libre de statut. Le résultat est inscrit au journal d'audit.",
+        "resync-payment-state": "Resynchroniser l'état de paiement",
+        "resync-payment-stateHint": "Recalculer le statut de la réservation et du paiement à partir de son plan, des paiements vérifiés et des dossiers de remboursement.",
+        "requeue-proof-review": "Remettre la preuve en file de revue",
+        "requeue-proof-reviewHint": "Une preuve de paiement en attente dont la réservation a quitté la file de validation redevient vérifiable.",
+        "open-refund-case": "Ouvrir un dossier de remboursement",
+        "open-refund-caseHint": "Créer le dossier de remboursement manquant pour une réservation dont le plan est en remboursement dû."
+      },
+      "refundRepair": {
+        "title": "Réparer le dossier de remboursement",
+        "description": "Réparations réservées à l'administrateur pour les dossiers bloqués. L'historique d'origine reste dans le journal d'audit.",
+        "reopen": "Rouvrir le dossier",
+        "correct-amount": "Corriger le montant approuvé",
+        "relink-payment": "Relier le paiement d'origine",
+        "amountLabel": "Montant approuvé",
+        "paymentIdLabel": "ID du paiement d'origine",
+        "paymentIdHint": "Doit être un paiement de la même réservation. Laissez vide pour ne changer que la référence.",
+        "referenceLabel": "Référence du paiement externe"
+      }
+    },
+    "auditActions": {
+      "ADMIN_GROUP_FORCE_CONFIRMED": "Groupe confirmé de force par l'administrateur",
+      "ADMIN_GROUP_CLOSED": "Groupe fermé par l'administrateur",
+      "ADMIN_DEADLINE_EXTENDED": "Date limite de confirmation prolongée par l'administrateur",
+      "ADMIN_BOOKING_REPAIRED": "Réservation réparée par l'administrateur",
+      "ADMIN_REFUND_REPAIRED": "Dossier de remboursement réparé par l'administrateur"
     }
   },
   "meta": {

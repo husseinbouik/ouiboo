@@ -177,3 +177,22 @@ export const getAdminPayoutBadgeMeta = (status: PayoutStatusType, t?: Translate)
 };
 
 export const isRejectedPayout = (status: PayoutStatusType) => status === PayoutStatus.Rejected;
+
+// #423: human-readable labels for the admin intervention audit actions,
+// so the audit trail reads as operations, not constants. Unknown actions
+// keep their raw value.
+const AUDIT_ACTION_KEYS: Record<string, string> = {
+  ADMIN_GROUP_FORCE_CONFIRMED: 'dashboard.auditActions.ADMIN_GROUP_FORCE_CONFIRMED',
+  ADMIN_GROUP_CLOSED: 'dashboard.auditActions.ADMIN_GROUP_CLOSED',
+  ADMIN_DEADLINE_EXTENDED: 'dashboard.auditActions.ADMIN_DEADLINE_EXTENDED',
+  ADMIN_BOOKING_REPAIRED: 'dashboard.auditActions.ADMIN_BOOKING_REPAIRED',
+  ADMIN_REFUND_REPAIRED: 'dashboard.auditActions.ADMIN_REFUND_REPAIRED',
+};
+
+export const getAdminAuditActionLabel = (action: string, t?: Translate) => {
+  const key = AUDIT_ACTION_KEYS[action];
+  if (key && t) {
+    return t(key);
+  }
+  return action;
+};

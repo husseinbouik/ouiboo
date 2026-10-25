@@ -12,6 +12,7 @@ import {
     FailRefundDto,
     InitiateRefundDto,
     RejectRefundDto,
+    RepairRefundCaseDto,
 } from './dto/refund-actions.dto';
 
 @ApiTags('AdminRefunds')
@@ -83,5 +84,11 @@ export class AdminRefundsController {
     @ApiOperation({ summary: 'Report a refund attempt as failed (#370)' })
     fail(@Request() req, @Param('id') id: string, @Body() dto: FailRefundDto) {
         return this.refundsService.fail(this.actor(req), 'ADMIN', null, id, dto);
+    }
+
+    @Post(':id/repair')
+    @ApiOperation({ summary: 'Admin-only repair of a stuck refund case: reopen a terminal case, correct its amount, or relink its payment (#423)' })
+    repair(@Request() req, @Param('id') id: string, @Body() dto: RepairRefundCaseDto) {
+        return this.refundsService.repairCaseAsAdmin(this.actor(req), id, dto);
     }
 }
