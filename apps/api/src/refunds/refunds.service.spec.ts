@@ -1503,3 +1503,92 @@ describe('RefundsService traveller notification (#419)', () => {
         expect(due.travelerNotifiedAt).toBeInstanceOf(Date);
     });
 });
+
+describe('RefundsService traveller notification branches (#419)', () => {
+    it('sends without trip title or due date when the case lacks them', async () => {
+        const db = makeFakeDb();
+        const refundCase: any = {
+            id: 'case-notify-bare',
+            bookingId: 'booking-9',
+            travelerId: 'traveler-9',
+            agencyId: 'agency-1',
+            status: 'AGENCY_ACTION_REQUIRED',
+            dedupeKey: 'refund-due:booking-9',
+            requestedAmount: D('150.00'),
+            approvedAmount: null,
+            currency: 'MAD',
+            refundDueAt: null,
+            travelerNotifiedAt: null,
+            traveler: { email: 'bare@example.test', name: null },
+            agency: { companyName: '' },
+            booking: { session: { template: { title: '' } } },
+        };
+        db._cases.set(refundCase.id, refundCase);
+        const { service, email } = makeService(db);
+
+        const sent = await service.notifyTravelerRefundCaseOpened(refundCase.id);
+
+        expect(sent).toBe(true);
+        const [, , html] = (email.sendEmail as jest.Mock).mock.calls[0];
+        expect(html).toContain('150');
+        expect(html).toContain('the agency');
+        expect(html).not.toContain('agency has until');
+    });
+
+    it('does not send when another caller claimed the stamp first', async () => {
+        const db = makeFakeDb();
+        const refundCase: any = {
+            id: 'case-notify-race',
+            bookingId: 'booking-10',
+            travelerId: 'traveler-10',
+            agencyId: 'agency-1',
+            status: 'AGENCY_ACTION_REQUIRED',
+            dedupeKey: 'refund-due:booking-10',
+            requestedAmount: D('150.00'),
+            approvedAmount: D('150.00'),
+            currency: 'MAD',
+            refundDueAt: new Date('2027-01-22T09:00:00.000Z'),
+            travelerNotifiedAt: null,
+            traveler: { email: 'race@example.test', name: 'Sara' },
+            agency: { companyName: 'Atlas Adventures SARL' },
+            booking: { session: { template: { title: 'Atlas Trek' } } },
+        };
+        db._cases.set(refundCase.id, refundCase);
+        (db.refundCase.updateMany as jest.Mock).mockResolvedValueOnce({ count: 0 });
+        const { service, email } = makeService(db);
+
+        const sent = await service.notifyTravelerRefundCaseOpened(refundCase.id);
+
+        expect(sent).toBe(false);
+        expect(email.sendEmail).not.toHaveBeenCalled();
+    });
+
+    it('session sweep returns 0 with no refund-due plans and skips non-cascade cases', async () => {
+        const db = makeFakeDb();
+        const { service, email } = makeService(db);
+
+        await expect(service.notifyTravelersRefundDueForSession('session-none')).resolves.toBe(0);
+
+        const foreign: any = {
+            id: 'case-foreign',
+            bookingId: 'booking-11',
+            travelerId: 'traveler-11',
+            agencyId: 'agency-1',
+            status: 'AGENCY_ACTION_REQUIRED',
+            dedupeKey: 'manual:booking-11',
+            requestedAmount: D('10.00'),
+            approvedAmount: D('10.00'),
+            currency: 'MAD',
+            refundDueAt: null,
+            travelerNotifiedAt: null,
+            traveler: { email: 'foreign@example.test', name: null },
+            agency: { companyName: 'Atlas' },
+            booking: { session: { template: { title: 'Trek' } } },
+        };
+        db._cases.set(foreign.id, foreign);
+        db._plans.push({ bookingId: 'booking-11', sessionId: 'session-1', status: 'REFUND_DUE' });
+
+        await expect(service.notifyTravelersRefundDueForSession('session-1')).resolves.toBe(0);
+        expect(email.sendEmail).not.toHaveBeenCalled();
+    });
+});
