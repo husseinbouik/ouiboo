@@ -4,14 +4,22 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import { VerificationStatus, type BookingDetails } from '@ouiboo/types';
+import type { BookingDetails } from '@ouiboo/types';
 import { formatCurrency } from '@ouiboo/utils';
-import { getFileTypeFromUrl } from './paymentProofUtils';
+import {
+  getExpectedStageAmount,
+  getFileTypeFromUrl,
+  getProofReviewStage,
+} from './paymentProofUtils';
 import { PaymentProofStatusBanner } from './PaymentProofStatusBanner';
 import { PaymentProofBookingCard } from './PaymentProofBookingCard';
 import { PaymentProofViewer } from './PaymentProofViewer';
 import { PaymentProofRejectionForm } from './PaymentProofRejectionForm';
 import { PaymentProofFooter } from './PaymentProofFooter';
+import {
+  PaymentProofBankConfirmation,
+  type BankConfirmationPayload,
+} from './PaymentProofBankConfirmation';
 
 interface PaymentProofReviewModalProps {
   isOpen: boolean;
@@ -19,17 +27,30 @@ interface PaymentProofReviewModalProps {
   booking?: BookingDetails | null;
   onApprove?: () => void;
   onReject?: (reason: string) => void;
+  onConfirmBankPayment?: (payload: BankConfirmationPayload) => void;
   isLoading?: boolean;
+  isConfirming?: boolean;
+  actionError?: string | null;
   readOnly?: boolean;
 }
 
+/**
+ * #422 (Council P0-20): two-step manual payment review.
+ * Step 1 (proof PENDING): accept or reject the proof image — accepting is
+ * not settlement. Step 2 (proof ACCEPTED): the bank-confirmation panel —
+ * only confirming the observed bank credit settles the payment. VERIFIED
+ * (bank-confirmed) and REJECTED proofs are final and read-only.
+ */
 export function PaymentProofReviewModal({
   isOpen,
   onClose,
   booking,
   onApprove,
   onReject,
+  onConfirmBankPayment,
   isLoading = false,
+  isConfirming = false,
+  actionError = null,
   readOnly = false,
 }: PaymentProofReviewModalProps) {
   const { t, i18n } = useTranslation();
@@ -42,8 +63,20 @@ export function PaymentProofReviewModal({
 
   if (!booking) return null;
 
-  const hasFinalReviewStatus = booking.paymentProof?.status && booking.paymentProof.status !== VerificationStatus.Pending;
-  const isReadOnly = Boolean(readOnly || hasFinalReviewStatus);
+  const stage = getProofReviewStage(booking.paymentProof?.status);
+  const isFinalStage = stage === 'final';
+  const isBankConfirmationStage = stage === 'bank-confirmation';
+  const isReadOnly = Boolean(readOnly || isFinalStage);
+  // In the bank-confirmation stage the only action lives in the panel, so
+  // the footer degrades to close-only (same as read-only).
+  const footerReadOnly = isReadOnly || isBankConfirmationStage;
+  let headerSubtitle = t('paymentProof.reviewAndApprove');
+  if (isReadOnly) {
+    headerSubtitle = t('paymentProof.viewOnly');
+  }
+  if (isBankConfirmationStage) {
+    headerSubtitle = t('paymentProof.acceptedSubtitle');
+  }
   const tripTitle = booking.session.template.title || t('paymentProof.trip');
   const travelerName = booking.fullName || booking.traveler?.name || t('paymentProof.traveler');
   const amountText = formatCurrency(booking.totalAmount, booking.currency, i18n.language);
@@ -134,9 +167,7 @@ export function PaymentProofReviewModal({
                   {t('paymentProof.reviewTitle')}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {isReadOnly
-                    ? t('paymentProof.viewOnly')
-                    : t('paymentProof.reviewAndApprove')}
+                  {headerSubtitle}
                 </p>
               </div>
               <button
@@ -148,8 +179,8 @@ export function PaymentProofReviewModal({
               </button>
             </div>
 
-            {/* Status Banner */}
-            {isReadOnly && <PaymentProofStatusBanner booking={booking} />}
+            {/* Status Banner — final states and the accepted intermediate */}
+            {(isFinalStage || isBankConfirmationStage) && <PaymentProofStatusBanner booking={booking} />}
 
             {/* Content */}
             <div className="p-6 space-y-6">
@@ -170,8 +201,25 @@ export function PaymentProofReviewModal({
                 onRetry={handleImageRetry}
               />
 
+              {actionError ? (
+                <p role="alert" className="text-sm font-medium text-danger">
+                  {actionError}
+                </p>
+              ) : null}
+
+              {/* Step 2 — bank confirmation (proof accepted, not settled) */}
+              {isBankConfirmationStage && !readOnly && onConfirmBankPayment && (
+                <PaymentProofBankConfirmation
+                  key={booking.id}
+                  expectedAmount={getExpectedStageAmount(booking)}
+                  currency={booking.currency}
+                  isLoading={isConfirming}
+                  onConfirm={onConfirmBankPayment}
+                />
+              )}
+
               {/* Rejection Reason Input */}
-              {showRejectInput && !isReadOnly && (
+              {showRejectInput && !isReadOnly && !isBankConfirmationStage && (
                 <PaymentProofRejectionForm
                   rejectionReason={rejectionReason}
                   rejectionError={rejectionError}
@@ -187,7 +235,7 @@ export function PaymentProofReviewModal({
             </div>
 
             <PaymentProofFooter
-              isReadOnly={isReadOnly}
+              isReadOnly={footerReadOnly}
               isLoading={isLoading}
               showRejectInput={showRejectInput}
               onClose={handleClose}

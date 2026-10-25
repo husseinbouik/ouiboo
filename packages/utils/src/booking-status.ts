@@ -191,6 +191,18 @@ export const getAgencyProofStatusLabel = (status?: VerificationStatusType | null
     };
   }
 
+  // #422 (Council P0-20): the proof image was accepted, but the payment is
+  // NOT settled — settlement requires the agency's bank confirmation.
+  // This state must never read as verified/paid.
+  if (status === VerificationStatus.Accepted) {
+    return {
+      label: 'Accepted',
+      className: 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-400/20',
+      icon: 'accepted',
+      displayLabel: 'Accepted — Pending Bank Confirmation',
+    };
+  }
+
   return {
     label: 'Pending',
     className: 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-400/20',
