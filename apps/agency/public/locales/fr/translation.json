@@ -243,7 +243,7 @@
       "validFromLabel": "Début de couverture",
       "expiryLabel": "Date d’expiration de l’assurance",
       "expiresOn": "valable jusqu’au {{date}}",
-      "coverageLimitLabel": "Plafond de couverture (MAD)",
+      "coverageLimitLabel": "Plafond de couverture",
       "coverageLimitPlaceholder": "ex. 500000",
       "certificateLabel": "Certificat d’assurance",
       "certificateRequired": "Un dossier d’assurance n’est complet qu’avec l’assureur, le numéro de police, le nom de l’assuré, la date d’expiration et le certificat téléversé.",
