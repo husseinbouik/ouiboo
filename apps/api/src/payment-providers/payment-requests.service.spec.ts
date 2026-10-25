@@ -28,7 +28,14 @@ function makeHarness(booking: any, profile: any) {
     const attemptsByKey = new Map<string, any>();
     const db: any = {
         booking: { findUnique: jest.fn(async () => booking) },
-        agencyProfile: { findUnique: jest.fn(async () => ({ bankDetails: 'RIB 999' })) },
+        agencyProfile: {
+            findUnique: jest.fn(async () => ({
+                bankDetails: 'RIB 999',
+                // #421: instructions flow only for a verified destination.
+                bankDetailsStatus: 'VERIFIED',
+                bankDetailsVerifiedAt: new Date('2026-10-20T00:00:00Z'),
+            })),
+        },
         agencyPaymentProfile: { findUnique: jest.fn(async () => profile) },
         paymentAttempt: {
             findUnique: jest.fn(async ({ where }: any) =>
