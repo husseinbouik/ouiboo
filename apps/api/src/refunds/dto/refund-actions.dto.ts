@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsNumber, IsOptional, IsString, MaxLength, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsIn, IsNumber, IsOptional, IsString, MaxLength, Min, MinLength } from 'class-validator';
 
 export class RequestRefundDto {
     @ApiProperty({ example: 'booking-id' })
@@ -12,6 +12,11 @@ export class RequestRefundDto {
     @IsString()
     @MaxLength(500)
     reason?: string;
+
+    @ApiProperty({ required: false, example: true, description: '#417: mark the request as a cancellation — the amount is then computed from the booking’s cancellation scale (snapshot taken at booking time) instead of the full amount paid.' })
+    @IsOptional()
+    @IsBoolean()
+    cancellation?: boolean;
 }
 
 export class CreateRefundCaseDto {

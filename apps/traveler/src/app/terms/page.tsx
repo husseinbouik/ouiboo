@@ -19,6 +19,8 @@ export default function TravelerTermsPage() {
     { title: t('terms.sectionFourTitle'), body: t('terms.sectionFourBody') },
     { title: t('terms.sectionFiveTitle'), body: t('terms.sectionFiveBody') },
     { title: t('terms.sectionSixTitle'), body: t('terms.sectionSixBody') },
+    // #417 (Council P0-11): the platform cancellation floor.
+    { title: t('terms.sectionSevenTitle'), body: t('terms.sectionSevenBody') },
   ];
 
   return (

@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import Image from 'next/image';
-import { BookingStatus, VerificationStatus, type BookingDetails } from '@ouiboo/types';
+import { BookingPaymentStatus, BookingStatus, VerificationStatus, type BookingDetails } from '@ouiboo/types';
 import { Badge, Button, Card } from '@ouiboo/ui';
 import { BookingDetailSkeleton } from '@/components/Skeletons';
 import { cn } from '@ouiboo/ui/utils';
@@ -20,6 +20,7 @@ import {
   Users,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { CancellationScaleCard } from '@/components/CancellationScaleCard';
 import {
   canRetryTravelerPayment,
   canCancelTravelerBooking,
@@ -37,6 +38,8 @@ export default function BookingDetailsPage() {
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [cancelRefundState, setCancelRefundState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [cancelRefundError, setCancelRefundError] = useState('');
 
   const { data: booking, isLoading } = useQuery<BookingDetails | null>({
     enabled: Boolean(bookingId),
@@ -96,6 +99,32 @@ export default function BookingDetailsPage() {
   const handleCancel = () => {
     setCancelling(true);
     cancelBookingMutation.mutate();
+  };
+
+  // #417 (Council P0-11): cancelling a PAID booking goes through the
+  // refund workflow — the amount is computed server-side from this
+  // booking's cancellation scale, never typed in by the traveller.
+  const cancelRefundMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.post('/refunds/request', { bookingId, cancellation: true });
+    },
+    onSuccess: async () => {
+      setCancelRefundState('sent');
+      await queryClient.invalidateQueries({ queryKey: ['booking-details-page', bookingId] });
+      await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      await queryClient.invalidateQueries({ queryKey: ['my-refunds'] });
+    },
+    onError: (error: unknown) => {
+      setCancelRefundState('error');
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setCancelRefundError(typeof message === 'string' ? message : 'The refund request could not be sent. Please try again.');
+    },
+  });
+
+  const handleCancelWithRefund = () => {
+    setCancelRefundState('sending');
+    setCancelRefundError('');
+    cancelRefundMutation.mutate();
   };
 
   if (isLoading) {
@@ -285,6 +314,51 @@ export default function BookingDetailsPage() {
             contact first, OuiBoo escalation during the trip, normal
             support (48h) for everything else. */}
         <TripContactsCard booking={booking} />
+
+
+        {/* #417 (Council P0-11): the cancellation scale this booking was
+            made under, repeated from the booking confirmation. */}
+        <CancellationScaleCard
+          scale={booking.cancellationScale}
+          baseAmount={Number(booking.totalAmount)}
+          currency={booking.currency}
+        />
+
+        {(booking.paymentStatus === BookingPaymentStatus.Paid
+          || booking.paymentStatus === BookingPaymentStatus.PartiallyPaid)
+          && booking.status !== BookingStatus.Cancelled
+          && !booking.refundStatus && (
+          <Card className="rounded-[2rem] border border-border shadow-sm bg-card">
+            <div className="p-8 space-y-4">
+              <h2 className="text-2xl font-black font-display tracking-tight text-foreground">Cancel this booking</h2>
+              <p className="text-sm text-muted-foreground">
+                Your refund is calculated from the cancellation scale above, based on how many days remain
+                before the trip starts, and is paid by the agency — Ouiboo never holds your money.
+              </p>
+              {cancelRefundState === 'sent' ? (
+                <div className="rounded-2xl border border-success/20 bg-success/10 px-4 py-3 text-sm font-semibold text-success">
+                  Cancellation requested. The agency has been notified and must act on your refund within the deadline shown in your refunds.
+                </div>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    className="h-12 px-6 rounded-xl text-xs font-black uppercase tracking-widest"
+                    onClick={handleCancelWithRefund}
+                    disabled={cancelRefundState === 'sending'}
+                  >
+                    {cancelRefundState === 'sending'
+                      ? <Loader2 className="h-4 w-4 animate-spin" />
+                      : 'Cancel booking & request refund'}
+                  </Button>
+                  {cancelRefundState === 'error' && (
+                    <p className="text-sm font-semibold text-danger">{cancelRefundError}</p>
+                  )}
+                </>
+              )}
+            </div>
+          </Card>
+        )}
 
         {(canReviewBooking || booking.review) && (
           <Card className="rounded-[2rem] border border-border shadow-sm bg-card">

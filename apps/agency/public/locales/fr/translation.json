@@ -407,7 +407,19 @@
       "noDescription": "Aucune description fournie.",
       "tbd": "À déterminer",
       "basePackage": "Forfait de base",
-      "pricePreview": "--- {{currency}}"
+      "pricePreview": "--- {{currency}}",
+      "cancellationTitle": "Barème d'annulation",
+      "cancellationSubtitle": "Ce que les voyageurs récupèrent lorsqu'ils annulent, selon le nombre de jours restant avant le voyage.",
+      "cancellationFloorNote": "Plancher de la plateforme (non modifiable) : si vous annulez, ou si le voyage ne peut pas avoir lieu faute d'avoir atteint le groupe minimum, le voyageur est remboursé à 100 % de ce qu'il a payé, remboursement initié sous 7 jours.",
+      "cancellationDefaultNote": "Ce voyage utilise le barème par défaut de la plateforme :",
+      "cancellationCustomize": "Personnaliser le barème",
+      "cancellationReset": "Utiliser le barème par défaut",
+      "cancellationAddBand": "Ajouter une tranche",
+      "cancellationDaysLabel": "Jours avant le voyage (ou plus)",
+      "cancellationPercentLabel": "% remboursé",
+      "cancellationRemoveBand": "Retirer la tranche",
+      "cancellationBandAtLeast": "{{days}} jours ou plus avant : remboursement de {{percent}} %",
+      "cancellationBandLessThan": "Moins de {{days}} jours avant : remboursement de {{percent}} %"
     }
   },
   "payments": {

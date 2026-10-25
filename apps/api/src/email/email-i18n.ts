@@ -93,6 +93,17 @@ const en = {
     panelNextStep:
       'Next step: upload your payment proof from the booking dashboard so the agency can review it.',
   },
+  bookingCancellation: {
+    heading: 'Cancellation terms for this booking',
+    paidByAgency: 'Refunds under these terms are paid by the agency you booked with.',
+    floor:
+      'If the agency cancels, or the trip does not run because its minimum group is not reached, you are refunded {{percent}}% of what you paid, initiated within {{days}} days.',
+    bandAtLeast:
+      'If you cancel {{days}} or more days before the trip starts: {{percent}}% refund of what you paid.',
+    bandLessThan:
+      'If you cancel less than {{days}} days before the trip starts: {{percent}}% refund of what you paid.',
+    bandOnly: 'If you cancel before the trip starts: {{percent}}% refund of what you paid.',
+  },
   bookingNewAgency: {
     subject: 'Ouiboo: New booking received',
     title: 'New booking received',
@@ -252,6 +263,18 @@ const fr: EmailStrings = {
     panelNextStep:
       "Étape suivante : téléversez votre preuve de paiement depuis le tableau de bord de la réservation afin que l'agence puisse l'examiner.",
   },
+  bookingCancellation: {
+    heading: 'Conditions d’annulation de cette réservation',
+    paidByAgency:
+      'Les remboursements prévus par ces conditions sont versés par l’agence auprès de laquelle vous avez réservé.',
+    floor:
+      'Si l’agence annule, ou si le voyage ne peut pas avoir lieu parce que le groupe minimum n’est pas atteint, vous êtes remboursé à hauteur de {{percent}} % du montant payé, et le remboursement doit être initié sous {{days}} jours.',
+    bandAtLeast:
+      'Si vous annulez {{days}} jours ou plus avant le départ : remboursement de {{percent}} % du montant payé.',
+    bandLessThan:
+      'Si vous annulez moins de {{days}} jours avant le départ : remboursement de {{percent}} % du montant payé.',
+    bandOnly: 'Si vous annulez avant le départ : remboursement de {{percent}} % du montant payé.',
+  },
   bookingNewAgency: {
     subject: 'Ouiboo : Nouvelle réservation reçue',
     title: 'Nouvelle réservation reçue',
@@ -404,6 +427,15 @@ const ar: EmailStrings = {
     body: 'تم استلام حجزك لرحلة {{tripTitle}}.',
     panelReference: 'مرجع الحجز:',
     panelNextStep: 'الخطوة التالية: ارفع إثبات الدفع من لوحة تحكم الحجز حتى تتمكن الوكالة من مراجعته.',
+  },
+  bookingCancellation: {
+    heading: 'شروط الإلغاء لهذا الحجز',
+    paidByAgency: 'تُدفع المبالغ المستردة بموجب هذه الشروط من قبل الوكالة التي حجزت لديها.',
+    floor:
+      'إذا ألغت الوكالة الرحلة، أو تعذّر تنظيمها لعدم اكتمال الحد الأدنى للمجموعة، يُسترد لك {{percent}}٪ مما دفعته، ويجب بدء الاسترداد خلال {{days}} أيام.',
+    bandAtLeast: 'إذا ألغيت قبل {{days}} أيام أو أكثر من بدء الرحلة: استرداد {{percent}}٪ مما دفعته.',
+    bandLessThan: 'إذا ألغيت قبل أقل من {{days}} أيام من بدء الرحلة: استرداد {{percent}}٪ مما دفعته.',
+    bandOnly: 'إذا ألغيت قبل بدء الرحلة: استرداد {{percent}}٪ مما دفعته.',
   },
   bookingNewAgency: {
     subject: 'Ouiboo: تم استلام حجز جديد',

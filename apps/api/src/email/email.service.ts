@@ -20,7 +20,9 @@ import {
   fillEmailCopy,
   normalizeEmailLocale,
   type EmailLocale,
+  type EmailStrings,
 } from './email-i18n'
+import type { CancellationScaleSnapshot } from '@ouiboo/types'
 
 @Injectable()
 export class EmailService {
@@ -269,14 +271,27 @@ export class EmailService {
    * default locale — no agency language preference is recorded yet.
    * The traveller copy carries the prevailing-language clause next to
    * the booking terms it confirms.
+   *
+   * #417 (Council P0-11): the traveller copy also repeats the
+   * cancellation scale the booking was made under — the snapshot taken
+   * at booking creation — in the same locale: the platform floor first,
+   * then one line per band. Refunds under these terms are paid by the
+   * agency, never by Ouiboo.
    */
-  async sendBookingNotification(travelerEmail: string, agencyEmail: string, bookingId: string, tripTitle: string, locale?: EmailLocale | string | null) {
+  async sendBookingNotification(travelerEmail: string, agencyEmail: string, bookingId: string, tripTitle: string, locale?: EmailLocale | string | null, cancellationScale?: CancellationScaleSnapshot | null) {
     const resolved = normalizeEmailLocale(locale)
     const t = emailStrings(resolved).bookingReceived
+    const cancellationStrings = emailStrings(resolved).bookingCancellation
+    const cancellationBlock = cancellationScale
+      ? `
+      ${emailHeading(cancellationStrings.heading)}
+      ${emailParagraph(cancellationStrings.paidByAgency)}
+      ${emailPanel(cancellationEmailLines(cancellationScale, cancellationStrings).map((line) => escapeHtml(line)).join('<br>'), 'neutral', resolved)}`
+      : ''
     const travelerContent = `
       ${emailHeading(t.heading)}
       ${emailParagraph(fillEmailCopy(t.body, { tripTitle }))}
-      ${emailPanel(`${escapeHtml(t.panelReference)} ${emailStrong(bookingId)}<br>${escapeHtml(t.panelNextStep)}`, 'neutral', resolved)}
+      ${emailPanel(`${escapeHtml(t.panelReference)} ${emailStrong(bookingId)}<br>${escapeHtml(t.panelNextStep)}`, 'neutral', resolved)}${cancellationBlock}
       ${emailParagraph(emailStrings(resolved).prevailingLanguage)}`
     const agencyStrings = emailStrings().bookingNewAgency
     const agencyContent = `
@@ -405,4 +420,46 @@ export class EmailService {
   getRefundActionRequiredSubject(locale?: EmailLocale | string | null) {
     return emailStrings(locale).refundActionRequired.subject
   }
+}
+
+/**
+ * #417: render a cancellation scale snapshot as confirmation-email
+ * lines in one locale: the platform floor first, then one line per
+ * band (highest threshold first; the lowest band reads "less than"
+ * the previous threshold so every timing is covered exactly once).
+ */
+function cancellationEmailLines(
+  scale: CancellationScaleSnapshot,
+  t: EmailStrings['bookingCancellation'],
+): string[] {
+  const bands = [...scale.bands].sort(
+    (a, b) => b.minDaysBeforeStart - a.minDaysBeforeStart,
+  )
+  const lines: string[] = [
+    fillEmailCopy(t.floor, {
+      percent: scale.floorRefundPercent,
+      days: scale.refundInitiationDays,
+    }),
+  ]
+  bands.forEach((band, index) => {
+    if (index === bands.length - 1) {
+      const previous = bands[index - 1]
+      lines.push(
+        previous
+          ? fillEmailCopy(t.bandLessThan, {
+              days: previous.minDaysBeforeStart,
+              percent: band.refundPercent,
+            })
+          : fillEmailCopy(t.bandOnly, { percent: band.refundPercent }),
+      )
+    } else {
+      lines.push(
+        fillEmailCopy(t.bandAtLeast, {
+          days: band.minDaysBeforeStart,
+          percent: band.refundPercent,
+        }),
+      )
+    }
+  })
+  return lines
 }

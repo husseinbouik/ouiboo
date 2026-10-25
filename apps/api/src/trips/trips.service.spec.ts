@@ -145,6 +145,118 @@ describe('TripsService', () => {
         });
     });
 
+    describe('cancellation scale (#417)', () => {
+        beforeEach(() => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.tripTemplate.create.mockResolvedValue(mockTripTemplate);
+            db.tripTemplate.update.mockResolvedValue(mockTripTemplate);
+        });
+
+        it('validates and normalizes agency bands on create (sorted, versioned)', async () => {
+            await service.createTemplate('agency-123', {
+                title: 'T',
+                images: ['a.jpg'],
+                cancellationPolicy: {
+                    bands: [
+                        { minDaysBeforeStart: 0, refundPercent: 10 },
+                        { minDaysBeforeStart: 14, refundPercent: 80 },
+                    ],
+                },
+            } as any);
+            const arg = db.tripTemplate.create.mock.calls[0][0];
+            expect(arg.data.cancellationPolicy).toEqual({
+                version: 'cancellation-v1',
+                bands: [
+                    { minDaysBeforeStart: 14, refundPercent: 80 },
+                    { minDaysBeforeStart: 0, refundPercent: 10 },
+                ],
+            });
+        });
+
+        it('rejects bands without 0-day coverage on create', async () => {
+            await expect(
+                service.createTemplate('agency-123', {
+                    title: 'T',
+                    images: ['a.jpg'],
+                    cancellationPolicy: { bands: [{ minDaysBeforeStart: 7, refundPercent: 50 }] },
+                } as any),
+            ).rejects.toThrow('0 days');
+            expect(db.tripTemplate.create).not.toHaveBeenCalled();
+        });
+
+        it('rejects duplicate band thresholds on update', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, images: ['a.jpg'] });
+            await expect(
+                service.updateTemplate('trip-123', 'agency-123', {
+                    cancellationPolicy: {
+                        bands: [
+                            { minDaysBeforeStart: 0, refundPercent: 10 },
+                            { minDaysBeforeStart: 0, refundPercent: 20 },
+                        ],
+                    },
+                } as any),
+            ).rejects.toThrow('Duplicate');
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('leaves the stored policy untouched when update omits it', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, images: ['a.jpg'] });
+            await service.updateTemplate('trip-123', 'agency-123', { title: 'New' } as any);
+            const arg = db.tripTemplate.update.mock.calls[0][0];
+            expect(arg.data.cancellationPolicy).toBeUndefined();
+        });
+
+        it('resolves the platform default scale on the public detail when the trip has none', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                cancellationPolicy: null,
+                agency: {
+                    id: 'agency-123',
+                    companyName: 'Atlas Adventures SARL',
+                    logo: null,
+                    verificationStatus: 'VERIFIED',
+                    bankDetails: null,
+                    bankDetailsStatus: 'VERIFIED',
+                    bankDetailsVerifiedAt: new Date(),
+                },
+            });
+            const result = await service.findOneTemplate('trip-123');
+            expect((result as any).cancellationScale.floorRefundPercent).toBe(100);
+            expect((result as any).cancellationScale.refundInitiationDays).toBe(7);
+            expect((result as any).cancellationScale.bands[0]).toEqual({
+                minDaysBeforeStart: 30,
+                refundPercent: 100,
+            });
+        });
+
+        it('resolves the agency bands on the public detail when stored', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                cancellationPolicy: {
+                    version: 'cancellation-v1',
+                    bands: [
+                        { minDaysBeforeStart: 0, refundPercent: 10 },
+                        { minDaysBeforeStart: 14, refundPercent: 80 },
+                    ],
+                },
+                agency: {
+                    id: 'agency-123',
+                    companyName: 'Atlas Adventures SARL',
+                    logo: null,
+                    verificationStatus: 'VERIFIED',
+                    bankDetails: null,
+                    bankDetailsStatus: 'VERIFIED',
+                    bankDetailsVerifiedAt: new Date(),
+                },
+            });
+            const result = await service.findOneTemplate('trip-123');
+            expect((result as any).cancellationScale.bands).toEqual([
+                { minDaysBeforeStart: 14, refundPercent: 80 },
+                { minDaysBeforeStart: 0, refundPercent: 10 },
+            ]);
+        });
+    });
+
     describe('deleteTemplate', () => {
         it('should delete a draft template if owned by user', async () => {
             db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });

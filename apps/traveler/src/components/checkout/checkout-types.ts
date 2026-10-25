@@ -1,4 +1,5 @@
 import type { AxiosError } from 'axios';
+import type { CancellationScaleSnapshot } from '@ouiboo/types';
 
 export type ApiErrorResponse = {
   message?: string;
@@ -42,6 +43,8 @@ export type CheckoutTrip = {
   images?: string[];
   /** #332: agency-provided alt text per image (index-aligned); may be absent. */
   imageAlts?: string[];
+  /** #417: the resolved cancellation scale from GET /trips/:id (bands + floor). */
+  cancellationScale?: CancellationScaleSnapshot | null;
   sessions?: CheckoutTripSession[];
   startLocation: string;
   title: string;

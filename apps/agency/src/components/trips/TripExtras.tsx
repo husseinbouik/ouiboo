@@ -3,6 +3,7 @@ import { Button, Input, Card, CardContent } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import type { TFunction } from 'i18next';
 import type { TripWizardFormApi } from './useTripWizardForm';
+import { TripCancellationScale } from './TripCancellationScale';
 
 type Props = {
   t: TFunction;
@@ -96,6 +97,9 @@ export function TripExtras({ t, form, mode }: Props) {
           </div>
         </CardContent>
       </Card>
+
+      {/* #417 (Council P0-11): per-trip cancellation bands. */}
+      <TripCancellationScale t={t} form={form} />
 
       <div className="space-y-4 pt-4 border-t border-border">
         <label className="text-sm font-semibold text-foreground">{t('trips.create.publishStatus')}</label>

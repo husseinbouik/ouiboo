@@ -407,7 +407,19 @@
       "noDescription": "No description provided yet.",
       "tbd": "TBD",
       "basePackage": "Base Pkg",
-      "pricePreview": "--- {{currency}}"
+      "pricePreview": "--- {{currency}}",
+      "cancellationTitle": "Cancellation scale",
+      "cancellationSubtitle": "What travellers get back when they cancel, based on how many days before the trip they cancel.",
+      "cancellationFloorNote": "Platform floor (cannot be changed): if you cancel, or the trip cannot run because the minimum group was not reached, the traveller is refunded 100% of what they paid, initiated within 7 days.",
+      "cancellationDefaultNote": "This trip uses the platform default scale:",
+      "cancellationCustomize": "Customize scale",
+      "cancellationReset": "Use platform default",
+      "cancellationAddBand": "Add band",
+      "cancellationDaysLabel": "Days before the trip (or more)",
+      "cancellationPercentLabel": "Refund %",
+      "cancellationRemoveBand": "Remove band",
+      "cancellationBandAtLeast": "{{days}} or more days before: {{percent}}% refund",
+      "cancellationBandLessThan": "Less than {{days}} days before: {{percent}}% refund"
     }
   },
   "payments": {

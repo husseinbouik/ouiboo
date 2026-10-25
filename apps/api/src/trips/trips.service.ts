@@ -1,11 +1,15 @@
 import { Injectable, ForbiddenException, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripSessionDto } from './dto/create-trip.dto';
-import { BookingStatus, SessionStatus, TripStatus } from '@ouiboo/database';
+import { BookingStatus, Prisma, SessionStatus, TripStatus } from '@ouiboo/database';
 import { toMoneyDecimal } from '../common/money.util';
 import { canOrganise, getAgencyActivationBlock } from '../common/agency-licence.util';
 import { visibleBankDetails } from '../common/bank-details.util';
 import { resolveStagedSessionConfig } from '../staged-payments/staged-payments.util';
+import {
+    buildCancellationScaleSnapshot,
+    normalizeCancellationPolicyInput,
+} from '../cancellation/cancellation.util';
 
 @Injectable()
 export class TripsService {
@@ -76,10 +80,16 @@ export class TripsService {
             );
         }
 
-        const { itinerary, imageAlts, ...tripData } = dto;
+        const { itinerary, imageAlts, cancellationPolicy, ...tripData } = dto;
 
         const data = {
             ...tripData,
+            // #417 (Council P0-11): validate + normalize the agency's
+            // cancellation bands before they are stored as structured
+            // data (throws on coverage gaps / duplicates / bad ranges).
+            cancellationPolicy: cancellationPolicy
+                ? (normalizeCancellationPolicyInput(cancellationPolicy) as unknown as Prisma.InputJsonValue)
+                : undefined,
             imageAlts: this.normalizeImageAlts(imageAlts, dto.images),
             agencyId: agencyId,
             status: TripStatus.DRAFT,
@@ -359,6 +369,13 @@ export class TripsService {
         const { bankDetailsVerifiedAt: _verificationStamp, ...publicAgency } = result.agency;
         return {
             ...result,
+            // #417 (Council P0-11): the resolved cancellation scale
+            // (agency bands, or the platform defaults when the trip has
+            // none) plus the platform floor terms — this is the scale
+            // displayed in MAD before payment and snapshotted onto the
+            // booking at creation. The raw stored policy stays in
+            // `cancellationPolicy` for the agency editor.
+            cancellationScale: buildCancellationScaleSnapshot(result.cancellationPolicy),
             agency: {
                 ...publicAgency,
                 bankDetails: visibleBankDetails(result.agency),
@@ -532,7 +549,7 @@ export class TripsService {
         const agency = await this.db.agencyProfile.findUnique({ where: { id: agencyId } });
         if (!agency) throw new NotFoundException('Agency profile not found');
 
-        const { itinerary, status: requestedStatus, imageAlts, ...tripData } = dto;
+        const { itinerary, status: requestedStatus, imageAlts, cancellationPolicy, ...tripData } = dto;
 
         // Verify ownership
         const existing = await this.db.tripTemplate.findFirst({
@@ -557,6 +574,11 @@ export class TripsService {
             where: { id },
             data: {
                 ...tripData,
+                // #417: same validated normalization as create; omitting
+                // the field leaves the stored bands untouched.
+                cancellationPolicy: cancellationPolicy
+                    ? (normalizeCancellationPolicyInput(cancellationPolicy) as unknown as Prisma.InputJsonValue)
+                    : undefined,
                 imageAlts: this.normalizeImageAlts(imageAlts, dto.images ?? existing.images),
                 status,
                 itinerary: itinerary ? {

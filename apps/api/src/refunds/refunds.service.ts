@@ -26,6 +26,11 @@ import { toMoneyDecimal, toMoneyString } from '../common/money.util';
 import { PRIVATE_FILE_PREFIX } from '../upload/upload.constants';
 import { GROUP_MINIMUM_NOT_REACHED_REASON } from '../staged-payments/staged-payments.util';
 import {
+    CANCELLATION_RULE_AGENCY_FAULT,
+    computeCancellationRefund,
+    resolveCancellationScale,
+} from '../cancellation/cancellation.util';
+import {
     REFUND_ACTIVE_STATUSES,
     REFUND_AGENCY_ACTION_STATUSES,
     REFUND_AUDIT_AMOUNT_THRESHOLD_MAD,
@@ -34,6 +39,7 @@ import {
     REFUND_POLICY_VERSION,
     REFUND_REASON_ADMIN_INITIATED,
     REFUND_REASON_AGENCY_CANCELLATION,
+    REFUND_REASON_TRAVELLER_CANCELLATION,
     REFUND_REASON_TRAVELLER_REQUEST,
     REFUND_RESTRICTION_REASON,
     REFUND_RULE_MINIMUM_NOT_REACHED,
@@ -412,10 +418,20 @@ export class RefundsService {
      * Traveller-initiated refund request. Only bookings with money actually
      * verified as paid (to the agency) can open a case, and only one active
      * case may exist per booking.
+     *
+     * #417 (Council P0-11): when the request is a CANCELLATION
+     * (input.cancellation), the requested amount is not the traveller's
+     * ask — it is computed from the booking's cancellation scale (the
+     * snapshot taken at booking creation; legacy bookings resolve from
+     * the template's current policy, then the platform defaults) and the
+     * days remaining before the session starts. A timing inside the
+     * scale's zero band opens no case: nothing is refundable under the
+     * scale, and a claim that the agency is at fault follows the floor
+     * instead (agency/admin case, 100%).
      */
     async requestRefund(
         travelerId: string,
-        input: { bookingId: string; reason?: string },
+        input: { bookingId: string; reason?: string; cancellation?: boolean },
     ) {
         const booking = await this.loadBookingForCase(input.bookingId);
         if (booking.travelerId !== travelerId) {
@@ -427,9 +443,39 @@ export class RefundsService {
                 'No verified payment to refund for this booking',
             );
         }
+        let requestedAmount = verified.total;
+        let eligibilityRule: string | undefined;
+        let cancellationAudit: Record<string, unknown> | undefined;
+        if (input.cancellation) {
+            const scale = resolveCancellationScale(
+                booking.cancellationScale ?? booking.session.template.cancellationPolicy,
+            );
+            const computation = computeCancellationRefund({
+                paidAmount: verified.total,
+                sessionStart: booking.session.startDate,
+                cancelledAt: new Date(),
+                scale,
+                trigger: 'TRAVELLER',
+            });
+            if (computation.amount.lessThanOrEqualTo(0)) {
+                throw new BadRequestException(
+                    'This trip’s cancellation scale no longer provides a refund at this time. If the agency is at fault, the platform floor applies instead — contact support.',
+                );
+            }
+            requestedAmount = computation.amount;
+            eligibilityRule = computation.rule;
+            cancellationAudit = {
+                percent: computation.percent,
+                daysBeforeStart: computation.daysBeforeStart,
+                bandMinDaysBeforeStart: computation.band?.minDaysBeforeStart,
+                scaleVersion: scale.version,
+            };
+        }
         const reason = input.reason?.trim()
             ? input.reason.trim().slice(0, 500)
-            : REFUND_REASON_TRAVELLER_REQUEST;
+            : input.cancellation
+                ? REFUND_REASON_TRAVELLER_CANCELLATION
+                : REFUND_REASON_TRAVELLER_REQUEST;
         const created = await this.db.$transaction(async (tx) => {
             await this.assertNoActiveCase(tx, booking.id);
             const refundCase = await tx.refundCase.create({
@@ -439,9 +485,10 @@ export class RefundsService {
                     agencyId: booking.agencyId,
                     originalPaymentId: verified.primary.id,
                     externalPaymentReference: verified.primary.externalReference,
-                    requestedAmount: verified.total,
+                    requestedAmount,
                     currency: booking.currency,
                     reason,
+                    eligibilityRule,
                     policyVersion: REFUND_POLICY_VERSION,
                     status: RefundCaseStatus.REFUND_REQUESTED,
                     createdBy: travelerId,
@@ -449,10 +496,11 @@ export class RefundsService {
                 },
             });
             await this.audit(tx, { id: travelerId }, 'REFUND_CASE_CREATED', refundCase.id, {
-                trigger: 'TRAVELLER_REQUEST',
+                trigger: input.cancellation ? 'TRAVELLER_CANCELLATION' : 'TRAVELLER_REQUEST',
                 bookingId: booking.id,
-                amount: toMoneyString(verified.total),
+                amount: toMoneyString(requestedAmount),
                 currency: booking.currency,
+                ...(cancellationAudit ? { cancellation: cancellationAudit } : {}),
             });
             return refundCase;
         });
@@ -504,6 +552,12 @@ export class RefundsService {
                         (isAgency
                             ? REFUND_REASON_AGENCY_CANCELLATION
                             : REFUND_REASON_ADMIN_INITIATED),
+                    // #417 (Council P0-11): an agency-initiated case is an
+                    // agency-fault cancellation — the platform floor
+                    // applies (100% of verified payments, already the
+                    // requested/approved amount here) and the bands are
+                    // never consulted.
+                    eligibilityRule: isAgency ? CANCELLATION_RULE_AGENCY_FAULT : undefined,
                     policyVersion: REFUND_POLICY_VERSION,
                     status: isAgency
                         ? RefundCaseStatus.AGENCY_ACTION_REQUIRED
@@ -1666,7 +1720,15 @@ export class RefundsService {
             include: {
                 session: {
                     include: {
-                        template: { select: { agencyId: true, title: true } },
+                        template: {
+                            select: {
+                                agencyId: true,
+                                title: true,
+                                // #417: legacy bookings (no scale snapshot)
+                                // resolve their scale from the template.
+                                cancellationPolicy: true,
+                            },
+                        },
                     },
                 },
             },

@@ -345,6 +345,83 @@ describe('BookingsService', () => {
             const createData = db.booking.create.mock.calls[0][0].data;
             expect(createData.locale).toBeNull();
         });
+
+        it('snapshots the platform default cancellation scale onto the booking (#417)', async () => {
+            mockSuccessfulCreate();
+
+            const result: any = await service.create('user-123', createDto);
+
+            const createData = db.booking.create.mock.calls[0][0].data;
+            expect(createData.cancellationScale.version).toBe('cancellation-v1');
+            expect(createData.cancellationScale.floorRefundPercent).toBe(100);
+            expect(createData.cancellationScale.refundInitiationDays).toBe(7);
+            expect(createData.cancellationScale.bands[0]).toEqual({
+                minDaysBeforeStart: 30,
+                refundPercent: 100,
+            });
+            // The mapped response repeats the scale (booking confirmation).
+            expect(result.cancellationScale.bands).toEqual(createData.cancellationScale.bands);
+        });
+
+        it('snapshots the agency bands when the trip defines its own scale (#417)', async () => {
+            db.tripSession.findUnique.mockResolvedValue({
+                ...availableSession,
+                template: {
+                    ...availableSession.template,
+                    cancellationPolicy: {
+                        version: 'cancellation-v1',
+                        bands: [
+                            { minDaysBeforeStart: 14, refundPercent: 80 },
+                            { minDaysBeforeStart: 0, refundPercent: 10 },
+                        ],
+                    },
+                },
+            });
+            db.tripSession.updateMany.mockResolvedValue({ count: 1 });
+            db.booking.findFirst.mockResolvedValue(null);
+            db.user.findUnique.mockResolvedValue(null);
+            db.booking.create.mockResolvedValue({
+                id: 'booking-new',
+                sessionId: 'session-123',
+                travelerId: 'user-123',
+                bookingDate: new Date(),
+                status: 'PENDING',
+                totalAmount: '500.00',
+                currency: 'MAD',
+                guestsCount: 2,
+                paymentMethod: 'MANUAL',
+                paymentStatus: 'UNPAID',
+                paymentPlan: null,
+                traveler: { email: 'traveler@example.com', name: 'Test Traveler' },
+                session: {
+                    id: 'session-123',
+                    templateId: 'template-1',
+                    startDate: new Date(),
+                    endDate: new Date(),
+                    price: '250.00',
+                    totalSeats: 10,
+                    availableSeats: 8,
+                    status: 'OPEN',
+                    currency: 'MAD',
+                    template: {
+                        id: 'template-1',
+                        title: 'Atlas Escape',
+                        startLocation: 'Marrakech',
+                        images: [],
+                        agencyId: 'agency-123',
+                        agency: { id: 'agency-123', companyName: 'Atlas' },
+                    },
+                },
+            });
+
+            await service.create('user-123', createDto);
+
+            const createData = db.booking.create.mock.calls[0][0].data;
+            expect(createData.cancellationScale.bands).toEqual([
+                { minDaysBeforeStart: 14, refundPercent: 80 },
+                { minDaysBeforeStart: 0, refundPercent: 10 },
+            ]);
+        });
     });
 
     describe('uploadPaymentProof', () => {

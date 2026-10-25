@@ -407,7 +407,19 @@
       "noDescription": "لم يتم تقديم وصف.",
       "tbd": "قيد التحديد",
       "basePackage": "الباقة الأساسية",
-      "pricePreview": "--- {{currency}}"
+      "pricePreview": "--- {{currency}}",
+      "cancellationTitle": "جدول الإلغاء",
+      "cancellationSubtitle": "ما يسترده المسافرون عند الإلغاء، حسب عدد الأيام المتبقية قبل الرحلة.",
+      "cancellationFloorNote": "حد أدنى تفرضه المنصة (لا يمكن تغييره): إذا ألغيتَ أنت، أو تعذّر تنظيم الرحلة لعدم اكتمال الحد الأدنى للمجموعة، يُسترد للمسافر 100٪ مما دفعه، ويُباشَر الاسترداد خلال 7 أيام.",
+      "cancellationDefaultNote": "تستخدم هذه الرحلة جدول المنصة الافتراضي:",
+      "cancellationCustomize": "تخصيص الجدول",
+      "cancellationReset": "استخدام جدول المنصة الافتراضي",
+      "cancellationAddBand": "إضافة شريحة",
+      "cancellationDaysLabel": "الأيام قبل الرحلة (أو أكثر)",
+      "cancellationPercentLabel": "نسبة الاسترداد %",
+      "cancellationRemoveBand": "إزالة الشريحة",
+      "cancellationBandAtLeast": "قبل {{days}} أيام أو أكثر: استرداد {{percent}}٪",
+      "cancellationBandLessThan": "قبل أقل من {{days}} أيام: استرداد {{percent}}٪"
     }
   },
   "payments": {

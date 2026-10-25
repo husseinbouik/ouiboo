@@ -133,6 +133,48 @@ describe('localized transactional templates (#424)', () => {
       .find((mail: any) => mail.to === 'agency@example.com')
     expect(agencyMail.html).toContain('<html lang="en" dir="ltr">')
   })
+
+  it('repeats the cancellation scale in the booking-received email, in the traveller locale (#417)', async () => {
+    const sendMail = jest.fn().mockResolvedValue({ messageId: 'm-cx' })
+    const localized = new EmailService()
+    ;(localized as any).transporter = { sendMail }
+    process.env.SMTP_USER = 'delivery@ouiboo.test'
+
+    const scale = {
+      version: 'cancellation-v1',
+      floorRefundPercent: 100,
+      refundInitiationDays: 7,
+      bands: [
+        { minDaysBeforeStart: 30, refundPercent: 100 },
+        { minDaysBeforeStart: 7, refundPercent: 50 },
+        { minDaysBeforeStart: 0, refundPercent: 0 },
+      ],
+    }
+    await localized.sendBookingNotification(
+      'traveler@example.com',
+      'agency@example.com',
+      'booking-1',
+      'Atlas Trek',
+      'fr',
+      scale,
+    )
+
+    const fr = emailStrings('fr').bookingCancellation
+    const travelerMail = sendMail.mock.calls
+      .map((call: any[]) => call[0])
+      .find((mail: any) => mail.to === 'traveler@example.com')
+    expect(travelerMail.html).toContain(fr.heading)
+    expect(travelerMail.html).toContain('groupe minimum')
+    expect(travelerMail.html).toContain('30 jours ou plus avant le départ')
+    expect(travelerMail.html).toContain('moins de 7 jours avant le départ')
+    expect(travelerMail.html).toContain(fr.paidByAgency)
+
+    // The agency copy does not carry the traveller's cancellation terms.
+    const agencyMail = sendMail.mock.calls
+      .map((call: any[]) => call[0])
+      .find((mail: any) => mail.to === 'agency@example.com')
+    expect(agencyMail.html).not.toContain(fr.heading)
+  })
 })
 
 describe('EmailService — every template renders in FR and AR (#424)', () => {
