@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { toPaginatedList } from '@ouiboo/utils';
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Pagination } from '@ouiboo/ui';
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Pagination, CardListSkeleton } from '@ouiboo/ui';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { RefundEvidenceForm, RefundEvidenceList, type RefundEvidenceRow } from '@/components/RefundEvidenceForm';
 
@@ -146,9 +146,9 @@ export default function RefundsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoading ? (
-            <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              <span>{t('common.loading')}</span>
+            <div role="status" aria-label={t('common.loading')}>
+              <CardListSkeleton rows={3} />
+              <span className="sr-only">{t('common.loading')}</span>
             </div>
           ) : cases.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">{t('refunds.empty')}</p>

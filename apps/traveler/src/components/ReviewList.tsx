@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { Badge, Button } from '@ouiboo/ui';
-import { Star, Loader2, MessageCircle } from 'lucide-react';
+import { ListRowSkeleton } from '@/components/Skeletons';
+import { Star, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -65,8 +66,9 @@ export function ReviewList({ tripId }: ReviewListProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-sunset-orange" />
+      <div role="status" aria-label="Loading reviews">
+        <ListRowSkeleton rows={3} />
+        <span className="sr-only">Loading reviews...</span>
       </div>
     );
   }
