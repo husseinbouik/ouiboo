@@ -148,3 +148,17 @@ export class FailRefundDto {
     @MaxLength(1000)
     failureReason!: string;
 }
+
+/**
+ * #416B (Council P0-09): traveller dispute of a completed refund ("the
+ * money never arrived"). The reason is mandatory — it becomes the
+ * case's dispute record and the trigger for the reopening audit row.
+ * The dispute window itself is enforced in the service.
+ */
+export class DisputeRefundDto {
+    @ApiProperty({ example: 'The money has not arrived in my account' })
+    @IsString()
+    @MinLength(1)
+    @MaxLength(1000)
+    reason!: string;
+}
