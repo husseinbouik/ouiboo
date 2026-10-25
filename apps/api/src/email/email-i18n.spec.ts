@@ -134,3 +134,67 @@ describe('localized transactional templates (#424)', () => {
     expect(agencyMail.html).toContain('<html lang="en" dir="ltr">')
   })
 })
+
+describe('EmailService — every template renders in FR and AR (#424)', () => {
+    const service = new EmailService();
+
+    // One call per public template getter, exercised per locale below.
+    const renders: Array<[string, (locale: 'fr' | 'ar') => string]> = [
+        ['subscription renewal', (l) => service.getSubscriptionRenewalReminderTemplate('Atlas', '12 Nov 2026', 'https://x/billing', l)],
+        ['otp', (l) => service.getOTPTemplate('123456', l)],
+        ['welcome', (l) => service.getWelcomeTemplate('Sara', l)],
+        ['password reset', (l) => service.getPasswordResetTemplate('https://x/reset', l)],
+        ['payment reminder', (l) => service.getPaymentReminderTemplate('Atlas Trek', 48, 'https://x/b', l)],
+        ['trip reminder d7', (l) => service.getTripReminderTemplate('Atlas Trek', 7, 'Atlas', 'https://x/t', l)],
+        ['trip reminder d1', (l) => service.getTripReminderTemplate('Atlas Trek', 1, 'Atlas', 'https://x/t', l)],
+        ['review request', (l) => service.getReviewRequestTemplate('Atlas Trek', 'Atlas', 'https://x/r', l)],
+        ['auto cancellation', (l) => service.getAutoUnpaidCancellationTemplate('Atlas Trek', 'bk-1', l)],
+        ['verification paused', (l) => service.getAgencyVerificationPausedTemplate('Licence expired', 2, 'https://x/v', l)],
+        ['refund action', (l) => service.getRefundActionRequiredTemplate('bk-1', 'https://x/r', l)],
+    ];
+
+    it.each(renders)('%s renders in fr and ar with no unresolved placeholders', (_name, render) => {
+        for (const locale of ['fr', 'ar'] as const) {
+            const out = render(locale);
+            expect(out.length).toBeGreaterThan(0);
+            expect(out).not.toContain('{{');
+            expect(out).not.toContain('undefined');
+            expect(out).toContain(locale === 'ar' ? 'dir="rtl"' : 'lang="fr"');
+        }
+    });
+
+    it('agency subject getters return distinct copy per locale', () => {
+        for (const get of [
+            (l?: string) => service.getAgencyVerificationPausedSubject(l),
+            (l?: string) => service.getRefundActionRequiredSubject(l),
+        ]) {
+            const [en, fr, ar] = [get(), get('fr'), get('ar')];
+            expect(fr).not.toBe(en);
+            expect(ar).not.toBe(en);
+        }
+    });
+
+    it('job-driven sends use the booking locale for subject and html', async () => {
+        const sent: Array<{ subject?: string; html?: string }> = [];
+        (service as unknown as { transporter: unknown }).transporter = {
+            sendMail: jest.fn(async (opts: { subject?: string; html?: string }) => {
+                sent.push(opts);
+                return { messageId: 'm' };
+            }),
+        };
+        await service.sendPaymentReminder('sara@example.com', 'Atlas Trek', 48, 'https://x/bookings/b1', 'ar');
+        await service.sendTripReminder('sara@example.com', 'Atlas Trek', 7, 'Atlas', 'https://x/trip/t1', 'fr');
+        await service.sendTripReminder('sara@example.com', 'Atlas Trek', 1, 'Atlas', 'https://x/trip/t1');
+        await service.sendReviewRequest('sara@example.com', 'Atlas Trek', 'Atlas', 'https://x/reviews/t1', 'ar');
+        await service.sendAutoUnpaidCancellationNotice('sara@example.com', 'Atlas Trek', 'b1', 'fr');
+        await service.sendSubscriptionRenewalReminder('atlas@example.com', 'Atlas', '12 Nov 2026', 'https://x/billing');
+        expect(sent).toHaveLength(6);
+        expect(sent[0].subject).toBe(fillEmailCopy(emailStrings('ar').paymentReminder.subject, { tripTitle: 'Atlas Trek' }));
+        expect(sent[0].html).toContain('dir="rtl"');
+        expect(sent[1].subject).toBe(fillEmailCopy(emailStrings('fr').tripReminder.subject, { tripTitle: 'Atlas Trek' }));
+        expect(sent[2].subject).toBe(fillEmailCopy(emailStrings('en').tripReminder.subject, { tripTitle: 'Atlas Trek' }));
+        expect(sent[3].subject).toBe(fillEmailCopy(emailStrings('ar').reviewRequest.subject, { tripTitle: 'Atlas Trek' }));
+        expect(sent[4].subject).toBe(fillEmailCopy(emailStrings('fr').autoUnpaidCancellation.subject, { tripTitle: 'Atlas Trek' }));
+        expect(sent[5].subject).toBe(emailStrings('en').subscriptionRenewal.subject);
+    });
+});
