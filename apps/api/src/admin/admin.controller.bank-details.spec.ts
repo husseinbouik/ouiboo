@@ -144,7 +144,7 @@ describe('AdminController.verifyAgencyBankDetails (#421)', () => {
             bankDetails: 'CIH Bank — RIB 111 (verified)',
             bankDetailsVerifiedAt: new Date('2026-10-01T00:00:00Z'),
         };
-        const { controller } = makeController(replacement);
+        const { controller, db } = makeController(replacement);
 
         const updated: any = await controller.verifyAgencyBankDetails(req, 'agency-1', {
             status: 'REJECTED',
@@ -152,6 +152,10 @@ describe('AdminController.verifyAgencyBankDetails (#421)', () => {
         });
 
         expect(updated.bankDetailsStatus).toBe('VERIFIED');
-        expect(updated.bankDetails).toBe('CIH Bank — RIB 111 (verified)');
+        // The live instructions are not part of the update at all —
+        // the verified destination stays exactly as it was.
+        const data = db.agencyProfile.update.mock.calls[0][0].data;
+        expect(data.bankDetails).toBeUndefined();
+        expect(data.bankDetailsStatus).toBe('VERIFIED');
     });
 });
