@@ -263,6 +263,29 @@ export interface ItineraryDay {
 }
 
 /**
+ * #417 (Council P0-11): one band of a trip's cancellation scale for
+ * traveller-initiated cancellations. Bands are stored as structured data
+ * on TripTemplate.cancellationPolicy and resolved by the API; the
+ * platform floor (agency fault / minimum group not reached = 100%
+ * refund, initiated within 7 days) always applies on top of the bands.
+ */
+export interface CancellationBand {
+    minDaysBeforeStart: number;
+    refundPercent: number;
+}
+
+export interface CancellationScale {
+    version: string;
+    bands: CancellationBand[];
+}
+
+/** The resolved scale: bands + the platform floor terms. */
+export interface CancellationScaleSnapshot extends CancellationScale {
+    floorRefundPercent: number;
+    refundInitiationDays: number;
+}
+
+/**
  * TripTemplate represents the "Master" trip definition.
  */
 export interface TripTemplate {
@@ -281,6 +304,10 @@ export interface TripTemplate {
     images: string[];
     /** #332: optional alt text per image, aligned by index with `images`. */
     imageAlts?: string[];
+    /** #417: agency-set cancellation bands as stored (null = defaults). */
+    cancellationPolicy?: CancellationScale | null;
+    /** #417: the resolved scale (bands + floor) returned by GET /trips/:id. */
+    cancellationScale?: CancellationScaleSnapshot;
     status: TripStatus;
     currency: string;
     startingPrice?: DecimalString | null;
@@ -384,6 +411,8 @@ export interface BookingDetails extends Booking {
     paymentProof?: PaymentProof;
     /** #369: staged payment plan; absent/null on single-payment bookings. */
     paymentPlan?: BookingPaymentPlan | null;
+    /** #417: cancellation scale snapshotted at booking creation (resolved from the template for legacy bookings). */
+    cancellationScale?: CancellationScaleSnapshot;
     review?: {
         id: string;
     };

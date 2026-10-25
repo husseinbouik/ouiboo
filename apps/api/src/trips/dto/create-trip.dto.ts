@@ -1,5 +1,5 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsString, IsEnum, IsPositive, IsInt, Min, IsArray, MinLength, IsOptional, ValidateNested, IsDateString, Matches, MaxLength } from 'class-validator';
+import { IsString, IsEnum, IsPositive, IsInt, Min, Max, IsArray, ArrayMinSize, ArrayMaxSize, MinLength, IsOptional, ValidateNested, IsDateString, Matches, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TripCategory, TripStatus } from '@ouiboo/types';
 import { IsDecimalMoney } from '../../common/validators/is-decimal-money.decorator';
@@ -23,6 +23,38 @@ export class ItineraryDayDto {
     @IsArray()
     @IsString({ each: true })
     activities!: string[];
+}
+
+/**
+ * #417 (Council P0-11): one band of an agency's per-trip cancellation
+ * scale for traveller-initiated cancellations. Semantic rules (coverage
+ * down to 0 days, no duplicate thresholds) are enforced in
+ * TripsService via cancellation.util; the platform floor (agency fault /
+ * minimum group not reached = 100% refund) is not configurable here and
+ * always overrides the bands.
+ */
+export class CancellationBandDto {
+    @ApiProperty({ example: 30, description: 'Whole days before the trip starts at which this band begins.' })
+    @IsInt()
+    @Min(0)
+    @Max(365)
+    minDaysBeforeStart!: number;
+
+    @ApiProperty({ example: 100, description: 'Percent of the amount actually paid that is refunded when cancelling in this band.' })
+    @IsInt()
+    @Min(0)
+    @Max(100)
+    refundPercent!: number;
+}
+
+export class CancellationPolicyDto {
+    @ApiProperty({ type: [CancellationBandDto], description: 'Bands covering every cancellation timing; must include a band starting at 0 days.' })
+    @IsArray()
+    @ArrayMinSize(1)
+    @ArrayMaxSize(10)
+    @ValidateNested({ each: true })
+    @Type(() => CancellationBandDto)
+    bands!: CancellationBandDto[];
 }
 
 export class CreateTripTemplateDto {
@@ -99,6 +131,15 @@ export class CreateTripTemplateDto {
     @ApiProperty({ enum: TripStatus, example: TripStatus.Draft })
     @IsEnum(TripStatus)
     status!: TripStatus;
+
+    // #417 (Council P0-11): agency per-trip cancellation bands. Omit to
+    // use the platform default scale. The platform floor (agency fault /
+    // minimum group not reached = 100% refund) always applies on top.
+    @ApiProperty({ type: CancellationPolicyDto, required: false })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => CancellationPolicyDto)
+    cancellationPolicy?: CancellationPolicyDto;
 
     @ApiProperty({ type: [ItineraryDayDto], required: false })
     @IsOptional()

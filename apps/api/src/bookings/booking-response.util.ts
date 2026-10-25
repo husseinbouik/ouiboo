@@ -12,6 +12,7 @@ import {
 } from '@ouiboo/types';
 import { type Prisma } from '@ouiboo/database';
 import { type MoneyInput, toMoneyString } from '../common/money.util';
+import { buildCancellationScaleSnapshot } from '../cancellation/cancellation.util';
 
 /**
  * #422 (Council P0-20): the only ExternalPayment fields booking/payment
@@ -68,6 +69,8 @@ type BookingMapperInput = {
   paymentProofId?: string | null;
   refundAmount?: MoneyInput | null;
   refundStatus?: string | null;
+  /** #417: cancellation scale snapshot stored on the booking (Json). */
+  cancellationScale?: unknown;
   confirmedAt?: NullableDate;
   cancelledAt?: NullableDate;
   paymentGatewayTransactionId?: string | null;
@@ -131,6 +134,8 @@ type BookingMapperInput = {
       id: string;
       title: string;
       startLocation: string;
+      /** #417: stored cancellation bands (Json); legacy-snapshot fallback. */
+      cancellationPolicy?: unknown;
       images: string[];
       /** #332: alt text per image (index-aligned); absent on pre-migration rows. */
       imageAlts?: string[];
@@ -235,6 +240,13 @@ export const mapBookingDetails = (booking: BookingMapperInput): BookingDetails =
   paymentProofId: booking.paymentProofId || undefined,
   refundAmount: toMoneyString(booking.refundAmount),
   refundStatus: (booking.refundStatus as RefundStatusType | null | undefined) ?? undefined,
+  // #417: the cancellation scale snapshotted at booking creation. For
+  // legacy bookings without a snapshot, resolve the effective scale
+  // from the template's current policy so the confirmation surface can
+  // always repeat a scale.
+  cancellationScale: buildCancellationScaleSnapshot(
+    booking.cancellationScale ?? booking.session?.template?.cancellationPolicy,
+  ),
   cancelledAt: toIsoString(booking.cancelledAt),
   confirmedAt: toIsoString(booking.confirmedAt),
   paymentGatewayTransactionId: booking.paymentGatewayTransactionId || undefined,

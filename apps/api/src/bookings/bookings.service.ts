@@ -6,10 +6,14 @@ import { EmailService } from '../email/email.service';
 import { UploadService } from '../upload/upload.service';
 import { BookingPaymentPlanStatus, BookingPaymentStatus, ExternalPaymentStage, PaymentCustodian, PaymentLedgerSource, PaymentMethod, SessionGroupStatus } from '@ouiboo/database';
 import { BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT, mapBookingDetails } from './booking-response.util';
+import { Prisma } from '@ouiboo/database';
 import { decimalEqualsMoney, multiplyMoney, toMoneyDecimal } from '../common/money.util';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
 import { isInsuranceVerified, isLicenceVerified } from '../common/agency-licence.util';
+import {
+    buildCancellationScaleSnapshot,
+} from '../cancellation/cancellation.util';
 
 const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
 
@@ -159,12 +163,21 @@ export class BookingsService {
 
             const totalAmount = multiplyMoney(sessionWithInfo.price, dto.guestsCount);
 
+            // #417 (Council P0-11): snapshot the trip's resolved
+            // cancellation scale onto the booking, so later template
+            // edits can never rewrite the terms booked under. The same
+            // snapshot's lines go into the booking confirmation email.
+            const cancellationScale = buildCancellationScaleSnapshot(
+                sessionWithInfo.template.cancellationPolicy,
+            );
+
             const booking = await tx.booking.create({
                 data: {
                     sessionId: dto.sessionId,
                     travelerId,
                     guestsCount: dto.guestsCount,
                     totalAmount,
+                    cancellationScale: cancellationScale as unknown as Prisma.InputJsonValue,
                     currency: sessionWithInfo.currency || 'MAD',
                     status: 'PENDING',
                     fullName: dto.fullName,
@@ -225,6 +238,7 @@ export class BookingsService {
                         bookingId: booking.id,
                         tripTitle: sessionWithInfo.template.title,
                         locale: booking.locale,
+                        cancellationScale,
                     }
                     : null,
             };
@@ -238,6 +252,7 @@ export class BookingsService {
                 notification.bookingId,
                 notification.tripTitle,
                 notification.locale,
+                notification.cancellationScale,
             ).catch(() => undefined);
         }
 

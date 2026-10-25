@@ -18,6 +18,23 @@ import { tripTemplateFixture } from './e2e-fixtures';
 
 jest.setTimeout(60_000);
 
+// #417 (Council P0-11): the booking confirmation repeats the trip's
+// cancellation scale, so sendBookingNotification also receives the
+// scale snapshot taken at booking creation. These trips use the
+// platform default bands.
+const DEFAULT_CANCELLATION_SCALE = {
+    version: 'cancellation-v1',
+    floorRefundPercent: 100,
+    refundInitiationDays: 7,
+    bands: [
+        { minDaysBeforeStart: 30, refundPercent: 100 },
+        { minDaysBeforeStart: 15, refundPercent: 75 },
+        { minDaysBeforeStart: 7, refundPercent: 50 },
+        { minDaysBeforeStart: 3, refundPercent: 25 },
+        { minDaysBeforeStart: 0, refundPercent: 0 },
+    ],
+};
+
 describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
     let app: INestApplication;
     let db: DatabaseService;
@@ -204,7 +221,8 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             'Mountain Adventure',
             // #424: trailing arg is the booking's stored locale (null =
             // created without one → emails fall back to English).
-            null
+            null,
+            DEFAULT_CANCELLATION_SCALE
         );
 
         // Verify database state
@@ -783,7 +801,8 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             agencyUser.email,
             createRes.body.id,
             'Mountain Adventure',
-            null // #424: no stored locale on this booking
+            null, // #424: no stored locale on this booking
+            DEFAULT_CANCELLATION_SCALE
         );
 
         // Upload proof

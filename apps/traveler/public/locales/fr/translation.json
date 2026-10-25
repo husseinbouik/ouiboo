@@ -250,7 +250,7 @@
     "sectionFiveBody": "Ouiboo respecte les droits de propriété intellectuelle d'autrui et attend de ses utilisateurs qu'ils fassent de même. Si vous estimez qu'un contenu sur Ouiboo porte atteinte à vos droits d'auteur, déposez un signalement sur notre page de signalement des droits d'auteur. Votre notification doit identifier l'œuvre protégée, le contenu prétendument litigieux et son emplacement sur Ouiboo, vos coordonnées, une déclaration de bonne foi selon laquelle l'utilisation n'est autorisée ni par le titulaire, ni par son agent, ni par la loi, ainsi qu'une déclaration, sous peine de parjure, attestant que les informations sont exactes et que vous êtes le titulaire des droits ou autorisé à agir en son nom. Nous examinons rapidement les notifications valides, retirons les contenus litigieux ou en désactivons l'accès, et résilions les comptes des contrefacteurs répétés. Si votre contenu a été retiré par erreur, vous pouvez déposer une contre-notification via la même page ; nous restaurerons le contenu sauf si l'auteur du signalement initial engage une action en justice. Les coordonnées de notre agent désigné seront publiées ici dès son enregistrement terminé.",
     "backToSignup": "Retour à l'inscription",
     "title": "Conditions d'utilisation",
-    "updated": "Dernière mise à jour : mars 2024",
+    "updated": "Dernière mise à jour : octobre 2026",
     "intro": "Ces conditions expliquent comment utiliser Ouiboo pour planifier et réserver vos aventures.",
     "sectionOneTitle": "Utiliser Ouiboo",
     "sectionOneBody": "Créez un profil, découvrez des voyages et réservez des expériences en toute confiance.",
@@ -261,7 +261,20 @@
     "sectionFourTitle": "Assistance",
     "sectionFourBody": "Nous sommes là pour vous aider par e-mail.",
     "sectionSixTitle": "Assistance et urgences",
-    "sectionSixBody": "OuiBoo assure l'assistance par e-mail et répond aux demandes normales sous 48 heures. Pendant un voyage en cours, l'agence organisatrice est votre premier contact pour les problèmes du jour même ; son contact d'urgence figure sur votre réservation. Si l'agence ne répond pas pendant la période du voyage, l'assistance OuiBoo fera remonter le problème auprès d'elle pour vous. OuiBoo n'exploite pas de ligne d'urgence 24h/24. Lorsqu'un remboursement est dû, l'agence doit l'effectuer dans les 7 jours suivant l'ouverture du dossier ; OuiBoo surveille ce délai et relance les remboursements en retard."
+    "sectionSixBody": "OuiBoo assure l'assistance par e-mail et répond aux demandes normales sous 48 heures. Pendant un voyage en cours, l'agence organisatrice est votre premier contact pour les problèmes du jour même ; son contact d'urgence figure sur votre réservation. Si l'agence ne répond pas pendant la période du voyage, l'assistance OuiBoo fera remonter le problème auprès d'elle pour vous. OuiBoo n'exploite pas de ligne d'urgence 24h/24. Lorsqu'un remboursement est dû, l'agence doit l'effectuer dans les 7 jours suivant l'ouverture du dossier ; OuiBoo surveille ce délai et relance les remboursements en retard.",
+    "sectionSevenTitle": "Annulation et remboursements",
+    "sectionSevenBody": "Chaque voyage affiche son barème d'annulation avant le paiement, et ce même barème est répété dans votre confirmation de réservation. Si l'agence annule votre voyage, ou si un voyage ne peut pas avoir lieu parce que son groupe minimum n'a pas été atteint, vous êtes remboursé à 100 % de ce que vous avez payé et le remboursement doit être initié sous 7 jours. Si vous annulez, votre remboursement suit le barème du voyage : plus vous annulez tôt avant le départ, plus le pourcentage remboursé est élevé. Les remboursements sont versés par l'agence auprès de laquelle vous avez réservé — Ouiboo est une plateforme technologique et ne détient jamais votre argent."
+  },
+  "cancellation": {
+    "title": "Politique d'annulation",
+    "floorAgency": "Si l'agence annule : remboursement de {{percent}} % de ce que vous avez payé, initié sous {{days}} jours.",
+    "floorMinimum": "Si le voyage n'a pas lieu faute d'avoir atteint le groupe minimum : remboursement de {{percent}} % de ce que vous avez payé, initié sous {{days}} jours.",
+    "ifYouCancel": "Si vous annulez",
+    "bandAtLeast": "{{days}} jours ou plus avant le voyage",
+    "bandLessThan": "Moins de {{days}} jours avant le voyage",
+    "bandAnyTime": "À tout moment avant le voyage",
+    "refundPercent": "Remboursement de {{percent}} %",
+    "paidByAgency": "Les remboursements sont versés par l'agence auprès de laquelle vous avez réservé — Ouiboo ne détient jamais votre argent."
   },
   "privacy": {
     "backToSignup": "Retour à l'inscription",

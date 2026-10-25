@@ -475,6 +475,12 @@ model TripTemplate {
   reviewCount        Int            @default(0)
   lastReviewDate     DateTime?
   startingPrice      Decimal?       @db.Decimal(18, 2)
+  // #417 (Council P0-11): agency per-trip cancellation bands for
+  // traveller-initiated cancellations, stored as structured data:
+  // { version, bands: [{ minDaysBeforeStart, refundPercent }] },
+  // validated on write by the API (never below the platform floor —
+  // agency-fault and minimum-unmet cancellations always refund 100%
+  // and never consult these bands). Null = platform default bands.
   cancellationPolicy Json?
   minBookings        Int            @default(1)
   createdAt          DateTime       @default(now())
@@ -562,6 +568,13 @@ model Booking {
   cancelledBy                 String?
   cancellationReason          String?
   confirmedAt                 DateTime?
+  // #417 (Council P0-11): snapshot of the trip's resolved cancellation
+  // scale ({ version, bands, floorRefundPercent, refundInitiationDays })
+  // taken at booking creation. Later template edits can never rewrite
+  // the terms a traveller already booked under; traveller-cancellation
+  // refunds are computed from this snapshot. Null for bookings created
+  // before the scale existed (resolved from the template at read time).
+  cancellationScale           Json?
   refundAmount                Decimal?             @db.Decimal(18, 2)
   refundStatus                RefundStatus?
   refundProcessedAt           DateTime?

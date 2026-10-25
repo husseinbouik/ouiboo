@@ -25,8 +25,9 @@ import { useAuth } from '@/components/AuthContext';
 import { ReviewList } from '@/components/ReviewList';
 import SellerIdentity from '@/components/SellerIdentity';
 import { TRAVELER_URL } from '@/lib/site';
-import { SessionStatus, type SessionStatusType } from '@ouiboo/types';
+import { SessionStatus, type CancellationScaleSnapshot, type SessionStatusType } from '@ouiboo/types';
 import { formatCurrency } from '@ouiboo/utils';
+import { CancellationScaleCard } from '@/components/CancellationScaleCard';
 
 type TripDay = {
   dayNumber: number;
@@ -76,6 +77,8 @@ type TripDetails = {
   } | null;
   sessions?: TripSession[];
   itinerary?: TripDay[];
+  /** #417: the resolved cancellation scale from GET /trips/:id (bands + floor). */
+  cancellationScale?: CancellationScaleSnapshot | null;
   inclusions?: string[];
   exclusions?: string[];
   checklist?: string[];
@@ -171,6 +174,11 @@ export default function TripDetailsClient({
   const minPriceLabel = lowestPricedSession
     ? formatCurrency(lowestPricedSession.price, lowestPricedSession.currency, i18n.language)
     : 'On request';
+
+  // #417: refund amounts on the cancellation scale are computed on the
+  // selected session's price, falling back to the lowest open price.
+  const selectedSessionData = openSessions.find((session) => session.id === selectedSession) ?? null;
+  const scaleBaseSession = selectedSessionData ?? lowestPricedSession;
 
   // Gallery tiles/thumbnails never include the photo currently shown in the
   // main viewer, so the same photo is never on screen twice. Indices are the
@@ -500,6 +508,14 @@ export default function TripDetailsClient({
                   </div>
                </div>
              )}
+
+             {/* #417: the cancellation scale, shown before payment. */}
+             <CancellationScaleCard
+               scale={trip.cancellationScale}
+               baseAmount={scaleBaseSession ? Number(scaleBaseSession.price) : null}
+               currency={scaleBaseSession?.currency ?? trip.sessions?.[0]?.currency}
+               className="pt-6"
+             />
 
              {/* Reviews Section */}
              <div className="space-y-6 pt-6">

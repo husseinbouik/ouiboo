@@ -8,6 +8,7 @@ import { MapPin, Calendar, Users, ShieldCheck, CheckCircle2 } from 'lucide-react
 import { formatCurrency } from '@ouiboo/utils';
 import type { CheckoutTrip } from './checkout-types';
 import SellerIdentity from '../SellerIdentity';
+import { CancellationScaleCard } from '../CancellationScaleCard';
 
 type CheckoutSummaryProps = {
   trip: CheckoutTrip;
@@ -98,6 +99,13 @@ export function CheckoutSummary({
           )}
         </div>
       </div>
+
+      {/* #417: the cancellation scale, repeated at checkout before payment. */}
+      <CancellationScaleCard
+        scale={trip.cancellationScale}
+        baseAmount={totalPrice}
+        currency={selectedCurrency}
+      />
 
       {errorMessage && (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-xs font-semibold text-rose-700">

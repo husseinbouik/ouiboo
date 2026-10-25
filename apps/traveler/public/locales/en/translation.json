@@ -250,7 +250,7 @@
     "sectionFiveBody": "Ouiboo respects the intellectual property rights of others and expects its users to do the same. If you believe content on Ouiboo infringes your copyright, file a report on our copyright report page. Your notice must identify the copyrighted work, the allegedly infringing material and where it appears on Ouiboo, your contact details, a good-faith statement that the use is not authorized by the owner, its agent, or the law, and a statement, under penalty of perjury, that the information is accurate and that you are the owner or authorized to act on the owner's behalf. We review valid notices promptly and remove or disable access to infringing material, and we terminate the accounts of repeat infringers. If your content was removed in error, you may file a counter-notice through the same page and we will restore the content unless the original reporter files a court action. Our designated agent information will be published here when registration is complete.",
     "backToSignup": "Back to sign up",
     "title": "Terms of Service",
-    "updated": "Last updated: March 2024",
+    "updated": "Last updated: October 2026",
     "intro": "These terms outline how you can use Ouiboo to plan and book your adventures.",
     "sectionOneTitle": "Using Ouiboo",
     "sectionOneBody": "Create a profile, discover trips, and book experiences in a respectful way.",
@@ -261,7 +261,20 @@
     "sectionFourTitle": "Support",
     "sectionFourBody": "We are here to help via email.",
     "sectionSixTitle": "Support and emergencies",
-    "sectionSixBody": "OuiBoo provides support by email and replies to normal requests within 48 hours. During an active trip, the agency organising your trip is your first contact for on-the-day problems; its emergency contact is shown on your booking. If the agency does not respond during the trip period, OuiBoo support will escalate with the agency on your behalf. OuiBoo does not operate a 24/7 hotline. When a refund is due, the agency must complete it within 7 days of the refund case opening; OuiBoo monitors the deadline and chases overdue refunds."
+    "sectionSixBody": "OuiBoo provides support by email and replies to normal requests within 48 hours. During an active trip, the agency organising your trip is your first contact for on-the-day problems; its emergency contact is shown on your booking. If the agency does not respond during the trip period, OuiBoo support will escalate with the agency on your behalf. OuiBoo does not operate a 24/7 hotline. When a refund is due, the agency must complete it within 7 days of the refund case opening; OuiBoo monitors the deadline and chases overdue refunds.",
+    "sectionSevenTitle": "Cancellation and refunds",
+    "sectionSevenBody": "Every trip shows its cancellation scale before you pay, and the same scale is repeated in your booking confirmation. If the agency cancels your trip, or a trip cannot run because its minimum group was not reached, you are refunded 100% of what you paid and the refund must be initiated within 7 days. If you cancel, your refund follows the trip's scale: the earlier you cancel before the trip starts, the higher the percentage refunded. Refunds are paid by the agency you booked with — Ouiboo is a technology platform and never holds your money."
+  },
+  "cancellation": {
+    "title": "Cancellation policy",
+    "floorAgency": "If the agency cancels: {{percent}}% refund of what you paid, initiated within {{days}} days.",
+    "floorMinimum": "If the trip doesn't run because the minimum group isn't reached: {{percent}}% refund of what you paid, initiated within {{days}} days.",
+    "ifYouCancel": "If you cancel",
+    "bandAtLeast": "{{days}} or more days before the trip",
+    "bandLessThan": "Less than {{days}} days before the trip",
+    "bandAnyTime": "Any time before the trip",
+    "refundPercent": "{{percent}}% refund",
+    "paidByAgency": "Refunds are paid by the agency you booked with — Ouiboo never holds your money."
   },
   "privacy": {
     "backToSignup": "Back to sign up",

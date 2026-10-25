@@ -70,6 +70,53 @@ export const CreateItineraryDaySchema = ItineraryDaySchema.omit({
     templateId: true,
 });
 
+/**
+ * #417 (Council P0-11): agency per-trip cancellation bands for
+ * traveller-initiated cancellations. The semantic rules mirror the API
+ * (cancellation.util): coverage must reach 0 days and thresholds must be
+ * unique, so every cancellation timing resolves to exactly one band.
+ * The platform floor (agency fault / minimum group not reached = 100%
+ * refund) is not configurable and always overrides the bands.
+ */
+export const CancellationBandSchema = z.object({
+    minDaysBeforeStart: z.number().int().min(0).max(365),
+    refundPercent: z.number().int().min(0).max(100),
+});
+
+export const CancellationPolicySchema = z.object({
+    bands: z.array(CancellationBandSchema).min(1).max(10).superRefine((bands, ctx) => {
+        const thresholds = new Set<number>();
+        for (const band of bands) {
+            if (thresholds.has(band.minDaysBeforeStart)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: `Duplicate cancellation band for ${band.minDaysBeforeStart} days before the trip`,
+                });
+            }
+            thresholds.add(band.minDaysBeforeStart);
+        }
+        if (!thresholds.has(0)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Add a band starting at 0 days so every cancellation timing is covered',
+            });
+        }
+    }),
+});
+
+/**
+ * #417: platform default bands, applied when a trip stores none.
+ * Mirrors PLATFORM_DEFAULT_CANCELLATION_BANDS in the API
+ * (apps/api/src/cancellation/cancellation.util.ts) — keep them in sync.
+ */
+export const PLATFORM_DEFAULT_CANCELLATION_BANDS: Array<z.infer<typeof CancellationBandSchema>> = [
+    { minDaysBeforeStart: 30, refundPercent: 100 },
+    { minDaysBeforeStart: 15, refundPercent: 75 },
+    { minDaysBeforeStart: 7, refundPercent: 50 },
+    { minDaysBeforeStart: 3, refundPercent: 25 },
+    { minDaysBeforeStart: 0, refundPercent: 0 },
+];
+
 export const TripTemplateSchema = z.object({
     id: z.string(),
     agencyId: z.string(),
@@ -86,6 +133,8 @@ export const TripTemplateSchema = z.object({
     images: z.array(z.string()).min(1, "At least one image is required"),
     // #332: optional alt text per image, aligned by index with `images`.
     imageAlts: z.array(z.string().max(300)).optional(),
+    // #417: optional agency cancellation bands (absent = platform defaults).
+    cancellationPolicy: CancellationPolicySchema.optional(),
     itinerary: z.array(ItineraryDaySchema).optional(),
     status: z.nativeEnum(TripStatus),
     currency: z.string().regex(/^[A-Z]{3}$/, "Currency must be an ISO 4217 code"),

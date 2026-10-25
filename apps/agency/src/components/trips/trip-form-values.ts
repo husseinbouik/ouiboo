@@ -36,6 +36,17 @@ export function tripToFormValues(trip: TripEditorData): CreateTripInput {
     checklist: trip.checklist || [],
     images,
     imageAlts: images.map((_, i) => trip.imageAlts?.[i] ?? ''),
+    // #417: the agency's stored cancellation bands; undefined when the
+    // trip uses the platform default scale (the editor then shows the
+    // default state instead of freezing the defaults as custom bands).
+    cancellationPolicy: trip.cancellationPolicy?.bands?.length
+      ? {
+          bands: trip.cancellationPolicy.bands.map((band) => ({
+            minDaysBeforeStart: band.minDaysBeforeStart,
+            refundPercent: band.refundPercent,
+          })),
+        }
+      : undefined,
     itinerary: trip.itinerary || [],
     status: trip.status,
     currency: trip.currency || 'MAD',

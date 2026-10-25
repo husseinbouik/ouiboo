@@ -332,6 +332,126 @@ describe('RefundsService (#370)', () => {
         ).rejects.toBeInstanceOf(ConflictException);
     });
 
+    describe('cancellation scale (#417)', () => {
+        const seedCancellableBooking = (
+            db: any,
+            overrides: Record<string, unknown> = {},
+            daysUntilStart = 10.5,
+        ) => {
+            db._bookings.set('booking-1', {
+                id: 'booking-1',
+                travelerId: 'traveler-1',
+                currency: 'MAD',
+                cancellationScale: null,
+                session: {
+                    startDate: new Date(Date.now() + daysUntilStart * DAY_MS),
+                    template: { agencyId: 'agency-1', title: 'Trek', cancellationPolicy: null },
+                },
+                ...overrides,
+            });
+        };
+
+        it('computes the requested amount from the default scale bands', async () => {
+            const db = makeFakeDb();
+            seedAgency(db);
+            seedCancellableBooking(db); // 10 whole days before start → 50% band
+            seedDepositPayment(db, { stage: 'FULL' });
+            const { service } = makeService(db);
+
+            const created = await service.requestRefund('traveler-1', {
+                bookingId: 'booking-1',
+                cancellation: true,
+            });
+
+            expect(created.status).toBe('REFUND_REQUESTED');
+            expect(created.requestedAmount).toBe('100.00'); // 50% of 200
+            expect(created.reason).toBe('TRAVELLER_CANCELLATION');
+            expect(created.eligibilityRule).toBe('CANCELLATION_SCALE_BAND_7D_50PCT');
+        });
+
+        it('prefers the booking snapshot over the template policy', async () => {
+            const db = makeFakeDb();
+            seedAgency(db);
+            seedCancellableBooking(
+                db,
+                {
+                    cancellationScale: {
+                        version: 'cancellation-v1',
+                        bands: [
+                            { minDaysBeforeStart: 14, refundPercent: 80 },
+                            { minDaysBeforeStart: 0, refundPercent: 10 },
+                        ],
+                        floorRefundPercent: 100,
+                        refundInitiationDays: 7,
+                    },
+                    session: {
+                        startDate: new Date(Date.now() + 20.5 * DAY_MS),
+                        template: { agencyId: 'agency-1', title: 'Trek', cancellationPolicy: null },
+                    },
+                },
+                20.5,
+            );
+            seedDepositPayment(db, { stage: 'FULL' });
+            const { service } = makeService(db);
+
+            const created = await service.requestRefund('traveler-1', {
+                bookingId: 'booking-1',
+                cancellation: true,
+            });
+
+            expect(created.requestedAmount).toBe('160.00'); // 80% of 200
+            expect(created.eligibilityRule).toBe('CANCELLATION_SCALE_BAND_14D_80PCT');
+        });
+
+        it('refunds in full at the 30-day boundary of the default scale', async () => {
+            const db = makeFakeDb();
+            seedAgency(db);
+            seedCancellableBooking(db, {}, 30.5);
+            seedDepositPayment(db, { stage: 'FULL' });
+            const { service } = makeService(db);
+
+            const created = await service.requestRefund('traveler-1', {
+                bookingId: 'booking-1',
+                cancellation: true,
+            });
+
+            expect(created.requestedAmount).toBe('200.00');
+            expect(created.eligibilityRule).toBe('CANCELLATION_SCALE_BAND_30D_100PCT');
+        });
+
+        it('opens no case inside the zero band of the scale', async () => {
+            const db = makeFakeDb();
+            seedAgency(db);
+            seedCancellableBooking(db, {}, 1.5); // 1 whole day before start → 0%
+            seedDepositPayment(db, { stage: 'FULL' });
+            const { service } = makeService(db);
+
+            await expect(
+                service.requestRefund('traveler-1', { bookingId: 'booking-1', cancellation: true }),
+            ).rejects.toBeInstanceOf(BadRequestException);
+            expect(db._cases.size).toBe(0);
+        });
+
+        it('marks agency-initiated cases with the platform floor rule at 100%', async () => {
+            const db = makeFakeDb();
+            seedAgency(db);
+            seedCancellableBooking(db, {}, 1.5); // bands would give 0% — the floor overrides
+            seedDepositPayment(db, { stage: 'FULL' });
+            const { service } = makeService(db);
+
+            const created = await service.createCase(
+                { id: 'agency-user-1' },
+                'AGENCY',
+                'agency-1',
+                { bookingId: 'booking-1' },
+            );
+
+            expect(created.status).toBe('AGENCY_ACTION_REQUIRED');
+            expect(created.requestedAmount).toBe('200.00');
+            expect(created.eligibilityRule).toBe('AGENCY_FAULT_FULL_REFUND');
+        });
+    });
+
     it('approve records REFUND_APPROVED in the audit trail and lands in AGENCY_ACTION_REQUIRED with an SLA deadline', async () => {
         const db = makeFakeDb();
         seedAgency(db);
