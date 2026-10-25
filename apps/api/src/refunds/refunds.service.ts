@@ -93,6 +93,10 @@ const CASE_INCLUDE = {
     },
     agency: { select: { id: true, companyName: true } },
     traveler: { select: { id: true, name: true, email: true } },
+    // #416C: the evidence trail travels with the case so every surface
+    // (agency form, admin audit queue, traveller view) can show WHAT a
+    // completion rests on. Append-only rows, oldest first.
+    evidence: { orderBy: { createdAt: 'asc' } },
 } satisfies Prisma.RefundCaseInclude;
 
 export function serializeRefundCase<T extends Record<string, any>>(refundCase: T) {
@@ -103,6 +107,17 @@ export function serializeRefundCase<T extends Record<string, any>>(refundCase: T
             refundCase.approvedAmount === null || refundCase.approvedAmount === undefined
                 ? null
                 : toMoneyString(refundCase.approvedAmount),
+        ...(Array.isArray(refundCase.evidence)
+            ? {
+                evidence: refundCase.evidence.map((row: Record<string, any>) => ({
+                    ...row,
+                    amount:
+                        row.amount === null || row.amount === undefined
+                            ? null
+                            : toMoneyString(row.amount),
+                })),
+            }
+            : {}),
     };
 }
 
@@ -1441,12 +1456,25 @@ export class RefundsService {
         limit?: string;
         status?: string;
         agencyId?: string;
+        auditQueue?: string | boolean;
     }) {
         const { page, limit } = parseRefundPagination(query.page, query.limit);
         const status = this.parseStatusFilter(query.status);
+        // #416C: the audit queue is completed cases flagged by the
+        // risk-based audit rule (auditRequired stamped at completion in
+        // 416B) that no admin has reviewed yet. It pins the status to
+        // REFUND_COMPLETED — the audit flag only exists on completions.
+        const auditQueue = query.auditQueue === true || query.auditQueue === 'true';
         const where: Prisma.RefundCaseWhereInput = {
             ...(status ? { status } : {}),
             ...(query.agencyId ? { agencyId: query.agencyId } : {}),
+            ...(auditQueue
+                ? {
+                    status: RefundCaseStatus.REFUND_COMPLETED,
+                    auditRequired: true,
+                    auditedAt: null,
+                }
+                : {}),
         };
         const [cases, total] = await Promise.all([
             this.db.refundCase.findMany({

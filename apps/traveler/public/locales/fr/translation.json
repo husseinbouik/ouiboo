@@ -337,5 +337,18 @@
     "organisedAndSoldBy": "Organisé et vendu par {{name}}",
     "licence": "Licence d'agent de voyages : {{number}}",
     "poweredBy": "Propulsé par OuiBoo"
+  },
+  "refunds": {
+    "confirmReceipt": "Confirmer la réception",
+    "confirmReceiptHint": "L'organisateur indique que le remboursement a été envoyé. Si l'argent est arrivé sur votre compte, vous pouvez le confirmer ici. La confirmation est facultative : elle aide à clore le dossier, mais un remboursement n'est marqué terminé que sur la confirmation de la banque ou du prestataire de paiement — jamais sur la seule parole de l'organisateur, et votre confirmation ne remplace pas cette vérification.",
+    "receiptConfirmed": "Vous avez confirmé la réception le {{date}}.",
+    "completedBasis": "Ce remboursement a été marqué terminé sur la base de la confirmation de la banque ou du prestataire de paiement — et non sur la seule parole de l'organisateur. Votre paiement est allé directement à l'organisateur, et le remboursement vient également de lui ; OuiBoo ne détient jamais votre argent.",
+    "dispute": "Signaler un problème",
+    "disputeHint": "L'argent n'est jamais arrivé ? Dites-le-nous avant le {{date}} (dans les {{days}} jours suivant la clôture) et nous rouvrirons le dossier.",
+    "disputeReasonPlaceholder": "Que s'est-il passé ? ex. L'argent n'est pas arrivé sur mon compte",
+    "disputeSubmit": "Rouvrir mon dossier de remboursement",
+    "disputeWindowClosed": "Le délai de {{days}} jours pour signaler un problème est écoulé. Veuillez contacter l'organisateur ou le support OuiBoo.",
+    "disputed": "Vous avez signalé un problème avec ce remboursement — le dossier a été rouvert et est en cours d'examen.",
+    "actionFailed": "Une erreur est survenue. Veuillez réessayer."
   }
 }

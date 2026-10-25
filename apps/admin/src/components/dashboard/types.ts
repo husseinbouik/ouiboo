@@ -19,6 +19,16 @@ export type AdminPendingGroup = {
   currency: string;
 };
 
+/** #416C: one row of a refund case's completion-evidence trail. */
+export type AdminRefundEvidence = {
+  id: string;
+  tier: string;
+  source: string;
+  reference: string | null;
+  amount: string | null;
+  createdAt: string;
+};
+
 export type AdminRefundCase = {
   id: string;
   bookingId: string;
@@ -34,6 +44,13 @@ export type AdminRefundCase = {
   initiatedAt: string | null;
   completedAt: string | null;
   failureReason: string | null;
+  /** #416: strongest qualifying evidence tier at completion. */
+  completionTier?: string | null;
+  /** #416B/#416C: risk-based audit queue fields. */
+  auditRequired?: boolean;
+  auditedAt?: string | null;
+  auditedBy?: string | null;
+  evidence?: AdminRefundEvidence[];
   originalPaymentId?: string | null;
   externalPaymentReference?: string | null;
   agency?: { id: string; companyName: string } | null;

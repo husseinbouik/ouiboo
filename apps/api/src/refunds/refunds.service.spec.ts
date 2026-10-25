@@ -1294,3 +1294,113 @@ describe('RefundsService PSP wiring + traveller confirm/dispute (#416B)', () => 
         expect(audits[0].metadata.auditRequired).toBe(true);
     });
 });
+
+describe('RefundsService audit queue + evidence exposure (#416C)', () => {
+    const ADMIN_ACTOR = { id: 'admin-1' };
+
+    function seedCase(db: any, overrides: Record<string, unknown> = {}) {
+        const row = {
+            id: `case-${db._cases.size + 1}`, bookingId: 'booking-1', travelerId: 'traveler-1',
+            agencyId: 'agency-1', originalPaymentId: 'payment-1',
+            requestedAmount: D('200.00'), approvedAmount: D('200.00'), currency: 'MAD',
+            status: 'REFUND_COMPLETED', completedAt: new Date(), completionTier: 'BANK_REFERENCE',
+            auditRequired: true, auditedAt: null, auditedBy: null,
+            ...overrides,
+        };
+        db._cases.set(row.id, row);
+        return row;
+    }
+
+    /**
+     * The shared fake's findMany/count do not model the auditQueue where
+     * fields — extend them here with the full matcher listAdminCases uses.
+     */
+    function honourAuditFields(db: any) {
+        const matches = (c: any, where: any = {}) =>
+            (where.agencyId === undefined || c.agencyId === where.agencyId)
+            && (where.status === undefined || typeof where.status !== 'string' || c.status === where.status)
+            && (where.auditRequired === undefined || c.auditRequired === where.auditRequired)
+            && (where.auditedAt === undefined || (c.auditedAt ?? null) === where.auditedAt);
+        db.refundCase.findMany = jest.fn(async ({ where }: any) =>
+            [...db._cases.values()].filter((c: any) => matches(c, where)),
+        );
+        db.refundCase.count = jest.fn(async ({ where }: any) =>
+            [...db._cases.values()].filter((c: any) => matches(c, where)).length,
+        );
+    }
+
+    it('the audit queue lists only completed, audit-flagged, not-yet-audited cases', async () => {
+        const db = makeFakeDb();
+        honourAuditFields(db);
+        seedAgency(db);
+        const queued = seedCase(db);
+        seedCase(db, { auditedAt: new Date(), auditedBy: 'admin-1' }); // already audited
+        seedCase(db, { auditRequired: false }); // not flagged
+        seedCase(db, { status: 'REFUND_INITIATED', completedAt: null, completionTier: null }); // not completed
+        const { service } = makeService(db);
+
+        const result = await service.listAdminCases({ auditQueue: 'true' });
+
+        expect(result.pagination.total).toBe(1);
+        expect(result.data.map((c: any) => c.id)).toEqual([queued.id]);
+        expect(result.data[0].auditRequired).toBe(true);
+        expect(result.data[0].auditedAt).toBeNull();
+        expect(result.data[0].completionTier).toBe('BANK_REFERENCE');
+    });
+
+    it('without auditQueue the admin list is unfiltered by the audit fields', async () => {
+        const db = makeFakeDb();
+        honourAuditFields(db);
+        seedAgency(db);
+        seedCase(db);
+        seedCase(db, { auditRequired: false });
+        const { service } = makeService(db);
+
+        const result = await service.listAdminCases({});
+
+        expect(result.pagination.total).toBe(2);
+    });
+
+    it('a marked-audited case leaves the audit queue', async () => {
+        const db = makeFakeDb();
+        honourAuditFields(db);
+        seedAgency(db);
+        seedCase(db);
+        const { service } = makeService(db);
+
+        await service.markAudited(ADMIN_ACTOR, 'case-1');
+        const result = await service.listAdminCases({ auditQueue: true });
+
+        expect(result.pagination.total).toBe(0);
+    });
+
+    it('case responses carry the evidence trail with amounts serialized as strings', async () => {
+        const db = makeFakeDb();
+        seedAgency(db);
+        const refundCase = seedCase(db, { status: 'REFUND_INITIATED', completedAt: null, completionTier: null });
+        refundCase.evidence = [
+            {
+                id: 'evidence-1', refundCaseId: refundCase.id, tier: 'BANK_REFERENCE',
+                source: 'AGENCY', reference: 'VIR-2026-1042',
+                proofUrl: 'private/agency-user-1/bank-confirmation.pdf',
+                amount: D('200.00'), note: null, recordedBy: 'agency-user-1',
+                createdAt: new Date(),
+            },
+            {
+                id: 'evidence-2', refundCaseId: refundCase.id, tier: 'TRAVELLER_CONFIRMATION',
+                source: 'TRAVELLER', reference: null, proofUrl: null,
+                amount: null, note: null, recordedBy: 'traveler-1',
+                createdAt: new Date(),
+            },
+        ];
+        const { service } = makeService(db);
+
+        const result = await service.getCaseForActor(refundCase.id, 'ADMIN', null);
+
+        expect(result.evidence).toHaveLength(2);
+        expect(result.evidence[0].tier).toBe('BANK_REFERENCE');
+        expect(result.evidence[0].reference).toBe('VIR-2026-1042');
+        expect(result.evidence[0].amount).toBe('200.00');
+        expect(result.evidence[1].amount).toBeNull();
+    });
+});

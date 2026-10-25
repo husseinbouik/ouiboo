@@ -1035,6 +1035,29 @@
     "failReasonPlaceholder": "Why did the refund fail?",
     "bookingFallback": "Booking",
     "failureReason": "Last attempt failed",
-    "title": "Refunds"
+    "title": "Refunds",
+    "evidence": {
+      "title": "Add completion evidence",
+      "instruction": "After you send the refund, attach the proof here: the bank transfer reference (or your payment provider's transaction id) and the confirmation document (bank statement or provider receipt). Both are required — the case can only be marked completed on this evidence, never on a declaration alone. If the reference matches the provider transaction, the submission counts as a provider confirmation.",
+      "referenceLabel": "Bank / provider reference",
+      "referencePlaceholder": "e.g. VIR-2026-1042 or provider transaction id",
+      "referenceHint": "Exactly as it appears on the bank statement or provider receipt.",
+      "amountLabel": "Amount sent (optional)",
+      "proofLabel": "Confirmation document",
+      "noteLabel": "Note (optional)",
+      "notePlaceholder": "e.g. bank name, value date",
+      "submit": "Attach evidence",
+      "submitted": "Evidence attached. You can now mark the case completed.",
+      "submitFailed": "Could not attach the evidence: {{message}}",
+      "listTitle": "Completion evidence",
+      "completedOn": "Completed on: {{tier}}",
+      "tier": {
+        "PSP_CONFIRMATION": "Payment provider confirmation",
+        "BANK_PROVIDER_CONFIRMATION": "Bank/provider confirmation document",
+        "BANK_REFERENCE": "Bank reference + retained document",
+        "TRAVELLER_CONFIRMATION": "Traveller confirmation",
+        "ADMIN_REVIEW": "OuiBoo admin review"
+      }
+    }
   }
 }

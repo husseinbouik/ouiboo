@@ -7,12 +7,24 @@ import { apiClient } from '@/lib/api-client';
 import { toPaginatedList } from '@ouiboo/utils';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Pagination } from '@ouiboo/ui';
 import { AlertTriangle, Loader2 } from 'lucide-react';
+import { RefundEvidenceForm } from '@/components/RefundEvidenceForm';
 
 /**
  * #370: agency refund cases. Refunds are paid by the agency (which
  * received the traveller's money directly) — OuiBoo tracks the case and
  * its SLA; it never holds or pays the refund itself (plan §42).
  */
+/** #416C: completion evidence attached to a case (append-only trail). */
+interface AgencyRefundEvidence {
+  id: string;
+  tier: string;
+  source: string;
+  reference: string | null;
+  amount: string | null;
+  note: string | null;
+  createdAt: string;
+}
+
 interface AgencyRefundCase {
   id: string;
   bookingId: string;
@@ -26,9 +38,22 @@ interface AgencyRefundCase {
   initiatedAt: string | null;
   completedAt: string | null;
   failureReason: string | null;
+  completionTier?: string | null;
+  evidence?: AgencyRefundEvidence[];
   traveler?: { name: string | null; email: string } | null;
   booking?: { session?: { template?: { title?: string | null } | null } | null } | null;
 }
+
+/** Mirrors the API: evidence can only be attached while a case is open. */
+const EVIDENCE_OPEN_STATUSES = new Set([
+  'REFUND_REQUESTED',
+  'ELIGIBILITY_REVIEW',
+  'REFUND_APPROVED',
+  'AGENCY_ACTION_REQUIRED',
+  'REFUND_INITIATED',
+  'REFUND_FAILED',
+  'REFUND_OVERDUE',
+]);
 
 const PAGE_LIMIT = 10;
 
@@ -177,6 +202,55 @@ export default function RefundsPage() {
                     <p className="text-xs text-destructive">
                       {t('refunds.failureReason')}: {refundCase.failureReason}
                     </p>
+                  )}
+
+                  {!!refundCase.evidence?.length && (
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                        {t('refunds.evidence.listTitle')}
+                      </p>
+                      <ul className="space-y-1">
+                        {refundCase.evidence.map((row) => (
+                          <li key={row.id} className="text-xs text-muted-foreground">
+                            <span className="font-semibold text-foreground">
+                              {t(`refunds.evidence.tier.${row.tier}`, {
+                                defaultValue: row.tier.replaceAll('_', ' '),
+                              })}
+                            </span>
+                            {row.reference ? <> · {row.reference}</> : null}
+                            {row.amount ? (
+                              <>
+                                {' '}
+                                · {row.amount} {refundCase.currency}
+                              </>
+                            ) : null}
+                            {' · '}
+                            {new Date(row.createdAt).toLocaleDateString()}
+                            {row.note ? <> · {row.note}</> : null}
+                          </li>
+                        ))}
+                      </ul>
+                      {refundCase.status === 'REFUND_COMPLETED' && refundCase.completionTier && (
+                        <p className="text-xs text-muted-foreground">
+                          {t('refunds.evidence.completedOn', {
+                            tier: t(`refunds.evidence.tier.${refundCase.completionTier}`, {
+                              defaultValue: refundCase.completionTier.replaceAll('_', ' '),
+                            }),
+                          })}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {EVIDENCE_OPEN_STATUSES.has(refundCase.status) && (
+                    <RefundEvidenceForm
+                      caseId={refundCase.id}
+                      expectedAmount={refundCase.approvedAmount ?? refundCase.requestedAmount}
+                      currency={refundCase.currency}
+                      onSubmitted={() => {
+                        queryClient.invalidateQueries({ queryKey: ['agency-refunds'] });
+                      }}
+                    />
                   )}
 
                   {actions.length > 0 && (

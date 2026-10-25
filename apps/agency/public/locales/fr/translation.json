@@ -1035,6 +1035,29 @@
     "failReasonPlaceholder": "Pourquoi le remboursement a-t-il échoué ?",
     "bookingFallback": "Réservation",
     "failureReason": "Dernière tentative échouée",
-    "title": "Remboursements"
+    "title": "Remboursements",
+    "evidence": {
+      "title": "Ajouter une preuve d'exécution",
+      "instruction": "Après l'envoi du remboursement, joignez la preuve ici : la référence du virement bancaire (ou l'identifiant de transaction de votre prestataire de paiement) et le document de confirmation (relevé bancaire ou reçu du prestataire). Les deux sont obligatoires — le dossier ne peut être marqué terminé que sur cette preuve, jamais sur une simple déclaration. Si la référence correspond à la transaction du prestataire, l'envoi vaut confirmation du prestataire.",
+      "referenceLabel": "Référence banque / prestataire",
+      "referencePlaceholder": "ex. VIR-2026-1042 ou identifiant de transaction",
+      "referenceHint": "Exactement comme elle figure sur le relevé bancaire ou le reçu du prestataire.",
+      "amountLabel": "Montant envoyé (facultatif)",
+      "proofLabel": "Document de confirmation",
+      "noteLabel": "Note (facultatif)",
+      "notePlaceholder": "ex. nom de la banque, date de valeur",
+      "submit": "Joindre la preuve",
+      "submitted": "Preuve jointe. Vous pouvez maintenant marquer le dossier comme terminé.",
+      "submitFailed": "Impossible de joindre la preuve : {{message}}",
+      "listTitle": "Preuves d'exécution",
+      "completedOn": "Terminé sur : {{tier}}",
+      "tier": {
+        "PSP_CONFIRMATION": "Confirmation du prestataire de paiement",
+        "BANK_PROVIDER_CONFIRMATION": "Document de confirmation banque/prestataire",
+        "BANK_REFERENCE": "Référence bancaire + document conservé",
+        "TRAVELLER_CONFIRMATION": "Confirmation du voyageur",
+        "ADMIN_REVIEW": "Examen par l'administration OuiBoo"
+      }
+    }
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { BookingPaymentPlanStatus, BookingPaymentStatus, BookingStatus, VerificationStatus, type BookingDetails } from '@ouiboo/types';
@@ -14,12 +15,16 @@ import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthContext';
 import { ReviewForm } from '@/components/ReviewForm';
 import {
+    TRAVELER_REFUND_DISPUTE_WINDOW_DAYS,
+    canConfirmTravelerRefundReceipt,
+    canDisputeTravelerRefund,
     canRetryTravelerPayment,
     canCancelTravelerBooking,
     getTravelerBookingStatusTone,
     getTravelerPaymentStatusMeta,
     getTravelerProofStatus,
     shouldShowUploadAction,
+    travelerRefundDisputeDeadline,
 } from '@ouiboo/utils';
 
 /** #370: refund case as returned by GET /refunds/mine (amounts are strings). */
@@ -33,6 +38,9 @@ interface TravelerRefundCase {
     refundDueAt: string | null;
     completedAt: string | null;
     failureReason: string | null;
+    /** #416B/#416C: traveller receipt confirmation / dispute stamps. */
+    travellerConfirmedAt?: string | null;
+    disputedAt?: string | null;
 }
 
 const REFUND_ACTIVE_STATUSES = new Set([
@@ -80,7 +88,14 @@ function refundCaseCopy(refundCase: TravelerRefundCase, agencyName: string): str
 
 export default function MyBookingsPage() {
     const { user } = useAuth();
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
+    // #416C: traveller refund receipt actions (confirm / dispute).
+    const [confirmingRefundId, setConfirmingRefundId] = useState<string | null>(null);
+    const [disputeOpenId, setDisputeOpenId] = useState<string | null>(null);
+    const [disputeReason, setDisputeReason] = useState<Record<string, string>>({});
+    const [disputingId, setDisputingId] = useState<string | null>(null);
+    const [refundActionError, setRefundActionError] = useState<string | null>(null);
     const [uploadingId, setUploadingId] = useState<string | null>(null);
     const [cancellingId, setCancellingId] = useState<string | null>(null);
     const [reviewModalOpen, setReviewModalOpen] = useState<string | null>(null);
@@ -129,6 +144,42 @@ export default function MyBookingsPage() {
         },
         onError: () => {
             setRequestingRefundId(null);
+        },
+    });
+
+    // #416C: the traveller confirms the refund money arrived (tier-4
+    // corroboration only — it never completes the case on its own).
+    const confirmReceiptMutation = useMutation({
+        mutationFn: async (caseId: string) => {
+            await apiClient.post(`/refunds/mine/${caseId}/confirm-receipt`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['my-refunds'] });
+            setConfirmingRefundId(null);
+            setRefundActionError(null);
+        },
+        onError: () => {
+            setConfirmingRefundId(null);
+            setRefundActionError(t('refunds.actionFailed'));
+        },
+    });
+
+    // #416C: the traveller disputes a completed refund ("the money
+    // never arrived") inside the dispute window; the case reopens.
+    const disputeRefundMutation = useMutation({
+        mutationFn: async ({ caseId, reason }: { caseId: string; reason: string }) => {
+            await apiClient.post(`/refunds/mine/${caseId}/dispute-receipt`, { reason });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['my-refunds'] });
+            queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+            setDisputingId(null);
+            setDisputeOpenId(null);
+            setRefundActionError(null);
+        },
+        onError: () => {
+            setDisputingId(null);
+            setRefundActionError(t('refunds.actionFailed'));
         },
     });
 
@@ -376,6 +427,101 @@ export default function MyBookingsPage() {
                                                                 {requestingRefundId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Request refund'}
                                                             </Button>
                                                         </>
+                                                    )}
+                                                    {/* #416C: traveller receipt actions. Confirming
+                                                        receipt only corroborates the refund — completion
+                                                        rests on bank/provider evidence, never on the
+                                                        agency's word alone (and never on OuiBoo holding
+                                                        the money: it never does). */}
+                                                    {refundCase && refundCase.status === 'REFUND_INITIATED' && (
+                                                        refundCase.travellerConfirmedAt ? (
+                                                            <p className="text-xs font-semibold text-foreground">
+                                                                {t('refunds.receiptConfirmed', {
+                                                                    date: format(new Date(refundCase.travellerConfirmedAt), 'MMM dd, yyyy'),
+                                                                })}
+                                                            </p>
+                                                        ) : canConfirmTravelerRefundReceipt(refundCase) ? (
+                                                            <div className="space-y-2">
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {t('refunds.confirmReceiptHint')}
+                                                                </p>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    className="h-10 px-5 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                                                                    disabled={confirmingRefundId === refundCase.id}
+                                                                    onClick={() => {
+                                                                        setConfirmingRefundId(refundCase.id);
+                                                                        confirmReceiptMutation.mutate(refundCase.id);
+                                                                    }}
+                                                                >
+                                                                    {confirmingRefundId === refundCase.id ? <Loader2 className="h-4 w-4 animate-spin" /> : t('refunds.confirmReceipt')}
+                                                                </Button>
+                                                            </div>
+                                                        ) : null
+                                                    )}
+                                                    {refundCase && refundCase.status === 'REFUND_COMPLETED' && (
+                                                        <div className="space-y-2">
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {t('refunds.completedBasis')}
+                                                            </p>
+                                                            {refundCase.disputedAt ? (
+                                                                <p className="text-xs font-semibold text-foreground">
+                                                                    {t('refunds.disputed')}
+                                                                </p>
+                                                            ) : canDisputeTravelerRefund(refundCase) ? (
+                                                                <>
+                                                                    <p className="text-xs text-muted-foreground">
+                                                                        {t('refunds.disputeHint', {
+                                                                            date: format(travelerRefundDisputeDeadline(refundCase.completedAt) ?? new Date(), 'MMM dd, yyyy'),
+                                                                            days: TRAVELER_REFUND_DISPUTE_WINDOW_DAYS,
+                                                                        })}
+                                                                    </p>
+                                                                    {disputeOpenId === refundCase.id ? (
+                                                                        <div className="space-y-2">
+                                                                            <textarea
+                                                                                value={disputeReason[refundCase.id] ?? ''}
+                                                                                onChange={(e) => setDisputeReason((prev) => ({ ...prev, [refundCase.id]: e.target.value }))}
+                                                                                placeholder={t('refunds.disputeReasonPlaceholder')}
+                                                                                aria-label={t('refunds.disputeReasonPlaceholder')}
+                                                                                rows={3}
+                                                                                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
+                                                                            />
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                className="h-10 px-5 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                                                                                disabled={disputingId === refundCase.id || !(disputeReason[refundCase.id] ?? '').trim()}
+                                                                                onClick={() => {
+                                                                                    setDisputingId(refundCase.id);
+                                                                                    disputeRefundMutation.mutate({
+                                                                                        caseId: refundCase.id,
+                                                                                        reason: (disputeReason[refundCase.id] ?? '').trim(),
+                                                                                    });
+                                                                                }}
+                                                                            >
+                                                                                {disputingId === refundCase.id ? <Loader2 className="h-4 w-4 animate-spin" /> : t('refunds.disputeSubmit')}
+                                                                            </Button>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            className="h-10 px-5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-border/60"
+                                                                            onClick={() => setDisputeOpenId(refundCase.id)}
+                                                                        >
+                                                                            {t('refunds.dispute')}
+                                                                        </Button>
+                                                                    )}
+                                                                </>
+                                                            ) : (
+                                                                <p className="text-xs text-muted-foreground">
+                                                                    {t('refunds.disputeWindowClosed', { days: TRAVELER_REFUND_DISPUTE_WINDOW_DAYS })}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {refundActionError && refundCase && (
+                                                        <p role="alert" className="text-xs font-semibold text-rose-600 dark:text-rose-400">
+                                                            {refundActionError}
+                                                        </p>
                                                     )}
                                                     {refundCase && REFUND_ACTIVE_STATUSES.has(refundCase.status) && (
                                                         <p className="text-xs text-muted-foreground">

@@ -377,7 +377,27 @@
       "failureReason": "Failure",
       "empty": "No refund cases",
       "dueBy": "Due by",
-      "requestedAt": "Requested"
+      "requestedAt": "Requested",
+      "audit": {
+        "all": "All cases",
+        "queue": "Audit queue",
+        "queueHint": "Completed refunds flagged for review by the risk-based audit rule. Auditing records the review — it never blocks completion.",
+        "queueEmpty": "No refunds are waiting for audit.",
+        "queueEmptyHint": "Flagged completions will appear here until an admin marks them audited.",
+        "required": "Audit required",
+        "audited": "Audited {{date}}",
+        "markAudited": "Mark audited"
+      },
+      "tierLabel": "Completed on",
+      "evidenceSummary": "{{count}} evidence item(s)",
+      "noEvidence": "No evidence recorded",
+      "tier": {
+        "PSP_CONFIRMATION": "Payment provider confirmation",
+        "BANK_PROVIDER_CONFIRMATION": "Bank/provider confirmation document",
+        "BANK_REFERENCE": "Bank reference + retained document",
+        "TRAVELLER_CONFIRMATION": "Traveller confirmation",
+        "ADMIN_REVIEW": "Admin review"
+      }
     },
     "groups": {
       "empty": "No groups are waiting",

@@ -377,7 +377,27 @@
       "failureReason": "Échec",
       "empty": "Aucun dossier de remboursement",
       "dueBy": "Échéance",
-      "requestedAt": "Demandé le"
+      "requestedAt": "Demandé le",
+      "audit": {
+        "all": "Tous les dossiers",
+        "queue": "File d'audit",
+        "queueHint": "Remboursements terminés signalés pour examen par la règle d'audit basée sur le risque. L'audit enregistre l'examen — il ne bloque jamais la clôture.",
+        "queueEmpty": "Aucun remboursement en attente d'audit.",
+        "queueEmptyHint": "Les clôtures signalées apparaîtront ici jusqu'à ce qu'un administrateur les marque comme auditées.",
+        "required": "Audit requis",
+        "audited": "Audité le {{date}}",
+        "markAudited": "Marquer comme audité"
+      },
+      "tierLabel": "Terminé sur",
+      "evidenceSummary": "{{count}} élément(s) de preuve",
+      "noEvidence": "Aucune preuve enregistrée",
+      "tier": {
+        "PSP_CONFIRMATION": "Confirmation du prestataire de paiement",
+        "BANK_PROVIDER_CONFIRMATION": "Document de confirmation banque/prestataire",
+        "BANK_REFERENCE": "Référence bancaire + document conservé",
+        "TRAVELLER_CONFIRMATION": "Confirmation du voyageur",
+        "ADMIN_REVIEW": "Examen administrateur"
+      }
     },
     "groups": {
       "empty": "Aucun groupe en attente",

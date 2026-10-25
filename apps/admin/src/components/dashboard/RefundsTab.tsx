@@ -27,6 +27,9 @@ type RefundsTabProps = {
     nextPage: string;
     goToPage: (page: number) => string;
   };
+  /** #416C: audit-queue view toggle (completed + auditRequired + unaudited). */
+  auditQueue?: boolean;
+  onAuditQueueChange?: (value: boolean) => void;
 };
 
 type RefundAction = 'review' | 'approve' | 'reject' | 'initiate' | 'complete' | 'fail';
@@ -87,7 +90,7 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | '
  * the lifecycle and SLA; overdue cases restrict the agency's new
  * bookings (existing bookings are never affected).
  */
-export default function RefundsTab({ t, cases, pagination, onPageChange, paginationLabels }: RefundsTabProps) {
+export default function RefundsTab({ t, cases, pagination, onPageChange, paginationLabels, auditQueue = false, onAuditQueueChange }: RefundsTabProps) {
   const queryClient = useQueryClient();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [repairTarget, setRepairTarget] = useState<AdminRefundCase | null>(null);
@@ -102,6 +105,19 @@ export default function RefundsTab({ t, cases, pagination, onPageChange, paginat
     mutationFn: async ({ id, action }: { id: string; action: RefundAction }) => {
       const body = action === 'fail' ? { failureReason: 'Marked failed by admin' } : {};
       await apiClient.post(`/admin/refunds/${id}/${action}`, body);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['refunds'] });
+      setBusyId(null);
+    },
+    onError: () => setBusyId(null),
+  });
+
+  // #416C: recording the audit review for a flagged completion. The
+  // stamp is a review obligation only — it never blocks completion.
+  const auditMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.post(`/admin/refunds/${id}/audit`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['refunds'] });
@@ -147,18 +163,50 @@ export default function RefundsTab({ t, cases, pagination, onPageChange, paginat
     setRepairTarget(refundCase);
   };
 
+  const viewToggle = onAuditQueueChange ? (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          variant={auditQueue ? 'outline' : 'default'}
+          onClick={() => onAuditQueueChange(false)}
+        >
+          {t('dashboard.refunds.audit.all')}
+        </Button>
+        <Button
+          size="sm"
+          variant={auditQueue ? 'default' : 'outline'}
+          onClick={() => onAuditQueueChange(true)}
+        >
+          {t('dashboard.refunds.audit.queue')}
+        </Button>
+      </div>
+      {auditQueue && (
+        <p className="text-xs text-muted-foreground">{t('dashboard.refunds.audit.queueHint')}</p>
+      )}
+    </div>
+  ) : null;
+
   if (cases.length === 0) {
     return (
-      <Card className="p-10 text-center space-y-3">
-        <RotateCcw className="h-10 w-10 mx-auto text-muted-foreground" />
-        <p className="font-semibold">{t('dashboard.refunds.empty')}</p>
-        <p className="text-sm text-muted-foreground">{t('dashboard.refunds.emptyHint')}</p>
-      </Card>
+      <div className="space-y-4">
+        {viewToggle}
+        <Card className="p-10 text-center space-y-3">
+          <RotateCcw className="h-10 w-10 mx-auto text-muted-foreground" />
+          <p className="font-semibold">
+            {t(auditQueue ? 'dashboard.refunds.audit.queueEmpty' : 'dashboard.refunds.empty')}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {t(auditQueue ? 'dashboard.refunds.audit.queueEmptyHint' : 'dashboard.refunds.emptyHint')}
+          </p>
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      {viewToggle}
       {repairFeedback && <div className="text-sm font-medium text-success">{repairFeedback}</div>}
       {cases.map((refundCase) => {
         const actions = actionsFor(refundCase.status);
@@ -201,7 +249,48 @@ export default function RefundsTab({ t, cases, pagination, onPageChange, paginat
                 </span>
               )}
             </div>
+            {refundCase.status === 'REFUND_COMPLETED' && (
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-muted-foreground">
+                {refundCase.completionTier && (
+                  <span>
+                    {t('dashboard.refunds.tierLabel')}:{' '}
+                    <span className="font-semibold text-foreground">
+                      {t(`dashboard.refunds.tier.${refundCase.completionTier}`, {
+                        defaultValue: refundCase.completionTier.replaceAll('_', ' '),
+                      })}
+                    </span>
+                  </span>
+                )}
+                <span>
+                  {refundCase.evidence?.length
+                    ? t('dashboard.refunds.evidenceSummary', { count: refundCase.evidence.length })
+                    : t('dashboard.refunds.noEvidence')}
+                </span>
+                {refundCase.auditedAt ? (
+                  <span>
+                    {t('dashboard.refunds.audit.audited', {
+                      date: formatDateTime(refundCase.auditedAt, t),
+                    })}
+                  </span>
+                ) : refundCase.auditRequired ? (
+                  <Badge variant="destructive">{t('dashboard.refunds.audit.required')}</Badge>
+                ) : null}
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
+              {refundCase.status === 'REFUND_COMPLETED' && refundCase.auditRequired && !refundCase.auditedAt && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busyId === refundCase.id}
+                  onClick={() => {
+                    setBusyId(refundCase.id);
+                    auditMutation.mutate(refundCase.id);
+                  }}
+                >
+                  {t('dashboard.refunds.audit.markAudited')}
+                </Button>
+              )}
               {actions.map((action) => (
                 <Button
                   key={action}
