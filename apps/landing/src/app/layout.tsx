@@ -10,7 +10,6 @@ import Providers from "../components/Providers";
 import LoadingSpinner from "../components/LoadingSpinner"; // Import the spinner
 import AnalyticsConsent from "../components/AnalyticsConsent";
 import { Suspense } from "react";
-import { Analytics } from '@vercel/analytics/react';
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -76,7 +75,6 @@ export default async function RootLayout({
           </Suspense>
           <AnalyticsConsent />
         </Providers>
-              <Analytics />
       </body>
     </html>
   );

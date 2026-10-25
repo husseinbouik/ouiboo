@@ -43,7 +43,6 @@ export const metadata: Metadata = {
 };
 
 import { getInitialLanguage, languageInitScript, type SupportedLanguage } from '@ouiboo/i18n/server';
-import { Analytics } from '@vercel/analytics/react';
 import { SkipLink } from '@/components/SkipLink';
 import { WebVitals } from '@/components/WebVitals';
 
@@ -69,7 +68,6 @@ export default async function RootLayout({
             {children}
           </main>
         </Providers>
-              <Analytics />
               <WebVitals />
       </body>
     </html>

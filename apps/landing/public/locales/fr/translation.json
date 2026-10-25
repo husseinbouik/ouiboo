@@ -187,6 +187,7 @@
   "waitlist": {
     "title": "Soyez le Premier à Découvrir Ouiboo",
     "subtitle": "Rejoignez notre liste d'attente pour un accès anticipé et des nouvelles du lancement.",
+    "paused": "Les inscriptions à la liste d'attente sont en pause pendant la préparation de la bêta fermée. Revenez bientôt — aucune information n'est collectée en attendant.",
     "form": {
       "name": "Entrez votre nom",
       "email": "Entrez votre email",
@@ -244,7 +245,7 @@
     },
     "section3": {
       "title": "Analytics facultatifs",
-      "body": "Les analytics du site sont désactivés sauf si vous choisissez de les autoriser. Vous pouvez modifier ce choix à tout moment. Le stockage lié à la langue et à la sécurité peut rester utilisé car il est nécessaire au fonctionnement du site."
+      "body": "Aucun traceur d'analyse ne fonctionne par défaut sur Ouiboo. Les analytics toujours actifs ont été retirés ; les analytics optionnels ne sont jamais chargés sauf si vous choisissez explicitement de les autoriser, et vous pouvez modifier ce choix à tout moment. Le stockage lié à la langue et à la sécurité peut rester utilisé car il est nécessaire au fonctionnement du site."
     },
     "section4": {
       "title": "Partage et conservation",
