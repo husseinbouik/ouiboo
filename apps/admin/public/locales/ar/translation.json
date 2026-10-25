@@ -144,7 +144,8 @@
       "when": "الوقت",
       "actor": "المنفذ",
       "target": "الهدف",
-      "metadata": "البيانات الوصفية"
+      "metadata": "البيانات الوصفية",
+      "termsAccepted": "تم قبول الشروط الإصدار {{version}}"
     },
     "actions": {
       "review": "مراجعة",

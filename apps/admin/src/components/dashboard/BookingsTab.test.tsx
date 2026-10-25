@@ -226,4 +226,21 @@ describe('BookingsTab bank-confirmation state (#422)', () => {
     expect(screen.queryByText('dashboard.status.proofAwaitingBankConfirmation')).toBeNull();
     expect(screen.queryByText('dashboard.status.proofBankConfirmed')).toBeNull();
   });
+
+  it('shows the recorded terms acceptance for a booking that has one (#481)', () => {
+    const termsBooking = {
+      ...manualBooking,
+      id: 'booking-terms-1',
+      termsVersion: '1.0',
+      termsAcceptedAt: '2026-10-20T10:05:00.000Z',
+    } as unknown as AdminBooking;
+    renderTab({ bookings: [termsBooking] });
+    // The t mock echoes the key; the date renders next to it.
+    expect(screen.getByText(/dashboard\.table\.termsAccepted/)).not.toBeNull();
+  });
+
+  it('renders no terms-acceptance line when none was recorded (#481)', () => {
+    renderTab();
+    expect(screen.queryByText(/dashboard\.table\.termsAccepted/)).toBeNull();
+  });
 });

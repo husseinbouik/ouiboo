@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useCheckoutBooking } from './useCheckoutBooking';
 import mockEnTranslations from '../../../public/locales/en/translation.json';
 import { apiClient } from '@/lib/api-client';
+import { CURRENT_BOOKING_TERMS_VERSION } from '@ouiboo/types';
 
 const pushMock = jest.fn();
 
@@ -83,6 +84,10 @@ describe('useCheckoutBooking (CIN removal)', () => {
             // #424: the active checkout locale travels with the booking so
             // booking-journey emails render in the traveller's language.
             locale: 'en',
+            // #481: the version of the booking terms this checkout
+            // displays, persisted by the API with a server acceptance
+            // timestamp.
+            termsVersion: CURRENT_BOOKING_TERMS_VERSION,
         });
         expect(payload).not.toHaveProperty('documentNumber');
         expect(pushMock).toHaveBeenCalledWith('/checkout/confirmation?bookingId=booking-1&proof=0');

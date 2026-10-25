@@ -185,6 +185,12 @@ export class BookingsService {
                     // #424: persist the checkout locale so booking-journey
                     // emails render in the traveller's language.
                     locale: dto.locale ?? null,
+                    // #481: persist the accepted booking-terms version
+                    // with a server acceptance timestamp, so the booking
+                    // proves which terms it was made under. Clients that
+                    // send no version record NULL for both fields.
+                    termsVersion: dto.termsVersion ?? null,
+                    termsAcceptedAt: dto.termsVersion ? new Date() : null,
                     paymentMethod: persistedPaymentMethod,
                 },
                 include: {
