@@ -19,7 +19,6 @@ describe('mapBookingDetails', () => {
       cancelledAt: null,
       fullName: 'John Doe',
       phoneNumber: '+212600000000',
-      documentNumber: 'AB123456',
       paymentProof: {
         id: 'proof-1',
         bookingId: 'booking-1',
@@ -82,6 +81,9 @@ describe('mapBookingDetails', () => {
     });
     expect(mapped.bookingDate).toBe('2026-01-01T00:00:00.000Z');
     expect(mapped.session.startDate).toBe('2026-02-01T00:00:00.000Z');
+    // CIN removal (founder decision 2026-10-25): booking responses never
+    // carry a traveller identity-document number.
+    expect(mapped).not.toHaveProperty('documentNumber');
   });
 
   describe('bank confirmation (#422 — proof ≠ settlement)', () => {

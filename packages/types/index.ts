@@ -342,7 +342,6 @@ export interface Booking {
     paymentGatewayMetadata?: Record<string, unknown>;
     fullName?: string;
     phoneNumber?: string;
-    documentNumber?: string;
 }
 
 export interface BookingTravelerSummary {

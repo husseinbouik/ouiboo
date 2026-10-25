@@ -74,7 +74,6 @@ type BookingMapperInput = {
   paymentGatewayMetadata?: unknown;
   fullName?: string | null;
   phoneNumber?: string | null;
-  documentNumber?: string | null;
   paymentProof?: {
     id: string;
     bookingId: string;
@@ -243,7 +242,6 @@ export const mapBookingDetails = (booking: BookingMapperInput): BookingDetails =
       : undefined,
   fullName: booking.fullName || undefined,
   phoneNumber: booking.phoneNumber || undefined,
-  documentNumber: booking.documentNumber || undefined,
   paymentProof: booking.paymentProof
     ? {
         id: booking.paymentProof.id,

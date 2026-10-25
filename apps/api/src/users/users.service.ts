@@ -235,7 +235,7 @@ export class UsersService {
             await tx.notificationPreference.deleteMany({ where: { userId } });
             await tx.notificationLog.updateMany({ where: { userId }, data: { recipientEmail: `${tombstone}@privacy.invalid`, subject: null, message: '[deleted by data subject request]' } });
             await tx.auditLog.updateMany({ where: { actorId: userId }, data: { actorEmail: null } });
-            await tx.booking.updateMany({ where: { travelerId: userId }, data: { fullName: null, phoneNumber: null, documentNumber: null, paymentProofUrl: null } });
+            await tx.booking.updateMany({ where: { travelerId: userId }, data: { fullName: null, phoneNumber: null, paymentProofUrl: null } });
             if (user.agencyProfile) {
                 await tx.tripTemplate.updateMany({ where: { agencyId: user.agencyProfile.id }, data: { status: 'ARCHIVED' } });
                 await tx.agencyProfile.update({ where: { id: user.agencyProfile.id }, data: { companyName: 'Deleted agency', ice: `${tombstone}-ice`, patente: 'DELETED', rib: 'DELETED', bio: null, logo: null, bankDetails: null, verificationStatus: 'REJECTED' } });

@@ -128,7 +128,6 @@ export interface CreateBookingInput {
   paymentMethod: string
   fullName?: string
   phoneNumber?: string
-  documentNumber?: string
 }
 
 export interface VerifyBookingPaymentInput {

@@ -186,7 +186,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 paymentMethod: 'BANK_TRANSFER',
             })
             .expect(201);
@@ -303,7 +302,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 totalAmount: 780,
                 fullName: 'Concurrent Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID-CONCURRENT',
                 status: 'AWAITING_VALIDATION',
             },
         });
@@ -389,7 +387,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 totalAmount: 1170, // 390 * 3
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             } as any,
         });
@@ -436,7 +433,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'COMPLETED',
             } as any,
         });
@@ -476,7 +472,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                     guestsCount: 2,
                     fullName: 'Traveler 1',
                     phoneNumber: '+1111111111',
-                    documentNumber: 'ID1',
                     paymentMethod: 'BANK_TRANSFER',
                 }),
             request(app.getHttpServer())
@@ -487,7 +482,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                     guestsCount: 2,
                     fullName: 'Traveler 2',
                     phoneNumber: '+2222222222',
-                    documentNumber: 'ID2',
                     paymentMethod: 'BANK_TRANSFER',
                 }),
             request(app.getHttpServer())
@@ -498,7 +492,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                     guestsCount: 2,
                     fullName: 'Traveler 3',
                     phoneNumber: '+3333333333',
-                    documentNumber: 'ID3',
                     paymentMethod: 'BANK_TRANSFER',
                 }),
         ]);
@@ -529,7 +522,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 paymentMethod: 'BANK_TRANSFER',
             })
             .expect(201);
@@ -543,7 +535,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 paymentMethod: 'BANK_TRANSFER',
             })
             .expect(400);
@@ -563,7 +554,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 paymentMethod: 'BANK_TRANSFER',
             })
             .expect(201);
@@ -582,7 +572,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
                 bookingDate: new Date(Date.now() - 25 * 60 * 60 * 1000), // 25 hours ago
             } as any,
@@ -617,7 +606,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
                 bookingDate: new Date(), // Just created
             } as any,
@@ -647,7 +635,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             } as any,
         });
@@ -705,7 +692,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             } as any,
         });
@@ -758,7 +744,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'CONFIRMED', // Manually set to CONFIRMED (bypass logic)
             } as any,
         });
@@ -785,7 +770,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 paymentMethod: 'BANK_TRANSFER',
             })
             .expect(201);
@@ -844,7 +828,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 paymentMethod: 'BANK_TRANSFER',
             })
             .expect(201);
@@ -879,7 +862,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             } as any,
         });
@@ -892,7 +874,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 totalAmount: 780,
                 fullName: 'Test Traveler 2',
                 phoneNumber: '+2234567890',
-                documentNumber: 'ID234567',
                 status: 'PENDING',
             } as any,
         });
@@ -963,7 +944,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             },
         });
@@ -976,7 +956,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 totalAmount: 400,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             },
         });
@@ -1024,7 +1003,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             },
         });
@@ -1082,7 +1060,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             },
         });
@@ -1142,7 +1119,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
             })
             .expect(400);
 
@@ -1155,7 +1131,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 guestsCount: 0,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
             })
             .expect(400);
 
@@ -1168,7 +1143,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 guestsCount: -1,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
             })
             .expect(400);
 
@@ -1181,7 +1155,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
             })
             .expect(400);
     });
@@ -1197,7 +1170,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             },
         });

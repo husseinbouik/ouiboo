@@ -199,7 +199,7 @@ export default function BookingDetailsPage() {
                     <p><span className="font-black text-foreground">Name:</span> {booking.fullName || booking.traveler.name || 'Not provided'}</p>
                     <p><span className="font-black text-foreground">Email:</span> {booking.traveler.email}</p>
                     <p><span className="font-black text-foreground">Phone:</span> {booking.phoneNumber || 'Not provided'}</p>
-                    <p><span className="font-black text-foreground">Document:</span> {booking.documentNumber || 'Not provided'}</p>
+                    <p className="text-muted-foreground">The agency may check your ID at departure, so please bring it with you.</p>
                   </div>
                 </div>
 

@@ -135,7 +135,6 @@ export const BookingSchema = z.object({
     paymentProofUrl: z.string().optional(),
     fullName: z.string().optional(),
     phoneNumber: z.string().optional(),
-    documentNumber: z.string().optional(),
     paymentGatewayTransactionId: z.string().optional(),
     paymentGatewayMetadata: z.record(z.string(), z.unknown()).optional(),
     cancelledAt: z.string().datetime().optional(),

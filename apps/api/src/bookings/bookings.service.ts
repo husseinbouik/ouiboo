@@ -32,7 +32,7 @@ export class BookingsService {
             throw new BadRequestException('guestsCount must be a positive integer');
         }
 
-        for (const [field, value] of Object.entries({ fullName: dto.fullName, phoneNumber: dto.phoneNumber, documentNumber: dto.documentNumber })) {
+        for (const [field, value] of Object.entries({ fullName: dto.fullName, phoneNumber: dto.phoneNumber })) {
             if (typeof value !== 'string' || value.trim().length === 0) {
                 throw new BadRequestException(field + ' is required');
             }
@@ -169,7 +169,6 @@ export class BookingsService {
                     status: 'PENDING',
                     fullName: dto.fullName,
                     phoneNumber: dto.phoneNumber,
-                    documentNumber: dto.documentNumber,
                     paymentMethod: persistedPaymentMethod,
                 },
                 include: {

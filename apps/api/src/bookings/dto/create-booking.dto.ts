@@ -32,11 +32,11 @@ export class CreateBookingDto {
     @MaxLength(32)
     phoneNumber!: string;
 
-    @ApiProperty({ example: 'CIN AE123456' })
-    @IsString()
-    @IsNotEmpty()
-    @MaxLength(100)
-    documentNumber!: string;
+    // Traveller identity-document numbers (CIN / passport) are intentionally
+    // NOT collected (founder decision 2026-10-25): CIN processing would
+    // trigger CNDP prior authorisation, and the agency checks ID physically
+    // at departure. The global ValidationPipe forbids non-whitelisted
+    // properties, so payloads still sending a document number are rejected.
 
     @ApiProperty({ enum: PaymentMethodEnum, example: PaymentMethodEnum.BANK_TRANSFER, description: 'Preferred payment method' })
     @IsEnum(PaymentMethodEnum)

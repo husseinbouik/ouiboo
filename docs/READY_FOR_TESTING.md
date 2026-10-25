@@ -124,7 +124,6 @@ curl -X POST http://localhost:3000/api/bookings \
     "guestsCount": 2,
     "fullName": "John Doe",
     "phoneNumber": "+212612345678",
-    "documentNumber": "AB123456",
     "paymentMethod": "BANK_TRANSFER"
   }'
 

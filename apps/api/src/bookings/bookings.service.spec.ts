@@ -120,7 +120,6 @@ describe('BookingsService', () => {
             guestsCount: 2,
             fullName: 'Test Traveler',
             phoneNumber: '+212600000000',
-            documentNumber: 'AA123456',
         };
         const availableSession = {
             id: 'session-123',
@@ -261,6 +260,73 @@ describe('BookingsService', () => {
                 db.booking.findFirst.mock.invocationCallOrder[0],
             );
         });
+
+        // CIN removal (founder decision 2026-10-25): bookings are created
+        // with name + phone only; no identity-document number is collected
+        // or stored anywhere in the create path.
+        const mockSuccessfulCreate = () => {
+            db.tripSession.findUnique.mockResolvedValue(availableSession);
+            db.tripSession.updateMany.mockResolvedValue({ count: 1 });
+            db.booking.findFirst.mockResolvedValue(null);
+            db.user.findUnique.mockResolvedValue(null);
+            db.booking.create.mockResolvedValue({
+                id: 'booking-new',
+                sessionId: 'session-123',
+                travelerId: 'user-123',
+                bookingDate: new Date(),
+                status: 'PENDING',
+                totalAmount: '500.00',
+                currency: 'MAD',
+                guestsCount: 2,
+                paymentMethod: 'MANUAL',
+                paymentStatus: 'UNPAID',
+                paymentPlan: null,
+                traveler: { email: 'traveler@example.com', name: 'Test Traveler' },
+                session: {
+                    id: 'session-123',
+                    templateId: 'template-1',
+                    startDate: new Date(),
+                    endDate: new Date(),
+                    price: '250.00',
+                    totalSeats: 10,
+                    availableSeats: 8,
+                    status: 'OPEN',
+                    currency: 'MAD',
+                    template: {
+                        id: 'template-1',
+                        title: 'Atlas Escape',
+                        startLocation: 'Marrakech',
+                        images: [],
+                        agencyId: 'agency-123',
+                        agency: { id: 'agency-123', companyName: 'Atlas' },
+                    },
+                },
+            });
+        };
+
+        it('creates a booking without any identity-document number (CIN removal)', async () => {
+            mockSuccessfulCreate();
+
+            const result: any = await service.create('user-123', createDto);
+
+            expect(result.id).toBe('booking-new');
+            expect(result).not.toHaveProperty('documentNumber');
+            const createData = db.booking.create.mock.calls[0][0].data;
+            expect(createData).not.toHaveProperty('documentNumber');
+        });
+
+        it('never persists a document number even if one reaches the service (CIN removal)', async () => {
+            mockSuccessfulCreate();
+
+            await service.create('user-123', {
+                ...createDto,
+                documentNumber: 'AB123456',
+            } as any);
+
+            const createData = db.booking.create.mock.calls[0][0].data;
+            expect(createData).not.toHaveProperty('documentNumber');
+            expect(JSON.stringify(createData)).not.toContain('AB123456');
+        });
     });
 
     describe('uploadPaymentProof', () => {
@@ -376,7 +442,6 @@ describe('BookingsService', () => {
             guestsCount: 2,
             fullName: 'Test Traveler',
             phoneNumber: '+212600000000',
-            documentNumber: 'AA123456',
         };
         const stagedSession = {
             id: 'session-123',
