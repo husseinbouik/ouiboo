@@ -178,7 +178,6 @@ const server = createServer((req, res) => {
       guestsCount: 2,
       fullName: 'Launch Traveler',
       phoneNumber: '+212600000000',
-      documentNumber: 'AB123456',
       traveler: { id: 'traveler-1', name: 'Launch Traveler', email: 'traveler@example.com' },
       session: {
         id: 'session-1',

@@ -462,7 +462,6 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
                 totalAmount: 2400,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123',
                 status: 'CONFIRMED',
             } as any,
         });
@@ -935,7 +934,6 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
                 totalAmount: session.price,
                 fullName: 'Test Traveler',
                 phoneNumber: '+12025550123',
-                documentNumber: 'DOC-1',
                 status: 'COMPLETED',
             } as any,
         });

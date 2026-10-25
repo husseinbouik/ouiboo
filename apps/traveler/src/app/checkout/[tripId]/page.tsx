@@ -33,7 +33,6 @@ export default function CheckoutPage() {
   const [guestCountOverride, setGuestCount] = useState<number | null>(null);
   const [fullNameOverride, setFullName] = useState<string | null>(null);
   const [phoneNumberOverride, setPhoneNumber] = useState<string | null>(null);
-  const [documentNumberOverride, setDocumentNumber] = useState<string | null>(null);
   const retryBookingId = searchParams.get('retryBooking');
 
   useEffect(() => {
@@ -77,7 +76,6 @@ export default function CheckoutPage() {
     ?? user?.name
     ?? '';
   const phoneNumber = phoneNumberOverride ?? retryBooking?.phoneNumber ?? '';
-  const documentNumber = documentNumberOverride ?? retryBooking?.documentNumber ?? '';
   const selectedSession = trip?.sessions?.find((session) => session.id === selectedSessionId);
   const sessionPrice = Number(selectedSession?.price ?? 0);
   const totalPrice = sessionPrice * guestCount;
@@ -99,7 +97,6 @@ export default function CheckoutPage() {
     guestCount,
     fullName,
     phoneNumber,
-    documentNumber,
     hasBankDetails,
     proofFile,
   });
@@ -130,8 +127,7 @@ export default function CheckoutPage() {
     selectedSessionId &&
     hasBankDetails &&
     fullName.trim() &&
-    phoneNumber.trim() &&
-    documentNumber.trim()
+    phoneNumber.trim()
   );
 
   return (
@@ -155,8 +151,6 @@ export default function CheckoutPage() {
                   onFullNameChange={setFullName}
                   phoneNumber={phoneNumber}
                   onPhoneNumberChange={setPhoneNumber}
-                  documentNumber={documentNumber}
-                  onDocumentNumberChange={setDocumentNumber}
                   language={i18n.language}
                 />
                 <CheckoutPayment

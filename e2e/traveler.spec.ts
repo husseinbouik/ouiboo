@@ -45,7 +45,6 @@ test.describe('traveler launch flow', () => {
     await expect(page.getByRole('heading', { name: /checkout/i })).toBeVisible();
     await page.getByPlaceholder(/abderrahmane/i).fill('Launch Traveler');
     await page.getByPlaceholder(/include country code/i).fill('+212600000000');
-    await page.getByPlaceholder(/enter document number/i).fill('AB123456');
     await page.getByRole('button', { name: /complete booking/i }).click();
 
     await page.waitForURL(/\/checkout\/confirmation\?bookingId=booking-1/);

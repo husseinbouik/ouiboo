@@ -19,8 +19,6 @@ type CheckoutGuestFormProps = {
   onFullNameChange: (value: string) => void;
   phoneNumber: string;
   onPhoneNumberChange: (value: string) => void;
-  documentNumber: string;
-  onDocumentNumberChange: (value: string) => void;
   language: string;
 };
 
@@ -35,8 +33,6 @@ export function CheckoutGuestForm({
   onFullNameChange,
   phoneNumber,
   onPhoneNumberChange,
-  documentNumber,
-  onDocumentNumberChange,
   language,
 }: CheckoutGuestFormProps) {
   return (
@@ -130,18 +126,9 @@ export function CheckoutGuestForm({
             />
           </div>
         </div>
-        <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="document-number" className="text-xs font-black uppercase tracking-widest text-muted-foreground">CIN or Passport Number</Label>
-          <Input
-            id="document-number"
-            name="document-number"
-            autoComplete="off"
-            placeholder="Enter document number for insurance"
-            className="h-14 rounded-2xl bg-muted/30 border-none font-bold text-lg"
-            value={documentNumber}
-            onChange={(e) => onDocumentNumberChange(e.target.value)}
-          />
-        </div>
+        <p className="text-xs font-semibold text-muted-foreground md:col-span-2">
+          We never ask for your ID number online. The agency may check your ID at departure, so please bring it with you.
+        </p>
       </div>
     </div>
   );

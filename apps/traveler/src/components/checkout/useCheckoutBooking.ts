@@ -14,7 +14,6 @@ type UseCheckoutBookingOptions = {
   guestCount: number;
   fullName: string;
   phoneNumber: string;
-  documentNumber: string;
   hasBankDetails: boolean;
   proofFile: File | null;
 };
@@ -26,7 +25,6 @@ export function useCheckoutBooking({
   guestCount,
   fullName,
   phoneNumber,
-  documentNumber,
   hasBankDetails,
   proofFile,
 }: UseCheckoutBookingOptions) {
@@ -39,7 +37,7 @@ export function useCheckoutBooking({
       if (!selectedSessionId) {
         throw new Error('Session is required');
       }
-      if (!fullName.trim() || !phoneNumber.trim() || !documentNumber.trim()) {
+      if (!fullName.trim() || !phoneNumber.trim()) {
         throw new Error('Guest contact details are required');
       }
       if (!hasBankDetails) {
@@ -57,7 +55,6 @@ export function useCheckoutBooking({
           guestsCount: guestCount,
           fullName: fullName.trim(),
           phoneNumber: phoneNumber.trim(),
-          documentNumber: documentNumber.trim(),
           paymentMethod: 'BANK_TRANSFER',
         });
         bookingId = response.data?.id ?? null;
