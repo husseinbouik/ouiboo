@@ -68,12 +68,14 @@ function makeDb(options: {
 
 function makeEmail(fail = false) {
     return {
-        sendEmail: jest.fn(async () => {
-            if (fail) {
-                throw new Error('SMTP down');
-            }
-            return {};
-        }),
+        sendEmail: jest.fn(
+            async (_to: string, _subject: string, _html: string) => {
+                if (fail) {
+                    throw new Error('SMTP down');
+                }
+                return {};
+            },
+        ),
     };
 }
 
