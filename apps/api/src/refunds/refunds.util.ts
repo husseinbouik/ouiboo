@@ -108,7 +108,14 @@ export const REFUND_TRANSITIONS: Record<RefundCaseStatus, RefundCaseStatus[]> = 
         RefundCaseStatus.REFUND_INITIATED,
         RefundCaseStatus.REFUND_FAILED,
     ],
-    [RefundCaseStatus.REFUND_COMPLETED]: [],
+    // #416B (Council P0-09): the single exit from REFUND_COMPLETED in the
+    // public state machine is the traveller dispute path
+    // (RefundsService.disputeReceipt — the case's own traveller, within
+    // the dispute window, money fields reverted). RefundsService.beginReview
+    // explicitly refuses completed cases so no other actor can use this
+    // edge; admin corrections of completed cases remain on the #423
+    // repair path, which bypasses this map deliberately.
+    [RefundCaseStatus.REFUND_COMPLETED]: [RefundCaseStatus.ELIGIBILITY_REVIEW],
     [RefundCaseStatus.REFUND_REJECTED]: [],
 };
 
@@ -202,4 +209,68 @@ export function qualifyingRefundCompletion(
         };
     }
     return null;
+}
+
+/**
+ * #416B (Council P0-09, plan D7): how long after completion the case's
+ * traveller may dispute receipt and reopen the case. Working default —
+ * founder-adjustable.
+ */
+export const REFUND_DISPUTE_WINDOW_DAYS = 60;
+
+/**
+ * #416B (Council P0-09, plan §2.5 / D6): risk-based audit flags stamped
+ * at completion time. A completion is queued for admin audit when any
+ * hard signal holds — the case was ever REFUND_OVERDUE, it was disputed
+ * (reopened) before, the amount is at or above the threshold, or the
+ * completion relied on the weakest qualifying evidence path (tier 3
+ * BANK_REFERENCE, or tier 4 traveller confirmation corroborated by a
+ * tier 5 admin review) — plus a deterministic sample of all other
+ * completions. The threshold is a named constant on purpose: it is a
+ * founder-adjustable policy value, applied to the case amount (the
+ * beta's cases are MAD).
+ */
+export const REFUND_AUDIT_AMOUNT_THRESHOLD_MAD = 5000;
+
+/** 1-in-N deterministic sampling: N = 5 yields a ≥20% sample. */
+export const REFUND_AUDIT_SAMPLE_MODULO = 5;
+
+/**
+ * Deterministic per-case sampling (stable across runs and workers —
+ * no randomness at completion time, so retries agree).
+ */
+export function refundAuditSampled(caseId: string): boolean {
+    let hash = 0;
+    for (let i = 0; i < caseId.length; i++) {
+        hash = (hash * 31 + caseId.charCodeAt(i)) % 2147483647;
+    }
+    return hash % REFUND_AUDIT_SAMPLE_MODULO === 0;
+}
+
+export interface RefundAuditSignals {
+    wasEverOverdue: boolean;
+    wasDisputed: boolean;
+    amountAtOrAboveThreshold: boolean;
+    completionTier: RefundEvidenceTier;
+    travellerConfirmationPresent: boolean;
+    caseId: string;
+}
+
+export function refundAuditRequired(signals: RefundAuditSignals): boolean {
+    if (signals.wasEverOverdue || signals.wasDisputed || signals.amountAtOrAboveThreshold) {
+        return true;
+    }
+    // Weakest qualifying paths: tier 3 carries the refund on a bank
+    // reference + retained proof alone; tier 4 + tier 5 completes on the
+    // traveller's word corroborated by an admin review.
+    if (signals.completionTier === RefundEvidenceTier.BANK_REFERENCE) {
+        return true;
+    }
+    if (
+        signals.completionTier === RefundEvidenceTier.ADMIN_REVIEW
+        && signals.travellerConfirmationPresent
+    ) {
+        return true;
+    }
+    return refundAuditSampled(signals.caseId);
 }

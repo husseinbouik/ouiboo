@@ -23,6 +23,7 @@ import {
 import * as crypto from 'node:crypto';
 import { DatabaseService } from '../database/database.service';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
+import { RefundsService } from '../refunds/refunds.service';
 import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
 import { decimalEqualsMoney } from '../common/money.util';
 import { PspAdapterRegistry, resolveWebhookSecret } from './adapters/psp-adapter.registry';
@@ -75,6 +76,7 @@ export class PaymentWebhooksService {
         private registry: PspAdapterRegistry,
         private externalPaymentsService: ExternalPaymentsService,
         private stagedPaymentsService: StagedPaymentsService,
+        private refundsService: RefundsService,
     ) { }
 
     async handleWebhook(providerKey: string, rawBody: string, signature: string | undefined) {
@@ -231,9 +233,10 @@ export class PaymentWebhooksService {
             return { received: true, status: 'conflict-recorded' };
         }
 
+        let refundCaseOutcome: { completed: boolean; agencyId: string | null } | undefined;
         try {
             await this.db.$transaction(async (tx) => {
-                await this.applyEventInTransaction(tx, attempt, event, adapter);
+                refundCaseOutcome = await this.applyEventInTransaction(tx, attempt, event, adapter);
             });
         } catch (error: any) {
             await this.recordInbox(providerKey, {
@@ -245,6 +248,15 @@ export class PaymentWebhooksService {
                 payload,
             });
             throw error;
+        }
+
+        // #416B: a PSP refund that completed a RefundCase may lift the
+        // agency's overdue restriction — recompute it after commit,
+        // exactly as the manual completion path does.
+        if (refundCaseOutcome?.completed && refundCaseOutcome.agencyId) {
+            await this.refundsService
+                .refreshAgencyRestriction(refundCaseOutcome.agencyId)
+                .catch(() => undefined);
         }
 
         await this.recordInbox(providerKey, {
@@ -391,6 +403,18 @@ export class PaymentWebhooksService {
                     data: { paymentStatus: BookingPaymentStatus.REFUNDED },
                 });
             }
+            // #416B (Council P0-09): the provider's refund confirmation
+            // is tier-1 evidence for the booking's RefundCase. The
+            // ledger refund above stays the single ledger write — the
+            // refunds side only attaches the evidence and, when the
+            // case is awaiting the agency's action or already
+            // initiated, completes it from this confirmation.
+            return this.refundsService.recordPspRefundConfirmationInTransaction(tx, {
+                bookingId: attempt.bookingId,
+                externalPaymentId: attempt.externalPaymentId ?? null,
+                providerRefundId: event.transactionId ?? event.providerPaymentId,
+                providerStatus: 'REFUNDED',
+            });
         }
     }
 

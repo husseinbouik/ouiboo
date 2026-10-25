@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
-import { Prisma } from '@ouiboo/database';
+import { Prisma, RefundEvidenceTier } from '@ouiboo/database';
 import { RefundsService } from './refunds.service';
+import { refundAuditRequired, refundAuditSampled } from './refunds.util';
 
 const D = (value: string) => new Prisma.Decimal(value);
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -18,6 +19,7 @@ function makeFakeDb() {
     const bookings = new Map<string, any>();
     const evidence: any[] = [];
     const attempts: any[] = [];
+    const auditRows: any[] = [];
     let seq = 0;
 
     const db: any = {
@@ -28,8 +30,20 @@ function makeFakeDb() {
         _bookings: bookings,
         _evidence: evidence,
         _attempts: attempts,
+        _audits: auditRows,
         auditLog: {
-            create: jest.fn(async ({ data }: any) => ({ id: `audit-${++seq}`, ...data })),
+            create: jest.fn(async ({ data }: any) => {
+                const row = { id: `audit-${++seq}`, ...data };
+                auditRows.push(row);
+                return row;
+            }),
+            findMany: jest.fn(async ({ where }: any = {}) =>
+                auditRows.filter((r) =>
+                    (where?.targetType === undefined || r.targetType === where.targetType)
+                    && (where?.targetId === undefined || r.targetId === where.targetId)
+                    && (where?.action === undefined || r.action === where.action),
+                ),
+            ),
         },
         refundEvidence: {
             create: jest.fn(async ({ data }: any) => {
@@ -72,7 +86,8 @@ function makeFakeDb() {
             }),
             findMany: jest.fn(async ({ where }: any) => {
                 return [...cases.values()].filter((c) =>
-                    (where?.agencyId === undefined || c.agencyId === where.agencyId)
+                    (where?.bookingId === undefined || c.bookingId === where.bookingId)
+                    && (where?.agencyId === undefined || c.agencyId === where.agencyId)
                     && (where?.travelerId === undefined || c.travelerId === where.travelerId)
                     && (where?.status?.in === undefined || where.status.in.includes(c.status))
                     && (where?.status === undefined || typeof where.status !== 'string' || c.status === where.status)
@@ -783,15 +798,17 @@ describe('RefundsService admin repairs (#423)', () => {
         });
     });
 
-    it('reopen is an admin repair path only: the public state machine still has no exit from terminal states', async () => {
+    it('reopen is an admin repair path only: ordinary transitions still cannot leave a terminal state', async () => {
         const db = makeFakeDb();
         seedAgency(db);
         seedCase(db);
         const { service } = makeService(db);
 
-        // The whitelisted transition engine refuses to leave REFUND_COMPLETED
-        // for any actor — the repair works precisely because it does not go
-        // through transitionInTransaction.
+        // Ordinary transitions refuse to leave REFUND_COMPLETED — the
+        // repair works precisely because it does not go through
+        // transitionInTransaction. (Since #416B the state machine has
+        // exactly one whitelisted exit from REFUND_COMPLETED: the
+        // traveller dispute path in disputeReceipt.)
         await expect(
             service.initiate(ADMIN, 'ADMIN', null, 'case-1', {}),
         ).rejects.toBeInstanceOf(BadRequestException);
@@ -899,5 +916,381 @@ describe('RefundsService admin repairs (#423)', () => {
             reason: '   ',
         })).rejects.toThrow('reason is required');
         expect(repairAudits(db)).toHaveLength(0);
+    });
+});
+
+describe('RefundsService PSP wiring + traveller confirm/dispute (#416B)', () => {
+    const AGENCY_ACTOR = { id: 'agency-user-1' };
+    const ADMIN_ACTOR = { id: 'admin-1' };
+
+    function seedCaseRow(db: any, overrides: Record<string, unknown> = {}) {
+        const row = {
+            id: 'case-1', bookingId: 'booking-1', travelerId: 'traveler-1', agencyId: 'agency-1',
+            originalPaymentId: 'payment-1', requestedAmount: D('200.00'), approvedAmount: D('200.00'),
+            currency: 'MAD', status: 'REFUND_INITIATED', initiatedAt: new Date(),
+            providerRefundId: null, providerStatus: null, completionTier: null,
+            travellerConfirmedAt: null, disputedAt: null, disputeReason: null,
+            completedAt: null, auditRequired: false, auditedAt: null, auditedBy: null,
+            refundDueAt: null,
+            ...overrides,
+        };
+        db._cases.set(row.id, row);
+        return row;
+    }
+
+    function seedFixture(db: any, caseOverrides: Record<string, unknown> = {}) {
+        seedAgency(db);
+        seedDepositPayment(db);
+        db._bookings.set('booking-1', { id: 'booking-1', refundStatus: null, paymentStatus: 'PAID' });
+        return seedCaseRow(db, caseOverrides);
+    }
+
+    function transitionTos(db: any) {
+        return db._audits
+            .filter((a: any) => a.action === 'REFUND_CASE_TRANSITION' && a.targetId === 'case-1')
+            .map((a: any) => a.metadata.to);
+    }
+
+    it('a PSP confirmation completes an initiated case with tier-1 evidence and writes no second ledger refund', async () => {
+        const db = makeFakeDb();
+        seedFixture(db);
+        db._plans.push({ bookingId: 'booking-1', agencyId: 'agency-1', status: 'REFUND_DUE' });
+        const { service, external } = makeService(db);
+
+        const outcome = await service.recordPspRefundConfirmationInTransaction(db, {
+            bookingId: 'booking-1',
+            externalPaymentId: 'payment-1',
+            providerRefundId: 'psp-refund-9',
+            providerStatus: 'REFUNDED',
+        });
+
+        expect(outcome).toEqual({ matched: true, completed: true, agencyId: 'agency-1' });
+        const row = db._cases.get('case-1');
+        expect(row.status).toBe('REFUND_COMPLETED');
+        expect(row.completionTier).toBe('PSP_CONFIRMATION');
+        expect(row.providerRefundId).toBe('psp-refund-9');
+        expect(row.completedAt).toBeInstanceOf(Date);
+        // Tier-1 evidence recorded once, from the system webhook source.
+        expect(db._evidence).toHaveLength(1);
+        expect(db._evidence[0]).toMatchObject({
+            refundCaseId: 'case-1',
+            tier: 'PSP_CONFIRMATION',
+            source: 'SYSTEM_WEBHOOK',
+            reference: 'psp-refund-9',
+            recordedBy: 'SYSTEM',
+        });
+        // The PSP caller already recorded the ledger refund — this
+        // method must never write a second one.
+        expect(external.recordRefundInTransaction).not.toHaveBeenCalled();
+        // Booking/plan completion effects match the manual path.
+        expect(db._bookings.get('booking-1').refundStatus).toBe('PROCESSED');
+        expect(db._plans[0].status).toBe('REFUNDED');
+    });
+
+    it('a PSP confirmation completes an AGENCY_ACTION_REQUIRED case through an audited initiate step', async () => {
+        const db = makeFakeDb();
+        seedFixture(db, { status: 'AGENCY_ACTION_REQUIRED', initiatedAt: null });
+        const { service } = makeService(db);
+
+        const outcome = await service.recordPspRefundConfirmationInTransaction(db, {
+            bookingId: 'booking-1',
+            externalPaymentId: 'payment-1',
+            providerRefundId: 'psp-refund-10',
+        });
+
+        expect(outcome.completed).toBe(true);
+        expect(db._cases.get('case-1').status).toBe('REFUND_COMPLETED');
+        expect(db._cases.get('case-1').initiatedAt).toBeInstanceOf(Date);
+        expect(transitionTos(db)).toEqual(['REFUND_INITIATED', 'REFUND_COMPLETED']);
+    });
+
+    it('a PSP confirmation with no active case for the booking changes nothing', async () => {
+        const db = makeFakeDb();
+        seedAgency(db);
+        const { service, external } = makeService(db);
+
+        const outcome = await service.recordPspRefundConfirmationInTransaction(db, {
+            bookingId: 'booking-1',
+            providerRefundId: 'psp-refund-11',
+        });
+
+        expect(outcome).toEqual({ matched: false, completed: false, agencyId: null });
+        expect(db._evidence).toHaveLength(0);
+        expect(external.recordRefundInTransaction).not.toHaveBeenCalled();
+    });
+
+    it('a PSP confirmation records evidence but does not complete a case still in eligibility review', async () => {
+        const db = makeFakeDb();
+        seedFixture(db, { status: 'ELIGIBILITY_REVIEW', initiatedAt: null });
+        const { service } = makeService(db);
+
+        const outcome = await service.recordPspRefundConfirmationInTransaction(db, {
+            bookingId: 'booking-1',
+            providerRefundId: 'psp-refund-12',
+        });
+
+        expect(outcome).toEqual({ matched: true, completed: false, agencyId: 'agency-1' });
+        expect(db._cases.get('case-1').status).toBe('ELIGIBILITY_REVIEW');
+        expect(db._evidence).toHaveLength(1);
+        expect(db._evidence[0].tier).toBe('PSP_CONFIRMATION');
+    });
+
+    it('a repeated PSP confirmation does not duplicate the evidence row', async () => {
+        const db = makeFakeDb();
+        seedFixture(db, { status: 'ELIGIBILITY_REVIEW', initiatedAt: null });
+        const { service } = makeService(db);
+
+        await service.recordPspRefundConfirmationInTransaction(db, {
+            bookingId: 'booking-1', providerRefundId: 'psp-refund-13',
+        });
+        const second = await service.recordPspRefundConfirmationInTransaction(db, {
+            bookingId: 'booking-1', providerRefundId: 'psp-refund-13',
+        });
+
+        expect(second.matched).toBe(true);
+        expect(db._evidence).toHaveLength(1);
+    });
+
+    it('confirmReceipt records tier-4 evidence and stamps the case, for the case traveller only', async () => {
+        const db = makeFakeDb();
+        seedFixture(db);
+        const { service } = makeService(db);
+
+        const updated = await service.confirmReceipt('traveler-1', 'case-1');
+
+        expect(updated.travellerConfirmedAt).toBeInstanceOf(Date);
+        expect(updated.status).toBe('REFUND_INITIATED'); // tier 4 never completes alone
+        expect(db._evidence).toHaveLength(1);
+        expect(db._evidence[0]).toMatchObject({
+            tier: 'TRAVELLER_CONFIRMATION',
+            source: 'TRAVELLER',
+            recordedBy: 'traveler-1',
+        });
+
+        const db2 = makeFakeDb();
+        seedFixture(db2);
+        const { service: service2 } = makeService(db2);
+        await expect(service2.confirmReceipt('traveler-2', 'case-1'))
+            .rejects.toBeInstanceOf(ForbiddenException);
+        expect(db2._evidence).toHaveLength(0);
+    });
+
+    it('confirmReceipt rejects the wrong status and a double confirmation', async () => {
+        const db = makeFakeDb();
+        seedFixture(db, { status: 'AGENCY_ACTION_REQUIRED', initiatedAt: null });
+        const { service } = makeService(db);
+        await expect(service.confirmReceipt('traveler-1', 'case-1'))
+            .rejects.toBeInstanceOf(BadRequestException);
+
+        const db2 = makeFakeDb();
+        seedFixture(db2);
+        const { service: service2 } = makeService(db2);
+        await service2.confirmReceipt('traveler-1', 'case-1');
+        await expect(service2.confirmReceipt('traveler-1', 'case-1'))
+            .rejects.toBeInstanceOf(BadRequestException);
+        expect(db2._evidence).toHaveLength(1);
+    });
+
+    it('disputeReceipt reopens a completed case inside the window and reverts the money fields — ledger untouched', async () => {
+        const db = makeFakeDb();
+        seedFixture(db, {
+            status: 'REFUND_COMPLETED',
+            completedAt: new Date(Date.now() - 10 * DAY_MS),
+            completionTier: 'BANK_REFERENCE',
+        });
+        db._bookings.get('booking-1').refundStatus = 'PROCESSED';
+        db._plans.push({ bookingId: 'booking-1', agencyId: 'agency-1', status: 'REFUNDED' });
+        const { service, external } = makeService(db);
+
+        const updated = await service.disputeReceipt('traveler-1', 'case-1', {
+            reason: 'The money never arrived',
+        });
+
+        expect(updated.status).toBe('ELIGIBILITY_REVIEW');
+        expect(updated.disputeReason).toBe('The money never arrived');
+        expect(updated.disputedAt).toBeInstanceOf(Date);
+        expect(updated.completionTier).toBeNull();
+        // Obligation is live again on the dashboards…
+        expect(db._bookings.get('booking-1').refundStatus).toBe('PENDING');
+        expect(db._plans[0].status).toBe('REFUND_DUE');
+        // …but the append-only ledger is not rewritten.
+        expect(external.recordRefundInTransaction).not.toHaveBeenCalled();
+        const disputes = db._audits.filter((a: any) => a.action === 'TRAVELLER_DISPUTE');
+        expect(disputes).toHaveLength(1);
+        expect(disputes[0].actorId).toBe('traveler-1');
+    });
+
+    it('disputeReceipt rejects disputes after the 60-day window, non-completed cases, and non-owners', async () => {
+        const db = makeFakeDb();
+        seedFixture(db, {
+            status: 'REFUND_COMPLETED',
+            completedAt: new Date(Date.now() - 61 * DAY_MS),
+            completionTier: 'BANK_REFERENCE',
+        });
+        const { service } = makeService(db);
+        await expect(service.disputeReceipt('traveler-1', 'case-1', { reason: 'Too late' }))
+            .rejects.toBeInstanceOf(BadRequestException);
+        expect(db._cases.get('case-1').status).toBe('REFUND_COMPLETED');
+
+        const db2 = makeFakeDb();
+        seedFixture(db2); // REFUND_INITIATED, not completed
+        const { service: service2 } = makeService(db2);
+        await expect(service2.disputeReceipt('traveler-1', 'case-1', { reason: 'Not completed' }))
+            .rejects.toBeInstanceOf(BadRequestException);
+
+        const db3 = makeFakeDb();
+        seedFixture(db3, {
+            status: 'REFUND_COMPLETED',
+            completedAt: new Date(),
+            completionTier: 'PSP_CONFIRMATION',
+        });
+        const { service: service3 } = makeService(db3);
+        await expect(service3.disputeReceipt('traveler-2', 'case-1', { reason: 'Not mine' }))
+            .rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('beginReview cannot reopen a completed case (the dispute path is traveller-only)', async () => {
+        const db = makeFakeDb();
+        seedFixture(db, {
+            status: 'REFUND_COMPLETED',
+            completedAt: new Date(),
+            completionTier: 'BANK_REFERENCE',
+        });
+        const { service } = makeService(db);
+
+        await expect(service.beginReview(ADMIN_ACTOR, 'ADMIN', null, 'case-1'))
+            .rejects.toBeInstanceOf(BadRequestException);
+        await expect(service.beginReview(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1'))
+            .rejects.toBeInstanceOf(BadRequestException);
+        expect(db._cases.get('case-1').status).toBe('REFUND_COMPLETED');
+    });
+
+    it('audit flag: a small tier-2 completion with no risk signals is not flagged (case-1 is outside the sample)', async () => {
+        expect(refundAuditSampled('case-1')).toBe(false);
+        const db = makeFakeDb();
+        seedFixture(db);
+        db._evidence.push({
+            id: 'evidence-1', refundCaseId: 'case-1', tier: 'BANK_PROVIDER_CONFIRMATION',
+            source: 'AGENCY', reference: 'pay_1', proofUrl: 'private/agency-user-1/doc.pdf',
+            amount: D('200.00'), note: null, recordedBy: 'agency-user-1', createdAt: new Date(),
+        });
+        const { service } = makeService(db);
+
+        const updated = await service.complete(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {});
+
+        expect(updated.status).toBe('REFUND_COMPLETED');
+        expect(updated.auditRequired).toBe(false);
+    });
+
+    it('audit flag: amount at or above the 5000 threshold is always flagged', async () => {
+        const db = makeFakeDb();
+        seedFixture(db, { requestedAmount: D('6000.00'), approvedAmount: D('6000.00') });
+        db._evidence.push({
+            id: 'evidence-1', refundCaseId: 'case-1', tier: 'BANK_PROVIDER_CONFIRMATION',
+            source: 'AGENCY', reference: 'pay_2', proofUrl: 'private/agency-user-1/doc.pdf',
+            amount: D('6000.00'), note: null, recordedBy: 'agency-user-1', createdAt: new Date(),
+        });
+        const { service } = makeService(db);
+
+        const updated = await service.complete(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {});
+
+        expect(updated.auditRequired).toBe(true);
+    });
+
+    it('audit flag: tier-3 (weakest path) completions are always flagged', async () => {
+        const db = makeFakeDb();
+        seedFixture(db);
+        db._evidence.push({
+            id: 'evidence-1', refundCaseId: 'case-1', tier: 'BANK_REFERENCE',
+            source: 'AGENCY', reference: 'VIR-1', proofUrl: 'private/agency-user-1/doc.pdf',
+            amount: D('200.00'), note: null, recordedBy: 'agency-user-1', createdAt: new Date(),
+        });
+        const { service } = makeService(db);
+
+        const updated = await service.complete(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {});
+
+        expect(updated.completionTier).toBe('BANK_REFERENCE');
+        expect(updated.auditRequired).toBe(true);
+    });
+
+    it('audit flag: tier 4 + tier 5 completions are always flagged', async () => {
+        const db = makeFakeDb();
+        seedFixture(db);
+        db._evidence.push({
+            id: 'evidence-1', refundCaseId: 'case-1', tier: 'TRAVELLER_CONFIRMATION',
+            source: 'TRAVELLER', reference: null, proofUrl: null,
+            amount: null, note: null, recordedBy: 'traveler-1', createdAt: new Date(),
+        });
+        const { service } = makeService(db);
+
+        // Admin completion records the tier-5 review; the traveller
+        // confirmation makes the qualifying path tier 4 + 5.
+        const updated = await service.complete(ADMIN_ACTOR, 'ADMIN', null, 'case-1', {});
+
+        expect(updated.completionTier).toBe('ADMIN_REVIEW');
+        expect(updated.auditRequired).toBe(true);
+    });
+
+    it('audit flag: a case that was ever overdue is flagged on completion', async () => {
+        const db = makeFakeDb();
+        seedFixture(db, {
+            status: 'AGENCY_ACTION_REQUIRED',
+            initiatedAt: null,
+            refundDueAt: new Date(Date.now() - DAY_MS),
+        });
+        const { service } = makeService(db);
+
+        await service.markOverdueCases();
+        expect(db._cases.get('case-1').status).toBe('REFUND_OVERDUE');
+        await service.initiate(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {});
+        db._evidence.push({
+            id: 'evidence-1', refundCaseId: 'case-1', tier: 'BANK_PROVIDER_CONFIRMATION',
+            source: 'AGENCY', reference: 'pay_3', proofUrl: 'private/agency-user-1/doc.pdf',
+            amount: D('200.00'), note: null, recordedBy: 'agency-user-1', createdAt: new Date(),
+        });
+        const updated = await service.complete(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {});
+
+        expect(updated.status).toBe('REFUND_COMPLETED');
+        expect(updated.auditRequired).toBe(true);
+    });
+
+    it('audit sampling is deterministic and covers at least 20% of cases', () => {
+        const ids = Array.from({ length: 200 }, (_, i) => `case-${i}`);
+        const first = ids.map((id) => refundAuditSampled(id));
+        const second = ids.map((id) => refundAuditSampled(id));
+        expect(second).toEqual(first);
+        const sampled = first.filter(Boolean).length;
+        expect(sampled).toBeGreaterThanOrEqual(40); // >= 20%
+        expect(sampled).toBeLessThanOrEqual(70);
+        // With no hard signal and a strong tier, the flag is exactly the sample.
+        const base = {
+            wasEverOverdue: false,
+            wasDisputed: false,
+            amountAtOrAboveThreshold: false,
+            completionTier: RefundEvidenceTier.PSP_CONFIRMATION,
+            travellerConfirmationPresent: false,
+        };
+        for (const id of ['case-1', 'case-2', 'case-3']) {
+            expect(refundAuditRequired({ ...base, caseId: id })).toBe(refundAuditSampled(id));
+        }
+    });
+
+    it('markAudited stamps auditedAt/auditedBy and audits the review', async () => {
+        const db = makeFakeDb();
+        seedFixture(db, {
+            status: 'REFUND_COMPLETED',
+            completedAt: new Date(),
+            completionTier: 'BANK_REFERENCE',
+            auditRequired: true,
+        });
+        const { service } = makeService(db);
+
+        const updated = await service.markAudited(ADMIN_ACTOR, 'case-1');
+
+        expect(updated.auditedBy).toBe('admin-1');
+        expect(updated.auditedAt).toBeInstanceOf(Date);
+        const audits = db._audits.filter((a: any) => a.action === 'REFUND_CASE_AUDITED');
+        expect(audits).toHaveLength(1);
+        expect(audits[0].metadata.auditRequired).toBe(true);
     });
 });

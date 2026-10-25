@@ -15,6 +15,7 @@ import {
 } from '@ouiboo/database';
 import { DatabaseService } from '../database/database.service';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
+import { RefundsService } from '../refunds/refunds.service';
 import { PspAdapterRegistry } from './adapters/psp-adapter.registry';
 import { toMoneyString } from '../common/money.util';
 
@@ -42,6 +43,7 @@ export class PaymentRequestsService {
         private db: DatabaseService,
         private registry: PspAdapterRegistry,
         private externalPaymentsService: ExternalPaymentsService,
+        private refundsService: RefundsService,
     ) { }
 
     async createRequest(
@@ -280,6 +282,7 @@ export class PaymentRequestsService {
             },
         );
         if (result.mode === 'executed') {
+            let refundCaseOutcome: { completed: boolean; agencyId: string | null } | undefined;
             await this.db.$transaction(async (tx) => {
                 await this.externalPaymentsService.recordRefundInTransaction(tx, {
                     bookingId: attempt.bookingId,
@@ -298,7 +301,25 @@ export class PaymentRequestsService {
                     where: { id: attempt.id },
                     data: { status: PaymentAttemptStatus.REFUNDED },
                 });
+                // #416B (Council P0-09): an executed provider refund is
+                // tier-1 evidence for the booking's RefundCase — attach
+                // it and complete the case when it is awaiting action
+                // or initiated. The ledger write above remains the only
+                // one; the manual adapter path (mode 'manual') records
+                // nothing here because no provider confirmation exists
+                // yet — that outcome belongs to the refund workflow.
+                refundCaseOutcome =
+                    await this.refundsService.recordPspRefundConfirmationInTransaction(tx, {
+                        bookingId: attempt.bookingId,
+                        externalPaymentId: attempt.externalPaymentId ?? null,
+                        providerRefundId: result.providerRefundId,
+                    });
             });
+            if (refundCaseOutcome?.completed && refundCaseOutcome.agencyId) {
+                await this.refundsService
+                    .refreshAgencyRestriction(refundCaseOutcome.agencyId)
+                    .catch(() => undefined);
+            }
         }
         return { attemptId: attempt.id, mode: result.mode, providerRefundId: result.providerRefundId };
     }

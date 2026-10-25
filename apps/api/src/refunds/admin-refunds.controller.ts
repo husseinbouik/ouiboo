@@ -91,4 +91,10 @@ export class AdminRefundsController {
     repair(@Request() req, @Param('id') id: string, @Body() dto: RepairRefundCaseDto) {
         return this.refundsService.repairCaseAsAdmin(this.actor(req), id, dto);
     }
+
+    @Post(':id/audit')
+    @ApiOperation({ summary: 'Mark a refund case as audited (#416)', description: 'Stamps auditedAt/auditedBy for a case in the risk-based audit queue (auditRequired). Auditing is a review obligation, not a completion blocker.' })
+    audit(@Request() req, @Param('id') id: string) {
+        return this.refundsService.markAudited(this.actor(req), id);
+    }
 }
