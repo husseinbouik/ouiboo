@@ -20,6 +20,76 @@ export interface RefundEvidencePayload {
   note?: string;
 }
 
+/** #416C: one row of a case's completion-evidence trail (append-only). */
+export interface RefundEvidenceRow {
+  id: string;
+  tier: string;
+  source: string;
+  reference: string | null;
+  amount: string | null;
+  note: string | null;
+  createdAt: string;
+}
+
+/**
+ * #416C: the evidence trail on a refund case card — what has been
+ * submitted so far, and (once completed) the tier the completion
+ * rests on. Renders nothing when no evidence exists yet.
+ */
+export function RefundEvidenceList({
+  evidence,
+  currency,
+  status,
+  completionTier,
+}: {
+  evidence?: RefundEvidenceRow[];
+  currency: string;
+  status: string;
+  completionTier?: string | null;
+}) {
+  const { t } = useTranslation();
+  if (!evidence?.length) {
+    return null;
+  }
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+        {t('refunds.evidence.listTitle')}
+      </p>
+      <ul className="space-y-1">
+        {evidence.map((row) => (
+          <li key={row.id} className="text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">
+              {t(`refunds.evidence.tier.${row.tier}`, {
+                defaultValue: row.tier.replaceAll('_', ' '),
+              })}
+            </span>
+            {row.reference ? <> · {row.reference}</> : null}
+            {row.amount ? (
+              <>
+                {' '}
+                · {row.amount} {currency}
+              </>
+            ) : null}
+            {' · '}
+            {new Date(row.createdAt).toLocaleDateString()}
+            {row.note ? <> · {row.note}</> : null}
+          </li>
+        ))}
+      </ul>
+      {status === 'REFUND_COMPLETED' && completionTier && (
+        <p className="text-xs text-muted-foreground">
+          {t('refunds.evidence.completedOn', {
+            tier: t(`refunds.evidence.tier.${completionTier}`, {
+              defaultValue: completionTier.replaceAll('_', ' '),
+            }),
+          })}
+        </p>
+      )}
+    </div>
+  );
+}
+
 /**
  * #416 (Council P0-09): one evidence shape for every agency submission
  * (decision D9) — the bank/provider reference AND the retained

@@ -4,7 +4,12 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RefundEvidenceForm, isRefundEvidenceReady } from './RefundEvidenceForm';
+import {
+  RefundEvidenceForm,
+  RefundEvidenceList,
+  isRefundEvidenceReady,
+  type RefundEvidenceRow,
+} from './RefundEvidenceForm';
 import { apiClient } from '@/lib/api-client';
 
 jest.mock('react-i18next', () => ({
@@ -143,5 +148,61 @@ describe('RefundEvidenceForm (#416C)', () => {
     ).not.toBeNull();
     expect(screen.queryByText('refunds.evidence.submitted')).toBeNull();
     expect(onSubmitted).not.toHaveBeenCalled();
+  });
+});
+
+describe('RefundEvidenceList (#416C)', () => {
+  const rows: RefundEvidenceRow[] = [
+    {
+      id: 'ev-1',
+      tier: 'BANK_REFERENCE',
+      source: 'AGENCY',
+      reference: 'VIR-2026-1042',
+      amount: '200.00',
+      note: 'Banque Populaire',
+      createdAt: '2026-10-04T10:00:00.000Z',
+    },
+    {
+      id: 'ev-2',
+      tier: 'TRAVELLER_CONFIRMATION',
+      source: 'TRAVELLER',
+      reference: null,
+      amount: null,
+      note: null,
+      createdAt: '2026-10-05T10:00:00.000Z',
+    },
+  ];
+
+  it('renders nothing without evidence', () => {
+    const { container } = render(
+      <RefundEvidenceList evidence={[]} currency="MAD" status="REFUND_INITIATED" />,
+    );
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('renders each row with its tier, reference, amount and note', () => {
+    render(
+      <RefundEvidenceList evidence={rows} currency="MAD" status="REFUND_INITIATED" />,
+    );
+    expect(screen.getByText('refunds.evidence.listTitle')).not.toBeNull();
+    expect(screen.getByText(/refunds\.evidence\.tier\.BANK_REFERENCE/)).not.toBeNull();
+    expect(screen.getByText(/VIR-2026-1042/)).not.toBeNull();
+    expect(screen.getByText(/200\.00 MAD/)).not.toBeNull();
+    expect(screen.getByText(/Banque Populaire/)).not.toBeNull();
+    expect(screen.getByText(/refunds\.evidence\.tier\.TRAVELLER_CONFIRMATION/)).not.toBeNull();
+    // No completion line while the case is still open.
+    expect(screen.queryByText(/refunds\.evidence\.completedOn/)).toBeNull();
+  });
+
+  it('states the completion tier once the case is completed', () => {
+    render(
+      <RefundEvidenceList
+        evidence={rows}
+        currency="MAD"
+        status="REFUND_COMPLETED"
+        completionTier="BANK_REFERENCE"
+      />,
+    );
+    expect(screen.getByText(/refunds\.evidence\.completedOn/)).not.toBeNull();
   });
 });

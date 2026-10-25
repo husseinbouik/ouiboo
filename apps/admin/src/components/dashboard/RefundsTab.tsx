@@ -120,7 +120,7 @@ export default function RefundsTab({ t, cases, pagination, onPageChange, paginat
       await apiClient.post(`/admin/refunds/${id}/audit`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['refunds'] });
+      void queryClient.invalidateQueries({ queryKey: ['refunds'] });
       setBusyId(null);
     },
     onError: () => setBusyId(null),
