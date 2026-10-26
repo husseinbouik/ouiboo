@@ -24,7 +24,12 @@ import { cn } from '@ouiboo/ui/utils';
 import { VerificationStatus, type TravelLicenceType } from '@ouiboo/types';
 import { PrivateDocumentUpload } from '@/components/PrivateDocumentUpload';
 import { VerificationPausedBanner } from '@/components/VerificationPausedBanner';
-import { effectiveInsuranceStatus, effectiveLicenceStatus } from '@/lib/agency-verification';
+import {
+  activationBlockArtefactKey,
+  effectiveInsuranceStatus,
+  effectiveLicenceStatus,
+  getAgencyActivationState,
+} from '@/lib/agency-verification';
 
 type AgencyOnboardingValues = {
   bio?: string;
@@ -254,6 +259,19 @@ export default function OnboardingPage() {
   if (!mounted) return null;
 
   const isVerified = user?.agencyProfile?.verificationStatus === VerificationStatus.Verified;
+  // #415: the header badge reflects the full activation gate (identity +
+  // licence + RC insurance) via the shared derivation — `isVerified`
+  // above stays identity-only because it locks the identity form fields.
+  const activation = getAgencyActivationState(user?.agencyProfile);
+  const activationBlock = activation.block;
+  let activationBadgeLabel = t('onboarding.status.pending');
+  if (activation.fullyVerified) {
+    activationBadgeLabel = t('onboarding.status.verified');
+  } else if (activationBlock) {
+    activationBadgeLabel = t('verification.incompleteDetail', {
+      artefact: t(activationBlockArtefactKey(activationBlock)),
+    });
+  }
   const licenceStatus = effectiveLicenceStatus(user?.agencyProfile);
   const licenceLocked = licenceStatus === 'VERIFIED';
   const insuranceStatus = effectiveInsuranceStatus(user?.agencyProfile);
@@ -296,13 +314,13 @@ export default function OnboardingPage() {
         </div>
         <div className={cn(
           "flex items-center gap-2 px-4 py-2 rounded-xl border transition-colors",
-          isVerified
+          activation.fullyVerified
             ? "bg-success/10 text-success border-success/30"
             : "bg-warning/10 text-warning border-warning/30"
         )}>
-          {isVerified ? <CheckCircle2 className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
+          {activation.fullyVerified ? <CheckCircle2 className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
           <span className="text-sm font-bold uppercase tracking-wide">
-            {isVerified ? t('onboarding.status.verified') : t('onboarding.status.pending')}
+            {activationBadgeLabel}
           </span>
         </div>
       </div>

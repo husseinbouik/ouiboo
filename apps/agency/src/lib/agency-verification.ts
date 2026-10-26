@@ -68,6 +68,74 @@ export function effectiveInsuranceStatus(
   return effectiveArtefactStatus(profile?.insuranceStatus, profile?.insuranceExpiry, now);
 }
 
+export type ActivationProfileLike = LicenceProfileLike &
+  InsuranceProfileLike & {
+    verificationStatus?: string | null;
+  };
+
+/**
+ * The single artefact that blocks activation, in the API gate's check
+ * order (identity → licence → insurance). `status` is the effective
+ * artefact status for licence/insurance blocks; identity has no artefact
+ * lifecycle, so it reports the raw mismatch as 'UNVERIFIED'.
+ */
+export type ActivationBlock =
+  | { artefact: 'identity'; status: 'UNVERIFIED' }
+  | { artefact: 'licence'; status: ArtefactStatus }
+  | { artefact: 'insurance'; status: ArtefactStatus };
+
+export type AgencyActivationState = {
+  /** True only when the API gate (`getAgencyActivationBlock`) would pass. */
+  fullyVerified: boolean;
+  licenceStatus: ArtefactStatus;
+  insuranceStatus: ArtefactStatus;
+  /** The first blocking artefact, or null when fully verified. */
+  block: ActivationBlock | null;
+};
+
+/**
+ * #415: ONE client-side derivation of the agency's activation state,
+ * mirroring the API's `getAgencyActivationBlock`. Every surface that
+ * talks about verification (dashboard headline, onboarding header, trip
+ * pages) must read this — never `verificationStatus` alone — so the UI
+ * can never claim "verified" while the gate would still 403 a publish
+ * or a payment activation. The gate applies to transitions only; it
+ * never retroactively blocks trips that are already ACTIVE.
+ */
+export function getAgencyActivationState(
+  profile: ActivationProfileLike | undefined,
+  now: Date = new Date(),
+): AgencyActivationState {
+  const licenceStatus = effectiveLicenceStatus(profile, now);
+  const insuranceStatus = effectiveInsuranceStatus(profile, now);
+  let block: ActivationBlock | null = null;
+  if (profile?.verificationStatus !== 'VERIFIED') {
+    block = { artefact: 'identity', status: 'UNVERIFIED' };
+  } else if (licenceStatus !== 'VERIFIED') {
+    block = { artefact: 'licence', status: licenceStatus };
+  } else if (insuranceStatus !== 'VERIFIED') {
+    block = { artefact: 'insurance', status: insuranceStatus };
+  }
+  return { fullyVerified: block === null, licenceStatus, insuranceStatus, block };
+}
+
+/** i18n key for the short artefact label, e.g. "RC insurance". */
+export function activationBlockArtefactKey(block: ActivationBlock): string {
+  return `verification.artefact.${block.artefact}`;
+}
+
+/**
+ * i18n key for the sentence naming the blocking artefact and its state.
+ * Licence/insurance reuse the onboarding per-artefact status copy, which
+ * already names the artefact and what to do about it in every locale.
+ */
+export function activationBlockMessageKey(block: ActivationBlock): string {
+  if (block.artefact === 'identity') {
+    return 'verification.block.identity';
+  }
+  return `onboarding.${block.artefact}.status.${block.status}`;
+}
+
 export type VerificationPause = {
   paused: boolean;
   licenceExpired: boolean;

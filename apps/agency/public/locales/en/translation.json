@@ -283,6 +283,18 @@
     "body": "Your active trips were paused and new bookings are blocked until the renewed document is submitted and verified.",
     "cta": "Renew verification"
   },
+  "verification": {
+    "incomplete": "Verification incomplete",
+    "incompleteDetail": "Verification incomplete — {{artefact}} not verified",
+    "artefact": {
+      "identity": "agency identity",
+      "licence": "travel licence",
+      "insurance": "RC insurance"
+    },
+    "block": {
+      "identity": "Your agency identity verification is not complete yet."
+    }
+  },
   "trips": {
     "manageTitle": "Manage and monitor your travel packages.",
     "searchPlaceholder": "Search trips by name or location...",
@@ -322,7 +334,6 @@
       "delete": "Delete",
       "duration": "{{days}} Days / {{nights}} Nights",
       "verificationRequired": "Verification Required",
-      "verificationRequiredBody": "Your agency verification is pending. You can create templates and sessions, but they will not be visible to travelers until your profile is verified.",
       "checkVerificationStatus": "Check Verification Status",
       "sessionsTitle": "Trip Sessions",
       "sessionsSubtitle": "Manage dates, prices, and capacity for your trip.",
@@ -333,7 +344,8 @@
       "deleteTripBody": "Archiving hides this trip from travelers. Your bookings, sessions, and revenue records are preserved and the trip can be restored anytime.",
       "altTrip": "Trip",
       "listView": "List view",
-      "calendarView": "Calendar view"
+      "calendarView": "Calendar view",
+      "activationBlockedBody": "You can keep working on your trips, but you can't publish new trips or activate payments until this is resolved. Trips that are already live are not affected."
     },
     "edit": {
       "backToDetail": "Back to Trip Detail",
@@ -550,8 +562,6 @@
     "quickActions": {
       "verifiedTitle": "Agency verified",
       "verifiedDescription": "Your agency is verified. Keep your profile complete to stay payment-ready.",
-      "finishVerificationTitle": "Complete verification",
-      "finishVerificationDescription": "Upload your documents to publish trips and receive traveller payments directly.",
       "verifiedCta": "Review onboarding",
       "finishVerificationCta": "Finish onboarding",
       "publishTitle": "Publish your next trip",

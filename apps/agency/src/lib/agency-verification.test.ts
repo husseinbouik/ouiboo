@@ -1,7 +1,10 @@
 import {
+  activationBlockArtefactKey,
+  activationBlockMessageKey,
   effectiveArtefactStatus,
   effectiveInsuranceStatus,
   effectiveLicenceStatus,
+  getAgencyActivationState,
   getVerificationPause,
 } from './agency-verification';
 
@@ -54,6 +57,73 @@ describe('effective licence / insurance status', () => {
       effectiveInsuranceStatus({ insuranceStatus: 'VERIFIED', insuranceExpiry: null }, NOW),
     ).toBe('PENDING_REVIEW');
     expect(effectiveInsuranceStatus(undefined, NOW)).toBe('NOT_SUBMITTED');
+  });
+});
+
+describe('getAgencyActivationState (#415 mirror of the API activation gate)', () => {
+  const fullyVerified = {
+    verificationStatus: 'VERIFIED',
+    travelLicenceStatus: 'VERIFIED',
+    licenceExpiry: FUTURE,
+    insuranceStatus: 'VERIFIED',
+    insuranceExpiry: FUTURE,
+  };
+
+  it('is fully verified only when identity, licence and insurance all pass', () => {
+    expect(getAgencyActivationState(fullyVerified, NOW)).toEqual({
+      fullyVerified: true,
+      licenceStatus: 'VERIFIED',
+      insuranceStatus: 'VERIFIED',
+      block: null,
+    });
+  });
+
+  it('blocks on identity first, whatever the artefacts say', () => {
+    const state = getAgencyActivationState(
+      { ...fullyVerified, verificationStatus: 'PENDING' },
+      NOW,
+    );
+    expect(state.fullyVerified).toBe(false);
+    expect(state.block).toEqual({ artefact: 'identity', status: 'UNVERIFIED' });
+    expect(getAgencyActivationState(undefined, NOW).block).toEqual({
+      artefact: 'identity',
+      status: 'UNVERIFIED',
+    });
+  });
+
+  it('blocks on the licence before insurance, including derived expiry', () => {
+    expect(
+      getAgencyActivationState({ ...fullyVerified, licenceExpiry: PAST }, NOW).block,
+    ).toEqual({ artefact: 'licence', status: 'EXPIRED' });
+    // A VERIFIED licence with no expiry on file is not verified-forever.
+    expect(
+      getAgencyActivationState({ ...fullyVerified, licenceExpiry: null }, NOW).block,
+    ).toEqual({ artefact: 'licence', status: 'PENDING_REVIEW' });
+  });
+
+  it('blocks on RC insurance when identity and licence pass', () => {
+    expect(
+      getAgencyActivationState({ ...fullyVerified, insuranceStatus: 'NOT_SUBMITTED' }, NOW)
+        .block,
+    ).toEqual({ artefact: 'insurance', status: 'NOT_SUBMITTED' });
+    expect(
+      getAgencyActivationState({ ...fullyVerified, insuranceExpiry: PAST }, NOW).block,
+    ).toEqual({ artefact: 'insurance', status: 'EXPIRED' });
+  });
+
+  it('maps blocks to the shared i18n keys', () => {
+    expect(activationBlockArtefactKey({ artefact: 'insurance', status: 'EXPIRED' })).toBe(
+      'verification.artefact.insurance',
+    );
+    expect(activationBlockMessageKey({ artefact: 'identity', status: 'UNVERIFIED' })).toBe(
+      'verification.block.identity',
+    );
+    expect(activationBlockMessageKey({ artefact: 'licence', status: 'EXPIRED' })).toBe(
+      'onboarding.licence.status.EXPIRED',
+    );
+    expect(activationBlockMessageKey({ artefact: 'insurance', status: 'NOT_SUBMITTED' })).toBe(
+      'onboarding.insurance.status.NOT_SUBMITTED',
+    );
   });
 });
 
