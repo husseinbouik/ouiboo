@@ -6,6 +6,7 @@ import { EmailService } from '../email/email.service';
 import { UploadService } from '../upload/upload.service';
 import { BookingPaymentPlanStatus, BookingPaymentStatus, ExternalPaymentStage, PaymentCustodian, PaymentLedgerSource, PaymentMethod, SessionGroupStatus } from '@ouiboo/database';
 import { BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT, mapBookingDetails } from './booking-response.util';
+import { resolvePaymentProofDownloadUrl } from './payment-proof-url.util';
 import { Prisma } from '@ouiboo/database';
 import { decimalEqualsMoney, multiplyMoney, toMoneyDecimal } from '../common/money.util';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
@@ -537,8 +538,7 @@ export class BookingsService {
 
 
     private buildPaymentProofDownloadUrl(bookingId: string) {
-        const apiUrl = process.env.API_URL || 'http://localhost:3000/api/v1';
-        return `${apiUrl}/bookings/${bookingId}/payment-proof/download`;
+        return resolvePaymentProofDownloadUrl(bookingId, process.env.API_URL);
     }
 
     private isPaymentProofExpired(bookingDate: Date) {

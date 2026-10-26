@@ -1,15 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import type { BookingDetails } from '@ouiboo/types';
 import { formatCurrency } from '@ouiboo/utils';
+import { apiClient } from '@/lib/api-client';
 import {
   getExpectedStageAmount,
   getFileTypeFromUrl,
   getProofReviewStage,
+  type ProofFileType,
 } from './paymentProofUtils';
 import { PaymentProofStatusBanner } from './PaymentProofStatusBanner';
 import { PaymentProofBookingCard } from './PaymentProofBookingCard';
@@ -60,6 +62,63 @@ export function PaymentProofReviewModal({
   const [imageError, setImageError] = useState(false);
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
   const [rejectionError, setRejectionError] = useState('');
+  const [proofObjectUrl, setProofObjectUrl] = useState<string | null>(null);
+  const [proofContentType, setProofContentType] = useState<string | null>(null);
+  const [proofRetryCount, setProofRetryCount] = useState(0);
+
+  const proofBookingId = booking?.id;
+  const hasProof = Boolean(booking?.paymentProof?.imageUrl);
+
+  // #422: the proof download endpoint requires authentication, and an
+  // <img>/<iframe> cannot send the Authorization header — a bare URL 401s
+  // (and the old host-less relative path 404'd on the agency origin).
+  // Fetch the proof through the authenticated apiClient as a blob, like
+  // the admin app does, and render the object URL. It is revoked when the
+  // modal closes, the booking changes, or the component unmounts.
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!proofBookingId || !hasProof) {
+      setImageLoading(false);
+      return;
+    }
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    setImageLoading(true);
+    setImageError(false);
+    void (async () => {
+      try {
+        const response = await apiClient.get(
+          `/bookings/${proofBookingId}/payment-proof/download`,
+          { responseType: 'blob' },
+        );
+        if (cancelled) return;
+        const headerType = response.headers?.['content-type'];
+        const contentType =
+          typeof headerType === 'string' && headerType
+            ? headerType
+            : response.data instanceof Blob
+              ? response.data.type
+              : '';
+        const blob =
+          response.data instanceof Blob && contentType && response.data.type !== contentType
+            ? new Blob([response.data], { type: contentType })
+            : response.data;
+        objectUrl = URL.createObjectURL(blob as Blob);
+        setProofContentType(contentType || null);
+        setProofObjectUrl(objectUrl);
+      } catch {
+        if (cancelled) return;
+        setImageLoading(false);
+        setImageError(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      setProofObjectUrl(null);
+      setProofContentType(null);
+    };
+  }, [isOpen, proofBookingId, hasProof, proofRetryCount]);
 
   if (!booking) return null;
 
@@ -80,8 +139,16 @@ export function PaymentProofReviewModal({
   const tripTitle = booking.session.template.title || t('paymentProof.trip');
   const travelerName = booking.fullName || booking.traveler?.name || t('paymentProof.traveler');
   const amountText = formatCurrency(booking.totalAmount, booking.currency, i18n.language);
-  const proofUrl = booking.paymentProof?.imageUrl ? `/bookings/${booking.id}/payment-proof/download` : null;
-  const fileType = proofUrl ? getFileTypeFromUrl(proofUrl) : 'unknown';
+  const proofUrl = hasProof ? proofObjectUrl : null;
+  // The response content type is authoritative once the blob arrives;
+  // before that, fall back to the stored proof filename's extension.
+  const fileType: ProofFileType = proofContentType
+    ? proofContentType.includes('pdf')
+      ? 'pdf'
+      : proofContentType.startsWith('image/')
+        ? 'image'
+        : getFileTypeFromUrl(booking.paymentProof?.imageUrl ?? '')
+    : getFileTypeFromUrl(booking.paymentProof?.imageUrl ?? '');
 
   const handleClose = () => {
     setShowRejectInput(false);
@@ -141,6 +208,7 @@ export function PaymentProofReviewModal({
   const handleImageRetry = () => {
     setImageError(false);
     setImageLoading(true);
+    setProofRetryCount((count) => count + 1);
   };
 
   return (
