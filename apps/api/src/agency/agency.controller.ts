@@ -380,6 +380,13 @@ export class AgencyController {
                 pendingBankDetails: true,
                 bankDetailsStatus: true,
                 bankDetailsVerifiedAt: true,
+                // #419 fix: the activation gate below compares the
+                // submitted holder name / attestation against the stored
+                // values, so they must be selected — previously the
+                // controller could not tell "present but unchanged" from
+                // "changed" for these fields at all.
+                bankAccountHolderName: true,
+                bankAttestationUrl: true,
                 verificationStatus: true,
                 travelLicenceStatus: true,
                 licenceExpiry: true,
@@ -391,6 +398,47 @@ export class AgencyController {
             },
         });
         if (!existing) throw new NotFoundException('Agency profile not found');
+
+        // #419 fix: the #371/#415 activation gate guards CHANGES to the
+        // payment destination — it must not reject the whole profile
+        // PATCH just because bank fields are present in the payload.
+        // The agency Settings form always submits every field bundled
+        // together, so the old placement (gate inside the bankDetails
+        // branch, whose no-change exemption only recognised a
+        // resubmission of the pending value, or of the live value while
+        // the destination was verified) meant an agency whose RC
+        // insurance was not yet verified could not save ANY setting —
+        // emergency contacts, bio, company name — whenever the bundled
+        // bankDetails did not exactly match the pending submission.
+        // Scoped rule: compare each payment-destination field against
+        // what is stored; only an actual change is gated, and only
+        // while the agency has no verified destination yet (replacing
+        // a verified destination stays review-gated, not agency-gated,
+        // as before). Clearing the details is a deactivation, not an
+        // activation, and stays ungated.
+        const normalized = (value?: string | null) => (value ?? '').trim();
+        const submittedBankDetails =
+            data.bankDetails !== undefined ? data.bankDetails.trim() : undefined;
+        const bankDetailsChanged =
+            submittedBankDetails !== undefined &&
+            submittedBankDetails !== '' &&
+            submittedBankDetails !== normalized(existing.pendingBankDetails) &&
+            submittedBankDetails !== normalized(existing.bankDetails);
+        const holderNameChanged =
+            data.bankAccountHolderName !== undefined &&
+            normalized(data.bankAccountHolderName) !==
+                normalized(existing.bankAccountHolderName);
+        const attestationChanged =
+            data.bankAttestationUrl !== undefined &&
+            normalized(data.bankAttestationUrl) !==
+                normalized(existing.bankAttestationUrl);
+        if (
+            (bankDetailsChanged || holderNameChanged || attestationChanged) &&
+            !isBankDestinationVerified(existing)
+        ) {
+            const block = getAgencyActivationBlock(existing);
+            if (block) throw new ForbiddenException(block);
+        }
 
         // #421 (Council P0-19): bank details are a payment DESTINATION,
         // not free text that goes live on save. A submission is stored in
@@ -414,19 +462,15 @@ export class AgencyController {
                 destination.bankDetailsRejectionReason = null;
             } else if (
                 submitted !== existing.pendingBankDetails &&
-                !(submitted === existing.bankDetails && isBankDestinationVerified(existing))
+                submitted !== existing.bankDetails
             ) {
-                // #371: the FIRST submission is still payment activation —
-                // it requires a verified identity AND a verified travel
-                // licence (#415: and verified RC insurance, via the shared
-                // activation block), so no agency can start receiving
-                // traveller payments by bypassing onboarding. Replacing an
-                // already-verified destination does not re-gate the
-                // agency; the destination review is the gate there.
-                if (!isBankDestinationVerified(existing)) {
-                    const block = getAgencyActivationBlock(existing);
-                    if (block) throw new ForbiddenException(block);
-                }
+                // A genuinely new destination submission. The #371/#415
+                // activation gate (verified identity + licence + RC
+                // insurance) has already been applied above, scoped to
+                // actual destination changes (#419 fix) — a submission
+                // identical to the stored live details is a no-op here
+                // regardless of the destination's verification state, so
+                // it can never re-gate or re-pend what is already stored.
                 destination.pendingBankDetails = submitted;
                 destination.bankDetailsStatus = 'PENDING_REVIEW';
                 destination.bankDetailsRejectionReason = null;
