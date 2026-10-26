@@ -37,7 +37,7 @@ const baseProfile = {
   companyName: 'Atlas Voyages SARL',
   ice: '123456789012345',
   patente: 'PAT12345',
-  rib: '123456789012345678901234',
+  rib: 'MA6400010001000100010001',
   bio: '',
   legalName: 'Atlas Voyages SARL',
   rc: '123456',

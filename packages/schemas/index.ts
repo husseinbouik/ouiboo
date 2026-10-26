@@ -35,7 +35,16 @@ export const AgencyProfileSchema = z.object({
     companyName: z.string().min(2, "Company name is required"),
     ice: z.string().regex(/^[0-9]{15}$/, "ICE must be 15 digits"),
     patente: z.string().min(5, "Patente is required"),
-    rib: z.string().regex(/^[0-9]{24}$/, "RIB must be 24 digits"),
+    rib: z.preprocess(
+        (value) =>
+            typeof value === 'string' ? value.replace(/\s+/g, '').toUpperCase() : value,
+        z
+            .string()
+            .regex(
+                /^[A-Z]{2}[0-9]{22}$/,
+                'RIB must be 24 characters: 2 letters followed by 22 digits',
+            ),
+    ),
     verificationStatus: z.nativeEnum(VerificationStatus),
     bio: z.string().optional(),
     logo: z.string().optional(),
