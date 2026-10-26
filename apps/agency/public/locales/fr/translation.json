@@ -283,6 +283,18 @@
     "body": "Vos voyages actifs ont été mis en pause et les nouvelles réservations sont bloquées jusqu’à l’envoi et la vérification du document renouvelé.",
     "cta": "Renouveler la vérification"
   },
+  "verification": {
+    "incomplete": "Vérification incomplète",
+    "incompleteDetail": "Vérification incomplète — {{artefact}} en attente de vérification",
+    "artefact": {
+      "identity": "l'identité de l'agence",
+      "licence": "la licence de voyage",
+      "insurance": "l'assurance RC"
+    },
+    "block": {
+      "identity": "La vérification de l'identité de votre agence n'est pas encore terminée."
+    }
+  },
   "trips": {
     "manageTitle": "Gérez et suivez vos forfaits voyage.",
     "searchPlaceholder": "Rechercher des voyages par nom ou lieu...",
@@ -317,7 +329,6 @@
       "delete": "Supprimer",
       "duration": "{{days}} jours / {{nights}} nuits",
       "verificationRequired": "Vérification requise",
-      "verificationRequiredBody": "La vérification de votre agence est en attente. Vous pouvez créer des modèles et des sessions, mais ils ne seront visibles par les voyageurs qu'après vérification de votre profil.",
       "checkVerificationStatus": "Vérifier le statut de vérification",
       "sessionsTitle": "Sessions du voyage",
       "sessionsSubtitle": "Gérez les dates, prix et capacités de votre voyage.",
@@ -333,7 +344,8 @@
       "archive": "Archiver",
       "archiving": "Archivage...",
       "restore": "Restaurer",
-      "restoring": "Restauration..."
+      "restoring": "Restauration...",
+      "activationBlockedBody": "Vous pouvez continuer à travailler sur vos voyages, mais vous ne pourrez pas publier de nouveaux voyages ni activer les paiements tant que ce point n'est pas résolu. Les voyages déjà en ligne ne sont pas affectés."
     },
     "edit": {
       "backToDetail": "Retour au détail du voyage",
@@ -550,8 +562,6 @@
     "quickActions": {
       "verifiedTitle": "Agence vérifiée",
       "verifiedDescription": "Votre agence est vérifiée. Gardez votre profil complet pour rester prêt pour les paiements.",
-      "finishVerificationTitle": "Compléter la vérification",
-      "finishVerificationDescription": "Téléversez vos documents pour publier des voyages et recevoir les paiements des voyageurs directement.",
       "verifiedCta": "Revoir l'onboarding",
       "finishVerificationCta": "Terminer l'onboarding",
       "publishTitle": "Publiez votre prochain circuit",

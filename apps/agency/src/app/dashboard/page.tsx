@@ -5,7 +5,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   BookingStatus,
   type BookingDetails,
-  type VerificationStatusType,
   VerificationStatus,
 } from '@ouiboo/types';
 import { toPaginatedList } from '@ouiboo/utils';
@@ -45,6 +44,10 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthContext';
 import { VerificationPausedBanner } from '@/components/VerificationPausedBanner';
+import {
+  activationBlockMessageKey,
+  getAgencyActivationState,
+} from '@/lib/agency-verification';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
@@ -147,7 +150,11 @@ export default function AgencyDashboard() {
     (booking) => booking.status === BookingStatus.AwaitingValidation || booking.status === BookingStatus.Pending,
   ).length;
   const latestBookings = recentBookings.slice(0, 5);
-  const verificationStatus: VerificationStatusType | undefined = user?.agencyProfile?.verificationStatus;
+  // #415: headline verification state comes from the shared activation
+  // derivation (identity + licence + RC insurance), never the legacy
+  // identity field alone — the API gate would still block this agency.
+  const activation = getAgencyActivationState(user?.agencyProfile);
+  const activationBlock = activation.block;
 
   const summaryCards = [
     {
@@ -179,13 +186,13 @@ export default function AgencyDashboard() {
     },
   ];
 
-  const isVerified = verificationStatus === VerificationStatus.Verified;
+  const isVerified = activation.fullyVerified;
   const quickActions = [
     {
-      title: isVerified ? t('dashboard.quickActions.verifiedTitle') : t('dashboard.quickActions.finishVerificationTitle'),
-      description: isVerified
+      title: isVerified ? t('dashboard.quickActions.verifiedTitle') : t('verification.incomplete'),
+      description: isVerified || !activationBlock
         ? t('dashboard.quickActions.verifiedDescription')
-        : t('dashboard.quickActions.finishVerificationDescription'),
+        : t(activationBlockMessageKey(activationBlock)),
       href: '/dashboard/onboarding',
       cta: isVerified ? t('dashboard.quickActions.verifiedCta') : t('dashboard.quickActions.finishVerificationCta'),
       icon: BadgeCheck,

@@ -7,6 +7,11 @@ import { useTranslation } from 'react-i18next';
 import { MapPin, Clock, AlertCircle } from 'lucide-react';
 import { Card, CardContent, Badge } from '@ouiboo/ui';
 import type { TripDetail } from './trip-detail-types';
+import { useAuth } from '@/components/AuthContext';
+import {
+  activationBlockMessageKey,
+  getAgencyActivationState,
+} from '@/lib/agency-verification';
 
 type TripOverviewProps = {
   trip: TripDetail;
@@ -14,6 +19,12 @@ type TripOverviewProps = {
 
 export function TripOverview({ trip }: TripOverviewProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  // #415: the banner reflects the real activation gate — it renders only
+  // when publishing/activating payments is actually blocked, names the
+  // blocking artefact, and never claims live trips are hidden (existing
+  // ACTIVE trips are never retroactively blocked).
+  const activation = getAgencyActivationState(user?.agencyProfile);
 
   return (
     <div className="lg:col-span-1 space-y-6">
@@ -42,18 +53,21 @@ export function TripOverview({ trip }: TripOverviewProps) {
         </CardContent>
       </Card>
 
-      <div className="bg-primary/10 border border-primary/30 rounded-2xl p-6 space-y-2">
-        <div className="flex items-center gap-2 text-primary font-bold">
-          <AlertCircle className="h-5 w-5" />
-          <span>{t('trips.detail.verificationRequired')}</span>
+      {activation.block && (
+        <div className="bg-primary/10 border border-primary/30 rounded-2xl p-6 space-y-2">
+          <div className="flex items-center gap-2 text-primary font-bold">
+            <AlertCircle className="h-5 w-5" />
+            <span>{t('trips.detail.verificationRequired')}</span>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {t(activationBlockMessageKey(activation.block))}{' '}
+            {t('trips.detail.activationBlockedBody')}
+          </p>
+          <Link href="/dashboard/onboarding" className="inline-block text-sm font-bold text-primary underline mt-2">
+            {t('trips.detail.checkVerificationStatus')}
+          </Link>
         </div>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {t('trips.detail.verificationRequiredBody')}
-        </p>
-        <Link href="/dashboard/onboarding" className="inline-block text-sm font-bold text-primary underline mt-2">
-          {t('trips.detail.checkVerificationStatus')}
-        </Link>
-      </div>
+      )}
     </div>
   );
 }
