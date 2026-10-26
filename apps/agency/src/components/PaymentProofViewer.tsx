@@ -3,7 +3,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileText, AlertCircle, Loader } from 'lucide-react';
-import Image from 'next/image';
 import { Button } from '@ouiboo/ui';
 import type { ProofFileType } from './paymentProofUtils';
 
@@ -36,14 +35,7 @@ export function PaymentProofViewer({
       </h3>
 
       <div className="relative border-2 border-border rounded-lg overflow-hidden bg-muted/50">
-        {!proofUrl ? (
-          <div className="h-96 flex items-center justify-center">
-            <div className="text-center">
-              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-              <p className="text-muted-foreground">{t('paymentProof.noProof')}</p>
-            </div>
-          </div>
-        ) : imageError ? (
+        {imageError ? (
           <div className="h-96 flex items-center justify-center">
             <div className="text-center">
               <AlertCircle className="h-12 w-12 text-danger mx-auto mb-2" />
@@ -57,6 +49,19 @@ export function PaymentProofViewer({
               </Button>
             </div>
           </div>
+        ) : !proofUrl ? (
+          imageLoading ? (
+            <div className="h-96 flex items-center justify-center">
+              <Loader className="h-8 w-8 text-muted-foreground animate-spin" />
+            </div>
+          ) : (
+            <div className="h-96 flex items-center justify-center">
+              <div className="text-center">
+                <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                <p className="text-muted-foreground">{t('paymentProof.noProof')}</p>
+              </div>
+            </div>
+          )
         ) : fileType === 'pdf' ? (
           <>
             {imageLoading && (
@@ -79,13 +84,14 @@ export function PaymentProofViewer({
                 <Loader className="h-8 w-8 text-muted-foreground animate-spin" />
               </div>
             )}
-            <Image
+            {/* The proof is an authenticated blob: object URL — next/image
+                cannot fetch it (no Authorization header), so render a
+                plain img from the object URL the modal created. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={proofUrl}
               alt={t('paymentProof.proofAlt')}
               className="w-full h-auto max-h-96 object-contain"
-              width={1200}
-              height={900}
-              unoptimized
               onLoad={onLoad}
               onError={onError}
             />
