@@ -85,7 +85,7 @@ export function PaymentProofReviewModal({
     let objectUrl: string | null = null;
     setImageLoading(true);
     setImageError(false);
-    (async () => {
+    void (async () => {
       try {
         const response = await apiClient.get(
           `/bookings/${proofBookingId}/payment-proof/download`,
