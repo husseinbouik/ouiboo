@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ouiboo.vercel.app';
   const title = 'Ouiboo — Travel experiences, made personal';
   const description =
-    'Discover handpicked trips across Morocco and beyond. Book unique travel experiences with verified local agencies.';
+    'Discover handpicked trips across Morocco and beyond. Book unique travel experiences with local travel agencies.';
   return {
     title,
     description,
