@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Button, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
+import { Button, ThemeToggle, LanguageSwitcher, BetaBadge } from '@ouiboo/ui';
 import { 
   Menu, 
   X, 
@@ -132,6 +132,7 @@ const [isOpen, setIsOpen] = useState(false);
             <span className="text-xl font-bold tracking-tight text-deep-blue dark:text-foreground">
                 Ouiboo
             </span>
+            <BetaBadge />
         </Link>
 
         <div className="hidden md:flex items-center gap-8 mx-6">
@@ -279,6 +280,7 @@ const [isOpen, setIsOpen] = useState(false);
                   <div className="flex items-center gap-2">
                      <div className="w-8 h-8 rounded-xl bg-sunset-orange-dark text-white flex items-center justify-center font-black text-lg">O</div>
                      <span className="text-xl font-black">Ouiboo</span>
+                     <BetaBadge />
                   </div>
                   <button ref={mobileMenuCloseRef} onClick={() => setIsOpen(false)} aria-label={t('nav.closeMenu', 'Close navigation menu')} className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center hit-slop">
                      <X className="h-5 w-5" />

@@ -47,6 +47,7 @@ jest.mock('@ouiboo/ui', () => ({
   Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
   ThemeToggle: () => null,
   LanguageSwitcher: () => null,
+  BetaBadge: () => null,
 }));
 
 jest.mock('qrcode', () => ({

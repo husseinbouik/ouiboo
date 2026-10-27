@@ -8,6 +8,7 @@ import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ArrowLeft, CheckCircle, Lock } from 'lucide-react';
 import { Button, Input } from '@ouiboo/ui';
+import { AuthSideWordmark } from '../../components/AuthSideWordmark';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ResetPasswordSchema, type ResetPasswordInput } from '@ouiboo/schemas';
 import { useTranslation } from 'react-i18next';
@@ -78,7 +79,7 @@ export default function TravelerResetPasswordPage() {
           />
         </motion.div>
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
-          <div className="text-3xl font-bold tracking-tight">Ouiboo</div>
+          <AuthSideWordmark />
           <div className="mb-12 space-y-4">
             <h2 className="text-4xl font-bold leading-tight">{t('resetPassword.sideTitle', 'Get back to planning')}</h2>
             <p className="text-lg text-gray-200 max-w-md">{t('resetPassword.sideSubtitle', 'Update your password and return to your travel dashboard in minutes.')}</p>

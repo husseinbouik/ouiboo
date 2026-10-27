@@ -4,6 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
+import { AuthBrandLockup } from '../../components/AuthBrandLockup';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, Eye, EyeOff, Calendar } from 'lucide-react';
@@ -140,8 +141,7 @@ export default function TravelerSignupPage() {
       >
         <div className="text-center mb-10">
           <Link href="/" className="inline-flex items-center justify-center gap-2 mb-8 group">
-              <div className="w-10 h-10 rounded-xl bg-deep-blue dark:bg-sunset-orange text-white flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">O</div>
-              <span className="text-2xl font-bold text-deep-blue dark:text-foreground">Ouiboo</span>
+              <AuthBrandLockup />
           </Link>
           <h2 className="text-3xl font-bold text-foreground mb-2">{t('signup.title', 'Create Account')}</h2>
           <p className="text-muted-foreground font-medium text-sm">{t('signup.subtitle', 'Start your journey with us')}</p>
