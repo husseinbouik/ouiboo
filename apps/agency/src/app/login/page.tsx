@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
+import { Button, Input, ThemeToggle, LanguageSwitcher, BetaBadge } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, Mail, Lock, Eye, EyeOff } from 'lucide-react';
@@ -202,7 +202,10 @@ if (!isMounted) return <div className="min-h-screen bg-background" />;
         </motion.div>
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full h-full">
           <div className="flex justify-end">
-             <div className="text-3xl font-bold tracking-tight">Ouiboo</div>
+             <div className="flex items-center gap-2.5">
+               <span className="text-3xl font-bold tracking-tight">Ouiboo</span>
+               <BetaBadge />
+             </div>
           </div>
           <motion.div
             initial={{ y: 20, opacity: 0 }}

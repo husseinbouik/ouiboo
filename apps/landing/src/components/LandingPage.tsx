@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic'
 import { Dialog } from '@headlessui/react'
 import { useTranslation } from 'react-i18next'
 import Image from 'next/image'
-import { Logo, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui'
+import { Logo, ThemeToggle, LanguageSwitcher, BetaBadge } from '@ouiboo/ui'
 import { CookiePreferencesButton } from './AnalyticsConsent'
 
 const PricingSection = dynamic(() => import('./PricingSection'));
@@ -226,6 +226,7 @@ export default function LandingPage() {
             <a href="#" className="-m-1.5 p-1.5 flex items-center gap-2">
               <Logo />
               <span className="font-bold text-xl tracking-tight">Ouiboo</span>
+              <BetaBadge />
             </a>
           </div>
           <div className="flex lg:hidden">
@@ -276,6 +277,7 @@ export default function LandingPage() {
               <a href="#" className="-m-1.5 p-1.5 flex items-center gap-2">
                 <Logo />
                 <span className="font-bold text-xl tracking-tight">Ouiboo</span>
+              <BetaBadge />
               </a>
               <button
                 type="button"

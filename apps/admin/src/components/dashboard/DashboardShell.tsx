@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { Search, LogOut } from 'lucide-react';
-import { Card, CardContent, ThemeToggle, LanguageSwitcher, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@ouiboo/ui';
+import { Card, CardContent, ThemeToggle, LanguageSwitcher, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, BetaBadge } from '@ouiboo/ui';
 import type { AdminTab } from './types';
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
@@ -55,6 +55,7 @@ export default function DashboardShell({
      <div className="flex items-center gap-3 px-2">
         <div className="h-8 w-8 bg-sunset-orange rounded-lg"></div>
         <span className="text-xl font-black tracking-tight">{t('dashboard.brand')}</span>
+        <BetaBadge />
      </div>
      
      <nav aria-label={t('dashboard.aria.mainNavigation')} className="space-y-2 flex-1">
