@@ -22,6 +22,7 @@ import {
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
+import { BetaBadge } from '@ouiboo/ui';
 import { useAuth } from '../AuthContext';
 
 export function AgencySidebar() {
@@ -87,9 +88,10 @@ export function AgencySidebar() {
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-xl font-bold text-foreground"
+              className="flex items-center gap-2 text-xl font-bold text-foreground"
             >
               Ouiboo
+              <BetaBadge />
             </motion.span>
           )}
         </Link>

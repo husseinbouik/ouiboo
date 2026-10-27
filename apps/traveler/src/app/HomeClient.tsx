@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 import { 
   MapPin, Calendar, Star, ArrowRight, Compass, Banknote, Zap, Heart, Mountain, Palmtree
 } from 'lucide-react';
-import { Button } from '@ouiboo/ui';
+import { Button, BetaBadge } from '@ouiboo/ui';
 import { motion, Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { TripSession, TripTemplate, VerificationStatusType } from '@ouiboo/types';
@@ -242,6 +242,7 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
             <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-deep-blue dark:bg-sunset-orange text-white flex items-center justify-center font-bold">O</div>
                 <span className="font-bold text-xl text-deep-blue dark:text-foreground">Ouiboo</span>
+                <BetaBadge />
             </div>
             <div className="text-sm text-muted-foreground">
                 {t('footer.rights', { year: new Date().getFullYear() })}
