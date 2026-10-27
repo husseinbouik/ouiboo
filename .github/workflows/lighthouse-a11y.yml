@@ -1,5 +1,20 @@
 # Lighthouse CI + axe-core accessibility budgets for key pages.
 #
+# LCP budget calibration (2026-10-27): budget.json's largest-contentful-
+# paint timing budget is 5000 ms, NOT the 4000 ms web-vitals "good"
+# threshold. Across every CI run sampled (2026-10-24 #448/#449 through
+# 2026-10-27 #514/#515) all five audited URLs land in a tight
+# 4.44–4.86 s band regardless of the code under test (API-only and
+# test-only PRs measure the same as traveler changes; a bare /login
+# measures the same as the media-heavy home page). That is the shared
+# GitHub-hosted runner's floor under Lighthouse's simulated throttling
+# with single-run sampling — an environment signature, not a product
+# measurement. 5000 ms sits just above the worst observed value
+# (4860 ms) so a genuine regression beyond the environment band still
+# trips the (report-only) Lighthouse step; do not read it as a product
+# performance target, and do not raise it further without fresh
+# cross-run evidence.
+#
 # Issue #213, promoted by #332 (2026-10-22): the desktop axe check, the
 # mobile axe check, and the keyboard-navigation check are BLOCKING — a red
 # step fails the PR. The brand color-contrast debt that kept the mobile
