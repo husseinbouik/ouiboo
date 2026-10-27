@@ -10,6 +10,7 @@ import { Manrope, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 import { SITE_DESCRIPTION, SITE_NAME, TRAVELER_URL } from "@/lib/site";
 
 const manrope = Manrope({
@@ -73,6 +74,7 @@ export default async function RootLayout({
           <main id="main-content" className="min-h-screen" tabIndex={-1}>
             {children}
           </main>
+          <Footer />
         </Providers>
               <WebVitals />
       </body>

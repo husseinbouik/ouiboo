@@ -524,8 +524,17 @@ export class EmailService {
     return renderEmail({ title: t.title, preheader: t.preheader, content, locale: resolved })
   }
 
-  getRefundCaseOpenedSubject(locale?: EmailLocale | string | null) {
-    return emailStrings(locale).refundCaseOpened.subject
+  getRefundCaseOpenedSubject(
+    locale?: EmailLocale | string | null,
+    dueDateLabel?: string | null,
+  ) {
+    // Session #3 P0-14 (#424): with a known deadline the subject names
+    // it; without one it still says the event that actually happened —
+    // a case opened — never "on its way".
+    const t = emailStrings(locale).refundCaseOpened
+    return dueDateLabel
+      ? fillEmailCopy(t.subjectWithDue, { dueDate: dueDateLabel })
+      : t.subject
   }
 }
 

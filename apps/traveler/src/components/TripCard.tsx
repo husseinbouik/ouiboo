@@ -1,9 +1,8 @@
 'use client';
 
-import Image from 'next/image';
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, Badge, Button } from '@ouiboo/ui';
+import { Card, Badge, Button, SafeImage } from '@ouiboo/ui';
 import { MapPin, Star, ChevronLeft, ChevronRight, Zap, Ticket } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
@@ -108,7 +107,11 @@ export function TripCard({ trip }: TripCardProps) {
   const queryClient = useQueryClient();
   const prefetchTrip = () => {
     void queryClient.prefetchQuery({
-      queryKey: ['trip', trip.id],
+      // Content-language audit (#546): the key carries the UI locale,
+      // exactly matching TripDetailsClient — prefetching into a
+      // locale-less key warmed a stale-language entry for the detail
+      // page to serve after a language switch.
+      queryKey: ['trip', trip.id, (i18n.language || 'en').split('-')[0]],
       queryFn: async () => {
         // #546: warm the detail in the current UI language, matching
         // TripDetailsClient's fetcher below.
@@ -201,7 +204,7 @@ export function TripCard({ trip }: TripCardProps) {
             transition={{ duration: 0.5 }}
             className="absolute inset-0"
           >
-            <Image
+            <SafeImage
               src={images[currentImage]}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               alt={trip.imageAlts?.[currentImage]?.trim() || (trip.startLocation ? `${trip.title} · ${trip.startLocation}` : trip.title)}
@@ -216,33 +219,45 @@ export function TripCard({ trip }: TripCardProps) {
         {/* Navigation Arrows */}
         {images.length > 1 && (
           <>
-            <button 
+            <button
               onClick={prevImage}
               aria-label={t('tripCard.previousImage')}
-              className="absolute start-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-110 hit-slop"
+              className="absolute start-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-70 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100 transition-all hover:scale-110 hit-slop"
             >
               <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
             </button>
-            <button 
+            <button
               onClick={nextImage}
               aria-label={t('tripCard.nextImage')}
-              className="absolute end-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-110 hit-slop"
+              className="absolute end-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-70 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100 transition-all hover:scale-110 hit-slop"
             >
               <ChevronRight className="h-4 w-4 rtl:rotate-180" />
             </button>
           </>
         )}
 
-        {/* Indicators */}
+        {/* Indicators — real buttons (Session #3 P0-1): keyboard/touch
+            reachable, not decorative divs. */}
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
           {images.map((_: string, i: number) => (
-            <div 
-              key={i} 
-              className={cn(
-                "h-1.5 rounded-full transition-all duration-300 shadow-sm",
-                currentImage === i ? "w-6 bg-white" : "w-1.5 bg-white/60"
-              )} 
-            />
+            <button
+              key={i}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                setCurrentImage(i);
+              }}
+              aria-label={t('tripCard.viewImage', { count: i + 1 })}
+              aria-current={currentImage === i || undefined}
+              className="p-1 -m-0.5 flex items-center justify-center"
+            >
+              <span
+                className={cn(
+                  "h-1.5 rounded-full transition-all duration-300 shadow-sm block",
+                  currentImage === i ? "w-6 bg-white" : "w-1.5 bg-white/60"
+                )}
+              />
+            </button>
           ))}
         </div>
 

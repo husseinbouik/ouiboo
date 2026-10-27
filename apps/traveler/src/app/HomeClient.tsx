@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 import { 
   MapPin, Calendar, Star, ArrowRight, Compass, Banknote, Zap, Heart, Mountain, Palmtree
 } from 'lucide-react';
-import { Button, BetaBadge } from '@ouiboo/ui';
+import { Button } from '@ouiboo/ui';
 import { motion, Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { TripSession, TripTemplate, VerificationStatusType } from '@ouiboo/types';
@@ -235,21 +235,11 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
             </div>
          </div>
       </section>
-      
-      {/* Footer */}
-      <footer className="bg-background border-t border-border py-12">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-deep-blue dark:bg-sunset-orange text-white flex items-center justify-center font-bold">O</div>
-                <span className="font-bold text-xl text-deep-blue dark:text-foreground">Ouiboo</span>
-                <BetaBadge />
-            </div>
-            <div className="text-sm text-muted-foreground">
-                {t('footer.rights', { year: new Date().getFullYear() })}
-            </div>
-        </div>
-      </footer>
 
+      {/* The global footer (Support / Privacy / Terms / rights) renders
+          from the root layout — Session #3 P0-7b (#555). This page used
+          to hand-roll a two-item footer here; removed so the home page
+          carries the same footer as every other page. */}
     </div>
   );
 }

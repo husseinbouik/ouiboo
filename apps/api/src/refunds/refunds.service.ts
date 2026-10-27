@@ -365,7 +365,7 @@ export class RefundsService {
         );
         await this.emailService.sendEmail(
             email,
-            this.emailService.getRefundCaseOpenedSubject(emailLocale),
+            this.emailService.getRefundCaseOpenedSubject(emailLocale, dueLabel),
             html,
         );
         return true;

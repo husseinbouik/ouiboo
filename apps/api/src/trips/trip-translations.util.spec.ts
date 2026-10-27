@@ -4,6 +4,7 @@ import {
     normalizeTripLocale,
     normalizeTripTranslations,
     resolveTripText,
+    stripSeedMarker,
 } from './trip-translations.util';
 
 describe('trip-translations.util (#546)', () => {
@@ -104,6 +105,7 @@ describe('trip-translations.util (#546)', () => {
             expect(resolveTripText(trip, 'en')).toEqual({
                 title: 'Title EN',
                 description: 'Description EN',
+                language: 'en',
             });
         });
 
@@ -111,6 +113,8 @@ describe('trip-translations.util (#546)', () => {
             expect(resolveTripText(trip, 'ar')).toEqual({
                 title: 'عنوان AR',
                 description: 'Description FR',
+                // P0-11: the reported language follows the title's source.
+                language: 'ar',
             });
         });
 
@@ -118,13 +122,14 @@ describe('trip-translations.util (#546)', () => {
             expect(resolveTripText(trip, 'es')).toEqual({
                 title: 'Titre FR',
                 description: 'Description FR',
+                language: 'fr',
             });
             expect(
                 resolveTripText(
                     { title: '', description: '', translations: { ar: { title: 'فقط', description: 'وصف فقط' } } },
                     'en',
                 ),
-            ).toEqual({ title: 'فقط', description: 'وصف فقط' });
+            ).toEqual({ title: 'فقط', description: 'وصف فقط', language: 'ar' });
         });
 
         it('legacy trip without a map renders its (French) columns in every locale', () => {
@@ -133,6 +138,7 @@ describe('trip-translations.util (#546)', () => {
                 expect(resolveTripText(legacy, locale)).toEqual({
                     title: 'Ancien titre',
                     description: 'Ancienne description',
+                    language: 'fr',
                 });
             }
         });
@@ -141,7 +147,31 @@ describe('trip-translations.util (#546)', () => {
             expect(resolveTripText({ title: '', description: '', translations: null }, 'ar')).toEqual({
                 title: '',
                 description: '',
+                language: 'fr',
             });
+        });
+    });
+
+    describe('seed marker stripping (Session #3 P0-6, #554)', () => {
+        it('stripSeedMarker removes trailing and inline markers', () => {
+            expect(stripSeedMarker('A trek.\n\n[staging-seed-v1]')).toBe('A trek.');
+            expect(stripSeedMarker('A [staging-seed-v2] trek')).toBe('A trek');
+            expect(stripSeedMarker('No marker here')).toBe('No marker here');
+        });
+
+        it('resolved public text never carries the marker, whichever language holds it', () => {
+            const seeded = {
+                title: 'Atlas Mountains Trek',
+                description: 'Challenge yourself.\n\n[staging-seed-v1]',
+                translations: {
+                    fr: { title: 'Atlas Mountains Trek', description: 'Challenge yourself.\n\n[staging-seed-v1]' },
+                },
+            };
+            for (const locale of ['fr', 'ar', 'en', undefined]) {
+                const resolved = resolveTripText(seeded, locale);
+                expect(resolved.description).toBe('Challenge yourself.');
+                expect(resolved.description).not.toContain('staging-seed');
+            }
         });
     });
 });

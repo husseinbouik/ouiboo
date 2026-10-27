@@ -24,6 +24,9 @@
     }
   },
   "common": {
+    "switchLanguage": "Switch language current is {{language}}",
+    "switchFrom": "Switch from {{language}}",
+    "toggleTheme": "Toggle theme",
     "back": "Back to Trips",
     "saveDraft": "Save Draft",
     "submit": "Submit",
@@ -336,7 +339,10 @@
       "editTemplate": "Edit Template",
       "deleting": "Deleting...",
       "delete": "Delete",
-      "duration": "{{days}} Days / {{nights}} Nights",
+      "durationDays_one": "{{count}} Day",
+    "durationDays_other": "{{count}} Days",
+    "durationNights_one": "{{count}} Night",
+    "durationNights_other": "{{count}} Nights",
       "verificationRequired": "Verification Required",
       "checkVerificationStatus": "Check Verification Status",
       "sessionsTitle": "Trip Sessions",
@@ -557,7 +563,7 @@
     "greeting": "Hello, {{name}}",
     "subtitle": "Here is your agency command center for bookings, payments, and growth.",
     "liveSnapshot": "Live Snapshot",
-    "totalRevenue": "Total Revenue",
+    "grossBookedValue": "Gross booked value",
     "bookCount_one": "{{count}} booking",
     "bookCount_other": "{{count}} bookings",
     "proofCount_one": "{{count}} proof to review",
@@ -612,11 +618,18 @@
       "pending": "Pending"
     },
     "growTitle": "Ready to expand your reach?",
-    "growBody": "You have {{tripCount}} active trips and {{travelerCount}} travelers in your audience. Add a fresh experience to keep momentum up.",
+    "growTrips_one": "You have {{count}} active trip",
+    "growTrips_other": "You have {{count}} active trips",
+    "growTravelers_one": "and {{count}} traveler in your audience.",
+    "growTravelers_other": "and {{count}} travelers in your audience.",
+    "growCta": "Add a fresh experience to keep momentum up.",
     "createNewTrip": "Create New Trip",
     "yourAgency": "Your Agency",
     "paymentsReceived": "Payments received",
+    "paymentsReceivedCaption": "Bank-confirmed money received from travellers",
     "paymentsPending": "Payments to verify",
+    "paymentsPendingCaption": "Traveller proofs uploaded, waiting for your bank confirmation",
+    "grossBookedValueCaption": "Total value of confirmed and completed bookings — not money received yet",
     "viewPayments": "View payments"
   },
   "status": {
@@ -786,6 +799,12 @@
     "errorTopTrips": "Error loading top trips.",
     "errorPayment": "Error loading payment methods.",
     "errorCustomers": "Error loading customer demographics."
+  },
+  "support": {
+    "title": "OuiBoo support",
+    "body": "Questions about verification, a payment proof that looks wrong, or a refund case that's stuck? Email us — we reply within {{hours}} hours on the normal support lane.",
+    "bodyNoEmail": "Questions about verification, a payment proof that looks wrong, or a refund case that's stuck? During the closed beta, reach OuiBoo through the contact who onboarded your agency — we reply within {{hours}} hours on the normal support lane.",
+    "escalationRole": "During an active trip, you are the traveller's first call — keep your emergency contact up to date in Settings. If you cannot resolve a problem during a trip, escalate it to OuiBoo right away."
   },
   "routeError": {
     "title": "This workspace could not load",
@@ -1075,7 +1094,8 @@
       "AGENCY_CANCELLATION": "Agency cancellation"
     },
     "listTitle": "Refund cases",
-    "actionRequiredBanner": "{{count}} refund case(s) need your action. Overdue refunds can restrict new bookings until they are resolved.",
+    "actionRequiredBanner_one": "{{count}} refund case needs your action. Overdue refunds can restrict new bookings until they are resolved.",
+    "actionRequiredBanner_other": "{{count}} refund cases need your action. Overdue refunds can restrict new bookings until they are resolved.",
     "honestNote": "Refunds are paid from your own merchant account — OuiBoo never holds traveller payments.",
     "subtitle": "Refund cases for payments travellers made directly to your agency. You process the refund — OuiBoo tracks the case and its deadline.",
     "dueBy": "Refund due by {{date}}",

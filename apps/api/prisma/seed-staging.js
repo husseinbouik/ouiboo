@@ -17,8 +17,11 @@ const { PrismaClient } = require('../../../packages/database/generated-client');
 
 const prisma = new PrismaClient();
 
-const SEED_MARKER = 'staging-seed-v1';
-
+// Session #3 P0-6 (#554): seed identity is the demo agency + the exact
+// fixture titles below. The previous version appended a
+// `[staging-seed-v1]` bookkeeping marker to the user-visible description
+// field, where it rendered verbatim on trip pages — never put seed
+// bookkeeping in content fields again.
 const DEMO_AGENCY = {
   email: 'demo-agency@ouiboo-staging.local',
   name: 'Atlas Adventures',
@@ -258,7 +261,7 @@ async function main() {
   let tripCount = 0;
   for (const trip of TRIPS) {
     const existingTrip = await prisma.tripTemplate.findFirst({
-      where: { agencyId: profile.id, title: trip.title, description: { contains: SEED_MARKER } },
+      where: { agencyId: profile.id, title: trip.title },
     });
     if (existingTrip) {
       console.log(`  ↷ ${trip.title} already exists`);
@@ -270,7 +273,7 @@ async function main() {
       data: {
         agencyId: profile.id,
         title: trip.title,
-        description: `${trip.description}\n\n[${SEED_MARKER}]`,
+        description: trip.description,
         category: trip.category,
         startLocation: trip.startLocation,
         endLocation: trip.endLocation,

@@ -1,6 +1,5 @@
-import Image from 'next/image';
 import { MapPin, Clock, Image as ImageIcon } from 'lucide-react';
-import { Card, CardContent } from '@ouiboo/ui';
+import { Card, CardContent, SafeImage } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import type { TFunction } from 'i18next';
 import type { TripWizardFormApi } from './useTripWizardForm';
@@ -25,7 +24,7 @@ export function TripLivePreview({ t, form, mode }: Props) {
         )}>
           <div className="relative h-48 bg-muted">
             {watchedImages[0] ? (
-              <Image src={watchedImages[0]} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={watchedImageAlts[0]?.trim() || watch('title') || t('trips.create.untitledAdventure')} fill sizes="(min-width: 1024px) 20vw, 100vw" />
+              <SafeImage src={watchedImages[0]} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={watchedImageAlts[0]?.trim() || watch('title') || t('trips.create.untitledAdventure')} fill sizes="(min-width: 1024px) 20vw, 100vw" />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                 <ImageIcon className="h-12 w-12" />

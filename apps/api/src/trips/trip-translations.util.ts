@@ -40,6 +40,21 @@ function cleanText(value: unknown): string | undefined {
 }
 
 /**
+ * Council Session #3 P0-6 (#554): the staging seed used to append its
+ * bookkeeping marker (`[staging-seed-v1]`) to the user-visible
+ * description field itself, and it rendered verbatim on trip pages.
+ * The seed no longer writes it (identity is the demo agency + title),
+ * but existing rows still carry it — strip any `[staging-seed-*]`
+ * marker at this boundary so it can never reach a public payload,
+ * whichever language version it sits in.
+ */
+const SEED_MARKER_PATTERN = /\s*\[staging-seed-[^\]]*\]\s*/g;
+
+export function stripSeedMarker(value: string): string {
+    return value.replace(SEED_MARKER_PATTERN, ' ').trim();
+}
+
+/**
  * Normalize a raw locale value coming from a query param, header, or a
  * map key: lowercases and drops any region suffix ('fr-MA' -> 'fr').
  * Returns undefined for anything that is not a plausible language code.
@@ -126,29 +141,46 @@ export function resolveTripText(
         translations?: unknown;
     },
     locale?: string | null,
-): { title: string; description: string } {
+): { title: string; description: string; language: string } {
     const map = normalizeTripTranslations(trip.translations);
     const requested = normalizeTripLocale(locale);
-    const chain: Array<TripTranslationEntry | undefined> = [];
+    // Session #3 P0-11 (#546): every chain entry carries the language it
+    // would resolve FROM, so the payload can tell the traveller which
+    // language they are actually reading when it is not their own.
+    const chain: Array<{ entry: TripTranslationEntry | undefined; language: string }> = [];
     if (requested && requested !== TRIP_CANONICAL_LOCALE) {
-        chain.push(map[requested]);
+        chain.push({ entry: map[requested], language: requested });
     }
-    chain.push(map[TRIP_CANONICAL_LOCALE]);
+    chain.push({ entry: map[TRIP_CANONICAL_LOCALE], language: TRIP_CANONICAL_LOCALE });
     chain.push({
-        title: cleanText(trip.title),
-        description: cleanText(trip.description),
+        entry: {
+            title: cleanText(trip.title),
+            description: cleanText(trip.description),
+        },
+        language: TRIP_CANONICAL_LOCALE,
     });
-    for (const entry of Object.values(map)) chain.push(entry);
+    for (const [code, entry] of Object.entries(map)) {
+        chain.push({ entry, language: code });
+    }
 
-    const pick = (field: 'title' | 'description'): string => {
-        for (const entry of chain) {
+    const pick = (field: 'title' | 'description'): { value: string; language: string } => {
+        for (const { entry, language } of chain) {
             const value = entry?.[field];
-            if (value && value.trim() !== '') return value;
+            if (value && value.trim() !== '') return { value: stripSeedMarker(value), language };
         }
-        return '';
+        return { value: '', language: TRIP_CANONICAL_LOCALE };
     };
 
-    return { title: pick('title'), description: pick('description') };
+    const title = pick('title');
+    const description = pick('description');
+    return {
+        title: title.value,
+        description: description.value,
+        // The headline language is what the reader perceives as "the
+        // language of this trip"; the description only decides when
+        // there is no title at all.
+        language: title.value !== '' ? title.language : description.language,
+    };
 }
 
 /**
@@ -161,7 +193,11 @@ export function localizeTripPayload<T extends {
     title?: string | null;
     description?: string | null;
     translations?: unknown;
-}>(trip: T, locale?: string | null): T {
+}>(trip: T, locale?: string | null): T & { contentLanguage: string } {
     const resolved = resolveTripText(trip, locale);
-    return { ...trip, title: resolved.title, description: resolved.description };
+    // Session #3 P0-11 (#546): additive payload field — the language the
+    // title/description were actually resolved in, so the traveller UI
+    // can say "shown in French" instead of failing silently in a
+    // language the reader may not read.
+    return { ...trip, title: resolved.title, description: resolved.description, contentLanguage: resolved.language };
 }

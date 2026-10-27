@@ -218,11 +218,16 @@ const en = {
   },
   // #419 traveller notice, moved onto this table as the #424 follow-up:
   // an automatic refund case (minimum group not reached) has opened.
+  // Session #3 P0-14 (#424): the subject/title/heading previously said
+  // "on its way" — that wording describes REFUND_INITIATED (money
+  // actually moving) and is reserved for it. A case that has merely
+  // OPENED says so, with the agency's deadline when one is known.
   refundCaseOpened: {
-    subject: 'Your refund is on its way',
-    title: 'Your refund is on its way',
+    subject: 'Your refund case is open',
+    subjectWithDue: 'Your refund case is open — agency has until {{dueDate}}',
+    title: 'Your refund case is open',
     preheader: 'Your trip did not reach its minimum group size, so a refund case has been opened for you.',
-    heading: 'Your refund is on its way',
+    heading: 'Your refund case is open',
     bodyWithTrip:
       'Your trip "{{tripTitle}}" did not reach the minimum group size, so it will not run as planned. A refund case has been opened for you automatically — you do not need to do anything.',
     body: 'Your trip did not reach the minimum group size, so it will not run as planned. A refund case has been opened for you automatically — you do not need to do anything.',
@@ -415,10 +420,11 @@ const fr: EmailStrings = {
     dashboard: 'Ouvrez votre tableau de bord des remboursements : {{url}}',
   },
   refundCaseOpened: {
-    subject: 'Votre remboursement est en route',
-    title: 'Votre remboursement est en route',
+    subject: 'Votre dossier de remboursement est ouvert',
+    subjectWithDue: "Votre dossier de remboursement est ouvert — l'agence a jusqu'au {{dueDate}}",
+    title: 'Votre dossier de remboursement est ouvert',
     preheader: "Votre voyage n'a pas atteint la taille minimale de groupe, un dossier de remboursement a donc été ouvert pour vous.",
-    heading: 'Votre remboursement est en route',
+    heading: 'Votre dossier de remboursement est ouvert',
     bodyWithTrip:
       "Votre voyage « {{tripTitle}} » n'a pas atteint la taille minimale de groupe, il n'aura donc pas lieu comme prévu. Un dossier de remboursement a été ouvert automatiquement pour vous — vous n'avez rien à faire.",
     body: "Votre voyage n'a pas atteint la taille minimale de groupe, il n'aura donc pas lieu comme prévu. Un dossier de remboursement a été ouvert automatiquement pour vous — vous n'avez rien à faire.",
@@ -593,10 +599,11 @@ const ar: EmailStrings = {
     dashboard: 'افتح لوحة تحكم الاستردادات الخاصة بك: {{url}}',
   },
   refundCaseOpened: {
-    subject: 'استردادك في الطريق إليك',
-    title: 'استردادك في الطريق إليك',
+    subject: 'تم فتح ملف الاسترداد الخاص بك',
+    subjectWithDue: 'تم فتح ملف الاسترداد الخاص بك — أمام الوكالة مهلة حتى {{dueDate}}',
+    title: 'تم فتح ملف الاسترداد الخاص بك',
     preheader: 'لم تصل رحلتك إلى الحد الأدنى لحجم المجموعة، لذا تم فتح قضية استرداد لك.',
-    heading: 'استردادك في الطريق إليك',
+    heading: 'تم فتح ملف الاسترداد الخاص بك',
     bodyWithTrip:
       'لم تصل رحلتك "{{tripTitle}}" إلى الحد الأدنى لحجم المجموعة، لذا لن تتم كما هو مخطط لها. تم فتح قضية استرداد لك تلقائياً — لست بحاجة إلى فعل أي شيء.',
     body: 'لم تصل رحلتك إلى الحد الأدنى لحجم المجموعة، لذا لن تتم كما هو مخطط لها. تم فتح قضية استرداد لك تلقائياً — لست بحاجة إلى فعل أي شيء.',

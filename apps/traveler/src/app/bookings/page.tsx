@@ -13,6 +13,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthContext';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { ReviewForm } from '@/components/ReviewForm';
 import { TravelerRefundActions } from '@/components/TravelerRefundActions';
 import {
@@ -55,36 +57,42 @@ const REFUND_ACTIVE_STATUSES = new Set([
  * organiser (agency) that received the payment — never promise that
  * OuiBoo guarantees or pays the refund.
  */
-function refundCaseCopy(refundCase: TravelerRefundCase, agencyName: string): string {
+function refundCaseCopy(refundCase: TravelerRefundCase, agencyName: string, t: TFunction, locale: string): string {
+    // Session #3 P0-12 (#557): this copy was hardcoded English (and the
+    // panel header printed the raw status enum). All strings now come
+    // from the refunds locale namespace, with a human label per status.
     const amount = `${refundCase.approvedAmount ?? refundCase.requestedAmount} ${refundCase.currency}`;
     const due = refundCase.refundDueAt
-        ? ` Expected by ${format(new Date(refundCase.refundDueAt), 'MMM dd, yyyy')}.`
+        ? t('refunds.expectedBy', {
+            date: new Date(refundCase.refundDueAt).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' }),
+        })
         : '';
     switch (refundCase.status) {
         case 'REFUND_REQUESTED':
-            return `Refund of ${amount} requested. ${agencyName} will review your request.`;
+            return t('refunds.case.requested', { amount, agency: agencyName });
         case 'ELIGIBILITY_REVIEW':
-            return `Your refund of ${amount} is under review.`;
+            return t('refunds.case.underReview', { amount });
         case 'REFUND_APPROVED':
         case 'AGENCY_ACTION_REQUIRED':
-            return `Refund of ${amount} approved. ${agencyName} will process your refund.${due}`;
+            return t('refunds.case.approved', { amount, agency: agencyName, due });
         case 'REFUND_INITIATED':
-            return `Your refund of ${amount} is on its way from ${agencyName}.`;
+            return t('refunds.case.initiated', { amount, agency: agencyName });
         case 'REFUND_COMPLETED':
-            return `Refund of ${amount} completed by ${agencyName}.`;
+            return t('refunds.case.completed', { amount, agency: agencyName });
         case 'REFUND_REJECTED':
-            return `Your refund request of ${amount} was not approved. You can contact ${agencyName} for details.`;
+            return t('refunds.case.rejected', { amount, agency: agencyName });
         case 'REFUND_FAILED':
-            return `A refund attempt by ${agencyName} failed. Your case stays open and ${agencyName} must retry.`;
+            return t('refunds.case.failed', { amount, agency: agencyName });
         case 'REFUND_OVERDUE':
-            return `Your refund of ${amount} is overdue. We are following up with ${agencyName}.`;
+            return t('refunds.case.overdue', { amount, agency: agencyName });
         default:
-            return `Refund status: ${refundCase.status.replaceAll('_', ' ')}.`;
+            return t('refunds.case.unknown', { status: refundCase.status.replaceAll('_', ' ') });
     }
 }
 
 export default function MyBookingsPage() {
     const { user } = useAuth();
+    const { t, i18n } = useTranslation();
     const queryClient = useQueryClient();
     const [uploadingId, setUploadingId] = useState<string | null>(null);
     const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -358,7 +366,7 @@ export default function MyBookingsPage() {
                                                     )}
                                                     {booking.paymentPlan.status === BookingPaymentPlanStatus.FullyPaid && (
                                                         <p className="text-sm font-semibold text-foreground">
-                                                            Paid in full — deposit and balance confirmed by {booking.session.template.agency?.companyName || 'the agency'}.
+                                                            {t('refunds.paidInFull', { agency: booking.session.template.agency?.companyName || t('refunds.defaultAgency') })}
                                                         </p>
                                                     )}
                                                 </div>
@@ -371,8 +379,8 @@ export default function MyBookingsPage() {
                                                 <div className="rounded-2xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 px-5 py-4">
                                                     <p className="text-sm font-semibold text-foreground">
                                                         {booking.paymentProof.status === VerificationStatus.Accepted
-                                                            ? <>Proof accepted by {booking.session.template.agency?.companyName || 'the agency'} — they still have to confirm the transfer in their bank account. Your payment is not settled until then.</>
-                                                            : <>Proof received. {booking.session.template.agency?.companyName || 'The agency'} still has to confirm the transfer in its bank account — your payment is not settled until then.</>}
+                                                            ? <>{t('refunds.proofAccepted', { agency: booking.session.template.agency?.companyName || t('refunds.defaultAgency') })}</>
+                                                            : <>{t('refunds.proofReceived', { agency: booking.session.template.agency?.companyName || t('refunds.defaultAgency') })}</>}
                                                     </p>
                                                 </div>
                                             )}
@@ -381,16 +389,16 @@ export default function MyBookingsPage() {
                                             {(refundCase || canRequestRefund) && (
                                                 <div className="rounded-2xl border border-border/60 bg-muted/20 px-5 py-4 space-y-2">
                                                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                                                        Refund {refundCase ? `· ${refundCase.status.replaceAll('_', ' ')}` : ''}
+                                                        {t('refunds.panelTitle')}{refundCase && t(`refunds.status.${refundCase.status}`, { defaultValue: '' }) ? ` · ${t(`refunds.status.${refundCase.status}`)}` : ''}
                                                     </p>
                                                     {refundCase ? (
                                                         <p className="text-sm font-semibold text-foreground">
-                                                            {refundCaseCopy(refundCase, booking.session.template.agency?.companyName || 'The organiser')}
+                                                            {refundCaseCopy(refundCase, booking.session.template.agency?.companyName || t('refunds.defaultOrganiser'), t, i18n.language)}
                                                         </p>
                                                     ) : (
                                                         <>
                                                             <p className="text-sm font-semibold text-foreground">
-                                                                Need a refund for this booking? Refunds are handled by {booking.session.template.agency?.companyName || 'the organiser'}, which received your payment.
+                                                                {t('refunds.requestPrompt', { agency: booking.session.template.agency?.companyName || t('refunds.defaultOrganiser') })}
                                                             </p>
                                                             <Button
                                                                 variant="outline"
@@ -401,7 +409,7 @@ export default function MyBookingsPage() {
                                                                     requestRefundMutation.mutate(booking.id);
                                                                 }}
                                                             >
-                                                                {requestingRefundId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Request refund'}
+                                                                {requestingRefundId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : t('refunds.requestButton')}
                                                             </Button>
                                                         </>
                                                     )}
@@ -409,7 +417,12 @@ export default function MyBookingsPage() {
                                                     {refundCase && <TravelerRefundActions refundCase={refundCase} />}
                                                     {refundCase && REFUND_ACTIVE_STATUSES.has(refundCase.status) && (
                                                         <p className="text-xs text-muted-foreground">
-                                                            We track this refund until the organiser completes it.
+                                                            {t('refunds.trackingLine')}
+                                                        </p>
+                                                    )}
+                                                    {refundCase?.status === 'REFUND_OVERDUE' && (
+                                                        <p className="text-xs font-semibold text-foreground">
+                                                            {t('refunds.nextUpdateOverdue')}
                                                         </p>
                                                     )}
                                                 </div>

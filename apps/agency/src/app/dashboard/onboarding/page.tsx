@@ -24,6 +24,7 @@ import { cn } from '@ouiboo/ui/utils';
 import { VerificationStatus, type TravelLicenceType } from '@ouiboo/types';
 import { PrivateDocumentUpload } from '@/components/PrivateDocumentUpload';
 import { VerificationPausedBanner } from '@/components/VerificationPausedBanner';
+import { SupportBlock } from '@/components/SupportBlock';
 import {
   activationBlockArtefactKey,
   effectiveInsuranceStatus,
@@ -321,6 +322,8 @@ export default function OnboardingPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
       <VerificationPausedBanner showCta={false} />
+      {/* Session #3 P0-9 (#556): blocked on verification? Here's the way to OuiBoo. */}
+      <SupportBlock />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground italic">
