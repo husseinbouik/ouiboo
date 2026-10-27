@@ -8,6 +8,7 @@ import { toPaginatedList } from '@ouiboo/utils';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Pagination, CardListSkeleton } from '@ouiboo/ui';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { RefundEvidenceForm, RefundEvidenceList, type RefundEvidenceRow } from '@/components/RefundEvidenceForm';
+import { SupportBlock } from '@/components/SupportBlock';
 
 /**
  * #370: agency refund cases. Refunds are paid by the agency (which
@@ -130,6 +131,9 @@ export default function RefundsPage() {
         <h1 className="text-3xl font-bold text-foreground">{t('refunds.title')}</h1>
         <p className="text-muted-foreground mt-1">{t('refunds.subtitle')}</p>
       </div>
+
+      {/* Session #3 P0-9 (#556): stuck case? The support route lives here too. */}
+      <SupportBlock />
 
       {!!actionCount?.count && (
         <div className="flex items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 px-5 py-4">

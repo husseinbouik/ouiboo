@@ -44,6 +44,7 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthContext';
 import { VerificationPausedBanner } from '@/components/VerificationPausedBanner';
+import { SupportBlock } from '@/components/SupportBlock';
 import {
   activationBlockMessageKey,
   getAgencyActivationState,
@@ -424,6 +425,9 @@ export default function AgencyDashboard() {
               <Link href="/dashboard/trips/create">{t('dashboard.createNewTrip')}</Link>
             </Button>
       </div>
+
+      {/* Session #3 P0-9 (#556): the agency support surface. */}
+      <SupportBlock />
     </div>
   );
 }

@@ -787,6 +787,12 @@
     "errorPayment": "Erreur lors du chargement des modes de paiement.",
     "errorCustomers": "Erreur lors du chargement des données démographiques clients."
   },
+  "support": {
+    "title": "Assistance OuiBoo",
+    "body": "Une question sur la vérification, un justificatif de paiement suspect ou un dossier de remboursement bloqué ? Écrivez-nous — nous répondons sous {{hours}} heures dans le cadre de l'assistance normale.",
+    "bodyNoEmail": "Une question sur la vérification, un justificatif de paiement suspect ou un dossier de remboursement bloqué ? Pendant la bêta fermée, contactez OuiBoo via la personne qui a accompagné l'inscription de votre agence — nous répondons sous {{hours}} heures dans le cadre de l'assistance normale.",
+    "escalationRole": "Pendant un voyage en cours, vous êtes le premier appel du voyageur — gardez votre contact d'urgence à jour dans les Paramètres. Si vous ne pouvez pas résoudre un problème pendant un voyage, faites-le remonter immédiatement à OuiBoo."
+  },
   "routeError": {
     "title": "Cet espace de travail n'a pas pu se charger",
     "description": "Réessayez la page. Vos données d'agence enregistrées n'ont pas été modifiées.",
