@@ -49,13 +49,14 @@ jobs:
 
       - name: Run production smoke tests
         id: smoke
-        run: mkdir -p test-results && npx playwright test e2e/production/smoke.spec.ts --reporter=json:test-results/results.json
+        run: mkdir -p test-results && npx playwright test e2e/production/smoke.spec.ts --reporter=json
         env:
           SMOKE_TRAVELER_URL: ${{ vars.STAGING_TRAVELER_URL }}
           SMOKE_AGENCY_URL: ${{ vars.STAGING_AGENCY_URL }}
           SMOKE_ADMIN_URL: ${{ vars.STAGING_ADMIN_URL }}
           SMOKE_LANDING_URL: ${{ vars.STAGING_LANDING_URL }}
           SMOKE_API_URL: ${{ vars.STAGING_API_URL }}
+          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/results.json
 
       # failure() is required here: now that the test step fails the job,
       # a plain outcome check would be skipped by the implicit success().
