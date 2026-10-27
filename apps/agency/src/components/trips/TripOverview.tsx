@@ -41,7 +41,7 @@ export function TripOverview({ trip }: TripOverviewProps) {
               <MapPin className="h-4 w-4 text-muted-foreground" /> {trip.startLocation}
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4 text-muted-foreground" /> {t('trips.detail.duration', { days: trip.durationDays, nights: trip.durationNights })}
+              <Clock className="h-4 w-4 text-muted-foreground" /> {t('trips.detail.durationDays', { count: trip.durationDays })} / {t('trips.detail.durationNights', { count: trip.durationNights })}
             </div>
           </div>
           <div className="pt-4 border-t border-border">

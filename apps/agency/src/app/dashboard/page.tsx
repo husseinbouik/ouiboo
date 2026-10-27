@@ -432,7 +432,7 @@ export default function AgencyDashboard() {
         <div className="relative z-10 space-y-4 max-w-xl text-center md:text-start">
           <h3 className="text-3xl font-black font-display tracking-tight leading-none">{t('dashboard.growTitle')}</h3>
           <p className="text-white/80 font-medium text-lg leading-relaxed">
-            {t('dashboard.growBody', { tripCount: stats.activeTrips, travelerCount: stats.totalCustomers })}
+            {t('dashboard.growTrips', { count: stats.activeTrips })} {t('dashboard.growTravelers', { count: stats.totalCustomers })} {t('dashboard.growCta')}
           </p>
         </div>
         <Button asChild className="h-20 px-12 rounded-[2rem] bg-white text-primary hover:bg-slate-100 font-black text-xl border-none shadow-2xl transition-all hover:scale-105 active:scale-95">

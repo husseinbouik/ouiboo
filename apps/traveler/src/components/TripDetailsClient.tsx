@@ -137,11 +137,11 @@ export default function TripDetailsClient({
   });
 
   if (isLoading) return (
-    <div className="min-h-screen bg-background pb-32" role="status" aria-label="Preparing your adventure...">
+    <div className="min-h-screen bg-background pb-32" role="status" aria-label={t('tripDetails.loading')}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32">
         <TripDetailSkeleton />
       </div>
-      <span className="sr-only">Preparing your adventure...</span>
+      <span className="sr-only">{t('tripDetails.loading')}</span>
     </div>
   );
 
@@ -151,12 +151,12 @@ export default function TripDetailsClient({
         <X className="h-8 w-8 text-danger" />
       </div>
       <div className="space-y-2">
-        <h1 className="text-2xl font-black text-foreground font-display">We could not load this trip</h1>
-        <p className="text-muted-foreground">Check your connection and try again.</p>
+        <h1 className="text-2xl font-black text-foreground font-display">{t('tripDetails.loadErrorTitle')}</h1>
+        <p className="text-muted-foreground">{t('tripDetails.loadErrorBody')}</p>
       </div>
       <div className="flex flex-wrap justify-center gap-3">
-        <Button type="button" onClick={() => void refetch()}>Try again</Button>
-        <Button type="button" variant="outline" onClick={() => router.push('/search')}>Browse other trips</Button>
+        <Button type="button" onClick={() => void refetch()}>{t('common.tryAgain')}</Button>
+        <Button type="button" variant="outline" onClick={() => router.push('/search')}>{t('tripDetails.browseOtherTrips')}</Button>
       </div>
     </div>
   );
@@ -166,9 +166,9 @@ export default function TripDetailsClient({
         <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center">
           <MapPin className="h-10 w-10 text-muted-foreground" />
         </div>
-        <h1 className="text-3xl font-black text-foreground font-display">Adventure not found</h1>
+        <h1 className="text-3xl font-black text-foreground font-display">{t('tripDetails.notFoundTitle')}</h1>
         <Button onClick={() => router.push('/')} className="bg-sunset-orange hover:bg-orange-600 px-8 py-6 rounded-2xl font-bold">
-            Explore other trips
+            {t('tripDetails.exploreOtherTrips')}
         </Button>
     </div>
   );
@@ -182,7 +182,7 @@ export default function TripDetailsClient({
   }, null);
   const minPriceLabel = lowestPricedSession
     ? formatCurrency(lowestPricedSession.price, lowestPricedSession.currency, i18n.language)
-    : 'On request';
+    : t('tripDetails.onRequest');
 
   // #417: refund amounts on the cancellation scale are computed on the
   // selected session's price, falling back to the lowest open price.
@@ -263,7 +263,7 @@ export default function TripDetailsClient({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32">
         <Link href="/search" className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-all mb-5 sm:mb-8 group bg-card/50 backdrop-blur-sm px-4 sm:px-5 py-2.5 rounded-xl border border-border/50 hover:bg-card shadow-sm">
             <ChevronLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-            Back to Catalog
+            {t('tripDetails.backToCatalog')}
         </Link>
 
         {/* Dynamic Photo Gallery */}
@@ -280,7 +280,7 @@ export default function TripDetailsClient({
                 onClickCapture={handleClickCapture}
             >
                 <SafeImage
-                    src={trip.images?.[activeImage] || 'https://images.unsplash.com/photo-1489749798305-4fea3ae63d43'}
+                    src={trip.images?.[activeImage] || ''}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     alt={trip.imageAlts?.[activeImage]?.trim() || trip.title}
                     fill
@@ -293,7 +293,7 @@ export default function TripDetailsClient({
                             key={idx}
                             type="button"
                             onClick={() => setActiveImage(idx)}
-                            aria-label={`View image ${idx + 1}`}
+                            aria-label={t('tripCard.viewImage', { count: idx + 1 })}
                             aria-current={activeImage === idx || undefined}
                             className={cn(
                                 "h-1.5 rounded-full transition-all duration-300 backdrop-blur-md",
@@ -305,10 +305,10 @@ export default function TripDetailsClient({
             </motion.div>
             
             {(trip.images?.length ?? 0) > 1 ? (
-              <div className="flex lg:hidden gap-3 overflow-x-auto pb-1" aria-label="Trip photos">
+              <div className="flex lg:hidden gap-3 overflow-x-auto pb-1" aria-label={t('tripDetails.photosLabel')}>
                   {galleryTiles.map(({ src, index }) => (
-                      <button key={index} type="button" className="relative h-20 w-28 shrink-0 rounded-2xl overflow-hidden shadow-md border border-border/50" onClick={() => setActiveImage(index)} aria-label={`View image ${index + 1}`}>
-                          <SafeImage src={src} className="w-full h-full object-cover" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - image ${index + 1}`} fill sizes="112px" />
+                      <button key={index} type="button" className="relative h-20 w-28 shrink-0 rounded-2xl overflow-hidden shadow-md border border-border/50" onClick={() => setActiveImage(index)} aria-label={t('tripCard.viewImage', { count: index + 1 })}>
+                          <SafeImage src={src} className="w-full h-full object-cover" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - ${index + 1}`} fill sizes="112px" />
                       </button>
                   ))}
               </div>
@@ -327,7 +327,7 @@ export default function TripDetailsClient({
                       </button>
                   ))}
                   {hiddenTileCount > 0 ? (
-                    <button type="button" onClick={() => setActiveImage(firstHiddenTileIndex)} className={cn("bg-muted/50 rounded-[1.5rem] flex items-center justify-center hover:bg-muted transition-colors border border-border", spanLastRailCell && "lg:col-span-2")} aria-label={`View ${hiddenTileCount} more images`}>
+                    <button type="button" onClick={() => setActiveImage(firstHiddenTileIndex)} className={cn("bg-muted/50 rounded-[1.5rem] flex items-center justify-center hover:bg-muted transition-colors border border-border", spanLastRailCell && "lg:col-span-2")} aria-label={t('tripDetails.viewMoreImages', { count: hiddenTileCount })}>
                         <span className="flex flex-col items-center gap-2">
                             <span className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground font-bold shadow-sm">
                                 +{hiddenTileCount}
@@ -362,8 +362,8 @@ export default function TripDetailsClient({
                     <div className="flex flex-wrap items-center gap-6">
                         <div className="flex items-center gap-1.5 bg-yellow-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span className="font-bold text-sm text-amber-700 dark:text-yellow-400">{reviewStats?.totalReviews ? (reviewStats.averageRating ?? 0).toFixed(1) : 'New'}</span>
-                            <span className="text-xs text-amber-700 dark:text-yellow-400/70 font-medium">({reviewStats?.totalReviews || 0} reviews)</span>
+                            <span className="font-bold text-sm text-amber-700 dark:text-yellow-400">{reviewStats?.totalReviews ? (reviewStats.averageRating ?? 0).toFixed(1) : t('tripDetails.newTrip')}</span>
+                            <span className="text-xs text-amber-700 dark:text-yellow-400/70 font-medium">{t('tripDetails.reviewsCount', { count: reviewStats?.totalReviews || 0 })}</span>
                         </div>
                         {/* #468: share this trip (native sheet / intent menu).
                             allowRuntimeOriginFallback: this app serves the trip
@@ -390,8 +390,8 @@ export default function TripDetailsClient({
                 {/* Quick Stats Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {[
-                        { label: 'Duration', value: `${trip.durationDays}D / ${trip.durationNights}N`, icon: Clock },
-                        { label: 'Available dates', value: openSessions.length > 0 ? `${openSessions.length} open` : 'On request', icon: Users },
+                        { label: t('tripDetails.durationLabel'), value: t('tripDetails.durationValue', { days: trip.durationDays, nights: trip.durationNights }), icon: Clock },
+                        { label: t('tripDetails.availableDatesLabel'), value: openSessions.length > 0 ? t('tripDetails.openDates', { count: openSessions.length }) : t('tripDetails.onRequest'), icon: Users },
                         { label: t('tripDetails.payment'), value: t('tripDetails.directToAgency'), icon: Banknote },
                     ].map((stat, i) => (
                         <div key={i} className="p-5 bg-card rounded-2xl border border-border shadow-sm flex flex-col gap-3">
@@ -406,7 +406,7 @@ export default function TripDetailsClient({
              </div>
 
              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-foreground font-display">The Experience</h2>
+                <h2 className="text-2xl font-bold text-foreground font-display">{t('tripDetails.experienceTitle')}</h2>
                 <div className="text-muted-foreground leading-relaxed text-lg font-medium whitespace-pre-wrap">
                     {trip.description}
                 </div>
@@ -415,9 +415,9 @@ export default function TripDetailsClient({
              {trip.itinerary && trip.itinerary.length > 0 ? (
                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-foreground font-display">Daily Plan</h2>
+                    <h2 className="text-2xl font-bold text-foreground font-display">{t('tripDetails.dailyPlanTitle')}</h2>
                     <Badge variant="outline" className="text-[10px] font-bold px-3 py-1 bg-muted/30">
-                        {trip.itinerary.length} Days
+                        {t('tripCard.days', { count: trip.itinerary.length })}
                     </Badge>
                   </div>
                   <div className="space-y-1">
@@ -435,12 +435,12 @@ export default function TripDetailsClient({
                              {day.title ? (
                                <h3 className="text-xl font-bold text-foreground leading-tight font-display">{day.title}</h3>
                              ) : (
-                               <h3 className="text-xl font-bold text-foreground leading-tight font-display">Day {day.dayNumber}</h3>
+                               <h3 className="text-xl font-bold text-foreground leading-tight font-display">{t('tripDetails.dayLabel', { number: day.dayNumber })}</h3>
                              )}
                           </div>
                           
                           <p className="text-muted-foreground leading-relaxed font-medium whitespace-pre-wrap text-base">
-                            {day.description || 'The agency has not provided a description for this day.'}
+                            {day.description || t('tripDetails.dayNoDescription')}
                           </p>
                           
                           {day.activities && day.activities.length > 0 && (
@@ -463,16 +463,16 @@ export default function TripDetailsClient({
                           <ClipboardList className="h-6 w-6 text-muted-foreground" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-foreground text-sm uppercase tracking-wider">Flexible trip structure</h3>
+                        <h3 className="font-bold text-foreground text-sm uppercase tracking-wider">{t('tripDetails.flexibleTitle')}</h3>
                          <p className="text-xs text-muted-foreground mt-1 max-w-[320px]">
-                           This experience is available for booking now. Use the description, inclusions, and session dates below to review the current trip scope.
+                           {t('tripDetails.flexibleBody')}
                          </p>
                       </div>
                   </div>
                )}
 
              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-foreground font-display">What&apos;s Included</h2>
+                <h2 className="text-2xl font-bold text-foreground font-display">{t('tripDetails.includedTitle')}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    {trip.inclusions?.map((item: string, idx: number) => (
                       <motion.div 
@@ -494,7 +494,7 @@ export default function TripDetailsClient({
 
              {trip.exclusions && trip.exclusions.length > 0 && (
                <div className="space-y-6 pt-6">
-                  <h2 className="text-2xl font-bold text-foreground font-display">What&apos;s Excluded</h2>
+                  <h2 className="text-2xl font-bold text-foreground font-display">{t('tripDetails.excludedTitle')}</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                      {trip.exclusions.map((item: string, idx: number) => (
                         <motion.div 
@@ -517,7 +517,7 @@ export default function TripDetailsClient({
 
              {trip.checklist && trip.checklist.length > 0 && (
                <div className="space-y-6 pt-6">
-                  <h2 className="text-2xl font-bold text-foreground font-display">Traveler Checklist</h2>
+                  <h2 className="text-2xl font-bold text-foreground font-display">{t('tripDetails.checklistTitle')}</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                      {trip.checklist.map((item: string, idx: number) => (
                         <motion.div 
@@ -549,9 +549,9 @@ export default function TripDetailsClient({
              {/* Reviews Section */}
              <div className="space-y-6 pt-6">
                <div className="flex items-center justify-between">
-                 <h2 className="text-2xl font-bold text-foreground font-display">Reviews & Ratings</h2>
+                 <h2 className="text-2xl font-bold text-foreground font-display">{t('tripDetails.reviewsTitle')}</h2>
                  <Badge variant="outline" className="text-[10px] font-bold px-3 py-1 bg-muted/30">
-                   {reviewStats?.totalReviews || 0} Reviews
+                   {t('tripDetails.reviewsBadge', { count: reviewStats?.totalReviews || 0 })}
                  </Badge>
                </div>
                
@@ -560,7 +560,7 @@ export default function TripDetailsClient({
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                    {/* Average Rating Display */}
                    <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6 space-y-4">
-                     <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Average Rating</p>
+                     <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{t('tripDetails.averageRating')}</p>
                      <div className="flex items-center gap-4">
                        <div className="flex flex-col">
                          <span className="text-5xl font-black text-foreground font-display">{reviewStats.totalReviews ? (reviewStats.averageRating ?? 0).toFixed(1) : '—'}</span>
@@ -582,7 +582,7 @@ export default function TripDetailsClient({
 
                    {/* Rating Distribution */}
                    <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6 space-y-4">
-                     <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Distribution</p>
+                     <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{t('tripDetails.distribution')}</p>
                      <div className="space-y-2">
                        {[5, 4, 3, 2, 1].map((rating) => {
                          const count = reviewStats.distribution?.[rating] || 0;
@@ -628,7 +628,7 @@ export default function TripDetailsClient({
                     </div>
 
                     <div className="space-y-4">
-                        <label id="session-select-label" className="text-xs font-bold text-foreground uppercase tracking-wider ml-1">Select Date</label>
+                        <label id="session-select-label" className="text-xs font-bold text-foreground uppercase tracking-wider ml-1">{t('tripDetails.selectDate')}</label>
                         <div
                             role="radiogroup"
                             aria-labelledby="session-select-label"
@@ -661,7 +661,7 @@ export default function TripDetailsClient({
                                               {new Date(session.startDate).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })} - {new Date(session.endDate).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })}
                                           </span>
                                           <span className={cn("text-[10px] font-bold mt-1", session.availableSeats < 5 ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400")}>
-                                              {session.availableSeats} spots left
+                                              {t('tripDetails.spotsLeft', { count: session.availableSeats })}
                                           </span>
                                       </div>
                                       <div className="w-5 h-5 rounded-full border-2 border-border dark:border-slate-600 flex items-center justify-center group-hover:border-sunset-orange">
@@ -674,28 +674,28 @@ export default function TripDetailsClient({
                                         {isStagedSession(session) ? (
                                           <>
                                             <div className="flex justify-between text-[11px] font-bold">
-                                              <span className="text-sunset-orange uppercase tracking-tighter">Deposit due at checkout</span>
+                                              <span className="text-sunset-orange uppercase tracking-tighter">{t('tripDetails.depositDue')}</span>
                                               <span className="text-foreground">{formatCurrency(session.deposit, session.currency, i18n.language)}</span>
                                             </div>
                                             <div className="flex justify-between text-[11px] font-bold">
-                                              <span className="text-muted-foreground uppercase tracking-tighter">Balance after confirmation</span>
+                                              <span className="text-muted-foreground uppercase tracking-tighter">{t('tripDetails.balanceAfterConfirmation')}</span>
                                               <span className="text-foreground">{formatCurrency(Number(session.price) - Number(session.deposit), session.currency, i18n.language)}</span>
                                             </div>
                                             <p className="text-[10px] text-muted-foreground">
-                                              This trip needs at least {session.minBookings} participants to run.
+                                              {t('tripDetails.minParticipants', { count: session.minBookings })}
                                               {session.confirmationDeadline
-                                                ? ` Confirmed by ${new Date(session.confirmationDeadline).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' })} — if the minimum is not reached, your deposit is refunded.`
-                                                : ' If the minimum is not reached, your deposit is refunded.'}
+                                                ? ` ${t('tripDetails.confirmedByRefund', { date: new Date(session.confirmationDeadline).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' }) })}`
+                                                : ` ${t('tripDetails.minNotReachedRefund')}`}
                                             </p>
                                           </>
                                         ) : (
                                           <>
                                             <div className="flex justify-between text-[11px] font-bold">
-                                              <span className="text-sunset-orange uppercase tracking-tighter">Total due at checkout</span>
+                                              <span className="text-sunset-orange uppercase tracking-tighter">{t('tripDetails.totalDue')}</span>
                                               <span className="text-foreground">{formatCurrency(session.price, session.currency, i18n.language)}</span>
                                             </div>
                                             <p className="text-[10px] text-muted-foreground">
-                                              The full amount is required at checkout.
+                                              {t('tripDetails.fullAmountRequired')}
                                             </p>
                                           </>
                                         )}
@@ -705,7 +705,7 @@ export default function TripDetailsClient({
                                 ))
                             ) : (
                                 <div className="text-center py-8 text-muted-foreground text-sm font-medium">
-                                    No available dates currently.
+                                    {t('tripDetails.noDates')}
                                 </div>
                             )}
                         </div>
@@ -723,7 +723,7 @@ export default function TripDetailsClient({
                             }}
                             className="w-full h-14 rounded-xl text-lg font-bold bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-orange-600 text-white shadow-lg shadow-blue-900/20 dark:shadow-orange-900/20 transition-all active:scale-95 disabled:opacity-50"
                         >
-                            Book Now
+                            {t('tripDetails.bookNow')}
                         </Button>
                         <p className="text-center text-xs text-muted-foreground mt-4 font-medium">
                             {t('tripDetails.directPaymentNote')}
@@ -737,11 +737,11 @@ export default function TripDetailsClient({
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 pt-3 pb-safe-3 shadow-2xl backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">From</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t('featured.from')}</p>
             <p className="truncate text-xl font-black text-foreground">{minPriceLabel}</p>
           </div>
           <Button asChild className="shrink-0 px-6">
-            <a href="#booking-options">{openSessions.length > 0 ? 'Choose a date' : 'View availability'}</a>
+            <a href="#booking-options">{openSessions.length > 0 ? t('tripDetails.chooseDate') : t('tripDetails.viewAvailability')}</a>
           </Button>
         </div>
       </div>
