@@ -26,7 +26,7 @@ export function TripCardSkeleton({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'flex h-full flex-col overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm',
+        'flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-sm',
         className,
       )}
       aria-hidden="true"
