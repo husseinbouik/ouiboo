@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { BookingPaymentPlanStatus, BookingPaymentStatus, BookingStatus, VerificationStatus, type BookingDetails } from '@ouiboo/types';
@@ -137,12 +137,29 @@ export default function MyBookingsPage() {
         },
     });
 
+    // #494 (B16): one idempotency key per booking for proof uploads
+    // from this page, stable for the page session — a re-click or
+    // retry after a lost response replays the same key and the API
+    // returns the stored proof instead of reprocessing the upload.
+    const proofIdempotencyKeysRef = useRef(new Map<string, string>());
+    const proofIdempotencyKeyFor = (bookingId: string) => {
+        let key = proofIdempotencyKeysRef.current.get(bookingId);
+        if (!key) {
+            key = crypto.randomUUID();
+            proofIdempotencyKeysRef.current.set(bookingId, key);
+        }
+        return key;
+    };
+
     const uploadProofMutation = useMutation({
         mutationFn: async ({ bookingId, file }: { bookingId: string; file: File }) => {
             const formData = new FormData();
             formData.append('file', file);
             await apiClient.post(`/bookings/${bookingId}/payment-proof`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'Idempotency-Key': proofIdempotencyKeyFor(bookingId),
+                },
             });
         },
         onSuccess: () => {

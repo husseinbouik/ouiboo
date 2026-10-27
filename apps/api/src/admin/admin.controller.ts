@@ -25,6 +25,7 @@ import {
     resolveBankConfirmation,
 } from '../bookings/booking-response.util';
 import { PaymentsService } from '../payments/payments.service';
+import { serializeDuplicateCreditFlag } from '../bookings/bookings.service';
 import { type MoneyInput } from '../common/money.util';
 import { effectiveInsuranceStatus, effectiveLicenceStatus, getAgencyActivationBlock } from '../common/agency-licence.util';
 
@@ -579,6 +580,60 @@ export class AdminController {
             },
         }).catch((err) => console.error('Audit log failed', err));
         return updated;
+    }
+
+    // #494 (B16): duplicate-credit reconciliation queue — agencies
+    // flag second bank credits (invisible to the ledger); admin
+    // reconciles manually and closes flags here. Ops record only.
+    @Get('duplicate-credit-flags')
+    @ApiOperation({ summary: 'List duplicate-credit flags for reconciliation (#494)' })
+    async listDuplicateCreditFlags() {
+        const flags = await this.db.duplicateCreditFlag.findMany({
+            orderBy: { createdAt: 'desc' },
+            take: 200,
+        });
+        // OPEN first (stable sort keeps the newest-first order inside
+        // each status group) so the queue reads as a work list.
+        const sorted = [...flags].sort((a, b) => Number(b.status === 'OPEN') - Number(a.status === 'OPEN'));
+        return sorted.map(serializeDuplicateCreditFlag);
+    }
+
+    @Post('duplicate-credit-flags/:id/resolve')
+    @ApiOperation({ summary: 'Resolve or dismiss a duplicate-credit flag (#494)' })
+    async resolveDuplicateCreditFlag(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() body: { status?: 'RESOLVED' | 'DISMISSED'; resolutionNote?: string },
+    ) {
+        const status = body?.status ?? 'RESOLVED';
+        if (!['RESOLVED', 'DISMISSED'].includes(status)) {
+            throw new BadRequestException('Invalid duplicate-credit flag resolution status');
+        }
+        const flag = await this.db.duplicateCreditFlag.findUnique({ where: { id } });
+        if (!flag) {
+            throw new BadRequestException('Duplicate credit flag not found');
+        }
+        if (flag.status !== 'OPEN') {
+            throw new BadRequestException('Duplicate credit flag is already closed');
+        }
+        const updated = await this.db.duplicateCreditFlag.update({
+            where: { id },
+            data: {
+                status,
+                resolvedBy: req.user.userId,
+                resolvedAt: new Date(),
+                resolutionNote: body?.resolutionNote?.trim() || null,
+            },
+        });
+        this.auditLogService.log({
+            actorId: req.user.userId,
+            actorEmail: req.user.email,
+            action: 'DUPLICATE_CREDIT_FLAG_CLOSED',
+            targetType: 'DuplicateCreditFlag',
+            targetId: id,
+            metadata: { status, bookingId: flag.bookingId, agencyId: flag.agencyId },
+        }).catch((err) => console.error('Audit log failed', err));
+        return serializeDuplicateCreditFlag(updated);
     }
 
     @Post('agencies/:id/bank-details/verify')

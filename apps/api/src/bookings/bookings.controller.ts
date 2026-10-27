@@ -1,4 +1,4 @@
-import { Controller, HttpCode, Post, Get, Body, UseGuards, Request, Param, Patch, UploadedFile, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Res, Query } from '@nestjs/common';
+import { Controller, HttpCode, Post, Get, Body, Headers, UseGuards, Request, Param, Patch, UploadedFile, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Res, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
 import { ConfirmBankPaymentDto, CreateBookingDto, VerifyManualPaymentDto } from './dto/create-booking.dto';
@@ -21,8 +21,15 @@ export class BookingsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Create a new booking' })
-    create(@Request() req, @Body() dto: CreateBookingDto) {
-        return this.bookingsService.create(req.user.userId, dto);
+    create(
+        @Request() req,
+        @Body() dto: CreateBookingDto,
+        // #494 (B16): one client-generated UUID per booking attempt;
+        // a replay returns the original booking, a replay with a
+        // different payload is a 409. Absent header = legacy behaviour.
+        @Headers('idempotency-key') idempotencyKey?: string,
+    ) {
+        return this.bookingsService.create(req.user.userId, dto, idempotencyKey);
     }
 
     @Get('my-bookings')
@@ -80,8 +87,35 @@ export class BookingsController {
             }),
         )
         file: Express.Multer.File,
+        // #494 (B16): one UUID per proof attempt; replay semantics in
+        // the service (same file = stored proof, different = 409).
+        @Headers('idempotency-key') idempotencyKey?: string,
     ) {
-        return this.bookingsService.uploadPaymentProof(id, req.user.userId, file);
+        return this.bookingsService.uploadPaymentProof(id, req.user.userId, file, idempotencyKey);
+    }
+
+    @Post(':id/duplicate-credit')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
+    @Roles(UserRole.Agency)
+    @ApiOperation({ summary: 'Flag a duplicate bank credit observed for a booking (#494)' })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            required: ['amount'],
+            properties: {
+                amount: { type: 'number', example: 200 },
+                bankReference: { type: 'string', nullable: true },
+                note: { type: 'string', nullable: true },
+            },
+        },
+    })
+    flagDuplicateCredit(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() body: { amount: unknown; bankReference?: string | null; note?: string | null },
+    ) {
+        return this.bookingsService.createDuplicateCreditFlag(id, req.tenantId, req.user.userId, body ?? ({} as never));
     }
 
     @Patch(':id/verify-payment')

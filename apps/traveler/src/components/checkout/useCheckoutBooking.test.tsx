@@ -93,6 +93,12 @@ describe('useCheckoutBooking (CIN removal)', () => {
             termsVersion: CURRENT_BOOKING_TERMS_VERSION,
         });
         expect(payload).not.toHaveProperty('documentNumber');
+        // #494 (B16): the create call carries one idempotency key for
+        // this booking attempt, so a retry or double submit replays
+        // instead of double-booking.
+        const config = postMock.mock.calls[0][2];
+        expect(config.headers['Idempotency-Key']).toEqual(expect.any(String));
+        expect(config.headers['Idempotency-Key'].length).toBeGreaterThan(0);
         expect(pushMock).toHaveBeenCalledWith('/checkout/confirmation?bookingId=booking-1&proof=0');
     });
 
