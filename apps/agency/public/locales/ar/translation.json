@@ -965,13 +965,13 @@
       "repeatRate": "معدل التكرار"
     },
     "funnel": {
-      "stageViews": "مشاهدات",
+      "stageSessions": "الجلسات المنشأة",
       "stageAttempts": "محاولات الحجز",
       "stageConfirmed": "مؤكدة",
       "stageCompleted": "مكتملة",
       "noData": "لا توجد بيانات قمع",
       "title": "قمع التحويل",
-      "subtitle": "تتبع كيفية تحول الزوار إلى حجوزات مكتملة",
+      "subtitle": "من الجلسات المنشأة إلى الحجوزات المكتملة",
       "export": "تصدير"
     }
   },

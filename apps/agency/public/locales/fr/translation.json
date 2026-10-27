@@ -958,13 +958,13 @@
       "repeatRate": "Taux de récurrence"
     },
     "funnel": {
-      "stageViews": "Vues",
+      "stageSessions": "Sessions créées",
       "stageAttempts": "Tentatives de réservation",
       "stageConfirmed": "Confirmées",
       "stageCompleted": "Terminées",
       "noData": "Aucune donnée d'entonnoir",
       "title": "Entonnoir de conversion",
-      "subtitle": "Suivez la conversion des visiteurs en réservations terminées",
+      "subtitle": "Des sessions créées aux réservations terminées",
       "export": "Exporter"
     }
   },

@@ -24,6 +24,7 @@ Use these documents in order:
 10. [Environment Validation And Dress Rehearsal](./ENVIRONMENT_VALIDATION_AND_DRESS_REHEARSAL.md)
 11. [Provider Approval Tracker](./PROVIDER_APPROVAL_TRACKER.md)
 12. [Launch Day Go No Go](./LAUNCH_DAY_GO_NO_GO.md)
+13. [Beta Metrics — Interim Definitions](./BETA_METRICS.md)
 
 Expected owners:
 

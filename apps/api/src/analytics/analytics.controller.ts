@@ -6,6 +6,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
+import { BetaMetricsService } from './beta-metrics.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
@@ -84,7 +85,10 @@ export class AnalyticsController {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.Admin)
 export class AdminAnalyticsController {
-  constructor(private analyticsService: AnalyticsService) {}
+  constructor(
+    private analyticsService: AnalyticsService,
+    private betaMetricsService: BetaMetricsService,
+  ) {}
 
   /**
    * Get platform metrics (admin only)
@@ -92,5 +96,21 @@ export class AdminAnalyticsController {
   @Get('metrics')
   async getPlatformMetrics() {
     return this.analyticsService.getPlatformMetrics();
+  }
+
+  /**
+   * Beta exit-criteria metrics (admin only) — #432 / B21.
+   * Optional `from`/`to` ISO dates; defaults to the last 30 days.
+   * Definitions: docs/launch-ops/BETA_METRICS.md.
+   */
+  @Get('beta-metrics')
+  async getBetaMetrics(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.betaMetricsService.getBetaMetrics(
+      from ? new Date(from) : undefined,
+      to ? new Date(to) : undefined,
+    );
   }
 }
