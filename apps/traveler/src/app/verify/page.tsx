@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ShieldCheck, RefreshCw } from 'lucide-react';
-import { Button, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
+import { Button, OtpCodeInput, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
 import { apiClient } from '@/lib/api-client';
 import { useMutation } from '@tanstack/react-query';
 import { setBrowserAccessToken } from '@ouiboo/api-client';
@@ -115,28 +115,6 @@ export default function VerifyEmailPage() {
     },
   });
 
-  const handleChange = (index: number, value: string) => {
-    if (value.length > 1) value = value[value.length - 1];
-    if (!/^\d*$/.test(value)) return;
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Auto-focus next input
-    if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      nextInput?.focus();
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      const prevInput = document.getElementById(`otp-${index - 1}`);
-      prevInput?.focus();
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const otpString = otp.join('');
@@ -217,20 +195,11 @@ export default function VerifyEmailPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="flex justify-between gap-2">
-            {otp.map((digit, idx) => (
-              <input
-                key={idx}
-                id={`otp-${idx}`}
-                type="text"
-                value={digit}
-                onChange={(e) => handleChange(idx, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(idx, e)}
-                className="w-full h-14 text-center text-2xl font-bold bg-muted border border-border rounded-xl focus:border-sunset-orange focus:ring-2 focus:ring-sunset-orange/10 focus:bg-background outline-none transition-all text-foreground"
-                maxLength={1}
-              />
-            ))}
-          </div>
+          <OtpCodeInput
+            value={otp}
+            onChange={setOtp}
+            inputClassName="w-full h-14 text-center text-2xl font-bold bg-muted border border-border rounded-xl focus:border-sunset-orange focus:ring-2 focus:ring-sunset-orange/10 focus:bg-background outline-none transition-all text-foreground"
+          />
 
           {error && (
             <div className="p-3 text-sm font-semibold text-danger bg-danger/10 border border-danger/20 rounded-xl flex items-center justify-center gap-2">

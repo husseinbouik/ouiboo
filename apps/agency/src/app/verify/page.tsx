@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Mail, ArrowRight, ShieldCheck, RefreshCw } from 'lucide-react';
-import { Button } from '@ouiboo/ui';
+import { Button, OtpCodeInput } from '@ouiboo/ui';
 import { apiClient } from '@/lib/api-client';
 import { useMutation } from '@tanstack/react-query';
 import { setBrowserAccessToken } from '@ouiboo/api-client';
@@ -118,28 +118,6 @@ export default function VerifyEmailPage() {
     },
   });
 
-  const handleChange = (index: number, value: string) => {
-    if (value.length > 1) value = value[value.length - 1];
-    if (!/^\d*$/.test(value)) return;
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Auto-focus next input
-    if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      nextInput?.focus();
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      const prevInput = document.getElementById(`otp-${index - 1}`);
-      prevInput?.focus();
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const otpString = otp.join('');
@@ -194,21 +172,13 @@ export default function VerifyEmailPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="flex justify-between gap-2" dir="ltr">
-            {otp.map((digit, idx) => (
-              <input
-                key={idx}
-                id={`otp-${idx}`}
-                type="text"
-                value={digit}
-                onChange={(e) => handleChange(idx, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(idx, e)}
-                className="w-12 h-14 text-center text-2xl font-bold bg-muted border-2 border-border rounded-xl focus:border-primary focus:bg-background outline-none transition-all"
-                maxLength={1}
-                aria-label={t('verify.otpDigit', { index: idx + 1 })}
-              />
-            ))}
-          </div>
+          <OtpCodeInput
+            value={otp}
+            onChange={setOtp}
+            dir="ltr"
+            inputClassName="w-12 h-14 text-center text-2xl font-bold bg-muted border-2 border-border rounded-xl focus:border-primary focus:bg-background outline-none transition-all"
+            ariaLabelForDigit={(idx) => t('verify.otpDigit', { index: idx + 1 })}
+          />
 
           {error && (
             <div className="p-3 text-sm text-danger bg-danger/10 border border-danger/30 rounded-xl text-center">
