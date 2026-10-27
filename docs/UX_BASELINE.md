@@ -1,5 +1,15 @@
 # UX/UI Quality Baseline
 
+## Brand Palette Emphasis
+
+One shared brand palette for every app; the canonical values live in
+`packages/tokens/tokens.css`. Apps differentiate by emphasis, never by
+separate brand colours: Traveller - sunset orange leads, deep blue
+supports. Agency - deep blue leads, sunset orange only for actions and
+accents. Admin and Landing follow the agency (operator) emphasis unless a
+screen is traveller-facing marketing. The logo is unified across all apps
+and is never recoloured per app.
+
 ## Cross-Portal Standards
 
 ### All Portals (Traveler, Agency, Admin)
