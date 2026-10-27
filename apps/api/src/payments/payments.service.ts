@@ -510,6 +510,169 @@ export class PaymentsService {
   }
 
   /**
+   * #596: provider id-mapping for webhook confirmations.
+   *
+   * A webhook's transaction id is NOT necessarily the initiation
+   * session id stored in `PaymentTransaction.transactionId`: CMI and
+   * CashPlus report a distinct transaction id in their webhooks, while
+   * the initiation response carried both ids. The mapping is therefore
+   * resolved from data already stored on the local transaction — no
+   * schema change is needed:
+   *
+   * - `transactionId` itself (the initiation session id; for Stripe
+   *   this is the checkout session id the webhook also reports), and
+   * - every provider id recorded in `providerData` / `metadata` at
+   *   initiation (the CMI/CashPlus adapters store the full initiation
+   *   response there, including the provider's own transaction id)
+   *   or by an earlier bound flow (e.g. a Stripe session object, which
+   *   carries its payment-intent id).
+   *
+   * A webhook confirmation may proceed only when its candidate ids
+   * resolve to EXACTLY ONE local transaction for the booking and
+   * provider. Zero matches — or an ambiguous mapping — parks the
+   * confirmation: nothing is confirmed, an error-level (alerting) log
+   * is emitted, and the webhook is rejected so the provider retries
+   * and the parked event stays visible instead of silently confirming
+   * a booking on an unmatched payment. Log lines on this path carry
+   * no payment identifiers or payload data.
+   */
+  private providerIdAliases(record: any): string[] {
+    if (!record || typeof record !== 'object') return [];
+    const keys = [
+      'id',
+      'transactionId',
+      'sessionId',
+      'session_id',
+      'paymentIntentId',
+      'payment_intent',
+      'chargeId',
+      'charge_id',
+      'providerTransactionId',
+      'initiationId',
+    ];
+    const ids: string[] = [];
+    for (const key of keys) {
+      const value = record[key];
+      if (typeof value === 'string' && value) ids.push(value);
+    }
+    if (record.metadata && typeof record.metadata === 'object') {
+      ids.push(...this.providerIdAliases(record.metadata));
+    }
+    return ids;
+  }
+
+  private webhookCandidateIds(event: any): string[] {
+    return [...new Set(this.providerIdAliases(event))];
+  }
+
+  private async resolveWebhookTransaction(
+    bookingId: string,
+    provider: string,
+    candidateIds: string[],
+  ) {
+    if (!candidateIds.length) return null;
+
+    const rows = await this.prisma.paymentTransaction.findMany({
+      where: { bookingId },
+    });
+
+    const matches = (rows ?? []).filter((transaction: any) => {
+      if (
+        transaction.provider &&
+        transaction.provider.toUpperCase() !== provider.toUpperCase()
+      ) {
+        return false;
+      }
+      const aliases = new Set<string>([
+        transaction.transactionId,
+        ...this.providerIdAliases(transaction.providerData),
+        ...this.providerIdAliases(transaction.metadata),
+      ]);
+      return candidateIds.some((id) => aliases.has(id));
+    });
+
+    return matches.length === 1 ? matches[0] : null;
+  }
+
+  private parkUnmatchedWebhookConfirmation(provider: string): never {
+    // Alerting on the park path: error-level log, deliberately free of
+    // payment identifiers and payload data (repo rule: never log
+    // payment payloads). The booking is NOT confirmed.
+    this.logger.error(
+      `Webhook payment confirmation parked for provider ${provider}: no unique local transaction mapping; booking was not confirmed`,
+    );
+    throw new BadRequestException(
+      'Webhook payment could not be matched to a local payment transaction; booking was not confirmed',
+    );
+  }
+
+  /**
+   * #596: claim the one local transaction a webhook confirmation maps
+   * to, conditionally on the state it was resolved in — the webhook
+   * equivalent of the #496 zero-row claim block. A claim that updates
+   * zero rows parks the confirmation instead of confirming.
+   */
+  private async claimWebhookTransaction(
+    bookingId: string,
+    provider: string,
+    candidateIds: string[],
+    providerData: any,
+  ) {
+    const transaction = await this.resolveWebhookTransaction(
+      bookingId,
+      provider,
+      candidateIds,
+    );
+
+    if (!transaction) {
+      this.parkUnmatchedWebhookConfirmation(provider);
+    }
+
+    // Idempotent replay: a duplicate webhook for an already-claimed
+    // transaction is a no-op; the booking transition is itself
+    // conditional and idempotent.
+    if (transaction.status === 'SUCCESS') {
+      return transaction;
+    }
+
+    if (
+      transaction.status !== 'INITIATED' &&
+      transaction.status !== 'PENDING'
+    ) {
+      this.parkUnmatchedWebhookConfirmation(provider);
+    }
+
+    const claimed = await this.prisma.paymentTransaction.updateMany({
+      where: {
+        id: transaction.id,
+        bookingId,
+        status: transaction.status,
+      },
+      data: {
+        status: 'SUCCESS',
+        providerData,
+      },
+    });
+
+    if (claimed.count !== 1) {
+      // Zero rows claimed: another flow moved this transaction.
+      // Proceed only if that flow already claimed it successfully.
+      const rows = await this.prisma.paymentTransaction.findMany({
+        where: { bookingId },
+      });
+      const current = (rows ?? []).find(
+        (row: any) => row.id === transaction.id,
+      );
+      if (current?.status === 'SUCCESS') {
+        return current;
+      }
+      this.parkUnmatchedWebhookConfirmation(provider);
+    }
+
+    return transaction;
+  }
+
+  /**
    * #496: the booking reference a provider result asserts, if any —
    * structured field first, then the metadata/order-reference shapes the
    * provider adapters return.
@@ -672,17 +835,15 @@ export class PaymentsService {
       return;
     }
 
-    // Update payment transaction
-    await this.prisma.paymentTransaction.updateMany({
-      where: {
-        bookingId,
-        transactionId: session.id,
-      },
-      data: {
-        status: 'SUCCESS',
-        providerData: session,
-      },
-    });
+    // #596: Stripe's webhook session id IS the initiation session id
+    // stored on the local transaction, so the mapping resolves
+    // directly; a zero-match parks instead of confirming.
+    await this.claimWebhookTransaction(
+      bookingId,
+      'STRIPE',
+      this.webhookCandidateIds(session),
+      session,
+    );
 
     // Transition booking to confirmed
     await this.transitionBookingToConfirmed(bookingId, {
@@ -782,6 +943,15 @@ export class PaymentsService {
       return;
     }
 
+    // #596: claim the mapped local transaction (zero-row claim parks)
+    // before confirming on a payment-intent success.
+    await this.claimWebhookTransaction(
+      transaction.booking.id,
+      'STRIPE',
+      this.webhookCandidateIds(paymentIntent),
+      paymentIntent,
+    );
+
     // Only process if not already confirmed
     if (transaction.booking.paymentStatus !== BookingPaymentStatus.PAID) {
       await this.transitionBookingToConfirmed(transaction.booking.id, {
@@ -839,17 +1009,16 @@ export class PaymentsService {
       return;
     }
 
-    // Update payment transaction
-    await this.prisma.paymentTransaction.updateMany({
-      where: {
-        bookingId,
-        transactionId: event.transactionId,
-      },
-      data: {
-        status: 'SUCCESS',
-        providerData: event,
-      },
-    });
+    // #596: the CMI webhook transaction id differs from the initiation
+    // session id stored on the local transaction; resolve it through
+    // the provider id-mapping (ids recorded in providerData at
+    // initiation). A zero-match parks instead of confirming.
+    await this.claimWebhookTransaction(
+      bookingId,
+      'CMI',
+      this.webhookCandidateIds(event),
+      event,
+    );
 
     // Transition booking to confirmed
     await this.transitionBookingToConfirmed(bookingId, {
@@ -968,17 +1137,16 @@ export class PaymentsService {
       return;
     }
 
-    // Update payment transaction
-    await this.prisma.paymentTransaction.updateMany({
-      where: {
-        bookingId,
-        transactionId: event.transactionId,
-      },
-      data: {
-        status: 'SUCCESS',
-        providerData: event,
-      },
-    });
+    // #596: same id-mapping as CMI — the CashPlus webhook transaction
+    // id differs from the initiation session id; resolve it through
+    // the ids recorded in providerData at initiation. A zero-match
+    // parks instead of confirming.
+    await this.claimWebhookTransaction(
+      bookingId,
+      'CASHPLUS',
+      this.webhookCandidateIds(event),
+      event,
+    );
 
     // Transition booking to confirmed
     await this.transitionBookingToConfirmed(bookingId, {

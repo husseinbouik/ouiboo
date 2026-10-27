@@ -1061,4 +1061,301 @@ describe('PaymentsService - Security Tests', () => {
       );
     });
   });
+
+  describe('handleWebhookCallback - #596 webhook id-mapping binding', () => {
+    const webhookBooking = () => ({
+      ...mockBooking,
+      currency: 'MAD',
+      traveler: mockBooking.traveler,
+      session: {
+        ...mockBooking.session,
+        template: {
+          id: 'template-1',
+          agencyId: 'agency-123',
+          title: 'Sahara Escape',
+          agency: { id: 'agency-123' },
+        },
+      },
+    });
+
+    const setupWebhook = (localTransactions: any[]) => {
+      const provider = {
+        verifyPayment: jest.fn(),
+        initiatePayment: jest.fn(),
+        validateWebhookSignature: jest.fn().mockReturnValue(true),
+        processRefund: jest.fn(),
+      };
+      jest.spyOn(providerFactory, 'getProvider').mockReturnValue(provider as any);
+      jest.spyOn(prismaService.booking, 'findUnique').mockResolvedValue(webhookBooking() as any);
+      jest
+        .spyOn(prismaService.paymentTransaction, 'findMany')
+        .mockResolvedValue(localTransactions as any);
+      jest.spyOn(prismaService.paymentTransaction, 'updateMany').mockResolvedValue({ count: 1 } as any);
+      jest.spyOn(prismaService.booking, 'updateMany').mockResolvedValue({ count: 1 } as any);
+      jest.spyOn(prismaService.notificationLog, 'create').mockResolvedValue({ id: 'notif-1' } as any);
+      jest.spyOn(emailService, 'sendPaymentConfirmation').mockResolvedValue(undefined);
+      return provider;
+    };
+
+    const callWebhook = (provider: string, event: any) =>
+      service.handleWebhookCallback(provider, JSON.stringify(event), 'sig');
+
+    it('confirms a Stripe checkout webhook whose session id is the stored initiation id', async () => {
+      setupWebhook([
+        {
+          id: 'tx-1',
+          bookingId: 'booking-123',
+          transactionId: 'cs_1',
+          provider: 'STRIPE',
+          status: 'INITIATED',
+          amount: 500,
+          providerData: { provider: 'STRIPE', sessionId: 'cs_1' },
+        },
+      ]);
+
+      const result = await callWebhook('stripe', {
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_1',
+            payment_intent: 'pi_1',
+            amount_total: 50000,
+            metadata: { bookingId: 'booking-123' },
+          },
+        },
+      });
+
+      expect(result).toEqual({ received: true, processed: true });
+      // The claim is by local row id, not by the webhook id.
+      expect(prismaService.paymentTransaction.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: 'tx-1', bookingId: 'booking-123' }),
+          data: expect.objectContaining({ status: 'SUCCESS' }),
+        }),
+      );
+      expect(prismaService.booking.updateMany).toHaveBeenCalled();
+    });
+
+    it('parks a Stripe checkout webhook whose session id matches no local transaction (zero-match)', async () => {
+      setupWebhook([
+        {
+          id: 'tx-1',
+          bookingId: 'booking-123',
+          transactionId: 'cs_other',
+          provider: 'STRIPE',
+          status: 'INITIATED',
+          amount: 500,
+          providerData: { provider: 'STRIPE', sessionId: 'cs_other' },
+        },
+      ]);
+
+      await expect(
+        callWebhook('stripe', {
+          type: 'checkout.session.completed',
+          data: {
+            object: {
+              id: 'cs_unmatched',
+              payment_intent: 'pi_unmatched',
+              amount_total: 50000,
+              metadata: { bookingId: 'booking-123' },
+            },
+          },
+        }),
+      ).rejects.toThrow('could not be matched to a local payment transaction');
+      expect(prismaService.paymentTransaction.updateMany).not.toHaveBeenCalled();
+      expect(prismaService.booking.updateMany).not.toHaveBeenCalled();
+      expect(externalPaymentsService.recordPaymentVerifiedInTransaction).not.toHaveBeenCalled();
+    });
+
+    it('confirms a CMI webhook via the provider id-mapping (webhook transaction id != initiation session id)', async () => {
+      setupWebhook([
+        {
+          id: 'tx-1',
+          bookingId: 'booking-123',
+          transactionId: 'cmi-session-1',
+          provider: 'CMI',
+          status: 'INITIATED',
+          amount: 500,
+          // Initiation stored the full provider response, including the
+          // provider transaction id the webhook later reports.
+          providerData: { provider: 'CMI', sessionId: 'cmi-session-1', transactionId: 'cmi-webhook-9' },
+        },
+      ]);
+
+      const result = await callWebhook('cmi', {
+        eventType: 'PAYMENT_SUCCESS',
+        orderId: 'booking-123',
+        transactionId: 'cmi-webhook-9',
+        amount: 500,
+      });
+
+      expect(result).toEqual({ received: true, processed: true });
+      expect(prismaService.paymentTransaction.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: 'tx-1', bookingId: 'booking-123' }),
+        }),
+      );
+      expect(prismaService.booking.updateMany).toHaveBeenCalled();
+    });
+
+    it('parks a CMI webhook whose transaction id maps to no local transaction (zero-match)', async () => {
+      setupWebhook([
+        {
+          id: 'tx-1',
+          bookingId: 'booking-123',
+          transactionId: 'cmi-session-1',
+          provider: 'CMI',
+          status: 'INITIATED',
+          amount: 500,
+          providerData: { provider: 'CMI', sessionId: 'cmi-session-1', transactionId: 'cmi-webhook-9' },
+        },
+      ]);
+
+      await expect(
+        callWebhook('cmi', {
+          eventType: 'PAYMENT_SUCCESS',
+          orderId: 'booking-123',
+          transactionId: 'cmi-webhook-unknown',
+          amount: 500,
+        }),
+      ).rejects.toThrow('could not be matched to a local payment transaction');
+      expect(prismaService.paymentTransaction.updateMany).not.toHaveBeenCalled();
+      expect(prismaService.booking.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('confirms a CashPlus webhook via the provider id-mapping (webhook transaction id != initiation session id)', async () => {
+      setupWebhook([
+        {
+          id: 'tx-1',
+          bookingId: 'booking-123',
+          transactionId: 'cp-session-1',
+          provider: 'CASHPLUS',
+          status: 'INITIATED',
+          amount: 500,
+          providerData: { provider: 'CASHPLUS', sessionId: 'cp-session-1', transactionId: 'cp-webhook-7' },
+        },
+      ]);
+
+      const result = await callWebhook('cashplus', {
+        status: 'SUCCESS',
+        orderId: 'booking-123',
+        transactionId: 'cp-webhook-7',
+        amount: 500,
+      });
+
+      expect(result).toEqual({ received: true, processed: true });
+      expect(prismaService.paymentTransaction.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: 'tx-1', bookingId: 'booking-123' }),
+        }),
+      );
+      expect(prismaService.booking.updateMany).toHaveBeenCalled();
+    });
+
+    it('parks a CashPlus webhook whose transaction id maps to no local transaction (zero-match)', async () => {
+      setupWebhook([
+        {
+          id: 'tx-1',
+          bookingId: 'booking-123',
+          transactionId: 'cp-session-1',
+          provider: 'CASHPLUS',
+          status: 'INITIATED',
+          amount: 500,
+          providerData: { provider: 'CASHPLUS', sessionId: 'cp-session-1', transactionId: 'cp-webhook-7' },
+        },
+      ]);
+
+      await expect(
+        callWebhook('cashplus', {
+          status: 'SUCCESS',
+          orderId: 'booking-123',
+          transactionId: 'cp-webhook-unknown',
+          amount: 500,
+        }),
+      ).rejects.toThrow('could not be matched to a local payment transaction');
+      expect(prismaService.paymentTransaction.updateMany).not.toHaveBeenCalled();
+      expect(prismaService.booking.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('parks a webhook whose id matches a local transaction of a different provider', async () => {
+      setupWebhook([
+        {
+          id: 'tx-1',
+          bookingId: 'booking-123',
+          transactionId: 'shared-session-1',
+          provider: 'CMI',
+          status: 'INITIATED',
+          amount: 500,
+          providerData: { provider: 'CMI', sessionId: 'shared-session-1', transactionId: 'shared-webhook-1' },
+        },
+      ]);
+
+      await expect(
+        callWebhook('cashplus', {
+          status: 'SUCCESS',
+          orderId: 'booking-123',
+          transactionId: 'shared-webhook-1',
+          amount: 500,
+        }),
+      ).rejects.toThrow('could not be matched to a local payment transaction');
+      expect(prismaService.booking.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('parks a webhook whose id mapping is ambiguous (two local transactions match)', async () => {
+      const mapped = {
+        bookingId: 'booking-123',
+        provider: 'CMI',
+        status: 'INITIATED',
+        amount: 500,
+        providerData: { provider: 'CMI', transactionId: 'cmi-webhook-9' },
+      };
+      setupWebhook([
+        { ...mapped, id: 'tx-1', transactionId: 'cmi-session-1' },
+        { ...mapped, id: 'tx-2', transactionId: 'cmi-session-2' },
+      ]);
+
+      await expect(
+        callWebhook('cmi', {
+          eventType: 'PAYMENT_SUCCESS',
+          orderId: 'booking-123',
+          transactionId: 'cmi-webhook-9',
+          amount: 500,
+        }),
+      ).rejects.toThrow('could not be matched to a local payment transaction');
+      expect(prismaService.paymentTransaction.updateMany).not.toHaveBeenCalled();
+      expect(prismaService.booking.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('parks a webhook confirmation when the conditional transaction claim updates zero rows', async () => {
+      const localTx = {
+        id: 'tx-1',
+        bookingId: 'booking-123',
+        transactionId: 'cmi-session-1',
+        provider: 'CMI',
+        status: 'INITIATED',
+        amount: 500,
+        providerData: { provider: 'CMI', sessionId: 'cmi-session-1', transactionId: 'cmi-webhook-9' },
+      };
+      setupWebhook([localTx]);
+      // Resolution finds the transaction, the claim loses the race, and
+      // the recheck still shows it unclaimed — confirmation must park.
+      (prismaService.paymentTransaction.findMany as jest.Mock)
+        .mockReset()
+        .mockResolvedValueOnce([localTx] as any)
+        .mockResolvedValueOnce([localTx] as any);
+      jest
+        .spyOn(prismaService.paymentTransaction, 'updateMany')
+        .mockResolvedValue({ count: 0 } as any);
+
+      await expect(
+        callWebhook('cmi', {
+          eventType: 'PAYMENT_SUCCESS',
+          orderId: 'booking-123',
+          transactionId: 'cmi-webhook-9',
+          amount: 500,
+        }),
+      ).rejects.toThrow('could not be matched to a local payment transaction');
+      expect(prismaService.booking.updateMany).not.toHaveBeenCalled();
+    });
+  });
 });
