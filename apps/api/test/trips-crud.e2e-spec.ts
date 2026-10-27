@@ -948,6 +948,121 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         expect(res.body._count?.reviews || 0).toBeGreaterThan(0);
     });
 
+    // ===== Section 15: Multilingual content (#546) =====
+    it('persists the translations map on create with the fr entry mirrored from the canonical fields', async () => {
+        const { agency1 } = await seedTestData();
+
+        const res = await request(app.getHttpServer())
+            .post('/trips')
+            .set('Authorization', 'Bearer <redacted>')
+            .send({
+                title: 'Aventure dans le désert',
+                description: 'Une aventure complète dans le désert marocain',
+                category: 'ADVENTURE',
+                startLocation: 'Marrakech',
+                durationDays: 3,
+                durationNights: 2,
+                inclusions: ['Transport'],
+                images: ['https://example.com/image1.jpg'],
+                status: 'DRAFT',
+                translations: {
+                    ar: { title: 'مغامرة في الصحراء', description: 'مغامرة كاملة في الصحراء المغربية' },
+                    en: { title: 'Desert Adventure', description: 'A complete adventure in the Moroccan desert' },
+                },
+            })
+            .expect(201);
+
+        expect(res.body.translations).toEqual({
+            fr: { title: 'Aventure dans le désert', description: 'Une aventure complète dans le désert marocain' },
+            ar: { title: 'مغامرة في الصحراء', description: 'مغامرة كاملة في الصحراء المغربية' },
+            en: { title: 'Desert Adventure', description: 'A complete adventure in the Moroccan desert' },
+        });
+
+        const stored = await db.tripTemplate.findUnique({ where: { id: res.body.id } });
+        expect((stored as any).translations).toEqual(res.body.translations);
+        expect(agency1.id).toBeTruthy();
+    });
+
+    it('resolves the public detail + list payloads into the requested locale with French fallback', async () => {
+        const { agency1 } = await seedTestData();
+        const template = await createTripTemplate(agency1.id, {
+            status: 'ACTIVE',
+            title: 'Titre français',
+            description: 'Description française complète',
+            translations: {
+                fr: { title: 'Titre français', description: 'Description française complète' },
+                ar: { title: 'العنوان بالعربية', description: 'الوصف بالعربية' },
+            },
+        });
+
+        const ar = await request(app.getHttpServer()).get(`/trips/${template.id}?locale=ar`).expect(200);
+        expect(ar.body.title).toBe('العنوان بالعربية');
+        expect(ar.body.description).toBe('الوصف بالعربية');
+
+        // English has no entry -> French (never empty).
+        const en = await request(app.getHttpServer()).get(`/trips/${template.id}?locale=en`).expect(200);
+        expect(en.body.title).toBe('Titre français');
+        expect(en.body.description).toBe('Description française complète');
+
+        // No locale at all -> the pre-#546 payload (French columns).
+        const plain = await request(app.getHttpServer()).get(`/trips/${template.id}`).expect(200);
+        expect(plain.body.title).toBe('Titre français');
+
+        const list = await request(app.getHttpServer()).get('/trips?locale=ar').expect(200);
+        const found = (list.body.data || []).find((row: any) => row.id === template.id);
+        expect(found?.title).toBe('العنوان بالعربية');
+    });
+
+    it('search matches the French columns and the localized texts', async () => {
+        const { agency1 } = await seedTestData();
+        await createTripTemplate(agency1.id, {
+            status: 'ACTIVE',
+            title: 'Randonnée Atlas',
+            description: 'Une randonnée dans le Haut Atlas',
+            translations: {
+                fr: { title: 'Randonnée Atlas', description: 'Une randonnée dans le Haut Atlas' },
+                ar: { title: 'رحلة الأطلس الكبير', description: 'وصف الرحلة' },
+            },
+        });
+
+        const byFrench = await request(app.getHttpServer()).get('/trips?q=Randonn%C3%A9e').expect(200);
+        expect((byFrench.body.data || []).length).toBeGreaterThan(0);
+
+        const byArabic = await request(app.getHttpServer()).get(`/trips?q=${encodeURIComponent('الأطلس')}`).expect(200);
+        expect((byArabic.body.data || []).length).toBeGreaterThan(0);
+    });
+
+    it('refuses to publish a trip whose French text is incomplete, publishes a French-only one', async () => {
+        const { agency1 } = await seedTestData();
+        // Direct-inserted drafts (the API DTO requires French at create;
+        // incomplete French can only exist via legacy/direct data).
+        const incomplete = await createTripTemplate(agency1.id, {
+            status: 'DRAFT',
+            title: 'Titre seul',
+            description: '',
+            translations: { ar: { title: 'عنوان', description: 'وصف كامل' } },
+        });
+        const frenchOnly = await createTripTemplate(agency1.id, {
+            status: 'DRAFT',
+            title: 'Voyage complet',
+            description: 'Description française complète',
+            translations: null,
+        });
+
+        await request(app.getHttpServer())
+            .patch(`/trips/${incomplete.id}`)
+            .set('Authorization', 'Bearer <redacted>')
+            .send({ status: 'ACTIVE' })
+            .expect(400);
+
+        const published = await request(app.getHttpServer())
+            .patch(`/trips/${frenchOnly.id}`)
+            .set('Authorization', 'Bearer <redacted>')
+            .send({ status: 'ACTIVE' })
+            .expect(200);
+        expect(published.body.status).toBe('ACTIVE');
+    });
+
     // ===== Section 14: Wishlist Integration =====
     it('Trip template includes wishlist count', async () => {
         const { agency1, traveler } = await seedTestData();

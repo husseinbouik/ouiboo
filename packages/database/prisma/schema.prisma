@@ -523,6 +523,14 @@ model TripTemplate {
   // agency-fault and minimum-unmet cancellations always refund 100%
   // and never consult these bands). Null = platform default bands.
   cancellationPolicy Json?
+  // #546: multilingual trip content — title + description keyed by ISO
+  // language code: { "fr": { title, description }, "ar": { ... } }.
+  // French is canonical: the `title`/`description` columns above hold
+  // the French text and mirror `translations.fr` on every write, so all
+  // existing consumers keep rendering French exactly as before. Other
+  // languages live only in this map (added by data, never by schema
+  // change) and are resolved server-side for public payloads.
+  translations       Json?
   minBookings        Int            @default(1)
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt

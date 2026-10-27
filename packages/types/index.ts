@@ -282,6 +282,15 @@ export interface CancellationScale {
     bands: CancellationBand[];
 }
 
+/** #546: one language's trip title + description in the translations map. */
+export interface TripTranslationEntry {
+    title?: string;
+    description?: string;
+}
+
+/** #546: trip title + description keyed by ISO language code (fr canonical). */
+export type TripTranslations = Record<string, TripTranslationEntry>;
+
 /** The resolved scale: bands + the platform floor terms. */
 export interface CancellationScaleSnapshot extends CancellationScale {
     floorRefundPercent: number;
@@ -311,6 +320,13 @@ export interface TripTemplate {
     cancellationPolicy?: CancellationScale | null;
     /** #417: the resolved scale (bands + floor) returned by GET /trips/:id. */
     cancellationScale?: CancellationScaleSnapshot;
+    /**
+     * #546: multilingual title + description, keyed by ISO language
+     * code. `title`/`description` above are the FRENCH text (canonical);
+     * public payloads resolve them into the request locale server-side,
+     * while this map carries every language the agency provided.
+     */
+    translations?: TripTranslations | null;
     status: TripStatus;
     currency: string;
     startingPrice?: DecimalString | null;

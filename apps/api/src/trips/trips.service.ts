@@ -11,6 +11,12 @@ import {
     buildCancellationScaleSnapshot,
     normalizeCancellationPolicyInput,
 } from '../cancellation/cancellation.util';
+import {
+    buildTripTranslations,
+    hasCompleteFrenchText,
+    localizeTripPayload,
+    normalizeTripTranslations,
+} from './trip-translations.util';
 
 @Injectable()
 export class TripsService {
@@ -60,6 +66,25 @@ export class TripsService {
         }
     }
 
+    /**
+     * #546: French content gate. French is the canonical language of a
+     * trip (the `title`/`description` columns ARE the French text), and
+     * a trip may only enter the marketplace with a complete French
+     * title + description. Drafts may be incomplete in every language;
+     * Arabic/English are encouraged but never block publishing.
+     */
+    private assertFrenchPublishable(trip: {
+        title?: string | null;
+        description?: string | null;
+        translations?: unknown;
+    }) {
+        if (!hasCompleteFrenchText(trip)) {
+            throw new BadRequestException(
+                'A French title and description are required to publish a trip',
+            );
+        }
+    }
+
     async createTemplate(agencyId: string, dto: CreateTripTemplateDto) {
         const agency = await this.db.agencyProfile.findUnique({
             where: { id: agencyId }
@@ -81,7 +106,7 @@ export class TripsService {
             );
         }
 
-        const { itinerary, imageAlts, cancellationPolicy, ...tripData } = dto;
+        const { itinerary, imageAlts, cancellationPolicy, translations, ...tripData } = dto;
 
         const data = {
             ...tripData,
@@ -91,6 +116,12 @@ export class TripsService {
             cancellationPolicy: cancellationPolicy
                 ? (normalizeCancellationPolicyInput(cancellationPolicy) as unknown as Prisma.InputJsonValue)
                 : undefined,
+            // #546: persist the language map; its `fr` entry mirrors
+            // the canonical title/description columns from this write.
+            translations: buildTripTranslations(translations, {
+                title: dto.title,
+                description: dto.description,
+            }) as unknown as Prisma.InputJsonValue,
             imageAlts: this.normalizeImageAlts(imageAlts, dto.images),
             agencyId: agencyId,
             status: TripStatus.DRAFT,
@@ -129,6 +160,9 @@ export class TripsService {
         sortOrder?: 'asc' | 'desc';
         page?: number;
         limit?: number;
+        // #546: request locale for resolving title/description from
+        // the translations map (fallback: French, then any language).
+        locale?: string;
     }) {
         try {
             const {
@@ -149,6 +183,7 @@ export class TripsService {
                 sortOrder = 'desc',
                 page = 1,
                 limit = 20,
+                locale,
             } = filters || {};
             const safePage = Math.max(1, Number.isFinite(page) ? Math.floor(page) : 1);
             const safeLimit = Math.min(Math.max(1, Number.isFinite(limit) ? Math.floor(limit) : 20), 50);
@@ -193,6 +228,11 @@ export class TripsService {
                     { title: { contains: search, mode: 'insensitive' } },
                     { description: { contains: search, mode: 'insensitive' } },
                     { startLocation: { contains: search, mode: 'insensitive' } },
+                    // #546: also match the localized texts. The French
+                    // columns above remain the primary match (no search
+                    // regression for legacy trips); the map's serialized
+                    // text covers Arabic/English (and future languages).
+                    { translations: { string_contains: search } },
                 ];
             }
 
@@ -298,7 +338,11 @@ export class TripsService {
             ]);
 
             return {
-                data: templates,
+                // #546: resolve title/description into the request
+                // locale (fallback French -> any language). Without a
+                // locale this resolves to the French columns, i.e. the
+                // payload is byte-identical to the pre-#546 shape.
+                data: templates.map((template) => localizeTripPayload(template, locale)),
                 pagination: {
                     total,
                     page: safePage,
@@ -312,7 +356,7 @@ export class TripsService {
         }
     }
 
-    async findOneTemplate(id: string) {
+    async findOneTemplate(id: string, locale?: string) {
         const result = await this.db.tripTemplate.findFirst({
             where: {
                 id,
@@ -326,6 +370,10 @@ export class TripsService {
                 id: true,
                 title: true,
                 description: true,
+                // #546: the language map rides along so the payload can
+                // be resolved into the request locale below (and so
+                // clients can see which languages exist).
+                translations: true,
                 category: true,
                 startLocation: true,
                 endLocation: true,
@@ -405,8 +453,12 @@ export class TripsService {
         // verified instructions stay live (visibleBankDetails encodes
         // that rule); the verification stamp itself is not exposed.
         const { bankDetailsVerifiedAt: _verificationStamp, ...publicAgency } = result.agency;
+        // #546: resolve title/description into the request locale
+        // (fallback French -> any language; no locale = French columns,
+        // identical to the pre-#546 payload).
+        const localized = localizeTripPayload(result, locale);
         return {
-            ...result,
+            ...localized,
             // #417 (Council P0-11): the resolved cancellation scale
             // (agency bands, or the platform defaults when the trip has
             // none) plus the platform floor terms — this is the scale
@@ -592,7 +644,7 @@ export class TripsService {
         const agency = await this.db.agencyProfile.findUnique({ where: { id: agencyId } });
         if (!agency) throw new NotFoundException('Agency profile not found');
 
-        const { itinerary, status: requestedStatus, imageAlts, cancellationPolicy, ...tripData } = dto;
+        const { itinerary, status: requestedStatus, imageAlts, cancellationPolicy, translations, ...tripData } = dto;
 
         // Verify ownership
         const existing = await this.db.tripTemplate.findFirst({
@@ -607,10 +659,36 @@ export class TripsService {
 
         const status = requestedStatus ?? existing.status;
 
+        // #546: the language map after this write. A supplied map is
+        // merged over the stored one per language (the editor sends the
+        // full map, but a partial PATCH must not erase other
+        // languages); the French entry then mirrors the post-write
+        // canonical columns. Omitting the map leaves it untouched
+        // unless the French columns themselves change.
+        const nextTitle = dto.title ?? existing.title;
+        const nextDescription = dto.description ?? existing.description;
+        const mergedTranslations = translations
+            ? buildTripTranslations(
+                { ...normalizeTripTranslations(existing.translations), ...normalizeTripTranslations(translations) },
+                { title: nextTitle, description: nextDescription },
+            )
+            : undefined;
+        const effectiveTranslations = mergedTranslations
+            ?? (dto.title !== undefined || dto.description !== undefined
+                ? buildTripTranslations(existing.translations, { title: nextTitle, description: nextDescription })
+                : undefined);
+
         // #371: a status change INTO Active is a publish transition and
         // goes through the same identity + licence gate as activate.
         if (status === TripStatus.ACTIVE && existing.status !== TripStatus.ACTIVE) {
             await this.assertAgencyCanPublish(agencyId);
+            // #546: ... and the French content gate, evaluated on the
+            // post-write content (this PATCH may itself supply French).
+            this.assertFrenchPublishable({
+                title: nextTitle,
+                description: nextDescription,
+                translations: effectiveTranslations ?? existing.translations,
+            });
         }
 
         return this.db.tripTemplate.update({
@@ -621,6 +699,9 @@ export class TripsService {
                 // the field leaves the stored bands untouched.
                 cancellationPolicy: cancellationPolicy
                     ? (normalizeCancellationPolicyInput(cancellationPolicy) as unknown as Prisma.InputJsonValue)
+                    : undefined,
+                translations: effectiveTranslations
+                    ? (effectiveTranslations as unknown as Prisma.InputJsonValue)
                     : undefined,
                 imageAlts: this.normalizeImageAlts(imageAlts, dto.images ?? existing.images),
                 status,
@@ -696,6 +777,8 @@ export class TripsService {
             throw new ConflictException('Only deactivated trips can be re-activated');
         }
         await this.assertAgencyCanPublish(agencyId);
+        // #546: re-activation is a publish transition — French gate too.
+        this.assertFrenchPublishable(existing);
         return this.db.tripTemplate.update({
             where: { id },
             data: { status: TripStatus.ACTIVE },
@@ -730,6 +813,8 @@ export class TripsService {
             throw new ConflictException('Only archived trips can be restored');
         }
         await this.assertAgencyCanPublish(agencyId);
+        // #546: restore lands in ACTIVE — French gate too.
+        this.assertFrenchPublishable(existing);
         return this.db.tripTemplate.update({
             where: { id },
             data: { status: TripStatus.ACTIVE },
