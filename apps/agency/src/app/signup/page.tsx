@@ -184,7 +184,7 @@ export default function AgencySignupPage() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder={t('signup.passwordPlaceholder')}
                     className="ps-10 pe-12 h-12 bg-muted border-border focus:bg-background transition-all duration-200"
-                    {...register('password', { required: t('signup.passwordRequired'), minLength: { value: 6, message: t('signup.passwordMinLength') } })}
+                    {...register('password', { required: t('signup.passwordRequired'), minLength: { value: 8, message: t('signup.passwordMinLength') } })}
                   />
                   <button
                     type="button"
