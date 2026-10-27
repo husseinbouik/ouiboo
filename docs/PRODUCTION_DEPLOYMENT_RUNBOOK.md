@@ -1,3 +1,10 @@
+> ⚠️ **DO NOT USE — wrong architecture.** This document describes a
+> Docker/workers deployment that is **not** the live system. Ouiboo runs
+> on Vercel serverless (apps) + Neon + Upstash + Backblaze. The governing
+> release process is `docs/launch-ops/RELEASE_RUNBOOK.md`; monitoring
+> truth is `docs/OPERATIONS_MONITORING.md`. Kept for history only.
+> (Marked 2026-10-27, Council Session #2 item B17.)
+
 # Production Deployment Runbook
 
 Target: Docker-based API, worker, Traveler, Agency, and Admin services with managed Postgres, Redis, object storage, SMTP, logging, and monitoring.
