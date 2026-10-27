@@ -54,6 +54,30 @@ describe('traveler booking status helpers', () => {
     expect(getTravelerPaymentStatusMeta(BookingPaymentStatus.Refunded, RefundStatus.Processed).label).toBe('Refunded');
   });
 
+  // #412 (Council Session #2, B15): the badge derives from
+  // paymentStatus + refundStatus together — a processed refund on a
+  // booking that is not fully refunded reads as a partial refund,
+  // never as plain "Paid"/"Deposit paid".
+  it('derives the badge from payment and refund status together', () => {
+    expect(
+      getTravelerPaymentStatusMeta(BookingPaymentStatus.Paid, RefundStatus.Processed).label,
+    ).toBe('Partially refunded');
+    expect(
+      getTravelerPaymentStatusMeta(BookingPaymentStatus.PartiallyPaid, RefundStatus.Processed).label,
+    ).toBe('Partially refunded');
+    // An in-flight refund does not rewrite the paid badge.
+    expect(
+      getTravelerPaymentStatusMeta(BookingPaymentStatus.Paid, RefundStatus.Pending).label,
+    ).toBe('Paid');
+    expect(
+      getTravelerPaymentStatusMeta(BookingPaymentStatus.PartiallyPaid, RefundStatus.Pending).label,
+    ).toBe('Deposit paid');
+    // A full refund still wins outright.
+    expect(
+      getTravelerPaymentStatusMeta(BookingPaymentStatus.Refunded, RefundStatus.Pending).label,
+    ).toBe('Refund in Progress');
+  });
+
   it('only shows retry payment for retryable gateway bookings', () => {
     expect(
       canRetryTravelerPayment({

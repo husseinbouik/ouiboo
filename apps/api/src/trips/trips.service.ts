@@ -1,7 +1,7 @@
 import { Injectable, ForbiddenException, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripSessionDto } from './dto/create-trip.dto';
-import { BookingStatus, Prisma, SessionStatus, TripStatus } from '@ouiboo/database';
+import { BookingPaymentStatus, BookingStatus, Prisma, SessionStatus, TripStatus } from '@ouiboo/database';
 import { toMoneyDecimal } from '../common/money.util';
 import { canOrganise, getAgencyActivationBlock } from '../common/agency-licence.util';
 import { visibleBankDetails } from '../common/bank-details.util';
@@ -624,6 +624,14 @@ export class TripsService {
                         BookingStatus.CONFIRMED,
                     ],
                 },
+                // #412 (Council Session #2, B15): a fully refunded
+                // booking (paymentStatus REFUNDED, derived from ledger
+                // totals when its refund cases complete) is
+                // economically closed — the traveller's money went
+                // back in full — so it must not block archiving the
+                // trip. Partially refunded bookings keep paymentStatus
+                // PAID/PARTIALLY_PAID and still count as active.
+                paymentStatus: { not: BookingPaymentStatus.REFUNDED },
             },
         });
     }
