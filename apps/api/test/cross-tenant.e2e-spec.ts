@@ -568,6 +568,29 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
             await request(app.getHttpServer()).get(`/bookings/${BOOKING_PAID}`).set(auth(tokenAdmin)).expect(200);
         });
 
+        it('trip emergency contacts ride only on the gated booking read (#251/B23)', async () => {
+            await db.agencyProfile.update({
+                where: { id: AGENCY_A },
+                data: { emergencyContactName: 'CT On-Call Coordinator', emergencyContactPhone: '+212600000001' },
+            });
+
+            // Positive control: the traveller holding the booking sees
+            // the contacts on their booking read.
+            const own = await request(app.getHttpServer()).get(`/bookings/${BOOKING_PAID}`).set(auth(tokenT1)).expect(200);
+            expect(bodyText(own)).toContain('+212600000001');
+
+            // A traveller without a booking on the trip is denied the
+            // read outright, so the contacts never reach them.
+            const foreign = await request(app.getHttpServer()).get(`/bookings/${BOOKING_PAID}`).set(auth(tokenT2));
+            expect(foreign.status).toBe(403);
+            expect(bodyText(foreign)).not.toContain('+212600000001');
+
+            // The public trip page never carries the contacts.
+            const pub = await request(app.getHttpServer()).get(`/trips/${TEMPLATE_A}`).expect(200);
+            expect(bodyText(pub)).not.toContain('emergencyContact');
+            expect(bodyText(pub)).not.toContain('+212600000001');
+        });
+
         it('booking lists never leak across travellers or agencies', async () => {
             const mine = await request(app.getHttpServer()).get('/bookings/my-bookings').set(auth(tokenT2)).expect(200);
             expect(bodyText(mine)).not.toContain(BOOKING_PAID);
