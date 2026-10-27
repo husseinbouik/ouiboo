@@ -257,6 +257,53 @@ describe('ExternalPaymentsService', () => {
         });
     });
 
+    describe('getBookingLedgerTotals (#412)', () => {
+        it('sums captures and completed refunds for one booking from the ledger', async () => {
+            const tx = {
+                paymentStatusLedgerEntry: {
+                    aggregate: jest
+                        .fn()
+                        .mockResolvedValueOnce({ _sum: { amount: new Prisma.Decimal('1000.00') } })
+                        .mockResolvedValueOnce({ _sum: { amount: new Prisma.Decimal('200.00') } }),
+                },
+            };
+            const service = new ExternalPaymentsService({} as any);
+
+            const totals = await service.getBookingLedgerTotals(tx as any, 'booking-1');
+
+            expect(totals.verifiedTotal.toString()).toBe('1000');
+            expect(totals.refundedTotal.toString()).toBe('200');
+            const [verifiedQuery, refundedQuery] = tx.paymentStatusLedgerEntry.aggregate.mock.calls.map(
+                (c: any[]) => c[0],
+            );
+            expect(verifiedQuery.where.bookingId).toBe('booking-1');
+            expect(verifiedQuery.where.type.in).toEqual([
+                PaymentLedgerEntryType.PAYMENT_VERIFIED,
+                PaymentLedgerEntryType.PAYMENT_CAPTURED,
+                PaymentLedgerEntryType.DEPOSIT_CAPTURED,
+                PaymentLedgerEntryType.BALANCE_CAPTURED,
+            ]);
+            expect(refundedQuery.where).toEqual({
+                bookingId: 'booking-1',
+                type: PaymentLedgerEntryType.REFUND_COMPLETED,
+            });
+        });
+
+        it('returns zero totals when the booking has no ledger entries', async () => {
+            const tx = {
+                paymentStatusLedgerEntry: {
+                    aggregate: jest.fn(async () => ({ _sum: { amount: null } })),
+                },
+            };
+            const service = new ExternalPaymentsService({} as any);
+
+            const totals = await service.getBookingLedgerTotals(tx as any, 'booking-none');
+
+            expect(totals.verifiedTotal.toString()).toBe('0');
+            expect(totals.refundedTotal.toString()).toBe('0');
+        });
+    });
+
     describe('staged payments (#369)', () => {
         it('scopes the upsert to the DEPOSIT stage for a deposit capture', async () => {
             const tx = makeTx();

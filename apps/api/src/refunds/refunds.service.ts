@@ -937,6 +937,11 @@ export class RefundsService {
                     bookingId: refundCase.bookingId,
                     agencyId: refundCase.agencyId,
                     travelerId: refundCase.travelerId,
+                    // #412 (B15): the ledger entry is keyed per case so
+                    // the second case of a staged booking (balance)
+                    // appends its own entry instead of deduplicating
+                    // against the deposit case's.
+                    refundCaseId: refundCase.id,
                     amount,
                     currency: refundCase.currency,
                     method: payment.method,
@@ -953,7 +958,7 @@ export class RefundsService {
                 });
             }
 
-            await this.applyCompletionBookingEffectsInTransaction(tx, refundCase, amount);
+            await this.applyCompletionBookingEffectsInTransaction(tx, refundCase);
             return updated;
         });
         await this.refreshAgencyRestriction(completed.agencyId);
@@ -968,25 +973,44 @@ export class RefundsService {
      * REFUNDED). The ledger write itself is NOT here: complete()
      * records it from the qualifying evidence, the PSP paths record it
      * from the provider event — each completion writes it exactly once.
+     *
+     * #412 (Council Session #2, B15): the booking's money fields derive
+     * from the append-only LEDGER TOTALS (verified minus refunded),
+     * never from per-stage ExternalPayment row counts:
+     * - refundAmount is the accumulated refunded total across ALL of
+     *   the booking's cases. Staged bookings are refunded by the
+     *   TWO-CASE PROCEDURE — one case per stage payment (deposit case
+     *   first, balance case second; see docs/launch-ops/
+     *   ADMIN_FINANCE_PLAYBOOK.md §3) — and the second completion used
+     *   to overwrite the first case's amount with its own.
+     * - paymentStatus becomes REFUNDED exactly when the refunded total
+     *   covers everything that was verified (a fully refunded booking
+     *   previously stayed PAID, claimed "Paid in full" on the traveller
+     *   card, stayed billable and blocked trip archiving). A partial
+     *   refund leaves paymentStatus untouched: the traveller surfaces
+     *   derive the "Partially refunded" badge from paymentStatus +
+     *   refundStatus together.
+     * - On a full refund the plan also closes: a FULLY_PAID plan moves
+     *   to REFUNDED so plan-driven copy ("Paid in full — deposit and
+     *   balance confirmed") stops rendering for money that went back.
      */
     private async applyCompletionBookingEffectsInTransaction(
         tx: Tx,
         refundCase: { bookingId: string },
-        amount: Prisma.Decimal,
     ) {
-        const remainingVerified = await tx.externalPayment.count({
-            where: {
-                bookingId: refundCase.bookingId,
-                status: ExternalPaymentStatus.VERIFIED,
-            },
-        });
+        const totals = await this.externalPaymentsService.getBookingLedgerTotals(
+            tx,
+            refundCase.bookingId,
+        );
+        const fullyRefunded = totals.verifiedTotal.greaterThan(0)
+            && totals.refundedTotal.greaterThanOrEqualTo(totals.verifiedTotal);
         await tx.booking.update({
             where: { id: refundCase.bookingId },
             data: {
-                refundAmount: amount,
+                refundAmount: totals.refundedTotal,
                 refundStatus: RefundStatus.PROCESSED,
                 refundProcessedAt: new Date(),
-                ...(remainingVerified === 0
+                ...(fullyRefunded
                     ? { paymentStatus: BookingPaymentStatus.REFUNDED }
                     : {}),
             },
@@ -998,6 +1022,15 @@ export class RefundsService {
             },
             data: { status: BookingPaymentPlanStatus.REFUNDED },
         });
+        if (fullyRefunded) {
+            await tx.bookingPaymentPlan.updateMany({
+                where: {
+                    bookingId: refundCase.bookingId,
+                    status: BookingPaymentPlanStatus.FULLY_PAID,
+                },
+                data: { status: BookingPaymentPlanStatus.REFUNDED },
+            });
+        }
     }
 
     /**
@@ -1172,7 +1205,6 @@ export class RefundsService {
             RefundEvidenceTier.PSP_CONFIRMATION,
             evidenceRows,
         );
-        const amount = toMoneyDecimal(current.approvedAmount ?? current.requestedAmount);
         const updated = await this.transitionInTransaction(
             tx,
             current,
@@ -1186,7 +1218,7 @@ export class RefundsService {
                 ...providerPatch,
             },
         );
-        await this.applyCompletionBookingEffectsInTransaction(tx, updated, amount);
+        await this.applyCompletionBookingEffectsInTransaction(tx, updated);
         return { matched: true, completed: true, agencyId: updated.agencyId };
     }
 

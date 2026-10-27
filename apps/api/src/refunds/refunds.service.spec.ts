@@ -163,7 +163,12 @@ function makeFakeDb() {
             updateMany: jest.fn(async ({ where, data }: any) => {
                 let count = 0;
                 for (const plan of plans) {
-                    if (plan.bookingId === where.bookingId && plan.status === where.status) {
+                    const statusMatches = typeof where.status === 'string'
+                        ? plan.status === where.status
+                        : Array.isArray(where.status?.in)
+                            ? where.status.in.includes(plan.status)
+                            : true;
+                    if (plan.bookingId === where.bookingId && statusMatches) {
                         plan.status = data.status;
                         count += 1;
                     }
@@ -194,6 +199,12 @@ function makeFakeDb() {
 function makeService(db: any) {
     const external = {
         recordRefundInTransaction: jest.fn(async (_tx: any, _input: any) => ({})),
+        // #412 (B15): completion effects derive the booking's money
+        // fields from ledger totals; tests stub the totals per scenario.
+        getBookingLedgerTotals: jest.fn(async () => ({
+            verifiedTotal: D('0'),
+            refundedTotal: D('0'),
+        })),
     };
     const email = {
         sendEmail: jest.fn(async () => undefined),
@@ -516,6 +527,12 @@ describe('RefundsService (#370)', () => {
             payment.status = 'REFUNDED';
             return {};
         });
+        // #412 (B15): the booking's money fields now derive from the
+        // ledger totals — the 200 verified is fully refunded.
+        external.getBookingLedgerTotals.mockResolvedValue({
+            verifiedTotal: D('200.00'),
+            refundedTotal: D('200.00'),
+        });
 
         const updated = await service.complete({ id: 'agency-user-1' }, 'AGENCY', 'agency-1', 'case-1', {});
 
@@ -524,10 +541,78 @@ describe('RefundsService (#370)', () => {
         expect(updated.completionTier).toBe('BANK_REFERENCE');
         expect(external.recordRefundInTransaction).toHaveBeenCalledTimes(1);
         expect(external.recordRefundInTransaction.mock.calls[0][1].source).toBe('BANK_CONFIRMATION');
+        // The ledger write is keyed per refund case (#412) so a second
+        // case on the same booking can never be deduplicated away.
+        expect(external.recordRefundInTransaction.mock.calls[0][1].refundCaseId).toBe('case-1');
         const booking = db._bookings.get('booking-1');
         expect(booking.refundStatus).toBe('PROCESSED');
+        expect(booking.refundAmount?.toString()).toBe('200');
         expect(booking.paymentStatus).toBe('REFUNDED');
         expect(db._plans[0].status).toBe('REFUNDED');
+    });
+
+    it('staged two-payment refund: refundAmount accumulates across the deposit and balance cases (#412)', async () => {
+        const db = makeFakeDb();
+        seedAgency(db);
+        // Session #1 fixture, at last with BOTH stage payments: a
+        // staged booking paid in two parts — deposit 200 + balance 800,
+        // each a VERIFIED ExternalPayment row, plan FULLY_PAID.
+        seedDepositPayment(db, { id: 'payment-deposit', amount: D('200.00'), stage: 'DEPOSIT' });
+        seedDepositPayment(db, {
+            id: 'payment-balance', amount: D('800.00'), stage: 'BALANCE',
+            externalReference: 'proof-2',
+        });
+        db._bookings.set('booking-1', {
+            id: 'booking-1', refundStatus: null, paymentStatus: 'PAID', refundAmount: null,
+        });
+        db._plans.push({ bookingId: 'booking-1', status: 'FULLY_PAID' });
+        const { service, external } = makeService(db);
+        const seedCase = (id: string, paymentId: string, amount: string) => {
+            db._cases.set(id, {
+                id, bookingId: 'booking-1', travelerId: 'traveler-1', agencyId: 'agency-1',
+                originalPaymentId: paymentId, requestedAmount: D(amount), approvedAmount: D(amount),
+                currency: 'MAD', status: 'REFUND_INITIATED', initiatedAt: new Date(),
+                providerRefundId: null,
+            });
+            db._evidence.push({
+                id: `evidence-${id}`, refundCaseId: id, tier: 'BANK_REFERENCE', source: 'AGENCY',
+                reference: `VIR-${id}`, proofUrl: 'private/agency-user-1/bank-confirmation.pdf',
+                amount: D(amount), note: null, recordedBy: 'agency-user-1', createdAt: new Date(),
+            });
+        };
+
+        // Case 1 refunds the DEPOSIT stage: 200 of the 1000 verified is
+        // back. The booking must NOT read refunded, and refundAmount is
+        // exactly the first case's amount.
+        seedCase('case-deposit', 'payment-deposit', '200.00');
+        external.getBookingLedgerTotals.mockResolvedValue({
+            verifiedTotal: D('1000.00'),
+            refundedTotal: D('200.00'),
+        });
+        await service.complete({ id: 'agency-user-1' }, 'AGENCY', 'agency-1', 'case-deposit', {});
+        let booking = db._bookings.get('booking-1');
+        expect(booking.refundStatus).toBe('PROCESSED');
+        expect(booking.refundAmount?.toString()).toBe('200');
+        expect(booking.paymentStatus).toBe('PAID');
+        expect(db._plans[0].status).toBe('FULLY_PAID');
+
+        // Case 2 refunds the BALANCE stage: the accumulated total must
+        // reach 1000 (the old code overwrote refundAmount with the
+        // second case's 800) and only NOW does the booking read
+        // REFUNDED, with the plan closing as REFUNDED too.
+        seedCase('case-balance', 'payment-balance', '800.00');
+        external.getBookingLedgerTotals.mockResolvedValue({
+            verifiedTotal: D('1000.00'),
+            refundedTotal: D('1000.00'),
+        });
+        await service.complete({ id: 'agency-user-1' }, 'AGENCY', 'agency-1', 'case-balance', {});
+        booking = db._bookings.get('booking-1');
+        expect(booking.refundAmount?.toString()).toBe('1000');
+        expect(booking.paymentStatus).toBe('REFUNDED');
+        expect(db._plans[0].status).toBe('REFUNDED');
+        // Each case keyed its own ledger entry.
+        const caseIds = external.recordRefundInTransaction.mock.calls.map((c: any[]) => c[1].refundCaseId);
+        expect(caseIds).toEqual(['case-deposit', 'case-balance']);
     });
 
     it('a failed refund does not disappear: it can be initiated again', async () => {

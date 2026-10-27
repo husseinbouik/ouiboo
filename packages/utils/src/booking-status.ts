@@ -72,6 +72,22 @@ export const getTravelerPaymentStatusMeta = (
   paymentStatus: BookingPaymentStatusType,
   refundStatus?: RefundStatusType,
 ) => {
+  // #412 (Council Session #2, B15): the badge is derived from
+  // paymentStatus AND refundStatus together. A processed refund on a
+  // booking that is not fully refunded is a partial refund — it must
+  // never present as plain "Paid"/"Deposit paid" (a fully refunded
+  // booking carries paymentStatus REFUNDED and is handled below).
+  if (
+    refundStatus === RefundStatus.Processed &&
+    (paymentStatus === BookingPaymentStatus.Paid ||
+      paymentStatus === BookingPaymentStatus.PartiallyPaid)
+  ) {
+    return {
+      label: 'Partially refunded',
+      className: 'bg-ocean-500/10 text-ocean-600 dark:text-ocean-300 border-blue-500/20',
+    };
+  }
+
   // #369: staged booking — deposit verified, balance still outstanding.
   if (paymentStatus === BookingPaymentStatus.PartiallyPaid) {
     return {
