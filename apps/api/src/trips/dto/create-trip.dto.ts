@@ -63,6 +63,32 @@ export class CancellationPolicyDto {
  * incomplete in any language); completeness is a publish-time rule —
  * French must be complete before a trip can go ACTIVE (TripsService).
  */
+/** #584 (phase 2): one itinerary day's text inside a language entry. */
+export class TripTranslationDayDto {
+    @ApiProperty({ required: false, example: 1 })
+    @IsOptional()
+    @IsInt()
+    dayNumber?: number;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsString()
+    @MaxLength(300)
+    title?: string;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsString()
+    @MaxLength(10000)
+    description?: string;
+
+    @ApiProperty({ required: false, type: [String] })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    activities?: string[];
+}
+
 export class TripTranslationEntryDto {
     @ApiProperty({ example: 'Aventure dans le désert de Marrakech', required: false })
     @IsOptional()
@@ -75,6 +101,32 @@ export class TripTranslationEntryDto {
     @IsString()
     @MaxLength(10000)
     description?: string;
+
+    // #584 (phase 2): section content in this language — itinerary days
+    // (aligned to the canonical days by dayNumber; positional entries
+    // are stamped at the write boundary) and whole-list translations.
+    @ApiProperty({ required: false, type: [TripTranslationDayDto] })
+    @IsOptional()
+    @IsArray()
+    itinerary?: TripTranslationDayDto[];
+
+    @ApiProperty({ required: false, type: [String] })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    inclusions?: string[];
+
+    @ApiProperty({ required: false, type: [String] })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    exclusions?: string[];
+
+    @ApiProperty({ required: false, type: [String] })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    checklist?: string[];
 }
 
 export class CreateTripTemplateDto {

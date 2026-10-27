@@ -5,7 +5,8 @@
   "types": "./index.ts",
   "exports": {
     ".": "./index.ts",
-    "./server": "./server.ts"
+    "./server": "./server.ts",
+    "./constants": "./constants.ts"
   },
   "dependencies": {
     "i18next": "*",

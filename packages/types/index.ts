@@ -283,9 +283,24 @@ export interface CancellationScale {
 }
 
 /** #546: one language's trip title + description in the translations map. */
+/** #584: one itinerary day inside a language entry — text keyed to the canonical day by dayNumber. */
+export interface TripTranslationDay {
+    dayNumber?: number;
+    title?: string;
+    description?: string;
+    /** Free-text activity tags — part of the day's language-keyed content (not enum codes). */
+    activities?: string[];
+}
+
 export interface TripTranslationEntry {
     title?: string;
     description?: string;
+    /** #584 (phase 2): itinerary days in this language, aligned to the canonical days by dayNumber. */
+    itinerary?: TripTranslationDay[];
+    /** #584 (phase 2): whole-list translations — a non-empty list replaces the canonical one wholesale. */
+    inclusions?: string[];
+    exclusions?: string[];
+    checklist?: string[];
 }
 
 /** #546: trip title + description keyed by ISO language code (fr canonical). */

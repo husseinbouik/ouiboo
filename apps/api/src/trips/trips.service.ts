@@ -13,9 +13,11 @@ import {
 } from '../cancellation/cancellation.util';
 import {
     buildTripTranslations,
+    frenchSectionsMissing,
     hasCompleteFrenchText,
     localizeTripPayload,
     normalizeTripTranslations,
+    type TripCanonicalSections,
 } from './trip-translations.util';
 
 @Injectable()
@@ -96,10 +98,19 @@ export class TripsService {
         title?: string | null;
         description?: string | null;
         translations?: unknown;
-    }) {
+    } & TripCanonicalSections) {
         if (!hasCompleteFrenchText(trip)) {
             throw new BadRequestException(
                 'A French title and description are required to publish a trip',
+            );
+        }
+        // #584 (phase 2): the same French-required rule covers the
+        // sections — a day or list that exists in any language must
+        // exist in French before the trip can publish.
+        const missingSections = frenchSectionsMissing(trip);
+        if (missingSections.length > 0) {
+            throw new BadRequestException(
+                `French section content is required to publish a trip (missing: ${missingSections.join(', ')})`,
             );
         }
     }
@@ -140,6 +151,12 @@ export class TripsService {
             translations: buildTripTranslations(translations, {
                 title: dto.title,
                 description: dto.description,
+                // #584: canonical sections mirror into the map's `fr`
+                // entry; other languages' days align by dayNumber.
+                itinerary,
+                inclusions: dto.inclusions,
+                exclusions: dto.exclusions,
+                checklist: dto.checklist,
             }) as unknown as Prisma.InputJsonValue,
             imageAlts: this.normalizeImageAlts(imageAlts, dto.images),
             agencyId: agencyId,
@@ -702,15 +719,24 @@ export class TripsService {
         // unless the French columns themselves change.
         const nextTitle = dto.title ?? existing.title;
         const nextDescription = dto.description ?? existing.description;
+        // #584: canonical sections for the map's French mirror — the
+        // post-write lists (dto wins, else the stored columns). The
+        // itinerary rows only mirror when this write carries them.
+        const frenchSections: TripCanonicalSections = {
+            itinerary,
+            inclusions: dto.inclusions ?? existing.inclusions,
+            exclusions: dto.exclusions ?? existing.exclusions,
+            checklist: dto.checklist ?? existing.checklist,
+        };
         const mergedTranslations = translations
             ? buildTripTranslations(
                 { ...normalizeTripTranslations(existing.translations), ...normalizeTripTranslations(translations) },
-                { title: nextTitle, description: nextDescription },
+                { title: nextTitle, description: nextDescription, ...frenchSections },
             )
             : undefined;
         const effectiveTranslations = mergedTranslations
             ?? (dto.title !== undefined || dto.description !== undefined
-                ? buildTripTranslations(existing.translations, { title: nextTitle, description: nextDescription })
+                ? buildTripTranslations(existing.translations, { title: nextTitle, description: nextDescription, ...frenchSections })
                 : undefined);
 
         // #371: a status change INTO Active is a publish transition and
@@ -719,10 +745,21 @@ export class TripsService {
             await this.assertAgencyCanPublish(agencyId);
             // #546: ... and the French content gate, evaluated on the
             // post-write content (this PATCH may itself supply French).
+            // #584: sections gate on the post-write canonical sections
+            // (itinerary rows are fetched when the PATCH doesn't carry
+            // a replacement itinerary).
+            const gateItinerary = itinerary ?? await this.db.itineraryDay.findMany({
+                where: { templateId: id },
+                orderBy: { dayNumber: 'asc' },
+            });
             this.assertFrenchPublishable({
                 title: nextTitle,
                 description: nextDescription,
                 translations: effectiveTranslations ?? existing.translations,
+                itinerary: gateItinerary,
+                inclusions: dto.inclusions ?? existing.inclusions,
+                exclusions: dto.exclusions ?? existing.exclusions,
+                checklist: dto.checklist ?? existing.checklist,
             });
         }
 
@@ -813,7 +850,10 @@ export class TripsService {
         }
         await this.assertAgencyCanPublish(agencyId);
         // #546: re-activation is a publish transition — French gate too.
-        this.assertFrenchPublishable(existing);
+        // #584: the gate also covers sections; the stored record does
+        // not carry the itinerary relation, so fetch the days.
+        const days = await this.db.itineraryDay.findMany({ where: { templateId: id } });
+        this.assertFrenchPublishable({ ...existing, itinerary: days });
         return this.db.tripTemplate.update({
             where: { id },
             data: { status: TripStatus.ACTIVE },
@@ -849,7 +889,9 @@ export class TripsService {
         }
         await this.assertAgencyCanPublish(agencyId);
         // #546: restore lands in ACTIVE — French gate too.
-        this.assertFrenchPublishable(existing);
+        // #584: sections included, days fetched as in activateTemplate.
+        const days = await this.db.itineraryDay.findMany({ where: { templateId: id } });
+        this.assertFrenchPublishable({ ...existing, itinerary: days });
         return this.db.tripTemplate.update({
             where: { id },
             data: { status: TripStatus.ACTIVE },

@@ -340,9 +340,9 @@
       "deleting": "Deleting...",
       "delete": "Delete",
       "durationDays_one": "{{count}} Day",
-    "durationDays_other": "{{count}} Days",
-    "durationNights_one": "{{count}} Night",
-    "durationNights_other": "{{count}} Nights",
+      "durationDays_other": "{{count}} Days",
+      "durationNights_one": "{{count}} Night",
+      "durationNights_other": "{{count}} Nights",
       "verificationRequired": "Verification Required",
       "checkVerificationStatus": "Check Verification Status",
       "sessionsTitle": "Trip Sessions",
@@ -446,7 +446,8 @@
       "cancellationPercentLabel": "Refund %",
       "cancellationRemoveBand": "Remove band",
       "cancellationBandAtLeast": "{{days}} or more days before: {{percent}}% refund",
-      "cancellationBandLessThan": "Less than {{days}} days before: {{percent}}% refund"
+      "cancellationBandLessThan": "Less than {{days}} days before: {{percent}}% refund",
+      "structureNote": "Days are added and ordered in French, the canonical structure — this tab only translates each day's text."
     }
   },
   "payments": {

@@ -973,7 +973,13 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             .expect(201);
 
         expect(res.body.translations).toEqual({
-            fr: { title: 'Aventure dans le désert', description: 'Une aventure complète dans le désert marocain' },
+            // #584: the fr entry also mirrors the canonical sections
+            // (here: inclusions) alongside title + description.
+            fr: {
+                title: 'Aventure dans le désert',
+                description: 'Une aventure complète dans le désert marocain',
+                inclusions: ['Transport'],
+            },
             ar: { title: 'مغامرة في الصحراء', description: 'مغامرة كاملة في الصحراء المغربية' },
             en: { title: 'Desert Adventure', description: 'A complete adventure in the Moroccan desert' },
         });
