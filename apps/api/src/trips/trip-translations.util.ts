@@ -40,6 +40,21 @@ function cleanText(value: unknown): string | undefined {
 }
 
 /**
+ * Council Session #3 P0-6 (#554): the staging seed used to append its
+ * bookkeeping marker (`[staging-seed-v1]`) to the user-visible
+ * description field itself, and it rendered verbatim on trip pages.
+ * The seed no longer writes it (identity is the demo agency + title),
+ * but existing rows still carry it — strip any `[staging-seed-*]`
+ * marker at this boundary so it can never reach a public payload,
+ * whichever language version it sits in.
+ */
+const SEED_MARKER_PATTERN = /\s*\[staging-seed-[^\]]*\]\s*/g;
+
+export function stripSeedMarker(value: string): string {
+    return value.replace(SEED_MARKER_PATTERN, ' ').trim();
+}
+
+/**
  * Normalize a raw locale value coming from a query param, header, or a
  * map key: lowercases and drops any region suffix ('fr-MA' -> 'fr').
  * Returns undefined for anything that is not a plausible language code.
@@ -143,7 +158,7 @@ export function resolveTripText(
     const pick = (field: 'title' | 'description'): string => {
         for (const entry of chain) {
             const value = entry?.[field];
-            if (value && value.trim() !== '') return value;
+            if (value && value.trim() !== '') return stripSeedMarker(value);
         }
         return '';
     };
