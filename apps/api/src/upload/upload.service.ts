@@ -124,6 +124,72 @@ export class UploadService {
         }
     }
 
+    /**
+     * Resolves a stored file reference back to its storage key (#251/B23).
+     *
+     * File references sit in the database in mixed shapes: raw keys
+     * (`private/{userId}/…`, `trips/{agencyId}/…`) and public URLs minted
+     * by the storage providers (`{S3_PUBLIC_URL}/{key}`,
+     * `https://{bucket}.s3.{region}.amazonaws.com/{key}`,
+     * `{origin}/api/v1/media/{key}`). API download URLs
+     * (`{origin}/api/v1/bookings/{id}/payment-proof/file`) carry no key
+     * and resolve to null, as do external URLs. Every platform key starts
+     * with one of the two root folders, so the key is recovered from the
+     * first matching path segment and re-validated as a safe key.
+     */
+    resolveStorageKey(reference: string | null | undefined): string | null {
+        if (!reference) {
+            return null;
+        }
+        const withoutQuery = reference.split(/[?#]/)[0];
+        let decoded = withoutQuery;
+        try {
+            decoded = decodeURIComponent(withoutQuery);
+        } catch {
+            // Keep the raw value; the safe-key check below rejects garbage.
+        }
+        const normalized = decoded.replace(/\\/g, '/');
+        for (const root of [`${PRIVATE_FILE_PREFIX}/`, 'trips/']) {
+            const nestedAt = normalized.indexOf(`/${root}`);
+            const candidate = nestedAt >= 0
+                ? normalized.slice(nestedAt + 1)
+                : normalized.startsWith(root)
+                    ? normalized
+                    : null;
+            if (candidate) {
+                try {
+                    return this.assertSafeKey(candidate);
+                } catch {
+                    return null;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Deletes a stored object by key. Both providers treat a missing key
+     * as a no-op, so deletion is idempotent.
+     */
+    async deleteFile(key: string): Promise<void> {
+        const safeKey = this.assertSafeKey(key);
+        const provider = await this.getStorageProvider();
+        await provider.delete(safeKey);
+    }
+
+    /**
+     * Deletes the stored object a database file reference points at.
+     * Returns true when a platform object deletion was requested.
+     */
+    async deleteFileByReference(reference: string | null | undefined): Promise<boolean> {
+        const key = this.resolveStorageKey(reference);
+        if (!key) {
+            return false;
+        }
+        await this.deleteFile(key);
+        return true;
+    }
+
     private isPrivateKey(key: string): boolean {
         return key === PRIVATE_FILE_PREFIX || key.startsWith(`${PRIVATE_FILE_PREFIX}/`);
     }
