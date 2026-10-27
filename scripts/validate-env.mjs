@@ -49,6 +49,8 @@ const envSchema = z.object({
   ENABLE_SWAGGER: z.enum(['true', 'false']).optional(),
   LOG_EMAIL_BODIES: z.enum(['true', 'false']).optional(),
   ENABLE_GATEWAY_PAYMENTS: z.enum(['true', 'false']).default('false'),
+  // Council B24(f): beta catalogue is MAD-only unless explicitly disabled.
+  MAD_ONLY_CATALOG: z.enum(['true', 'false']).default('true'),
   ADMIN_SEED: z.enum(['true', 'false']).default('false'),
   ADMIN_EMAIL: optionalValue(z.string().email()),
   ADMIN_USERNAME: optionalValue(z.string().min(1)),

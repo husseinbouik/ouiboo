@@ -5,8 +5,8 @@ import { BookingPaymentStatus, BookingStatus, Prisma, SessionStatus, TripStatus 
 import { toMoneyDecimal } from '../common/money.util';
 import { canOrganise, getAgencyActivationBlock } from '../common/agency-licence.util';
 import { visibleBankDetails } from '../common/bank-details.util';
+import { BETA_CATALOG_CURRENCY, isCatalogCurrencyAllowed, isMadOnlyCatalogEnabled } from '../common/catalog-currency.util';
 import { resolveStagedSessionConfig } from '../staged-payments/staged-payments.util';
-import { recordSearchEvent } from '../analytics/search-events';
 import {
     buildCancellationScaleSnapshot,
     normalizeCancellationPolicyInput,
@@ -167,6 +167,18 @@ export class TripsService {
             if (featured) where.featured = true;
             if (agencyId) where.agencyId = agencyId;
             if (currency) where.currency = currency;
+            // B24(f) / #498: while the MAD-only beta gate is on, the
+            // public catalogue never lists a non-MAD trip. An explicit
+            // non-MAD currency filter intersects to an empty page.
+            if (isMadOnlyCatalogEnabled()) {
+                if (where.currency && where.currency !== BETA_CATALOG_CURRENCY) {
+                    return {
+                        data: [],
+                        pagination: { total: 0, page: safePage, limit: safeLimit, totalPages: 0 },
+                    };
+                }
+                where.currency = BETA_CATALOG_CURRENCY;
+            }
             // Normalize category to uppercase enum value (#119: ?category=adventure -> ADVENTURE)
             if (category) {
                 const normalized = category.toUpperCase();
@@ -285,30 +297,6 @@ export class TripsService {
                 this.db.tripTemplate.count({ where }),
             ]);
 
-            // #432 / B21 (Council Session #2): this method serves the
-            // public catalog search (GET /trips) — record one
-            // identifier-free search event per call so the beta's
-            // zero-result rate is measurable. Best-effort by design:
-            // recordSearchEvent never throws.
-            await recordSearchEvent(this.db, {
-                query: q,
-                filters: {
-                    featured,
-                    category: category ? category.toUpperCase() : undefined,
-                    agencyId,
-                    currency,
-                    priceMin,
-                    priceMax,
-                    durationMin,
-                    durationMax,
-                    ratingMin,
-                    available,
-                    startDateFrom,
-                    startDateTo,
-                },
-                resultCount: total,
-            });
-
             return {
                 data: templates,
                 pagination: {
@@ -330,6 +318,9 @@ export class TripsService {
                 id,
                 status: TripStatus.ACTIVE,
                 agency: { verificationStatus: 'VERIFIED' },
+                // B24(f) / #498: a non-MAD trip is not publicly visible
+                // while the beta gate is on — same NotFound as absent.
+                ...(isMadOnlyCatalogEnabled() ? { currency: BETA_CATALOG_CURRENCY } : {}),
             },
             select: {
                 id: true,
@@ -570,9 +561,14 @@ export class TripsService {
                 status: TripStatus.ACTIVE,
                 agency: { verificationStatus: 'VERIFIED' },
             },
-            select: { id: true },
+            select: { id: true, currency: true },
         });
         if (!template) throw new NotFoundException('Trip template not found');
+        // B24(f) / #498: sessions of a non-MAD trip stay hidden while
+        // the beta gate is on (indistinguishable from an absent trip).
+        if (!isCatalogCurrencyAllowed(template.currency)) {
+            throw new NotFoundException('Trip template not found');
+        }
 
         return this.db.tripSession.findMany({
             where: {

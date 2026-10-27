@@ -13,6 +13,7 @@ import { decimalEqualsMoney, multiplyMoney, toMoneyDecimal, toMoneyString } from
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
 import { isInsuranceVerified, isLicenceVerified } from '../common/agency-licence.util';
+import { isCatalogCurrencyAllowed } from '../common/catalog-currency.util';
 import {
     buildCancellationScaleSnapshot,
 } from '../cancellation/cancellation.util';
@@ -227,6 +228,15 @@ export class BookingsService {
         // facing wording stays generic, like the identity check above.
         if (!isLicenceVerified(agency, now) || !isInsuranceVerified(agency, now)) {
             throw new BadRequestException('This agency is not currently accepting bookings');
+        }
+        // B24(f) / #498: beta catalogue admission — while the MAD-only
+        // gate is on, a non-MAD trip cannot be booked even by a direct
+        // API call (the public catalogue also hides it; this service
+        // check is the enforcement point). Session and template
+        // currencies are kept equal by the #498 invariant, so either
+        // field carries the answer.
+        if (!isCatalogCurrencyAllowed(session.currency ?? session.template.currency)) {
+            throw new BadRequestException('This trip is not available for booking yet');
         }
         if (dto.paymentMethod === PaymentMethodEnum.WALLET) {
             throw new BadRequestException('This payment method is not available');
