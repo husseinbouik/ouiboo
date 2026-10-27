@@ -264,5 +264,8 @@
     "privacyNotice": "avis de confidentialité",
     "continueWithoutAnalytics": "Continuer sans analytics",
     "allowAnalytics": "Autoriser les analytics"
+  },
+  "beta": {
+    "explainer": "Bêta fermée — voyageurs invités uniquement ; vous payez toujours l'agence directement."
   }
 }

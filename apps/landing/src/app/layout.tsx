@@ -5,6 +5,7 @@ import { Manrope, Space_Grotesk } from 'next/font/google';
 import Script from 'next/script';
 import "./globals.css";
 import { getInitialLanguage, languageInitScript } from '@ouiboo/i18n/server';
+import { buildLandingMetadata } from "../lib/metadata";
 
 import Providers from "../components/Providers";
 import LoadingSpinner from "../components/LoadingSpinner"; // Import the spinner
@@ -23,31 +24,14 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_LANDING_URL || 'http://localhost:3004'),
-  applicationName: "Ouiboo",
-  title: {
-    default: "Ouiboo — Travel experiences, made personal",
-    template: "%s | Ouiboo",
-  },
-  description: "Discover memorable trips from local travel experts and manage every booking with confidence.",
-  keywords: ["Ouiboo", "travel marketplace", "travel experiences", "travel agencies", "local travel experts"],
-  alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    siteName: "Ouiboo",
-    title: "Ouiboo — Travel experiences, made personal",
-    description: "Discover memorable trips from local travel experts and manage every booking with confidence.",
-    url: "/",
-    locale: "en_US",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Ouiboo — Travel experiences, made personal",
-    description: "Discover memorable trips from local travel experts and manage every booking with confidence.",
-  },
-robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  // #563/#564: locale-driven metadata (title/description/og:locale per
+  // en/fr/ar, canonical tagline shared with email) on the resolved
+  // public origin — never the old hard-coded English copy on a
+  // localhost metadataBase.
+  const locale = await getInitialLanguage();
+  return buildLandingMetadata(locale);
+}
 
 export default async function RootLayout({
   children
@@ -57,7 +41,7 @@ export default async function RootLayout({
   const currentLocale = await getInitialLanguage();
 
   return (
-    <html lang={currentLocale} dir={currentLocale === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning={true}>
+    <html lang={currentLocale} dir={currentLocale === 'ar' ? 'rtl' : 'ltr'} data-emphasis="landing" suppressHydrationWarning={true}>
       <body className={`${manrope.variable} ${spaceGrotesk.variable} antialiased`} suppressHydrationWarning>
         <Script
           id="language-init"
