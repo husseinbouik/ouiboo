@@ -362,3 +362,85 @@ describe('RefundsTab audit queue (#416C)', () => {
     expect(onAuditQueueChange).toHaveBeenCalledWith(false);
   });
 });
+
+describe('RefundsTab admin review (B8)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    postMock.mockResolvedValue({});
+  });
+
+  /** The modal confirm reuses the action label; it renders last. */
+  function reviewConfirm() {
+    const all = screen.getAllByRole('button', { name: 'dashboard.refunds.actions.adminReview' });
+    return all[all.length - 1];
+  }
+
+  function openReview() {
+    fireEvent.click(screen.getByRole('button', { name: 'dashboard.refunds.actions.adminReview' }));
+  }
+
+  it('offers the admin-review action on an initiated case', () => {
+    renderTab([initiatedCase]);
+    expect(screen.getByRole('button', { name: 'dashboard.refunds.actions.adminReview' })).not.toBeNull();
+  });
+
+  it('does not offer the admin-review action on a requested case', () => {
+    renderTab([requestedCase]);
+    expect(screen.queryByRole('button', { name: 'dashboard.refunds.actions.adminReview' })).toBeNull();
+  });
+
+  it('blocks a reason-only review: a document or an external reference is required', async () => {
+    renderTab([initiatedCase]);
+    openReview();
+    expect(screen.getByText('dashboard.refunds.adminReview.title')).not.toBeNull();
+    typeReason('Verified against the bank statement');
+    fireEvent.click(reviewConfirm());
+    expect(await screen.findByText('dashboard.refunds.adminReview.evidenceRequired')).not.toBeNull();
+    expect(postMock).not.toHaveBeenCalled();
+  });
+
+  it('posts the review with reason and reference to the admin-review endpoint', async () => {
+    renderTab([initiatedCase]);
+    openReview();
+    fireEvent.change(screen.getByLabelText('dashboard.refunds.adminReview.referenceLabel'), {
+      target: { value: 'BANK-STMT-2026-1187' },
+    });
+    typeReason('Verified against the bank statement');
+    fireEvent.click(reviewConfirm());
+    await waitFor(() => {
+      expect(postMock).toHaveBeenCalledWith('/admin/refunds/case-3/admin-review', {
+        reason: 'Verified against the bank statement',
+        reference: 'BANK-STMT-2026-1187',
+      });
+    });
+  });
+
+  it('posts the review with a document key when no reference is given', async () => {
+    renderTab([initiatedCase]);
+    openReview();
+    fireEvent.change(screen.getByLabelText('dashboard.refunds.adminReview.documentLabel'), {
+      target: { value: 'private/admin-1/bank-statement.pdf' },
+    });
+    typeReason('Statement on file shows the transfer');
+    fireEvent.click(reviewConfirm());
+    await waitFor(() => {
+      expect(postMock).toHaveBeenCalledWith('/admin/refunds/case-3/admin-review', {
+        reason: 'Statement on file shows the transfer',
+        proofUrl: 'private/admin-1/bank-statement.pdf',
+      });
+    });
+  });
+
+  it('shows the API error inside the admin-review modal', async () => {
+    postMock.mockRejectedValue({ response: { data: { message: 'Review could not be recorded' } } });
+    renderTab([initiatedCase]);
+    openReview();
+    fireEvent.change(screen.getByLabelText('dashboard.refunds.adminReview.referenceLabel'), {
+      target: { value: 'BANK-STMT-2026-1187' },
+    });
+    typeReason('Verified against the bank statement');
+    fireEvent.click(reviewConfirm());
+    expect(await screen.findByText('Review could not be recorded')).not.toBeNull();
+    expect(screen.getByText('dashboard.refunds.adminReview.title')).not.toBeNull();
+  });
+});

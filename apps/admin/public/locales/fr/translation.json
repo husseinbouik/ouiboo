@@ -387,7 +387,8 @@
         "initiate": "Marquer comme envoyé",
         "fail": "Marquer comme échoué",
         "approve": "Approuver",
-        "reject": "Rejeter"
+        "reject": "Rejeter",
+        "adminReview": "Revue admin"
       },
       "status": {
         "REFUND_APPROVED": "Approuvé",
@@ -420,6 +421,15 @@
         "required": "Audit requis",
         "audited": "Audité le {{date}}",
         "markAudited": "Marquer comme audité"
+      },
+      "adminReview": {
+        "title": "Enregistrer la revue admin",
+        "description": "Enregistre votre revue comme preuve de clôture (niveau 5), dans une étape distincte. Le dossier est ensuite clôturé sur cette preuve — toute clôture par revue admin est placée en file d'audit.",
+        "referenceLabel": "Référence externe",
+        "referenceHint": "Une référence bancaire ou prestataire que vous avez vérifiée vous-même.",
+        "documentLabel": "Document (clé de stockage privée)",
+        "documentHint": "Clé privée d’un document que vous avez téléversé, ex. private/<votre-id>/releve-bancaire.pdf.",
+        "evidenceRequired": "Joignez un document ou une référence externe — un motif seul n'est pas une preuve."
       },
       "tierLabel": "Terminé sur",
       "evidenceSummary": "{{count}} élément(s) de preuve",

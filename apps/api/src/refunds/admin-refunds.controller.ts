@@ -6,6 +6,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RefundsService } from './refunds.service';
 import {
+    AdminReviewRefundDto,
     ApproveRefundDto,
     CompleteRefundDto,
     CreateRefundCaseDto,
@@ -79,8 +80,14 @@ export class AdminRefundsController {
         return this.refundsService.initiate(this.actor(req), 'ADMIN', null, id, dto);
     }
 
+    @Post(':id/admin-review')
+    @ApiOperation({ summary: 'Record an admin review as tier-5 evidence (#416, B8)', description: 'Separate step from completion: records a tier-5 ADMIN_REVIEW evidence row with a mandatory written reason and an attached document and/or external reference. A later complete() call consumes the row as pre-existing evidence.' })
+    adminReview(@Request() req, @Param('id') id: string, @Body() dto: AdminReviewRefundDto) {
+        return this.refundsService.adminReview(this.actor(req), 'ADMIN', id, dto);
+    }
+
     @Post(':id/complete')
-    @ApiOperation({ summary: 'Complete a refund case (#370, #416)', description: 'Completes on the case\'s qualifying evidence; when none exists, the admin\'s completion itself is recorded as tier-5 ADMIN_REVIEW evidence.' })
+    @ApiOperation({ summary: 'Complete a refund case (#370, #416)', description: 'Completes only on the case\'s pre-existing qualifying evidence. With none, completion fails (400) and nothing is written — record an admin review first (POST :id/admin-review) when the completion rests on an admin review.' })
     complete(@Request() req, @Param('id') id: string, @Body() dto: CompleteRefundDto) {
         return this.refundsService.complete(this.actor(req), 'ADMIN', null, id, dto);
     }

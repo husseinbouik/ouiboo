@@ -140,6 +140,8 @@ export const REFUND_OVERDUE_ELIGIBLE_STATUSES: RefundCaseStatus[] = [
  *   tier 2 BANK_PROVIDER_CONFIRMATION  — bank/provider confirmation doc
  *   tier 3 BANK_REFERENCE              — bank reference AND retained proof
  *   tier 5 ADMIN_REVIEW                — an admin's recorded review
+ *     (B8: only when the review row carries a written reason AND an
+ *     attached document or external reference — see below)
  *   tier 4 TRAVELLER_CONFIRMATION + tier 5 — corroborated completion
  * Tier 4 alone NEVER qualifies: the traveller's word corroborates, it
  * does not certify the agency's refund. Returns the qualifying tier, the
@@ -152,6 +154,7 @@ export interface RefundEvidenceLike {
     source?: RefundEvidenceSource | string | null;
     reference?: string | null;
     proofUrl?: string | null;
+    note?: string | null;
 }
 
 export interface RefundCompletionQualification {
@@ -196,10 +199,20 @@ export function qualifyingRefundCompletion(
             reference: bankReference.reference ?? null,
         };
     }
+    // Tier 5 (B8, Council Session #2): an admin review qualifies only
+    // when it was recorded as a real review — a mandatory written reason
+    // (the row's note) AND an attached document or an external
+    // reference. Rows lacking either (notably the legacy rows the old
+    // completion-time auto-create wrote with neither) NEVER qualify:
+    // there is no grandfathering.
     const adminReview = evidence.find(
         (e) =>
             e.tier === RefundEvidenceTier.ADMIN_REVIEW
-            && e.source === RefundEvidenceSource.ADMIN,
+            && e.source === RefundEvidenceSource.ADMIN
+            && typeof e.note === 'string'
+            && e.note.trim() !== ''
+            && ((typeof e.reference === 'string' && e.reference.trim() !== '')
+                || (typeof e.proofUrl === 'string' && e.proofUrl.trim() !== '')),
     );
     if (adminReview) {
         return {
@@ -224,9 +237,8 @@ export const REFUND_DISPUTE_WINDOW_DAYS = 60;
  * hard signal holds — the case was ever REFUND_OVERDUE, it was disputed
  * (reopened) before, the amount is at or above the threshold, or the
  * completion relied on the weakest qualifying evidence path (tier 3
- * BANK_REFERENCE, or tier 4 traveller confirmation corroborated by a
- * tier 5 admin review) — plus a deterministic sample of all other
- * completions. The threshold is a named constant on purpose: it is a
+ * BANK_REFERENCE, or tier 5 ADMIN_REVIEW — B8: always flagged) — plus
+ * a deterministic sample of all other completions. The threshold is a named constant on purpose: it is a
  * founder-adjustable policy value, applied to the case amount (the
  * beta's cases are MAD).
  */
@@ -261,15 +273,17 @@ export function refundAuditRequired(signals: RefundAuditSignals): boolean {
         return true;
     }
     // Weakest qualifying paths: tier 3 carries the refund on a bank
-    // reference + retained proof alone; tier 4 + tier 5 completes on the
-    // traveller's word corroborated by an admin review.
+    // reference + retained proof alone.
     if (signals.completionTier === RefundEvidenceTier.BANK_REFERENCE) {
         return true;
     }
-    if (
-        signals.completionTier === RefundEvidenceTier.ADMIN_REVIEW
-        && signals.travellerConfirmationPresent
-    ) {
+    // B8 (Council Session #2): EVERY tier-5 completion is audited. An
+    // admin review is the platform certifying a refund on its own word,
+    // so it is always queued for audit — regardless of traveller
+    // confirmation, amount, or overdue state (a tier-5 completion with
+    // no traveller confirmation previously fell through to the ~20%
+    // sample, and the audit queue is worked by the same solo admin).
+    if (signals.completionTier === RefundEvidenceTier.ADMIN_REVIEW) {
         return true;
     }
     return refundAuditSampled(signals.caseId);

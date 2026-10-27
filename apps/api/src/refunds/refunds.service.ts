@@ -774,6 +774,87 @@ export class RefundsService {
         };
     }
 
+    /**
+     * B8 (Council Session #2, #416): record an admin review as tier-5
+     * completion evidence — a SEPARATE step from complete(), in its
+     * own request and transaction. The review is a real review, not a
+     * completion-time assertion: a written reason is mandatory (stored
+     * as the evidence row's note and in the audit entry), AND the admin
+     * must attach a document (a private storage key from their own
+     * uploads) and/or an external reference they verified. A reason
+     * alone is not evidence; a "note at completion" never satisfies
+     * this. complete() later consumes the row like any other evidence,
+     * and every tier-5 completion is forced into the audit queue.
+     * Evidence is append-only: rows are never updated or deleted here.
+     */
+    async adminReview(
+        actor: RefundActor,
+        role: RefundActorRole,
+        caseId: string,
+        input: { reason?: string; reference?: string; proofUrl?: string },
+    ) {
+        if (role !== 'ADMIN') {
+            throw new ForbiddenException('Only an admin can record an admin review');
+        }
+        const refundCase = await this.loadCaseForActor(caseId, role, null);
+        if (!REFUND_ACTIVE_STATUSES.includes(refundCase.status)) {
+            throw new BadRequestException(
+                'An admin review can only be recorded on an open refund case',
+            );
+        }
+        const reason = input.reason?.trim();
+        if (!reason) {
+            throw new BadRequestException(
+                'A written reason is required to record an admin review',
+            );
+        }
+        const reference = input.reference?.trim() || undefined;
+        const proofUrl = input.proofUrl?.trim() || undefined;
+        if (!reference && !proofUrl) {
+            throw new BadRequestException(
+                'An admin review must attach a document or an external reference — a reason alone is not evidence',
+            );
+        }
+        if (proofUrl) {
+            const ownPrefix = `${PRIVATE_FILE_PREFIX}/${actor.id}/`;
+            if (!proofUrl.startsWith(ownPrefix)) {
+                throw new BadRequestException(
+                    'proofUrl must reference a private document uploaded by this admin',
+                );
+            }
+        }
+        const evidence = await this.db.$transaction(async (tx) => {
+            const created = await tx.refundEvidence.create({
+                data: {
+                    refundCaseId: refundCase.id,
+                    tier: RefundEvidenceTier.ADMIN_REVIEW,
+                    source: RefundEvidenceSource.ADMIN,
+                    reference,
+                    proofUrl,
+                    note: reason.slice(0, 1000),
+                    recordedBy: actor.id,
+                },
+            });
+            await this.audit(tx, actor, 'REFUND_EVIDENCE_RECORDED', refundCase.id, {
+                evidenceId: created.id,
+                tier: RefundEvidenceTier.ADMIN_REVIEW,
+                source: RefundEvidenceSource.ADMIN,
+                via: 'ADMIN_REVIEW',
+                reason: reason.slice(0, 1000),
+                hasReference: !!reference,
+                hasDocument: !!proofUrl,
+            });
+            return created;
+        });
+        return {
+            ...evidence,
+            amount:
+                evidence.amount === null || evidence.amount === undefined
+                    ? null
+                    : toMoneyString(evidence.amount),
+        };
+    }
+
     async complete(
         actor: RefundActor,
         role: RefundActorRole,
@@ -784,15 +865,16 @@ export class RefundsService {
         const refundCase = await this.loadCaseForActor(caseId, role, tenantAgencyId);
         const amount = toMoneyDecimal(refundCase.approvedAmount ?? refundCase.requestedAmount);
         const completed = await this.db.$transaction(async (tx) => {
-            // #416 (Council P0-09): the completion gate. Checked inside
-            // the transaction against the case's evidence rows, before
-            // any state moves. An agency can never certify its own
-            // refund: with no qualifying evidence the completion is
-            // refused and nothing is written. An admin completing a case
-            // records their review as tier-5 evidence in the same
-            // transaction — that recorded review IS the qualifying tier
-            // (and the only way tier 4 traveller confirmation, which
-            // never qualifies alone, can corroborate a completion).
+            // #416 (Council P0-09) + B8 (Council Session #2): the
+            // completion gate. Checked inside the transaction against
+            // the case's evidence rows, before any state moves. NO
+            // actor can complete a case without pre-existing qualifying
+            // evidence: an agency can never certify its own refund, and
+            // an admin completion no longer manufactures its own tier-5
+            // review in this transaction (the auto-create branch is
+            // deleted). An admin review must be recorded beforehand via
+            // adminReview() — a separate request and transaction — and
+            // complete() consumes that row like any other evidence.
             if (!canTransitionRefund(refundCase.status, RefundCaseStatus.REFUND_COMPLETED)) {
                 throw new BadRequestException(
                     `Refund case cannot move from ${refundCase.status} to ${RefundCaseStatus.REFUND_COMPLETED}`,
@@ -801,30 +883,10 @@ export class RefundsService {
             const evidenceRows = await tx.refundEvidence.findMany({
                 where: { refundCaseId: refundCase.id },
             });
-            let qualifying = qualifyingRefundCompletion(evidenceRows);
-            if (!qualifying && role === 'ADMIN') {
-                await tx.refundEvidence.create({
-                    data: {
-                        refundCaseId: refundCase.id,
-                        tier: RefundEvidenceTier.ADMIN_REVIEW,
-                        source: RefundEvidenceSource.ADMIN,
-                        recordedBy: actor.id,
-                    },
-                });
-                await this.audit(tx, actor, 'REFUND_EVIDENCE_RECORDED', refundCase.id, {
-                    tier: RefundEvidenceTier.ADMIN_REVIEW,
-                    source: RefundEvidenceSource.ADMIN,
-                    via: 'ADMIN_COMPLETION',
-                });
-                qualifying = {
-                    tier: RefundEvidenceTier.ADMIN_REVIEW,
-                    source: PaymentLedgerSource.ADMIN_PROOF_REVIEW,
-                    reference: null,
-                };
-            }
+            const qualifying = qualifyingRefundCompletion(evidenceRows);
             if (!qualifying) {
                 throw new BadRequestException(
-                    'A refund case can only be completed with evidence: a PSP or bank/provider confirmation, a bank reference with a retained proof document, or an admin review (the traveller\u2019s confirmation alone is not sufficient). Attach evidence before completing.',
+                    'A refund case can only be completed with evidence: a PSP or bank/provider confirmation, a bank reference with a retained proof document, or an admin review recorded beforehand (the traveller\u2019s confirmation alone is not sufficient). Attach evidence — or record an admin review — before completing.',
                 );
             }
             // #416B: stamp the risk-based audit flag at completion time

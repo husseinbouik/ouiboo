@@ -387,7 +387,8 @@
         "initiate": "Mark sent",
         "fail": "Mark failed",
         "approve": "Approve",
-        "reject": "Reject"
+        "reject": "Reject",
+        "adminReview": "Admin review"
       },
       "status": {
         "REFUND_APPROVED": "Approved",
@@ -420,6 +421,15 @@
         "required": "Audit required",
         "audited": "Audited {{date}}",
         "markAudited": "Mark audited"
+      },
+      "adminReview": {
+        "title": "Record admin review",
+        "description": "Records your review as completion evidence (tier 5), in its own step. The case is completed afterwards, on this evidence — every admin-review completion is queued for audit.",
+        "referenceLabel": "External reference",
+        "referenceHint": "A bank or provider reference you verified yourself.",
+        "documentLabel": "Document (private storage key)",
+        "documentHint": "Private key of a document you uploaded, e.g. private/<your-id>/bank-statement.pdf.",
+        "evidenceRequired": "Attach a document or an external reference — a reason alone is not evidence."
       },
       "tierLabel": "Completed on",
       "evidenceSummary": "{{count}} evidence item(s)",

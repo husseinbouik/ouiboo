@@ -105,6 +105,34 @@ export class AddRefundEvidenceDto {
     note?: string;
 }
 
+/**
+ * B8 (Council Session #2, #416): the admin-review step that records
+ * tier-5 ADMIN_REVIEW evidence — a separate request from completion.
+ * The written reason is mandatory (stored as the evidence note and in
+ * the audit entry). An attached document (private storage key) and/or
+ * an external reference is also required; the service enforces the
+ * at-least-one-of rule, since class-validator cannot express it here.
+ */
+export class AdminReviewRefundDto {
+    @ApiProperty({ example: 'Verified the agency\u2019s bank statement shows the outgoing transfer', description: 'Mandatory written reason for the review (stored as the evidence note and in the audit log).' })
+    @IsString()
+    @MinLength(3)
+    @MaxLength(1000)
+    reason!: string;
+
+    @ApiProperty({ required: false, example: 'BANK-STMT-2026-1187', description: 'External reference the admin verified (bank/provider reference). At least one of reference / proofUrl is required.' })
+    @IsOptional()
+    @IsString()
+    @MaxLength(200)
+    reference?: string;
+
+    @ApiProperty({ required: false, example: 'private/<userId>/bank-statement.pdf', description: 'Private storage key of a document the admin attached to the review. Must reference a document uploaded by this admin under private/{userId}/. At least one of reference / proofUrl is required.' })
+    @IsOptional()
+    @IsString()
+    @MaxLength(500)
+    proofUrl?: string;
+}
+
 export const REFUND_REPAIR_ACTIONS = ['reopen', 'correct-amount', 'relink-payment'] as const;
 
 export type RefundRepairAction = (typeof REFUND_REPAIR_ACTIONS)[number];
