@@ -12,6 +12,7 @@ import { cn } from '@ouiboo/ui/utils';
 import { formatCurrency } from '@ouiboo/utils';
 import { SessionStatus, type SessionStatusType, VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 import { WishlistButton } from './WishlistButton';
+import { tripCoverViewTransitionName } from '@/lib/view-transition';
 
 export interface TripCardTrip {
   id: string;
@@ -26,6 +27,10 @@ export interface TripCardTrip {
   images?: string[];
   /** #332: agency-provided alt text per image (index-aligned); may be absent. */
   imageAlts?: string[];
+  /** #486: stored blur placeholders per image (index-aligned data-URLs);
+   * may be absent/null per image — SafeImage falls back to the shared
+   * palette placeholder, so existing media renders correctly. */
+  imageBlurDataURLs?: (string | null)[];
   averageRating?: number | null;
   reviewCount?: number;
   sessions?: Array<{
@@ -210,6 +215,8 @@ export function TripCard({ trip }: TripCardProps) {
               alt={trip.imageAlts?.[currentImage]?.trim() || (trip.startLocation ? `${trip.title} · ${trip.startLocation}` : trip.title)}
               fill
               sizes="(min-width: 1024px) 33vw, 100vw"
+              blurDataURL={trip.imageBlurDataURLs?.[currentImage] ?? undefined}
+              style={{ viewTransitionName: tripCoverViewTransitionName(trip.id) }}
             />
           </motion.div>
         </AnimatePresence>

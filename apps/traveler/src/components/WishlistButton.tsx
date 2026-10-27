@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Heart } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -8,21 +8,36 @@ import { useAuth } from '@/components/AuthContext';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
+import { useToast } from '@ouiboo/ui';
+import { optimisticHandlers } from '@/lib/optimistic';
 
 interface WishlistButtonProps {
   tripId: string;
   className?: string;
 }
 
+interface WishlistStatus {
+  isWishlisted: boolean;
+}
+
+/**
+ * #484: migrated from the hand-rolled useState mirror onto the shared
+ * optimistic pattern (@/lib/optimistic): onMutate snapshots + applies,
+ * onError rolls back AND surfaces the error toast, onSettled
+ * invalidates so server truth wins.
+ *
+ * #485: a successful removal offers Undo in the toast — Undo performs
+ * the real inverse mutation (re-add), so it stays truthful if the
+ * server state changed in between.
+ */
 export function WishlistButton({ tripId, className }: WishlistButtonProps) {
   const { t } = useTranslation();
   const { user, setShowLoginModal } = useAuth();
   const queryClient = useQueryClient();
-  const [isOptimistic, setIsOptimistic] = useState(false);
-  const [optimisticState, setOptimisticState] = useState(false);
+  const { toast } = useToast();
 
   // Check if trip is wishlisted
-  const { data: wishlistData } = useQuery({
+  const { data: wishlistData } = useQuery<WishlistStatus>({
     queryKey: ['wishlist-status', tripId],
     queryFn: async () => {
       const response = await apiClient.get(`/users/wishlist/${tripId}/is-wishlisted`);
@@ -31,43 +46,51 @@ export function WishlistButton({ tripId, className }: WishlistButtonProps) {
     enabled: !!user,
   });
 
-  const isWishlisted = isOptimistic ? optimisticState : wishlistData?.isWishlisted || false;
+  const isWishlisted = wishlistData?.isWishlisted || false;
 
-  // Mutation to add to wishlist
-  const addMutation = useMutation({
-    mutationFn: async () => {
-      await apiClient.post(`/users/wishlist/${tripId}`);
+  const toggleMutation = useMutation({
+    mutationFn: async (next: boolean) => {
+      if (next) {
+        await apiClient.post(`/users/wishlist/${tripId}`);
+      } else {
+        await apiClient.delete(`/users/wishlist/${tripId}`);
+      }
     },
-    onSuccess: () => {
-      setIsOptimistic(false);
-      queryClient.invalidateQueries({ queryKey: ['wishlist-status', tripId] });
-      queryClient.invalidateQueries({ queryKey: ['wishlist-count'] });
-      queryClient.invalidateQueries({ queryKey: ['wishlist'] });
-    },
-    onError: () => {
-      setIsOptimistic(false);
-      setOptimisticState(false);
+    ...optimisticHandlers<boolean>(queryClient, {
+      patches: (next) => [
+        {
+          queryKey: ['wishlist-status', tripId],
+          update: () => ({ isWishlisted: next }),
+        },
+      ],
+      invalidateKeys: [
+        ['wishlist-status', tripId],
+        ['wishlist-count'],
+        ['wishlist'],
+      ],
+      onError: () => {
+        toast({
+          title: t('wishlist.updateFailed'),
+          variant: 'error',
+          dismissLabel: t('common.closeDialog'),
+        });
+      },
+    }),
+    onSuccess: (_data, next) => {
+      if (!next) {
+        toast({
+          title: t('wishlist.removed'),
+          dismissLabel: t('common.closeDialog'),
+          action: {
+            label: t('common.undo'),
+            onClick: () => toggleMutation.mutate(true),
+          },
+        });
+      }
     },
   });
 
-  // Mutation to remove from wishlist
-  const removeMutation = useMutation({
-    mutationFn: async () => {
-      await apiClient.delete(`/users/wishlist/${tripId}`);
-    },
-    onSuccess: () => {
-      setIsOptimistic(false);
-      queryClient.invalidateQueries({ queryKey: ['wishlist-status', tripId] });
-      queryClient.invalidateQueries({ queryKey: ['wishlist-count'] });
-      queryClient.invalidateQueries({ queryKey: ['wishlist'] });
-    },
-    onError: () => {
-      setIsOptimistic(false);
-      setOptimisticState(true);
-    },
-  });
-
-  const handleClick = async (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -76,18 +99,10 @@ export function WishlistButton({ tripId, className }: WishlistButtonProps) {
       return;
     }
 
-    // Optimistic update
-    setIsOptimistic(true);
-    setOptimisticState(!isWishlisted);
-
-    if (isWishlisted) {
-      removeMutation.mutate();
-    } else {
-      addMutation.mutate();
-    }
+    toggleMutation.mutate(!isWishlisted);
   };
 
-  const isLoading_ = addMutation.isPending || removeMutation.isPending;
+  const isLoading_ = toggleMutation.isPending;
 
   return (
     <motion.button
@@ -121,4 +136,3 @@ export function WishlistButton({ tripId, className }: WishlistButtonProps) {
     </motion.button>
   );
 }
-
