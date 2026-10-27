@@ -57,7 +57,9 @@
     "viewAll": "View all trips",
     "from": "From",
     "emptyTitle": "No trips found",
-    "emptySubtitle": "Check back later for new adventures."
+    "emptySubtitle": "Check back later for new adventures.",
+    "loadErrorTitle": "We couldn't load trips",
+    "loadErrorSubtitle": "Something went wrong while loading the catalogue. Check your connection and try again."
   },
   "categories": {
     "title": "Travel your way",
@@ -527,6 +529,8 @@
     "reviewsTitle": "Reviews & Ratings",
     "averageRating": "Average Rating",
     "distribution": "Distribution",
+    "distributionRating_one": "{{count}} star",
+    "distributionRating_other": "{{count}} stars",
     "selectDate": "Select Date",
     "spotsLeft_one": "{{count}} spot left",
     "spotsLeft_other": "{{count}} spots left",
@@ -606,6 +610,14 @@
     "disputeWindowClosed": "The {{days}}-day window to report a problem has closed. Please contact the organiser or OuiBoo support.",
     "disputed": "You reported a problem with this refund — the case has been reopened and is under review.",
     "actionFailed": "Something went wrong. Please try again."
+  },
+  "paymentPlan": {
+    "depositDue": "Deposit due: {{amount}} \u2014 pay the deposit to {{agency}} to secure your spot. This trip needs at least {{count}} participants by {{date}}.",
+    "depositPaid": "Deposit confirmed by {{agency}}. Waiting for trip confirmation \u2014 this trip needs at least {{count}} participants by {{date}}. If the minimum is not reached, your deposit is refunded.",
+    "balanceDue": "Trip confirmed \u2014 remaining balance due: {{amount}}",
+    "balancePayBefore": " (pay before {{date}})",
+    "uploadBalanceReceipt": "Upload Balance Receipt",
+    "refundDue": "This trip was not confirmed \u2014 the minimum group size was not reached. Your deposit of {{amount}} is refundable; {{agency}} will process your refund."
   },
   "support": {
     "title": "Support",

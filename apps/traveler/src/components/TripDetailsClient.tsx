@@ -28,6 +28,7 @@ import { TRAVELER_URL } from '@/lib/site';
 import { SessionStatus, type CancellationScaleSnapshot, type SessionStatusType } from '@ouiboo/types';
 import { formatCurrency } from '@ouiboo/utils';
 import { CancellationScaleCard } from '@/components/CancellationScaleCard';
+import { RatingDistribution } from '@/components/RatingDistribution';
 
 type TripDay = {
   dayNumber: number;
@@ -379,7 +380,9 @@ export default function TripDetailsClient({
                         <div className="flex items-center gap-1.5 bg-yellow-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                             <span className="font-bold text-sm text-amber-700 dark:text-yellow-400">{reviewStats?.totalReviews ? (reviewStats.averageRating ?? 0).toFixed(1) : t('tripDetails.newTrip')}</span>
-                            <span className="text-xs text-amber-700 dark:text-yellow-400/70 font-medium">{t('tripDetails.reviewsCount', { count: reviewStats?.totalReviews || 0 })}</span>
+                            {/* #579: at zero reviews show the localised
+                                "No reviews yet", not a "(0 reviews)" count. */}
+                            <span className="text-xs text-amber-700 dark:text-yellow-400/70 font-medium">{reviewStats?.totalReviews ? t('tripDetails.reviewsCount', { count: reviewStats.totalReviews }) : t('reviews.noReviewsYet')}</span>
                         </div>
                         {/* #468: share this trip (native sheet / intent menu).
                             allowRuntimeOriginFallback: this app serves the trip
@@ -567,7 +570,8 @@ export default function TripDetailsClient({
                <div className="flex items-center justify-between">
                  <h2 className="text-2xl font-bold text-foreground font-display">{t('tripDetails.reviewsTitle')}</h2>
                  <Badge variant="outline" className="text-[10px] font-bold px-3 py-1 bg-muted/30">
-                   {t('tripDetails.reviewsBadge', { count: reviewStats?.totalReviews || 0 })}
+                   {/* #579: zero reviews reads "No reviews yet", not "0 Reviews". */}
+                   {reviewStats?.totalReviews ? t('tripDetails.reviewsBadge', { count: reviewStats.totalReviews }) : t('reviews.noReviewsYet')}
                  </Badge>
                </div>
                
@@ -596,27 +600,11 @@ export default function TripDetailsClient({
                      </div>
                    </div>
 
-                   {/* Rating Distribution */}
+                   {/* Rating Distribution (#587: extracted so the row
+                       labels are pinned by RatingDistribution.test.tsx) */}
                    <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6 space-y-4">
                      <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{t('tripDetails.distribution')}</p>
-                     <div className="space-y-2">
-                       {[5, 4, 3, 2, 1].map((rating) => {
-                         const count = reviewStats.distribution?.[rating] || 0;
-                         const percentage = reviewStats.totalReviews > 0 ? (count / reviewStats.totalReviews * 100) : 0;
-                         return (
-                           <div key={rating} className="flex items-center gap-2">
-                             <span className="text-xs font-bold text-muted-foreground w-6">{rating}?</span>
-                             <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                               <div
-                                 className="h-full bg-gradient-to-r from-sunset-orange to-orange-600"
-                                 style={{ width: `${percentage}%` }}
-                               />
-                             </div>
-                             <span className="text-xs font-medium text-muted-foreground w-8 text-right">{count}</span>
-                           </div>
-                         );
-                       })}
-                     </div>
+                     <RatingDistribution distribution={reviewStats.distribution} totalReviews={reviewStats.totalReviews} />
                    </div>
                  </div>
                )}
