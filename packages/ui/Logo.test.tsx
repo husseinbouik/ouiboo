@@ -39,7 +39,10 @@ describe('Logo geometry (Session #3 P0-4)', () => {
   });
 
   it('pin tip reaches y≈23.2 (pin height ≥13 units)', () => {
-    const m = logoSource.match(/M16 (\d+(?:\.\d+)?)C/);
+    // Anchor on the pin path specifically (its C14.9 21 shoulder is
+    // unique) — the O-ring path also starts "M16 <n>C" and a naive
+    // first-match reads the ring's 8 instead of the pin's tip.
+    const m = logoSource.match(/M16 (\d+(?:\.\d+)?)C14\.9 21/);
     expect(m).not.toBeNull();
     expect(parseFloat(m![1])).toBeGreaterThanOrEqual(23);
   });
