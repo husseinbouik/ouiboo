@@ -9,7 +9,9 @@ import {
   canUseNativeShare,
   copyShareLink,
   getShareTargets,
+  isLocalhostUrl,
   isSharingEnabled,
+  resolveShareBaseUrl,
   scrubShareClaimWords,
 } from './share';
 
@@ -142,6 +144,80 @@ describe('trip share helpers (#468)', () => {
         if (previous === undefined) delete process.env.NEXT_PUBLIC_SHARING_ENABLED;
         else process.env.NEXT_PUBLIC_SHARING_ENABLED = previous;
       }
+    });
+  });
+
+  describe('isLocalhostUrl', () => {
+    it('detects loopback hosts', () => {
+      expect(isLocalhostUrl('http://localhost:3001')).toBe(true);
+      expect(isLocalhostUrl('http://127.0.0.1:3001')).toBe(true);
+      expect(isLocalhostUrl('http://[::1]:3001')).toBe(true);
+    });
+
+    it('accepts public hosts and survives unparseable values', () => {
+      expect(isLocalhostUrl('https://ouiboo-traveler-staging.vercel.app')).toBe(false);
+      expect(isLocalhostUrl('https://localhost.example.com')).toBe(false);
+      expect(isLocalhostUrl('not a url')).toBe(false);
+    });
+  });
+
+  describe('resolveShareBaseUrl (localhost leak guard, #468)', () => {
+    const DEPLOYED = 'https://ouiboo-traveler-staging.vercel.app';
+
+    it('prefers a configured public base over the runtime origin', () => {
+      expect(
+        resolveShareBaseUrl('https://traveler.example.com/', {
+          runtimeOrigin: DEPLOYED,
+          allowRuntimeOriginFallback: true,
+        }),
+      ).toBe('https://traveler.example.com');
+    });
+
+    it('falls back to the runtime origin in the traveller app when the configured base is loopback', () => {
+      expect(
+        resolveShareBaseUrl('http://localhost:3001', {
+          runtimeOrigin: DEPLOYED,
+          allowRuntimeOriginFallback: true,
+        }),
+      ).toBe(DEPLOYED);
+    });
+
+    it('returns null in the agency app instead of leaking localhost or the agency origin', () => {
+      expect(
+        resolveShareBaseUrl('http://localhost:3001', {
+          runtimeOrigin: 'https://ouiboo-agency-staging.vercel.app',
+        }),
+      ).toBeNull();
+      expect(resolveShareBaseUrl('', { runtimeOrigin: DEPLOYED })).toBeNull();
+    });
+
+    it('keeps the loopback base in true local development (page served from loopback)', () => {
+      expect(
+        resolveShareBaseUrl('http://localhost:3001', {
+          runtimeOrigin: 'http://localhost:3001',
+          allowRuntimeOriginFallback: true,
+        }),
+      ).toBe('http://localhost:3001');
+    });
+
+    it('uses the configured value when no runtime origin is known (SSR)', () => {
+      expect(resolveShareBaseUrl('http://localhost:3001')).toBe('http://localhost:3001');
+      expect(resolveShareBaseUrl('')).toBeNull();
+    });
+
+    it('a deployed-configuration payload never contains localhost', () => {
+      const base = resolveShareBaseUrl('http://localhost:3001', {
+        runtimeOrigin: DEPLOYED,
+        allowRuntimeOriginFallback: true,
+      });
+      const payload = buildSharePayload({
+        travelerBaseUrl: base ?? '',
+        tripId: 'trip-1',
+        tripTitle: 'Sahara Trek',
+        textTemplate: 'Trip: {{title}}',
+      });
+      expect(payload.url).toBe(`${DEPLOYED}/trip/trip-1?src=share`);
+      expect(payload.url).not.toContain('localhost');
     });
   });
 

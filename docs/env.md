@@ -37,6 +37,6 @@ To rotate admin credentials safely:
 Define the following `NEXT_PUBLIC_*` variables in each frontend app as needed:
 
 - `NEXT_PUBLIC_API_URL`: Base URL for the API (used by `admin`, `agency`, `traveler`).
-- `NEXT_PUBLIC_TRAVELER_URL`: Traveler site URL (used by `landing`).
+- `NEXT_PUBLIC_TRAVELER_URL`: Traveler site URL (used by `landing` for links, and by `traveler` + `agency` as the share-link / canonical / OG base - #468; must be set to the real public URL in every deployed environment, never left at the localhost default).
 - `NEXT_PUBLIC_AGENCY_URL`: Agency site URL (used by `landing`).
 - `NEXT_PUBLIC_CLARITY_PROJECT_ID`: Microsoft Clarity project ID (used by `landing`).

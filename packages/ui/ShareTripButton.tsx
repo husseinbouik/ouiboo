@@ -9,6 +9,7 @@ import {
   copyShareLink,
   getShareTargets,
   isSharingEnabled,
+  resolveShareBaseUrl,
   type ShareTargetId,
 } from '@ouiboo/utils';
 import { Button } from './Button';
@@ -31,6 +32,14 @@ export interface ShareTripButtonProps {
   tripTitle: string;
   /** Origin of the traveller app — the share link always points there. */
   travelerBaseUrl: string;
+  /**
+   * #468: may the page's own origin replace a missing/loopback
+   * travelerBaseUrl? Set ONLY by the traveller app — it serves the public
+   * trip pages, so its origin is the share target's origin. The agency app
+   * leaves this off: with no public base configured it renders nothing
+   * rather than sharing a localhost (or agency-origin) link.
+   */
+  allowRuntimeOriginFallback?: boolean;
   /** Value of the `src` parameter on the shared URL (attribution). */
   source?: string;
   iconOnly?: boolean;
@@ -56,6 +65,7 @@ export function ShareTripButton({
   tripId,
   tripTitle,
   travelerBaseUrl,
+  allowRuntimeOriginFallback = false,
   source,
   iconOnly = false,
   size = 'default',
@@ -85,8 +95,20 @@ export function ShareTripButton({
     return null;
   }
 
+  // #468: resolve the share base so a deployed build can never emit a
+  // localhost link (both apps default NEXT_PUBLIC_TRAVELER_URL to a
+  // loopback URL, and the variable was missing on the staging projects).
+  // No safe public base -> no share action at all.
+  const shareBaseUrl = resolveShareBaseUrl(travelerBaseUrl, {
+    runtimeOrigin: typeof window !== 'undefined' ? window.location.origin : undefined,
+    allowRuntimeOriginFallback,
+  });
+  if (shareBaseUrl === null) {
+    return null;
+  }
+
   const payload = buildSharePayload({
-    travelerBaseUrl,
+    travelerBaseUrl: shareBaseUrl,
     tripId,
     tripTitle,
     textTemplate: t('share.text'),
