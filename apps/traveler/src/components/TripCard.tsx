@@ -18,6 +18,10 @@ export interface TripCardTrip {
   id: string;
   title: string;
   category?: string;
+  /** #498: authoritative trip currency. The API enforces a single currency
+   * per trip (every session must match the template currency), and the trip
+   * payload already carries it — the card type just never declared it. */
+  currency?: string;
   startLocation?: string;
   durationDays?: number;
   images?: string[];
@@ -30,6 +34,7 @@ export interface TripCardTrip {
     status: SessionStatusType | string;
     availableSeats: number;
     price: number | string;
+    currency?: string;
     startDate: string;
   }>;
   agency?: {
@@ -57,6 +62,14 @@ export function TripCard({ trip }: TripCardProps) {
   const minPrice = sessions.length
     ? Math.min(...sessions.map((session) => Number(session.price || 0)))
     : null;
+  // #498: format the price in the currency of the session that set it (which,
+  // per the API invariant, is the trip currency). Fall back to the trip-level
+  // currency, then to the formatter default when neither is present.
+  const cheapestSession =
+    minPrice === null
+      ? null
+      : (sessions.find((session) => Number(session.price || 0) === minPrice) ?? null);
+  const priceCurrency = cheapestSession?.currency ?? trip.currency;
   const isAgencyVerified = trip.agency?.verificationStatus === VerificationStatus.Verified;
 
   // #333: warm the trip-detail query on hover/focus/press so tapping a card
@@ -211,7 +224,7 @@ export function TripCard({ trip }: TripCardProps) {
         <div className="absolute top-3 end-14 flex flex-col items-end gap-2">
           <Badge className="bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none flex items-center gap-1">
             <Ticket className="h-3 w-3" />
-            {minPrice !== null ? formatCurrency(minPrice, undefined, i18n.language) : t('tripCard.priceTba')}
+            {minPrice !== null ? formatCurrency(minPrice, priceCurrency, i18n.language) : t('tripCard.priceTba')}
           </Badge>
           <Badge className={cn(
             "text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none flex items-center gap-1",
@@ -261,7 +274,7 @@ export function TripCard({ trip }: TripCardProps) {
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{t('tripCard.from')}</span>
             <div className="flex items-baseline gap-1">
                 <span className="text-xl font-bold text-foreground">
-                   {minPrice !== null ? formatCurrency(minPrice, undefined, i18n.language) : '---'}
+                   {minPrice !== null ? formatCurrency(minPrice, priceCurrency, i18n.language) : '---'}
                 </span>
             </div>
           </div>
