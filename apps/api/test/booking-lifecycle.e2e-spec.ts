@@ -220,9 +220,9 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             agencyUser.email,
             bookingId,
             'Mountain Adventure',
-            // #424: trailing arg is the booking's stored locale (null =
-            // created without one → emails fall back to English).
-            null,
+            // #424: trailing arg is the booking's stored locale (the create
+            // payload above carries locale 'en').
+            'en',
             DEFAULT_CANCELLATION_SCALE
         );
 
@@ -809,7 +809,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             agencyUser.email,
             createRes.body.id,
             'Mountain Adventure',
-            null, // #424: no stored locale on this booking
+            'en', // #424: the booking's stored locale (create payload carries 'en')
             DEFAULT_CANCELLATION_SCALE
         );
 
