@@ -29,6 +29,70 @@ const trimTrailingSlashes = (value: string) => {
 };
 
 /**
+ * #468 bug (founder report, 2026-10-27): true when a URL points at a
+ * loopback host. Both apps default NEXT_PUBLIC_TRAVELER_URL to
+ * http://localhost:3001, and the variable was not set on the staging
+ * traveller/agency projects, so a deployed build would happily share
+ * localhost links. Unparseable values are not loopback (the URL builders
+ * surface those errors as before).
+ */
+export function isLocalhostUrl(value: string): boolean {
+  try {
+    // WHATWG URL keeps the brackets on IPv6 hostnames ('[::1]').
+    const hostname = new URL(value).hostname.replace(/^\[(.*)\]$/, '$1');
+    return hostname === 'localhost' || hostname === '::1' || hostname.startsWith('127.');
+  } catch {
+    return false;
+  }
+}
+
+export interface ShareBaseResolution {
+  /** `window.location.origin` of the page rendering the share action, when known. */
+  runtimeOrigin?: string;
+  /**
+   * May the runtime origin stand in for a missing/loopback configured base?
+   * Only the traveller app may pass true: it serves the public trip pages,
+   * so its own origin IS the share target's origin. The agency app must
+   * leave this off — its origin is not where trips live.
+   */
+  allowRuntimeOriginFallback?: boolean;
+}
+
+/**
+ * Resolve the base URL share links are built on, so a deployed build can
+ * never emit a loopback share URL:
+ *
+ * 1. A configured (NEXT_PUBLIC_TRAVELER_URL) non-loopback base always wins.
+ * 2. Otherwise, when the caller allows it and the page itself is served
+ *    from a public origin, that origin is the base (traveller app).
+ * 3. A loopback configured base is honoured only while the page itself is
+ *    served from loopback — true local development.
+ * 4. Anything else returns null: the caller renders no share action at
+ *    all rather than a link that points at localhost or the wrong app.
+ */
+export function resolveShareBaseUrl(
+  configuredBaseUrl: string,
+  resolution: ShareBaseResolution = {},
+): string | null {
+  const configured = trimTrailingSlashes(configuredBaseUrl.trim());
+  if (configured && !isLocalhostUrl(configured)) return configured;
+
+  const runtimeOrigin = resolution.runtimeOrigin?.trim();
+  if (runtimeOrigin) {
+    if (!isLocalhostUrl(runtimeOrigin)) {
+      return resolution.allowRuntimeOriginFallback ? trimTrailingSlashes(runtimeOrigin) : null;
+    }
+    // The page itself is served from loopback: local development, where a
+    // loopback share base is the correct origin for this build.
+    return configured || trimTrailingSlashes(runtimeOrigin);
+  }
+
+  // No runtime origin (SSR / tests): the configured value is all there is.
+  // Share URLs are only assembled client-side, where the origin is known.
+  return configured || null;
+}
+
+/**
  * Canonical public trip URL on the traveller app: `/trip/{id}` (the same
  * path the trip page's canonical metadata uses) plus the share source
  * parameter, e.g. `https://ouiboo…/trip/abc?src=share`.

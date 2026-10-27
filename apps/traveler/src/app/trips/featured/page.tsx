@@ -4,19 +4,22 @@ import type { TripCardTrip } from '@/components/TripCard';
 import { Badge, Button } from '@ouiboo/ui';
 import Link from 'next/link';
 import { Compass, Sparkles } from 'lucide-react';
+import { getInitialLanguage } from '@ouiboo/i18n/server';
 
 const TripCard = dynamic(() => import('@/components/TripCard').then((m) => m.TripCard));
 
 async function getFeaturedTrips(): Promise<TripCardTrip[]> {
   try {
-    let response = await apiClient.get('/trips?featured=true&status=ACTIVE');
+    // #546: trip text in the visitor's language.
+    const locale = await getInitialLanguage();
+    let response = await apiClient.get(`/trips?featured=true&status=ACTIVE&locale=${locale}`);
     const directFeatured = Array.isArray(response.data) ? response.data : response.data?.data;
 
     if (directFeatured?.length) {
       return directFeatured;
     }
 
-    response = await apiClient.get('/trips?status=ACTIVE&sortBy=popularity&sortOrder=desc&limit=12');
+    response = await apiClient.get(`/trips?status=ACTIVE&sortBy=popularity&sortOrder=desc&limit=12&locale=${locale}`);
     return response.data?.data || response.data || [];
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

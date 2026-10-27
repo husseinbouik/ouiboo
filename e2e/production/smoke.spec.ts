@@ -140,7 +140,17 @@ test.describe('production smoke: no console errors on load', () => {
           errors.push(msg.text());
         }
       });
-      await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+      await page.goto(url, { waitUntil: 'load', timeout: 30000 });
+      // Do not gate on 'networkidle': the traveller homepage streams RSC
+      // and loads many third-party trip images plus link prefetches, so
+      // total network silence can exceed 30s in CI even though the app
+      // itself opens no long-lived connections (audited: no WebSocket,
+      // EventSource or polling intervals in the traveller source). Give
+      // the page a bounded settle window instead - the listeners above
+      // collect errors from before navigation through the settle, so a
+      // severe console error still fails this test.
+      await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => undefined);
+      await page.waitForTimeout(2000);
       expect(errors).toEqual([]);
     });
   }

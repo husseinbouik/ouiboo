@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/api-client';
 import dynamic from 'next/dynamic';
 import type { Metadata } from 'next';
+import { getInitialLanguage } from '@ouiboo/i18n/server';
 import type { TripSession, TripTemplate, VerificationStatusType } from '@ouiboo/types';
 
 const HomeClient = dynamic(() => import('./HomeClient'));
@@ -25,10 +26,12 @@ async function getFeaturedTrips() {
       return [];
     };
 
-    let response = await apiClient.get('/trips?featured=true&status=ACTIVE');
+    // #546: ask the API for trip text in the visitor's language.
+    const locale = await getInitialLanguage();
+    let response = await apiClient.get(`/trips?featured=true&status=ACTIVE&locale=${locale}`);
     let trips = extractTrips(response.data);
     if (trips.length === 0) {
-      response = await apiClient.get('/trips?status=ACTIVE');
+      response = await apiClient.get(`/trips?status=ACTIVE&locale=${locale}`);
       trips = extractTrips(response.data);
     }
     return trips;

@@ -55,6 +55,9 @@ export interface TripsQueryParams extends PageParams {
   featured?: boolean
   status?: TripStatus | string
   q?: string
+  /** #546: request locale — the API resolves title/description from the
+   * trip's translations map (fallback French -> any language). */
+  locale?: string
   category?: TripCategory | string
   agencyId?: string
   priceMin?: number

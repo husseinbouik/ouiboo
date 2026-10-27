@@ -44,7 +44,7 @@ export default function SearchClient({
   initialFilters: SearchInitialFilters;
   initialResponse: unknown;
 }) {
-  const { t, ready } = useTranslation();
+  const { t, ready, i18n } = useTranslation();
   const TRIP_CATEGORIES = [
     { label: t('categories.adventure'), value: TripCategory.Adventure },
     { label: t('categories.cultural'), value: TripCategory.Cultural },
@@ -126,6 +126,8 @@ export default function SearchClient({
       sortOrder,
       page: currentPage,
       limit: 20,
+      // #546: resolve trip titles/descriptions into the UI language.
+      locale: i18n.language,
     };
     if (filters.searchQuery) params.q = filters.searchQuery;
     if (filters.category) params.category = filters.category;
@@ -136,7 +138,7 @@ export default function SearchClient({
     if (filters.availabilityOnly) params.available = true;
     if (filters.ratingMin > 0) params.ratingMin = filters.ratingMin;
     return params;
-  }, [filters, sortBy, sortOrder, currentPage]);
+  }, [filters, sortBy, sortOrder, currentPage, i18n.language]);
 
   const { data: response, isLoading, error, isError } = useTripsQuery(queryParams, {
     placeholderData: keepPreviousData,

@@ -1,5 +1,5 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsString, IsEnum, IsPositive, IsInt, Min, Max, IsArray, ArrayMinSize, ArrayMaxSize, MinLength, IsOptional, ValidateNested, IsDateString, Matches, MaxLength } from 'class-validator';
+import { IsString, IsEnum, IsPositive, IsInt, Min, Max, IsArray, ArrayMinSize, ArrayMaxSize, MinLength, IsOptional, IsObject, ValidateNested, IsDateString, Matches, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TripCategory, TripStatus } from '@ouiboo/types';
 import { IsDecimalMoney } from '../../common/validators/is-decimal-money.decorator';
@@ -57,6 +57,26 @@ export class CancellationPolicyDto {
     bands!: CancellationBandDto[];
 }
 
+/**
+ * #546: one language's title + description inside the trip translations
+ * map. Both fields are optional at the DTO level (drafts may be
+ * incomplete in any language); completeness is a publish-time rule —
+ * French must be complete before a trip can go ACTIVE (TripsService).
+ */
+export class TripTranslationEntryDto {
+    @ApiProperty({ example: 'Aventure dans le désert de Marrakech', required: false })
+    @IsOptional()
+    @IsString()
+    @MaxLength(300)
+    title?: string;
+
+    @ApiProperty({ example: 'Découvrez la magie du désert marocain...', required: false })
+    @IsOptional()
+    @IsString()
+    @MaxLength(10000)
+    description?: string;
+}
+
 export class CreateTripTemplateDto {
     @ApiProperty({ example: 'Marrakech Desert Adventure' })
     @IsString()
@@ -67,6 +87,21 @@ export class CreateTripTemplateDto {
     @IsString()
     @MinLength(10)
     description!: string;
+
+    // #546: multilingual title + description, keyed by ISO language
+    // code ({ fr: { title, description }, ar: { ... } }). The top-level
+    // `title`/`description` above are the FRENCH text (canonical) and
+    // mirror the map's `fr` entry on every write. The map is sanitized
+    // server-side (trip-translations.util); a future language is added
+    // by sending a new key — no API change needed.
+    @ApiProperty({
+        required: false,
+        description: 'Title + description per language code: { [languageCode]: { title?, description? } }',
+        example: { ar: { title: 'مغامرة في صحراء مراكش', description: '...' } },
+    })
+    @IsOptional()
+    @IsObject()
+    translations?: Record<string, TripTranslationEntryDto>;
 
     @ApiProperty({ enum: TripCategory, example: TripCategory.Adventure })
     @IsEnum(TripCategory)

@@ -7,12 +7,16 @@ const mockTripTemplate = {
     id: 'trip-123',
     agencyId: 'agency-123',
     title: 'Test Trip',
+    // Real rows always carry a (French) description — NOT NULL column.
+    description: 'A test trip description',
     currency: 'MAD',
     status: 'DRAFT',
     _count: { sessions: 0 },
 };
 
 const mockDatabaseService = {
+    // #546: localized search resolves matching ids via one raw query.
+    $queryRaw: jest.fn().mockResolvedValue([]),
     $transaction: jest.fn((fn: any) => fn({
         itineraryDay: { deleteMany: jest.fn().mockResolvedValue({}) },
         review: { deleteMany: jest.fn().mockResolvedValue({}) },
@@ -344,6 +348,20 @@ describe('TripsService', () => {
                 where: expect.objectContaining({
                     category: 'ADVENTURE',
                     agencyId: 'agency-123',
+                }),
+            }));
+        });
+
+        it('adds translation-matched ids to the search OR when the raw lookup hits (#546)', async () => {
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(0);
+            (db as any).$queryRaw.mockResolvedValue([{ id: 'tpl-ar-1' }, { id: 'tpl-ar-2' }]);
+
+            await service.findAllTemplates({ q: 'الأطلس' });
+
+            expect(db.tripTemplate.findMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({
+                    OR: expect.arrayContaining([{ id: { in: ['tpl-ar-1', 'tpl-ar-2'] } }]),
                 }),
             }));
         });
@@ -794,6 +812,165 @@ describe('TripsService', () => {
             await service.createTemplate('agency-123', { title: 'T' } as any);
 
             expect(db.tripTemplate.create).toHaveBeenCalled();
+        });
+    });
+
+    describe('multilingual content: language map + French publish gate (#546)', () => {
+        const verifiedAgency = {
+            id: 'agency-123',
+            verificationStatus: 'VERIFIED',
+            travelLicenceStatus: 'VERIFIED',
+            licenceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            travelLicenceType: 'ODV',
+            insuranceStatus: 'VERIFIED',
+            insuranceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        };
+
+        beforeEach(() => {
+            db.tripTemplate.update.mockResolvedValue({ ...mockTripTemplate, status: 'ACTIVE' });
+        });
+
+        it('create persists the map with the fr entry mirrored from the canonical fields', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123', travelLicenceType: 'ODV' });
+            db.tripTemplate.create.mockResolvedValue(mockTripTemplate);
+
+            await service.createTemplate('agency-123', {
+                title: 'Titre FR',
+                description: 'Description FR complète',
+                translations: { ar: { title: 'عنوان', description: 'وصف' } },
+            } as any);
+
+            const data = db.tripTemplate.create.mock.calls[0][0].data;
+            expect(data.translations).toEqual({
+                ar: { title: 'عنوان', description: 'وصف' },
+                fr: { title: 'Titre FR', description: 'Description FR complète' },
+            });
+        });
+
+        it('blocks re-activation when French is incomplete, even with a complete Arabic version', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue(verifiedAgency);
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                status: 'INACTIVE',
+                title: '',
+                description: '',
+                translations: { ar: { title: 'عنوان', description: 'وصف كامل' } },
+            });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/French title and description are required/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks a PATCH publish transition when the post-write French text is incomplete', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue(verifiedAgency);
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                status: 'DRAFT',
+                title: 'Titre',
+                description: '',
+                translations: null,
+            });
+
+            await expect(service.updateTemplate('trip-123', 'agency-123', { status: 'ACTIVE' } as any))
+                .rejects.toThrow(/French title and description are required/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('publishes a French-only trip (Arabic/English encouraged, never blocking)', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue(verifiedAgency);
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE', translations: null });
+
+            const result = await service.activateTemplate('trip-123', 'agency-123');
+
+            expect(db.tripTemplate.update).toHaveBeenCalledWith({
+                where: { id: 'trip-123' },
+                data: { status: 'ACTIVE' },
+            });
+            expect(result.status).toBe('ACTIVE');
+        });
+
+        it('update merges translations per language and re-mirrors the French entry', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                status: 'DRAFT',
+                translations: {
+                    fr: { title: 'Test Trip', description: 'A test trip description' },
+                    ar: { title: 'قديم', description: 'وصف قديم' },
+                },
+            });
+
+            await service.updateTemplate('trip-123', 'agency-123', {
+                translations: { en: { title: 'English title', description: 'English description' } },
+            } as any);
+
+            const data = db.tripTemplate.update.mock.calls[0][0].data;
+            expect(data.translations).toEqual({
+                fr: { title: 'Test Trip', description: 'A test trip description' },
+                ar: { title: 'قديم', description: 'وصف قديم' },
+                en: { title: 'English title', description: 'English description' },
+            });
+        });
+
+        it('findAll resolves title/description into the requested locale', async () => {
+            db.tripTemplate.findMany.mockResolvedValue([
+                {
+                    ...mockTripTemplate,
+                    title: 'Titre FR',
+                    description: 'Description FR',
+                    translations: {
+                        fr: { title: 'Titre FR', description: 'Description FR' },
+                        ar: { title: 'عنوان AR', description: 'وصف AR' },
+                    },
+                },
+            ]);
+            db.tripTemplate.count.mockResolvedValue(1);
+
+            const result = await service.findAllTemplates({ locale: 'ar' });
+
+            expect(result.data[0].title).toBe('عنوان AR');
+            expect(result.data[0].description).toBe('وصف AR');
+            // The full map still rides along for multi-language clients.
+            expect((result.data[0] as any).translations.ar.title).toBe('عنوان AR');
+        });
+
+        it('findAll without a locale returns the French columns unchanged (legacy shape)', async () => {
+            db.tripTemplate.findMany.mockResolvedValue([{ ...mockTripTemplate, translations: null }]);
+            db.tripTemplate.count.mockResolvedValue(1);
+
+            const result = await service.findAllTemplates({});
+
+            expect(result.data[0].title).toBe('Test Trip');
+            expect(result.data[0].description).toBe('A test trip description');
+        });
+
+        it('findOne resolves into the requested locale and selects the map', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                title: 'Titre FR',
+                description: 'Description FR',
+                translations: {
+                    fr: { title: 'Titre FR', description: 'Description FR' },
+                    en: { title: 'Title EN', description: 'Description EN' },
+                },
+                agency: {
+                    id: 'agency-123',
+                    companyName: 'Atlas Adventures SARL',
+                    logo: null,
+                    verificationStatus: 'VERIFIED',
+                    bankDetails: null,
+                    bankDetailsStatus: 'VERIFIED',
+                    bankDetailsVerifiedAt: null,
+                },
+            });
+
+            const result = await service.findOneTemplate('trip-123', 'en');
+
+            const args = db.tripTemplate.findFirst.mock.calls[0][0];
+            expect(args.select.translations).toBe(true);
+            expect(result.title).toBe('Title EN');
+            expect(result.description).toBe('Description EN');
         });
     });
 });

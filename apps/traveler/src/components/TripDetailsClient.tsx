@@ -116,7 +116,9 @@ export default function TripDetailsClient({
     enabled: !!tripId,
     initialData: initialTrip ?? undefined,
     queryFn: async () => {
-      const response = await apiClient.get(`/trips/${tripId}`);
+      // #546: trip text in the current UI language (the ISR server
+      // payload is the canonical French; this refetch localizes it).
+      const response = await apiClient.get(`/trips/${tripId}?locale=${i18n.language}`);
       return response.data;
     }
   });
@@ -354,8 +356,11 @@ export default function TripDetailsClient({
                             <span className="font-bold text-sm text-amber-700 dark:text-yellow-400">{reviewStats?.totalReviews ? (reviewStats.averageRating ?? 0).toFixed(1) : 'New'}</span>
                             <span className="text-xs text-amber-700 dark:text-yellow-400/70 font-medium">({reviewStats?.totalReviews || 0} reviews)</span>
                         </div>
-                        {/* #468: share this trip (native sheet / intent menu) */}
-                        <ShareTripButton tripId={trip.id} tripTitle={trip.title} travelerBaseUrl={TRAVELER_URL} className="rounded-full" />
+                        {/* #468: share this trip (native sheet / intent menu).
+                            allowRuntimeOriginFallback: this app serves the trip
+                            pages, so its own origin is a safe share base if the
+                            configured one is ever loopback in a deployed build. */}
+                        <ShareTripButton tripId={trip.id} tripTitle={trip.title} travelerBaseUrl={TRAVELER_URL} allowRuntimeOriginFallback className="rounded-full" />
                     </div>
 
                     {/* #371: seller of record + verified travel licence */}

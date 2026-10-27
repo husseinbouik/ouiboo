@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 import { getServerTranslations } from '@/lib/server-translations';
+import { getInitialLanguage } from '@ouiboo/i18n/server';
 import SellerIdentity from '@/components/SellerIdentity';
 
 interface AgencyPublicProfile {
@@ -41,7 +42,9 @@ async function getAgency(id: string): Promise<AgencyPublicProfile | null> {
 
 async function getAgencyTrips(agencyId: string): Promise<Trip[]> {
   try {
-    const res = await apiClient.get(`/trips?agencyId=${agencyId}&status=ACTIVE`);
+    // #546: trip text in the visitor's language.
+    const locale = await getInitialLanguage();
+    const res = await apiClient.get(`/trips?agencyId=${agencyId}&status=ACTIVE&locale=${locale}`);
     return Array.isArray(res.data?.data) ? res.data.data : [];
   } catch (error) {
     console.error(error);

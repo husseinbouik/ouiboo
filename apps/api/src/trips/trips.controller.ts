@@ -1,6 +1,7 @@
-import { BadRequestException, Controller, Get, Post, Body, Param, UseGuards, Request, Query, Patch, Delete } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Post, Body, Param, UseGuards, Request, Query, Patch, Delete, Headers } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { TripsService } from './trips.service';
+import { normalizeTripLocale } from './trip-translations.util';
 import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripTemplateDto, UpdateTripSessionDto } from './dto/create-trip.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -72,8 +73,15 @@ export class TripsController {
         @Query('sortOrder') sortOrder?: string,
         @Query('page') page?: string,
         @Query('limit') limit?: string,
+        // #546: request locale for localized title/description. The
+        // explicit query param wins; the apps' `x-ouiboo-language`
+        // header (the locale channel the web apps already use) is the
+        // fallback. Absent both, payloads resolve to French.
+        @Query('locale') locale?: string,
+        @Headers('x-ouiboo-language') languageHeader?: string,
     ) {
         return this.tripsService.findAllTemplates({
+            locale: normalizeTripLocale(locale) ?? normalizeTripLocale(languageHeader),
             featured: featured === 'true',
             status,
             q: q || search,
@@ -97,8 +105,15 @@ export class TripsController {
 
     @Get(':id')
     @ApiOperation({ summary: 'Get trip template by ID' })
-    findOne(@Param('id') id: string) {
-        return this.tripsService.findOneTemplate(id);
+    findOne(
+        @Param('id') id: string,
+        @Query('locale') locale?: string,
+        @Headers('x-ouiboo-language') languageHeader?: string,
+    ) {
+        return this.tripsService.findOneTemplate(
+            id,
+            normalizeTripLocale(locale) ?? normalizeTripLocale(languageHeader),
+        );
     }
 
     @Post(':id/sessions')
