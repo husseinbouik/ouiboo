@@ -43,3 +43,6 @@ export function metadataDescription(value: string | null | undefined): string {
   if (!normalized) return SITE_DESCRIPTION
   return normalized.length > 160 ? `${normalized.slice(0, 157)}...` : normalized
 }
+
+// #245 controlled failing fixture — deliberate syntax error, do not merge
+export const __failingFixture245 = ;
