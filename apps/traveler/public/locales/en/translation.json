@@ -328,7 +328,8 @@
     "notFoundTitle": "This route is not on the map",
     "notFoundDescription": "The page may have moved or the trip may no longer be available.",
     "exploreTrips": "Explore available trips",
-    "closeDialog": "Close dialog"
+    "closeDialog": "Close dialog",
+    "undo": "Undo"
   },
   "tripCard": {
     "previousImage": "Previous image",
@@ -391,7 +392,9 @@
     "emptySubtitle": "Start adding trips to your wishlist to see them here",
     "previous": "Previous",
     "next": "Next",
-    "pageOf": "Page {{page}} of {{pages}}"
+    "pageOf": "Page {{page}} of {{pages}}",
+    "removed": "Removed from your wishlist",
+    "updateFailed": "Could not update your wishlist. Please try again."
   },
   "verify": {
     "title": "Check your email",

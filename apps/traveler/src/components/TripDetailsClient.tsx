@@ -25,6 +25,7 @@ import { useAuth } from '@/components/AuthContext';
 import { ReviewList } from '@/components/ReviewList';
 import SellerIdentity from '@/components/SellerIdentity';
 import { TRAVELER_URL } from '@/lib/site';
+import { tripCoverViewTransitionName } from '@/lib/view-transition';
 import { SessionStatus, type CancellationScaleSnapshot, type SessionStatusType } from '@ouiboo/types';
 import { formatCurrency } from '@ouiboo/utils';
 import { CancellationScaleCard } from '@/components/CancellationScaleCard';
@@ -70,6 +71,10 @@ type TripDetails = {
   images?: string[];
   /** #332: agency-provided alt text per image (index-aligned); may be absent. */
   imageAlts?: string[];
+  /** #486: stored blur placeholders per image (index-aligned data-URLs);
+   * may be absent/null per image — SafeImage falls back to the shared
+   * palette placeholder, so existing media renders correctly. */
+  imageBlurDataURLs?: (string | null)[];
   /** #371: seller of record (legal name + verified licence) from GET /trips/:id. */
   agency?: {
     id?: string;
@@ -302,6 +307,8 @@ export default function TripDetailsClient({
                     alt={trip.imageAlts?.[activeImage]?.trim() || trip.title}
                     fill
                     sizes="(min-width: 1024px) 60vw, 100vw"
+                    blurDataURL={trip.imageBlurDataURLs?.[activeImage] ?? undefined}
+                    style={{ viewTransitionName: tripCoverViewTransitionName(trip.id) }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
                 <div className="absolute bottom-6 left-6 flex gap-2">
@@ -325,7 +332,7 @@ export default function TripDetailsClient({
               <div className="flex lg:hidden gap-3 overflow-x-auto pb-1" aria-label={t('tripDetails.photosLabel')}>
                   {galleryTiles.map(({ src, index }) => (
                       <button key={index} type="button" className="relative h-20 w-28 shrink-0 rounded-2xl overflow-hidden shadow-md border border-border/50" onClick={() => setActiveImage(index)} aria-label={t('tripCard.viewImage', { count: index + 1 })}>
-                          <SafeImage src={src} className="w-full h-full object-cover" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - ${index + 1}`} fill sizes="112px" />
+                          <SafeImage src={src} className="w-full h-full object-cover" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - ${index + 1}`} fill sizes="112px" blurDataURL={trip.imageBlurDataURLs?.[index] ?? undefined} />
                       </button>
                   ))}
               </div>
@@ -339,7 +346,7 @@ export default function TripDetailsClient({
               >
                   {desktopTiles.map(({ src, index }, tilePos) => (
                       <button key={index} type="button" className={cn("relative min-h-36 rounded-2xl overflow-hidden shadow-lg border border-border/50 group", spanLastRailCell && hiddenTileCount === 0 && tilePos === desktopTiles.length - 1 && "lg:col-span-2")} onClick={() => setActiveImage(index)} aria-label={`View image ${index + 1}`}>
-                          <SafeImage src={src} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - image ${index + 1}`} fill sizes="20vw" />
+                          <SafeImage src={src} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - image ${index + 1}`} fill sizes="20vw" blurDataURL={trip.imageBlurDataURLs?.[index] ?? undefined} />
                           <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                       </button>
                   ))}

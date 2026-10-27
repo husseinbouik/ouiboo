@@ -328,7 +328,8 @@
     "notFoundTitle": "هذا المسار غير موجود على الخريطة",
     "notFoundDescription": "ربما تم نقل الصفحة أو لم تعد الرحلة متاحة.",
     "exploreTrips": "استكشف الرحلات المتاحة",
-    "closeDialog": "إغلاق النافذة"
+    "closeDialog": "إغلاق النافذة",
+    "undo": "تراجع"
   },
   "tripCard": {
     "previousImage": "الصورة السابقة",
@@ -391,7 +392,9 @@
     "emptySubtitle": "ابدأ بإضافة رحلات إلى مفضلتك لعرضها هنا",
     "previous": "السابق",
     "next": "التالي",
-    "pageOf": "صفحة {{page}} من {{pages}}"
+    "pageOf": "صفحة {{page}} من {{pages}}",
+    "removed": "تمت الإزالة من مفضلتك",
+    "updateFailed": "تعذر تحديث مفضلتك. يرجى المحاولة مرة أخرى."
   },
   "verify": {
     "title": "تحقق من بريدك الإلكتروني",

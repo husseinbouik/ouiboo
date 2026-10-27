@@ -328,7 +328,8 @@
     "notFoundTitle": "Cette page n'est pas sur la carte",
     "notFoundDescription": "La page a peut-être été déplacée ou le voyage n'est plus disponible.",
     "exploreTrips": "Explorer les voyages disponibles",
-    "closeDialog": "Fermer la boîte de dialogue"
+    "closeDialog": "Fermer la boîte de dialogue",
+    "undo": "Annuler"
   },
   "tripCard": {
     "previousImage": "Image précédente",
@@ -391,7 +392,9 @@
     "emptySubtitle": "Ajoutez des voyages à vos favoris pour les voir ici",
     "previous": "Précédent",
     "next": "Suivant",
-    "pageOf": "Page {{page}} sur {{pages}}"
+    "pageOf": "Page {{page}} sur {{pages}}",
+    "removed": "Retiré de vos favoris",
+    "updateFailed": "Impossible de mettre à jour vos favoris. Veuillez réessayer."
   },
   "verify": {
     "title": "Vérifiez votre email",
