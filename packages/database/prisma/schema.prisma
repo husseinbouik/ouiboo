@@ -434,6 +434,14 @@ model AgencyProfile {
   travelLicenceStatus    LicenceStatus      @default(NOT_SUBMITTED)
   licenceVerifiedAt      DateTime?
   licenceExpiry          DateTime?
+  // B4 (Council Session #2): Law 31-08 Art. 29/32 seller identity block —
+  // the licence's date of issue and issuing authority, rendered live in
+  // checkout, on the trip page, and in the booking confirmation.
+  // Captured at submission; a complete submission (and any admin
+  // VERIFIED decision) now requires both. Legacy verified rows predate
+  // the fields: null means "not yet supplied", never a fabricated value.
+  licenceIssuedAt          DateTime?
+  licenceIssuingAuthority  String?
   licenceRejectionReason String?
   // #415 (Council P0-08): the licence is proven by an uploaded document
   // (private identity-document upload, key only — never a public URL)

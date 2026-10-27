@@ -93,6 +93,16 @@ const en = {
     panelNextStep:
       'Next step: upload your payment proof from the booking dashboard so the agency can review it.',
   },
+  // B4: Law 31-08 Art. 29/32 seller identity block in the durable
+  // booking confirmation email. Issue details render only when they
+  // are on the agency's record — never a fabricated value.
+  bookingSeller: {
+    heading: 'Your seller',
+    soldBy: 'This trip is organised and sold by {{name}}.',
+    licence: 'Travel-agent licence: {{type}} {{number}}',
+    issued: 'Issued on {{date}} by {{authority}}.',
+    detailsPending: 'The licence issue details are being confirmed with the agency.',
+  },
   bookingCancellation: {
     heading: 'Cancellation terms for this booking',
     paidByAgency: 'Refunds under these terms are paid by the agency you booked with.',
@@ -282,6 +292,13 @@ const fr: EmailStrings = {
     panelNextStep:
       "Étape suivante : téléversez votre preuve de paiement depuis le tableau de bord de la réservation afin que l'agence puisse l'examiner.",
   },
+  bookingSeller: {
+    heading: 'Votre vendeur',
+    soldBy: 'Ce voyage est organisé et vendu par {{name}}.',
+    licence: 'Licence d’agent de voyages : {{type}} {{number}}',
+    issued: 'Délivrée le {{date}} par {{authority}}.',
+    detailsPending: 'Les détails de délivrance de la licence sont en cours de confirmation auprès de l’agence.',
+  },
   bookingCancellation: {
     heading: 'Conditions d’annulation de cette réservation',
     paidByAgency:
@@ -464,6 +481,13 @@ const ar: EmailStrings = {
     body: 'تم استلام حجزك لرحلة {{tripTitle}}.',
     panelReference: 'مرجع الحجز:',
     panelNextStep: 'الخطوة التالية: ارفع إثبات الدفع من لوحة تحكم الحجز حتى تتمكن الوكالة من مراجعته.',
+  },
+  bookingSeller: {
+    heading: 'البائع',
+    soldBy: 'هذه الرحلة منظمة ومباعة من طرف {{name}}.',
+    licence: 'رخصة وكيل الأسفار: {{type}} {{number}}',
+    issued: 'صادرة بتاريخ {{date}} عن {{authority}}.',
+    detailsPending: 'جارٍ تأكيد تفاصيل إصدار الرخصة مع الوكالة.',
   },
   bookingCancellation: {
     heading: 'شروط الإلغاء لهذا الحجز',

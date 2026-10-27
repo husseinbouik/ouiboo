@@ -134,6 +134,8 @@ describe('UsersService', () => {
                 travelLicenceType: 'ODV',
                 travelLicenceNumber: 'AV-2024-0187',
                 licenceExpiry: '2028-05-31',
+                licenceIssuedAt: '2024-03-15',
+                licenceIssuingAuthority: 'Ministère du Tourisme',
                 licenceDocumentKey: 'private/user-9/licence.pdf',
             });
 
@@ -142,8 +144,48 @@ describe('UsersService', () => {
                     travelLicenceStatus: 'PENDING_REVIEW',
                     licenceVerifiedAt: null,
                     licenceExpiry: new Date('2028-05-31'),
+                    // B4: issue data persisted for the seller block.
+                    licenceIssuedAt: new Date('2024-03-15'),
+                    licenceIssuingAuthority: 'Ministère du Tourisme',
                 }),
             }));
+        });
+
+        it('keeps a licence submission without the issue data NOT_SUBMITTED (B4)', async () => {
+            const { db, service } = createLicenceService(null);
+
+            await service.updateAgencyProfile('user-9', {
+                ...baseProfile,
+                travelLicenceType: 'ODV',
+                travelLicenceNumber: 'AV-2024-0187',
+                licenceExpiry: '2028-05-31',
+                licenceDocumentKey: 'private/user-9/licence.pdf',
+            });
+
+            const call = db.agencyProfile.upsert.mock.calls[0][0];
+            expect(call.create.travelLicenceStatus).toBe('NOT_SUBMITTED');
+        });
+
+        it('sends a legacy verified agency that supplies the issue data back to review (B4)', async () => {
+            const { db, service } = createLicenceService({
+                travelLicenceType: 'ODV',
+                travelLicenceNumber: 'AV-2024-0187',
+                licenceExpiry: new Date('2028-05-31'),
+                licenceIssuedAt: null,
+                licenceIssuingAuthority: null,
+                travelLicenceStatus: 'VERIFIED',
+                licenceDocumentKey: 'private/user-9/licence.pdf',
+            });
+
+            await service.updateAgencyProfile('user-9', {
+                ...baseProfile,
+                licenceIssuedAt: '2024-03-15',
+                licenceIssuingAuthority: 'Ministère du Tourisme',
+            });
+
+            const call = db.agencyProfile.upsert.mock.calls[0][0];
+            expect(call.update.travelLicenceStatus).toBe('PENDING_REVIEW');
+            expect(call.update.licenceVerifiedAt).toBeNull();
         });
 
         it('never lets an agency set its own licence status to VERIFIED', async () => {
@@ -154,6 +196,8 @@ describe('UsersService', () => {
                 travelLicenceType: 'ODV',
                 travelLicenceNumber: 'AV-2024-0187',
                 licenceExpiry: '2028-05-31',
+                licenceIssuedAt: '2024-03-15',
+                licenceIssuingAuthority: 'Ministère du Tourisme',
                 licenceDocumentKey: 'private/user-9/licence.pdf',
                 travelLicenceStatus: 'VERIFIED',
                 licenceVerifiedAt: new Date(),
@@ -169,6 +213,8 @@ describe('UsersService', () => {
                 travelLicenceType: 'ODV',
                 travelLicenceNumber: 'AV-2024-0187',
                 licenceExpiry: new Date('2028-05-31'),
+                licenceIssuedAt: new Date('2024-03-15'),
+                licenceIssuingAuthority: 'Ministère du Tourisme',
                 travelLicenceStatus: 'VERIFIED',
                 licenceDocumentKey: 'private/user-9/licence.pdf',
             });

@@ -24,6 +24,22 @@ import {
 } from './email-i18n'
 import type { CancellationScaleSnapshot } from '@ouiboo/types'
 
+/**
+ * B4 (Council Session #2): seller-of-record facts for the Law 31-08
+ * Art. 29/32 block in the booking confirmation email. `licenceVerified`
+ * must be the caller's effective-status derivation (verified +
+ * unexpired) — the email never re-derives or invents licence data.
+ */
+export interface BookingSellerInfo {
+  legalName?: string | null
+  companyName?: string | null
+  travelLicenceType?: string | null
+  travelLicenceNumber?: string | null
+  licenceVerified: boolean
+  licenceIssuedAt?: Date | string | null
+  licenceIssuingAuthority?: string | null
+}
+
 @Injectable()
 export class EmailService {
   private transporter?: nodemailer.Transporter
@@ -266,6 +282,46 @@ export class EmailService {
   }
 
   /**
+   * B4: render the Law 31-08 Art. 29/32 seller identity block for the
+   * traveller's booking confirmation. The licence line renders only
+   * when the caller derived the licence as effectively VERIFIED; the
+   * issue date/authority render only when they are on the record —
+   * a legacy record missing them gets the honest pending line, never
+   * a fabricated value.
+   */
+  private bookingSellerBlock(seller: BookingSellerInfo | null | undefined, locale: EmailLocale): string {
+    if (!seller) {
+      return ''
+    }
+    const name = seller.legalName?.trim() || seller.companyName?.trim()
+    if (!name) {
+      return ''
+    }
+    const t = emailStrings(locale).bookingSeller
+    const lines = [fillEmailCopy(t.soldBy, { name })]
+    if (seller.licenceVerified && seller.travelLicenceNumber?.trim()) {
+      lines.push(fillEmailCopy(t.licence, {
+        type: seller.travelLicenceType?.trim() ?? '',
+        number: seller.travelLicenceNumber.trim(),
+      }))
+      const issuedAt = seller.licenceIssuedAt ? new Date(seller.licenceIssuedAt) : null
+      const authority = seller.licenceIssuingAuthority?.trim()
+      if (issuedAt && !Number.isNaN(issuedAt.getTime()) && authority) {
+        const date = new Intl.DateTimeFormat(
+          locale === 'fr' ? 'fr-FR' : locale === 'ar' ? 'ar-MA' : 'en-GB',
+          { dateStyle: 'medium' },
+        ).format(issuedAt)
+        lines.push(fillEmailCopy(t.issued, { date, authority }))
+      } else {
+        lines.push(t.detailsPending)
+      }
+    }
+    return `
+      ${emailHeading(t.heading)}
+      ${emailPanel(lines.map((line) => escapeHtml(line)).join('<br>'), 'neutral', locale)}`
+  }
+
+  /**
    * #424: the traveller's copy renders in `locale` (their checkout
    * language, persisted on the booking). The agency copy keeps the
    * default locale — no agency language preference is recorded yet.
@@ -277,8 +333,11 @@ export class EmailService {
    * at booking creation — in the same locale: the platform floor first,
    * then one line per band. Refunds under these terms are paid by the
    * agency, never by Ouiboo.
+   *
+   * B4 (Council Session #2): the traveller copy also carries the
+   * Law 31-08 seller identity block (see bookingSellerBlock).
    */
-  async sendBookingNotification(travelerEmail: string, agencyEmail: string, bookingId: string, tripTitle: string, locale?: EmailLocale | string | null, cancellationScale?: CancellationScaleSnapshot | null) {
+  async sendBookingNotification(travelerEmail: string, agencyEmail: string, bookingId: string, tripTitle: string, locale?: EmailLocale | string | null, cancellationScale?: CancellationScaleSnapshot | null, seller?: BookingSellerInfo | null) {
     const resolved = normalizeEmailLocale(locale)
     const t = emailStrings(resolved).bookingReceived
     const cancellationStrings = emailStrings(resolved).bookingCancellation
@@ -291,7 +350,7 @@ export class EmailService {
     const travelerContent = `
       ${emailHeading(t.heading)}
       ${emailParagraph(fillEmailCopy(t.body, { tripTitle }))}
-      ${emailPanel(`${escapeHtml(t.panelReference)} ${emailStrong(bookingId)}<br>${escapeHtml(t.panelNextStep)}`, 'neutral', resolved)}${cancellationBlock}
+      ${emailPanel(`${escapeHtml(t.panelReference)} ${emailStrong(bookingId)}<br>${escapeHtml(t.panelNextStep)}`, 'neutral', resolved)}${this.bookingSellerBlock(seller, resolved)}${cancellationBlock}
       ${emailParagraph(emailStrings(resolved).prevailingLanguage)}`
     const agencyStrings = emailStrings().bookingNewAgency
     const agencyContent = `

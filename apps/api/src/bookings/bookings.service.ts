@@ -399,6 +399,19 @@ export class BookingsService {
                         tripTitle: sessionWithInfo.template.title,
                         locale: booking.locale,
                         cancellationScale,
+                        // B4: Law 31-08 seller identity block for the
+                        // traveller's durable confirmation email. The
+                        // licence flag uses the same effective-status
+                        // derivation as the booking gate above.
+                        seller: {
+                            legalName: agency.legalName,
+                            companyName: agency.companyName,
+                            travelLicenceType: agency.travelLicenceType,
+                            travelLicenceNumber: agency.travelLicenceNumber,
+                            licenceVerified: isLicenceVerified(agency, now),
+                            licenceIssuedAt: agency.licenceIssuedAt,
+                            licenceIssuingAuthority: agency.licenceIssuingAuthority,
+                        },
                     }
                     : null,
             };
@@ -435,6 +448,7 @@ export class BookingsService {
                 notification.tripTitle,
                 notification.locale,
                 notification.cancellationScale,
+                notification.seller,
             ).catch(() => undefined);
         }
 

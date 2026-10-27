@@ -27,7 +27,7 @@ import {
 import { PaymentsService } from '../payments/payments.service';
 import { serializeDuplicateCreditFlag } from '../bookings/bookings.service';
 import { type MoneyInput } from '../common/money.util';
-import { effectiveInsuranceStatus, effectiveLicenceStatus, getAgencyActivationBlock } from '../common/agency-licence.util';
+import { effectiveInsuranceStatus, effectiveLicenceStatus, getAgencyActivationBlock, sellerBlockMissingFields } from '../common/agency-licence.util';
 
 const parseEnumQuery = <T extends string>(value: string | undefined, allowedValues: readonly T[]) => {
     if (!value) {
@@ -453,6 +453,8 @@ export class AdminController {
                 travelLicenceNumber: true,
                 travelLicenceStatus: true,
                 licenceExpiry: true,
+                licenceIssuedAt: true,
+                licenceIssuingAuthority: true,
                 licenceDocumentKey: true,
             },
         });
@@ -480,6 +482,15 @@ export class AdminController {
             if (agency.licenceExpiry.getTime() <= Date.now()) {
                 throw new BadRequestException('Travel licence has already expired; ask the agency to renew it before verification');
             }
+            // B4: the Law 31-08 seller block renders the licence issue
+            // date and issuing authority — a licence cannot be marked
+            // VERIFIED until both are on the record.
+            if (!agency.licenceIssuedAt) {
+                throw new BadRequestException('Licence issue date is required before verification');
+            }
+            if (!agency.licenceIssuingAuthority?.trim()) {
+                throw new BadRequestException('Licence issuing authority is required before verification');
+            }
             if (body.ministryChecked !== true) {
                 throw new BadRequestException('Ministry-list check attestation (ministryChecked) is required to verify a licence');
             }
@@ -505,6 +516,8 @@ export class AdminController {
                 status,
                 licenceNumber: agency.travelLicenceNumber,
                 licenceDocumentKey: agency.licenceDocumentKey,
+                licenceIssuedAt: agency.licenceIssuedAt,
+                licenceIssuingAuthority: agency.licenceIssuingAuthority,
                 ministryChecked: status === 'VERIFIED' ? true : undefined,
             },
         }).catch((err) => console.error('Audit log failed', err));
@@ -850,11 +863,19 @@ export class AdminController {
         ]);
         // #371: derived licence status (expired licences flagged on read).
         // #415: derived insurance status alongside it.
+        // B4: seller-block data completeness — for an effectively
+        // VERIFIED licence, the Law 31-08 block fields still missing on
+        // the record (legacy rows predate licenceIssuedAt /
+        // licenceIssuingAuthority). Admin works this list until every
+        // verified agency has supplied them; other rows report [].
         return {
             data: agencies.map((agency) => ({
                 ...agency,
                 effectiveLicenceStatus: effectiveLicenceStatus(agency),
                 effectiveInsuranceStatus: effectiveInsuranceStatus(agency),
+                sellerBlockMissingFields: effectiveLicenceStatus(agency) === 'VERIFIED'
+                    ? sellerBlockMissingFields(agency)
+                    : [],
             })),
             pagination: buildPaginationMeta(total, safePage, safeLimit),
         };

@@ -96,6 +96,56 @@ export function isLicenceVerified(profile: LicenceProfileLike, now: Date = new D
     return effectiveLicenceStatus(profile, now) === 'VERIFIED';
 }
 
+/**
+ * B4 (Council Session #2): the Law 31-08 Art. 29/32 seller identity
+ * block, as rendered in checkout, on the trip page, and in the booking
+ * confirmation, needs five facts about the seller of record: legal
+ * name, licence type, licence number, licence ISSUE DATE, and ISSUING
+ * AUTHORITY. The last two were added after licences were already being
+ * verified, so legacy verified rows may lack them — the gap must be
+ * shown honestly (never filled with a fabricated value) and surfaced
+ * to admin as a data-completeness list. This helper is the single
+ * derivation every surface uses.
+ */
+export type SellerBlockProfileLike = {
+    legalName?: string | null;
+    travelLicenceType?: string | null;
+    travelLicenceNumber?: string | null;
+    licenceIssuedAt?: Date | string | null;
+    licenceIssuingAuthority?: string | null;
+};
+
+export const SELLER_BLOCK_FIELDS = [
+    'legalName',
+    'travelLicenceType',
+    'travelLicenceNumber',
+    'licenceIssuedAt',
+    'licenceIssuingAuthority',
+] as const;
+
+export type SellerBlockField = (typeof SELLER_BLOCK_FIELDS)[number];
+
+/** Seller-block fields with no usable value on the record. */
+export function sellerBlockMissingFields(profile: SellerBlockProfileLike): SellerBlockField[] {
+    const missing: SellerBlockField[] = [];
+    if (!profile.legalName?.trim()) {
+        missing.push('legalName');
+    }
+    if (!profile.travelLicenceType) {
+        missing.push('travelLicenceType');
+    }
+    if (!profile.travelLicenceNumber?.trim()) {
+        missing.push('travelLicenceNumber');
+    }
+    if (!parseExpiry(profile.licenceIssuedAt)) {
+        missing.push('licenceIssuedAt');
+    }
+    if (!profile.licenceIssuingAuthority?.trim()) {
+        missing.push('licenceIssuingAuthority');
+    }
+    return missing;
+}
+
 export function effectiveInsuranceStatus(
     profile: InsuranceProfileLike,
     now: Date = new Date(),

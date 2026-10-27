@@ -223,7 +223,19 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             // #424 + B9: trailing arg is the booking's stored locale —
             // creation now always records one (sent as 'en' above).
             'en',
-            DEFAULT_CANCELLATION_SCALE
+            DEFAULT_CANCELLATION_SCALE,
+            // B4: the Law 31-08 seller block input — this fixture's
+            // licence is verified but predates the issue fields, so
+            // they arrive null (the email renders the pending line).
+            {
+                legalName: null,
+                companyName: 'Test Agency Ltd',
+                travelLicenceType: 'ODV',
+                travelLicenceNumber: 'LIC-100001',
+                licenceVerified: true,
+                licenceIssuedAt: null,
+                licenceIssuingAuthority: null,
+            }
         );
 
         // Verify database state
@@ -810,7 +822,17 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             createRes.body.id,
             'Mountain Adventure',
             'en', // #424 + B9: the stored locale (creation requires one)
-            DEFAULT_CANCELLATION_SCALE
+            DEFAULT_CANCELLATION_SCALE,
+            // B4: seller block input (see the happy-path assertion).
+            {
+                legalName: null,
+                companyName: 'Test Agency Ltd',
+                travelLicenceType: 'ODV',
+                travelLicenceNumber: 'LIC-100001',
+                licenceVerified: true,
+                licenceIssuedAt: null,
+                licenceIssuingAuthority: null,
+            }
         );
 
         // Upload proof

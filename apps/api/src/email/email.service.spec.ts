@@ -33,6 +33,70 @@ describe('EmailService templates', () => {
   })
 })
 
+describe('EmailService booking seller block (B4)', () => {
+  const service = new EmailService()
+
+  const captureTravelerHtml = async (seller: any) => {
+    const sendEmail = jest
+      .spyOn(service as any, 'sendEmail')
+      .mockResolvedValue(true)
+    await service.sendBookingNotification(
+      'traveler@example.com',
+      'agency@example.com',
+      'booking-1',
+      'Atlas Trek',
+      'en',
+      null,
+      seller,
+    )
+    const html = sendEmail.mock.calls[0][2] as string
+    sendEmail.mockRestore()
+    return html
+  }
+
+  const completeSeller = {
+    legalName: 'Atlas Adventures SARL',
+    companyName: 'Atlas Adventures',
+    travelLicenceType: 'ODV',
+    travelLicenceNumber: 'AV-2024-0187',
+    licenceVerified: true,
+    licenceIssuedAt: new Date('2024-03-15T00:00:00.000Z'),
+    licenceIssuingAuthority: 'Ministère du Tourisme',
+  }
+
+  it('renders the complete seller block for a verified agency', async () => {
+    const html = await captureTravelerHtml(completeSeller)
+    expect(html).toContain('Your seller')
+    expect(html).toContain('Atlas Adventures SARL')
+    expect(html).toContain('ODV AV-2024-0187')
+    expect(html).toContain('Issued on')
+    expect(html).toContain('Ministère du Tourisme')
+  })
+
+  it('shows the honest pending line when the issue data is missing (legacy record)', async () => {
+    const html = await captureTravelerHtml({
+      ...completeSeller,
+      licenceIssuedAt: null,
+      licenceIssuingAuthority: null,
+    })
+    expect(html).toContain('AV-2024-0187')
+    expect(html).toContain('being confirmed with the agency')
+    expect(html).not.toContain('Issued on')
+  })
+
+  it('never renders a licence line for an unverified licence', async () => {
+    const html = await captureTravelerHtml({ ...completeSeller, licenceVerified: false })
+    expect(html).toContain('Atlas Adventures SARL')
+    expect(html).not.toContain('AV-2024-0187')
+    expect(html).not.toContain('Issued on')
+  })
+
+  it('omits the block entirely without seller data', async () => {
+    const html = await captureTravelerHtml(null)
+    expect(html).not.toContain('Your seller')
+  })
+})
+
 describe('EmailService delivery', () => {
   const originalEnv = { ...process.env }
 

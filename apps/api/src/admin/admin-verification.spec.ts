@@ -36,6 +36,8 @@ describe('AdminController agency verification (#415)', () => {
         travelLicenceNumber: 'AV-2024-0187',
         travelLicenceStatus: 'PENDING_REVIEW',
         licenceExpiry: future,
+        licenceIssuedAt: new Date('2024-03-15T00:00:00.000Z'),
+        licenceIssuingAuthority: 'Ministère du Tourisme',
         licenceDocumentKey: 'private/user-9/licence.pdf',
     };
 
@@ -79,6 +81,22 @@ describe('AdminController agency verification (#415)', () => {
             const { controller: expired } = createController({ ...completeLicence, licenceExpiry: past });
             await expect(expired.verifyAgencyLicence(req, 'agency-1', { status: 'VERIFIED', ministryChecked: true }))
                 .rejects.toThrow(/already expired/i);
+        });
+
+        it('refuses VERIFIED without the licence issue date (B4)', async () => {
+            const { controller } = createController({ ...completeLicence, licenceIssuedAt: null });
+            await expect(controller.verifyAgencyLicence(req, 'agency-1', { status: 'VERIFIED', ministryChecked: true }))
+                .rejects.toThrow(/issue date is required/i);
+        });
+
+        it('refuses VERIFIED without the licence issuing authority (B4)', async () => {
+            const { controller } = createController({ ...completeLicence, licenceIssuingAuthority: null });
+            await expect(controller.verifyAgencyLicence(req, 'agency-1', { status: 'VERIFIED', ministryChecked: true }))
+                .rejects.toThrow(/issuing authority is required/i);
+
+            const { controller: blank } = createController({ ...completeLicence, licenceIssuingAuthority: '   ' });
+            await expect(blank.verifyAgencyLicence(req, 'agency-1', { status: 'VERIFIED', ministryChecked: true }))
+                .rejects.toThrow(/issuing authority is required/i);
         });
 
         it('refuses VERIFIED without the Ministry-check attestation', async () => {

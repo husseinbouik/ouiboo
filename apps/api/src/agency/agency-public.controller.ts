@@ -23,9 +23,14 @@ export class AgencyPublicController {
                 // is only exposed while the licence is verified (Law 11-16
                 // requires verified agents to display it publicly).
                 legalName: true,
+                travelLicenceType: true,
                 travelLicenceNumber: true,
                 travelLicenceStatus: true,
                 licenceExpiry: true,
+                // B4: seller-block issue data — same withholding rule as
+                // the licence number (exposed only while VERIFIED).
+                licenceIssuedAt: true,
+                licenceIssuingAuthority: true,
                 // #413 (Council B10): what+when verification statement on the
                 // public profile — the licence check date and the RC
                 // insurance evidence date.
@@ -52,7 +57,10 @@ export class AgencyPublicController {
             verificationStatus: agency.verificationStatus,
             legalName: agency.legalName,
             licenceVerified,
+            travelLicenceType: licenceVerified ? agency.travelLicenceType : null,
             travelLicenceNumber: licenceVerified ? agency.travelLicenceNumber : null,
+            licenceIssuedAt: licenceVerified ? agency.licenceIssuedAt : null,
+            licenceIssuingAuthority: licenceVerified ? agency.licenceIssuingAuthority : null,
             licenceVerifiedAt: licenceVerified ? agency.licenceVerifiedAt : null,
             insuranceStatus: effectiveInsurance,
             insuranceVerifiedAt: insuranceVerified ? agency.insuranceVerifiedAt : null,

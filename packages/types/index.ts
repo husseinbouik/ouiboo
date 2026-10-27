@@ -197,6 +197,9 @@ export interface AgencyProfile {
     travelLicenceStatus?: LicenceStatus;
     licenceVerifiedAt?: string;
     licenceExpiry?: string;
+    // B4 (Council Session #2): Law 31-08 seller-block licence issue data.
+    licenceIssuedAt?: string;
+    licenceIssuingAuthority?: string;
     licenceRejectionReason?: string;
     // #415: licence document (private upload key) + Ministry-check stamp
     licenceDocumentKey?: string;

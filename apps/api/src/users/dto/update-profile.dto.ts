@@ -104,6 +104,21 @@ export class UpdateAgencyProfileDto {
     @IsOptional()
     licenceExpiry?: string;
 
+    // B4 (Council Session #2): licence issue date + issuing authority —
+    // the Law 31-08 Art. 29/32 seller block cannot be completed without
+    // them, so a licence submission is only reviewable when both are
+    // present (same completeness rule as number/type/expiry/document).
+    @ApiProperty({ example: '2024-03-15', required: false, description: 'Licence date of issue (ISO 8601)' })
+    @IsDateString()
+    @IsOptional()
+    licenceIssuedAt?: string;
+
+    @ApiProperty({ example: 'Ministère du Tourisme', required: false, description: 'Authority that issued the licence' })
+    @IsString()
+    @IsOptional()
+    @MaxLength(160)
+    licenceIssuingAuthority?: string;
+
     // #415: licence document — a PRIVATE identity-document upload key
     // (private/{userId}/…), never a URL. The service validates ownership
     // of the key. A complete licence submission (number + type + expiry

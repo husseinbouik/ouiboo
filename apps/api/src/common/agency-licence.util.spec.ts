@@ -6,7 +6,45 @@ import {
     getAgencyInsuranceBlock,
     isInsuranceVerified,
     isLicenceVerified,
+    sellerBlockMissingFields,
 } from './agency-licence.util';
+
+describe('sellerBlockMissingFields (B4)', () => {
+    const complete = {
+        legalName: 'Atlas Adventures SARL',
+        travelLicenceType: 'ODV',
+        travelLicenceNumber: 'AV-2024-0187',
+        licenceIssuedAt: new Date('2024-03-15T00:00:00.000Z'),
+        licenceIssuingAuthority: 'Ministère du Tourisme',
+    };
+
+    it('reports nothing missing for a complete seller block', () => {
+        expect(sellerBlockMissingFields(complete)).toEqual([]);
+    });
+
+    it('flags the legacy gap: a verified record without issue data', () => {
+        expect(sellerBlockMissingFields({
+            ...complete,
+            licenceIssuedAt: null,
+            licenceIssuingAuthority: null,
+        })).toEqual(['licenceIssuedAt', 'licenceIssuingAuthority']);
+    });
+
+    it('treats blank strings and unparseable dates as missing', () => {
+        expect(sellerBlockMissingFields({
+            ...complete,
+            licenceIssuedAt: 'not-a-date',
+            licenceIssuingAuthority: '   ',
+        })).toEqual(['licenceIssuedAt', 'licenceIssuingAuthority']);
+        expect(sellerBlockMissingFields({})).toEqual([
+            'legalName',
+            'travelLicenceType',
+            'travelLicenceNumber',
+            'licenceIssuedAt',
+            'licenceIssuingAuthority',
+        ]);
+    });
+});
 
 const NOW = new Date('2026-10-23T12:00:00.000Z');
 const FUTURE = new Date('2027-06-01T00:00:00.000Z');
