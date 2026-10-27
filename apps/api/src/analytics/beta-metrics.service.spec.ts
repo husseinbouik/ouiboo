@@ -129,3 +129,23 @@ describe('BetaMetricsService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
+
+describe('Beta exit gate values (#431)', () => {
+  it('wires QA thresholds as documented gate constants', async () => {
+    const { BETA_EXIT_GATES } = await import('./beta-metrics.service');
+    expect(BETA_EXIT_GATES.zeroResultRateMaxPercent).toBe(20);
+    expect(BETA_EXIT_GATES.feeCaptureMinPercent).toBe(98);
+    expect(BETA_EXIT_GATES.disputesMaxPer1000Bookings).toBe(30);
+  });
+
+  it('carries the fee-capture criterion as present-but-inactive while the beta is free', async () => {
+    const service = new BetaMetricsService(buildMock() as any);
+    const m = await service.getBetaMetrics(undefined, undefined, NOW);
+    const fee = m.exitCriteria.find((c) => c.key === 'feeCapture') as any;
+    expect(fee).toBeDefined();
+    expect(fee.target).toContain('98%');
+    expect(fee.value).toBeNull();
+    expect(fee.pass).toBeNull();
+    expect(fee.active).toBe(false);
+  });
+});

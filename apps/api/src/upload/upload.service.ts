@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { IStorageProvider } from './interfaces/storage-provider.interface';
 import { UploadSafetyService } from './upload-safety.service';
 import { PRIVATE_FILE_PREFIX, SIGNED_URL_TOKEN_PURPOSE, SIGNED_URL_TTL_SECONDS } from './upload.constants';
+import { derivePublicMediaUrl } from './media-url.util';
 
 export interface SignedUrlRequester {
     userId: string;
@@ -122,6 +123,17 @@ export class UploadService {
         } catch {
             throw new NotFoundException('File not found');
         }
+    }
+
+    /**
+     * Re-derives the public URL for a stored media reference against the
+     * CURRENT public base (#447). Stored rows hold references (full URLs
+     * minted under an older base, or raw keys); callers serving trip
+     * images / agency logos must pass them through here (or the
+     * media-url.util helpers) instead of returning the stored value.
+     */
+    toPublicMediaUrl(reference: string | null | undefined): string | null | undefined {
+        return derivePublicMediaUrl(reference);
     }
 
     /**

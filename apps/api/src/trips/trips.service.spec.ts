@@ -346,6 +346,8 @@ describe('TripsService', () => {
                         { title: { contains: 'atlas', mode: 'insensitive' } },
                         { description: { contains: 'atlas', mode: 'insensitive' } },
                         { startLocation: { contains: 'atlas', mode: 'insensitive' } },
+                        // #440: destination (endLocation) is searchable.
+                        { endLocation: { contains: 'atlas', mode: 'insensitive' } },
                     ],
                 }),
             }));

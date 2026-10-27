@@ -984,6 +984,7 @@ model SearchEvent {
 
 // Reviews & Ratings
 enum ReviewStatus {
+  PENDING
   VISIBLE
   HIDDEN
   REMOVED
@@ -1002,6 +1003,8 @@ model Review {
   response          String?      @db.Text
   isVerifiedBooking Boolean      @default(true)
   status            ReviewStatus @default(VISIBLE)
+  // #439: author edit budget (service-enforced: max edits + edit window).
+  editCount         Int          @default(0)
   moderatedById     String?
   moderatedBy       User?        @relation("ReviewModerator", fields: [moderatedById], references: [id], onDelete: SetNull)
   moderatedAt       DateTime?

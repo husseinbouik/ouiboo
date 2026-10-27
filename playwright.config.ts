@@ -56,11 +56,36 @@ export default defineConfig({
   projects: [
     {
       name: 'traveler',
-      testMatch: /traveler\.spec\.ts/,
+      // #560: traveler-console.spec.ts was orphaned (it matched no
+      // project, so the #336 console-hygiene gate never ran in CI).
+      testMatch: /(traveler|traveler-console)\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:3001',
         channel: process.platform === 'win32' ? 'chrome' : undefined,
+      },
+    },
+    {
+      // #560: one mobile project — the audience is mobile-first but the
+      // suite was desktop-only. Runs the traveler journeys on a
+      // touch/notched handset profile.
+      name: 'traveler-mobile',
+      testMatch: /traveler\.spec\.ts/,
+      use: {
+        ...devices['Pixel 7'],
+        baseURL: 'http://localhost:3001',
+      },
+    },
+    {
+      // #560: production/smoke.spec.ts was orphaned too. It targets the
+      // LIVE deployments (URLs from SMOKE_* env vars, canonical prod
+      // defaults in the spec) — run it explicitly with
+      // `npx playwright test --project=production-smoke`; it is not part
+      // of the local mock-backed projects above.
+      name: 'production-smoke',
+      testMatch: /production\/smoke\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
       },
     },
     {

@@ -38,6 +38,27 @@ export const ADMIN_INTERVENTION_ACTIONS = [
   'ADMIN_DEADLINE_EXTENDED',
 ] as const;
 
+/**
+ * #431 (Council P1-05): the beta exit thresholds as documented gate
+ * values — the single source the endpoint evaluates and
+ * docs/launch-ops/BETA_METRICS.md mirrors. QA's thresholds from the
+ * council report: zero-result ≤20%, fee capture ≥98%, disputes
+ * ≤30/1,000. Fee capture stays `active: false` while the beta is free
+ * (no platform fee exists to capture — it activates with the
+ * monetisation gate #426); the gate value is wired now so the switch
+ * is a flag flip, not a new metric.
+ */
+export const BETA_EXIT_GATES = {
+  zeroResultRateMaxPercent: 20,
+  refundSlaMinPercent: 95,
+  disputesMaxPer1000Bookings: 30,
+  stuckStatesMax: 0,
+  duplicateBookingsMaxPercent: 1,
+  termsRecordedPercent: 100,
+  feeCaptureMinPercent: 98,
+  feeCaptureActive: false,
+} as const;
+
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
 
@@ -236,19 +257,19 @@ export class BetaMetricsService {
           key: 'zeroResultRate',
           target: '<= 20% of searches return zero results',
           value: zeroResultRate,
-          pass: zeroResultRate === null ? null : zeroResultRate <= 20,
+          pass: zeroResultRate === null ? null : zeroResultRate <= BETA_EXIT_GATES.zeroResultRateMaxPercent,
         },
         {
           key: 'refundSla',
           target: '>= 95% of refund cases initiated within 7 days of request',
           value: refundSlaPercent,
-          pass: refundSlaPercent === null ? null : refundSlaPercent >= 95,
+          pass: refundSlaPercent === null ? null : refundSlaPercent >= BETA_EXIT_GATES.refundSlaMinPercent,
         },
         {
           key: 'disputesPer1000Bookings',
           target: '<= 30 disputes per 1,000 bookings',
           value: disputesPer1000,
-          pass: disputesPer1000 === null ? null : disputesPer1000 <= 30,
+          pass: disputesPer1000 === null ? null : disputesPer1000 <= BETA_EXIT_GATES.disputesMaxPer1000Bookings,
         },
         {
           key: 'stuckStates',
@@ -260,13 +281,22 @@ export class BetaMetricsService {
           key: 'duplicateBookings',
           target: '< 1% duplicate bookings',
           value: duplicateRate,
-          pass: duplicateRate === null ? null : duplicateRate < 1,
+          pass: duplicateRate === null ? null : duplicateRate < BETA_EXIT_GATES.duplicateBookingsMaxPercent,
+        },
+        {
+          // #431: QA's fee-capture gate value, wired but inactive while
+          // the beta is free (no fee exists to capture; #426 activates).
+          key: 'feeCapture',
+          target: '>= 98% of platform service fees captured (activates with monetisation, #426)',
+          value: null,
+          pass: null,
+          active: BETA_EXIT_GATES.feeCaptureActive,
         },
         {
           key: 'termsRecorded',
           target: 'terms recorded on 100% of new bookings',
           value: termsRecordedRate,
-          pass: termsRecordedRate === null ? null : termsRecordedRate === 100,
+          pass: termsRecordedRate === null ? null : termsRecordedRate === BETA_EXIT_GATES.termsRecordedPercent,
         },
       ],
     };

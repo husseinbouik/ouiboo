@@ -278,7 +278,7 @@ export default function TripDetailsClient({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32">
         <Link href="/search" className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-all mb-5 sm:mb-8 group bg-card/50 backdrop-blur-sm px-4 sm:px-5 py-2.5 rounded-xl border border-border/50 hover:bg-card shadow-sm">
-            <ChevronLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+            <ChevronLeft className="h-4 w-4 group-hover:-translate-x-1 rtl:group-hover:translate-x-1 rtl:rotate-180 transition-transform" />
             {t('tripDetails.backToCatalog')}
         </Link>
 
@@ -303,7 +303,7 @@ export default function TripDetailsClient({
                     sizes="(min-width: 1024px) 60vw, 100vw"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
-                <div className="absolute bottom-6 left-6 flex gap-2">
+                <div className="absolute bottom-6 start-6 flex gap-2">
                     {trip.images?.map((_, idx: number) => (
                         <button
                             key={idx}
@@ -367,7 +367,7 @@ export default function TripDetailsClient({
                         </Badge>
                         <span className="text-border mx-1">|</span>
                         <div className="flex items-center text-sm font-semibold text-muted-foreground">
-                            <MapPin className="h-4 w-4 mr-1.5 text-sunset-orange" />
+                            <MapPin className="h-4 w-4 me-1.5 text-sunset-orange" />
                             {trip.startLocation}
                         </div>
                     </div>
@@ -438,11 +438,11 @@ export default function TripDetailsClient({
                   </div>
                   <div className="space-y-1">
                     {trip.itinerary.map((day, idx: number) => (
-                      <div key={idx} className="relative pl-12 pb-10 last:pb-0 group">
+                      <div key={idx} className="relative ps-12 pb-10 last:pb-0 group">
                         {/* Timeline Connector */}
-                        <div className="absolute left-4 top-2 bottom-0 w-0.5 bg-border/60 group-last:hidden" />
+                        <div className="absolute start-4 top-2 bottom-0 w-0.5 bg-border/60 group-last:hidden" />
                         
-                        <div className="absolute left-0 top-0 w-8 h-8 rounded-full bg-card border-2 border-sunset-orange text-sunset-orange flex items-center justify-center font-bold text-xs z-10 shadow-sm transition-all group-hover:scale-110 group-hover:bg-sunset-orange group-hover:text-white">
+                        <div className="absolute start-0 top-0 w-8 h-8 rounded-full bg-card border-2 border-sunset-orange text-sunset-orange flex items-center justify-center font-bold text-xs z-10 shadow-sm transition-all group-hover:scale-110 group-hover:bg-sunset-orange group-hover:text-white">
                           {day.dayNumber}
                         </div>
                         
@@ -612,7 +612,7 @@ export default function TripDetailsClient({
                                  style={{ width: `${percentage}%` }}
                                />
                              </div>
-                             <span className="text-xs font-medium text-muted-foreground w-8 text-right">{count}</span>
+                             <span className="text-xs font-medium text-muted-foreground w-8 text-end">{count}</span>
                            </div>
                          );
                        })}
@@ -644,11 +644,11 @@ export default function TripDetailsClient({
                     </div>
 
                     <div className="space-y-4">
-                        <label id="session-select-label" className="text-xs font-bold text-foreground uppercase tracking-wider ml-1">{t('tripDetails.selectDate')}</label>
+                        <label id="session-select-label" className="text-xs font-bold text-foreground uppercase tracking-wider ms-1">{t('tripDetails.selectDate')}</label>
                         <div
                             role="radiogroup"
                             aria-labelledby="session-select-label"
-                            className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar"
+                            className="space-y-3 max-h-[300px] overflow-y-auto pe-2 custom-scrollbar"
                         >
                            {openSessions.length > 0 ? (
                                 openSessions.map((session) => (

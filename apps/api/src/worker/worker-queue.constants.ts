@@ -8,4 +8,8 @@ export const MaintenanceJobName = {
   ExchangeRateRefresh: 'exchange-rate-refresh',
   CompleteFinishedBookings: 'complete-finished-bookings',
   GroupConfirmationDeadlines: 'group-confirmation-deadlines',
+  // #433: the refund-due sweeps join the hourly deadline cadence (they
+  // previously only ran inside the daily serverless maintenance pass).
+  RefundDueCaseSync: 'refund-due-case-sync',
+  RefundOverdueSweep: 'refund-overdue-sweep',
 } as const;

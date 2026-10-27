@@ -144,7 +144,7 @@ export const mockTravelerApi = async (page: Page) => {
       const agencyId = searchParams.get('agencyId');
       const q = (searchParams.get('q') || '').toLowerCase();
       const category = searchParams.get('category');
-      const matchesSearch = !q || 'atlas weekend escape'.includes(q) || 'marrakech'.includes(q);
+      const matchesSearch = !q || 'atlas weekend escape'.includes(q) || 'marrakech'.includes(q) || 'imlil'.includes(q);
       const matchesCategory = !category || category.toLowerCase() === 'adventure';
       const matchesAgency = !agencyId || agencyId === 'agency-1';
       const tripData = matchesSearch && matchesCategory && matchesAgency
@@ -154,11 +154,25 @@ export const mockTravelerApi = async (page: Page) => {
             title: 'Atlas Weekend Escape',
             category: 'Adventure',
             startLocation: 'Marrakech',
-            durationDays: 3,
-            images: ['https://example.com/trip.jpg'],
+            // #560: beta fields — currency, endLocation, translations,
+            // licence/insurance verification (the mock fixtures predated
+            // them, so beta-shaped UI states were untestable).
+            endLocation: 'Imlil',
+            currency: 'MAD',
+            translations: {
+              fr: { title: 'Escapade week-end dans l\'Atlas', description: 'Une escapade guidée en montagne pour les tests de lancement.' },
+              ar: { title: 'عطلة نهاية أسبوع في الأطلس', description: 'رحلة جبلية مصحوبة بمرشد لاختبارات الإطلاق.' },
+              en: { title: 'Atlas Weekend Escape', description: 'A guided mountain escape for launch testing.' },
+            },
             agency: {
               id: 'agency-1',
               verificationStatus: 'VERIFIED',
+              travelLicenceStatus: 'VERIFIED',
+              travelLicenceType: 'ODV',
+              travelLicenceNumber: 'LIC-E2E-1',
+              licenceVerifiedAt: '2026-10-01T00:00:00.000Z',
+              insuranceStatus: 'VERIFIED',
+              insuranceVerifiedAt: '2026-10-01T00:00:00.000Z',
             },
             sessions: [
               {
@@ -190,6 +204,13 @@ export const mockTravelerApi = async (page: Page) => {
         title: 'Atlas Weekend Escape',
         category: 'Adventure',
         startLocation: 'Marrakech',
+        endLocation: 'Imlil',
+        currency: 'MAD',
+        translations: {
+          fr: { title: 'Escapade week-end dans l\'Atlas', description: 'Une escapade guidée en montagne pour les tests de lancement.' },
+          ar: { title: 'عطلة نهاية أسبوع في الأطلس', description: 'رحلة جبلية مصحوبة بمرشد لاختبارات الإطلاق.' },
+          en: { title: 'Atlas Weekend Escape', description: 'A guided mountain escape for launch testing.' },
+        },
         durationDays: 3,
         durationNights: 2,
         description: 'A guided mountain escape for launch testing.',
@@ -203,6 +224,13 @@ export const mockTravelerApi = async (page: Page) => {
         agency: {
           companyName: 'Atlas Co',
           bankDetails: 'RIB 1234567890',
+          verificationStatus: 'VERIFIED',
+          travelLicenceStatus: 'VERIFIED',
+          travelLicenceType: 'ODV',
+          travelLicenceNumber: 'LIC-E2E-1',
+          licenceVerifiedAt: '2026-10-01T00:00:00.000Z',
+          insuranceStatus: 'VERIFIED',
+          insuranceVerifiedAt: '2026-10-01T00:00:00.000Z',
         },
         sessions: [
           {
