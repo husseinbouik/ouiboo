@@ -63,6 +63,10 @@ export const AgencyProfileSchema = z.object({
     travelLicenceNumber: z.string().optional(),
     // Date (YYYY-MM-DD from the onboarding form) or full ISO datetime.
     licenceExpiry: z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Invalid licence expiry date").optional(),
+    // B4 (Council Session #2): licence issue date + issuing authority —
+    // part of a complete licence submission (Law 31-08 seller block).
+    licenceIssuedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Invalid licence issue date").optional(),
+    licenceIssuingAuthority: z.string().optional(),
 });
 
 export const ItineraryDaySchema = z.object({

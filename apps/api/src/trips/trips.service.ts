@@ -354,10 +354,18 @@ export class TripsService {
                         bankDetailsVerifiedAt: true,
                         // #371: seller-of-record display on the trip page and
                         // at checkout (legal name + verified licence number).
+                        // B4: the complete seller block also carries the
+                        // licence type, issue date, and issuing authority;
+                        // SellerIdentity withholds them client-side unless
+                        // the licence is verified (same derivation as the
+                        // public profile endpoint).
                         legalName: true,
+                        travelLicenceType: true,
                         travelLicenceNumber: true,
                         travelLicenceStatus: true,
                         licenceExpiry: true,
+                        licenceIssuedAt: true,
+                        licenceIssuingAuthority: true,
                         // #413 (Council B10): what+when verification statement
                         // next to the seller identity — the licence check date
                         // and the RC insurance evidence date.

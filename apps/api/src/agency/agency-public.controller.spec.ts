@@ -18,7 +18,11 @@ describe('AgencyPublicController (#371, #413)', () => {
         logo: null,
         verificationStatus: 'VERIFIED',
         legalName: 'Atlas Adventures SARL',
+        travelLicenceType: 'ODV',
         travelLicenceNumber: 'AV-2024-0187',
+        // B4: seller-block issue data on the record.
+        licenceIssuedAt: new Date('2024-03-15T00:00:00.000Z'),
+        licenceIssuingAuthority: 'Ministère du Tourisme',
         travelLicenceStatus: 'VERIFIED',
         // Effective-status derivation (#415): a VERIFIED check only counts
         // with a future expiry on record — no expiry degrades to
@@ -45,6 +49,23 @@ describe('AgencyPublicController (#371, #413)', () => {
         expect(result.licenceVerifiedAt).toEqual(new Date('2026-10-24T00:00:00.000Z'));
         expect(result.insuranceStatus).toBe('VERIFIED');
         expect(result.insuranceVerifiedAt).toEqual(new Date('2026-10-25T00:00:00.000Z'));
+    });
+
+    it('exposes the licence type and issue data only while verified (B4)', async () => {
+        const { controller } = makeController({ ...baseAgency });
+        const result = await controller.getPublicProfile('agency-1');
+        expect(result.travelLicenceType).toBe('ODV');
+        expect(result.licenceIssuedAt).toEqual(new Date('2024-03-15T00:00:00.000Z'));
+        expect(result.licenceIssuingAuthority).toBe('Ministère du Tourisme');
+
+        const { controller: pending } = makeController({
+            ...baseAgency,
+            travelLicenceStatus: 'PENDING_REVIEW',
+        });
+        const pendingResult = await pending.getPublicProfile('agency-1');
+        expect(pendingResult.travelLicenceType).toBeNull();
+        expect(pendingResult.licenceIssuedAt).toBeNull();
+        expect(pendingResult.licenceIssuingAuthority).toBeNull();
     });
 
     it('withholds the licence number and both stamps while the checks have not passed', async () => {

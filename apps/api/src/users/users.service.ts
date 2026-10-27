@@ -94,6 +94,8 @@ export class UsersService {
                 travelLicenceType: true,
                 travelLicenceNumber: true,
                 licenceExpiry: true,
+                licenceIssuedAt: true,
+                licenceIssuingAuthority: true,
                 travelLicenceStatus: true,
                 licenceDocumentKey: true,
                 insuranceInsurer: true,
@@ -107,7 +109,7 @@ export class UsersService {
             },
         });
 
-        const licenceTouched = ['travelLicenceType', 'travelLicenceNumber', 'licenceExpiry', 'licenceDocumentKey', 'licenceDocumentName']
+        const licenceTouched = ['travelLicenceType', 'travelLicenceNumber', 'licenceExpiry', 'licenceIssuedAt', 'licenceIssuingAuthority', 'licenceDocumentKey', 'licenceDocumentName']
             .some((key) => safeData[key] !== undefined);
         if (licenceTouched) {
             const nextNumber = safeData.travelLicenceNumber !== undefined
@@ -119,6 +121,14 @@ export class UsersService {
             const nextExpiry = safeData.licenceExpiry !== undefined
                 ? (safeData.licenceExpiry ? new Date(safeData.licenceExpiry) : null)
                 : existing?.licenceExpiry ?? null;
+            // B4: issue date + issuing authority join the completeness
+            // rule — the seller block cannot be rendered without them.
+            const nextIssuedAt = safeData.licenceIssuedAt !== undefined
+                ? (safeData.licenceIssuedAt ? new Date(safeData.licenceIssuedAt) : null)
+                : existing?.licenceIssuedAt ?? null;
+            const nextIssuingAuthority = safeData.licenceIssuingAuthority !== undefined
+                ? (safeData.licenceIssuingAuthority?.trim() || null)
+                : existing?.licenceIssuingAuthority ?? null;
             const nextDocumentKey = safeData.licenceDocumentKey !== undefined
                 ? (safeData.licenceDocumentKey || null)
                 : existing?.licenceDocumentKey ?? null;
@@ -126,6 +136,8 @@ export class UsersService {
                 || nextNumber !== (existing.travelLicenceNumber ?? null)
                 || nextType !== (existing.travelLicenceType ?? null)
                 || (nextExpiry?.getTime() ?? null) !== (existing.licenceExpiry?.getTime() ?? null)
+                || (nextIssuedAt?.getTime() ?? null) !== (existing.licenceIssuedAt?.getTime() ?? null)
+                || nextIssuingAuthority !== (existing.licenceIssuingAuthority ?? null)
                 || nextDocumentKey !== (existing.licenceDocumentKey ?? null);
             if (changed) {
                 // #415: a licence submission is reviewable only when it
@@ -134,7 +146,14 @@ export class UsersService {
                 // submission; an incomplete submission stays
                 // NOT_SUBMITTED. Any change also voids the previous
                 // Ministry-check stamp (it attested the old details).
-                const complete = Boolean(nextNumber && nextType && nextExpiry && nextDocumentKey);
+                // B4: issue date + issuing authority are part of
+                // "complete" — a legacy VERIFIED agency that edits any
+                // licence field without supplying them goes back to
+                // review until the seller block can be completed.
+                const complete = Boolean(
+                    nextNumber && nextType && nextExpiry && nextDocumentKey
+                    && nextIssuedAt && nextIssuingAuthority,
+                );
                 safeData.travelLicenceStatus = complete ? 'PENDING_REVIEW' : 'NOT_SUBMITTED';
                 safeData.licenceVerifiedAt = null;
                 safeData.licenceRejectionReason = null;
@@ -143,6 +162,12 @@ export class UsersService {
             }
             if (safeData.licenceExpiry !== undefined) {
                 safeData.licenceExpiry = nextExpiry;
+            }
+            if (safeData.licenceIssuedAt !== undefined) {
+                safeData.licenceIssuedAt = nextIssuedAt;
+            }
+            if (safeData.licenceIssuingAuthority !== undefined) {
+                safeData.licenceIssuingAuthority = nextIssuingAuthority;
             }
         }
 
