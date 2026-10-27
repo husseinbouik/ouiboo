@@ -139,7 +139,7 @@ export function CommandPalette({
     const el = listRef.current?.querySelector<HTMLElement>(
       `[data-index="${activeIndex}"]`,
     )
-    el?.scrollIntoView({ block: 'nearest' })
+    el?.scrollIntoView?.({ block: 'nearest' })
   }, [activeIndex])
 
   const runItem = React.useCallback(
