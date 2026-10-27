@@ -18,6 +18,7 @@ import { MessagesModule } from '../src/messages/messages.module';
 import { InvoicesModule } from '../src/invoices/invoices.module';
 import { PaymentProvidersModule } from '../src/payment-providers/payment-providers.module';
 import { AdminModule } from '../src/admin/admin.module';
+import { UsersModule } from '../src/users/users.module';
 import { UserRole } from '@ouiboo/types';
 import { tripTemplateFixture } from './e2e-fixtures';
 
@@ -81,6 +82,12 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
     const CONVERSATION_ID = 'ct-conversation-1';
     const MESSAGE_ID = 'ct-message-1';
     const MERCHANT_A = 'CT-MERCH-A-001';
+    // B22(e) wallet/payout fixtures: legacy custody rows for agency A.
+    // No wallet/payout HTTP routes exist anymore — the only surface
+    // that can still serialize them is the caller's own data export.
+    const WALLET_A = 'ct-wallet-a';
+    const WALLET_TX_A = 'ct-wallet-tx-a';
+    const PAYOUT_A = 'ct-payout-a';
 
     const PROOF_PNG = path.resolve(__dirname, 'fixtures', 'proof.png');
 
@@ -127,6 +134,7 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
                 InvoicesModule,
                 PaymentProvidersModule,
                 AdminModule,
+                UsersModule,
             ],
         })
             .overrideProvider(EmailService)
@@ -172,6 +180,9 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
 
     async function clearWorld() {
         if (!db) return;
+        await db.walletTransaction.deleteMany();
+        await db.payoutRequest.deleteMany();
+        await db.wallet.deleteMany();
         await db.message.deleteMany();
         await db.conversation.deleteMany();
         await db.refundEvidence.deleteMany();
@@ -395,6 +406,17 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
                 onboardingStatus: 'CONNECTED',
                 paymentEnabled: true,
             } as any,
+        });
+
+        // B22(e): legacy wallet + payout rows belonging to agency A.
+        await db.wallet.create({
+            data: { id: WALLET_A, agencyId: AGENCY_A, availableBalance: 7777, pendingBalance: 0 } as any,
+        });
+        await db.walletTransaction.create({
+            data: { id: WALLET_TX_A, walletId: WALLET_A, amount: 7777, type: 'CREDIT', reason: 'Cross-tenant probe credit' } as any,
+        });
+        await db.payoutRequest.create({
+            data: { id: PAYOUT_A, agencyId: AGENCY_A, amount: 5555, bankDetails: 'Agency A bank details' } as any,
         });
 
         await db.conversation.create({
@@ -854,6 +876,191 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
             const res = await request(app.getHttpServer()).delete(`/messages/${MESSAGE_ID}`).set(auth(tokenT2));
             expectDenied(res);
             expect(await db.message.findUnique({ where: { id: MESSAGE_ID } })).toBeTruthy();
+        });
+    });
+
+    // ------------------------------------------------------------------
+    // Wallet / payout surfaces (B22(e) — #425 completion)
+    //
+    // Custody was removed from the product: the Wallet /
+    // WalletTransaction / PayoutRequest tables survive in the schema
+    // (legacy rows included in a user's own data export), but no
+    // wallet or payout HTTP routes exist. These tests pin both halves:
+    // the historical route shapes stay 404 for every actor, and the
+    // one remaining serialization surface — GET /users/me/export — is
+    // scoped to the caller's own user id, so agency A's wallet and
+    // payout rows can never appear in agency B's (or a traveller's)
+    // export. If a wallet route or a cross-tenant export leak is ever
+    // reintroduced, these tests fail.
+    // ------------------------------------------------------------------
+    describe('wallet and payout surfaces (B22(e))', () => {
+        it('exposes no wallet/payout HTTP routes to any actor', async () => {
+            for (const token of [tokenA, tokenB, tokenT1, tokenAdmin]) {
+                await request(app.getHttpServer()).get('/wallet').set(auth(token)).expect(404);
+                await request(app.getHttpServer()).get('/agency/wallet').set(auth(token)).expect(404);
+                await request(app.getHttpServer()).get('/payouts').set(auth(token)).expect(404);
+                await request(app.getHttpServer()).post('/payout-requests').set(auth(token)).send({ amount: 100 }).expect(404);
+                await request(app.getHttpServer()).post('/wallet/payouts').set(auth(token)).send({ amount: 100 }).expect(404);
+            }
+        });
+
+        it('data export contains only the caller’s own wallet and payout rows', async () => {
+            const exportA = await request(app.getHttpServer()).get('/users/me/export').set(auth(tokenA)).expect(200);
+            // Positive control: agency A's own export DOES carry its
+            // wallet, transaction and payout request — the scoping is
+            // per-user, not a blanket omission.
+            expect(bodyText(exportA)).toContain(WALLET_A);
+            expect(bodyText(exportA)).toContain(WALLET_TX_A);
+            expect(bodyText(exportA)).toContain(PAYOUT_A);
+
+            const exportB = await request(app.getHttpServer()).get('/users/me/export').set(auth(tokenB)).expect(200);
+            expect(bodyText(exportB)).not.toContain(WALLET_A);
+            expect(bodyText(exportB)).not.toContain(WALLET_TX_A);
+            expect(bodyText(exportB)).not.toContain(PAYOUT_A);
+
+            const exportT1 = await request(app.getHttpServer()).get('/users/me/export').set(auth(tokenT1)).expect(200);
+            expect(bodyText(exportT1)).not.toContain(WALLET_A);
+            expect(bodyText(exportT1)).not.toContain(PAYOUT_A);
+        });
+    });
+
+    // ------------------------------------------------------------------
+    // Agency profile PATCH (B22(e) — #425 completion)
+    //
+    // PATCH /agency/profile resolves the tenant from the JWT, never
+    // from the body: a write by agency B must land on B's profile only
+    // (bank details stage as a PENDING destination per #421 — the live
+    // destination does not change), A's profile must stay
+    // byte-identical, and identifier fields smuggled in the body are
+    // rejected by the whitelist pipe before anything is written.
+    // ------------------------------------------------------------------
+    describe('agency profile patch (B22(e))', () => {
+        const profileSnapshot = async (id: string) => db.agencyProfile.findUnique({
+            where: { id },
+            select: {
+                companyName: true,
+                bankDetails: true,
+                pendingBankDetails: true,
+                bankDetailsStatus: true,
+            },
+        });
+
+        it('a profile PATCH writes only to the caller’s own profile', async () => {
+            const beforeA = await profileSnapshot(AGENCY_A);
+
+            const res = await request(app.getHttpServer())
+                .patch('/agency/profile')
+                .set(auth(tokenB))
+                .send({ companyName: 'Hijacked B', bankDetails: 'Agency A bank details' });
+            expect(res.status).toBe(200);
+
+            // The write landed on B — staged as a pending destination,
+            // B's live bank details untouched.
+            const afterB = await profileSnapshot(AGENCY_B);
+            expect(afterB?.companyName).toBe('Hijacked B');
+            expect(afterB?.pendingBankDetails).toBe('Agency A bank details');
+            expect(afterB?.bankDetails).toBe('Agency B bank details');
+            expect(afterB?.bankDetailsStatus).toBe('PENDING_REVIEW');
+
+            // A's profile is byte-identical.
+            expect(await profileSnapshot(AGENCY_A)).toEqual(beforeA);
+
+            // Restore B (profiles persist across tests in this suite).
+            await db.agencyProfile.update({
+                where: { id: AGENCY_B },
+                data: { companyName: 'Cross Tenant Agency B', pendingBankDetails: null, bankDetailsStatus: 'VERIFIED' },
+            });
+        });
+
+        it('smuggled tenant identifiers in the PATCH body are rejected and change nothing', async () => {
+            const beforeA = await profileSnapshot(AGENCY_A);
+            const beforeB = await profileSnapshot(AGENCY_B);
+
+            const res = await request(app.getHttpServer())
+                .patch('/agency/profile')
+                .set(auth(tokenB))
+                .send({ id: AGENCY_A, userId: AGENCY_A_USER, agencyId: AGENCY_A, companyName: 'Hijacked via ids' });
+            expect(res.status).toBe(400);
+
+            expect(await profileSnapshot(AGENCY_A)).toEqual(beforeA);
+            expect(await profileSnapshot(AGENCY_B)).toEqual(beforeB);
+        });
+
+        it('a traveller cannot PATCH an agency profile at all', async () => {
+            const res = await request(app.getHttpServer())
+                .patch('/agency/profile')
+                .set(auth(tokenT1))
+                .send({ companyName: 'Traveller hijack' });
+            expect(res.status).toBe(403);
+        });
+    });
+
+    // ------------------------------------------------------------------
+    // Admin bank-details verification (B22(e) — #425 completion)
+    //
+    // POST /admin/agencies/:id/bank-details/verify is admin-only by
+    // class guard. An agency cannot verify another agency's pending
+    // destination, cannot verify its OWN (no self-verification), and a
+    // traveller cannot either; the denied attempts must leave the
+    // pending submission exactly as staged. The admin positive control
+    // proves the route works when the guard passes: the pending
+    // destination is promoted to the live one.
+    // ------------------------------------------------------------------
+    describe('admin bank-details verification (B22(e))', () => {
+        const NEW_BANK_DETAILS = 'Agency B NEW bank details';
+
+        const stagePendingForB = async () => {
+            await db.agencyProfile.update({
+                where: { id: AGENCY_B },
+                data: { pendingBankDetails: NEW_BANK_DETAILS, bankDetailsStatus: 'PENDING_REVIEW' },
+            });
+        };
+        const restoreB = async () => {
+            await db.agencyProfile.update({
+                where: { id: AGENCY_B },
+                data: { bankDetails: 'Agency B bank details', pendingBankDetails: null, bankDetailsStatus: 'VERIFIED' },
+            });
+        };
+        const bankState = async (id: string) => db.agencyProfile.findUnique({
+            where: { id },
+            select: { bankDetails: true, pendingBankDetails: true, bankDetailsStatus: true },
+        });
+
+        it('no non-admin can verify a pending bank destination — not even the owning agency itself', async () => {
+            await stagePendingForB();
+            try {
+                for (const token of [tokenA, tokenB, tokenT1]) {
+                    const res = await request(app.getHttpServer())
+                        .post(`/admin/agencies/${AGENCY_B}/bank-details/verify`)
+                        .set(auth(token))
+                        .send({ status: 'VERIFIED' });
+                    expect(res.status).toBe(403);
+                }
+                const state = await bankState(AGENCY_B);
+                expect(state?.pendingBankDetails).toBe(NEW_BANK_DETAILS);
+                expect(state?.bankDetails).toBe('Agency B bank details');
+                expect(state?.bankDetailsStatus).toBe('PENDING_REVIEW');
+            } finally {
+                await restoreB();
+            }
+        });
+
+        it('positive control: the admin promotes the pending destination to live', async () => {
+            await stagePendingForB();
+            try {
+                await request(app.getHttpServer())
+                    .post(`/admin/agencies/${AGENCY_B}/bank-details/verify`)
+                    .set(auth(tokenAdmin))
+                    .send({ status: 'VERIFIED' })
+                    .expect(201);
+
+                const state = await bankState(AGENCY_B);
+                expect(state?.bankDetails).toBe(NEW_BANK_DETAILS);
+                expect(state?.pendingBankDetails).toBeNull();
+                expect(state?.bankDetailsStatus).toBe('VERIFIED');
+            } finally {
+                await restoreB();
+            }
         });
     });
 });
