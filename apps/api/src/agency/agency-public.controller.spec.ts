@@ -20,10 +20,13 @@ describe('AgencyPublicController (#371, #413)', () => {
         legalName: 'Atlas Adventures SARL',
         travelLicenceNumber: 'AV-2024-0187',
         travelLicenceStatus: 'VERIFIED',
-        licenceExpiry: null,
+        // Effective-status derivation (#415): a VERIFIED check only counts
+        // with a future expiry on record — no expiry degrades to
+        // PENDING_REVIEW, so both fixtures carry future expiries.
+        licenceExpiry: new Date('2027-10-24T00:00:00.000Z'),
         licenceVerifiedAt: new Date('2026-10-24T00:00:00.000Z'),
         insuranceStatus: 'VERIFIED',
-        insuranceExpiry: null,
+        insuranceExpiry: new Date('2027-10-25T00:00:00.000Z'),
         insuranceVerifiedAt: new Date('2026-10-25T00:00:00.000Z'),
     };
 
