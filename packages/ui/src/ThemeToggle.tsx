@@ -24,7 +24,7 @@ export function ThemeToggle({ isTransparent, label = 'Toggle theme' }: { isTrans
       type="button"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
       className={cn(
-        'w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 relative overflow-hidden group hover:bg-foreground/5',
+        'w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 relative group hover:bg-foreground/5 hit-slop',
         isTransparent
           ? 'text-white/80 hover:text-white'
           : 'text-muted-foreground hover:text-foreground',

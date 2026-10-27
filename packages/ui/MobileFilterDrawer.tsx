@@ -136,6 +136,7 @@ export function MobileFilterDrawer({
                 type="button"
                 variant="ghost"
                 size="icon"
+                className="hit-slop"
                 onClick={() => setOpen(false)}
                 aria-label={closeLabel}
               >

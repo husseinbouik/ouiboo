@@ -129,7 +129,7 @@ export function CheckoutPayment({
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); onClearProof(); }}
-                  className="absolute top-6 end-6 h-8 w-8 bg-black/60 text-white rounded-full flex items-center justify-center hover:bg-black transition-all"
+                  className="absolute top-6 end-6 h-8 w-8 bg-black/60 text-white rounded-full flex items-center justify-center hover:bg-black transition-all hit-slop"
                 >
                   <X className="h-4 w-4" />
                 </button>

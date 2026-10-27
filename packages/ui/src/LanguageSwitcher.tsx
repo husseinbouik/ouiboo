@@ -39,7 +39,7 @@ export function LanguageSwitcher({ isTransparent }: { isTransparent?: boolean })
       type="button"
       onClick={handleToggle}
       className={cn(
-        'flex items-center gap-1.5 px-2.5 h-9 rounded-xl transition-all duration-300 group hover:bg-foreground/5',
+        'flex items-center gap-1.5 px-2.5 h-9 rounded-xl transition-all duration-300 group hover:bg-foreground/5 hit-slop',
         isTransparent
           ? 'text-white/80 hover:text-white'
           : 'text-muted-foreground hover:text-foreground border border-transparent hover:border-border',
