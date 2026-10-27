@@ -450,7 +450,8 @@
     "browseTrips": "Parcourir les voyages",
     "emptyTitle": "Aucune conversation pour le moment",
     "emptyBody": "Commencez à discuter avec une agence depuis une page de voyage.",
-    "title": "Messages"
+    "title": "Messages",
+    "idDocumentWarning": "N'envoyez pas de documents d'identité (passeport ou carte d'identité nationale) ni d'informations de paiement (carte ou coordonnées bancaires) dans les messages. Ouiboo ne vous les demandera jamais ici."
   },
   "notifications": {
     "signInTitle": "Connectez-vous pour voir vos notifications",

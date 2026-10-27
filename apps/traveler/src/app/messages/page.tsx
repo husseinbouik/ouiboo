@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { Button } from '@ouiboo/ui';
-import { MessageCircle } from 'lucide-react';
+import { AlertTriangle, MessageCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/components/AuthContext';
 
@@ -71,6 +71,12 @@ export default function MessagesPage() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
       <h1 className="text-3xl font-bold mb-8">Messages</h1>
+      {/* #251/B23: ID documents and payment credentials must never be
+          sent through chat — warn on the messaging surface itself. */}
+      <div className="rounded-2xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 p-5 text-sm mb-8 flex gap-3" role="note">
+        <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+        <p className="font-medium text-foreground">{t('messages.idDocumentWarning')}</p>
+      </div>
       {conversations.length === 0 ? (
         <div className="text-center py-16 bg-card/70 rounded-2xl border border-dashed border-border">
           <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

@@ -877,6 +877,50 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
             expectDenied(res);
             expect(await db.message.findUnique({ where: { id: MESSAGE_ID } })).toBeTruthy();
         });
+
+        it('rejects private-document and external attachments at send time (#251/B23)', async () => {
+            const privateRef = await request(app.getHttpServer())
+                .post('/messages')
+                .set(auth(tokenT1))
+                .send({ recipientId: AGENCY_A, content: 'Here is my passport', attachmentUrl: 'private/ct-traveler-1/passport.jpg' });
+            expect(privateRef.status).toBe(400);
+
+            const external = await request(app.getHttpServer())
+                .post('/messages')
+                .set(auth(tokenT1))
+                .send({ recipientId: AGENCY_A, content: 'Scan at this link', attachmentUrl: 'https://external.example.com/scan.jpg' });
+            expect(external.status).toBe(400);
+        });
+
+        it('admin can strip a message attachment; other roles cannot (#251/B23)', async () => {
+            const seeded = await db.message.create({
+                data: {
+                    conversationId: CONVERSATION_ID,
+                    senderId: TRAVELER_1,
+                    content: 'Attachment moderation probe',
+                    attachmentUrl: 'https://cdn.ouiboo.test/trips/ct-agency-a/chat.png',
+                },
+            });
+
+            const byTraveler = await request(app.getHttpServer())
+                .delete(`/admin/messages/${seeded.id}/attachment`)
+                .set(auth(tokenT1))
+                .send({ reason: 'Trying to moderate my own message' });
+            expect(byTraveler.status).toBe(403);
+            expect((await db.message.findUnique({ where: { id: seeded.id } }))?.attachmentUrl).toBeTruthy();
+
+            const byAdmin = await request(app.getHttpServer())
+                .delete(`/admin/messages/${seeded.id}/attachment`)
+                .set(auth(tokenAdmin))
+                .send({ reason: 'ID document sent in chat' });
+            expect(byAdmin.status).toBe(200);
+
+            expect((await db.message.findUnique({ where: { id: seeded.id } }))?.attachmentUrl).toBeNull();
+            const audit = await db.auditLog.findFirst({
+                where: { action: 'MESSAGE_ATTACHMENT_REMOVED', targetId: seeded.id },
+            });
+            expect(audit).toBeTruthy();
+        });
     });
 
     // ------------------------------------------------------------------

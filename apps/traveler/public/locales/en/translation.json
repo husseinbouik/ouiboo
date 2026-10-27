@@ -450,7 +450,8 @@
     "browseTrips": "Browse Trips",
     "emptyTitle": "No conversations yet",
     "emptyBody": "Start chatting with an agency from a trip page.",
-    "title": "Messages"
+    "title": "Messages",
+    "idDocumentWarning": "Do not send ID documents (passport or national ID card) or payment credentials (card or bank details) in messages. Ouiboo never asks for them here."
   },
   "notifications": {
     "signInTitle": "Sign in to view your notifications",
