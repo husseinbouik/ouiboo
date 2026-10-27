@@ -39,6 +39,9 @@ const mockDatabaseService = {
     booking: {
         count: jest.fn().mockResolvedValue(0),
     },
+    searchEvent: {
+        create: jest.fn().mockResolvedValue({}),
+    },
     agencyProfile: {
         findUnique: jest.fn(),
     },
@@ -346,6 +349,28 @@ describe('TripsService', () => {
                     agencyId: 'agency-123',
                 }),
             }));
+        });
+
+        it('records an identifier-free search event with allowlisted filters only (#432/B21)', async () => {
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(7);
+
+            await service.findAllTemplates({
+                q: '  atlas trek  ',
+                category: 'Adventure',
+                priceMax: 900,
+                page: 3,
+                limit: 5,
+                sortBy: 'price',
+                status: 'ACTIVE',
+            });
+
+            expect(db.searchEvent.create).toHaveBeenCalledTimes(1);
+            const data = db.searchEvent.create.mock.calls[0][0].data;
+            expect(data.resultCount).toBe(7);
+            expect(data.query).toBe('atlas trek');
+            // pagination/sort/status plumbing and the raw query key never land in the record
+            expect(data.filters).toEqual({ category: 'ADVENTURE', priceMax: 900 });
         });
 
         it('selects the licence/insurance what+when fields for the card statement (#413)', async () => {

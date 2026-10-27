@@ -8,7 +8,10 @@ import { Download } from 'lucide-react';
 import { exportConversionFunnelToCSV } from '../../lib/export-utils';
 
 type FunnelProps = {
-  data?: { views: number; bookingAttempts: number; confirmed: number; completed: number; conversionRate: number };
+  // #432 / B21: the first stage is sessions the agency created (supply),
+  // never "views" — no traveller-view measurement exists. The rate is
+  // the share of booking attempts that reached COMPLETED.
+  data?: { sessionsCreated: number; bookingAttempts: number; confirmed: number; completed: number; completionRate: number };
 };
 
 export default function ConversionFunnelChart({ data }: FunnelProps) {
@@ -17,7 +20,7 @@ export default function ConversionFunnelChart({ data }: FunnelProps) {
   const transformed = useMemo(() => {
     if (!data) return undefined;
     return [
-      { stage: t('charts.funnel.stageViews'), count: data.views },
+      { stage: t('charts.funnel.stageSessions'), count: data.sessionsCreated },
       { stage: t('charts.funnel.stageAttempts'), count: data.bookingAttempts },
       { stage: t('charts.funnel.stageConfirmed'), count: data.confirmed },
       { stage: t('charts.funnel.stageCompleted'), count: data.completed },
@@ -34,7 +37,7 @@ export default function ConversionFunnelChart({ data }: FunnelProps) {
     <Card className="rounded-[2.5rem] shadow-xl shadow-black/5 p-6 text-muted-foreground">{t('charts.funnel.noData')}</Card>
   );
 
-  const rate = data.conversionRate || 0;
+  const rate = data.completionRate || 0;
   const badgeColor = rate > 5 ? 'bg-success' : rate >= 2 ? 'bg-warning' : 'bg-danger';
 
   return (

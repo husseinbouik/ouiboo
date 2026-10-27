@@ -958,13 +958,13 @@
       "repeatRate": "Repeat Rate"
     },
     "funnel": {
-      "stageViews": "Views",
+      "stageSessions": "Sessions Created",
       "stageAttempts": "Booking Attempts",
       "stageConfirmed": "Confirmed",
       "stageCompleted": "Completed",
       "noData": "No funnel data",
       "title": "Conversion Funnel",
-      "subtitle": "Track how visitors convert to completed bookings",
+      "subtitle": "Sessions created through to completed bookings",
       "export": "Export"
     }
   },

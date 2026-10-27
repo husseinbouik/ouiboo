@@ -948,6 +948,24 @@ model AuditLog {
   @@index([action, createdAt])
 }
 
+// #432 / B21 (Council Session #2): server-side, cookie-free record of
+// public catalog searches (GET /trips) — the beta's zero-result-rate
+// measurement. Deliberately identifier-free: NO traveller id, NO IP, NO
+// user agent, NO session/cookie linkage. `query` is the traveller-typed
+// search text (trimmed, length-capped by the recorder); `filters` is a
+// strict allowlist snapshot (see search-events.ts) so no arbitrary
+// client-supplied keys can ever land here. Rows are append-only.
+model SearchEvent {
+  id          String   @id @default(cuid())
+  query       String?
+  filters     Json
+  resultCount Int
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([resultCount, createdAt])
+}
+
 // Reviews & Ratings
 enum ReviewStatus {
   VISIBLE

@@ -7,7 +7,13 @@ export class AnalyticsService {
   constructor(private prisma: DatabaseService) {}
 
   /**
-   * Get revenue trends for agency
+   * Get revenue trends for agency.
+   *
+   * Definition (#432): the amounts are the AGENCY's completed-booking
+   * takings — money travellers paid the agency for its trips. This is
+   * never OuiBoo/platform revenue; platform fee capture does not exist
+   * before the monetisation gate (#426), and in a free beta platform
+   * revenue is exactly 0. See docs/launch-ops/BETA_METRICS.md.
    */
   async getRevenueTrends(
     agencyId: string,
@@ -89,12 +95,19 @@ export class AnalyticsService {
       }),
     ]);
 
+    // #432 / B21 (Council Session #2): the first stage is NOT "views" —
+    // no traveller-view measurement exists; the count is TripSession
+    // rows (supply the agency created). The old `views` key and the
+    // completed/sessions "conversionRate" divided bookings by supply
+    // and have been removed; the agency chart (the only consumer) was
+    // migrated in the same change. `completionRate` is the share of
+    // booking attempts that reached COMPLETED.
     return {
-      views: sessions,
+      sessionsCreated: sessions,
       bookingAttempts: bookings,
       confirmed,
       completed,
-      conversionRate: sessions > 0 ? (completed / sessions) * 100 : 0,
+      completionRate: bookings > 0 ? (completed / bookings) * 100 : 0,
     };
   }
 
@@ -202,10 +215,18 @@ export class AnalyticsService {
   }
 
   /**
-   * Platform-wide analytics
+   * Platform-wide analytics.
+   *
+   * Definition (#432): `grossBookingValue` is the sum of COMPLETED
+   * booking totals — traveller money paid to AGENCIES, never OuiBoo
+   * revenue. The old `gmv` key carried the same sum under a name that
+   * read as platform revenue (it has no consumers and is removed).
+   * `platformRevenue` is reported explicitly: no platform fee capture
+   * exists before the monetisation gate (#426), so it is exactly
+   * '0.00' — in the free beta there is no other honest value.
    */
   async getPlatformMetrics() {
-    const [totalRevenue, totalBookings, totalAgencies, totalTravelers, avgBookingValue] = await Promise.all([
+    const [grossBookingValue, totalBookings, totalAgencies, totalTravelers, avgBookingValue] = await Promise.all([
       this.prisma.booking.aggregate({
         where: { status: 'COMPLETED' },
         _sum: { totalAmount: true },
@@ -224,7 +245,8 @@ export class AnalyticsService {
     ]);
 
     return {
-      gmv: toMoneyString(totalRevenue._sum.totalAmount) || '0.00',
+      grossBookingValue: toMoneyString(grossBookingValue._sum.totalAmount) || '0.00',
+      platformRevenue: '0.00',
       totalBookings,
       totalAgencies,
       totalTravelers,
