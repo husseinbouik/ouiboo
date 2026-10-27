@@ -264,9 +264,18 @@
  * Written as plain layered classes rather than @utility: the utility
  * needs a pseudo-element, and this form keeps the stylesheet free of
  * nested rules.
+ *
+ * Council Session #3 P0-1 (#490 regression): `position: relative` must
+ * NOT be set unconditionally here. This block sits after Tailwind's
+ * `.absolute` in the same utilities layer at equal specificity, so an
+ * unconditional `position` silently overrode `absolute` on every element
+ * carrying both classes (TripCard carousel buttons, the Dialog close
+ * button, the checkout proof close button) and collapsed them in-flow.
+ * The relative anchor for the ::after is therefore applied only when the
+ * element is not already positioned by a utility class.
  */
 @layer utilities {
-  .hit-slop {
+  .hit-slop:not(.absolute, .fixed, .sticky, .relative) {
     position: relative;
   }
 

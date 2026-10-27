@@ -322,6 +322,7 @@
   "tripCard": {
     "previousImage": "الصورة السابقة",
     "nextImage": "الصورة التالية",
+    "viewImage": "عرض الصورة {{count}}",
     "defaultCategory": "مغامرة",
     "priceTba": "السعر قريباً",
     "spots_one": "مقعد واحد",

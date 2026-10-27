@@ -322,6 +322,7 @@
   "tripCard": {
     "previousImage": "Previous image",
     "nextImage": "Next image",
+    "viewImage": "View image {{count}}",
     "defaultCategory": "Adventure",
     "priceTba": "Price TBA",
     "spots_one": "{{count}} spot",
