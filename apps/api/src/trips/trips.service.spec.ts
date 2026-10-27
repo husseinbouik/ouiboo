@@ -347,6 +347,19 @@ describe('TripsService', () => {
                 }),
             }));
         });
+
+        it('selects the licence/insurance what+when fields for the card statement (#413)', async () => {
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(0);
+
+            await service.findAllTemplates({});
+
+            const args = db.tripTemplate.findMany.mock.calls[0][0];
+            expect(args.include.agency.select.travelLicenceStatus).toBe(true);
+            expect(args.include.agency.select.licenceVerifiedAt).toBe(true);
+            expect(args.include.agency.select.insuranceStatus).toBe(true);
+            expect(args.include.agency.select.insuranceVerifiedAt).toBe(true);
+        });
     });
 
     describe('findOneTemplate agency bankDetails (#380)', () => {
@@ -671,6 +684,10 @@ describe('TripsService', () => {
             expect(args.select.agency.select.travelLicenceNumber).toBe(true);
             expect(args.select.agency.select.travelLicenceStatus).toBe(true);
             expect(args.select.agency.select.licenceExpiry).toBe(true);
+            // #413 (Council B10): what+when statement dates.
+            expect(args.select.agency.select.licenceVerifiedAt).toBe(true);
+            expect(args.select.agency.select.insuranceStatus).toBe(true);
+            expect(args.select.agency.select.insuranceVerifiedAt).toBe(true);
         });
     });
 

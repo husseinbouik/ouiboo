@@ -70,7 +70,7 @@
   },
   "checkout": {
     "title": "Checkout",
-    "secureProcess": "Secure Manual Payment Process",
+    "secureProcess": "Manual payment to the agency",
     "goBack": "Go back",
     "progressLabel": "Checkout progress",
     "stepGuestDetails": "Guest details",
@@ -328,6 +328,8 @@
     "spots_other": "{{count}} spots",
     "soldOut": "Sold out",
     "verifiedAgency": "Licence number provided by the agency — not independently verified",
+    "licenceChecked": "Licence checked {{date}}",
+    "insuranceEvidenced": "RC insurance evidenced {{date}}",
     "agencyPending": "Agency Pending",
     "days_one": "{{count}} Day",
     "days_other": "{{count}} Days",
@@ -462,7 +464,14 @@
   "seller": {
     "organisedAndSoldBy": "Organised and sold by {{name}}",
     "licence": "Travel-agent licence: {{number}}",
+    "licenceChecked": "Licence document checked on {{date}}",
+    "insuranceEvidenced": "RC insurance evidenced on {{date}}",
     "poweredBy": "Powered by OuiBoo"
+  },
+  "tripDetails": {
+    "payment": "Payment",
+    "directToAgency": "Direct to the agency",
+    "directPaymentNote": "You pay the agency directly — Ouiboo never holds your money. Uploading a payment proof does not settle the payment."
   },
   "refunds": {
     "confirmReceipt": "Confirm receipt",

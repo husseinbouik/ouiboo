@@ -70,7 +70,7 @@
   },
   "checkout": {
     "title": "إتمام الحجز",
-    "secureProcess": "عملية دفع يدوي آمنة",
+    "secureProcess": "دفع يدوي إلى الوكالة",
     "goBack": "رجوع",
     "progressLabel": "تقدم الحجز",
     "stepGuestDetails": "بيانات الضيف",
@@ -328,6 +328,8 @@
     "spots_other": "{{count}} مقاعد",
     "soldOut": "مكتمل",
     "verifiedAgency": "رقم الترخيص مقدم من الوكالة — لم يتم التحقق منه بشكل مستقل",
+    "licenceChecked": "تم التحقق من الترخيص في {{date}}",
+    "insuranceEvidenced": "تم إثبات تأمين المسؤولية المدنية في {{date}}",
     "agencyPending": "وكالة قيد المراجعة",
     "days_one": "يوم واحد",
     "days_other": "{{count}} أيام",
@@ -462,7 +464,14 @@
   "seller": {
     "organisedAndSoldBy": "منظَّم ومباع من طرف {{name}}",
     "licence": "رخصة وكيل الأسفار: {{number}}",
+    "licenceChecked": "تم التحقق من وثيقة الترخيص في {{date}}",
+    "insuranceEvidenced": "تم إثبات تأمين المسؤولية المدنية في {{date}}",
     "poweredBy": "مدعوم من OuiBoo"
+  },
+  "tripDetails": {
+    "payment": "الدفع",
+    "directToAgency": "مباشرة إلى الوكالة",
+    "directPaymentNote": "تدفع للوكالة مباشرة — لا تحتفظ OuiBoo بأموالك أبدًا. إرسال إثبات الدفع لا يعني تسويته."
   },
   "refunds": {
     "confirmReceipt": "تأكيد الاستلام",

@@ -1,6 +1,6 @@
 export const SITE_NAME = 'Ouiboo'
 export const SITE_DESCRIPTION =
-  'Discover and book memorable trips from local travel experts, with clear details and secure booking in one place.'
+  'Discover and book memorable trips from local travel experts, with clear details in one place.'
 
 export const TRAVELER_URL =
   process.env.NEXT_PUBLIC_TRAVELER_URL || 'http://localhost:3001'

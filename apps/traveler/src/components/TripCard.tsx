@@ -4,7 +4,7 @@ import Image from 'next/image';
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, Badge, Button } from '@ouiboo/ui';
-import { MapPin, Star, ChevronLeft, ChevronRight, Zap, ShieldCheck, Ticket } from 'lucide-react';
+import { MapPin, Star, ChevronLeft, ChevronRight, Zap, Ticket } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -39,6 +39,11 @@ export interface TripCardTrip {
   }>;
   agency?: {
     verificationStatus?: VerificationStatusType;
+    /** #413 (Council B10): what+when verification statement fields. */
+    travelLicenceStatus?: string;
+    licenceVerifiedAt?: string | null;
+    insuranceStatus?: string;
+    insuranceVerifiedAt?: string | null;
   } | null;
 }
 
@@ -71,6 +76,30 @@ export function TripCard({ trip }: TripCardProps) {
       : (sessions.find((session) => Number(session.price || 0) === minPrice) ?? null);
   const priceCurrency = cheapestSession?.currency ?? trip.currency;
   const isAgencyVerified = trip.agency?.verificationStatus === VerificationStatus.Verified;
+
+  // #413 (Council B10): the what+when verification statement. Each part is
+  // present only when that check actually passed and carries its real date;
+  // with no dated check on record the card falls back to the plain
+  // disclaimer text (never a shield, never a bare "verified" claim).
+  const formatCheckDate = (value?: string | null) => {
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? null
+      : new Intl.DateTimeFormat(i18n.language || 'en', { dateStyle: 'medium' }).format(date);
+  };
+  const licenceCheckedDate =
+    trip.agency?.travelLicenceStatus === 'VERIFIED'
+      ? formatCheckDate(trip.agency?.licenceVerifiedAt)
+      : null;
+  const insuranceEvidencedDate =
+    trip.agency?.insuranceStatus === 'VERIFIED'
+      ? formatCheckDate(trip.agency?.insuranceVerifiedAt)
+      : null;
+  const verificationChecks = [
+    licenceCheckedDate ? t('tripCard.licenceChecked', { date: licenceCheckedDate }) : null,
+    insuranceEvidencedDate ? t('tripCard.insuranceEvidenced', { date: insuranceEvidencedDate }) : null,
+  ].filter((part): part is string => Boolean(part));
 
   // #333: warm the trip-detail query on hover/focus/press so tapping a card
   // paints instantly instead of starting a cold request chain. Uses the exact
@@ -251,16 +280,18 @@ export function TripCard({ trip }: TripCardProps) {
           </div>
 
           {/* #317: public cards never display an internal approval state.
-              The badge exists only as a positive verified signal; a pending,
-              rejected, or unknown state renders no badge at all. */}
-          {isAgencyVerified && (
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge className="border-none text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 bg-success/15 text-success-dark">
-                <ShieldCheck className="h-3 w-3" />
-                {t('tripCard.verifiedAgency')}
-              </Badge>
-            </div>
-          )}
+              #413 (Council B10): no ShieldCheck beside disclaimer text and
+              no bare "verified" badge — the dated what+when statement when
+              the checks are on record, else the plain disclaimer as text. */}
+          {verificationChecks.length > 0 ? (
+            <p className="text-[11px] font-medium text-muted-foreground">
+              {verificationChecks.join(' · ')}
+            </p>
+          ) : isAgencyVerified ? (
+            <p className="text-[11px] font-medium text-muted-foreground">
+              {t('tripCard.verifiedAgency')}
+            </p>
+          ) : null}
           
           <div className="flex items-center gap-3 text-muted-foreground text-xs font-medium">
             <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {trip.startLocation}</span>

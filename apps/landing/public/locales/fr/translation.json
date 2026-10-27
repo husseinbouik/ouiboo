@@ -20,7 +20,7 @@
     "title": "Une marketplace conçue pour la confiance",
     "subtitle": "Des fondations claires pour chaque étape du voyage.",
     "item1": "Détails de voyage structurés",
-    "item2": "Vérification des agences",
+    "item2": "Processus d'examen des agences",
     "item3": "Paiements directs à l'agence",
     "item4": "Assistance par e-mail"
   },
@@ -73,7 +73,7 @@
       "description": "Trouvez des expériences que vous ne verrez nulle part ailleurs, des circuits culinaires aux treks en montagne."
     },
     "feature2": {
-      "title": "Réservez en Confiance",
+      "title": "Sachez qui vend votre voyage",
       "description": "Numéro de licence fourni par l'agence — non vérifié de manière indépendante par Ouiboo."
     },
     "feature3": {

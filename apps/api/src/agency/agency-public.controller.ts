@@ -1,7 +1,7 @@
 import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { DatabaseService } from '../database/database.service';
-import { effectiveLicenceStatus } from '../common/agency-licence.util';
+import { effectiveInsuranceStatus, effectiveLicenceStatus } from '../common/agency-licence.util';
 
 @ApiTags('Agency Public')
 @Controller('agencies')
@@ -26,6 +26,13 @@ export class AgencyPublicController {
                 travelLicenceNumber: true,
                 travelLicenceStatus: true,
                 licenceExpiry: true,
+                // #413 (Council B10): what+when verification statement on the
+                // public profile — the licence check date and the RC
+                // insurance evidence date.
+                licenceVerifiedAt: true,
+                insuranceStatus: true,
+                insuranceExpiry: true,
+                insuranceVerifiedAt: true,
             }
         });
 
@@ -34,6 +41,8 @@ export class AgencyPublicController {
         }
 
         const licenceVerified = effectiveLicenceStatus(agency) === 'VERIFIED';
+        const effectiveInsurance = effectiveInsuranceStatus(agency);
+        const insuranceVerified = effectiveInsurance === 'VERIFIED';
 
         return {
             id: agency.id,
@@ -44,6 +53,9 @@ export class AgencyPublicController {
             legalName: agency.legalName,
             licenceVerified,
             travelLicenceNumber: licenceVerified ? agency.travelLicenceNumber : null,
+            licenceVerifiedAt: licenceVerified ? agency.licenceVerifiedAt : null,
+            insuranceStatus: effectiveInsurance,
+            insuranceVerifiedAt: insuranceVerified ? agency.insuranceVerifiedAt : null,
         };
     }
 }

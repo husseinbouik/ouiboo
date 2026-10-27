@@ -23,6 +23,31 @@ export interface SellerAgencyInfo {
     licenceExpiry?: string | Date | null;
     /** Pre-derived by the API (public profile endpoint). */
     licenceVerified?: boolean;
+    /** #413 (Council B10): when the licence document was checked. */
+    licenceVerifiedAt?: string | Date | null;
+    insuranceStatus?: string | null;
+    /** #413 (Council B10): when the RC insurance was evidenced. */
+    insuranceVerifiedAt?: string | Date | null;
+}
+
+function toValidDate(value: string | Date | null | undefined): Date | null {
+    if (!value) return null;
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * #413 (Council B10): the what+when verification statement — each part is
+ * present only when that check actually passed, and carries the date it
+ * happened. No date, no claim.
+ */
+export function getVerificationChecks(agency: SellerAgencyInfo, now: Date = new Date()) {
+    const licenceCheckedDate = isLicenceVerifiedForDisplay(agency, now)
+        ? toValidDate(agency.licenceVerifiedAt)
+        : null;
+    const insuranceEvidencedDate =
+        agency.insuranceStatus === 'VERIFIED' ? toValidDate(agency.insuranceVerifiedAt) : null;
+    return { licenceCheckedDate, insuranceEvidencedDate };
 }
 
 export function isLicenceVerifiedForDisplay(agency: SellerAgencyInfo, now: Date = new Date()): boolean {
@@ -60,7 +85,7 @@ export default function SellerIdentity({
     agency: SellerAgencyInfo | null | undefined;
     className?: string;
 }) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
 
     if (!agency) {
         return null;
@@ -68,6 +93,25 @@ export default function SellerIdentity({
     const { name, licenceVerified, licenceNumber } = getSellerDisplay(agency);
     if (!name) {
         return null;
+    }
+
+    // #413 (Council B10): explicit what+when — only the checks that passed,
+    // each with the actual date from the agency's verification record.
+    const { licenceCheckedDate, insuranceEvidencedDate } = getVerificationChecks(agency);
+    const formatDate = (date: Date) =>
+        new Intl.DateTimeFormat(i18n.language || 'en', { dateStyle: 'medium' }).format(date);
+    const checks: string[] = [];
+    if (licenceCheckedDate) {
+        const date = formatDate(licenceCheckedDate);
+        checks.push(
+            t('seller.licenceChecked', { date, defaultValue: `Licence document checked on ${date}` }),
+        );
+    }
+    if (insuranceEvidencedDate) {
+        const date = formatDate(insuranceEvidencedDate);
+        checks.push(
+            t('seller.insuranceEvidenced', { date, defaultValue: `RC insurance evidenced on ${date}` }),
+        );
     }
 
     return (
@@ -83,6 +127,7 @@ export default function SellerIdentity({
                     </span>
                 )}
             </p>
+            {checks.length > 0 && <p className="text-xs">{checks.join(' · ')}</p>}
             <p className="text-xs">{t('seller.poweredBy', 'Powered by OuiBoo')}</p>
         </div>
     );
