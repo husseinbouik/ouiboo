@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 import {
   Plus,
@@ -13,7 +12,7 @@ import {
   Filter,
   ArrowUpDown
 } from 'lucide-react';
-import { Button, Card, CardContent, Input, ShareTripButton } from '@ouiboo/ui';
+import { Button, Card, CardContent, Input, ShareTripButton, SafeImage } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -208,7 +207,7 @@ export default function AgencyTripsPage() {
           filteredTrips.map((trip) => (
             <Card key={trip.id} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden bg-card border border-border flex flex-col">
               <div className="relative h-48 overflow-hidden">
-                 <Image
+                 <SafeImage
                    src={trip.images?.[0] || `https://ui-avatars.com/api/?name=${encodeURIComponent(trip.title)}&background=0A192F&color=fff`}
                    alt={trip.imageAlts?.[0]?.trim() || trip.title}
                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"

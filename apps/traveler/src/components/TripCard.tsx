@@ -1,9 +1,8 @@
 'use client';
 
-import Image from 'next/image';
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, Badge, Button } from '@ouiboo/ui';
+import { Card, Badge, Button, SafeImage } from '@ouiboo/ui';
 import { MapPin, Star, ChevronLeft, ChevronRight, Zap, Ticket } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
@@ -201,7 +200,7 @@ export function TripCard({ trip }: TripCardProps) {
             transition={{ duration: 0.5 }}
             className="absolute inset-0"
           >
-            <Image
+            <SafeImage
               src={images[currentImage]}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               alt={trip.imageAlts?.[currentImage]?.trim() || (trip.startLocation ? `${trip.title} · ${trip.startLocation}` : trip.title)}

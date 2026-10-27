@@ -1,6 +1,5 @@
-import Image from 'next/image';
 import { Plus, Info, X } from 'lucide-react';
-import { Card, CardContent } from '@ouiboo/ui';
+import { Card, CardContent, SafeImage } from '@ouiboo/ui';
 import type { TFunction } from 'i18next';
 import type { TripWizardFormApi } from './useTripWizardForm';
 
@@ -23,7 +22,7 @@ export function TripMediaUpload({ t, form, mode }: Props) {
             {watchedImages.map((img, idx) => (
               <div key={idx} className="space-y-2">
                 <div className="relative aspect-video bg-muted rounded-xl overflow-hidden group border border-border">
-                  <Image src={img} className="w-full h-full object-cover" alt={watchedImageAlts[idx]?.trim() || t('trips.create.imageAlt', { name: watch('title') || t('trips.create.untitledAdventure'), index: idx + 1 })} fill sizes="(min-width: 768px) 33vw, 50vw" />
+                  <SafeImage src={img} className="w-full h-full object-cover" alt={watchedImageAlts[idx]?.trim() || t('trips.create.imageAlt', { name: watch('title') || t('trips.create.untitledAdventure'), index: idx + 1 })} fill sizes="(min-width: 768px) 33vw, 50vw" />
                   <button
                     type="button"
                     aria-label={t('common.delete')}

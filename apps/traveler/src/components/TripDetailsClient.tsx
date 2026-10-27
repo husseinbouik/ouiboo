@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import React, { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
@@ -16,7 +15,7 @@ import {
   X,
   ClipboardList
 } from 'lucide-react';
-import { Button, Badge, TripDetailSkeleton, ShareTripButton } from '@ouiboo/ui';
+import { Button, Badge, TripDetailSkeleton, ShareTripButton, SafeImage } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -270,9 +269,9 @@ export default function TripDetailsClient({
                 onTouchEnd={handleTouchEnd}
                 onClickCapture={handleClickCapture}
             >
-                <Image 
-                    src={trip.images?.[activeImage] || 'https://images.unsplash.com/photo-1489749798305-4fea3ae63d43'} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                <SafeImage
+                    src={trip.images?.[activeImage] || 'https://images.unsplash.com/photo-1489749798305-4fea3ae63d43'}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     alt={trip.imageAlts?.[activeImage]?.trim() || trip.title}
                     fill
                     sizes="(min-width: 1024px) 60vw, 100vw"
@@ -299,7 +298,7 @@ export default function TripDetailsClient({
               <div className="flex lg:hidden gap-3 overflow-x-auto pb-1" aria-label="Trip photos">
                   {galleryTiles.map(({ src, index }) => (
                       <button key={index} type="button" className="relative h-20 w-28 shrink-0 rounded-2xl overflow-hidden shadow-md border border-border/50" onClick={() => setActiveImage(index)} aria-label={`View image ${index + 1}`}>
-                          <Image src={src} className="w-full h-full object-cover" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - image ${index + 1}`} fill sizes="112px" />
+                          <SafeImage src={src} className="w-full h-full object-cover" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - image ${index + 1}`} fill sizes="112px" />
                       </button>
                   ))}
               </div>
@@ -313,7 +312,7 @@ export default function TripDetailsClient({
               >
                   {desktopTiles.map(({ src, index }) => (
                       <button key={index} type="button" className="relative min-h-36 rounded-[1.5rem] overflow-hidden shadow-lg border border-border/50 group" onClick={() => setActiveImage(index)} aria-label={`View image ${index + 1}`}>
-                          <Image src={src} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - image ${index + 1}`} fill sizes="20vw" />
+                          <SafeImage src={src} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - image ${index + 1}`} fill sizes="20vw" />
                           <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                       </button>
                   ))}

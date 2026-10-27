@@ -34,6 +34,7 @@ export * from './Tabs';
 export * from './Textarea';
 export * from './Toast';
 export * from './Logo';
+export * from './SafeImage';
 export * from './MobileFilterDrawer';
 export * from './OtpCodeInput';
 export * from './Pagination';
