@@ -242,6 +242,9 @@ describe('BookingsTab bank-confirmation state (#422)', () => {
   it('labels a booking with no recorded terms as unrecorded, never with a version (B9)', () => {
     renderTab();
     expect(screen.queryByText(/dashboard\.table\.termsAccepted/)).toBeNull();
-    expect(screen.getByText('dashboard.table.termsUnrecorded')).not.toBeNull();
+    // Both fixture bookings lack a recorded terms version, so the
+    // unrecorded label renders once per row — getByText would throw
+    // on the multiple matches.
+    expect(screen.getAllByText('dashboard.table.termsUnrecorded')).toHaveLength(2);
   });
 });
