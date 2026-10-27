@@ -3,6 +3,7 @@ import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
 import { PaymentProviderFactory } from './providers/payment-provider.factory';
 import { InitiatePaymentDto, VerifyPaymentDto, ProcessRefundDto } from './dto/payment.dto';
+import { PaymentVerificationResult } from './interfaces/payment-provider.interface';
 import { PaymentMethod, BookingStatus, BookingPaymentStatus, RefundStatus, PaymentCustodian, PaymentLedgerEntryType, PaymentLedgerSource } from '@ouiboo/database';
 import { MoneyInput, decimalEqualsMoney, multiplyMoney, toMoneyDecimal, toMoneyString } from '../common/money.util';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
@@ -106,6 +107,13 @@ export class PaymentsService {
 
   /**
    * Verify payment status
+   *
+   * #496: the local PaymentTransaction is the authority. Verification first
+   * resolves exactly one local transaction bound to (booking, provider,
+   * provider transaction reference); the provider result must agree with
+   * it on booking reference, amount and currency; and the transaction is
+   * claimed with a conditional update — a provider "success" that updates
+   * zero local rows can never confirm the booking.
    */
   async verifyPayment(dto: VerifyPaymentDto, requesterId?: string) {
     this.ensureGatewayPaymentsEnabled();
@@ -124,6 +132,41 @@ export class PaymentsService {
       throw new BadRequestException('Booking does not belong to the authenticated traveler');
     }
 
+    // #496: resolve the authoritative local transaction BEFORE trusting
+    // any provider answer. Client-supplied identifiers alone prove nothing.
+    const localTransaction = await this.resolveAuthoritativeTransaction(
+      dto.bookingId,
+      dto.provider,
+      dto.transactionId,
+    );
+
+    // Idempotent replay: this transaction already succeeded and the booking
+    // is already paid — a duplicate verification (double submit, return-path
+    // refresh, webhook race) is a no-op success, never a second confirmation.
+    if (
+      localTransaction.status === 'SUCCESS' &&
+      booking.paymentStatus === BookingPaymentStatus.PAID
+    ) {
+      this.logger.log(
+        `Payment already verified for booking ${dto.bookingId}; duplicate verification ignored`,
+      );
+      return {
+        status: 'success' as const,
+        transactionId: dto.transactionId,
+        metadata: (localTransaction.providerData as Record<string, any>) ?? undefined,
+      };
+    }
+
+    if (
+      localTransaction.status !== 'INITIATED' &&
+      localTransaction.status !== 'PENDING' &&
+      localTransaction.status !== 'SUCCESS'
+    ) {
+      throw new BadRequestException(
+        `Payment transaction is not in a verifiable state (${localTransaction.status})`,
+      );
+    }
+
     const provider = this.paymentProviderFactory.getProvider(
       dto.provider as any,
     );
@@ -133,18 +176,57 @@ export class PaymentsService {
       dto.bookingId,
     );
 
+    // #496: whenever the provider asserts which booking its transaction
+    // belongs to, it must be THIS booking — on every outcome, so a foreign
+    // transaction can neither confirm nor cancel this booking.
+    const providerBookingId = this.providerAssertedBookingId(result);
+    if (providerBookingId && providerBookingId !== dto.bookingId) {
+      this.logger.warn(
+        `Provider ${dto.provider} transaction ${dto.transactionId} belongs to booking ${providerBookingId}, not ${dto.bookingId}; verification rejected`,
+      );
+      throw new BadRequestException(
+        'Payment transaction does not belong to this booking',
+      );
+    }
+
     if (result.status === 'success') {
-      // Update payment transaction
-      await this.prisma.paymentTransaction.updateMany({
+      // #496: the paid amount/currency the provider reports must match the
+      // authoritative local transaction amount and the booking currency.
+      this.assertProviderAmountCurrency(result, localTransaction, booking);
+
+      // Atomically claim the local transaction. The conditional update only
+      // matches while the transaction is still in the state we resolved, so
+      // concurrent verifications cannot both proceed to confirmation.
+      const claimed = await this.prisma.paymentTransaction.updateMany({
         where: {
+          id: localTransaction.id,
           bookingId: dto.bookingId,
           transactionId: dto.transactionId,
+          status: localTransaction.status,
         },
         data: {
           status: 'SUCCESS',
           providerData: result.metadata,
         },
       });
+
+      if (claimed.count !== 1) {
+        // Zero rows updated: another flow already moved this transaction.
+        // Confirm nothing here — succeed idempotently only if that flow
+        // already paid the booking.
+        const current = await this.prisma.booking.findUnique({
+          where: { id: dto.bookingId },
+        });
+        if (current?.paymentStatus === BookingPaymentStatus.PAID) {
+          this.logger.log(
+            `Payment for booking ${dto.bookingId} already confirmed by a concurrent flow; verification is idempotent`,
+          );
+          return result;
+        }
+        throw new BadRequestException(
+          'Payment could not be bound to the booking transaction; booking was not confirmed',
+        );
+      }
 
       // Transition booking to CONFIRMED state and update payment status
       await this.transitionBookingToConfirmed(dto.bookingId, result.metadata);
@@ -164,35 +246,139 @@ export class PaymentsService {
 
   /**
    * Process refund
+   *
+   * #497: the refund target is resolved from the booking's successful local
+   * payment transaction — never from caller-supplied identifiers alone.
+   * The amount is validated against the remaining refundable balance, and
+   * the refund is claimed with a conditional state transition BEFORE the
+   * provider is called, so concurrent/refreshed requests cannot
+   * double-refund. A deterministic provider idempotency key makes a retry
+   * of the same claim replay one provider operation.
    */
   async processRefund(dto: ProcessRefundDto) {
     this.ensureGatewayPaymentsEnabled();
     const booking = await this.prisma.booking.findUnique({
       where: { id: dto.bookingId },
+      include: { paymentTransactions: true },
     });
 
     if (!booking) {
       throw new BadRequestException('Booking not found');
     }
 
+    if (booking.paymentStatus !== BookingPaymentStatus.PAID) {
+      throw new BadRequestException('Only paid bookings can be refunded');
+    }
+
+    if (booking.refundStatus === RefundStatus.PENDING) {
+      throw new BadRequestException('A refund is already in progress for this booking');
+    }
+
+    // #497: prove the caller-supplied reference IS the booking's successful
+    // payment, from the local ledger — not merely a plausible identifier.
+    const transactions =
+      (booking as any).paymentTransactions ??
+      (await this.prisma.paymentTransaction.findMany({
+        where: { bookingId: dto.bookingId },
+      }));
+    const successfulMatches = (transactions as any[]).filter(
+      (transaction) =>
+        transaction.status === 'SUCCESS' &&
+        transaction.transactionId === dto.transactionId &&
+        transaction.provider &&
+        transaction.provider.toUpperCase() === dto.provider.toUpperCase(),
+    );
+
+    if (successfulMatches.length !== 1) {
+      throw new BadRequestException(
+        'No successful payment transaction for this booking matches the refund request',
+      );
+    }
+
+    const transaction = successfulMatches[0];
+
+    // #497: bound the refund by the authoritative paid amount (the local
+    // transaction, in the booking's currency) less refunds already made.
+    const paidAmount = toMoneyDecimal(transaction.amount);
+    const alreadyRefunded = booking.refundAmount
+      ? toMoneyDecimal(booking.refundAmount)
+      : toMoneyDecimal(0);
+    const requestedAmount = toMoneyDecimal(dto.amount);
+
+    if (!requestedAmount.greaterThan(0)) {
+      throw new BadRequestException('Refund amount must be positive');
+    }
+
+    const refundedTotal = alreadyRefunded.plus(requestedAmount);
+    if (refundedTotal.greaterThan(paidAmount)) {
+      throw new BadRequestException(
+        `Refund amount exceeds the remaining refundable balance (${toMoneyString(paidAmount.minus(alreadyRefunded))} ${booking.currency})`,
+      );
+    }
+
+    // #497: atomically claim the refund BEFORE calling the provider. The
+    // claim only matches while the booking still shows the exact refund
+    // state we validated (status PENDING is the in-flight marker), so a
+    // concurrent or refreshed duplicate loses the race here and never
+    // reaches the provider.
+    const claimed = await this.prisma.booking.updateMany({
+      where: {
+        id: dto.bookingId,
+        paymentStatus: BookingPaymentStatus.PAID,
+        refundStatus: booking.refundStatus ?? null,
+        refundAmount: booking.refundAmount ?? null,
+      },
+      data: {
+        refundStatus: RefundStatus.PENDING,
+      },
+    });
+
+    if (claimed.count !== 1) {
+      throw new BadRequestException(
+        'Refund could not be claimed; another refund may already be in progress for this booking',
+      );
+    }
+
     const provider = this.paymentProviderFactory.getProvider(
       dto.provider as any,
     );
 
-    const refundResult = await provider.processRefund(
-      dto.transactionId,
-      toMoneyDecimal(dto.amount),
-    );
+    // Deterministic: the same (booking, transaction, cumulative total)
+    // always produces the same key, so a retry replays one provider refund.
+    const idempotencyKey = `ouiboo-refund-${dto.bookingId}-${transaction.transactionId}-${toMoneyString(refundedTotal)}`;
+
+    let refundResult: { success: boolean; refundId?: string; error?: string };
+    try {
+      refundResult = await provider.processRefund(
+        transaction.transactionId,
+        requestedAmount,
+        idempotencyKey,
+      );
+    } catch (error) {
+      await this.releaseRefundClaim(dto.bookingId);
+      throw error;
+    }
+
+    if (!refundResult.success) {
+      // Recoverable, support-visible failure: the claim is released to
+      // FAILED (booking.refundStatus) and no refund totals move, so the
+      // refund can be retried without corrupting payment state.
+      await this.releaseRefundClaim(dto.bookingId);
+      return refundResult;
+    }
 
     if (refundResult.success) {
-      // Update booking with refund info
+      // Update booking with refund info. Totals accumulate across partial
+      // refunds; the booking is REFUNDED only once fully refunded.
       await this.prisma.booking.update({
         where: { id: dto.bookingId },
         data: {
-          refundAmount: toMoneyDecimal(dto.amount),
+          refundAmount: refundedTotal,
           refundStatus: RefundStatus.PROCESSED,
           refundProcessedAt: new Date(),
-          paymentStatus: BookingPaymentStatus.REFUNDED,
+          paymentStatus: decimalEqualsMoney(refundedTotal, paidAmount)
+            ? BookingPaymentStatus.REFUNDED
+            : BookingPaymentStatus.PAID,
         },
       });
 
@@ -216,7 +402,7 @@ export class PaymentsService {
             method: PaymentMethod.GATEWAY,
             provider: dto.provider,
             externalReference: refundResult.refundId || null,
-            externalTransactionId: dto.transactionId,
+            externalTransactionId: transaction.transactionId,
             custodian: PaymentCustodian.AGENCY_PSP,
             source: PaymentLedgerSource.GATEWAY_REFUND,
           });
@@ -256,6 +442,10 @@ export class PaymentsService {
       throw new BadRequestException('Only paid bookings can be refunded');
     }
 
+    if (booking.refundStatus === RefundStatus.PENDING) {
+      throw new BadRequestException('A refund is already in progress for this booking');
+    }
+
     const successfulTransaction = booking.paymentTransactions.find(
       (transaction) => transaction.status === 'SUCCESS' && transaction.provider && transaction.transactionId,
     );
@@ -267,11 +457,116 @@ export class PaymentsService {
       throw new BadRequestException('Missing provider transaction data for this booking');
     }
 
+    // #497: with no explicit amount, refund only what remains refundable
+    // on the authoritative transaction — never the full booking total
+    // after a partial refund has already been made.
+    const alreadyRefunded = booking.refundAmount
+      ? toMoneyDecimal(booking.refundAmount)
+      : toMoneyDecimal(0);
+    const remainingAmount = successfulTransaction
+      ? toMoneyDecimal(successfulTransaction.amount).minus(alreadyRefunded)
+      : toMoneyDecimal(booking.totalAmount);
+
     return this.processRefund({
       bookingId,
-      amount: amount ?? booking.totalAmount,
+      amount: amount ?? remainingAmount,
       provider,
       transactionId,
+    });
+  }
+
+  /**
+   * #496: resolve exactly one authoritative local payment transaction for
+   * (booking, provider transaction reference) and prove it belongs to the
+   * requested provider. Throws when there is no such transaction, when the
+   * reference is ambiguous, or when the provider does not match.
+   */
+  private async resolveAuthoritativeTransaction(
+    bookingId: string,
+    provider: string,
+    transactionId: string,
+  ) {
+    const matches = await this.prisma.paymentTransaction.findMany({
+      where: { bookingId, transactionId },
+    });
+
+    if (!matches || matches.length !== 1) {
+      throw new BadRequestException(
+        'No authoritative payment transaction found for this booking and provider reference',
+      );
+    }
+
+    const transaction = matches[0];
+    if (
+      !transaction.provider ||
+      transaction.provider.toUpperCase() !== provider.toUpperCase()
+    ) {
+      throw new BadRequestException(
+        'Payment transaction does not belong to the requested provider',
+      );
+    }
+
+    return transaction;
+  }
+
+  /**
+   * #496: the booking reference a provider result asserts, if any —
+   * structured field first, then the metadata/order-reference shapes the
+   * provider adapters return.
+   */
+  private providerAssertedBookingId(
+    result: PaymentVerificationResult,
+  ): string | undefined {
+    const metadata: any = result.metadata ?? {};
+    return (
+      result.bookingId ??
+      metadata.bookingId ??
+      metadata.orderId ??
+      metadata.metadata?.bookingId ??
+      undefined
+    );
+  }
+
+  /**
+   * #496: when the provider reports a paid amount or currency, both must
+   * match the authoritative local transaction amount and booking currency.
+   */
+  private assertProviderAmountCurrency(
+    result: PaymentVerificationResult,
+    localTransaction: { amount: MoneyInput },
+    booking: { currency?: string | null },
+  ) {
+    const metadata: any = result.metadata ?? {};
+    const reportedAmount = result.amount ?? metadata.amount ?? undefined;
+
+    if (reportedAmount !== undefined && reportedAmount !== null) {
+      if (!decimalEqualsMoney(reportedAmount, localTransaction.amount)) {
+        throw new BadRequestException(
+          'Provider amount does not match the booking payment transaction',
+        );
+      }
+    }
+
+    const reportedCurrency = result.currency ?? metadata.currency ?? undefined;
+    if (reportedCurrency) {
+      const expectedCurrency = (booking.currency || 'MAD').toUpperCase();
+      if (String(reportedCurrency).toUpperCase() !== expectedCurrency) {
+        throw new BadRequestException(
+          'Provider currency does not match the booking currency',
+        );
+      }
+    }
+  }
+
+  /**
+   * #497: release an in-flight refund claim to a recoverable, support-
+   * visible FAILED state after a provider failure, without moving any
+   * refund totals or booking payment state.
+   */
+  private async releaseRefundClaim(bookingId: string) {
+    await this.prisma.booking.updateMany({
+      where: { id: bookingId, refundStatus: RefundStatus.PENDING },
+      data: { refundStatus: RefundStatus.FAILED },
     });
   }
 

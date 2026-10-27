@@ -76,6 +76,11 @@ export class CashPlusPaymentProvider implements PaymentProvider {
         return {
           status: 'success',
           transactionId: res.transactionId || transactionId,
+          // #496: surface the provider's order reference and currency so
+          // the service can bind the result to the authoritative local
+          // transaction for this booking before confirming anything.
+          bookingId: res.orderId || res.metadata?.bookingId || undefined,
+          currency: typeof res.currency === 'string' ? res.currency : undefined,
           metadata: res,
         };
       } else if (res.status === 'PENDING') {
@@ -91,12 +96,16 @@ export class CashPlusPaymentProvider implements PaymentProvider {
   async processRefund(
     transactionId: string,
     amount: MoneyInput,
+    idempotencyKey?: string,
   ): Promise<{ success: boolean; refundId?: string; error?: string }> {
     try {
       const res = await this.callCashPlusAPI('/v1/payments/refund', {
         transactionId,
         amount: toMinorUnits(amount),
         merchantId: this.merchantId,
+        // #497: deterministic key so a retried refund replays one
+        // provider operation instead of creating a second refund.
+        ...(idempotencyKey ? { idempotencyKey } : {}),
       });
 
       return { success: res.status === 'SUCCESS', refundId: res.refundId, error: res.errorMessage };
