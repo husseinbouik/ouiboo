@@ -479,11 +479,17 @@
     "insuranceEvidenced": "Assurance RC justifiée le {{date}}",
     "poweredBy": "Propulsé par OuiBoo"
   },
+  "languageNames": {
+    "en": "anglais",
+    "fr": "français",
+    "ar": "arabe"
+  },
   "tripDetails": {
     "payment": "Paiement",
     "directToAgency": "Directement à l'agence",
     "directPaymentNote": "Vous payez l'agence directement — Ouiboo ne détient jamais votre argent. L'envoi d'un justificatif ne règle pas le paiement.",
-    "morePhotos": "Plus de photos"
+    "morePhotos": "Plus de photos",
+    "contentLanguageNotice": "Affiché en {{language}} — l'agence n'a pas encore publié ce voyage dans votre langue."
   },
   "refunds": {
     "confirmReceipt": "Confirmer la réception",

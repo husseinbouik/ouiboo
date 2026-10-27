@@ -479,11 +479,17 @@
     "insuranceEvidenced": "تم إثبات تأمين المسؤولية المدنية في {{date}}",
     "poweredBy": "مدعوم من OuiBoo"
   },
+  "languageNames": {
+    "en": "الإنجليزية",
+    "fr": "الفرنسية",
+    "ar": "العربية"
+  },
   "tripDetails": {
     "payment": "الدفع",
     "directToAgency": "مباشرة إلى الوكالة",
     "directPaymentNote": "تدفع للوكالة مباشرة — لا تحتفظ OuiBoo بأموالك أبدًا. إرسال إثبات الدفع لا يعني تسويته.",
-    "morePhotos": "المزيد من الصور"
+    "morePhotos": "المزيد من الصور",
+    "contentLanguageNotice": "يُعرض بـ{{language}} — لم تنشر الوكالة هذه الرحلة بلغتك بعد."
   },
   "refunds": {
     "confirmReceipt": "تأكيد الاستلام",

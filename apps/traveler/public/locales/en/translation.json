@@ -479,11 +479,17 @@
     "insuranceEvidenced": "RC insurance evidenced on {{date}}",
     "poweredBy": "Powered by OuiBoo"
   },
+  "languageNames": {
+    "en": "English",
+    "fr": "French",
+    "ar": "Arabic"
+  },
   "tripDetails": {
     "payment": "Payment",
     "directToAgency": "Direct to the agency",
     "directPaymentNote": "You pay the agency directly — Ouiboo never holds your money. Uploading a payment proof does not settle the payment.",
-    "morePhotos": "More photos"
+    "morePhotos": "More photos",
+    "contentLanguageNotice": "Shown in {{language}} — the agency hasn't published this trip in your language yet."
   },
   "refunds": {
     "confirmReceipt": "Confirm receipt",

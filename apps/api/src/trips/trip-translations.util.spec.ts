@@ -105,6 +105,7 @@ describe('trip-translations.util (#546)', () => {
             expect(resolveTripText(trip, 'en')).toEqual({
                 title: 'Title EN',
                 description: 'Description EN',
+                language: 'en',
             });
         });
 
@@ -112,6 +113,8 @@ describe('trip-translations.util (#546)', () => {
             expect(resolveTripText(trip, 'ar')).toEqual({
                 title: 'عنوان AR',
                 description: 'Description FR',
+                // P0-11: the reported language follows the title's source.
+                language: 'ar',
             });
         });
 
@@ -119,13 +122,14 @@ describe('trip-translations.util (#546)', () => {
             expect(resolveTripText(trip, 'es')).toEqual({
                 title: 'Titre FR',
                 description: 'Description FR',
+                language: 'fr',
             });
             expect(
                 resolveTripText(
                     { title: '', description: '', translations: { ar: { title: 'فقط', description: 'وصف فقط' } } },
                     'en',
                 ),
-            ).toEqual({ title: 'فقط', description: 'وصف فقط' });
+            ).toEqual({ title: 'فقط', description: 'وصف فقط', language: 'ar' });
         });
 
         it('legacy trip without a map renders its (French) columns in every locale', () => {
@@ -134,6 +138,7 @@ describe('trip-translations.util (#546)', () => {
                 expect(resolveTripText(legacy, locale)).toEqual({
                     title: 'Ancien titre',
                     description: 'Ancienne description',
+                    language: 'fr',
                 });
             }
         });
@@ -142,6 +147,7 @@ describe('trip-translations.util (#546)', () => {
             expect(resolveTripText({ title: '', description: '', translations: null }, 'ar')).toEqual({
                 title: '',
                 description: '',
+                language: 'fr',
             });
         });
     });

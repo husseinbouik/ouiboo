@@ -11,6 +11,7 @@ import {
   Check,
   ChevronLeft,
   Banknote,
+  Languages,
   Star,
   X,
   ClipboardList
@@ -57,6 +58,9 @@ const isStagedSession = (session: TripSession) =>
 type TripDetails = {
   id: string;
   title: string;
+  /** Session #3 P0-11 (#546): language the API actually resolved the
+   * title/description in — the page says so when it is not the reader's. */
+  contentLanguage?: string;
   category?: string;
   startLocation: string;
   durationDays: number;
@@ -367,6 +371,17 @@ export default function TripDetailsClient({
                             configured one is ever loopback in a deployed build. */}
                         <ShareTripButton tripId={trip.id} tripTitle={trip.title} travelerBaseUrl={TRAVELER_URL} allowRuntimeOriginFallback className="rounded-full" />
                     </div>
+
+                    {/* Session #3 P0-11 (#546): when the content resolved
+                        in a language other than the reader's UI language,
+                        say so — French-only content previously failed
+                        silently for Arabic/English readers. */}
+                    {trip.contentLanguage && trip.contentLanguage !== (i18n.language || 'en').split('-')[0] ? (
+                      <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+                        <Languages className="h-4 w-4 text-sunset-orange shrink-0" />
+                        {t('tripDetails.contentLanguageNotice', { language: t(`languageNames.${trip.contentLanguage}`) })}
+                      </p>
+                    ) : null}
 
                     {/* #371: seller of record + verified travel licence */}
                     <SellerIdentity agency={trip.agency} className="mt-4" />
