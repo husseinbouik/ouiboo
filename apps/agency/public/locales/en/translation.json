@@ -24,6 +24,9 @@
     }
   },
   "common": {
+    "switchLanguage": "Switch language current is {{language}}",
+    "switchFrom": "Switch from {{language}}",
+    "toggleTheme": "Toggle theme",
     "back": "Back to Trips",
     "saveDraft": "Save Draft",
     "submit": "Submit",

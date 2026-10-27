@@ -24,6 +24,9 @@
     }
   },
   "common": {
+    "switchLanguage": "تبديل اللغة — الحالية: {{language}}",
+    "switchFrom": "التبديل من {{language}}",
+    "toggleTheme": "تبديل المظهر",
     "back": "العودة إلى الرحلات",
     "saveDraft": "حفظ كمسودة",
     "submit": "إرسال",

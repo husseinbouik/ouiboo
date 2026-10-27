@@ -314,6 +314,9 @@
     "sideSubtitle": "Update your password and return to your travel dashboard in minutes."
   },
   "common": {
+    "switchLanguage": "Switch language current is {{language}}",
+    "switchFrom": "Switch from {{language}}",
+    "toggleTheme": "Toggle theme",
     "skipToContent": "Skip to content",
     "loading": "Loading...",
     "errorTitle": "Something went wrong",
@@ -538,6 +541,25 @@
     "bookNow": "Book Now",
     "chooseDate": "Choose a date",
     "viewAvailability": "View availability"
+  },
+  "reviews": {
+      "loading": "Loading reviews...",
+      "noReviewsYet": "No reviews yet",
+      "beFirst": "Be the first to share your experience!",
+      "sortBy": "Sort by:",
+      "sortRecent": "Most Recent",
+      "sortHighest": "Highest Rated",
+      "sortLowest": "Lowest Rated",
+      "count_one": "{{count}} review",
+      "count_other": "{{count}} reviews",
+      "anonymous": "Anonymous",
+      "verifiedBooking": "Verified Booking",
+      "showLess": "Show less",
+      "readMore": "Read more",
+      "agencyResponse": "Agency Response",
+      "pageOf": "Page {{page}} of {{total}}",
+      "previous": "Previous",
+      "next": "Next"
   },
   "refunds": {
     "panelTitle": "Refund",

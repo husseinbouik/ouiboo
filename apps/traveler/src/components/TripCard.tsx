@@ -107,7 +107,11 @@ export function TripCard({ trip }: TripCardProps) {
   const queryClient = useQueryClient();
   const prefetchTrip = () => {
     void queryClient.prefetchQuery({
-      queryKey: ['trip', trip.id],
+      // Session #3 P0-12 defect (#546): the key carries the UI locale,
+      // exactly matching TripDetailsClient — a locale-less key warmed
+      // the wrong-language entry and the detail page served it stale
+      // after an in-app language switch.
+      queryKey: ['trip', trip.id, (i18n.language || 'en').split('-')[0]],
       queryFn: async () => {
         // #546: warm the detail in the current UI language, matching
         // TripDetailsClient's fetcher below.

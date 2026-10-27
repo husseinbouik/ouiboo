@@ -114,10 +114,25 @@ export default function TripDetailsClient({
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const swipeHandledRef = useRef(false);
 
+  // Session #3 P0-12 defect (#546): the query key MUST carry the UI
+  // locale. It previously read ['trip', tripId] — so after an in-app
+  // language switch React Query kept serving the payload cached in the
+  // previous language (and TripCard's prefetch warmed that same entry),
+  // leaving the title/description in French while the chrome switched.
+  // The founder's browser-language-Arabic phone rendered Arabic only
+  // because its very first fetch already used ar.
+  const uiLocale = (i18n.language || 'en').split('-')[0];
   const { data: trip, isLoading, isError, refetch } = useQuery<TripDetails | null>({
-    queryKey: ['trip', tripId],
+    queryKey: ['trip', tripId, uiLocale],
     enabled: !!tripId,
-    initialData: initialTrip ?? undefined,
+    // Seed from the ISR payload ONLY when it is already in the UI
+    // language (it is the canonical French unless the API resolved
+    // otherwise) — never flash a stale-language first render after a
+    // switch; the localized refetch replaces it.
+    initialData:
+      initialTrip && (initialTrip.contentLanguage ?? 'fr') === uiLocale
+        ? initialTrip
+        : undefined,
     queryFn: async () => {
       // #546: trip text in the current UI language (the ISR server
       // payload is the canonical French; this refetch localizes it).
@@ -376,7 +391,7 @@ export default function TripDetailsClient({
                         in a language other than the reader's UI language,
                         say so — French-only content previously failed
                         silently for Arabic/English readers. */}
-                    {trip.contentLanguage && trip.contentLanguage !== (i18n.language || 'en').split('-')[0] ? (
+                    {trip.contentLanguage && trip.contentLanguage !== uiLocale ? (
                       <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
                         <Languages className="h-4 w-4 text-sunset-orange shrink-0" />
                         {t('tripDetails.contentLanguageNotice', { language: t(`languageNames.${trip.contentLanguage}`) })}

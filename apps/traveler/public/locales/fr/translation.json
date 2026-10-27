@@ -314,6 +314,9 @@
     "sideSubtitle": "Mettez à jour votre mot de passe et revenez à votre tableau de bord de voyage en quelques minutes."
   },
   "common": {
+    "switchLanguage": "Changer de langue — actuelle : {{language}}",
+    "switchFrom": "Passer de {{language}}",
+    "toggleTheme": "Basculer le thème",
     "skipToContent": "Aller au contenu",
     "loading": "Chargement...",
     "errorTitle": "Une erreur est survenue",
@@ -538,6 +541,25 @@
     "bookNow": "Réserver",
     "chooseDate": "Choisir une date",
     "viewAvailability": "Voir les disponibilités"
+  },
+  "reviews": {
+      "loading": "Chargement des avis...",
+      "noReviewsYet": "Pas encore d'avis",
+      "beFirst": "Soyez le premier à partager votre expérience !",
+      "sortBy": "Trier par :",
+      "sortRecent": "Plus récents",
+      "sortHighest": "Meilleures notes",
+      "sortLowest": "Notes les plus basses",
+      "count_one": "{{count}} avis",
+      "count_other": "{{count}} avis",
+      "anonymous": "Anonyme",
+      "verifiedBooking": "Réservation vérifiée",
+      "showLess": "Afficher moins",
+      "readMore": "Lire la suite",
+      "agencyResponse": "Réponse de l'agence",
+      "pageOf": "Page {{page}} sur {{total}}",
+      "previous": "Précédent",
+      "next": "Suivant"
   },
   "refunds": {
     "panelTitle": "Remboursement",

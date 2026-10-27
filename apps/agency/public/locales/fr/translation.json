@@ -24,6 +24,9 @@
     }
   },
   "common": {
+    "switchLanguage": "Changer de langue — actuelle : {{language}}",
+    "switchFrom": "Passer de {{language}}",
+    "toggleTheme": "Basculer le thème",
     "back": "Retour aux Voyages",
     "saveDraft": "Enregistrer le brouillon",
     "submit": "Soumettre",
