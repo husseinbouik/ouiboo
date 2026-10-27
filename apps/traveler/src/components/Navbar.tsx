@@ -244,7 +244,7 @@ const [isOpen, setIsOpen] = useState(false);
                 aria-expanded={isOpen}
                 aria-controls="traveler-mobile-menu"
                 className={cn(
-                    "md:hidden w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                    "md:hidden w-10 h-10 rounded-xl flex items-center justify-center transition-all hit-slop",
                     isTransparent ? "bg-white/10 text-white" : "bg-muted text-foreground"
                 )}
             >
@@ -280,7 +280,7 @@ const [isOpen, setIsOpen] = useState(false);
                      <div className="w-8 h-8 rounded-xl bg-sunset-orange-dark text-white flex items-center justify-center font-black text-lg">O</div>
                      <span className="text-xl font-black">Ouiboo</span>
                   </div>
-                  <button ref={mobileMenuCloseRef} onClick={() => setIsOpen(false)} aria-label={t('nav.closeMenu', 'Close navigation menu')} className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                  <button ref={mobileMenuCloseRef} onClick={() => setIsOpen(false)} aria-label={t('nav.closeMenu', 'Close navigation menu')} className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center hit-slop">
                      <X className="h-5 w-5" />
                   </button>
                </div>

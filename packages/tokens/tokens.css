@@ -243,3 +243,27 @@
   padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
 }
 
+/*
+ * #490: minimum touch target. Icon-only controls smaller than 44px keep
+ * their visual size; the pseudo-element grows the tappable box to at
+ * least 44x44, centered on the control. Apply `hit-slop` to icon-only
+ * buttons under 44px (see packages/ui README, "Touch targets").
+ * Written as plain layered classes rather than @utility: the utility
+ * needs a pseudo-element, and this form keeps the stylesheet free of
+ * nested rules.
+ */
+@layer utilities {
+  .hit-slop {
+    position: relative;
+  }
+
+  .hit-slop::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 2.75rem);
+    height: max(100%, 2.75rem);
+    transform: translate(-50%, -50%);
+  }
+}

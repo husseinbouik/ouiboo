@@ -130,3 +130,29 @@ export function ExampleField() {
   )
 }
 ```
+
+## Touch targets (44px minimum hit area)
+
+Every interactive control must expose a hit area of at least 44x44px
+(Apple HIG / WCAG guidance), even when the visual stays compact:
+
+- If the control itself is >= 44px, nothing to do.
+- If an icon-only control is smaller, keep its visual size and add the
+  `hit-slop` utility (defined in `@ouiboo/tokens/tokens.css`). It grows
+  the tappable box to at least 44x44 via a centered pseudo-element
+  without changing layout. Do not combine it with `overflow-hidden` on
+  the same element — that clips the expanded hit area.
+- Prefer real size (padding) over `hit-slop` when the layout has room;
+  use `hit-slop` for overlays and fixed chrome (card arrows, navbar
+  buttons, dialog/drawer close buttons).
+
+## Safe-area insets
+
+Apps set `viewport-fit=cover`, so on notched devices the
+`env(safe-area-inset-*)` values are real. Sticky/fixed bottom bars,
+sheet/drawer footers, and bottom-anchored CTAs must clear the home
+indicator using the shared utilities from `@ouiboo/tokens/tokens.css`:
+`pb-safe` / `pt-safe` (inset only) or `pb-safe-3` / `pb-safe-4` /
+`pb-safe-5` (0.75rem / 1rem / 1.25rem of base spacing plus the inset).
+Do not hand-write `env(safe-area-inset-...)` arbitrary values in
+components.

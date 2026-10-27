@@ -98,7 +98,7 @@ export function WishlistButton({ tripId, className }: WishlistButtonProps) {
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
       className={cn(
-        'inline-flex items-center justify-center p-2.5 rounded-full backdrop-blur-md transition-all duration-300',
+        'inline-flex items-center justify-center p-3 rounded-full backdrop-blur-md transition-all duration-300',
         'bg-white/20 hover:bg-white/30',
         'border border-white/30',
         'disabled:opacity-50 disabled:cursor-not-allowed',
