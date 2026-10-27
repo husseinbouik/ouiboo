@@ -3,6 +3,13 @@ name: Staging Smoke Tests
 # Runs fast production smoke tests on every PR to staging.
 # Catches broken URLs, CORS regressions, dead links, and UI failures
 # before they reach production. Failures auto-create GitHub issues.
+#
+# The smoke job is merge-blocking on PRs: branch protection requires the
+# `smoke` context, and the test step does not swallow failures, so a real
+# smoke failure fails the job (issue #245). Scheduled/manual runs fail
+# loudly the same way and still file issues via the failure() step below.
+# Release gating itself remains the human blocking smoke in
+# docs/launch-ops/RELEASE_RUNBOOK.md; this workflow never gates a release.
 
 on:
   pull_request:
@@ -49,10 +56,11 @@ jobs:
           SMOKE_ADMIN_URL: ${{ vars.STAGING_ADMIN_URL }}
           SMOKE_LANDING_URL: ${{ vars.STAGING_LANDING_URL }}
           SMOKE_API_URL: ${{ vars.STAGING_API_URL }}
-        continue-on-error: true
 
+      # failure() is required here: now that the test step fails the job,
+      # a plain outcome check would be skipped by the implicit success().
       - name: Parse failures and create issues
-        if: steps.smoke.outcome == 'failure'
+        if: failure() && steps.smoke.outcome == 'failure'
         uses: actions/github-script@v9
         with:
           script: |
