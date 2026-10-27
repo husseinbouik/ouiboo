@@ -343,6 +343,7 @@
       "bookingRejected": "مرفوض",
       "bookingCancelled": "ملغي",
       "bookingCompleted": "مكتمل",
+      "bookingNoShow": "لم يحضر",
       "verificationPending": "قيد الانتظار",
       "verificationVerified": "تم التحقق",
       "verificationRejected": "مرفوض",

@@ -343,6 +343,7 @@
       "bookingRejected": "Rejetée",
       "bookingCancelled": "Annulée",
       "bookingCompleted": "Terminée",
+      "bookingNoShow": "Absent",
       "verificationPending": "En attente",
       "verificationVerified": "Vérifiée",
       "verificationRejected": "Rejetée",

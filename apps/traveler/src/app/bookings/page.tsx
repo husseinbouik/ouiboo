@@ -24,6 +24,7 @@ import {
     getTravelerPaymentStatusMeta,
     getTravelerProofStatus,
     shouldShowUploadAction,
+    isReviewEligibleBooking,
 } from '@ouiboo/utils';
 
 /** #370: refund case as returned by GET /refunds/mine (amounts are strings). */
@@ -464,7 +465,8 @@ export default function MyBookingsPage() {
                                                             </Button>
                                                         </label>
                                                     )}
-                                                    {booking.status === BookingStatus.Completed && !booking.review && (
+                                                    {/* #434: review eligibility attaches to recorded ATTENDED attendance, not completion alone. */}
+                                                    {isReviewEligibleBooking(booking) && !booking.review && (
                                                         <Button
                                                             onClick={() => setReviewModalOpen(booking.id)}
                                                             className="h-12 px-8 bg-deep-blue hover:bg-blue-900 rounded-xl text-xs font-black uppercase tracking-widest border-none"

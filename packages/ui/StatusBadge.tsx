@@ -45,6 +45,8 @@ const commonStatuses: Record<string, StatusDefinition> = {
   REJECTED: { tone: 'danger', icon: XCircle },
   FAILED: { tone: 'danger', icon: XCircle },
   CANCELLED: { tone: 'danger', icon: Ban },
+  // #434: traveller recorded as not attending.
+  NO_SHOW: { tone: 'danger', icon: XCircle },
   CANCELED: { tone: 'danger', icon: Ban },
 }
 
