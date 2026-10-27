@@ -36,7 +36,15 @@ describe('User features E2E (user-features.e2e-spec)', () => {
     } as unknown as EmailService;
 
     const mockUploadService = {
-        uploadFile: jest.fn(async (file: any) => ({ url: 'https://example.com/avatar.png', filename: 'avatar.png', size: file.size || 0 }))
+        uploadFile: jest.fn(async (file: any) => ({ url: 'https://example.com/avatar.png', filename: 'avatar.png', size: file.size || 0 })),
+        // #251/B23: account deletion resolves stored references to keys
+        // and deletes the objects — the stub mirrors that contract.
+        resolveStorageKey: jest.fn((ref: string | null | undefined) => {
+            if (!ref) return null;
+            const match = ref.match(/(?:private|trips)\/[A-Za-z0-9._\-/]+/);
+            return match ? match[0] : null;
+        }),
+        deleteFile: jest.fn(async (_key: string) => undefined),
     } as unknown as UploadService;
 
     beforeAll(async () => {
@@ -250,6 +258,16 @@ describe('User features E2E (user-features.e2e-spec)', () => {
     it('deletes only the authenticated account by revoking and pseudonymizing it', async () => {
         await seedTestData();
 
+        // #251/B23: give the account a stored file and a date of birth so
+        // the erasure pass has something to delete and scrub.
+        await db.user.update({
+            where: { id: 'traveler-user-1' },
+            data: {
+                avatar: 'https://media.ouiboo.test/trips/traveler-user-1/avatar.png',
+                dateOfBirth: new Date('2000-05-17T00:00:00.000Z'),
+            },
+        });
+
         await request(app.getHttpServer())
             .delete('/users/me')
             .set('Authorization', 'Bearer traveler')
@@ -261,6 +279,12 @@ describe('User features E2E (user-features.e2e-spec)', () => {
         expect(deleted?.name).toBeNull();
         expect(deleted?.email).toMatch(/^deleted-.+@privacy\.invalid$/);
         expect(admin?.email).toBe('admin@test.com');
+
+        // The stored avatar object was requested deleted, and the
+        // personal fields are scrubbed.
+        expect((mockUploadService as any).deleteFile).toHaveBeenCalledWith('trips/traveler-user-1/avatar.png');
+        expect(deleted?.avatar).toBeNull();
+        expect(deleted?.dateOfBirth).toBeNull();
     });
 
     // ===== Review CRUD tests =====
