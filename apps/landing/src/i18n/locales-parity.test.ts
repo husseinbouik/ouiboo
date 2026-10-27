@@ -17,6 +17,13 @@ function keySet(value: unknown, prefix = ''): string[] {
     );
 }
 
+// The ONE documented empty-string exception: `pricing.enterprise.currency`
+// is '' by design in every locale — the enterprise tier's price is the word
+// "Custom" ("Sur mesure" / "حسب الطلب"), so there is no currency suffix to
+// render after it. Any OTHER empty translation, in any locale, still fails
+// this suite: the exception is an exact path set, not a pattern or a count.
+const EMPTY_PATH_EXCEPTIONS = new Set(['pricing.enterprise.currency']);
+
 function emptyPaths(value: unknown, prefix = ''): string[] {
     if (typeof value === 'string') return value.trim() === '' ? [prefix] : [];
     if (value === null || typeof value !== 'object') return [];
@@ -33,8 +40,16 @@ describe('landing locale parity (#567)', () => {
     });
 
     it('has no empty translation  (one documented exception)', () => {
-        expect(emptyPaths(en)).toEqual([]);
-        expect(emptyPaths(fr)).toEqual([]);
-        expect(emptyPaths(ar)).toEqual([]);
+        const unexpectedEmpties = (locale: unknown) =>
+            emptyPaths(locale).filter((path) => !EMPTY_PATH_EXCEPTIONS.has(path));
+        expect(unexpectedEmpties(en)).toEqual([]);
+        expect(unexpectedEmpties(fr)).toEqual([]);
+        expect(unexpectedEmpties(ar)).toEqual([]);
+        // Pin the exception itself: the documented path must actually be
+        // the empty one in every locale, so the set cannot silently drift
+        // into excusing a different (genuinely missing) translation.
+        expect(emptyPaths(en)).toEqual([...EMPTY_PATH_EXCEPTIONS]);
+        expect(emptyPaths(fr)).toEqual([...EMPTY_PATH_EXCEPTIONS]);
+        expect(emptyPaths(ar)).toEqual([...EMPTY_PATH_EXCEPTIONS]);
     });
 });
