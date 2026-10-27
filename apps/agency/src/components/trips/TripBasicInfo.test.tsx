@@ -24,7 +24,7 @@ jest.mock('@/lib/api-client', () => ({
   apiClient: { get: jest.fn(), post: jest.fn(), put: jest.fn(), patch: jest.fn() },
 }));
 
-let capturedForm: TripWizardFormApi | null = null;
+const formHolder: { form: TripWizardFormApi | null } = { form: null };
 
 function Harness() {
   const form = useTripWizardForm({
@@ -33,7 +33,7 @@ function Harness() {
       description: 'Description française du voyage',
     },
   });
-  capturedForm = form;
+  formHolder.form = form;
   return <TripBasicInfo t={t as never} form={form} />;
 }
 
@@ -74,7 +74,7 @@ describe('TripBasicInfo language tabs (#546)', () => {
     fireEvent.change(titleInput, { target: { value: 'عنوان بالعربية' } });
     fireEvent.change(descriptionInput, { target: { value: 'وصف كامل بالعربية' } });
 
-    expect(capturedForm?.watch('translations')?.ar).toEqual({
+    expect(formHolder.form?.watch('translations')?.ar).toEqual({
       title: 'عنوان بالعربية',
       description: 'وصف كامل بالعربية',
     });
@@ -85,6 +85,6 @@ describe('TripBasicInfo language tabs (#546)', () => {
     expect(hint.textContent).toContain('trips.create.languageEn');
 
     // French canonical values are untouched by the Arabic tab.
-    expect(capturedForm?.watch('title')).toBe('Titre français');
+    expect(formHolder.form?.watch('title')).toBe('Titre français');
   });
 });
