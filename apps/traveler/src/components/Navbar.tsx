@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Button, ThemeToggle, LanguageSwitcher, BetaBadge } from '@ouiboo/ui';
+import { Button, ThemeToggle, LanguageSwitcher, BetaBadge, Logo } from '@ouiboo/ui';
 import { 
   Menu, 
   X, 
@@ -126,9 +126,7 @@ const [isOpen, setIsOpen] = useState(false);
       >
         {/* Logo Section */}
         <Link href="/" className="flex items-center gap-2 group shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-deep-blue text-white flex items-center justify-center font-bold text-lg">
-                O
-            </div>
+            <Logo size={32} />
             <span className="text-xl font-bold tracking-tight text-deep-blue dark:text-foreground">
                 Ouiboo
             </span>
@@ -278,7 +276,7 @@ const [isOpen, setIsOpen] = useState(false);
             >
                <div className="flex justify-between items-center text-foreground">
                   <div className="flex items-center gap-2">
-                     <div className="w-8 h-8 rounded-xl bg-sunset-orange-dark text-white flex items-center justify-center font-black text-lg">O</div>
+                     <Logo size={32} />
                      <span className="text-xl font-black">Ouiboo</span>
                      <BetaBadge />
                   </div>

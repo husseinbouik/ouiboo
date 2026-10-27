@@ -22,7 +22,7 @@ import {
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
-import { BetaBadge } from '@ouiboo/ui';
+import { BetaBadge, Logo } from '@ouiboo/ui';
 import { useAuth } from '../AuthContext';
 
 export function AgencySidebar() {
@@ -81,9 +81,7 @@ export function AgencySidebar() {
 
       <div className="flex h-16 items-center px-6 overflow-hidden shrink-0">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold shrink-0 shadow-lg shadow-primary/20">
-            O
-          </div>
+          <Logo size={32} className="shadow-lg shadow-primary/20 rounded-lg" />
           {!isCollapsed && (
             <motion.span
               initial={{ opacity: 0 }}

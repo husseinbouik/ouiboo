@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { Search, LogOut } from 'lucide-react';
-import { Card, CardContent, ThemeToggle, LanguageSwitcher, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, BetaBadge } from '@ouiboo/ui';
+import { Card, CardContent, ThemeToggle, LanguageSwitcher, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, BetaBadge, Logo } from '@ouiboo/ui';
 import type { AdminTab } from './types';
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
@@ -53,7 +53,10 @@ export default function DashboardShell({
   {/* Sidebar - desktop only */}
   <aside className="hidden md:flex w-64 bg-deep-blue text-white p-6 space-y-8 flex-col">
      <div className="flex items-center gap-3 px-2">
-        <div className="h-8 w-8 bg-sunset-orange rounded-lg"></div>
+        {/* Session #3 P0-4 (#552): the admin shell previously showed an
+            empty orange square here — it gets the shared pin Logo like
+            every other app. */}
+        <Logo size={32} />
         <span className="text-xl font-black tracking-tight">{t('dashboard.brand')}</span>
         <BetaBadge />
      </div>
