@@ -186,11 +186,14 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {travelStyles.map((style) => (
-                    <motion.div 
+                    <Link
                         key={style.key}
+                        href={`/search?category=${style.key.toUpperCase()}`}
+                        className="block rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset-orange focus-visible:ring-offset-2"
+                    >
+                    <motion.div
                         whileHover={{ y: -5 }}
-                        onClick={() => window.location.href = `/search?category=${style.key.toUpperCase()}`}
-                        className="bg-card p-8 rounded-3xl shadow-sm border border-border hover:shadow-md transition-all cursor-pointer group"
+                        className="bg-card p-8 rounded-3xl shadow-sm border border-border hover:shadow-md transition-all group h-full"
                     >
                         <div className={`w-14 h-14 rounded-2xl ${style.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
                             <style.Icon className="w-7 h-7" />
@@ -198,6 +201,7 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
                         <h3 className="text-xl font-bold text-foreground mb-2">{style.name}</h3>
                         <p className="text-sm text-muted-foreground">{t('categories.discoverTrips')}</p>
                     </motion.div>
+                    </Link>
                 ))}
             </div>
         </div>
