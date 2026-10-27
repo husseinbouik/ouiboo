@@ -116,7 +116,7 @@
     "statusPendingTitle": "Paiement en attente",
     "statusPendingBody": "Nous attendons l'initiation de votre virement.",
     "statusProofTitle": "Preuve de paiement téléversée",
-    "statusProofBody": "Téléversez votre reçu pour verrouiller votre réservation.",
+    "statusProofBody": "Téléversez votre reçu pour que l'agence puisse vérifier votre virement — votre réservation est confirmée par l'agence, pas par le téléversement.",
     "statusBankTitle": "Confirmation bancaire",
     "statusBankBody": "Votre paiement n'est confirmé que lorsque l'agence confirme le virement sur son compte bancaire — l'acceptation de votre preuve seule ne vaut pas règlement.",
     "selectedDate": "Date sélectionnée",

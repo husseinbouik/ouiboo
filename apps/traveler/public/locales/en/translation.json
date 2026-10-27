@@ -116,7 +116,7 @@
     "statusPendingTitle": "Pending payment",
     "statusPendingBody": "We are waiting for your transfer to be initiated.",
     "statusProofTitle": "Payment proof uploaded",
-    "statusProofBody": "Upload your receipt to lock in your reservation.",
+    "statusProofBody": "Upload your receipt so the agency can verify your transfer — your reservation is confirmed by the agency, not by the upload.",
     "statusBankTitle": "Bank confirmation",
     "statusBankBody": "Your payment is confirmed only when the agency confirms the transfer in its bank account — accepting your proof alone does not settle it.",
     "selectedDate": "Selected Date",

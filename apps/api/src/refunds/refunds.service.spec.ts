@@ -1852,7 +1852,7 @@ describe('RefundsService traveller notification (#419)', () => {
         expect(email.sendEmail).toHaveBeenCalledTimes(1);
         const [to, subject, html] = (email.sendEmail as jest.Mock).mock.calls[0];
         expect(to).toBe('traveler@example.test');
-        expect(subject).toBe('Your refund is on its way');
+        expect(subject).toBe('Your refund case is open — agency has until 22 January 2027');
         expect(html).toContain('Atlas Trek');
         expect(html).toContain('200');
         expect(html).toContain('MAD');
@@ -1878,7 +1878,7 @@ describe('RefundsService traveller notification (#419)', () => {
 
         expect(sent).toBe(true);
         const [, subject, html] = (email.sendEmail as jest.Mock).mock.calls[0];
-        expect(subject).toBe('Votre remboursement est en route');
+        expect(subject).toBe("Votre dossier de remboursement est ouvert — l'agence a jusqu'au 22 janvier 2027");
         expect(html).toContain('<html lang="fr" dir="ltr">');
         expect(html).toContain('22 janvier 2027');
         expect(html).toContain('Atlas Trek');
@@ -1896,7 +1896,8 @@ describe('RefundsService traveller notification (#419)', () => {
 
         expect(sent).toBe(true);
         const [, subject, html] = (email.sendEmail as jest.Mock).mock.calls[0];
-        expect(subject).toBe('استردادك في الطريق إليك');
+        expect(subject).toContain('تم فتح ملف الاسترداد الخاص بك — أمام الوكالة مهلة حتى');
+        expect(subject).toContain('2027');
         expect(html).toContain('<html lang="ar" dir="rtl">');
         expect(html).toContain('لم تصل رحلتك');
         expect(html).not.toContain('Your refund is on its way');
@@ -1911,7 +1912,7 @@ describe('RefundsService traveller notification (#419)', () => {
 
         expect(sent).toBe(true);
         const [, subject, html] = (email.sendEmail as jest.Mock).mock.calls[0];
-        expect(subject).toBe('Your refund is on its way');
+        expect(subject).toBe('Your refund case is open — agency has until 22 January 2027');
         expect(html).toContain('<html lang="en" dir="ltr">');
     });
 

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Badge } from '@ouiboo/ui';
-import { Calendar, Info, Banknote, UploadCloud, CheckCircle2, LifeBuoy, X, Clock } from 'lucide-react';
+import { Calendar, Info, Banknote, UploadCloud, LifeBuoy, X, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
 import { formatCurrency } from '@ouiboo/utils';
@@ -151,9 +151,15 @@ export function CheckoutPayment({
       <div className="space-y-4 pt-6 border-t border-border/50">
         <p className="text-xs font-black text-foreground uppercase tracking-widest">{t('checkout.paymentStatus')}</p>
         <div className="space-y-3">
+          {/* Session #3 P0-14 (#422): selecting a file is not an upload,
+              and an upload is not a settlement. Step 1 previously turned
+              green with a check the moment a file was merely SELECTED —
+              it now stays pending (amber + clock) until the agency
+              confirms in its bank account; step 2 likewise never claims
+              a completed state from a local file selection. */}
           <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
-            <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center", proofFile ? "bg-success/100 text-white" : "bg-amber-500 text-white")}>
-              {proofFile ? <CheckCircle2 className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+            <div className="h-8 w-8 rounded-xl flex items-center justify-center bg-amber-500 text-white">
+              <Clock className="h-4 w-4" />
             </div>
             <div>
               <p className="text-sm font-black text-foreground">{t('checkout.statusPendingTitle')}</p>
@@ -161,7 +167,7 @@ export function CheckoutPayment({
             </div>
           </div>
           <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
-            <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center", proofFile ? "bg-success/100 text-white" : "bg-muted text-muted-foreground")}>
+            <div className="h-8 w-8 rounded-xl flex items-center justify-center bg-muted text-muted-foreground">
               <UploadCloud className="h-4 w-4" />
             </div>
             <div>
