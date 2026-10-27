@@ -79,12 +79,20 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       this.logger.error('Unhandled request exception', stack)
     }
 
+    // Path only, never the query string (Council P1-11, #437): signed
+    // download/media tokens travel in query parameters, so the raw URL
+    // must not be echoed in the problem body (`instance`) any more than
+    // in the log line below. One shared value so the two cannot drift.
+    const requestPath = (request.originalUrl || request.url || '').split(
+      '?'
+    )[0]
+
     const problem: ProblemDetails = {
       type: `https://api.ouiboo.com/problems/${status}`,
       title: statusTitles[status] || 'Request Failed',
       status,
       detail,
-      instance: request.originalUrl || request.url,
+      instance: requestPath,
       errors: validationErrors(rawMessage),
       timestamp: new Date().toISOString(),
     }
@@ -100,7 +108,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       event: 'http_error',
       timestamp: problem.timestamp,
       method: request.method,
-      path: (request.originalUrl || request.url || '').split('?')[0],
+      path: requestPath,
       status,
       error:
         exception instanceof Error

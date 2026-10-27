@@ -91,4 +91,21 @@ describe('GlobalExceptionFilter structured error logging (#399)', () => {
     expect(problem.errors?.validation).toEqual(['email must be an email'])
     expect(JSON.parse(jsonLineFrom(warnSpy)).status).toBe(400)
   })
+
+  it('strips the query string from the problem instance (#437)', () => {
+    const { host, json } = makeHost('/api/v1/media/download?token=<redacted>')
+    new GlobalExceptionFilter().catch(new NotFoundException('nope'), host)
+
+    const problem = json.mock.calls[0][0] as { instance: string }
+    expect(problem.instance).toBe('/api/v1/media/download')
+    expect(JSON.stringify(problem)).not.toContain('supersecret')
+  })
+
+  it('keeps the problem instance unchanged without a query string (#437)', () => {
+    const { host, json } = makeHost('/api/v1/trips')
+    new GlobalExceptionFilter().catch(new NotFoundException('nope'), host)
+
+    const problem = json.mock.calls[0][0] as { instance: string }
+    expect(problem.instance).toBe('/api/v1/trips')
+  })
 })
