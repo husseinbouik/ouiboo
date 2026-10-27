@@ -110,7 +110,9 @@ export function TripCard({ trip }: TripCardProps) {
     void queryClient.prefetchQuery({
       queryKey: ['trip', trip.id],
       queryFn: async () => {
-        const response = await apiClient.get(`/trips/${trip.id}`);
+        // #546: warm the detail in the current UI language, matching
+        // TripDetailsClient's fetcher below.
+        const response = await apiClient.get(`/trips/${trip.id}?locale=${i18n.language}`);
         return response.data;
       },
       staleTime: 60 * 1000,

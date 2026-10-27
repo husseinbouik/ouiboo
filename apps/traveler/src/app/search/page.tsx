@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import SearchClient, { type SearchInitialFilters } from '@/components/SearchClient';
 import { TripCategory, TripStatus } from '@ouiboo/types';
+import { getInitialLanguage } from '@ouiboo/i18n/server';
 
 export const metadata: Metadata = {
   title: 'Explore trips — Ouiboo',
@@ -44,6 +45,9 @@ async function fetchInitialTrips(filters: SearchInitialFilters) {
     sortOrder: 'desc',
     page: '1',
     limit: '20',
+    // #546: trip text in the visitor's language (client refetches keep
+    // passing the active UI language via SearchClient).
+    locale: await getInitialLanguage(),
   });
   if (filters.searchQuery) params.set('q', filters.searchQuery);
   if (filters.category) params.set('category', filters.category);
