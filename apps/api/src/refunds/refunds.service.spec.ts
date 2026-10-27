@@ -725,7 +725,11 @@ describe('RefundsService completion evidence gate (#416)', () => {
         });
         seedEvidence(db, {
             tier: 'ADMIN_REVIEW', source: 'ADMIN',
-            reference: null, proofUrl: null, recordedBy: 'admin-1',
+            // B8: a qualifying tier-5 row carries the review's written
+            // reason (note) and an external reference.
+            reference: 'BANK-STMT-2026-1187', proofUrl: null,
+            note: 'Admin verified the outgoing transfer on the agency bank statement',
+            recordedBy: 'admin-1',
         });
         const { service, external } = makeService(db);
 
@@ -767,20 +771,55 @@ describe('RefundsService completion evidence gate (#416)', () => {
         expect(external.recordRefundInTransaction.mock.calls[0][1].source).toBe('GATEWAY_REFUND');
     });
 
-    it('an admin completing without evidence records their review as tier-5 evidence', async () => {
+    it('B8: an admin completing without evidence is refused exactly like an agency — 400, nothing written', async () => {
         const db = makeFakeDb();
         seedCompleteFixture(db);
         const { service, external } = makeService(db);
 
-        const updated = await service.complete(ADMIN_ACTOR, 'ADMIN', null, 'case-1', {});
+        await expect(
+            service.complete(ADMIN_ACTOR, 'ADMIN', null, 'case-1', {}),
+        ).rejects.toBeInstanceOf(BadRequestException);
 
-        expect(updated.status).toBe('REFUND_COMPLETED');
-        expect(updated.completionTier).toBe('ADMIN_REVIEW');
-        const recorded = db._evidence.filter((e: any) => e.tier === 'ADMIN_REVIEW');
-        expect(recorded).toHaveLength(1);
-        expect(recorded[0].source).toBe('ADMIN');
-        expect(recorded[0].recordedBy).toBe('admin-1');
-        expect(external.recordRefundInTransaction.mock.calls[0][1].source).toBe('ADMIN_PROOF_REVIEW');
+        // No auto-created tier-5 row, no state move, no ledger entry.
+        expect(db._cases.get('case-1').status).toBe('REFUND_INITIATED');
+        expect(db._evidence).toHaveLength(0);
+        expect(external.recordRefundInTransaction).not.toHaveBeenCalled();
+    });
+
+    it('B8: a legacy empty tier-5 row (no reason, no document/reference) does not qualify — no grandfathering', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        // The shape the deleted auto-create branch used to write.
+        seedEvidence(db, {
+            tier: 'ADMIN_REVIEW', source: 'ADMIN',
+            reference: null, proofUrl: null, note: null, recordedBy: 'admin-1',
+        });
+        const { service, external } = makeService(db);
+
+        await expect(
+            service.complete(ADMIN_ACTOR, 'ADMIN', null, 'case-1', {}),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        await expect(
+            service.complete(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {}),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(db._cases.get('case-1').status).toBe('REFUND_INITIATED');
+        expect(external.recordRefundInTransaction).not.toHaveBeenCalled();
+    });
+
+    it('B8: a tier-5 row with a reason but no document/reference still does not qualify', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        seedEvidence(db, {
+            tier: 'ADMIN_REVIEW', source: 'ADMIN',
+            reference: null, proofUrl: null,
+            note: 'Admin reviewed this case', recordedBy: 'admin-1',
+        });
+        const { service } = makeService(db);
+
+        await expect(
+            service.complete(ADMIN_ACTOR, 'ADMIN', null, 'case-1', {}),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(db._cases.get('case-1').status).toBe('REFUND_INITIATED');
     });
 
     it('providerStatus is recorded as reported and never defaulted to COMPLETED', async () => {
@@ -890,6 +929,128 @@ describe('RefundsService completion evidence gate (#416)', () => {
                 reference: 'VIR-1', proofUrl: 'private/agency-user-1/doc.pdf',
             }),
         ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('B8: adminReview requires a written reason', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        const { service } = makeService(db);
+
+        await expect(
+            service.adminReview(ADMIN_ACTOR, 'ADMIN', 'case-1', { reference: 'BANK-STMT-1' }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        await expect(
+            service.adminReview(ADMIN_ACTOR, 'ADMIN', 'case-1', { reason: '   ', reference: 'BANK-STMT-1' }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(db._evidence).toHaveLength(0);
+    });
+
+    it('B8: adminReview requires a document or an external reference — a reason alone is not evidence', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        const { service } = makeService(db);
+
+        await expect(
+            service.adminReview(ADMIN_ACTOR, 'ADMIN', 'case-1', { reason: 'I reviewed the case' }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        await expect(
+            service.adminReview(ADMIN_ACTOR, 'ADMIN', 'case-1', { reason: 'I reviewed the case', reference: '  ', proofUrl: '' }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(db._evidence).toHaveLength(0);
+    });
+
+    it('B8: adminReview rejects a document key outside the admin\u2019s own private folder', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        const { service } = makeService(db);
+
+        await expect(
+            service.adminReview(ADMIN_ACTOR, 'ADMIN', 'case-1', {
+                reason: 'Verified against the attached statement',
+                proofUrl: 'private/agency-user-1/statement.pdf',
+            }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(db._evidence).toHaveLength(0);
+    });
+
+    it('B8: adminReview is admin-only and refuses terminal cases', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        const { service } = makeService(db);
+
+        await expect(
+            service.adminReview(AGENCY_ACTOR, 'AGENCY', 'case-1', {
+                reason: 'Agency cannot self-review', reference: 'X-1',
+            }),
+        ).rejects.toBeInstanceOf(ForbiddenException);
+
+        db._cases.get('case-1').status = 'REFUND_COMPLETED';
+        await expect(
+            service.adminReview(ADMIN_ACTOR, 'ADMIN', 'case-1', {
+                reason: 'Too late', reference: 'X-1',
+            }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(db._evidence).toHaveLength(0);
+    });
+
+    it('B8: adminReview (step 1) then complete (step 2) completes via ADMIN_PROOF_REVIEW with the audit flag forced', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        const { service, external } = makeService(db);
+
+        // Step 1 — its own request/transaction: records the tier-5 row.
+        const recorded = await service.adminReview(ADMIN_ACTOR, 'ADMIN', 'case-1', {
+            reason: 'Verified the outgoing transfer on the agency bank statement',
+            reference: 'BANK-STMT-2026-1187',
+        });
+        expect(recorded.tier).toBe('ADMIN_REVIEW');
+        expect(recorded.source).toBe('ADMIN');
+        expect(recorded.note).toBe('Verified the outgoing transfer on the agency bank statement');
+        expect(recorded.reference).toBe('BANK-STMT-2026-1187');
+        expect(recorded.recordedBy).toBe('admin-1');
+        // Recording evidence never moves the case by itself.
+        expect(db._cases.get('case-1').status).toBe('REFUND_INITIATED');
+
+        // Step 2 — completion consumes the pre-existing row.
+        const updated = await service.complete(ADMIN_ACTOR, 'ADMIN', null, 'case-1', {});
+
+        expect(updated.status).toBe('REFUND_COMPLETED');
+        expect(updated.completionTier).toBe('ADMIN_REVIEW');
+        // Forced: no traveller confirmation, amount below the threshold,
+        // never overdue, and case-1 sits outside the deterministic
+        // sample — only the B8 tier-5 force can flag this completion.
+        expect(refundAuditSampled('case-1')).toBe(false);
+        expect(updated.auditRequired).toBe(true);
+        expect(external.recordRefundInTransaction.mock.calls[0][1].source).toBe('ADMIN_PROOF_REVIEW');
+        expect(external.recordRefundInTransaction.mock.calls[0][1].externalTransactionId).toBe('BANK-STMT-2026-1187');
+
+        // Two distinct audit entries: the review's evidence record and
+        // the completion transition.
+        const evidenceAudits = db._audits.filter(
+            (a: any) => a.action === 'REFUND_EVIDENCE_RECORDED' && a.metadata?.via === 'ADMIN_REVIEW',
+        );
+        expect(evidenceAudits).toHaveLength(1);
+        expect(evidenceAudits[0].metadata.reason).toContain('bank statement');
+        const transitions = db._audits.filter(
+            (a: any) => a.action === 'REFUND_CASE_TRANSITION' && a.metadata?.to === 'REFUND_COMPLETED',
+        );
+        expect(transitions).toHaveLength(1);
+    });
+
+    it('B8: adminReview with only an attached document (no reference) also qualifies the completion', async () => {
+        const db = makeFakeDb();
+        seedCompleteFixture(db);
+        const { service } = makeService(db);
+
+        await service.adminReview(ADMIN_ACTOR, 'ADMIN', 'case-1', {
+            reason: 'Statement on file shows the transfer',
+            proofUrl: 'private/admin-1/bank-statement.pdf',
+        });
+        const updated = await service.complete(AGENCY_ACTOR, 'AGENCY', 'agency-1', 'case-1', {});
+
+        expect(updated.status).toBe('REFUND_COMPLETED');
+        expect(updated.completionTier).toBe('ADMIN_REVIEW');
+        expect(updated.auditRequired).toBe(true);
     });
 });
 
@@ -1365,8 +1526,32 @@ describe('RefundsService PSP wiring + traveller confirm/dispute (#416B)', () => 
         });
         const { service } = makeService(db);
 
-        // Admin completion records the tier-5 review; the traveller
-        // confirmation makes the qualifying path tier 4 + 5.
+        // B8: the tier-5 review is its own step (adminReview), recorded
+        // before completion; the traveller confirmation makes the
+        // qualifying path tier 4 + 5.
+        await service.adminReview(ADMIN_ACTOR, 'ADMIN', 'case-1', {
+            reason: 'Corroborated the traveller confirmation against the bank statement',
+            reference: 'BANK-STMT-2026-1187',
+        });
+        const updated = await service.complete(ADMIN_ACTOR, 'ADMIN', null, 'case-1', {});
+
+        expect(updated.completionTier).toBe('ADMIN_REVIEW');
+        expect(updated.auditRequired).toBe(true);
+    });
+
+    it('audit flag: a tier-5 completion with NO traveller confirmation is always flagged (B8 force)', async () => {
+        const db = makeFakeDb();
+        seedFixture(db);
+        const { service } = makeService(db);
+
+        await service.adminReview(ADMIN_ACTOR, 'ADMIN', 'case-1', {
+            reason: 'Agency produced the bank confirmation on request',
+            proofUrl: 'private/admin-1/bank-confirmation.pdf',
+        });
+        // Small amount, never overdue, never disputed, case-1 outside
+        // the sample, and no tier-4 row — the flag can only come from
+        // the B8 rule that every ADMIN_REVIEW completion is audited.
+        expect(refundAuditSampled('case-1')).toBe(false);
         const updated = await service.complete(ADMIN_ACTOR, 'ADMIN', null, 'case-1', {});
 
         expect(updated.completionTier).toBe('ADMIN_REVIEW');

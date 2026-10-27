@@ -93,6 +93,11 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | '
 export default function RefundsTab({ t, cases, pagination, onPageChange, paginationLabels, auditQueue = false, onAuditQueueChange }: RefundsTabProps) {
   const queryClient = useQueryClient();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<AdminRefundCase | null>(null);
+  const [reviewReference, setReviewReference] = useState('');
+  const [reviewDocument, setReviewDocument] = useState('');
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewFeedback, setReviewFeedback] = useState<string | null>(null);
   const [repairTarget, setRepairTarget] = useState<AdminRefundCase | null>(null);
   const [repairAction, setRepairAction] = useState<RefundRepairAction>('reopen');
   const [repairAmount, setRepairAmount] = useState('');
@@ -125,6 +130,52 @@ export default function RefundsTab({ t, cases, pagination, onPageChange, paginat
     },
     onError: () => setBusyId(null),
   });
+
+  // B8 (Council Session #2): record an admin review as tier-5 evidence
+  // through its own endpoint — a separate step from completion. The
+  // modal enforces the written reason; the document/reference pair is
+  // validated here and again server-side (a reason alone is not
+  // evidence). Completion afterwards consumes the recorded row.
+  const adminReviewMutation = useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const body: Record<string, unknown> = { reason };
+      if (reviewReference.trim()) {
+        body.reference = reviewReference.trim();
+      }
+      if (reviewDocument.trim()) {
+        body.proofUrl = reviewDocument.trim();
+      }
+      await apiClient.post(`/admin/refunds/${id}/admin-review`, body);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['refunds'] });
+      setReviewTarget(null);
+      setReviewError(null);
+      setReviewFeedback(t('dashboard.groups.success'));
+    },
+    onError: (error: AxiosError<ApiErrorResponse>) => {
+      setReviewError(getErrorMessage(error, t('dashboard.interventions.failed')));
+    },
+  });
+
+  const openAdminReview = (refundCase: AdminRefundCase) => {
+    setReviewError(null);
+    setReviewFeedback(null);
+    setReviewReference('');
+    setReviewDocument('');
+    setReviewTarget(refundCase);
+  };
+
+  const submitAdminReview = (reason: string) => {
+    if (!reviewTarget) {
+      return;
+    }
+    if (!reviewReference.trim() && !reviewDocument.trim()) {
+      setReviewError(t('dashboard.refunds.adminReview.evidenceRequired'));
+      return;
+    }
+    adminReviewMutation.mutate({ id: reviewTarget.id, reason });
+  };
 
   const repairMutation = useMutation({
     mutationFn: async ({ id, action, reason }: { id: string; action: RefundRepairAction; reason: string }) => {
@@ -208,6 +259,7 @@ export default function RefundsTab({ t, cases, pagination, onPageChange, paginat
     <div className="space-y-4">
       {viewToggle}
       {repairFeedback && <div className="text-sm font-medium text-success">{repairFeedback}</div>}
+      {reviewFeedback && <div className="text-sm font-medium text-success">{reviewFeedback}</div>}
       {cases.map((refundCase) => {
         const actions = actionsFor(refundCase.status);
         const overdue = refundCase.status === 'REFUND_OVERDUE';
@@ -305,6 +357,16 @@ export default function RefundsTab({ t, cases, pagination, onPageChange, paginat
                   {t(`dashboard.refunds.actions.${action}`)}
                 </Button>
               ))}
+              {refundCase.status === 'REFUND_INITIATED' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={adminReviewMutation.isPending}
+                  onClick={() => openAdminReview(refundCase)}
+                >
+                  {t('dashboard.refunds.actions.adminReview')}
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="ghost"
@@ -407,6 +469,58 @@ export default function RefundsTab({ t, cases, pagination, onPageChange, paginat
                 </div>
               </>
             )}
+          </div>
+        </AdminActionModal>
+      )}
+
+      {reviewTarget && (
+        <AdminActionModal
+          t={t}
+          title={t('dashboard.refunds.adminReview.title')}
+          description={t('dashboard.refunds.adminReview.description')}
+          confirmLabel={t('dashboard.refunds.actions.adminReview')}
+          pending={adminReviewMutation.isPending}
+          error={reviewError}
+          onClose={() => setReviewTarget(null)}
+          onSubmit={submitAdminReview}
+        >
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <label
+                htmlFor="refund-admin-review-reference"
+                className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                {t('dashboard.refunds.adminReview.referenceLabel')}
+              </label>
+              <input
+                id="refund-admin-review-reference"
+                type="text"
+                value={reviewReference}
+                onChange={(event) => setReviewReference(event.target.value)}
+                className="w-full rounded-xl border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sunset-orange/20"
+              />
+              <p className="text-xs text-muted-foreground">
+                {t('dashboard.refunds.adminReview.referenceHint')}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="refund-admin-review-document"
+                className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                {t('dashboard.refunds.adminReview.documentLabel')}
+              </label>
+              <input
+                id="refund-admin-review-document"
+                type="text"
+                value={reviewDocument}
+                onChange={(event) => setReviewDocument(event.target.value)}
+                className="w-full rounded-xl border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sunset-orange/20"
+              />
+              <p className="text-xs text-muted-foreground">
+                {t('dashboard.refunds.adminReview.documentHint')}
+              </p>
+            </div>
           </div>
         </AdminActionModal>
       )}
