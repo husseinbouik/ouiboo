@@ -475,6 +475,7 @@
     "licenceTyped": "Licence d'agent de voyages : {{type}} {{number}}",
     "licenceIssued": "Délivrée le {{date}} par {{authority}}",
     "licenceDetailsPending": "Les détails de délivrance de la licence sont en cours de confirmation auprès de l'agence.",
+    "licenceNotConfirmed": "Détails de la licence non encore confirmés — renseignez-vous auprès de l'agence avant de payer.",
     "licenceChecked": "Document de licence vérifié le {{date}}",
     "insuranceEvidenced": "Assurance RC justifiée le {{date}}",
     "poweredBy": "Propulsé par OuiBoo"

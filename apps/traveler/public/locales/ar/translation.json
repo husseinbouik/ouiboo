@@ -475,6 +475,7 @@
     "licenceTyped": "رخصة وكيل الأسفار: {{type}} {{number}}",
     "licenceIssued": "صادرة بتاريخ {{date}} عن {{authority}}",
     "licenceDetailsPending": "جارٍ تأكيد تفاصيل إصدار الرخصة مع الوكالة.",
+    "licenceNotConfirmed": "تفاصيل الترخيص غير مؤكدة بعد — استفسر لدى الوكالة قبل الدفع.",
     "licenceChecked": "تم التحقق من وثيقة الترخيص في {{date}}",
     "insuranceEvidenced": "تم إثبات تأمين المسؤولية المدنية في {{date}}",
     "poweredBy": "مدعوم من OuiBoo"

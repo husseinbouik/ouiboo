@@ -3,7 +3,7 @@ import { DatabaseService } from '../database/database.service';
 import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripSessionDto } from './dto/create-trip.dto';
 import { BookingPaymentStatus, BookingStatus, Prisma, SessionStatus, TripStatus } from '@ouiboo/database';
 import { toMoneyDecimal } from '../common/money.util';
-import { canOrganise, getAgencyActivationBlock } from '../common/agency-licence.util';
+import { canOrganise, getAgencyActivationBlock, sellerBlockMissingFields } from '../common/agency-licence.util';
 import { visibleBankDetails } from '../common/bank-details.util';
 import { BETA_CATALOG_CURRENCY, isCatalogCurrencyAllowed, isMadOnlyCatalogEnabled } from '../common/catalog-currency.util';
 import { resolveStagedSessionConfig } from '../staged-payments/staged-payments.util';
@@ -55,6 +55,8 @@ export class TripsService {
                 travelLicenceType: true,
                 insuranceStatus: true,
                 insuranceExpiry: true,
+                licenceIssuedAt: true,
+                licenceIssuingAuthority: true,
             },
         });
         const block = agency ? getAgencyActivationBlock(agency) : 'Agency profile not found';
@@ -63,6 +65,23 @@ export class TripsService {
             throw new ForbiddenException(
                 'A distributor (DV) licence does not permit organising trips — only ODV agencies can publish trips',
             );
+        }
+        // Session #3 P0-13 (#415): the Law 31-08 seller block cannot be
+        // rendered completely without the licence ISSUE DATE and ISSUING
+        // AUTHORITY. A verified legacy record missing either keeps its
+        // already-ACTIVE trips (the gate only runs on transitions in),
+        // but may not publish new ones until the record is complete —
+        // the same facts the traveller side must now state honestly
+        // (SellerIdentity's not-confirmed line) instead of omitting.
+        if (agency) {
+            const missingIssueFields = sellerBlockMissingFields(agency).filter(
+                (field) => field === 'licenceIssuedAt' || field === 'licenceIssuingAuthority',
+            );
+            if (missingIssueFields.length > 0) {
+                throw new ForbiddenException(
+                    'The agency licence record is incomplete — the licence issue date and issuing authority are required before trips can be published',
+                );
+            }
         }
     }
 
