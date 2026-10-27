@@ -954,7 +954,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
 
         const res = await request(app.getHttpServer())
             .post('/trips')
-            .set('Authorization', 'Bearer <redacted>')
+            .set('Authorization', 'Bearer agency-123')
             .send({
                 title: 'Aventure dans le désert',
                 description: 'Une aventure complète dans le désert marocain',
@@ -1051,13 +1051,13 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
 
         await request(app.getHttpServer())
             .patch(`/trips/${incomplete.id}`)
-            .set('Authorization', 'Bearer <redacted>')
+            .set('Authorization', 'Bearer agency-123')
             .send({ status: 'ACTIVE' })
             .expect(400);
 
         const published = await request(app.getHttpServer())
             .patch(`/trips/${frenchOnly.id}`)
-            .set('Authorization', 'Bearer <redacted>')
+            .set('Authorization', 'Bearer agency-123')
             .send({ status: 'ACTIVE' })
             .expect(200);
         expect(published.body.status).toBe('ACTIVE');

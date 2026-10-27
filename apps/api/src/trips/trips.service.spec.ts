@@ -15,6 +15,8 @@ const mockTripTemplate = {
 };
 
 const mockDatabaseService = {
+    // #546: localized search resolves matching ids via one raw query.
+    $queryRaw: jest.fn().mockResolvedValue([]),
     $transaction: jest.fn((fn: any) => fn({
         itineraryDay: { deleteMany: jest.fn().mockResolvedValue({}) },
         review: { deleteMany: jest.fn().mockResolvedValue({}) },
@@ -339,8 +341,6 @@ describe('TripsService', () => {
                         { title: { contains: 'atlas', mode: 'insensitive' } },
                         { description: { contains: 'atlas', mode: 'insensitive' } },
                         { startLocation: { contains: 'atlas', mode: 'insensitive' } },
-                        // #546: localized texts in the translations map.
-                        { translations: { string_contains: 'atlas' } },
                     ],
                 }),
             }));
@@ -348,6 +348,20 @@ describe('TripsService', () => {
                 where: expect.objectContaining({
                     category: 'ADVENTURE',
                     agencyId: 'agency-123',
+                }),
+            }));
+        });
+
+        it('adds translation-matched ids to the search OR when the raw lookup hits (#546)', async () => {
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(0);
+            (db as any).$queryRaw.mockResolvedValue([{ id: 'tpl-ar-1' }, { id: 'tpl-ar-2' }]);
+
+            await service.findAllTemplates({ q: 'الأطلس' });
+
+            expect(db.tripTemplate.findMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({
+                    OR: expect.arrayContaining([{ id: { in: ['tpl-ar-1', 'tpl-ar-2'] } }]),
                 }),
             }));
         });

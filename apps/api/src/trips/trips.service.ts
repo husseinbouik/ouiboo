@@ -224,16 +224,32 @@ export class TripsService {
             }
             if (q?.trim()) {
                 const search = q.trim();
-                where.OR = [
+                const orConditions: any[] = [
                     { title: { contains: search, mode: 'insensitive' } },
                     { description: { contains: search, mode: 'insensitive' } },
                     { startLocation: { contains: search, mode: 'insensitive' } },
-                    // #546: also match the localized texts. The French
-                    // columns above remain the primary match (no search
-                    // regression for legacy trips); the map's serialized
-                    // text covers Arabic/English (and future languages).
-                    { translations: { string_contains: search } },
                 ];
+                // #546: also match the localized texts. The French columns
+                // above stay the primary match (no search regression for
+                // legacy trips). Prisma's Json filters cannot
+                // substring-match inside an object-valued Json column, so
+                // the matching template ids are resolved with one bounded
+                // raw query over the serialized translations map.
+                // Best-effort: if that query is unavailable (e.g. a
+                // pre-migration database), search degrades to French-only
+                // instead of failing.
+                try {
+                    const rows = await this.db.$queryRaw<Array<{ id: string }>>(
+                        Prisma.sql`SELECT "id" FROM "TripTemplate" WHERE "translations"::text ILIKE ${`%${search}%`} LIMIT 500`,
+                    );
+                    const translationMatchIds = (rows ?? []).map((row) => row.id).filter(Boolean);
+                    if (translationMatchIds.length > 0) {
+                        orConditions.push({ id: { in: translationMatchIds } });
+                    }
+                } catch {
+                    // translations search unavailable — French-only matching.
+                }
+                where.OR = orConditions;
             }
 
             // Duration filter
