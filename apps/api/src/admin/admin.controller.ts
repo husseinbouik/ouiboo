@@ -310,7 +310,10 @@ export class AdminController {
         });
 
         if (result.fullyPaid && result.travelerEmail) {
-            this.emailService.sendPaymentConfirmation(
+            // #436 (Council P1-10): awaited — an un-awaited send races the
+            // serverless freeze after the response returns (#409). The
+            // failure is logged, never thrown: the review already settled.
+            await this.emailService.sendPaymentConfirmation(
                 result.travelerEmail,
                 result.tripTitle,
                 result.locale,

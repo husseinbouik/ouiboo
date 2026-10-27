@@ -99,16 +99,23 @@ export class InvoicesService {
     }
 
     private resolveCommissionRate(override?: number): Prisma.Decimal {
+        // #443 (Council P1-20): the per-request override and the env
+        // configuration resolve through the SAME range validation. The
+        // override path previously returned early, skipping the (0, 100]
+        // check the env path applies — a caller could snapshot a 0%,
+        // negative, or >100% platform service fee onto an invoice.
+        let rate: Prisma.Decimal;
         if (override !== undefined && override !== null) {
-            return toMoneyDecimal(override, 'commissionRatePercent');
+            rate = toMoneyDecimal(override, 'commissionRatePercent');
+        } else {
+            const configured = process.env.OUIBOO_COMMISSION_RATE_PERCENT?.trim();
+            if (!configured) {
+                throw new BadRequestException(
+                    'COMMISSION_RATE_NOT_CONFIGURED: pass commissionRatePercent or set OUIBOO_COMMISSION_RATE_PERCENT',
+                );
+            }
+            rate = toMoneyDecimal(configured, 'OUIBOO_COMMISSION_RATE_PERCENT');
         }
-        const configured = process.env.OUIBOO_COMMISSION_RATE_PERCENT?.trim();
-        if (!configured) {
-            throw new BadRequestException(
-                'COMMISSION_RATE_NOT_CONFIGURED: pass commissionRatePercent or set OUIBOO_COMMISSION_RATE_PERCENT',
-            );
-        }
-        const rate = toMoneyDecimal(configured, 'OUIBOO_COMMISSION_RATE_PERCENT');
         if (rate.lte(0) || rate.gt(100)) {
             throw new BadRequestException('COMMISSION_RATE_OUT_OF_RANGE: rate must be within (0, 100]');
         }

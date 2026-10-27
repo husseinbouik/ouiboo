@@ -2,6 +2,7 @@ import {
     canOrganise,
     effectiveInsuranceStatus,
     effectiveLicenceStatus,
+    effectiveVerificationStatus,
     getAgencyActivationBlock,
     getAgencyInsuranceBlock,
     isInsuranceVerified,
@@ -190,6 +191,37 @@ describe('agency licence utilities (#371)', () => {
             expect(getAgencyInsuranceBlock({ insuranceStatus: 'PENDING_REVIEW' }, NOW)).toMatch(/must be submitted and verified/i);
             expect(getAgencyInsuranceBlock({ insuranceStatus: 'VERIFIED', insuranceExpiry: null }, NOW)).toMatch(/must be submitted and verified/i);
             expect(getAgencyInsuranceBlock({ insuranceStatus: 'VERIFIED', insuranceExpiry: PAST }, NOW)).toMatch(/has expired/i);
+        });
+    });
+
+    describe('effectiveVerificationStatus (#569)', () => {
+        const fullyVerified = {
+            verificationStatus: 'VERIFIED',
+            travelLicenceStatus: 'VERIFIED', licenceExpiry: FUTURE,
+            insuranceStatus: 'VERIFIED', insuranceExpiry: FUTURE,
+        };
+
+        it('stays VERIFIED only when identity, licence and insurance are all verified', () => {
+            expect(effectiveVerificationStatus(fullyVerified, NOW)).toBe('VERIFIED');
+        });
+
+        it('downgrades to PENDING while licence or insurance is NOT_SUBMITTED', () => {
+            expect(effectiveVerificationStatus(
+                { ...fullyVerified, travelLicenceStatus: 'NOT_SUBMITTED', licenceExpiry: null }, NOW,
+            )).toBe('PENDING');
+            expect(effectiveVerificationStatus(
+                { ...fullyVerified, insuranceStatus: 'NOT_SUBMITTED', insuranceExpiry: null }, NOW,
+            )).toBe('PENDING');
+        });
+
+        it('downgrades when a component is expired or lacks an expiry', () => {
+            expect(effectiveVerificationStatus({ ...fullyVerified, licenceExpiry: PAST }, NOW)).toBe('PENDING');
+            expect(effectiveVerificationStatus({ ...fullyVerified, insuranceExpiry: null }, NOW)).toBe('PENDING');
+        });
+
+        it('passes a non-VERIFIED identity status through unchanged', () => {
+            expect(effectiveVerificationStatus({ ...fullyVerified, verificationStatus: 'PENDING' }, NOW)).toBe('PENDING');
+            expect(effectiveVerificationStatus({ ...fullyVerified, verificationStatus: 'REJECTED' }, NOW)).toBe('REJECTED');
         });
     });
 
