@@ -143,7 +143,7 @@ export function MobileFilterDrawer({
               </Button>
             </header>
             <div className="flex-1 overflow-y-auto p-5">{children}</div>
-            {footer ? <footer className="border-t p-5">{footer}</footer> : null}
+            {footer ? <footer className="border-t px-5 pt-5 pb-safe-5">{footer}</footer> : null}
           </section>
         </div>
       ) : null}

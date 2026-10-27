@@ -709,7 +709,7 @@ export default function TripDetailsClient({
           </div>
         </div>
       </div>
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-2xl backdrop-blur lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 pt-3 pb-safe-3 shadow-2xl backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">From</p>
