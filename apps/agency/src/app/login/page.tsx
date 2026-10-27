@@ -202,10 +202,7 @@ if (!isMounted) return <div className="min-h-screen bg-background" />;
         </motion.div>
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full h-full">
           <div className="flex justify-end">
-             <div className="flex items-center gap-2.5">
-               <span className="text-3xl font-bold tracking-tight">Ouiboo</span>
-               <BetaBadge />
-             </div>
+             <div className="flex items-center gap-2.5"><span className="text-3xl font-bold tracking-tight">Ouiboo</span><BetaBadge /></div>
           </div>
           <motion.div
             initial={{ y: 20, opacity: 0 }}
