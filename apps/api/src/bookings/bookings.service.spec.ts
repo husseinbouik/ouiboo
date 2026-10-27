@@ -1442,4 +1442,109 @@ describe('BookingsService', () => {
             expect(db.duplicateCreditFlag.create).not.toHaveBeenCalled();
         });
     });
+
+    // ------------------------------------------------------------------
+    // Trip emergency contacts gating (#251/B23, verifying #419).
+    //
+    // AgencyProfile.emergencyContactName/Phone carry a schema comment
+    // saying they are "shown only to travellers holding a booking with
+    // this agency, never publicly". The only read path that embeds them
+    // in a response is mapBookingDetails, and findOneForUser is its
+    // gatekeeper — these tests pin that the gate is a real server-side
+    // check (booked traveller / owning agency / admin), not just the
+    // comment.
+    // ------------------------------------------------------------------
+    describe('findOneForUser trip contacts gating (#251/B23)', () => {
+        const contactBooking = {
+            id: 'booking-contacts',
+            sessionId: 'session-1',
+            travelerId: 'traveler-1',
+            bookingDate: new Date('2026-01-01T00:00:00.000Z'),
+            status: 'CONFIRMED',
+            totalAmount: 1200,
+            guestsCount: 2,
+            paymentMethod: 'MANUAL',
+            paymentStatus: 'PAID',
+            paymentProof: null,
+            paymentPlan: null,
+            externalPayments: [],
+            review: null,
+            traveler: { email: 'traveler@example.com', name: 'Booked Traveller' },
+            session: {
+                id: 'session-1',
+                templateId: 'template-1',
+                startDate: new Date('2026-02-01T00:00:00.000Z'),
+                endDate: new Date('2026-02-05T00:00:00.000Z'),
+                price: 600,
+                deposit: 100,
+                totalSeats: 12,
+                availableSeats: 10,
+                status: 'OPEN',
+                template: {
+                    id: 'template-1',
+                    title: 'Atlas Trek',
+                    startLocation: 'Marrakech',
+                    images: ['cover.jpg'],
+                    agencyId: 'agency-1',
+                    agency: {
+                        id: 'agency-1',
+                        companyName: 'Atlas Adventures',
+                        emergencyContactName: 'Yasmine Coordinator',
+                        emergencyContactPhone: '+212612345678',
+                    },
+                },
+            },
+        } as any;
+
+        beforeEach(() => {
+            db.booking.findUnique.mockResolvedValue(contactBooking);
+        });
+
+        it('serves the contacts to the traveller holding the booking', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue(null);
+
+            const result = await service.findOneForUser('booking-contacts', 'traveler-1', 'TRAVELER');
+
+            expect(result.session.template.agency).toMatchObject({
+                emergencyContactName: 'Yasmine Coordinator',
+                emergencyContactPhone: '+212612345678',
+            });
+        });
+
+        it('denies a traveller who holds no booking on the trip', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue(null);
+
+            await expect(
+                service.findOneForUser('booking-contacts', 'traveler-2', 'TRAVELER'),
+            ).rejects.toThrow(ForbiddenException);
+        });
+
+        it('serves the contacts to the agency that owns the trip', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-1' });
+
+            const result = await service.findOneForUser('booking-contacts', 'agency-user-1', 'AGENCY');
+
+            expect(result.session.template.agency).toMatchObject({
+                emergencyContactPhone: '+212612345678',
+            });
+        });
+
+        it('denies a foreign agency', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-2' });
+
+            await expect(
+                service.findOneForUser('booking-contacts', 'agency-user-2', 'AGENCY'),
+            ).rejects.toThrow(ForbiddenException);
+        });
+
+        it('serves the contacts to an admin', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue(null);
+
+            const result = await service.findOneForUser('booking-contacts', 'admin-1', 'ADMIN');
+
+            expect(result.session.template.agency).toMatchObject({
+                emergencyContactPhone: '+212612345678',
+            });
+        });
+    });
 });

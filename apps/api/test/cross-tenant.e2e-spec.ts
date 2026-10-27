@@ -568,6 +568,29 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
             await request(app.getHttpServer()).get(`/bookings/${BOOKING_PAID}`).set(auth(tokenAdmin)).expect(200);
         });
 
+        it('trip emergency contacts ride only on the gated booking read (#251/B23)', async () => {
+            await db.agencyProfile.update({
+                where: { id: AGENCY_A },
+                data: { emergencyContactName: 'CT On-Call Coordinator', emergencyContactPhone: '+212600000001' },
+            });
+
+            // Positive control: the traveller holding the booking sees
+            // the contacts on their booking read.
+            const own = await request(app.getHttpServer()).get(`/bookings/${BOOKING_PAID}`).set(auth(tokenT1)).expect(200);
+            expect(bodyText(own)).toContain('+212600000001');
+
+            // A traveller without a booking on the trip is denied the
+            // read outright, so the contacts never reach them.
+            const foreign = await request(app.getHttpServer()).get(`/bookings/${BOOKING_PAID}`).set(auth(tokenT2));
+            expect(foreign.status).toBe(403);
+            expect(bodyText(foreign)).not.toContain('+212600000001');
+
+            // The public trip page never carries the contacts.
+            const pub = await request(app.getHttpServer()).get(`/trips/${TEMPLATE_A}`).expect(200);
+            expect(bodyText(pub)).not.toContain('emergencyContact');
+            expect(bodyText(pub)).not.toContain('+212600000001');
+        });
+
         it('booking lists never leak across travellers or agencies', async () => {
             const mine = await request(app.getHttpServer()).get('/bookings/my-bookings').set(auth(tokenT2)).expect(200);
             expect(bodyText(mine)).not.toContain(BOOKING_PAID);
@@ -876,6 +899,50 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
             const res = await request(app.getHttpServer()).delete(`/messages/${MESSAGE_ID}`).set(auth(tokenT2));
             expectDenied(res);
             expect(await db.message.findUnique({ where: { id: MESSAGE_ID } })).toBeTruthy();
+        });
+
+        it('rejects private-document and external attachments at send time (#251/B23)', async () => {
+            const privateRef = await request(app.getHttpServer())
+                .post('/messages')
+                .set(auth(tokenT1))
+                .send({ recipientId: AGENCY_A, content: 'Here is my passport', attachmentUrl: 'private/ct-traveler-1/passport.jpg' });
+            expect(privateRef.status).toBe(400);
+
+            const external = await request(app.getHttpServer())
+                .post('/messages')
+                .set(auth(tokenT1))
+                .send({ recipientId: AGENCY_A, content: 'Scan at this link', attachmentUrl: 'https://external.example.com/scan.jpg' });
+            expect(external.status).toBe(400);
+        });
+
+        it('admin can strip a message attachment; other roles cannot (#251/B23)', async () => {
+            const seeded = await db.message.create({
+                data: {
+                    conversationId: CONVERSATION_ID,
+                    senderId: TRAVELER_1,
+                    content: 'Attachment moderation probe',
+                    attachmentUrl: 'https://cdn.ouiboo.test/trips/ct-agency-a/chat.png',
+                },
+            });
+
+            const byTraveler = await request(app.getHttpServer())
+                .delete(`/admin/messages/${seeded.id}/attachment`)
+                .set(auth(tokenT1))
+                .send({ reason: 'Trying to moderate my own message' });
+            expect(byTraveler.status).toBe(403);
+            expect((await db.message.findUnique({ where: { id: seeded.id } }))?.attachmentUrl).toBeTruthy();
+
+            const byAdmin = await request(app.getHttpServer())
+                .delete(`/admin/messages/${seeded.id}/attachment`)
+                .set(auth(tokenAdmin))
+                .send({ reason: 'ID document sent in chat' });
+            expect(byAdmin.status).toBe(200);
+
+            expect((await db.message.findUnique({ where: { id: seeded.id } }))?.attachmentUrl).toBeNull();
+            const audit = await db.auditLog.findFirst({
+                where: { action: 'MESSAGE_ATTACHMENT_REMOVED', targetId: seeded.id },
+            });
+            expect(audit).toBeTruthy();
         });
     });
 

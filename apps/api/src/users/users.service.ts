@@ -1,12 +1,17 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { Prisma } from '@ouiboo/database';
 import { DatabaseService } from '../database/database.service';
 import { PRIVATE_FILE_PREFIX } from '../upload/upload.constants';
+import { UploadService } from '../upload/upload.service';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 
 @Injectable()
 export class UsersService {
-    constructor(private db: DatabaseService) { }
+    constructor(
+        private db: DatabaseService,
+        private uploadService: UploadService,
+    ) { }
 
     private sanitizeUser(user: any) {
         if (!user) {
@@ -225,9 +230,36 @@ export class UsersService {
         return { exportedAt: new Date().toISOString(), subject: user, notifications, auditLogs };
     }
 
+    /**
+     * Account deletion / right-to-erasure pass (#251 — Council B23).
+     *
+     * Two halves, kept in sync with the per-category retention table in
+     * docs/PRIVACY_ACCOUNT_DELETION_RETENTION.md:
+     *
+     *  1. Every stored file the user uploaded is deleted from object
+     *     storage: avatar, agency logo, travel-licence and insurance
+     *     documents, bank attestation, payment proofs on their bookings,
+     *     attachments on messages they sent, and refund evidence they
+     *     recorded. References live in the database in mixed shapes (raw
+     *     storage keys and public URLs), so they are resolved through
+     *     UploadService.resolveStorageKey and deduplicated first.
+     *  2. The database tombstone scrubs every personal-data category.
+     *     Rows that double as financial/ledger evidence (bookings,
+     *     payments, refund cases and evidence rows, invoices, wallet
+     *     ledger) are retained with their personal fields nulled — the
+     *     retention table in the doc states what is kept and why.
+     *
+     * Storage deletion is best-effort per object and runs BEFORE the
+     * database scrub: a storage outage must not block erasure of the
+     * account itself. Failures are logged as counts only (never keys or
+     * file names) so ops can follow up on orphaned objects.
+     */
     async deleteUserAccount(userId: string) {
         const user = await this.db.user.findUnique({ where: { id: userId }, include: { agencyProfile: true } });
         if (!user) throw new NotFoundException('User not found');
+
+        await this.deleteUserStoredFiles(userId, user);
+
         const tombstone = `deleted-${randomUUID()}`;
         await this.db.$transaction(async (tx) => {
             await tx.refreshToken.deleteMany({ where: { userId } });
@@ -235,12 +267,91 @@ export class UsersService {
             await tx.notificationPreference.deleteMany({ where: { userId } });
             await tx.notificationLog.updateMany({ where: { userId }, data: { recipientEmail: `${tombstone}@privacy.invalid`, subject: null, message: '[deleted by data subject request]' } });
             await tx.auditLog.updateMany({ where: { actorId: userId }, data: { actorEmail: null } });
-            await tx.booking.updateMany({ where: { travelerId: userId }, data: { fullName: null, phoneNumber: null, paymentProofUrl: null } });
+            // Bookings survive as financial records; every traveller-typed
+            // field on them is personal data and is nulled, and the
+            // uploaded payment-proof images are detached (their storage
+            // objects were deleted above).
+            await tx.booking.updateMany({ where: { travelerId: userId }, data: { fullName: null, phoneNumber: null, paymentProofUrl: null, cancellationReason: null } });
+            await tx.paymentProof.updateMany({ where: { booking: { travelerId: userId } }, data: { imageUrl: '' } });
+            // Messages the user sent: content and attachments are their
+            // personal data. The rows stay so the other participant keeps
+            // a coherent conversation shell.
+            await tx.message.updateMany({ where: { senderId: userId }, data: { content: '[deleted by data subject request]', attachmentUrl: null } });
+            // Refund evidence rows are retained financial records; the
+            // uploader's file reference is detached (object deleted above).
+            await tx.refundEvidence.updateMany({ where: { recordedBy: userId }, data: { proofUrl: null } });
+            // Review ratings stay for aggregate integrity; the traveller's
+            // own comment text is personal content and is removed.
+            await tx.review.updateMany({ where: { travelerId: userId }, data: { comment: null } });
+            // Live admin break-glass credentials minted by this account
+            // must not survive it.
+            await tx.breakGlassCredential.deleteMany({ where: { createdById: userId } });
             if (user.agencyProfile) {
                 await tx.tripTemplate.updateMany({ where: { agencyId: user.agencyProfile.id }, data: { status: 'ARCHIVED' } });
-                await tx.agencyProfile.update({ where: { id: user.agencyProfile.id }, data: { companyName: 'Deleted agency', ice: `${tombstone}-ice`, patente: 'DELETED', rib: 'DELETED', bio: null, logo: null, bankDetails: null, verificationStatus: 'REJECTED' } });
+                await tx.agencyProfile.update({
+                    where: { id: user.agencyProfile.id },
+                    data: {
+                        companyName: 'Deleted agency', ice: `${tombstone}-ice`, patente: 'DELETED', rib: 'DELETED', bio: null, logo: null, bankDetails: null, verificationStatus: 'REJECTED',
+                        // Legal representative and trip emergency contacts
+                        // are named individuals — personal data.
+                        legalRepresentative: null, emergencyContactName: null, emergencyContactPhone: null,
+                        // Licence + insurance verification dossiers: the
+                        // document keys are detached (objects deleted
+                        // above) and every verification stamp is cleared.
+                        travelLicenceType: null, travelLicenceNumber: null, travelLicenceStatus: 'NOT_SUBMITTED', licenceExpiry: null, licenceDocumentKey: null, licenceDocumentName: null, licenceVerifiedAt: null, licenceRejectionReason: null, licenceMinistryCheckedAt: null, licenceMinistryCheckedBy: null,
+                        insuranceStatus: 'NOT_SUBMITTED', insurancePolicyNumber: null, insuranceInsuredName: null, insuranceValidFrom: null, insuranceExpiry: null, insuranceCoverageLimit: null, insuranceCertificateKey: null, insuranceVerifiedAt: null, insuranceRejectionReason: null,
+                        // Bank destination: holder name and attestation are
+                        // detached; the (already scrubbed) details revert
+                        // to unverified.
+                        bankAttestationUrl: null, bankAccountHolderName: null, pendingBankDetails: null, bankDetailsStatus: 'UNVERIFIED', bankDetailsVerifiedAt: null, bankDetailsVerifiedBy: null, bankDetailsRejectionReason: null,
+                    },
+                });
             }
-            await tx.user.update({ where: { id: userId }, data: { email: `${tombstone}@privacy.invalid`, name: null, avatar: null, password: tombstone, isEmailVerified: false, otp: null, otpExpiresAt: null, otpLastSentAt: null, passwordResetTokenHash: null, passwordResetExpiresAt: null, passwordResetSentAt: null } });
+            await tx.user.update({ where: { id: userId }, data: { email: `${tombstone}@privacy.invalid`, name: null, avatar: null, password: tombstone, isEmailVerified: false, otp: null, otpExpiresAt: null, otpLastSentAt: null, passwordResetTokenHash: null, passwordResetExpiresAt: null, passwordResetSentAt: null, dateOfBirth: null, ageAttestedAt: null, mfaEnabled: false, mfaTotpSecret: null, mfaRecoveryCodeHashes: Prisma.JsonNull, mfaEnrolledAt: null } });
         });
+    }
+
+    /**
+     * Collects every storage reference owned by the deleting user and
+     * requests deletion of each distinct object. Best-effort: individual
+     * failures are counted and logged without identifiers, never thrown.
+     */
+    private async deleteUserStoredFiles(userId: string, user: any): Promise<void> {
+        const references: Array<string | null | undefined> = [
+            user.avatar,
+            user.agencyProfile?.logo,
+            user.agencyProfile?.bankAttestationUrl,
+            user.agencyProfile?.licenceDocumentKey,
+            user.agencyProfile?.insuranceCertificateKey,
+        ];
+
+        const [proofs, sentMessages, evidence] = await Promise.all([
+            this.db.paymentProof.findMany({ where: { booking: { travelerId: userId } }, select: { imageUrl: true } }),
+            this.db.message.findMany({ where: { senderId: userId, attachmentUrl: { not: null } }, select: { attachmentUrl: true } }),
+            this.db.refundEvidence.findMany({ where: { recordedBy: userId, proofUrl: { not: null } }, select: { proofUrl: true } }),
+        ]);
+        proofs.forEach((proof: any) => references.push(proof.imageUrl));
+        sentMessages.forEach((message: any) => references.push(message.attachmentUrl));
+        evidence.forEach((row: any) => references.push(row.proofUrl));
+
+        const keys = new Set<string>();
+        for (const reference of references) {
+            const key = this.uploadService.resolveStorageKey(reference);
+            if (key) {
+                keys.add(key);
+            }
+        }
+
+        let failed = 0;
+        for (const key of keys) {
+            try {
+                await this.uploadService.deleteFile(key);
+            } catch {
+                failed += 1;
+            }
+        }
+        if (failed > 0) {
+            console.warn(`Account deletion: ${failed} stored file(s) could not be deleted for a deleting account and were orphaned for ops follow-up`);
+        }
     }
 }
