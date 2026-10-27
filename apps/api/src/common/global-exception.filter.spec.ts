@@ -108,4 +108,41 @@ describe('GlobalExceptionFilter structured error logging (#399)', () => {
     const problem = json.mock.calls[0][0] as { instance: string }
     expect(problem.instance).toBe('/api/v1/trips')
   })
+
+  it('derives the instance from request.url when originalUrl is absent, and tolerates an empty URL (#437)', () => {
+    const makeBareHost = (request: Record<string, unknown>) => {
+      const json = jest.fn()
+      const type = jest.fn(() => ({ json }))
+      const status = jest.fn(() => ({ type }))
+      const response = { status, type, json }
+      const host = {
+        switchToHttp: () => ({
+          getResponse: () => response,
+          getRequest: () => request,
+        }),
+      } as unknown as ArgumentsHost
+      return { host, json }
+    }
+
+    const fromUrl = makeBareHost({
+      method: 'GET',
+      url: '/api/v1/media/raw?token=<redacted>',
+      correlationId: 'cid-test-1',
+    })
+    new GlobalExceptionFilter().catch(new NotFoundException('nope'), fromUrl.host)
+    expect(
+      (fromUrl.json.mock.calls[0][0] as { instance: string }).instance
+    ).toBe('/api/v1/media/raw')
+
+    const empty = makeBareHost({
+      method: 'GET',
+      url: '',
+      originalUrl: '',
+      correlationId: 'cid-test-1',
+    })
+    new GlobalExceptionFilter().catch(new NotFoundException('nope'), empty.host)
+    expect((empty.json.mock.calls[0][0] as { instance: string }).instance).toBe(
+      ''
+    )
+  })
 })
