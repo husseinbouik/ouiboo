@@ -47,6 +47,13 @@ export const signTestSession = (role: 'AGENCY' | 'ADMIN' | 'TRAVELER', sub = 'e2
 
 /** Establishes an authenticated session for the given role before navigating to protected pages. */
 export const authenticateAs = async (page: Page, role: 'AGENCY' | 'ADMIN' | 'TRAVELER') => {
+  // #245: a real login also writes the api-client's session hint to
+  // localStorage (setBrowserAccessToken), and AuthProvider probes
+  // /users/me only when a session may exist. Seed the hint alongside the
+  // cookies so this context models a logged-in browser faithfully —
+  // without it the app correctly treats the context as anonymous and
+  // never loads the user these cookies stand for.
+  await seedLocalStorage(page, { 'ouiboo.session.hint': '1' });
   await page.context().addCookies([
     {
       name: 'ouiboo_session',

@@ -18,12 +18,65 @@ const SESSION_RETRY_DELAY_MS = 1000
 
 let browserAccessToken: string | null = null
 
+// Session hint (#245). The access token lives only in memory, so after a
+// reload nothing client-side can tell "returning user whose token must be
+// restored via the refresh cookie" apart from "anonymous visitor" — and
+// the auth layer probed GET /users/me for everyone, producing a 401 (plus
+// a second 401 from the refresh attempt) in the console of every
+// anonymous page view. This hint is the discriminator: it is written to
+// localStorage exactly when a token is stored (every login/verify flow
+// and every successful refresh goes through setBrowserAccessToken) and
+// removed whenever the token is cleared. It carries no credential value —
+// only the fact that a session may exist.
+export const BROWSER_SESSION_HINT_KEY = 'ouiboo.session.hint'
+
+function writeBrowserSessionHint(): void {
+  try {
+    window.localStorage.setItem(BROWSER_SESSION_HINT_KEY, '1')
+  } catch {
+    // Storage unavailable (privacy mode, disabled cookies): the hint is
+    // an optimisation, never a requirement — probing stays as before.
+  }
+}
+
+function removeBrowserSessionHint(): void {
+  try {
+    window.localStorage.removeItem(BROWSER_SESSION_HINT_KEY)
+  } catch {
+    // See writeBrowserSessionHint.
+  }
+}
+
+export function hasBrowserSessionHint(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    return window.localStorage.getItem(BROWSER_SESSION_HINT_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+/**
+ * True when a session may exist: an in-memory access token, or the
+ * persisted hint that one was stored before a reload.
+ */
+export function hasPossibleBrowserSession(): boolean {
+  return Boolean(browserAccessToken) || hasBrowserSessionHint()
+}
+
 export interface BrowserAuthOptions {
   loginPath?: string
 }
 
 export async function setBrowserAccessToken(token: string | null): Promise<void> {
   browserAccessToken = token
+  if (typeof window !== 'undefined') {
+    if (token) {
+      writeBrowserSessionHint()
+    } else {
+      removeBrowserSessionHint()
+    }
+  }
   // Establish the BFF app session (#208) so the Next.js proxy can validate
   // authenticated requests. MUST be awaited before redirecting to protected
   // routes, otherwise the proxy will not see the session cookie yet.
@@ -37,6 +90,9 @@ export async function setBrowserAccessToken(token: string | null): Promise<void>
 
 export function clearBrowserAccessToken() {
   browserAccessToken = null
+  if (typeof window !== 'undefined') {
+    removeBrowserSessionHint()
+  }
   // Clear the BFF app session (#208). Fire-and-forget.
   if (typeof window !== 'undefined') {
     clearAppSession().catch(() => {
@@ -259,17 +315,24 @@ export function attachBrowserAuth(
         const hadAccessToken = Boolean(browserAccessToken)
         originalRequest._retry = true
 
-        try {
-          const newToken = await getRefreshedToken()
-          if (newToken) {
-            originalRequest.headers = {
-              ...(originalRequest.headers || {}),
-              Authorization: `Bearer ${newToken}`,
+        // #245: attempt the refresh only when a session can exist. With
+        // no in-memory token and no session hint, the refresh cookie
+        // cannot be there either (the hint is written whenever a token
+        // is stored), so the refresh would only add a second 401 to the
+        // console of an anonymous visit.
+        if (hadAccessToken || hasBrowserSessionHint()) {
+          try {
+            const newToken = await getRefreshedToken()
+            if (newToken) {
+              originalRequest.headers = {
+                ...(originalRequest.headers || {}),
+                Authorization: `Bearer ${newToken}`,
+              }
+              return client(originalRequest)
             }
-            return client(originalRequest)
+          } catch {
+            // Continue to the logout path when refresh fails.
           }
-        } catch {
-          // Continue to the logout path when refresh fails.
         }
 
         if (typeof window !== 'undefined') {
