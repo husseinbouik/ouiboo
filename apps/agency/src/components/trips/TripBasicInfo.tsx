@@ -2,20 +2,7 @@ import { useState } from 'react';
 import { Input, Card, CardContent } from '@ouiboo/ui';
 import type { TFunction } from 'i18next';
 import type { TripWizardFormApi } from './useTripWizardForm';
-
-/**
- * #546: the languages a trip's title + description can be written in.
- * French is canonical (it binds the top-level title/description form
- * fields and is required to publish); the other languages bind the
- * `translations` map and are encouraged, never blocking.
- */
-const CONTENT_LANGUAGES = [
-  { code: 'fr', labelKey: 'trips.create.languageFr', dir: 'ltr' },
-  { code: 'ar', labelKey: 'trips.create.languageAr', dir: 'rtl' },
-  { code: 'en', labelKey: 'trips.create.languageEn', dir: 'ltr' },
-] as const;
-
-type ContentLanguageCode = (typeof CONTENT_LANGUAGES)[number]['code'];
+import { CANONICAL_LANGUAGE, CONTENT_LANGUAGES, ContentLanguageTabs, contentLanguageDir, isCanonicalLanguage, languagePresentation, type ContentLanguageCode } from './ContentLanguageTabs';
 
 type Props = {
   t: TFunction;
@@ -25,48 +12,34 @@ type Props = {
 /** Wizard step 1 — trip basics: title, description (per language), category, locations, duration, currency. */
 export function TripBasicInfo({ t, form }: Props) {
   const { register, errors, watch } = form;
-  const [activeLanguage, setActiveLanguage] = useState<ContentLanguageCode>('fr');
+  const [activeLanguage, setActiveLanguage] = useState<ContentLanguageCode>(CANONICAL_LANGUAGE as ContentLanguageCode);
 
   // #546: completeness hint for the encouraged languages — a language
   // counts as translated only with BOTH a title and a description.
   const translations = watch('translations');
-  const missingLanguages = CONTENT_LANGUAGES.filter(({ code }) => code !== 'fr')
+  const missingLanguages = CONTENT_LANGUAGES.filter(({ code }) => !isCanonicalLanguage(code))
     .filter(({ code }) => {
       const entry = translations?.[code];
       return !(entry?.title?.trim() && entry?.description?.trim());
     })
-    .map(({ labelKey }) => t(labelKey));
+    .map(({ code }) => {
+      const { labelKey } = languagePresentation(code);
+      return labelKey ? t(labelKey) : code.toUpperCase();
+    });
 
-  const activeDir = CONTENT_LANGUAGES.find(({ code }) => code === activeLanguage)?.dir ?? 'ltr';
+  const activeDir = contentLanguageDir(activeLanguage);
 
   return (
     <section className="space-y-6 animate-in fade-in duration-300">
       <Card className="border border-border shadow-sm bg-card">
         <CardContent className="p-6 space-y-4">
           <div className="space-y-2">
-            <div
-              role="tablist"
-              aria-label={t('trips.create.title')}
-              className="flex flex-wrap items-center gap-2"
-            >
-              {CONTENT_LANGUAGES.map(({ code, labelKey }) => (
-                <button
-                  key={code}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeLanguage === code}
-                  data-testid={`trip-language-tab-${code}`}
-                  onClick={() => setActiveLanguage(code)}
-                  className={`h-9 px-4 rounded-full text-sm font-semibold border transition-all ${
-                    activeLanguage === code
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-background text-foreground border-border hover:border-primary/50'
-                  }`}
-                >
-                  {t(labelKey)}
-                </button>
-              ))}
-            </div>
+            <ContentLanguageTabs
+              t={t}
+              activeLanguage={activeLanguage}
+              onChange={(code) => setActiveLanguage(code as ContentLanguageCode)}
+              ariaLabel={t('trips.create.title')}
+            />
             <p className="text-xs text-muted-foreground">{t('trips.create.frenchRequiredNote')}</p>
             {missingLanguages.length > 0 && (
               <p className="text-xs text-muted-foreground" data-testid="translations-missing-hint">
@@ -75,7 +48,7 @@ export function TripBasicInfo({ t, form }: Props) {
             )}
           </div>
 
-          {activeLanguage === 'fr' ? (
+          {isCanonicalLanguage(activeLanguage) ? (
             <>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-foreground">{t('trips.create.title')}</label>

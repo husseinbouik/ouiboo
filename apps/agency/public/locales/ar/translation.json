@@ -335,11 +335,11 @@
       "deleting": "جار الحذف...",
       "delete": "حذف",
       "durationDays_zero": "{{count}} أيام",
-    "durationDays_one": "يوم واحد",
-    "durationDays_other": "{{count}} أيام",
-    "durationNights_zero": "{{count}} ليالٍ",
-    "durationNights_one": "ليلة واحدة",
-    "durationNights_other": "{{count}} ليالٍ",
+      "durationDays_one": "يوم واحد",
+      "durationDays_other": "{{count}} أيام",
+      "durationNights_zero": "{{count}} ليالٍ",
+      "durationNights_one": "ليلة واحدة",
+      "durationNights_other": "{{count}} ليالٍ",
       "verificationRequired": "التحقق مطلوب",
       "checkVerificationStatus": "تحقق من حالة التحقق",
       "sessionsTitle": "جلسات الرحلة",
@@ -448,7 +448,8 @@
       "cancellationPercentLabel": "نسبة الاسترداد %",
       "cancellationRemoveBand": "إزالة الشريحة",
       "cancellationBandAtLeast": "قبل {{days}} أيام أو أكثر: استرداد {{percent}}٪",
-      "cancellationBandLessThan": "قبل أقل من {{days}} أيام: استرداد {{percent}}٪"
+      "cancellationBandLessThan": "قبل أقل من {{days}} أيام: استرداد {{percent}}٪",
+      "structureNote": "تُضاف الأيام وتُرتَّب بالفرنسية، وهي البنية الأساسية — هذه العلامة تترجم نص كل يوم فقط."
     }
   },
   "payments": {

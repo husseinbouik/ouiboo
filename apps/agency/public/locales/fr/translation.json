@@ -335,9 +335,9 @@
       "deleting": "Suppression...",
       "delete": "Supprimer",
       "durationDays_one": "{{count}} jour",
-    "durationDays_other": "{{count}} jours",
-    "durationNights_one": "{{count}} nuit",
-    "durationNights_other": "{{count}} nuits",
+      "durationDays_other": "{{count}} jours",
+      "durationNights_one": "{{count}} nuit",
+      "durationNights_other": "{{count}} nuits",
       "verificationRequired": "Vérification requise",
       "checkVerificationStatus": "Vérifier le statut de vérification",
       "sessionsTitle": "Sessions du voyage",
@@ -446,7 +446,8 @@
       "cancellationPercentLabel": "% remboursé",
       "cancellationRemoveBand": "Retirer la tranche",
       "cancellationBandAtLeast": "{{days}} jours ou plus avant : remboursement de {{percent}} %",
-      "cancellationBandLessThan": "Moins de {{days}} jours avant : remboursement de {{percent}} %"
+      "cancellationBandLessThan": "Moins de {{days}} jours avant : remboursement de {{percent}} %",
+      "structureNote": "Les jours s'ajoutent et s'ordonnent en français, la structure canonique — cet onglet traduit uniquement le texte de chaque jour."
     }
   },
   "payments": {

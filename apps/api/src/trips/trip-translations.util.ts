@@ -57,10 +57,25 @@ export interface TripCanonicalSections {
 
 export type TripTranslationsMap = Record<string, TripTranslationEntry>;
 
-/** The canonical language: required to publish, first fallback everywhere. */
-export const TRIP_CANONICAL_LOCALE = 'fr';
-
 const LOCALE_CODE_PATTERN = /^[a-z]{2,3}$/;
+
+/**
+ * The canonical language: required to publish, first fallback
+ * everywhere. Founder scalability rule (#584): the map itself is fully
+ * language-agnostic — entries are keyed by any ISO code and nothing in
+ * this module enumerates fr/ar/en. WHICH language is canonical is a
+ * MARKET rule, not a data rule: French for the Morocco launch,
+ * expressed as configuration (`TRIP_CONTENT_CANONICAL_LOCALE`) so a
+ * future market changes one env value, never the schema or the code.
+ */
+const envCanonicalLocale = process.env.TRIP_CONTENT_CANONICAL_LOCALE
+    ?.split('-')[0]
+    ?.trim()
+    .toLowerCase();
+export const TRIP_CANONICAL_LOCALE =
+    envCanonicalLocale && LOCALE_CODE_PATTERN.test(envCanonicalLocale)
+        ? envCanonicalLocale
+        : 'fr';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
