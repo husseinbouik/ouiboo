@@ -3,7 +3,7 @@
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, Badge, Button, SafeImage } from '@ouiboo/ui';
-import { MapPin, Star, ChevronLeft, ChevronRight, Zap, Ticket } from 'lucide-react';
+import { MapPin, Star, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -198,15 +198,15 @@ export function TripCard({ trip }: TripCardProps) {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentImage}
-            initial={{ opacity: 0, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.5 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
             className="absolute inset-0"
           >
             <SafeImage
               src={images[currentImage]}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="w-full h-full object-cover"
               alt={trip.imageAlts?.[currentImage]?.trim() || (trip.startLocation ? `${trip.title} · ${trip.startLocation}` : trip.title)}
               fill
               sizes="(min-width: 1024px) 33vw, 100vw"
@@ -214,7 +214,14 @@ export function TripCard({ trip }: TripCardProps) {
           </motion.div>
         </AnimatePresence>
         
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
+        {/* #571: the photo previously carried five overlay layers and
+            the price appeared twice (badge here + footer). What remains:
+            this legibility gradient (indicators only), the category
+            badge, ONE availability badge, the wishlist button and the
+            carousel controls — the footer is the single price surface.
+            #573: the crossfade above is opacity-only; the image no
+            longer also scales on hover (double transform). */}
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/50 to-transparent opacity-50" />
 
         {/* Navigation Arrows */}
         {images.length > 1 && (
@@ -268,10 +275,6 @@ export function TripCard({ trip }: TripCardProps) {
         </div>
 
         <div className="absolute top-3 end-14 flex flex-col items-end gap-2">
-          <Badge className="bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none flex items-center gap-1">
-            <Ticket className="h-3 w-3" />
-            {minPrice !== null ? formatCurrency(minPrice, priceCurrency, i18n.language) : t('tripCard.priceTba')}
-          </Badge>
           <Badge className={cn(
             "text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none flex items-center gap-1",
             nextSession ? "bg-success/15 text-success-dark" : "bg-warning/15 text-warning-dark"
@@ -321,7 +324,7 @@ export function TripCard({ trip }: TripCardProps) {
           <div className="flex flex-col">
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{t('tripCard.from')}</span>
             <div className="flex items-baseline gap-1">
-                <span className="text-xl font-bold text-foreground">
+                <span className="oui-numeric text-xl font-bold text-foreground">
                    {minPrice !== null ? formatCurrency(minPrice, priceCurrency, i18n.language) : '---'}
                 </span>
             </div>

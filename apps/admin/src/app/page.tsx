@@ -673,6 +673,33 @@ export default function AdminDashboard() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         summaryCards={summaryCards}
+        paletteItems={[
+          // #487: entity items from the lists this page already loads
+          // (tab-scoped queries — a list contributes once it has loaded).
+          // Selecting one only switches tab and seeds the tab search:
+          // navigation, never a mutation.
+          ...allAgencies.map((agency) => ({
+            id: `agency-${agency.id}`,
+            label: agency.companyName,
+            group: t('commandPalette.groupAgencies'),
+            keywords: agency.id,
+            perform: () => { handleTabChange('AGENCIES'); setSearchQuery(agency.companyName); },
+          })),
+          ...pendingTrips.map((trip) => ({
+            id: `trip-${trip.id}`,
+            label: trip.title,
+            group: t('commandPalette.groupTrips'),
+            keywords: `${trip.id} ${trip.agency?.companyName ?? ''}`,
+            perform: () => { handleTabChange('PENDING'); setSearchQuery(trip.title); },
+          })),
+          ...allBookings.map((booking) => ({
+            id: `booking-${booking.id}`,
+            label: booking.session?.template?.title || booking.id,
+            group: t('commandPalette.groupBookings'),
+            keywords: `${booking.id} ${booking.traveler?.name ?? ''} ${booking.traveler?.email ?? ''}`,
+            perform: () => { handleTabChange('BOOKINGS'); setSearchQuery(booking.id); },
+          })),
+        ]}
         onLogout={logout}
       >
         {activeTab === 'PENDING' && showPendingSkeleton && (

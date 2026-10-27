@@ -1140,5 +1140,13 @@
         "ADMIN_REVIEW": "مراجعة إدارة OuiBoo"
       }
     }
+  },
+  "commandPalette": {
+    "open": "فتح لوحة الأوامر",
+    "trigger": "ابحث أو انتقل إلى…",
+    "placeholder": "ابحث في الأقسام ورحلاتك…",
+    "empty": "لا توجد نتائج مطابقة.",
+    "groupNavigation": "انتقل إلى",
+    "groupTrips": "رحلاتك"
   }
 }

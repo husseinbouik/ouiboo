@@ -74,7 +74,11 @@ export function AgencySidebar() {
       <button
         onClick={toggleCollapse}
         aria-label={isCollapsed ? t('sidebar.expandSidebar') : t('sidebar.collapseSidebar')}
-        className="absolute -end-3 top-20 bg-background border border-border rounded-full p-1.5 shadow-sm text-muted-foreground hover:text-primary z-50 opacity-0 group-hover:opacity-100 transition-opacity"
+        // #573: the collapse toggle was hover-only — unreachable on
+        // touch and invisible to keyboard users until hovered. It is
+        // now always visible on coarse pointers, fully visible on
+        // focus, and `hit-slop` keeps its 44px target (#490).
+        className="hit-slop absolute -end-3 top-20 bg-background border border-border rounded-full p-1.5 shadow-sm text-muted-foreground hover:text-primary z-50 opacity-100 [@media(hover:hover)]:opacity-40 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
       >
         {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </button>

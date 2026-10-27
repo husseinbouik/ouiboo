@@ -1128,5 +1128,13 @@
         "ADMIN_REVIEW": "Examen par l'administration OuiBoo"
       }
     }
+  },
+  "commandPalette": {
+    "open": "Ouvrir la palette de commandes",
+    "trigger": "Rechercher ou accéder à…",
+    "placeholder": "Rechercher parmi les sections et vos voyages…",
+    "empty": "Aucun résultat.",
+    "groupNavigation": "Accéder à",
+    "groupTrips": "Vos voyages"
   }
 }

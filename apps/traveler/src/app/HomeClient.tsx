@@ -145,7 +145,7 @@ export default function HomeClient({ featuredTrips, featuredTripsFetchFailed = f
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div className="max-w-2xl">
-              <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">{t('featured.title')}</h2>
+              <h2 className="oui-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">{t('featured.title')}</h2>
               <p className="text-lg text-muted-foreground">{t('featured.subtitle')}</p>
             </div>
             <Link href="/search" className="text-sunset-orange-dark font-semibold hover:text-orange-800 flex items-center gap-2 transition-colors">
@@ -179,13 +179,12 @@ export default function HomeClient({ featuredTrips, featuredTripsFetchFailed = f
                 </motion.div>
               ))
             ) : (
-                <div className="col-span-full py-20 text-center bg-card/70 rounded-3xl border border-dashed border-border">
-                    <div className="mx-auto h-12 w-12 text-muted-foreground">
-                        <Compass className="h-full w-full" />
-                    </div>
-                    <h3 className="mt-2 text-sm font-semibold text-foreground">{t('featured.emptyTitle')}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">{t('featured.emptySubtitle')}</p>
-                </div>
+                <EmptyState
+                    className="col-span-full py-20 rounded-3xl"
+                    icon={<Compass className="h-6 w-6" />}
+                    title={t('featured.emptyTitle')}
+                    description={t('featured.emptySubtitle')}
+                />
             )}
           </motion.div>
         </div>
@@ -195,7 +194,7 @@ export default function HomeClient({ featuredTrips, featuredTripsFetchFailed = f
       <section className="py-24 bg-muted/35">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="mx-auto max-w-2xl text-center mb-16">
-                <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">{t('categories.title')}</h2>
+                <h2 className="oui-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl">{t('categories.title')}</h2>
                 <p className="mt-4 text-lg text-muted-foreground">{t('categories.subtitle')}</p>
             </div>
             
