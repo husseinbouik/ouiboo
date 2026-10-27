@@ -16,13 +16,14 @@ Use these documents in order:
 2. [Deployment Start Here](./DEPLOYMENT_START_HERE.md)
 3. [Staging Setup Checklist](./STAGING_SETUP_CHECKLIST.md)
 4. [Production Release Runbook](./PRODUCTION_RELEASE_RUNBOOK.md)
-5. [Rollback And Post-Deploy Checklist](./ROLLBACK_AND_POST_DEPLOY_CHECKLIST.md)
-6. [Banking And Settlement Checklist](./BANKING_AND_SETTLEMENT_CHECKLIST.md)
-7. [Admin Finance Playbook](./ADMIN_FINANCE_PLAYBOOK.md)
-8. [Support Macros And Escalation Matrix](./SUPPORT_MACROS_AND_ESCALATION.md)
-9. [Environment Validation And Dress Rehearsal](./ENVIRONMENT_VALIDATION_AND_DRESS_REHEARSAL.md)
-10. [Provider Approval Tracker](./PROVIDER_APPROVAL_TRACKER.md)
-11. [Launch Day Go No Go](./LAUNCH_DAY_GO_NO_GO.md)
+5. [Release Runbook — Gated Manual Promotion Path](./RELEASE_RUNBOOK.md)
+6. [Rollback And Post-Deploy Checklist](./ROLLBACK_AND_POST_DEPLOY_CHECKLIST.md)
+7. [Banking And Settlement Checklist](./BANKING_AND_SETTLEMENT_CHECKLIST.md)
+8. [Admin Finance Playbook](./ADMIN_FINANCE_PLAYBOOK.md)
+9. [Support Macros And Escalation Matrix](./SUPPORT_MACROS_AND_ESCALATION.md)
+10. [Environment Validation And Dress Rehearsal](./ENVIRONMENT_VALIDATION_AND_DRESS_REHEARSAL.md)
+11. [Provider Approval Tracker](./PROVIDER_APPROVAL_TRACKER.md)
+12. [Launch Day Go No Go](./LAUNCH_DAY_GO_NO_GO.md)
 
 Expected owners:
 
