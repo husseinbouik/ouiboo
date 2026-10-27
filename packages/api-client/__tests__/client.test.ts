@@ -15,7 +15,17 @@ import {
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from 'axios';
-import { createApiClient, establishAppSession } from '../client';
+import axios from 'axios';
+import {
+  BROWSER_SESSION_HINT_KEY,
+  clearBrowserAccessToken,
+  createApiClient,
+  createBrowserApiClient,
+  establishAppSession,
+  hasBrowserSessionHint,
+  hasPossibleBrowserSession,
+  setBrowserAccessToken,
+} from '../client';
 
 const BASE_URL = 'https://api.example.test/api/v1';
 
@@ -148,5 +158,107 @@ describe('establishAppSession (#318, #234)', () => {
       'Failed to fetch',
     );
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('anonymous session probing (#245)', () => {
+  // Minimal browser stand-ins: the package runs its tests in node, where
+  // `window` is undefined and every hint helper must safely no-op. These
+  // stubs model the browser surface client.ts actually touches.
+  const storage = new Map<string, string>();
+  const localStorageStub = {
+    getItem: (key: string) => (storage.has(key) ? storage.get(key)! : null),
+    setItem: (key: string, value: string) => {
+      storage.set(key, value);
+    },
+    removeItem: (key: string) => {
+      storage.delete(key);
+    },
+    clear: () => storage.clear(),
+  };
+  const locationStub = { href: '' };
+  const fetchMock = jest.fn();
+
+  beforeEach(() => {
+    storage.clear();
+    locationStub.href = '';
+    (global as any).window = {
+      localStorage: localStorageStub,
+      location: locationStub,
+    };
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue({ ok: true, status: 200 });
+    global.fetch = fetchMock as unknown as typeof fetch;
+  });
+
+  afterEach(async () => {
+    await setBrowserAccessToken(null);
+    clearBrowserAccessToken();
+    jest.restoreAllMocks();
+    delete (global as any).window;
+  });
+
+  it('tracks the session hint alongside the token lifecycle', async () => {
+    expect(hasBrowserSessionHint()).toBe(false);
+    expect(hasPossibleBrowserSession()).toBe(false);
+
+    await setBrowserAccessToken('token-1');
+    expect(hasBrowserSessionHint()).toBe(true);
+    expect(hasPossibleBrowserSession()).toBe(true);
+
+    clearBrowserAccessToken();
+    expect(hasBrowserSessionHint()).toBe(false);
+    expect(hasPossibleBrowserSession()).toBe(false);
+  });
+
+  it('does not call /auth/refresh for a 401 when no session can exist', async () => {
+    const postSpy = jest
+      .spyOn(axios, 'post')
+      .mockRejectedValue(new Error('refresh must not be called'));
+    const client = createBrowserApiClient(BASE_URL);
+    let calls = 0;
+    client.defaults.adapter = async (
+      config: InternalAxiosRequestConfig,
+    ): Promise<AxiosResponse> => {
+      calls++;
+      throw httpError(config, 401);
+    };
+
+    await expect(client.get('/users/me')).rejects.toBeTruthy();
+
+    expect(calls).toBe(1);
+    expect(postSpy).not.toHaveBeenCalled();
+    // The anonymous profile probe must not bounce the visitor to login.
+    expect(locationStub.href).toBe('');
+  });
+
+  it('attempts the refresh when only the persisted hint remains (post-reload)', async () => {
+    // Fresh module registry = empty in-memory token, like after a reload;
+    // the hint in localStorage is the only trace of the earlier login.
+    let fresh: typeof import('../client');
+    let freshAxios: typeof axios;
+    jest.isolateModules(() => {
+      freshAxios = require('axios').default;
+      fresh = require('../client');
+    });
+    localStorageStub.setItem(BROWSER_SESSION_HINT_KEY, '1');
+    expect(fresh!.hasPossibleBrowserSession()).toBe(true);
+
+    const postSpy = jest
+      .spyOn(freshAxios!, 'post')
+      .mockRejectedValue(new Error('refresh cookie expired'));
+    const client = fresh!.createBrowserApiClient(BASE_URL);
+    client.defaults.adapter = async (
+      config: InternalAxiosRequestConfig,
+    ): Promise<AxiosResponse> => {
+      throw httpError(config, 401);
+    };
+
+    await expect(client.get('/users/me')).rejects.toBeTruthy();
+
+    expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(String(postSpy.mock.calls[0][0])).toContain('/auth/refresh');
+    // The failed restore clears the hint, so later loads stay silent.
+    expect(fresh!.hasBrowserSessionHint()).toBe(false);
   });
 });
