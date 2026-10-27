@@ -3,6 +3,7 @@ import {
   type BookingPaymentPlan,
   type BookingPaymentPlanStatusType,
   type BookingPaymentStatusType,
+  type BookingAttendanceType,
   type BookingStatusType,
   type PaymentMethodType,
   type RefundStatusType,
@@ -72,6 +73,10 @@ type BookingMapperInput = {
   /** #417: cancellation scale snapshot stored on the booking (Json). */
   cancellationScale?: unknown;
   /** #481: booking-terms version accepted at checkout (null if unrecorded). */
+  /** #434: attendance recorded by the agency (null until recorded). */
+  attendance?: string | null;
+  attendanceRecordedAt?: NullableDate;
+  attendanceRecordedBy?: string | null;
   termsVersion?: string | null;
   /** #481: server timestamp of the terms acceptance (null if unrecorded). */
   termsAcceptedAt?: NullableDate;
@@ -257,6 +262,10 @@ export const mapBookingDetails = (booking: BookingMapperInput): BookingDetails =
   // server acceptance timestamp + the checkout locale — the full
   // acceptance record. Null (never omitted) when not recorded, so
   // consumers can distinguish "unrecorded" from a missing field.
+  // #434: the attendance record (all null until the agency records it).
+  attendance: (booking.attendance as BookingAttendanceType | null | undefined) ?? null,
+  attendanceRecordedAt: toIsoString(booking.attendanceRecordedAt) ?? null,
+  attendanceRecordedBy: booking.attendanceRecordedBy ?? null,
   termsVersion: booking.termsVersion ?? null,
   termsAcceptedAt: toIsoString(booking.termsAcceptedAt) ?? null,
   locale: booking.locale ?? null,

@@ -345,6 +345,7 @@
       "bookingRejected": "Rejected",
       "bookingCancelled": "Cancelled",
       "bookingCompleted": "Completed",
+      "bookingNoShow": "No-Show",
       "verificationPending": "Pending",
       "verificationVerified": "Verified",
       "verificationRejected": "Rejected",

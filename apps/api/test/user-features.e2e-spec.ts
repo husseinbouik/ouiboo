@@ -292,7 +292,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
         const { traveler, agencyProfile } = await seedTestData();
         const template = await db.tripTemplate.create({ data: tripTemplateFixture({ agencyId: agencyProfile.id, title: 'Test Trip' }) });
         const session = await db.tripSession.create({ data: { templateId: template.id, startDate: futureDate(1), endDate: futureDate(2), price: 100, totalSeats: 10, availableSeats: 10 } as any });
-        const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'COMPLETED' } as any });
+        const booking = await db.booking.create({ data: { sessionId: session.id, travelerId: traveler.id, guestsCount: 1, totalAmount: 100, status: 'COMPLETED', attendance: 'ATTENDED', attendanceRecordedAt: new Date() } as any });
 
         const res = await request(app.getHttpServer())
             .post(`/bookings/${booking.id}/review`)
@@ -536,8 +536,9 @@ describe('User features E2E (user-features.e2e-spec)', () => {
         await request(app.getHttpServer()).post(`/users/wishlist/${template.id}`).set('Authorization', 'Bearer traveler').expect(201);
         // create booking
         const bookingRes = await request(app.getHttpServer()).post('/bookings').set('Authorization', 'Bearer traveler').send({ sessionId: session.id, guestsCount: 1, fullName: 'J', phoneNumber: '+1', paymentMethod: 'BANK_TRANSFER', termsAccepted: true, termsVersion: '1.0', locale: 'en' }).expect(201);
-        // mark as completed directly in DB for review
-        await db.booking.update({ where: { id: bookingRes.body.id }, data: { status: 'COMPLETED' } });
+        // mark as completed directly in DB for review — #434: review
+        // eligibility also requires recorded ATTENDED attendance.
+        await db.booking.update({ where: { id: bookingRes.body.id }, data: { status: 'COMPLETED', attendance: 'ATTENDED', attendanceRecordedAt: new Date() } });
         // review
         await request(app.getHttpServer()).post(`/bookings/${bookingRes.body.id}/review`).set('Authorization', 'Bearer traveler').send({ rating: 5, comment: 'Great' }).expect(201);
     });

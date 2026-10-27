@@ -409,3 +409,55 @@ describe('mapBookingDetails agency emergency contact (#419)', () => {
     expect(mapped.session.template.agency).not.toHaveProperty('emergencyContactName');
   });
 });
+
+describe('mapBookingDetails attendance (#434)', () => {
+  const baseBooking = (overrides: Record<string, unknown> = {}) => ({
+    id: 'booking-1',
+    sessionId: 'session-1',
+    travelerId: 'traveler-1',
+    bookingDate: new Date('2026-01-01T00:00:00.000Z'),
+    status: BookingStatus.Completed,
+    totalAmount: 1200,
+    guestsCount: 2,
+    paymentMethod: PaymentMethod.Manual,
+    paymentStatus: BookingPaymentStatus.Paid,
+    traveler: { email: 'traveler@example.com', name: 'John Doe' },
+    session: {
+      id: 'session-1',
+      templateId: 'template-1',
+      startDate: new Date('2026-02-01T00:00:00.000Z'),
+      endDate: new Date('2026-02-05T00:00:00.000Z'),
+      price: 600,
+      deposit: 100,
+      totalSeats: 12,
+      availableSeats: 10,
+      status: SessionStatus.Open,
+      template: {
+        id: 'template-1',
+        title: 'Atlas Trek',
+        startLocation: 'Marrakech',
+        images: ['cover.jpg'],
+        agency: { id: 'agency-1', companyName: 'Atlas Adventures' },
+      },
+    },
+    ...overrides,
+  }) as any;
+
+  it('surfaces the recorded attendance and its stamps', () => {
+    const mapped = mapBookingDetails(baseBooking({
+      attendance: 'ATTENDED',
+      attendanceRecordedAt: new Date('2026-02-05T09:30:00.000Z'),
+      attendanceRecordedBy: 'agency-user-1',
+    }));
+    expect(mapped.attendance).toBe('ATTENDED');
+    expect(mapped.attendanceRecordedAt).toBe('2026-02-05T09:30:00.000Z');
+    expect(mapped.attendanceRecordedBy).toBe('agency-user-1');
+  });
+
+  it('maps unrecorded attendance to explicit nulls', () => {
+    const mapped = mapBookingDetails(baseBooking());
+    expect(mapped.attendance).toBeNull();
+    expect(mapped.attendanceRecordedAt).toBeNull();
+    expect(mapped.attendanceRecordedBy).toBeNull();
+  });
+});

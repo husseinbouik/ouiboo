@@ -60,6 +60,7 @@ const BOOKING_STATUS_KEYS: Record<string, string> = {
   [BookingStatus.Rejected]: 'dashboard.status.bookingRejected',
   [BookingStatus.Cancelled]: 'dashboard.status.bookingCancelled',
   [BookingStatus.Completed]: 'dashboard.status.bookingCompleted',
+  [BookingStatus.NoShow]: 'dashboard.status.bookingNoShow',
 };
 
 const BOOKING_PAYMENT_STATUS_KEYS: Record<string, string> = {

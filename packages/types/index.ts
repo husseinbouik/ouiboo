@@ -382,7 +382,21 @@ export enum BookingStatus {
     PendingMinimum = "PENDING_MINIMUM",
     /** #369: staged payments — group minimum not reached by the deadline. */
     NotConfirmed = "NOT_CONFIRMED",
+    /** #434 (Council P1-08): agency recorded that the traveller did not attend. */
+    NoShow = "NO_SHOW",
 }
+
+/**
+ * #434 (Council P1-08): attendance recorded by the agency for a booking.
+ * Absent/null = not recorded yet. Only ATTENDED makes a completed
+ * booking review-eligible.
+ */
+export enum BookingAttendance {
+    Attended = "ATTENDED",
+    NoShow = "NO_SHOW",
+}
+
+export type BookingAttendanceType = BookingAttendance;
 
 export type BookingStatusType = BookingStatus;
 
@@ -421,6 +435,10 @@ export interface Booking {
     paymentGatewayMetadata?: Record<string, unknown>;
     fullName?: string;
     phoneNumber?: string;
+    /** #434: attendance recorded by the agency; null/absent = not recorded yet. */
+    attendance?: BookingAttendance | null;
+    attendanceRecordedAt?: string | null;
+    attendanceRecordedBy?: string | null;
 }
 
 export interface BookingTravelerSummary {

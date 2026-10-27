@@ -1135,6 +1135,87 @@ export class BookingsService {
         return updatedBooking.booking;
     }
 
+    /**
+     * #434 (Council P1-08): record attendance for a booking.
+     *
+     * Only the OWNING agency may record attendance (tenant check mirrors
+     * loadPaymentReviewContext, resolved from the agency profile — never
+     * from client input), and only once the trip has started: attendance
+     * is a departure fact, not a forecast. Eligible source states are
+     * CONFIRMED (recording attended completes the booking) and COMPLETED
+     * (the date-based job may complete a booking first; the agency can
+     * still record attendance afterwards — that recording is what makes
+     * the booking review-eligible, and recording NO_SHOW moves it out
+     * of COMPLETED into NO_SHOW).
+     *
+     * Recording is one-shot: replaying the SAME outcome is idempotent,
+     * but a recorded outcome cannot be flipped through this endpoint —
+     * attendance is the review-eligibility fact, so silent flips would
+     * let a no-show be rewritten into a reviewable attendance (or the
+     * reverse). Corrections are an admin/audit matter, not a toggle.
+     */
+    async markAttendance(bookingId: string, tenantId: string, actorUserId: string, attended: boolean) {
+        if (typeof attended !== 'boolean') {
+            throw new BadRequestException('attended must be a boolean');
+        }
+        const outcome = attended ? 'ATTENDED' : 'NO_SHOW';
+
+        const booking = await this.db.booking.findUnique({
+            where: { id: bookingId },
+            include: { session: { include: { template: true } } },
+        });
+        if (!booking) throw new BadRequestException('Booking not found');
+
+        const agency = await this.db.agencyProfile.findUnique({
+            where: { id: tenantId },
+        });
+        if (!agency || booking.session.template.agencyId !== agency.id) {
+            throw new ForbiddenException('Forbidden');
+        }
+
+        if (booking.attendance) {
+            if (booking.attendance === outcome) {
+                return booking;
+            }
+            throw new BadRequestException('Attendance has already been recorded for this booking');
+        }
+
+        if (booking.status !== 'CONFIRMED' && booking.status !== 'COMPLETED') {
+            throw new BadRequestException('Attendance can only be recorded for a confirmed booking');
+        }
+
+        if (booking.session.startDate > new Date()) {
+            throw new BadRequestException('Attendance cannot be recorded before the trip starts');
+        }
+
+        const claimed = await this.db.booking.updateMany({
+            where: { id: bookingId, status: booking.status, attendance: null },
+            data: {
+                status: attended ? 'COMPLETED' : 'NO_SHOW',
+                attendance: outcome,
+                attendanceRecordedAt: new Date(),
+                attendanceRecordedBy: actorUserId ?? null,
+            },
+        });
+        if (claimed.count !== 1) {
+            throw new BadRequestException('Attendance has already been recorded for this booking');
+        }
+
+        await this.db.auditLog
+            .create({
+                data: {
+                    actorId: actorUserId ?? null,
+                    action: 'BOOKING_ATTENDANCE_RECORDED',
+                    targetType: 'Booking',
+                    targetId: bookingId,
+                    metadata: { attendance: outcome, agencyId: agency.id },
+                },
+            })
+            .catch((err: unknown) => console.error('Audit log failed', err));
+
+        return this.db.booking.findUniqueOrThrow({ where: { id: bookingId } });
+    }
+
     async cancelBooking(bookingId: string, travelerId: string) {
         const booking = await this.db.booking.findUnique({
             where: { id: bookingId },

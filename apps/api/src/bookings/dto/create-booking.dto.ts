@@ -87,6 +87,18 @@ export class CreateBookingDto {
     termsVersion!: string;
 }
 
+/**
+ * #434 (Council P1-08): attendance recording by the owning agency.
+ * `attended: true` marks the traveller ATTENDED (the booking completes
+ * and becomes review-eligible); `attended: false` marks NO_SHOW (the
+ * booking moves to the NO_SHOW status and is never review-eligible).
+ */
+export class MarkAttendanceDto {
+    @ApiProperty({ example: true, description: 'Whether the traveller attended the trip' })
+    @IsBoolean()
+    attended!: boolean;
+}
+
 export class VerifyManualPaymentDto {
     @ApiProperty({ example: true })
     @IsBoolean()
