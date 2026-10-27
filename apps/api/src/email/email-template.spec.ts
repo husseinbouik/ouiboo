@@ -37,11 +37,34 @@ describe('email template safety', () => {
     const text = emailToPlainText(html)
 
     expect(html).toContain('name="viewport"')
-    expect(html).toContain('Travel made personal')
+    // #570: the shell carries the one canonical (Open Graph) tagline —
+    // the retired third variant must not reappear. With no recorded
+    // locale the shell renders the French default.
+    expect(html).toContain('Des voyages qui laissent des souvenirs')
+    expect(html).not.toContain('Travel made personal')
     expect(html).toContain('role="presentation"')
+    const htmlEn = renderEmail({
+      title: 'Booking received',
+      preheader: 'Your booking is in.',
+      content: emailParagraph('Hello'),
+      locale: 'en',
+    })
+    expect(htmlEn).toContain('Find trips worth remembering')
     expect(text).toContain('Booking received')
     expect(text).toContain('Your booking is ready.')
     expect(text).not.toContain('<p')
+  })
+
+  it('renders the pin mark in the header lockup (#570)', () => {
+    const html = renderEmail({
+      title: 'Booking received',
+      preheader: 'Your booking is in.',
+      content: emailParagraph('Hello'),
+    })
+    // The adopted pin logo: navy tile, white O ring, sunset-orange pin.
+    expect(html).toContain('<svg width="36" height="36" viewBox="0 0 32 32"')
+    expect(html).toContain('fill="#FF6B35"')
+    expect(html).toContain('fill="#0A192F"')
   })
 
   it('prevents header injection and masks recipient logs', () => {
@@ -61,6 +84,9 @@ describe('marketing email layout (#322)', () => {
       content: emailParagraph('Hello!'),
       unsubscribeUrl: 'https://api.ouiboo.test/api/v1/email/unsubscribe?t=abc.def',
       postalAddress: 'Ouiboo, 12 Rue Example, Casablanca, Morocco',
+      // Explicit locale: this test pins the English marketing copy
+      // (#570 made French the unrecorded-locale default).
+      locale: 'en',
     })
     expect(html).toContain('Ouiboo, 12 Rue Example, Casablanca, Morocco')
     expect(html).toContain('href="https://api.ouiboo.test/api/v1/email/unsubscribe?t=abc.def"')

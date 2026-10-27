@@ -4,7 +4,10 @@
 // layout sets <html lang> (and dir="rtl" for Arabic) and all subjects,
 // headings and body copy come from this table. The booking journey passes
 // the traveller's checkout locale (persisted on the Booking at creation);
-// recipients whose locale is not recorded keep the English default.
+// recipients whose locale is not recorded default to French (#570,
+// Council Session #3 P1-12) — French is the canonical language of this
+// Morocco-first product, so an unrecorded locale must not silently fall
+// back to English.
 //
 // Key parity across locales is enforced two ways: the FR/AR tables are
 // typed as EmailStrings (compile time) and email-i18n.spec.ts walks the
@@ -14,7 +17,7 @@
 export const EMAIL_LOCALES = ['en', 'fr', 'ar'] as const
 export type EmailLocale = (typeof EMAIL_LOCALES)[number]
 
-export const DEFAULT_EMAIL_LOCALE: EmailLocale = 'en'
+export const DEFAULT_EMAIL_LOCALE: EmailLocale = 'fr'
 
 export function normalizeEmailLocale(value?: string | null): EmailLocale {
   const base = value?.split('-')[0]?.toLowerCase()
@@ -41,7 +44,10 @@ export function fillEmailCopy(
 
 const en = {
   layout: {
-    tagline: 'Travel made personal',
+    // #570: the one canonical tagline — the Open Graph line ("Ouiboo —
+    // Find trips worth remembering"). The email shell previously carried
+    // a third variant ("Travel made personal") found nowhere else.
+    tagline: 'Find trips worth remembering',
     serviceFooter: 'This is a service message from Ouiboo.',
     allRightsReserved: 'All rights reserved.',
     marketingReceivedBecause:
@@ -246,7 +252,7 @@ export type EmailStrings = typeof en
 
 const fr: EmailStrings = {
   layout: {
-    tagline: 'Le voyage rendu personnel',
+    tagline: 'Des voyages qui laissent des souvenirs',
     serviceFooter: 'Ceci est un message de service de Ouiboo.',
     allRightsReserved: 'Tous droits réservés.',
     marketingReceivedBecause:
@@ -442,7 +448,7 @@ const fr: EmailStrings = {
 
 const ar: EmailStrings = {
   layout: {
-    tagline: 'سفر مصمم على مقاسك',
+    tagline: 'رحلات تستحق أن تبقى في الذاكرة',
     serviceFooter: 'هذه رسالة خدمة من Ouiboo.',
     allRightsReserved: 'جميع الحقوق محفوظة.',
     marketingReceivedBecause:

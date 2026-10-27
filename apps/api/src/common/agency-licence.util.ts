@@ -153,6 +153,34 @@ export function effectiveInsuranceStatus(
     return deriveEffectiveStatus(profile.insuranceStatus, profile.insuranceExpiry, now);
 }
 
+/**
+ * #569 (Council Session #3, P1-11): the umbrella `verificationStatus` is
+ * an identity check on its own — it does NOT by itself prove the travel
+ * licence or the RC insurance. A stored VERIFIED identity whose licence
+ * or insurance is not ALSO effectively verified (submitted, verified,
+ * unexpired) must never be published as an umbrella VERIFIED: any future
+ * surface reading only this field would publish a false claim. The
+ * stored row is never rewritten — public payloads derive the umbrella
+ * on read: VERIFIED only when identity + licence + insurance are all
+ * effectively VERIFIED, otherwise the identity's own stored status
+ * downgraded to PENDING while any component is outstanding. Internal
+ * gates keep reading the component fields directly (see
+ * getAgencyActivationBlock); this derivation is for display payloads.
+ */
+export function effectiveVerificationStatus(
+    profile: AgencyActivationProfile,
+    now: Date = new Date(),
+): string {
+    const stored = profile.verificationStatus ?? 'PENDING';
+    if (stored !== 'VERIFIED') {
+        return stored;
+    }
+    if (!isLicenceVerified(profile, now) || !isInsuranceVerified(profile, now)) {
+        return 'PENDING';
+    }
+    return 'VERIFIED';
+}
+
 export function isInsuranceVerified(profile: InsuranceProfileLike, now: Date = new Date()): boolean {
     return effectiveInsuranceStatus(profile, now) === 'VERIFIED';
 }

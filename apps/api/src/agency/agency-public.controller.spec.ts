@@ -83,6 +83,27 @@ describe('AgencyPublicController (#371, #413)', () => {
         expect(result.insuranceVerifiedAt).toBeNull();
     });
 
+    it('does not publish an umbrella VERIFIED while licence+insurance are NOT_SUBMITTED (#569)', async () => {
+        const { controller } = makeController({
+            ...baseAgency,
+            travelLicenceStatus: 'NOT_SUBMITTED',
+            licenceExpiry: null,
+            insuranceStatus: 'NOT_SUBMITTED',
+            insuranceExpiry: null,
+        });
+
+        const result = await controller.getPublicProfile('agency-1');
+
+        expect(result.verificationStatus).toBe('PENDING');
+        expect(result.licenceVerified).toBe(false);
+    });
+
+    it('keeps the umbrella VERIFIED when every component is verified (#569)', async () => {
+        const { controller } = makeController({ ...baseAgency });
+        const result = await controller.getPublicProfile('agency-1');
+        expect(result.verificationStatus).toBe('VERIFIED');
+    });
+
     it('throws when the agency does not exist', async () => {
         const { controller } = makeController(null);
         await expect(controller.getPublicProfile('missing')).rejects.toBeInstanceOf(

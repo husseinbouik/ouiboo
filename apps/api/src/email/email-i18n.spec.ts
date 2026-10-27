@@ -36,13 +36,13 @@ describe('email i18n (#424)', () => {
     for (const locale of EMAIL_LOCALES) walk(EMAIL_STRINGS[locale], locale)
   })
 
-  it('normalizes locale input and falls back to English', () => {
+  it('normalizes locale input and falls back to French for unrecorded locales (#570)', () => {
     expect(normalizeEmailLocale('fr')).toBe('fr')
     expect(normalizeEmailLocale('ar-MA')).toBe('ar')
     expect(normalizeEmailLocale('EN-us')).toBe('en')
-    expect(normalizeEmailLocale('de')).toBe('en')
-    expect(normalizeEmailLocale(null)).toBe('en')
-    expect(normalizeEmailLocale(undefined)).toBe('en')
+    expect(normalizeEmailLocale('de')).toBe('fr')
+    expect(normalizeEmailLocale(null)).toBe('fr')
+    expect(normalizeEmailLocale(undefined)).toBe('fr')
   })
 
   it('marks Arabic as RTL and the other locales as LTR', () => {
@@ -82,12 +82,13 @@ describe('localized transactional templates (#424)', () => {
     expect(t.subject).toContain('Réservation confirmée')
   })
 
-  it('keeps English as the default when no locale is recorded', () => {
+  it('defaults to French when no locale is recorded (#570)', () => {
     const html = service.getOTPTemplate('123456')
-    expect(html).toContain('<html lang="en" dir="ltr">')
-    expect(html).toContain('Verify your email address')
+    expect(html).toContain('<html lang="fr" dir="ltr">')
+    expect(html).toContain('Vérifiez votre adresse e-mail')
+    expect(html).not.toContain('Verify your email address')
     const htmlNull = service.getOTPTemplate('123456', null)
-    expect(htmlNull).toContain('<html lang="en" dir="ltr">')
+    expect(htmlNull).toContain('<html lang="fr" dir="ltr">')
   })
 
   it('sends the booking confirmation with a French subject and body', async () => {
@@ -131,7 +132,9 @@ describe('localized transactional templates (#424)', () => {
     const agencyMail = sendMail.mock.calls
       .map((call: any[]) => call[0])
       .find((mail: any) => mail.to === 'agency@example.com')
-    expect(agencyMail.html).toContain('<html lang="en" dir="ltr">')
+    // #570: the agency copy carries no recorded locale of its own, so it
+    // renders in the French default — not English.
+    expect(agencyMail.html).toContain('<html lang="fr" dir="ltr">')
   })
 
   it('repeats the cancellation scale in the booking-received email, in the traveller locale (#417)', async () => {
@@ -213,7 +216,7 @@ describe('EmailService — every template renders in FR and AR (#424)', () => {
             (l?: string) => service.getRefundActionRequiredSubject(l),
             (l?: string) => service.getRefundCaseOpenedSubject(l),
         ]) {
-            const [en, fr, ar] = [get(), get('fr'), get('ar')];
+            const [en, fr, ar] = [get('en'), get('fr'), get('ar')];
             expect(fr).not.toBe(en);
             expect(ar).not.toBe(en);
         }
@@ -237,10 +240,12 @@ describe('EmailService — every template renders in FR and AR (#424)', () => {
         expect(sent[0].subject).toBe(fillEmailCopy(emailStrings('ar').paymentReminder.subject, { tripTitle: 'Atlas Trek' }));
         expect(sent[0].html).toContain('dir="rtl"');
         expect(sent[1].subject).toBe(fillEmailCopy(emailStrings('fr').tripReminder.subject, { tripTitle: 'Atlas Trek' }));
-        expect(sent[2].subject).toBe(fillEmailCopy(emailStrings('en').tripReminder.subject, { tripTitle: 'Atlas Trek' }));
+        // #570: sends with no recorded locale (sent[2], sent[5]) render
+        // in the French default, not English.
+        expect(sent[2].subject).toBe(fillEmailCopy(emailStrings('fr').tripReminder.subject, { tripTitle: 'Atlas Trek' }));
         expect(sent[3].subject).toBe(fillEmailCopy(emailStrings('ar').reviewRequest.subject, { tripTitle: 'Atlas Trek' }));
         expect(sent[4].subject).toBe(fillEmailCopy(emailStrings('fr').autoUnpaidCancellation.subject, { tripTitle: 'Atlas Trek' }));
-        expect(sent[5].subject).toBe(emailStrings('en').subscriptionRenewal.subject);
+        expect(sent[5].subject).toBe(emailStrings('fr').subscriptionRenewal.subject);
     });
 });
 

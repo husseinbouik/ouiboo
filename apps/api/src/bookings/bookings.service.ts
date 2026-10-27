@@ -451,15 +451,25 @@ export class BookingsService {
 
         if (transactionResult.notification) {
             const notification = transactionResult.notification;
-            this.emailService.sendBookingNotification(
-                notification.travelerEmail,
-                notification.agencyEmail,
-                notification.bookingId,
-                notification.tripTitle,
-                notification.locale,
-                notification.cancellationScale,
-                notification.seller,
-            ).catch(() => undefined);
+            // #436 (Council P1-10): await the booking emails — the same
+            // serverless-freeze failure class as #409. An un-awaited send
+            // races the instance freeze after the response returns and the
+            // mail is lost. The send is awaited but never allowed to fail
+            // the booking: the booking is already committed, so a delivery
+            // error is logged, not thrown (the #410 auth pattern).
+            try {
+                await this.emailService.sendBookingNotification(
+                    notification.travelerEmail,
+                    notification.agencyEmail,
+                    notification.bookingId,
+                    notification.tripTitle,
+                    notification.locale,
+                    notification.cancellationScale,
+                    notification.seller,
+                );
+            } catch (error) {
+                console.error('Failed to send booking notification email', error);
+            }
         }
 
         return transactionResult.booking;
@@ -1107,11 +1117,19 @@ export class BookingsService {
         // The "payment confirmed" email means fully paid; a staged deposit
         // confirmation does not send it (the balance is still outstanding).
         if (updatedBooking.fullyPaid && booking.traveler?.email) {
-            this.emailService.sendPaymentConfirmation(
-                booking.traveler.email,
-                booking.session.template.title,
-                booking.locale,
-            ).catch(() => undefined);
+            // #436 (Council P1-10): awaited like the booking notification
+            // above — fire-and-forget loses this mail to the serverless
+            // freeze (#409). A delivery failure is logged, never thrown:
+            // the payment is already confirmed.
+            try {
+                await this.emailService.sendPaymentConfirmation(
+                    booking.traveler.email,
+                    booking.session.template.title,
+                    booking.locale,
+                );
+            } catch (error) {
+                console.error('Failed to send payment confirmation email', error);
+            }
         }
 
         return updatedBooking.booking;

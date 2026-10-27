@@ -1,7 +1,7 @@
 import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { DatabaseService } from '../database/database.service';
-import { effectiveInsuranceStatus, effectiveLicenceStatus } from '../common/agency-licence.util';
+import { effectiveInsuranceStatus, effectiveLicenceStatus, effectiveVerificationStatus } from '../common/agency-licence.util';
 
 @ApiTags('Agency Public')
 @Controller('agencies')
@@ -54,7 +54,10 @@ export class AgencyPublicController {
             companyName: agency.companyName,
             bio: agency.bio,
             logo: agency.logo,
-            verificationStatus: agency.verificationStatus,
+            // #569: the umbrella is reconciled with its components on
+            // read — VERIFIED only when identity + licence + insurance
+            // are all effectively verified (see agency-licence.util).
+            verificationStatus: effectiveVerificationStatus(agency),
             legalName: agency.legalName,
             licenceVerified,
             travelLicenceType: licenceVerified ? agency.travelLicenceType : null,

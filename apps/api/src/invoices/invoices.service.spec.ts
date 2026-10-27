@@ -136,6 +136,21 @@ describe('InvoicesService (#359)', () => {
         expect(db.invoice.create).not.toHaveBeenCalled();
     });
 
+    it('applies the env-path range validation to the per-request override (#443)', async () => {
+        bookings = [makeBooking('b1', '1000.00', 3)];
+        for (const bad of [0, -5, 100.01, 150]) {
+            const error = await service
+                .generateMonthlyInvoice('agency-1', 2026, 10, bad)
+                .catch((e: unknown) => e);
+            expect(error).toBeInstanceOf(BadRequestException);
+            expect((error as BadRequestException).message).toContain('COMMISSION_RATE_OUT_OF_RANGE');
+        }
+        expect(db.invoice.create).not.toHaveBeenCalled();
+        // Boundary: 100 is inside (0, 100] on both paths.
+        const invoice = await service.generateMonthlyInvoice('agency-1', 2026, 10, 100);
+        expect(invoice.commissionRate).toBe('100.00');
+    });
+
     it('uses the configured env rate when no per-request rate is given', async () => {
         process.env.OUIBOO_COMMISSION_RATE_PERCENT = '5';
         bookings = [makeBooking('b1', '2000.00', 3)];
