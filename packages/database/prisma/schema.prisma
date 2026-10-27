@@ -462,6 +462,7 @@ model AgencyProfile {
   verificationPausedAt      DateTime?
   verificationPauseReason   String?
   refundCases                 RefundCase[]
+  duplicateCreditFlags        DuplicateCreditFlag[]
   // #370: refund enforcement ladder (plan §16, level 2). Set while the
   // agency has an overdue refund case: NEW bookings are refused, existing
   // bookings are never touched. Null = not restricted.
@@ -597,6 +598,12 @@ model Booking {
   // nullable so the legacy rows remain representable.
   termsVersion                String?
   termsAcceptedAt             DateTime?
+  // #494 (B16): traveller-supplied booking-creation idempotency key.
+  // A replay returns the original booking; the payload hash makes the
+  // same key with a DIFFERENT payload a 409. Per-traveller unique
+  // index below; null when the client sent no key (legacy).
+  idempotencyKey              String?
+  idempotencyPayloadHash      String?
   paymentProofUrl             String?
   paymentProofId              String?              @unique
   paymentProof                PaymentProof?
@@ -629,7 +636,9 @@ model Booking {
   paymentAttempts             PaymentAttempt[]
   paymentPlan                 BookingPaymentPlan?
   refundCases                 RefundCase[]
+  duplicateCreditFlags        DuplicateCreditFlag[]
 
+  @@unique([travelerId, idempotencyKey])
   @@index([travelerId])
   @@index([sessionId])
   @@index([sessionId, status])
@@ -649,6 +658,11 @@ model PaymentProof {
   uploadedAt      DateTime           @default(now())
   rejectionReason String?
   status          VerificationStatus @default(PENDING)
+  // #494 (B16): proof-submission idempotency, same pattern as Booking
+  // — same key + same file hash returns the stored proof; different
+  // file is a 409. Null when no key was sent.
+  idempotencyKey        String?
+  idempotencyPayloadHash String?
 }
 
 // #368: A factual record of a traveller payment held OUTSIDE OuiBoo — by the
@@ -791,6 +805,42 @@ model RefundCase {
   @@index([travelerId, status])
   @@index([agencyId, status])
   @@index([status, refundDueAt])
+}
+
+enum DuplicateCreditFlagStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+// #494 (Council Session #2, B16): a duplicate bank credit reported by
+// an agency — a traveller who transfers twice creates two real credits
+// but only one recorded payment; the second is invisible to the
+// ledger. The agency flags the amount/reference it observed and admin
+// reconciles manually. Ops record only; never moves money.
+model DuplicateCreditFlag {
+  id                String                    @id @default(cuid())
+  bookingId         String
+  booking           Booking                   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  // The recorded payment the duplicate relates to, when one exists.
+  externalPaymentId String?
+  agencyId          String
+  agency            AgencyProfile             @relation(fields: [agencyId], references: [id])
+  reportedBy        String
+  amount            Decimal                   @db.Decimal(18, 2)
+  currency          String                    @default("MAD")
+  bankReference     String?
+  note              String?
+  status            DuplicateCreditFlagStatus @default(OPEN)
+  resolvedBy        String?
+  resolvedAt        DateTime?
+  resolutionNote    String?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  @@index([agencyId, status])
+  @@index([bookingId])
+  @@index([status, createdAt])
 }
 
 // #416 (Council P0-09): append-only completion evidence for a RefundCase.

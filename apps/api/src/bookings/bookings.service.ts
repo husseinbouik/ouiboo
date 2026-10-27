@@ -1,4 +1,5 @@
-import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { createHash } from 'node:crypto';
 import { CURRENT_BOOKING_TERMS_VERSION, UserRole } from '@ouiboo/types';
 import { DatabaseService } from '../database/database.service';
 import { CreateBookingDto, PaymentMethodEnum } from './dto/create-booking.dto';
@@ -8,7 +9,7 @@ import { BookingPaymentPlanStatus, BookingPaymentStatus, ExternalPaymentStage, P
 import { BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT, mapBookingDetails } from './booking-response.util';
 import { resolvePaymentProofDownloadUrl } from './payment-proof-url.util';
 import { Prisma } from '@ouiboo/database';
-import { decimalEqualsMoney, multiplyMoney, toMoneyDecimal } from '../common/money.util';
+import { decimalEqualsMoney, multiplyMoney, toMoneyDecimal, toMoneyString } from '../common/money.util';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
 import { isInsuranceVerified, isLicenceVerified } from '../common/agency-licence.util';
@@ -17,6 +18,112 @@ import {
 } from '../cancellation/cancellation.util';
 
 const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
+
+// The include shape create() builds its response from, shared with the
+// #494 idempotency replay lookup so a replayed response is built from
+// exactly the same data as the original one.
+const BOOKING_RESPONSE_INCLUDE = {
+    session: {
+        include: {
+            template: {
+                include: {
+                    agency: true,
+                },
+            },
+        },
+    },
+    traveler: {
+        select: {
+            email: true,
+            name: true,
+        },
+    },
+    paymentProof: true,
+    paymentPlan: true,
+    review: {
+        select: {
+            id: true,
+        },
+    },
+} satisfies Prisma.BookingInclude;
+
+// #494 (Council Session #2, B16): canonical payload hash for a booking
+// idempotency key — covers only the fields that define WHAT was booked;
+// a replay changing any of them under the same key is answered 409.
+export function bookingIdempotencyPayloadHash(dto: CreateBookingDto): string {
+    const canonical = JSON.stringify({
+        sessionId: dto.sessionId ?? null,
+        guestsCount: dto.guestsCount ?? null,
+        fullName: dto.fullName ?? null,
+        phoneNumber: dto.phoneNumber ?? null,
+        paymentMethod: dto.paymentMethod ?? null,
+        termsVersion: dto.termsVersion ?? null,
+        locale: dto.locale ?? null,
+    });
+    return createHash('sha256').update(canonical).digest('hex');
+}
+
+// Normalize an Idempotency-Key header: absent/blank opts out (legacy
+// behaviour); over-long keys are rejected, never truncated.
+function normalizeIdempotencyKey(rawKey?: string | null): string | null {
+    const key = rawKey?.trim();
+    if (!key) {
+        return null;
+    }
+    if (key.length > 200) {
+        throw new BadRequestException('Idempotency-Key is too long');
+    }
+    return key;
+}
+
+// #494: the API shape of a DuplicateCreditFlag (money as string,
+// dates as ISO strings), shared by the agency and admin surfaces.
+export function serializeDuplicateCreditFlag(flag: {
+    id: string;
+    bookingId: string;
+    externalPaymentId: string | null;
+    agencyId: string;
+    reportedBy: string;
+    amount: unknown;
+    currency: string;
+    bankReference: string | null;
+    note: string | null;
+    status: string;
+    resolvedBy: string | null;
+    resolvedAt: Date | null;
+    resolutionNote: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+}) {
+    return {
+        id: flag.id,
+        bookingId: flag.bookingId,
+        externalPaymentId: flag.externalPaymentId,
+        agencyId: flag.agencyId,
+        reportedBy: flag.reportedBy,
+        amount: toMoneyString(flag.amount as never),
+        currency: flag.currency,
+        bankReference: flag.bankReference,
+        note: flag.note,
+        status: flag.status,
+        resolvedBy: flag.resolvedBy,
+        resolvedAt: flag.resolvedAt ? flag.resolvedAt.toISOString() : null,
+        resolutionNote: flag.resolutionNote,
+        createdAt: flag.createdAt.toISOString(),
+        updatedAt: flag.updatedAt.toISOString(),
+    };
+}
+
+function isIdempotencyUniqueViolation(error: unknown): boolean {
+    if (!error || typeof error !== 'object') {
+        return false;
+    }
+    const candidate = error as { code?: unknown; meta?: { target?: unknown } };
+    if (candidate.code !== 'P2002') {
+        return false;
+    }
+    return JSON.stringify(candidate.meta?.target ?? '').includes('idempotencyKey');
+}
 
 @Injectable()
 export class BookingsService {
@@ -28,7 +135,27 @@ export class BookingsService {
         private stagedPaymentsService: StagedPaymentsService,
     ) { }
 
-    async create(travelerId: string, dto: CreateBookingDto) {
+    async create(travelerId: string, dto: CreateBookingDto, rawIdempotencyKey?: string) {
+        // #494 (Council Session #2, B16): idempotent creation — one
+        // client UUID per booking ATTEMPT, sent as Idempotency-Key.
+        // The lookup runs before all other validation on purpose: a
+        // replay returns the original booking even if the session has
+        // since closed (the operation already happened); the same key
+        // with a DIFFERENT payload is a client bug, answered 409.
+        const idempotencyKey = normalizeIdempotencyKey(rawIdempotencyKey);
+        const idempotencyPayloadHash = idempotencyKey
+            ? bookingIdempotencyPayloadHash(dto)
+            : null;
+        if (idempotencyKey) {
+            const replayed = await this.findBookingByIdempotencyKey(travelerId, idempotencyKey);
+            if (replayed) {
+                if (replayed.idempotencyPayloadHash !== idempotencyPayloadHash) {
+                    throw new ConflictException('Idempotency-Key was already used with a different booking payload');
+                }
+                return mapBookingDetails(replayed);
+            }
+        }
+
         if (!dto?.sessionId || typeof dto.sessionId !== 'string') {
             throw new BadRequestException('sessionId is required');
         }
@@ -124,7 +251,7 @@ export class BookingsService {
             }
         }
 
-        const transactionResult = await this.db.$transaction(async (tx) => {
+        const runCreateTransaction = () => this.db.$transaction(async (tx) => {
 
             // 2. Atomic update to reserve seats (Concurrent Safe)
             // returning count helps know if it succeeded
@@ -213,6 +340,11 @@ export class BookingsService {
                     // new bookings (NULL survives only on pre-B9 rows).
                     termsVersion: dto.termsVersion,
                     termsAcceptedAt: new Date(),
+                    // #494: persisted so a replayed request finds this
+                    // booking by (travelerId, key); null when the
+                    // caller sent no key.
+                    idempotencyKey,
+                    idempotencyPayloadHash,
                     paymentMethod: persistedPaymentMethod,
                 },
                 include: {
@@ -272,6 +404,28 @@ export class BookingsService {
             };
         });
 
+        let transactionResult: Awaited<ReturnType<typeof runCreateTransaction>>;
+        try {
+            transactionResult = await runCreateTransaction();
+        } catch (error) {
+            // #494: concurrent first-time requests with the same key
+            // both pass the pre-check; the loser hits the unique index
+            // inside its transaction and rolls back cleanly (no seats
+            // lost). Answer with the winner's booking — or 409 when
+            // the winner carried a different payload.
+            if (!idempotencyKey || !isIdempotencyUniqueViolation(error)) {
+                throw error;
+            }
+            const winner = await this.findBookingByIdempotencyKey(travelerId, idempotencyKey);
+            if (!winner) {
+                throw error;
+            }
+            if (winner.idempotencyPayloadHash !== idempotencyPayloadHash) {
+                throw new ConflictException('Idempotency-Key was already used with a different booking payload');
+            }
+            return mapBookingDetails(winner);
+        }
+
         if (transactionResult.notification) {
             const notification = transactionResult.notification;
             this.emailService.sendBookingNotification(
@@ -285,6 +439,15 @@ export class BookingsService {
         }
 
         return transactionResult.booking;
+    }
+
+    // #494: the stored booking for a traveller's idempotency key, with
+    // the response include — null when the key was never used.
+    private async findBookingByIdempotencyKey(travelerId: string, idempotencyKey: string) {
+        return this.db.booking.findFirst({
+            where: { travelerId, idempotencyKey },
+            include: BOOKING_RESPONSE_INCLUDE,
+        });
     }
 
     async findAllByTraveler(travelerId: string, page = 1, limit = 10) {
@@ -388,12 +551,13 @@ export class BookingsService {
         return mapBookingDetails(booking);
     }
 
-    async uploadPaymentProof(bookingId: string, userId: string, file: Express.Multer.File) {
+    async uploadPaymentProof(bookingId: string, userId: string, file: Express.Multer.File, rawIdempotencyKey?: string) {
         const booking = await this.db.booking.findUnique({
             where: { id: bookingId },
             include: {
                 session: { include: { template: true } },
                 paymentPlan: true,
+                paymentProof: true,
             },
         });
 
@@ -403,6 +567,26 @@ export class BookingsService {
 
         if (booking.travelerId !== userId) {
             throw new ForbiddenException('Forbidden');
+        }
+
+        // #494 (B16): idempotent proof submission — a replayed key
+        // with the SAME file returns the stored proof untouched (no
+        // re-upload, no status reset, no second pending record), even
+        // if the booking has since moved on; the same key with a
+        // DIFFERENT file is a 409. A genuinely new proof (new key,
+        // e.g. after a rejection) replaces the stored one below.
+        const proofIdempotencyKey = normalizeIdempotencyKey(rawIdempotencyKey);
+        const proofPayloadHash = proofIdempotencyKey && file?.buffer
+            ? createHash('sha256').update(file.buffer).digest('hex')
+            : null;
+        if (proofIdempotencyKey && booking.paymentProof?.idempotencyKey === proofIdempotencyKey) {
+            if (booking.paymentProof.idempotencyPayloadHash !== proofPayloadHash) {
+                throw new ConflictException('Idempotency-Key was already used with a different payment proof');
+            }
+            return {
+                ...booking.paymentProof,
+                downloadUrl: this.buildPaymentProofDownloadUrl(bookingId),
+            };
         }
 
         // #369 staged payments: the plan decides which payment step a proof
@@ -464,11 +648,17 @@ export class BookingsService {
                     uploadedAt: new Date(),
                     status: 'PENDING',
                     rejectionReason: null,
+                    // #494: the stored key always tracks the latest
+                    // accepted submission (null when it sent none).
+                    idempotencyKey: proofIdempotencyKey,
+                    idempotencyPayloadHash: proofPayloadHash,
                 },
                 create: {
                     bookingId,
                     imageUrl: uploadResult.filename,
                     status: 'PENDING',
+                    idempotencyKey: proofIdempotencyKey,
+                    idempotencyPayloadHash: proofPayloadHash,
                 },
             });
 
@@ -510,6 +700,76 @@ export class BookingsService {
                 downloadUrl,
             };
         });
+    }
+
+    // #494 (Council Session #2, B16): duplicate-credit flag. A
+    // traveller who transfers twice creates two real bank credits,
+    // but bank confirmation binds exactly one — the second is
+    // invisible to the ledger. The agency reports what it observed
+    // (amount + reference) here for admin reconciliation. Ops record
+    // only: a flag never moves money or mutates the ledger.
+    async createDuplicateCreditFlag(
+        bookingId: string,
+        tenantAgencyId: string,
+        reportedByUserId: string,
+        input: { amount: unknown; bankReference?: string | null; note?: string | null },
+    ) {
+        const booking = await this.db.booking.findUnique({
+            where: { id: bookingId },
+            select: {
+                id: true,
+                currency: true,
+                session: { select: { template: { select: { agencyId: true } } } },
+            },
+        });
+        if (!booking) {
+            throw new BadRequestException('Booking not found');
+        }
+        if (booking.session.template.agencyId !== tenantAgencyId) {
+            throw new ForbiddenException('You can only flag duplicate credits on your own bookings');
+        }
+
+        let amount: ReturnType<typeof toMoneyDecimal>;
+        try {
+            amount = toMoneyDecimal(input.amount as never);
+        } catch {
+            throw new BadRequestException('amount must be a valid money amount');
+        }
+        if (!amount.gt(0)) {
+            throw new BadRequestException('amount must be greater than zero');
+        }
+
+        // Link the flag to the booking's recorded payment when one
+        // exists, so admin reconciliation starts from the credit that
+        // WAS recorded.
+        const recordedPayment = await this.db.externalPayment.findFirst({
+            where: { bookingId },
+            orderBy: { createdAt: 'desc' },
+            select: { id: true },
+        });
+
+        const flag = await this.db.duplicateCreditFlag.create({
+            data: {
+                bookingId,
+                externalPaymentId: recordedPayment?.id ?? null,
+                agencyId: tenantAgencyId,
+                reportedBy: reportedByUserId,
+                amount,
+                currency: booking.currency || 'MAD',
+                bankReference: input.bankReference?.trim() || null,
+                note: input.note?.trim() || null,
+            },
+        });
+        return serializeDuplicateCreditFlag(flag);
+    }
+
+    async listDuplicateCreditFlagsForAgency(agencyId: string) {
+        const flags = await this.db.duplicateCreditFlag.findMany({
+            where: { agencyId },
+            orderBy: { createdAt: 'desc' },
+            take: 200,
+        });
+        return flags.map(serializeDuplicateCreditFlag);
     }
 
     async getPaymentProofFile(bookingId: string, userId: string, role?: string) {

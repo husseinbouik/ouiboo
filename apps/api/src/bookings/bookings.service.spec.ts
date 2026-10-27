@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BookingsService } from './bookings.service';
+import { BookingsService, bookingIdempotencyPayloadHash } from './bookings.service';
 import { DatabaseService } from '../database/database.service';
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { createHash } from 'node:crypto';
 import { UploadService } from '../upload/upload.service';
 import { EmailService } from '../email/email.service';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
@@ -41,6 +42,13 @@ const mockDatabaseService = {
     paymentProof: {
         upsert: jest.fn(),
         updateMany: jest.fn(),
+    },
+    externalPayment: {
+        findFirst: jest.fn(),
+    },
+    duplicateCreditFlag: {
+        create: jest.fn(),
+        findMany: jest.fn(),
     },
     agencyProfile: {
         findUnique: jest.fn(),
@@ -508,6 +516,9 @@ describe('BookingsService', () => {
                 include: {
                     session: { include: { template: true } },
                     paymentPlan: true,
+                    // #494: the stored proof is loaded for the
+                    // idempotency replay check.
+                    paymentProof: true,
                 },
             });
             expect(db.paymentProof.upsert).toHaveBeenCalled();
@@ -1186,6 +1197,249 @@ describe('BookingsService', () => {
                 confirmedAmount: 780,
                 bankReference: 'TRX-1',
             })).rejects.toThrow(ForbiddenException);
+        });
+    });
+
+    describe('idempotency (#494)', () => {
+        const createDto = {
+            sessionId: 'session-123',
+            guestsCount: 2,
+            fullName: 'Test Traveler',
+            phoneNumber: '+212600000000',
+            termsAccepted: true,
+            termsVersion: '1.0',
+            locale: 'en',
+        };
+
+        // A stored booking row in the replay lookup's shape.
+        const storedBookingRow = (overrides: Record<string, unknown> = {}) => ({
+            id: 'booking-original',
+            sessionId: 'session-123',
+            travelerId: 'user-123',
+            bookingDate: new Date(),
+            status: 'PENDING',
+            totalAmount: '500.00',
+            currency: 'MAD',
+            guestsCount: 2,
+            paymentMethod: 'MANUAL',
+            paymentStatus: 'UNPAID',
+            paymentPlan: null,
+            paymentProof: null,
+            review: null,
+            idempotencyKey: 'attempt-key-1',
+            idempotencyPayloadHash: bookingIdempotencyPayloadHash(createDto as never),
+            traveler: { email: 'traveler@example.com', name: 'Test Traveler' },
+            session: {
+                id: 'session-123',
+                templateId: 'template-1',
+                startDate: new Date(),
+                endDate: new Date(),
+                price: '250.00',
+                totalSeats: 10,
+                availableSeats: 8,
+                status: 'OPEN',
+                currency: 'MAD',
+                template: {
+                    id: 'template-1',
+                    title: 'Atlas Escape',
+                    startLocation: 'Marrakech',
+                    images: [],
+                    agencyId: 'agency-123',
+                    agency: { id: 'agency-123', companyName: 'Atlas' },
+                },
+            },
+            ...overrides,
+        });
+
+        it('replay with the same key returns the original booking without creating anything', async () => {
+            db.booking.findFirst.mockResolvedValue(storedBookingRow());
+
+            const result = await service.create('user-123', createDto as never, 'attempt-key-1');
+
+            expect(result.id).toBe('booking-original');
+            expect(db.booking.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+                where: { travelerId: 'user-123', idempotencyKey: 'attempt-key-1' },
+            }));
+            expect(db.$transaction).not.toHaveBeenCalled();
+            expect(db.booking.create).not.toHaveBeenCalled();
+            expect(db.tripSession.findUnique).not.toHaveBeenCalled();
+        });
+
+        it('replay with the same key but a different payload is a 409', async () => {
+            db.booking.findFirst.mockResolvedValue(storedBookingRow());
+
+            await expect(service.create('user-123', {
+                ...createDto,
+                guestsCount: 5,
+            } as never, 'attempt-key-1')).rejects.toThrow(ConflictException);
+            expect(db.booking.create).not.toHaveBeenCalled();
+        });
+
+        const availableSession = {
+            id: 'session-123',
+            status: 'OPEN',
+            startDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            price: 250,
+            template: {
+                status: 'ACTIVE',
+                title: 'Atlas Escape',
+                agency: {
+                    userId: 'agency-user-123',
+                    verificationStatus: 'VERIFIED',
+                    travelLicenceStatus: 'VERIFIED',
+                    licenceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+                    insuranceStatus: 'VERIFIED',
+                    insuranceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+                    subscriptionStatus: 'TRIAL',
+                    trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                    subscriptionEndsAt: null,
+                },
+            },
+        };
+
+        it('a fresh key is persisted on the created booking with its payload hash', async () => {
+            db.booking.findFirst.mockResolvedValue(null);
+            db.tripSession.findUnique.mockResolvedValue(availableSession);
+            db.tripSession.updateMany.mockResolvedValue({ count: 1 });
+            db.user.findUnique.mockResolvedValue(null);
+            db.booking.create.mockResolvedValue(storedBookingRow({ id: 'booking-new' }));
+
+            const result = await service.create('user-123', createDto as never, 'attempt-key-1');
+
+            expect(result.id).toBe('booking-new');
+            const createData = db.booking.create.mock.calls[0][0].data;
+            expect(createData.idempotencyKey).toBe('attempt-key-1');
+            expect(createData.idempotencyPayloadHash).toBe(bookingIdempotencyPayloadHash(createDto as never));
+        });
+
+        it('a lost race on the unique index returns the winning booking', async () => {
+            // Pre-check: no booking yet. In-transaction duplicate guard:
+            // none either. The create itself loses the unique race; the
+            // post-catch lookup finds the winner.
+            let findFirstCalls = 0;
+            db.booking.findFirst.mockImplementation(async () => {
+                findFirstCalls += 1;
+                return findFirstCalls >= 3 ? storedBookingRow() : null;
+            });
+            db.tripSession.findUnique.mockResolvedValue(availableSession);
+            db.tripSession.updateMany.mockResolvedValue({ count: 1 });
+            db.booking.create.mockRejectedValue({
+                code: 'P2002',
+                meta: { target: ['travelerId', 'idempotencyKey'] },
+            });
+
+            const result = await service.create('user-123', createDto as never, 'attempt-key-1');
+
+            expect(result.id).toBe('booking-original');
+        });
+
+        it('proof replay with the same key and file returns the stored proof untouched', async () => {
+            const fileHash = createHash('sha256').update(Buffer.from('file')).digest('hex');
+            db.booking.findUnique.mockResolvedValue({
+                ...mockBooking,
+                paymentPlan: null,
+                paymentProof: {
+                    id: 'proof-123',
+                    bookingId: 'booking-123',
+                    imageUrl: 'payment-proofs/booking-123/proof.png',
+                    uploadedAt: new Date(),
+                    status: 'PENDING',
+                    rejectionReason: null,
+                    idempotencyKey: 'proof-key-1',
+                    idempotencyPayloadHash: fileHash,
+                },
+            });
+
+            const result = await service.uploadPaymentProof('booking-123', 'user-123', {
+                originalname: 'proof.png',
+                mimetype: 'image/png',
+                size: 4,
+                buffer: Buffer.from('file'),
+            } as Express.Multer.File, 'proof-key-1');
+
+            expect(result.id).toBe('proof-123');
+            expect(uploadService.uploadFile).not.toHaveBeenCalled();
+            expect(db.paymentProof.upsert).not.toHaveBeenCalled();
+            expect(mockExternalPaymentsService.recordPaymentPendingInTransaction).not.toHaveBeenCalled();
+        });
+
+        it('proof replay with the same key but a different file is a 409', async () => {
+            db.booking.findUnique.mockResolvedValue({
+                ...mockBooking,
+                paymentPlan: null,
+                paymentProof: {
+                    id: 'proof-123',
+                    bookingId: 'booking-123',
+                    imageUrl: 'payment-proofs/booking-123/proof.png',
+                    uploadedAt: new Date(),
+                    status: 'PENDING',
+                    rejectionReason: null,
+                    idempotencyKey: 'proof-key-1',
+                    idempotencyPayloadHash: createHash('sha256').update(Buffer.from('file')).digest('hex'),
+                },
+            });
+
+            await expect(service.uploadPaymentProof('booking-123', 'user-123', {
+                originalname: 'other.png',
+                mimetype: 'image/png',
+                size: 5,
+                buffer: Buffer.from('other'),
+            } as Express.Multer.File, 'proof-key-1')).rejects.toThrow(ConflictException);
+            expect(uploadService.uploadFile).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('duplicate-credit flags (#494)', () => {
+        const flagBooking = {
+            id: 'booking-123',
+            currency: 'MAD',
+            session: { template: { agencyId: 'agency-123' } },
+        };
+
+        it('the owning agency can flag a duplicate credit; the flag links the recorded payment', async () => {
+            db.booking.findUnique.mockResolvedValue(flagBooking);
+            db.externalPayment.findFirst.mockResolvedValue({ id: 'payment-1' });
+            db.duplicateCreditFlag.create.mockImplementation(async ({ data }: never) => ({
+                id: 'flag-1',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                resolvedBy: null,
+                resolvedAt: null,
+                resolutionNote: null,
+                status: 'OPEN',
+                ...(data as object),
+            }));
+
+            const result = await service.createDuplicateCreditFlag('booking-123', 'agency-123', 'agency-user-1', {
+                amount: 200,
+                bankReference: 'DUP-REF-1',
+            });
+
+            expect(result.id).toBe('flag-1');
+            expect(result.status).toBe('OPEN');
+            expect(result.amount).toBe('200.00');
+            const createData = db.duplicateCreditFlag.create.mock.calls[0][0].data;
+            expect(createData.agencyId).toBe('agency-123');
+            expect(createData.externalPaymentId).toBe('payment-1');
+            expect(createData.bankReference).toBe('DUP-REF-1');
+        });
+
+        it('another agency cannot flag a duplicate credit on this booking', async () => {
+            db.booking.findUnique.mockResolvedValue(flagBooking);
+
+            await expect(service.createDuplicateCreditFlag('booking-123', 'agency-999', 'agency-user-9', {
+                amount: 200,
+            })).rejects.toThrow(ForbiddenException);
+            expect(db.duplicateCreditFlag.create).not.toHaveBeenCalled();
+        });
+
+        it('a non-positive amount is rejected', async () => {
+            db.booking.findUnique.mockResolvedValue(flagBooking);
+
+            await expect(service.createDuplicateCreditFlag('booking-123', 'agency-123', 'agency-user-1', {
+                amount: 0,
+            })).rejects.toThrow(BadRequestException);
+            expect(db.duplicateCreditFlag.create).not.toHaveBeenCalled();
         });
     });
 });
