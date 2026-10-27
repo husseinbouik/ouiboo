@@ -476,7 +476,8 @@
   "tripDetails": {
     "payment": "Payment",
     "directToAgency": "Direct to the agency",
-    "directPaymentNote": "You pay the agency directly — Ouiboo never holds your money. Uploading a payment proof does not settle the payment."
+    "directPaymentNote": "You pay the agency directly — Ouiboo never holds your money. Uploading a payment proof does not settle the payment.",
+    "morePhotos": "More photos"
   },
   "refunds": {
     "confirmReceipt": "Confirm receipt",

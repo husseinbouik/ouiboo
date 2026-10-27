@@ -194,6 +194,12 @@ export default function TripDetailsClient({
   const desktopTiles = galleryTiles.slice(0, 3);
   const hiddenTileCount = galleryTiles.length - desktopTiles.length;
   const firstHiddenTileIndex = hiddenTileCount > 0 ? galleryTiles[desktopTiles.length].index : -1;
+  // Session #3 P0-3 (#551): the desktop rail is a fixed 2-column grid.
+  // With an odd number of cells the last cell must span both columns —
+  // otherwise a lone tile (the common 2-image trip) renders as a narrow
+  // full-height strip beside an empty pale column.
+  const railCellCount = desktopTiles.length + (hiddenTileCount > 0 ? 1 : 0);
+  const spanLastRailCell = railCellCount % 2 === 1;
 
   // Touch swipe support for the main gallery image (mobile): a horizontal
   // swipe changes the photo, while vertical gestures still scroll the page.
@@ -310,19 +316,19 @@ export default function TripDetailsClient({
                   animate={{ opacity: 1, x: 0 }}
                   className="hidden lg:grid lg:col-span-5 grid-cols-2 auto-rows-fr gap-4 md:gap-6"
               >
-                  {desktopTiles.map(({ src, index }) => (
-                      <button key={index} type="button" className="relative min-h-36 rounded-[1.5rem] overflow-hidden shadow-lg border border-border/50 group" onClick={() => setActiveImage(index)} aria-label={`View image ${index + 1}`}>
+                  {desktopTiles.map(({ src, index }, tilePos) => (
+                      <button key={index} type="button" className={cn("relative min-h-36 rounded-[1.5rem] overflow-hidden shadow-lg border border-border/50 group", spanLastRailCell && hiddenTileCount === 0 && tilePos === desktopTiles.length - 1 && "lg:col-span-2")} onClick={() => setActiveImage(index)} aria-label={`View image ${index + 1}`}>
                           <SafeImage src={src} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - image ${index + 1}`} fill sizes="20vw" />
                           <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                       </button>
                   ))}
                   {hiddenTileCount > 0 ? (
-                    <button type="button" onClick={() => setActiveImage(firstHiddenTileIndex)} className="bg-muted/50 rounded-[1.5rem] flex items-center justify-center hover:bg-muted transition-colors border border-border" aria-label={`View ${hiddenTileCount} more images`}>
+                    <button type="button" onClick={() => setActiveImage(firstHiddenTileIndex)} className={cn("bg-muted/50 rounded-[1.5rem] flex items-center justify-center hover:bg-muted transition-colors border border-border", spanLastRailCell && "lg:col-span-2")} aria-label={`View ${hiddenTileCount} more images`}>
                         <span className="flex flex-col items-center gap-2">
                             <span className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground font-bold shadow-sm">
                                 +{hiddenTileCount}
                             </span>
-                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">View Gallery</span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">{t('tripDetails.morePhotos')}</span>
                         </span>
                     </button>
                   ) : null}

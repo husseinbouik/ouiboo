@@ -476,7 +476,8 @@
   "tripDetails": {
     "payment": "Paiement",
     "directToAgency": "Directement à l'agence",
-    "directPaymentNote": "Vous payez l'agence directement — Ouiboo ne détient jamais votre argent. L'envoi d'un justificatif ne règle pas le paiement."
+    "directPaymentNote": "Vous payez l'agence directement — Ouiboo ne détient jamais votre argent. L'envoi d'un justificatif ne règle pas le paiement.",
+    "morePhotos": "Plus de photos"
   },
   "refunds": {
     "confirmReceipt": "Confirmer la réception",

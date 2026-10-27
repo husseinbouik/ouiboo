@@ -476,7 +476,8 @@
   "tripDetails": {
     "payment": "الدفع",
     "directToAgency": "مباشرة إلى الوكالة",
-    "directPaymentNote": "تدفع للوكالة مباشرة — لا تحتفظ OuiBoo بأموالك أبدًا. إرسال إثبات الدفع لا يعني تسويته."
+    "directPaymentNote": "تدفع للوكالة مباشرة — لا تحتفظ OuiBoo بأموالك أبدًا. إرسال إثبات الدفع لا يعني تسويته.",
+    "morePhotos": "المزيد من الصور"
   },
   "refunds": {
     "confirmReceipt": "تأكيد الاستلام",
