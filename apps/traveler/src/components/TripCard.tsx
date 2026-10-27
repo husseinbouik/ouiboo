@@ -217,14 +217,14 @@ export function TripCard({ trip }: TripCardProps) {
             <button 
               onClick={prevImage}
               aria-label={t('tripCard.previousImage')}
-              className="absolute start-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+              className="absolute start-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-110 hit-slop"
             >
               <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
             </button>
             <button 
               onClick={nextImage}
               aria-label={t('tripCard.nextImage')}
-              className="absolute end-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+              className="absolute end-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-110 hit-slop"
             >
               <ChevronRight className="h-4 w-4 rtl:rotate-180" />
             </button>
