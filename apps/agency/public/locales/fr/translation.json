@@ -7,7 +7,8 @@
     "whatsapp": "WhatsApp",
     "facebook": "Facebook",
     "x": "X",
-    "telegram": "Telegram"
+    "telegram": "Telegram",
+    "opensAtLaunch": "Le partage ouvrira au lancement public"
   },
   "auth": {
     "errors": {
@@ -447,7 +448,9 @@
       "cancellationRemoveBand": "Retirer la tranche",
       "cancellationBandAtLeast": "{{days}} jours ou plus avant : remboursement de {{percent}} %",
       "cancellationBandLessThan": "Moins de {{days}} jours avant : remboursement de {{percent}} %",
-      "structureNote": "Les jours s'ajoutent et s'ordonnent en français, la structure canonique — cet onglet traduit uniquement le texte de chaque jour."
+      "structureNote": "Les jours s'ajoutent et s'ordonnent en français, la structure canonique — cet onglet traduit uniquement le texte de chaque jour.",
+      "livePreviewEmptyTitle": "Rien à prévisualiser pour le moment",
+      "livePreviewEmptyBody": "Ajoutez un titre, une description, un lieu ou une photo et l’aperçu de votre voyage apparaîtra ici."
     }
   },
   "payments": {
@@ -1128,6 +1131,25 @@
         "ADMIN_REVIEW": "Examen par l'administration OuiBoo"
       }
     }
+  },
+  "sharePreview": {
+    "title": "Aperçu du lien",
+    "liveNote": "Le partage est activé : voici l’aperçu que les réseaux sociaux afficheront pour ce voyage.",
+    "gatedNote": "Le partage est désactivé pendant la bêta : l’aperçu public actuel est la carte générique Ouiboo. Voici l’aperçu que ce voyage affichera à l’ouverture du partage au lancement public.",
+    "shareTextLabel": "Texte de partage",
+    "noPublicBase": "Aucune adresse voyageur publique n’est configurée pour ce build : aucun lien de partage ne peut être prévisualisé."
+  },
+  "betaNotAvailable": {
+    "title": "Pas dans la bêta",
+    "subtitle": "La bêta fermée est entièrement gratuite.",
+    "billingTitle": "La facturation et l’abonnement ne font pas partie de la bêta",
+    "walletTitle": "Les paiements ne sont pas actifs dans la bêta",
+    "body": "Pendant la bêta fermée, il n’y a ni frais de plateforme, ni abonnement, ni crédits — rien à payer à Ouiboo et rien à résilier. Cette surface ouvrira au lancement des formules payantes, après la bêta.",
+    "paymentsNote": "Les paiements des voyageurs sont distincts : les voyageurs paient votre agence directement (virement bancaire ou votre prestataire de paiement). Ouiboo ne détient jamais l’argent des voyageurs : il n’existe donc aucun solde Ouiboo à retirer.",
+    "viewPayments": "Voir les paiements reçus directement",
+    "viewBookings": "Voir les réservations",
+    "walletBannerTitle": "Bêta gratuite — ni frais, ni crédits",
+    "walletBannerBody": "Cette page enregistre les paiements des voyageurs versés directement à votre agence. Ouiboo ne détient pas l’argent et ne facture aucun frais pendant la bêta ; les totaux ci-dessous sont un relevé, pas un solde."
   },
   "commandPalette": {
     "open": "Ouvrir la palette de commandes",

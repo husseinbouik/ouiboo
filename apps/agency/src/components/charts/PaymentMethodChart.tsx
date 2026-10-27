@@ -18,7 +18,7 @@ export default function PaymentMethodChart({ data = { MANUAL: 0, GATEWAY: 0 } }:
   const total = transformed.reduce((s, r) => s + r.value, 0);
 
   return (
-    <Card className="rounded-[2.5rem] shadow-xl shadow-black/5 p-6">
+    <Card className="rounded-4xl shadow-xl shadow-black/5 p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-display font-black text-lg text-foreground">{t('charts.paymentMethod.title')}</h3>

@@ -89,8 +89,11 @@ export function TripBasicInfo({ t, form }: Props) {
             </>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-2">
+          {/* #578: locations get a wider track on large screens and the
+              inputs may ellipsize instead of clipping the End Location
+              placeholder mid-word (worst in FR/AR). */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1.3fr] gap-4">
+            <div className="space-y-2 min-w-0">
               <label className="text-sm font-semibold text-foreground">{t('trips.create.category')}</label>
               <select {...register('category')} className="w-full h-12 px-4 bg-background border border-border rounded-xl text-sm focus:outline-none text-foreground">
                 <option value="ADVENTURE">{t('trips.create.categoryAdventure')}</option>
@@ -100,13 +103,13 @@ export function TripBasicInfo({ t, form }: Props) {
                 <option value="NATURE">{t('trips.create.categoryNature')}</option>
               </select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-0">
               <label className="text-sm font-semibold text-foreground">{t('trips.create.startingLocation')}</label>
-              <Input {...register('startLocation')} placeholder={t('trips.create.startingLocationPlaceholder')} className="h-12" />
+              <Input {...register('startLocation')} placeholder={t('trips.create.startingLocationPlaceholder')} title={t('trips.create.startingLocationPlaceholder')} className="h-12 text-ellipsis" />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-0">
               <label className="text-sm font-semibold text-foreground">{t('trips.create.endLocation')}</label>
-              <Input {...register('endLocation')} placeholder={t('trips.create.endLocationPlaceholder')} className="h-12" />
+              <Input {...register('endLocation')} placeholder={t('trips.create.endLocationPlaceholder')} title={t('trips.create.endLocationPlaceholder')} className="h-12 text-ellipsis" />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
