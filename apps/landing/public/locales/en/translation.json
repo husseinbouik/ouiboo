@@ -264,5 +264,8 @@
     "privacyNotice": "privacy notice",
     "continueWithoutAnalytics": "Continue without analytics",
     "allowAnalytics": "Allow analytics"
+  },
+  "beta": {
+    "explainer": "Closed beta — invited travellers only; you always pay the agency directly."
   }
 }
