@@ -57,7 +57,7 @@ export default async function FeaturedTripsPage() {
             ))}
           </div>
         ) : (
-          <div className="rounded-[2rem] border border-dashed border-border bg-card/50 p-12 text-center">
+          <div className="rounded-3xl border border-dashed border-border bg-card/50 p-12 text-center">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted">
               <Sparkles className="h-7 w-7 text-sunset-orange" />
             </div>

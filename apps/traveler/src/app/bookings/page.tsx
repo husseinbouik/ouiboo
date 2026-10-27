@@ -224,7 +224,7 @@ export default function MyBookingsPage() {
         return (
             <div className="min-h-screen bg-background font-sans text-foreground overflow-hidden relative">
                 <div className="max-w-5xl mx-auto px-6 pt-32 pb-20">
-                    <div className="text-center py-20 bg-card/70 rounded-[2rem] border border-dashed border-border">
+                    <div className="text-center py-20 bg-card/70 rounded-3xl border border-dashed border-border">
                         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                             <Calendar className="h-8 w-8 text-muted-foreground" />
                         </div>
@@ -275,7 +275,7 @@ export default function MyBookingsPage() {
                             const showRetryPayment = canRetryTravelerPayment(booking);
 
                             return (
-                                <Card key={booking.id} className="group border border-border shadow-sm hover:shadow-lg transition-all duration-300 rounded-[2rem] overflow-hidden bg-card">
+                                <Card key={booking.id} className="group border border-border shadow-sm hover:shadow-lg transition-all duration-300 rounded-3xl overflow-hidden bg-card">
                                     <div className="flex flex-col md:flex-row">
                                         <div className="w-full md:w-72 h-48 md:h-auto overflow-hidden relative">
                                             <div className="absolute inset-0 bg-muted animate-pulse" />
@@ -534,7 +534,7 @@ export default function MyBookingsPage() {
                             );
                         })
                     ) : (
-<div className="text-center py-20 bg-card/70 rounded-[2rem] border border-dashed border-border">
+<div className="text-center py-20 bg-card/70 rounded-3xl border border-dashed border-border">
                             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Calendar className="h-8 w-8 text-muted-foreground" />
                             </div>

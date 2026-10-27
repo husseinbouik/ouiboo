@@ -43,12 +43,12 @@ export function CheckoutPayment({
   return (
     <div className="space-y-8 pt-10 border-t">
       <div className="flex items-center gap-4">
-        <div className="h-10 w-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black">2</div>
+        <div className="h-10 w-10 rounded-xl bg-success text-success-foreground flex items-center justify-center font-black">2</div>
         <h2 className="text-2xl font-black font-display">{t('checkout.bankTransfer')}</h2>
       </div>
 
       <div className={cn(
-        "p-6 rounded-[2rem] border-2 space-y-4",
+        "p-6 rounded-3xl border-2 space-y-4",
         hasBankDetails ? "border-primary/20 bg-primary/5" : "border-rose-200 bg-rose-50"
       )}>
         <div className="flex items-center gap-3">
@@ -89,7 +89,7 @@ export function CheckoutPayment({
       </div>
 
       {stagedInfo && hasBankDetails && (
-        <div className="p-6 rounded-[2rem] border-2 border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 space-y-3">
+        <div className="p-6 rounded-3xl border-2 border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 space-y-3">
           <div className="flex items-center gap-3">
             <Info className="h-6 w-6 text-amber-600" />
             <h4 className="font-black text-base">{t('checkout.stagedTitle', { agencyName: stagedInfo.agencyName })}</h4>
@@ -112,7 +112,7 @@ export function CheckoutPayment({
           <p className="text-xs font-black text-foreground uppercase tracking-widest">{t('checkout.uploadProofStep')}</p>
           <Badge variant="outline" className="text-[8px] font-black border-primary/20 text-primary">{t('checkout.uploadWithin24h')}</Badge>
         </div>
-        <label className="h-44 border-4 border-dashed border-muted rounded-[2rem] flex flex-col items-center justify-center gap-4 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-pointer group focus-within:ring-2 focus-within:ring-primary focus-within:border-primary/40">
+        <label className="h-44 border-4 border-dashed border-muted rounded-3xl flex flex-col items-center justify-center gap-4 hover:bg-primary/5 hover:border-primary/20 transition-all cursor-pointer group focus-within:ring-2 focus-within:ring-primary focus-within:border-primary/40">
           {/* #332: sr-only (not display:none) so the input stays in the
               Tab order and keyboard users can open the file picker; the
               label shows the focus ring via focus-within. */}

@@ -158,7 +158,7 @@ export default function CheckoutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           {/* Left: Form */}
           <div className="lg:col-span-8 space-y-8">
-            <Card className="border-none shadow-xl shadow-black/5 rounded-[2.5rem] overflow-hidden">
+            <Card className="border-none shadow-xl shadow-black/5 rounded-4xl overflow-hidden">
               <CardContent className="p-10 space-y-10">
                 <CheckoutGuestForm
                   trip={trip}

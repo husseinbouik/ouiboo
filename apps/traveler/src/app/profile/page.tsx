@@ -64,7 +64,7 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen bg-background pt-24 pb-20 transition-colors duration-300">
         <div className="max-w-3xl mx-auto px-6">
-          <Card className="rounded-[2rem] border border-dashed border-border/60 bg-card/80 p-10 text-center">
+          <Card className="rounded-3xl border border-dashed border-border/60 bg-card/80 p-10 text-center">
             <CardTitle className="text-2xl font-black text-foreground font-display">Sign in to manage your profile</CardTitle>
             <p className="mt-4 text-sm text-muted-foreground">
               Your traveler profile stores the name and avatar used across bookings, reviews, and support requests.
@@ -102,7 +102,7 @@ export default function ProfilePage() {
           <div className="h-1 w-24 bg-sunset-orange rounded-full shrink-0" />
         </div>
 
-        <Card className="border-none shadow-2xl shadow-deep-blue/5 dark:shadow-none dark:ring-1 dark:ring-border rounded-[2.5rem] overflow-hidden bg-card">
+        <Card className="border-none shadow-2xl shadow-deep-blue/5 dark:shadow-none dark:ring-1 dark:ring-border rounded-4xl overflow-hidden bg-card">
           <CardHeader className="p-10 pb-0">
             <CardTitle className="text-2xl font-black text-foreground font-display flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-sunset-orange/10 flex items-center justify-center">

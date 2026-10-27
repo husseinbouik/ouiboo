@@ -136,7 +136,7 @@ export default function CheckoutConfirmationPage() {
         <Card className="border-none shadow-2xl shadow-black/10 rounded-[3rem] overflow-hidden">
           <CardContent className="p-10 space-y-10">
             <div className="text-center space-y-4">
-              <div className="mx-auto h-20 w-20 rounded-[2rem] bg-success/10 text-success flex items-center justify-center">
+              <div className="mx-auto h-20 w-20 rounded-3xl bg-success/10 text-success flex items-center justify-center">
                 <CheckCircle2 className="h-10 w-10" />
               </div>
               <Badge className="mx-auto bg-success/10 text-success border-none px-4 py-1.5 rounded-full font-black uppercase text-[10px] tracking-widest">
@@ -165,18 +165,18 @@ export default function CheckoutConfirmationPage() {
             <div className="space-y-4">
               <p className="text-xs font-black uppercase tracking-widest text-foreground">{t('checkout.confirmation.statusTitle')}</p>
               {isLoading && (
-                <div className="rounded-[2rem] border border-border/60 bg-muted/20 px-5 py-4 text-sm font-semibold text-muted-foreground">
+                <div className="rounded-3xl border border-border/60 bg-muted/20 px-5 py-4 text-sm font-semibold text-muted-foreground">
                   {t('checkout.confirmation.loadingStatus')}
                 </div>
               )}
               {isGatewayVerificationInProgress && (
-                <div className="rounded-[2rem] border border-ocean-500/20 bg-ocean-500/10 px-5 py-4 text-sm font-semibold text-ocean-700 dark:text-ocean-300 flex items-center gap-3">
+                <div className="rounded-3xl border border-ocean-500/20 bg-ocean-500/10 px-5 py-4 text-sm font-semibold text-ocean-700 dark:text-ocean-300 flex items-center gap-3">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   {t('checkout.confirmation.finalizingGateway')}
                 </div>
               )}
               {verifyPaymentMutation.isError && (
-                <div className="rounded-[2rem] border border-danger/20 bg-danger/10 px-5 py-4 text-sm font-semibold text-danger flex items-center gap-3">
+                <div className="rounded-3xl border border-danger/20 bg-danger/10 px-5 py-4 text-sm font-semibold text-danger flex items-center gap-3">
                   <AlertCircle className="h-4 w-4" />
                   {t('checkout.confirmation.gatewayError')}
                 </div>
@@ -188,7 +188,7 @@ export default function CheckoutConfirmationPage() {
                     <div
                       key={item.title}
                       className={cn(
-                        "flex items-start gap-4 rounded-[2rem] border p-5",
+                        "flex items-start gap-4 rounded-3xl border p-5",
                         item.state === 'complete' ? "border-success/20 bg-success/10" : "border-border/60 bg-muted/20"
                       )}
                     >
@@ -212,16 +212,16 @@ export default function CheckoutConfirmationPage() {
 
               <div className="flex flex-col sm:flex-row gap-4">
               {isCancelled && retryCheckoutHref && (
-                <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-[1.5rem] bg-sunset-orange hover:bg-orange-600 text-white font-black border-none">
+                <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-sunset-orange hover:bg-orange-600 text-white font-black border-none">
                   <Link href={retryCheckoutHref} className="w-full sm:w-auto">
                     {t('checkout.confirmation.retryPayment')}
                   </Link>
                 </Button>
               )}
-              <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-[1.5rem] bg-deep-blue dark:bg-card text-white font-black">
+              <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-deep-blue dark:bg-card text-white font-black">
               <Link href="/bookings">{t('checkout.confirmation.viewBookings')}</Link>
             </Button>
-              <Button asChild variant="outline" className="w-full sm:w-auto h-14 px-8 rounded-[1.5rem] font-black">
+              <Button asChild variant="outline" className="w-full sm:w-auto h-14 px-8 rounded-2xl font-black">
               <Link href="/">{t('checkout.confirmation.backHome')}</Link>
             </Button>
             </div>

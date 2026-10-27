@@ -116,7 +116,7 @@ export function CheckoutSummary({
       <Button
         disabled={!canSubmit || isSubmitting}
         onClick={onSubmit}
-        className="w-full h-20 rounded-[2rem] text-xl font-black bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 border-none group px-10"
+        className="w-full h-20 rounded-3xl text-xl font-black bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 border-none group px-10"
       >
         {isSubmitting ? t('checkout.submitting') : t('checkout.completeBooking')} <CheckCircle2 className="h-6 w-6 ms-4 group-hover:scale-110 transition-transform" />
       </Button>

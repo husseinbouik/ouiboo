@@ -1,8 +1,49 @@
 import { isLocalhostUrl } from '@ouiboo/utils'
+import type { SupportedLanguage } from '@ouiboo/i18n/server'
 
 export const SITE_NAME = 'Ouiboo'
 export const SITE_DESCRIPTION =
   'Discover and book memorable trips from local travel experts, with clear details in one place.'
+
+/**
+ * Canonical brand copy (#563 traveller remainder, mirroring the landing
+ * alignment in PR #590). ONE tagline across traveller OG, landing OG and
+ * email: the email layout's taglines (en "Travel made personal",
+ * fr "Le voyage rendu personnel", ar "سفر مصمم على مقاسك"). The root
+ * layout's generateMetadata reads title/description/og:locale from here
+ * for the visitor's active locale instead of hard-coding English.
+ */
+export interface SiteCopy {
+  tagline: string
+  title: string
+  description: string
+  ogLocale: string
+}
+
+export const SITE_COPY: Record<SupportedLanguage, SiteCopy> = {
+  en: {
+    tagline: 'Travel made personal',
+    title: 'Ouiboo — Travel made personal',
+    description: SITE_DESCRIPTION,
+    ogLocale: 'en_US',
+  },
+  fr: {
+    tagline: 'Le voyage rendu personnel',
+    title: 'Ouiboo — Le voyage rendu personnel',
+    description:
+      "Découvrez et réservez des voyages mémorables auprès d'experts locaux, avec des détails clairs au même endroit.",
+    ogLocale: 'fr_FR',
+  },
+  ar: {
+    tagline: 'سفر مصمم على مقاسك',
+    title: 'Ouiboo — سفر مصمم على مقاسك',
+    description:
+      'اكتشف واحجز رحلات لا تُنسى من خبراء سفر محليين، بتفاصيل واضحة في مكان واحد.',
+    ogLocale: 'ar_MA',
+  },
+}
+
+export const OG_LOCALES = Object.values(SITE_COPY).map((copy) => copy.ogLocale)
 
 const LOCAL_DEV_TRAVELER_URL = 'http://localhost:3001'
 
