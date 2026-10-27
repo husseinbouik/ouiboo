@@ -3,18 +3,11 @@ import { render, screen } from '@testing-library/react';
 import { BetaBadge } from './BetaBadge';
 
 describe('BetaBadge (@ouiboo/ui)', () => {
-  const original = process.env.NEXT_PUBLIC_BETA_BADGE;
-
   afterEach(() => {
-    if (original === undefined) {
-      delete process.env.NEXT_PUBLIC_BETA_BADGE;
-    } else {
-      process.env.NEXT_PUBLIC_BETA_BADGE = original;
-    }
+    delete process.env.NEXT_PUBLIC_BETA_BADGE;
   });
 
   it('renders the BETA pill by default (flag unset)', () => {
-    delete process.env.NEXT_PUBLIC_BETA_BADGE;
     render(<BetaBadge />);
     const badge = screen.getByTestId('beta-badge');
     expect(badge.textContent).toBe('BETA');
