@@ -511,7 +511,7 @@ describe('User features E2E (user-features.e2e-spec)', () => {
         // wishlist
         await request(app.getHttpServer()).post(`/users/wishlist/${template.id}`).set('Authorization', 'Bearer traveler').expect(201);
         // create booking
-        const bookingRes = await request(app.getHttpServer()).post('/bookings').set('Authorization', 'Bearer traveler').send({ sessionId: session.id, guestsCount: 1, fullName: 'J', phoneNumber: '+1', paymentMethod: 'BANK_TRANSFER' }).expect(201);
+        const bookingRes = await request(app.getHttpServer()).post('/bookings').set('Authorization', 'Bearer traveler').send({ sessionId: session.id, guestsCount: 1, fullName: 'J', phoneNumber: '+1', paymentMethod: 'BANK_TRANSFER', termsAccepted: true, termsVersion: '1.0', locale: 'en' }).expect(201);
         // mark as completed directly in DB for review
         await db.booking.update({ where: { id: bookingRes.body.id }, data: { status: 'COMPLETED' } });
         // review

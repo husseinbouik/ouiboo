@@ -145,7 +145,8 @@
       "actor": "Acteur",
       "target": "Cible",
       "metadata": "Métadonnées",
-      "termsAccepted": "Conditions v{{version}} acceptées"
+      "termsAccepted": "Conditions v{{version}} acceptées",
+      "termsUnrecorded": "Version des conditions non enregistrée"
     },
     "actions": {
       "review": "Examiner",

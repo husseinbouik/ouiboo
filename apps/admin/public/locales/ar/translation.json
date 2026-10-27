@@ -145,7 +145,8 @@
       "actor": "المنفذ",
       "target": "الهدف",
       "metadata": "البيانات الوصفية",
-      "termsAccepted": "تم قبول الشروط الإصدار {{version}}"
+      "termsAccepted": "تم قبول الشروط الإصدار {{version}}",
+      "termsUnrecorded": "إصدار الشروط غير مسجل"
     },
     "actions": {
       "review": "مراجعة",

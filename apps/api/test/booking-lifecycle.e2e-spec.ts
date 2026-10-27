@@ -199,6 +199,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: session.id,
                 guestsCount: 2,
                 fullName: 'John Doe',
@@ -490,6 +491,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 .post('/bookings')
                 .set('Authorization', `Bearer traveler-1`)
                 .send({
+                    termsAccepted: true, termsVersion: '1.0', locale: 'en',
                     sessionId: session.id,
                     guestsCount: 2,
                     fullName: 'Traveler 1',
@@ -500,6 +502,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 .post('/bookings')
                 .set('Authorization', `Bearer traveler-2`)
                 .send({
+                    termsAccepted: true, termsVersion: '1.0', locale: 'en',
                     sessionId: session.id,
                     guestsCount: 2,
                     fullName: 'Traveler 2',
@@ -510,6 +513,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 .post('/bookings')
                 .set('Authorization', `Bearer traveler-3`)
                 .send({
+                    termsAccepted: true, termsVersion: '1.0', locale: 'en',
                     sessionId: session.id,
                     guestsCount: 2,
                     fullName: 'Traveler 3',
@@ -540,6 +544,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: session.id,
                 guestsCount: 2,
                 fullName: 'John Doe',
@@ -553,6 +558,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: session.id,
                 guestsCount: 2,
                 fullName: 'John Doe',
@@ -572,6 +578,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: session.id,
                 guestsCount: 2,
                 fullName: 'John Doe',
@@ -788,6 +795,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: session.id,
                 guestsCount: 2,
                 fullName: 'John Doe',
@@ -849,6 +857,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: session.id,
                 guestsCount: 2,
                 fullName: 'John Doe',
@@ -1141,6 +1150,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
@@ -1152,6 +1162,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: session.id,
                 guestsCount: 0,
                 fullName: 'John Doe',
@@ -1164,6 +1175,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: session.id,
                 guestsCount: -1,
                 fullName: 'John Doe',
@@ -1176,10 +1188,38 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: 'non-existent',
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
+            })
+            .expect(400);
+
+        // B9: no explicit terms acceptance — no booking is created
+        await request(app.getHttpServer())
+            .post('/bookings')
+            .set('Authorization', `Bearer traveler-token`)
+            .send({
+                sessionId: session.id,
+                guestsCount: 2,
+                fullName: 'John Doe',
+                phoneNumber: '+1234567890',
+                paymentMethod: 'BANK_TRANSFER',
+            })
+            .expect(400);
+
+        // B9: terms version outside the server allowlist
+        await request(app.getHttpServer())
+            .post('/bookings')
+            .set('Authorization', `Bearer traveler-token`)
+            .send({
+                termsAccepted: true, termsVersion: '9.9', locale: 'en',
+                sessionId: session.id,
+                guestsCount: 2,
+                fullName: 'John Doe',
+                phoneNumber: '+1234567890',
+                paymentMethod: 'BANK_TRANSFER',
             })
             .expect(400);
     });

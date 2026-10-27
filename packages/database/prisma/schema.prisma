@@ -587,11 +587,14 @@ model Booking {
   // language the traveller booked in. Null = not recorded (pre-#424
   // bookings and non-checkout paths) → emails use the default locale.
   locale                      String?
-  // #481: the version of the traveller booking terms the checkout
-  // displayed and the traveller accepted, plus the server timestamp of
-  // that acceptance — the evidence of which terms this booking was made
-  // under. Null = not recorded (pre-#481 bookings and clients that do
-  // not send a version); a booking is never blocked on recording it.
+  // #481 + B9 (Council Session #2): the version of the traveller
+  // booking terms the checkout displayed and the traveller accepted,
+  // plus the server timestamp of that acceptance — the evidence of
+  // which terms this booking was made under. Required for every new
+  // booking since B9 (explicit termsAccepted flag + server version
+  // allowlist + locale); Null only on pre-B9 bookings, which admin
+  // surfaces label "terms version unrecorded". The columns stay
+  // nullable so the legacy rows remain representable.
   termsVersion                String?
   termsAcceptedAt             DateTime?
   paymentProofUrl             String?

@@ -252,14 +252,16 @@ export default function BookingDetailsPage() {
                 </div>
               </div>
 
-              {/* #481: the terms this booking was made under — version +
-                  acceptance time, read-only evidence for the traveller. */}
+              {/* #481 + B9: the terms this booking was made under —
+                  version + acceptance time + checkout locale, read-only
+                  evidence for the traveller. */}
               {booking.termsVersion && (
                 <p className="text-xs text-muted-foreground">
                   Terms accepted: version {booking.termsVersion}
                   {booking.termsAcceptedAt
                     ? ` · ${format(new Date(booking.termsAcceptedAt), 'MMM dd, yyyy, HH:mm')}`
                     : ''}
+                  {booking.locale ? ` · locale: ${booking.locale}` : ''}
                 </p>
               )}
 

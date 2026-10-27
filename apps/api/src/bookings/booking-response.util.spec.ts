@@ -135,11 +135,23 @@ describe('mapBookingDetails', () => {
       expect(mapped.termsAcceptedAt).toBe('2026-01-01T00:05:00.000Z');
     });
 
+    it('surfaces the checkout locale recorded with the acceptance (B9)', () => {
+      const mapped = mapBookingDetails({
+        ...baseInput,
+        termsVersion: '1.0',
+        termsAcceptedAt: new Date('2026-01-01T00:05:00.000Z'),
+        locale: 'fr',
+      });
+
+      expect(mapped.locale).toBe('fr');
+    });
+
     it('maps an unrecorded acceptance to explicit nulls', () => {
       const mapped = mapBookingDetails(baseInput);
 
       expect(mapped.termsVersion).toBeNull();
       expect(mapped.termsAcceptedAt).toBeNull();
+      expect(mapped.locale).toBeNull();
     });
   });
 
