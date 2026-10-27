@@ -59,15 +59,16 @@ export function TripCard({ trip }: TripCardProps) {
   const nextSession = [...openSessions].sort((a, b) => {
     return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
   })[0];
-  const cheapestSession = sessions.length
-    ? sessions.reduce((cheapest, session) =>
-        Number(session.price || 0) < Number(cheapest.price || 0) ? session : cheapest,
-      )
+  const minPrice = sessions.length
+    ? Math.min(...sessions.map((session) => Number(session.price || 0)))
     : null;
-  const minPrice = cheapestSession ? Number(cheapestSession.price || 0) : null;
   // #498: format the price in the currency of the session that set it (which,
   // per the API invariant, is the trip currency). Fall back to the trip-level
   // currency, then to the formatter default when neither is present.
+  const cheapestSession =
+    minPrice === null
+      ? null
+      : (sessions.find((session) => Number(session.price || 0) === minPrice) ?? null);
   const priceCurrency = cheapestSession?.currency ?? trip.currency;
   const isAgencyVerified = trip.agency?.verificationStatus === VerificationStatus.Verified;
 
