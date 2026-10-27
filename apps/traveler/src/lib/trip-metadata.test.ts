@@ -1,3 +1,4 @@
+import { scrubShareClaimWords } from '@ouiboo/utils';
 import { buildTripMetadata, resolveTripCoverImage } from './trip-metadata';
 import { SITE_DESCRIPTION, absoluteTravelerUrl } from './site';
 
@@ -66,7 +67,10 @@ describe('buildTripMetadata (#468)', () => {
 
   it('falls back to the site description when nothing is available', () => {
     const metadata = buildTripMetadata({ id: 't4', title: 'Bare', description: null }, { sharingEnabled: true });
-    expect(metadata.description).toBe(SITE_DESCRIPTION);
+    // Gate-on preview text passes through the B12 claim scrubber; the site
+    // description carries no claim words after the #413 sweep, so it comes
+    // through unchanged.
+    expect(metadata.description).toBe(scrubShareClaimWords(SITE_DESCRIPTION));
   });
 });
 

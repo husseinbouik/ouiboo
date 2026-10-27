@@ -27,6 +27,18 @@ const baseProps = {
 };
 
 describe('TripDetailHeader (#468 share action)', () => {
+  // Council B12: sharing is gated OFF by default for the beta
+  // (NEXT_PUBLIC_SHARING_ENABLED). These cases exercise the header's own
+  // show/hide logic, so they opt the gate in explicitly; the gate itself
+  // has a dedicated case below.
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_SHARING_ENABLED = 'true';
+  });
+
+  afterEach(() => {
+    delete process.env.NEXT_PUBLIC_SHARING_ENABLED;
+  });
+
   it('shows the share action for an active trip', () => {
     render(<TripDetailHeader {...baseProps} tripStatus={TripStatus.Active} />);
     expect(screen.getByRole('button', { name: 'share.button' })).not.toBeNull();
@@ -45,6 +57,12 @@ describe('TripDetailHeader (#468 share action)', () => {
 
   it('hides the share action when the trip title is unavailable', () => {
     render(<TripDetailHeader {...baseProps} tripTitle={undefined} tripStatus={TripStatus.Active} />);
+    expect(screen.queryByRole('button', { name: 'share.button' })).toBeNull();
+  });
+
+  it('hides the share action while the B12 sharing gate is off', () => {
+    delete process.env.NEXT_PUBLIC_SHARING_ENABLED;
+    render(<TripDetailHeader {...baseProps} tripStatus={TripStatus.Active} />);
     expect(screen.queryByRole('button', { name: 'share.button' })).toBeNull();
   });
 });
