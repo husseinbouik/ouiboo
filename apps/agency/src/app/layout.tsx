@@ -1,4 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+
+// #491: viewport-fit=cover makes env(safe-area-inset-*) real on notched
+// devices; the pb-safe / pt-safe utilities in @ouiboo/tokens consume them.
+export const viewport: Viewport = {
+  viewportFit: "cover",
+};
 import Script from "next/script";
 import { Manrope } from "next/font/google";
 import "./globals.css";

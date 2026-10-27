@@ -213,3 +213,33 @@
     scroll-behavior: auto !important;
   }
 }
+/*
+ * #491: safe-area utilities (shared by every app via tokens.css).
+ * `viewport-fit=cover` is set in the app layouts, so on notched devices
+ * env(safe-area-inset-*) carries the real inset; elsewhere it is 0 and
+ * these utilities reduce to their plain spacing value.
+ *   pb-safe / pt-safe  — exactly the inset, no base spacing
+ *   pb-safe-3/4/5      — 0.75rem / 1rem / 1.25rem of base spacing + inset
+ * Use them on sticky/fixed bottom bars, sheet and drawer footers, and
+ * bottom-anchored CTAs so nothing sits under the home indicator.
+ */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+@utility pb-safe-3 {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+}
+
+@utility pb-safe-4 {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+@utility pb-safe-5 {
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+}
+
