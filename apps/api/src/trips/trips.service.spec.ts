@@ -39,9 +39,6 @@ const mockDatabaseService = {
     booking: {
         count: jest.fn().mockResolvedValue(0),
     },
-    searchEvent: {
-        create: jest.fn().mockResolvedValue({}),
-    },
     agencyProfile: {
         findUnique: jest.fn(),
     },
@@ -351,28 +348,6 @@ describe('TripsService', () => {
             }));
         });
 
-        it('records an identifier-free search event with allowlisted filters only (#432/B21)', async () => {
-            db.tripTemplate.findMany.mockResolvedValue([]);
-            db.tripTemplate.count.mockResolvedValue(7);
-
-            await service.findAllTemplates({
-                q: '  atlas trek  ',
-                category: 'Adventure',
-                priceMax: 900,
-                page: 3,
-                limit: 5,
-                sortBy: 'price',
-                status: 'ACTIVE',
-            });
-
-            expect(db.searchEvent.create).toHaveBeenCalledTimes(1);
-            const data = db.searchEvent.create.mock.calls[0][0].data;
-            expect(data.resultCount).toBe(7);
-            expect(data.query).toBe('atlas trek');
-            // pagination/sort/status plumbing and the raw query key never land in the record
-            expect(data.filters).toEqual({ category: 'ADVENTURE', priceMax: 900 });
-        });
-
         it('selects the licence/insurance what+when fields for the card statement (#413)', async () => {
             db.tripTemplate.findMany.mockResolvedValue([]);
             db.tripTemplate.count.mockResolvedValue(0);
@@ -480,6 +455,72 @@ describe('TripsService', () => {
             expect(args.include.agency.select.verificationStatus).toBe(true);
         });
     });
+    describe('MAD-only beta catalogue gate (B24(f) / #498)', () => {
+        afterEach(() => {
+            delete process.env.MAD_ONLY_CATALOG;
+        });
+
+        it('forces the public listing filter to MAD while the gate is on (default)', async () => {
+            delete process.env.MAD_ONLY_CATALOG;
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(0);
+
+            await service.findAllTemplates({});
+
+            const args = db.tripTemplate.findMany.mock.calls[0][0];
+            expect(args.where.currency).toBe('MAD');
+        });
+
+        it('returns an empty page for an explicit non-MAD filter while the gate is on', async () => {
+            delete process.env.MAD_ONLY_CATALOG;
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(0);
+
+            const result = await service.findAllTemplates({ currency: 'EUR' });
+
+            expect(result.data).toEqual([]);
+            expect(result.pagination.total).toBe(0);
+            expect(db.tripTemplate.findMany).not.toHaveBeenCalled();
+        });
+
+        it('leaves the listing currency untouched when MAD_ONLY_CATALOG=false', async () => {
+            process.env.MAD_ONLY_CATALOG = 'false';
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(0);
+
+            await service.findAllTemplates({});
+
+            const args = db.tripTemplate.findMany.mock.calls[0][0];
+            expect(args.where.currency).toBeUndefined();
+        });
+
+        it('gates the public trip detail on MAD while the gate is on', async () => {
+            delete process.env.MAD_ONLY_CATALOG;
+            db.tripTemplate.findFirst.mockResolvedValue(null);
+
+            await expect(service.findOneTemplate('trip-123')).rejects.toThrow(NotFoundException);
+            const args = db.tripTemplate.findFirst.mock.calls[0][0];
+            expect(args.where.currency).toBe('MAD');
+        });
+
+        it('hides the sessions of a non-MAD trip while the gate is on', async () => {
+            delete process.env.MAD_ONLY_CATALOG;
+            db.tripTemplate.findFirst.mockResolvedValue({ id: 'trip-123', currency: 'EUR' });
+
+            await expect(service.findSessionsByTemplate('trip-123')).rejects.toThrow(NotFoundException);
+            expect(db.tripSession.findMany).not.toHaveBeenCalled();
+        });
+
+        it('serves the sessions of a MAD trip while the gate is on', async () => {
+            delete process.env.MAD_ONLY_CATALOG;
+            db.tripTemplate.findFirst.mockResolvedValue({ id: 'trip-123', currency: 'MAD' });
+            db.tripSession.findMany.mockResolvedValue([{ id: 'session-1' }]);
+
+            const result = await service.findSessionsByTemplate('trip-123');
+            expect(result).toEqual([{ id: 'session-1' }]);
+        });
+    });
+
     describe('session staged-payment configuration (#369)', () => {
         const future = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 

@@ -260,6 +260,50 @@ describe('BookingsService', () => {
             expect(db.$transaction).not.toHaveBeenCalled();
         });
 
+        // B24(f) / #498: the MAD-only beta catalogue gate is enforced at
+        // booking creation, not just in the listing UI.
+        describe('MAD-only beta catalogue gate (B24(f) / #498)', () => {
+            const eurSession = {
+                ...availableSession,
+                currency: 'EUR',
+                template: { ...availableSession.template, currency: 'EUR' },
+            };
+
+            afterEach(() => {
+                delete process.env.MAD_ONLY_CATALOG;
+            });
+
+            it('rejects a non-MAD booking while the gate is on (default posture)', async () => {
+                delete process.env.MAD_ONLY_CATALOG;
+                db.tripSession.findUnique.mockResolvedValue(eurSession);
+
+                await expect(service.create('user-123', createDto)).rejects.toThrow(
+                    'This trip is not available for booking yet',
+                );
+                expect(db.$transaction).not.toHaveBeenCalled();
+                expect(db.booking.create).not.toHaveBeenCalled();
+            });
+
+            it('rejects a non-MAD booking when only the template carries the currency', async () => {
+                delete process.env.MAD_ONLY_CATALOG;
+                const { currency: _sessionCurrency, ...sessionWithoutCurrency } = eurSession;
+                db.tripSession.findUnique.mockResolvedValue(sessionWithoutCurrency);
+
+                await expect(service.create('user-123', createDto)).rejects.toThrow(
+                    'This trip is not available for booking yet',
+                );
+            });
+
+            it('allows a non-MAD booking when MAD_ONLY_CATALOG=false (deliberate opt-out)', async () => {
+                process.env.MAD_ONLY_CATALOG = 'false';
+                mockSuccessfulCreate();
+                db.tripSession.findUnique.mockResolvedValue(eurSession);
+
+                const result: any = await service.create('user-123', createDto);
+                expect(result.id).toBe('booking-new');
+            });
+        });
+
         it('checks for duplicate bookings after acquiring the session row', async () => {
             db.tripSession.findUnique.mockResolvedValue(availableSession);
             db.tripSession.updateMany.mockResolvedValue({ count: 1 });
