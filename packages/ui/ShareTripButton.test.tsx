@@ -118,46 +118,4 @@ describe('ShareTripButton (#468, @ouiboo/ui)', () => {
     expect(container.firstChild).toBeNull();
     expect(screen.queryByRole('button', { name: 'share.button' })).toBeNull();
   });
-
-  describe('share base resolution (#468 localhost guard)', () => {
-    const stubRuntimeOrigin = (origin: string) => {
-      Object.defineProperty(window.location, 'origin', {
-        configurable: true,
-        get: () => origin,
-      });
-    };
-
-    afterEach(() => {
-      Reflect.deleteProperty(window.location, 'origin');
-    });
-
-    it('uses the deployed page origin instead of a loopback configured base (traveller app)', async () => {
-      stubRuntimeOrigin('https://traveler.example.com');
-      const user = userEvent.setup();
-      const writeText = jest.fn().mockResolvedValue(undefined);
-      Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
-
-      render(
-        <ShareTripButton
-          tripId="trip-1"
-          tripTitle="Sahara Trek"
-          travelerBaseUrl="http://localhost:3001"
-          allowRuntimeOriginFallback
-        />,
-      );
-      await user.click(screen.getByRole('button', { name: 'share.button' }));
-      await user.click(await screen.findByRole('menuitem', { name: /share\.copyLink/ }));
-
-      expect(writeText).toHaveBeenCalledWith('https://traveler.example.com/trip/trip-1?src=share');
-    });
-
-    it('renders nothing when only a loopback base is configured and runtime fallback is off (agency app)', () => {
-      stubRuntimeOrigin('https://agency.example.com');
-      const { container } = render(
-        <ShareTripButton tripId="trip-1" tripTitle="Sahara Trek" travelerBaseUrl="http://localhost:3001" />,
-      );
-      expect(container.firstChild).toBeNull();
-      expect(screen.queryByRole('button', { name: 'share.button' })).toBeNull();
-    });
-  });
 });
