@@ -26,6 +26,12 @@ export class AgencyPublicController {
                 travelLicenceNumber: true,
                 travelLicenceStatus: true,
                 licenceExpiry: true,
+                // #413 (Council B10): what+when verification statement on the
+                // public profile — the licence check date and the RC
+                // insurance evidence date.
+                licenceVerifiedAt: true,
+                insuranceStatus: true,
+                insuranceVerifiedAt: true,
             }
         });
 
@@ -34,6 +40,7 @@ export class AgencyPublicController {
         }
 
         const licenceVerified = effectiveLicenceStatus(agency) === 'VERIFIED';
+        const insuranceVerified = agency.insuranceStatus === 'VERIFIED';
 
         return {
             id: agency.id,
@@ -44,6 +51,9 @@ export class AgencyPublicController {
             legalName: agency.legalName,
             licenceVerified,
             travelLicenceNumber: licenceVerified ? agency.travelLicenceNumber : null,
+            licenceVerifiedAt: licenceVerified ? agency.licenceVerifiedAt : null,
+            insuranceStatus: agency.insuranceStatus,
+            insuranceVerifiedAt: insuranceVerified ? agency.insuranceVerifiedAt : null,
         };
     }
 }

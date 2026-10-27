@@ -70,7 +70,7 @@
   },
   "checkout": {
     "title": "Finaliser la réservation",
-    "secureProcess": "Processus de paiement manuel sécurisé",
+    "secureProcess": "Paiement manuel à l'agence",
     "goBack": "Retour",
     "progressLabel": "Progression de la réservation",
     "stepGuestDetails": "Coordonnées",
@@ -328,6 +328,8 @@
     "spots_other": "{{count}} places",
     "soldOut": "Complet",
     "verifiedAgency": "Numéro de licence fourni par l'agence — non vérifié de manière indépendante",
+    "licenceChecked": "Licence vérifiée le {{date}}",
+    "insuranceEvidenced": "Assurance RC justifiée le {{date}}",
     "agencyPending": "Agence en attente",
     "days_one": "{{count}} jour",
     "days_other": "{{count}} jours",
@@ -462,7 +464,14 @@
   "seller": {
     "organisedAndSoldBy": "Organisé et vendu par {{name}}",
     "licence": "Licence d'agent de voyages : {{number}}",
+    "licenceChecked": "Document de licence vérifié le {{date}}",
+    "insuranceEvidenced": "Assurance RC justifiée le {{date}}",
     "poweredBy": "Propulsé par OuiBoo"
+  },
+  "tripDetails": {
+    "payment": "Paiement",
+    "directToAgency": "Directement à l'agence",
+    "directPaymentNote": "Vous payez l'agence directement — Ouiboo ne détient jamais votre argent. L'envoi d'un justificatif ne règle pas le paiement."
   },
   "refunds": {
     "confirmReceipt": "Confirmer la réception",

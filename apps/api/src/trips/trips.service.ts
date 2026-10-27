@@ -263,6 +263,14 @@ export class TripsService {
                                 // #317: the traveler card badges verified agencies from
                                 // this field; without it every card read "Agency Pending".
                                 verificationStatus: true,
+                                // #413 (Council B10): the card renders an explicit
+                                // what+when statement (what was checked + the date),
+                                // so the licence/insurance states and their
+                                // verification stamps ride along.
+                                travelLicenceStatus: true,
+                                licenceVerifiedAt: true,
+                                insuranceStatus: true,
+                                insuranceVerifiedAt: true,
                             },
                         },
                         _count: {
@@ -350,6 +358,12 @@ export class TripsService {
                         travelLicenceNumber: true,
                         travelLicenceStatus: true,
                         licenceExpiry: true,
+                        // #413 (Council B10): what+when verification statement
+                        // next to the seller identity — the licence check date
+                        // and the RC insurance evidence date.
+                        licenceVerifiedAt: true,
+                        insuranceStatus: true,
+                        insuranceVerifiedAt: true,
                     },
                 },
                 itinerary: {

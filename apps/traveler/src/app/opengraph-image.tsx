@@ -26,7 +26,7 @@ export default function OpenGraphImage() {
             Find trips worth remembering.
           </div>
           <div style={{ color: '#DCE8F2', display: 'flex', fontSize: 30, lineHeight: 1.35, marginTop: 32 }}>
-            Memorable experiences from local travel experts, with clear details and secure booking.
+            Memorable experiences from local travel experts, with clear details and direct payment to the agency.
           </div>
         </div>
         <div style={{ background: '#FF8A4C', borderRadius: 999, bottom: 64, display: 'flex', height: 24, position: 'absolute', right: 72, width: 24 }} />

@@ -4,7 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import Image from 'next/image';
 import { Badge } from '@ouiboo/ui';
-import { Calendar, Info, ShieldCheck, Banknote, UploadCloud, CheckCircle2, X, Clock } from 'lucide-react';
+import { Calendar, Info, Banknote, UploadCloud, CheckCircle2, X, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
 import { formatCurrency } from '@ouiboo/utils';
@@ -90,7 +90,7 @@ export function CheckoutPayment({
       {stagedInfo && hasBankDetails && (
         <div className="p-6 rounded-[2rem] border-2 border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 space-y-3">
           <div className="flex items-center gap-3">
-            <ShieldCheck className="h-6 w-6 text-amber-600" />
+            <Info className="h-6 w-6 text-amber-600" />
             <h4 className="font-black text-base">{t('checkout.stagedTitle', { agencyName: stagedInfo.agencyName })}</h4>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">
@@ -170,7 +170,7 @@ export function CheckoutPayment({
           </div>
           <div className="flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
             <div className="h-8 w-8 rounded-xl flex items-center justify-center bg-muted text-muted-foreground">
-              <ShieldCheck className="h-4 w-4" />
+              <Banknote className="h-4 w-4" />
             </div>
             <div>
               <p className="text-sm font-black text-foreground">{t('checkout.statusBankTitle')}</p>

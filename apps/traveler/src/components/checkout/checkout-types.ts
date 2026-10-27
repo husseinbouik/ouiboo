@@ -39,6 +39,10 @@ export type CheckoutTrip = {
     travelLicenceNumber?: string | null;
     travelLicenceStatus?: string | null;
     licenceExpiry?: string | null;
+    /** #413 (Council B10): what+when verification statement dates. */
+    licenceVerifiedAt?: string | null;
+    insuranceStatus?: string | null;
+    insuranceVerifiedAt?: string | null;
   } | null;
   images?: string[];
   /** #332: agency-provided alt text per image (index-aligned); may be absent. */

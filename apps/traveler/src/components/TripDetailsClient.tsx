@@ -5,13 +5,13 @@ import React, { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { 
-  MapPin, 
-  Clock, 
-  Users, 
-  Check, 
-  ChevronLeft, 
-  ShieldCheck,
+import {
+  MapPin,
+  Clock,
+  Users,
+  Check,
+  ChevronLeft,
+  Banknote,
   Star,
   X,
   ClipboardList
@@ -74,6 +74,10 @@ type TripDetails = {
     travelLicenceNumber?: string | null;
     travelLicenceStatus?: string | null;
     licenceExpiry?: string | null;
+    /** #413 (Council B10): what+when verification statement dates. */
+    licenceVerifiedAt?: string | null;
+    insuranceStatus?: string | null;
+    insuranceVerifiedAt?: string | null;
   } | null;
   sessions?: TripSession[];
   itinerary?: TripDay[];
@@ -363,7 +367,7 @@ export default function TripDetailsClient({
                     {[
                         { label: 'Duration', value: `${trip.durationDays}D / ${trip.durationNights}N`, icon: Clock },
                         { label: 'Available dates', value: openSessions.length > 0 ? `${openSessions.length} open` : 'On request', icon: Users },
-                        { label: 'Booking', value: 'Secure checkout', icon: ShieldCheck },
+                        { label: t('tripDetails.payment'), value: t('tripDetails.directToAgency'), icon: Banknote },
                     ].map((stat, i) => (
                         <div key={i} className="p-5 bg-card rounded-2xl border border-border shadow-sm flex flex-col gap-3">
                             <stat.icon className="h-5 w-5 text-sunset-orange" />
@@ -696,8 +700,8 @@ export default function TripDetailsClient({
                         >
                             Book Now
                         </Button>
-                        <p className="text-center text-xs text-muted-foreground mt-4 font-medium flex items-center justify-center gap-1">
-                            <ShieldCheck className="h-3 w-3" /> Secure payment through Ouiboo
+                        <p className="text-center text-xs text-muted-foreground mt-4 font-medium">
+                            {t('tripDetails.directPaymentNote')}
                         </p>
                     </div>
                 </div>
