@@ -557,7 +557,7 @@
     "greeting": "Hello, {{name}}",
     "subtitle": "Here is your agency command center for bookings, payments, and growth.",
     "liveSnapshot": "Live Snapshot",
-    "totalRevenue": "Total Revenue",
+    "grossBookedValue": "Gross booked value",
     "bookCount_one": "{{count}} booking",
     "bookCount_other": "{{count}} bookings",
     "proofCount_one": "{{count}} proof to review",
@@ -616,7 +616,10 @@
     "createNewTrip": "Create New Trip",
     "yourAgency": "Your Agency",
     "paymentsReceived": "Payments received",
+    "paymentsReceivedCaption": "Bank-confirmed money received from travellers",
     "paymentsPending": "Payments to verify",
+    "paymentsPendingCaption": "Traveller proofs uploaded, waiting for your bank confirmation",
+    "grossBookedValueCaption": "Total value of confirmed and completed bookings — not money received yet",
     "viewPayments": "View payments"
   },
   "status": {

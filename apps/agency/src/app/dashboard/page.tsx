@@ -72,7 +72,11 @@ type AgencyStatsResponse = {
   };
 };
 
-const formatCurrency = (amount: number) => amount.toLocaleString(undefined, {
+// Session #3 P0-10 (#432): coerce before formatting. The API returns
+// some totals as strings; String.prototype.toLocaleString ignores the
+// fraction/grouping options, which is how the dashboard rendered
+// "2,400.00" beside "2000.00" for the same currency on one screen.
+const formatCurrency = (amount: number) => Number(amount).toLocaleString(undefined, {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
@@ -157,9 +161,16 @@ export default function AgencyDashboard() {
   const activation = getAgencyActivationState(user?.agencyProfile);
   const activationBlock = activation.block;
 
+  // Session #3 P0-10 (#432, debate D3 "definitions, not deletion"): the
+  // received total and the booked total are different computations that
+  // SHOULD differ — keep both, Payments Received stays the hero, the
+  // other is labelled by what it is (gross booked value), and every card
+  // carries a one-line definition so the difference is explained on the
+  // card itself.
   const summaryCards = [
     {
       label: t('dashboard.paymentsReceived'),
+      caption: t('dashboard.paymentsReceivedCaption'),
       value: formatCurrency(Number(stats.payments.totalReceived || 0)),
       currency: t('dashboard.currency'),
       icon: Wallet,
@@ -169,6 +180,7 @@ export default function AgencyDashboard() {
     },
     {
       label: t('dashboard.paymentsPending'),
+      caption: t('dashboard.paymentsPendingCaption'),
       value: formatCurrency(Number(stats.payments.pendingVerificationAmount || 0)),
       currency: t('dashboard.currency'),
       icon: Clock,
@@ -177,8 +189,9 @@ export default function AgencyDashboard() {
       trendUp: null,
     },
     {
-      label: t('dashboard.totalRevenue'),
-      value: formatCurrency(stats.revenue || 0),
+      label: t('dashboard.grossBookedValue'),
+      caption: t('dashboard.grossBookedValueCaption'),
+      value: formatCurrency(Number(stats.revenue || 0)),
       currency: t('dashboard.currency'),
       icon: TrendingUp,
       color: 'bg-muted-foreground',
@@ -294,6 +307,7 @@ export default function AgencyDashboard() {
                   <h3 className="text-4xl font-black font-display tracking-tighter">
                     {stat.value} <span className="text-sm font-bold text-muted-foreground">{stat.currency}</span>
                   </h3>
+                  <p className="text-xs text-muted-foreground mt-1">{stat.caption}</p>
                 </div>
               </CardContent>
             </Card>

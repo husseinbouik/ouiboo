@@ -557,7 +557,7 @@
     "greeting": "Bonjour, {{name}}",
     "subtitle": "Voici votre centre de pilotage pour les réservations, les paiements et la croissance.",
     "liveSnapshot": "Aperçu en direct",
-    "totalRevenue": "Revenu total",
+    "grossBookedValue": "Valeur brute des réservations",
     "bookCount_one": "{{count}} réservation",
     "bookCount_other": "{{count}} réservations",
     "proofCount_one": "{{count}} justificatif à examiner",
@@ -616,7 +616,10 @@
     "createNewTrip": "Créer un nouveau circuit",
     "yourAgency": "Votre agence",
     "paymentsReceived": "Paiements reçus",
+    "paymentsReceivedCaption": "Argent confirmé par la banque, reçu des voyageurs",
     "paymentsPending": "Paiements à vérifier",
+    "paymentsPendingCaption": "Justificatifs envoyés par les voyageurs, en attente de votre confirmation bancaire",
+    "grossBookedValueCaption": "Valeur totale des réservations confirmées et terminées — pas encore de l'argent reçu",
     "viewPayments": "Voir les paiements"
   },
   "status": {

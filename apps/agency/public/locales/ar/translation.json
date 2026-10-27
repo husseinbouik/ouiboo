@@ -557,7 +557,7 @@
     "greeting": "مرحباً، {{name}}",
     "subtitle": "هذه هي مركز قيادة وكالتك للحجوزات والمدفوعات والنمو.",
     "liveSnapshot": "لقطة مباشرة",
-    "totalRevenue": "إجمالي الإيرادات",
+    "grossBookedValue": "القيمة الإجمالية للحجوزات",
     "bookCount_zero": "{{count}} حجوزات",
     "bookCount_one": "{{count}} حجز",
     "bookCount_other": "{{count}} حجوزات",
@@ -623,7 +623,10 @@
     "yourAgency": "وكالتك",
     "recentRequestsCount_zero": "{{count}} طلبات حديثة",
     "paymentsReceived": "المدفوعات المستلمة",
+    "paymentsReceivedCaption": "أموال مؤكدة بنكياً مستلمة من المسافرين",
     "paymentsPending": "مدفوعات للتحقق",
+    "paymentsPendingCaption": "إثباتات رفعها المسافرون، في انتظار تأكيدك البنكي",
+    "grossBookedValueCaption": "القيمة الإجمالية للحجوزات المؤكدة والمكتملة — ليست أموالاً مستلمة بعد",
     "viewPayments": "عرض المدفوعات"
   },
   "status": {
