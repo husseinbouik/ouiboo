@@ -6,6 +6,7 @@ import { toMoneyDecimal } from '../common/money.util';
 import { canOrganise, getAgencyActivationBlock } from '../common/agency-licence.util';
 import { visibleBankDetails } from '../common/bank-details.util';
 import { resolveStagedSessionConfig } from '../staged-payments/staged-payments.util';
+import { recordSearchEvent } from '../analytics/search-events';
 import {
     buildCancellationScaleSnapshot,
     normalizeCancellationPolicyInput,
@@ -283,6 +284,30 @@ export class TripsService {
                 }),
                 this.db.tripTemplate.count({ where }),
             ]);
+
+            // #432 / B21 (Council Session #2): this method serves the
+            // public catalog search (GET /trips) — record one
+            // identifier-free search event per call so the beta's
+            // zero-result rate is measurable. Best-effort by design:
+            // recordSearchEvent never throws.
+            await recordSearchEvent(this.db, {
+                query: q,
+                filters: {
+                    featured,
+                    category: category ? category.toUpperCase() : undefined,
+                    agencyId,
+                    currency,
+                    priceMin,
+                    priceMax,
+                    durationMin,
+                    durationMax,
+                    ratingMin,
+                    available,
+                    startDateFrom,
+                    startDateTo,
+                },
+                resultCount: total,
+            });
 
             return {
                 data: templates,
