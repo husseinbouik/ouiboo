@@ -25,6 +25,8 @@ Use these documents in order:
 11. [Provider Approval Tracker](./PROVIDER_APPROVAL_TRACKER.md)
 12. [Launch Day Go No Go](./LAUNCH_DAY_GO_NO_GO.md)
 13. [Beta Metrics — Interim Definitions](./BETA_METRICS.md)
+14. [Beta Ops Checklist](./BETA_OPS_CHECKLIST.md)
+15. [Incident Card](./INCIDENT_CARD.md)
 
 Expected owners:
 
