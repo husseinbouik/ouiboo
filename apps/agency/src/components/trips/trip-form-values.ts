@@ -1,10 +1,12 @@
 import type { CreateTripInput } from '@ouiboo/schemas';
-import type { TripStatusType } from '@ouiboo/types';
+import type { TripStatusType, TripTranslations } from '@ouiboo/types';
 
 /** Shape of the trip payload returned by GET /agency/trips/:id. */
 export type TripEditorData = CreateTripInput & {
   title: string;
   description: string;
+  /** #546: the stored language map (null on legacy payloads). */
+  translations?: TripTranslations | null;
   category: CreateTripInput['category'];
   startLocation: string;
   durationDays: number;
@@ -26,6 +28,9 @@ export function tripToFormValues(trip: TripEditorData): CreateTripInput {
   return {
     title: trip.title,
     description: trip.description,
+    // #546: the language tabs edit this map; omitting it from reset()
+    // would wipe the stored Arabic/English texts on save.
+    translations: trip.translations ?? undefined,
     category: trip.category,
     startLocation: trip.startLocation,
     endLocation: trip.endLocation,

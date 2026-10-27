@@ -116,7 +116,9 @@ export default function TripDetailsClient({
     enabled: !!tripId,
     initialData: initialTrip ?? undefined,
     queryFn: async () => {
-      const response = await apiClient.get(`/trips/${tripId}`);
+      // #546: trip text in the current UI language (the ISR server
+      // payload is the canonical French; this refetch localizes it).
+      const response = await apiClient.get(`/trips/${tripId}?locale=${i18n.language}`);
       return response.data;
     }
   });
