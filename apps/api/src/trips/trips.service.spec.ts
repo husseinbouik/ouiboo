@@ -31,6 +31,11 @@ const mockDatabaseService = {
         update: jest.fn(),
         delete: jest.fn(),
     },
+    // #584: the publish gate fetches canonical itinerary days when a
+    // transition does not carry them.
+    itineraryDay: {
+        findMany: jest.fn().mockResolvedValue([]),
+    },
     tripSession: {
         create: jest.fn(),
         update: jest.fn(),
