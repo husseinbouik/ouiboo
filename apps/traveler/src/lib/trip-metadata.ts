@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { absoluteTravelerUrl, metadataDescription } from '@/lib/site';
+import { isSharingEnabled, scrubShareClaimWords } from '@ouiboo/utils';
+import { absoluteTravelerUrl, metadataDescription, SITE_DESCRIPTION, SITE_NAME } from '@/lib/site';
 
 export type TripMetadataInput = {
   id: string;
@@ -23,14 +24,31 @@ export function resolveTripCoverImage(trip: TripMetadataInput): string | undefin
   return undefined;
 }
 
+export interface TripMetadataOptions {
+  /**
+   * Council B12: rich trip previews are gated by NEXT_PUBLIC_SHARING_ENABLED
+   * (default OFF for the closed beta). Injectable for tests; defaults to the
+   * env flag.
+   */
+  sharingEnabled?: boolean;
+}
+
 /**
  * Single source of truth for the public trip page metadata. Both the
  * segment layout and the page used to build their own (diverging) copies;
  * they now delegate here so the served Open Graph / Twitter tags are
  * deterministic: og:title, og:description, og:image (absolute cover URL)
  * and a summary_large_image Twitter card.
+ *
+ * Council B12: while sharing is gated off, a trip URL serves only a
+ * generic, claim-free preview — no agency-written title, description or
+ * cover image. When sharing is on, agency-written copy still passes
+ * through the claim-word scrubber before it can reach a preview card.
  */
-export function buildTripMetadata(trip: TripMetadataInput | null): Metadata {
+export function buildTripMetadata(
+  trip: TripMetadataInput | null,
+  options: TripMetadataOptions = {},
+): Metadata {
   if (!trip) {
     return {
       title: 'Trip not found — Ouiboo',
@@ -38,14 +56,37 @@ export function buildTripMetadata(trip: TripMetadataInput | null): Metadata {
     };
   }
 
-  const title = `${trip.title} — Ouiboo`;
-  const trimmedDescription = trip.description?.replace(/\s+/g, ' ').trim();
-  const description = trimmedDescription
-    ? metadataDescription(trip.description)
-    : trip.durationDays && trip.startLocation
-      ? `Book ${trip.title}, a ${trip.durationDays}-day trip from ${trip.startLocation}.`
-      : metadataDescription(trip.description);
   const canonicalPath = `/trip/${encodeURIComponent(trip.id)}`;
+  const sharingEnabled = options.sharingEnabled ?? isSharingEnabled();
+
+  if (!sharingEnabled) {
+    return {
+      title: SITE_NAME,
+      description: SITE_DESCRIPTION,
+      alternates: { canonical: canonicalPath },
+      openGraph: {
+        type: 'website',
+        title: SITE_NAME,
+        description: SITE_DESCRIPTION,
+        url: canonicalPath,
+      },
+      twitter: {
+        card: 'summary',
+        title: SITE_NAME,
+        description: SITE_DESCRIPTION,
+      },
+    };
+  }
+
+  const title = `${scrubShareClaimWords(trip.title)} — Ouiboo`;
+  const trimmedDescription = trip.description?.replace(/\s+/g, ' ').trim();
+  const description = scrubShareClaimWords(
+    trimmedDescription
+      ? metadataDescription(trip.description)
+      : trip.durationDays && trip.startLocation
+        ? `Book ${trip.title}, a ${trip.durationDays}-day trip from ${trip.startLocation}.`
+        : metadataDescription(trip.description),
+  );
   const coverImage = resolveTripCoverImage(trip);
 
   return {

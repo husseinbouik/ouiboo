@@ -16,7 +16,7 @@ describe('buildTripMetadata (#468)', () => {
       images: ['https://cdn.example.com/a.jpg', 'https://cdn.example.com/b.jpg'],
       durationDays: 3,
       startLocation: 'Imlil',
-    });
+    }, { sharingEnabled: true });
 
     expect(metadata.title).toBe('Atlas Hike — Ouiboo');
     expect(metadata.description).toBe('A great hike');
@@ -45,7 +45,7 @@ describe('buildTripMetadata (#468)', () => {
   });
 
   it('omits images when the trip has none, but keeps the large-image card', () => {
-    const metadata = buildTripMetadata({ id: 't2', title: 'No Photo', description: 'Desc', images: [] });
+    const metadata = buildTripMetadata({ id: 't2', title: 'No Photo', description: 'Desc', images: [] }, { sharingEnabled: true });
     const og = metadata.openGraph as { images?: unknown };
     const twitter = metadata.twitter as { card?: string; images?: unknown };
     expect(og.images).toBeUndefined();
@@ -60,13 +60,73 @@ describe('buildTripMetadata (#468)', () => {
       description: '   ',
       durationDays: 3,
       startLocation: 'Imlil',
-    });
+    }, { sharingEnabled: true });
     expect(metadata.description).toBe('Book Atlas Hike, a 3-day trip from Imlil.');
   });
 
   it('falls back to the site description when nothing is available', () => {
-    const metadata = buildTripMetadata({ id: 't4', title: 'Bare', description: null });
+    const metadata = buildTripMetadata({ id: 't4', title: 'Bare', description: null }, { sharingEnabled: true });
     expect(metadata.description).toBe(SITE_DESCRIPTION);
+  });
+});
+
+describe('buildTripMetadata sharing gate (Council B12)', () => {
+  const trip = {
+    id: 'trip 1',
+    title: 'Atlas Hike',
+    description: 'A great hike',
+    images: ['https://cdn.example.com/a.jpg'],
+    durationDays: 3,
+    startLocation: 'Imlil',
+  };
+
+  it('serves only a generic, claim-free preview while the gate is off', () => {
+    const metadata = buildTripMetadata(trip, { sharingEnabled: false });
+
+    expect(metadata.title).toBe('Ouiboo');
+    expect(metadata.description).toBe(SITE_DESCRIPTION);
+    expect(metadata.alternates?.canonical).toBe('/trip/trip%201');
+
+    const og = metadata.openGraph as { title?: string; description?: string; images?: unknown };
+    expect(og.title).toBe('Ouiboo');
+    expect(og.description).toBe(SITE_DESCRIPTION);
+    expect(og.images).toBeUndefined();
+
+    const twitter = metadata.twitter as { card?: string; title?: string; images?: unknown };
+    expect(twitter.card).toBe('summary');
+    expect(twitter.title).toBe('Ouiboo');
+    expect(twitter.images).toBeUndefined();
+
+    // No agency-written copy anywhere in the preview.
+    expect(JSON.stringify(metadata)).not.toContain('Atlas Hike');
+    expect(JSON.stringify(metadata)).not.toContain('cdn.example.com');
+  });
+
+  it('defaults to the env flag: off when unset, on when "true"', () => {
+    const previous = process.env.NEXT_PUBLIC_SHARING_ENABLED;
+    try {
+      delete process.env.NEXT_PUBLIC_SHARING_ENABLED;
+      expect(buildTripMetadata(trip).title).toBe('Ouiboo');
+      process.env.NEXT_PUBLIC_SHARING_ENABLED = 'true';
+      expect(buildTripMetadata(trip).title).toBe('Atlas Hike — Ouiboo');
+    } finally {
+      if (previous === undefined) delete process.env.NEXT_PUBLIC_SHARING_ENABLED;
+      else process.env.NEXT_PUBLIC_SHARING_ENABLED = previous;
+    }
+  });
+
+  it('scrubs claim words from agency-written copy in rich previews', () => {
+    const metadata = buildTripMetadata(
+      {
+        id: 't9',
+        title: 'Secure Atlas Hike',
+        description: 'A guaranteed, protected trek with a verified guide',
+        images: [],
+      },
+      { sharingEnabled: true },
+    );
+    expect(metadata.title).toBe('Atlas Hike — Ouiboo');
+    expect(metadata.description).toBe('A trek with a guide');
   });
 });
 
