@@ -20,9 +20,16 @@ window.HTMLElement.prototype.scrollIntoView = () => {};
 const SHARE_URL = `${TRAVELER_URL}/trip/trip-1?src=share`;
 
 describe('ShareTripButton (#468, traveler)', () => {
+  // Council B12: sharing is gated OFF by default — these suites exercise
+  // the enabled path, so they opt in explicitly per test.
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_SHARING_ENABLED = 'true';
+  });
+
   afterEach(() => {
     Reflect.deleteProperty(navigator, 'share');
     Reflect.deleteProperty(navigator, 'clipboard');
+    delete process.env.NEXT_PUBLIC_SHARING_ENABLED;
     jest.restoreAllMocks();
   });
 
@@ -79,5 +86,12 @@ describe('ShareTripButton (#468, traveler)', () => {
       text: 'share.text',
       url: SHARE_URL,
     });
+  });
+
+  it('renders nothing while the sharing gate is off (Council B12)', () => {
+    delete process.env.NEXT_PUBLIC_SHARING_ENABLED;
+    const { container } = render(<ShareTripButton tripId="trip-1" tripTitle="Sahara Trek" travelerBaseUrl={TRAVELER_URL} />);
+    expect(container.firstChild).toBeNull();
+    expect(screen.queryByRole('button', { name: 'share.button' })).toBeNull();
   });
 });

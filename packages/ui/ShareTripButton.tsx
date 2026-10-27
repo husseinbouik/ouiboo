@@ -8,6 +8,7 @@ import {
   canUseNativeShare,
   copyShareLink,
   getShareTargets,
+  isSharingEnabled,
   type ShareTargetId,
 } from '@ouiboo/utils';
 import { Button } from './Button';
@@ -45,6 +46,11 @@ export interface ShareTripButtonProps {
  * Telegram intents and a copy-link action with visible confirmation.
  * Shared by the traveller and agency apps — the apps only supply their
  * base URL and share source.
+ *
+ * Council B12: sharing is gated OFF by default for the closed beta
+ * (NEXT_PUBLIC_SHARING_ENABLED, see isSharingEnabled in @ouiboo/utils) —
+ * the button renders nothing in either app until the flag is set to
+ * 'true' deliberately at public launch.
  */
 export function ShareTripButton({
   tripId,
@@ -72,6 +78,12 @@ export function ShareTripButton({
     },
     [],
   );
+
+  // Council B12 gate (after hooks, per the rules of hooks): no share
+  // affordance at all while sharing is disabled.
+  if (!isSharingEnabled()) {
+    return null;
+  }
 
   const payload = buildSharePayload({
     travelerBaseUrl,

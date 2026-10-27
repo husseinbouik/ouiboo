@@ -9,6 +9,8 @@ import {
   canUseNativeShare,
   copyShareLink,
   getShareTargets,
+  isSharingEnabled,
+  scrubShareClaimWords,
 } from './share';
 
 describe('trip share helpers (#468)', () => {
@@ -116,6 +118,52 @@ describe('trip share helpers (#468)', () => {
     it('reports failure without throwing when the write is rejected', async () => {
       const writeText = jest.fn().mockRejectedValue(new Error('denied'));
       await expect(copyShareLink('https://t.example/trip/1', { writeText })).resolves.toBe(false);
+    });
+  });
+
+  describe('isSharingEnabled (Council B12 gate)', () => {
+    it('is true only for the exact string "true"', () => {
+      expect(isSharingEnabled('true')).toBe(true);
+      expect(isSharingEnabled('false')).toBe(false);
+      expect(isSharingEnabled('TRUE')).toBe(false);
+      expect(isSharingEnabled('1')).toBe(false);
+      expect(isSharingEnabled('')).toBe(false);
+      expect(isSharingEnabled(undefined)).toBe(false);
+    });
+
+    it('defaults to the NEXT_PUBLIC_SHARING_ENABLED env var', () => {
+      const previous = process.env.NEXT_PUBLIC_SHARING_ENABLED;
+      try {
+        delete process.env.NEXT_PUBLIC_SHARING_ENABLED;
+        expect(isSharingEnabled()).toBe(false);
+        process.env.NEXT_PUBLIC_SHARING_ENABLED = 'true';
+        expect(isSharingEnabled()).toBe(true);
+      } finally {
+        if (previous === undefined) delete process.env.NEXT_PUBLIC_SHARING_ENABLED;
+        else process.env.NEXT_PUBLIC_SHARING_ENABLED = previous;
+      }
+    });
+  });
+
+  describe('scrubShareClaimWords (Council B12 OG scrub)', () => {
+    it('strips English claim words and tidies punctuation', () => {
+      expect(scrubShareClaimWords('Secure Sahara Trek, guaranteed fun!')).toBe('Sahara Trek, fun!');
+      expect(scrubShareClaimWords('A verified agency offers protected booking')).toBe(
+        'A agency offers booking',
+      );
+    });
+
+    it('strips French and Arabic claim words', () => {
+      expect(scrubShareClaimWords('Voyage sécurisé et garanti au départ de Tanger')).toBe(
+        'Voyage et au départ de Tanger',
+      );
+      expect(scrubShareClaimWords('رحلة آمنة ومضمونة إلى الصحراء')).toBe('رحلة إلى الصحراء');
+    });
+
+    it('leaves claim-free copy untouched', () => {
+      expect(scrubShareClaimWords('Sunset camel trek in Merzouga')).toBe(
+        'Sunset camel trek in Merzouga',
+      );
     });
   });
 });
