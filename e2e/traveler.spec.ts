@@ -67,7 +67,22 @@ test.describe('traveler launch flow', () => {
 
     await page.getByPlaceholder(/destination, activity or keyword/i).fill('atlas');
     await page.getByRole('button', { name: /^search$/i }).click();
+    // #599/#560: on small viewports the category controls live inside the
+    // MobileFilterDrawer — they are not in the DOM at all until it opens
+    // (the desktop sidebar is display:none there), so the mobile project
+    // must open the drawer first, exactly as a phone user does. Desktop
+    // keeps the direct sidebar click. The category assertion itself is
+    // unchanged: Adventure is still clicked and must still surface the trip.
+    const viewport = page.viewportSize();
+    const isMobileViewport = viewport !== null && viewport.width < 1024;
+    if (isMobileViewport) {
+      await page.getByRole('button', { name: /^filters/i }).click();
+    }
     await page.getByRole('button', { name: 'Adventure' }).click();
+    if (isMobileViewport) {
+      // Close the drawer via its footer CTA so the result is uncovered.
+      await page.getByRole('button', { name: /view .* trips/i }).click();
+    }
     await expect(page.getByRole('heading', { name: 'Atlas Weekend Escape' })).toBeVisible();
   });
 });
