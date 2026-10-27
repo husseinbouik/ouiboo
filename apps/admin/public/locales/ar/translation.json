@@ -559,12 +559,12 @@
       "liveNote": "المشاركة مفعّلة: هذه هي المعاينة التي ستعرضها تطبيقات التواصل.",
       "gatedNote": "المشاركة معطّلة: المعاينة العامة الحالية هي بطاقة Ouiboo العامة. هذه هي المعاينة التي ستحملها هذه الرحلة عند فتح المشاركة عند الإطلاق العام.",
       "shareTextLabel": "نص المشاركة",
-      "shareText": "اكتشف هذه الرحلة على Ouiboo: {{title}}"
+      "shareText": "اكتشف هذه الرحلة على Ouiboo: ⁨{{title}}⁩"
     }
   },
   "meta": {
     "titleDefault": "إدارة المنصة",
-    "titleTemplate": "%s | إدارة Ouiboo",
+    "titleTemplate": "%s | Ouiboo إدارة",
     "description": "مساحة إدارة خاصة لمنصة Ouiboo."
   },
   "common": {

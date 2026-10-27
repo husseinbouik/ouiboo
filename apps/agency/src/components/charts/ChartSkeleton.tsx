@@ -5,7 +5,7 @@ import { Card } from '@ouiboo/ui';
 
 export function LineChartSkeleton() {
   return (
-    <Card className="rounded-[2.5rem] shadow-xl shadow-black/5 p-6">
+    <Card className="rounded-4xl shadow-xl shadow-black/5 p-6">
       <div className="animate-pulse bg-muted h-64 rounded-lg" />
     </Card>
   );
@@ -13,7 +13,7 @@ export function LineChartSkeleton() {
 
 export function PieChartSkeleton() {
   return (
-    <Card className="rounded-[2.5rem] shadow-xl shadow-black/5 p-6">
+    <Card className="rounded-4xl shadow-xl shadow-black/5 p-6">
       <div className="animate-pulse bg-muted h-64 w-64 rounded-full mx-auto" />
     </Card>
   );
@@ -21,7 +21,7 @@ export function PieChartSkeleton() {
 
 export function TableSkeleton() {
   return (
-    <Card className="rounded-[2.5rem] shadow-xl shadow-black/5 p-6">
+    <Card className="rounded-4xl shadow-xl shadow-black/5 p-6">
       <div className="space-y-3">
         <div className="animate-pulse h-4 bg-muted rounded w-3/4" />
         <div className="animate-pulse h-40 bg-muted rounded" />

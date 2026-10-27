@@ -282,7 +282,7 @@ export default function AgencyDashboard() {
             animate="animate"
             transition={{ delay: i * 0.1 }}
           >
-            <Card className="border-none shadow-xl shadow-black/5 rounded-[2.5rem] overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+            <Card className="border-none shadow-xl shadow-black/5 rounded-4xl overflow-hidden group hover:-translate-y-1 transition-all duration-300">
               <CardContent className="p-8">
                 <div className="flex justify-between items-start mb-6">
                   <div className={cn('w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg', stat.color)}>
@@ -327,7 +327,7 @@ export default function AgencyDashboard() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {quickActions.map((action) => (
-            <Card key={action.title} className="border-none shadow-lg shadow-black/5 rounded-[2rem] overflow-hidden">
+            <Card key={action.title} className="border-none shadow-lg shadow-black/5 rounded-3xl overflow-hidden">
               <CardContent className="p-6 flex flex-col gap-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2">
@@ -348,7 +348,7 @@ export default function AgencyDashboard() {
       </div>
 
       <div className="space-y-6">
-        <div className="flex justify-between items-center bg-card p-6 rounded-[2rem] border border-border/50 shadow-sm">
+        <div className="flex justify-between items-center bg-card p-6 rounded-3xl border border-border/50 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center"><AlertCircle className="h-5 w-5 text-primary" /></div>
             <div>
@@ -361,7 +361,7 @@ export default function AgencyDashboard() {
             </Button>
         </div>
 
-        <Card className="border-none shadow-xl shadow-black/5 rounded-[2.5rem] overflow-hidden">
+        <Card className="border-none shadow-xl shadow-black/5 rounded-4xl overflow-hidden">
           <CardContent className="p-0">
             <Table>
               <TableHeader className="bg-muted/30">
@@ -435,7 +435,7 @@ export default function AgencyDashboard() {
             {t('dashboard.growTrips', { count: stats.activeTrips })} {t('dashboard.growTravelers', { count: stats.totalCustomers })} {t('dashboard.growCta')}
           </p>
         </div>
-        <Button asChild className="h-20 px-12 rounded-[2rem] bg-white text-primary hover:bg-slate-100 font-black text-xl border-none shadow-2xl transition-all hover:scale-105 active:scale-95">
+        <Button asChild className="h-20 px-12 rounded-3xl bg-white text-primary hover:bg-slate-100 font-black text-xl border-none shadow-2xl transition-all hover:scale-105 active:scale-95">
               <Link href="/dashboard/trips/create">{t('dashboard.createNewTrip')}</Link>
             </Button>
       </div>

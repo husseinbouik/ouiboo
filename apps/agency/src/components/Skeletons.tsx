@@ -12,7 +12,7 @@ export function AgencyTripCardSkeleton({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'flex flex-col overflow-hidden rounded-[1.5rem] border border-border bg-card shadow-sm',
+        'flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm',
         className,
       )}
       aria-hidden="true"
