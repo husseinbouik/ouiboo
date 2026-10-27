@@ -296,7 +296,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         expect(mockEmailService.sendPaymentConfirmation).toHaveBeenCalledWith(
             traveler.email,
             'Mountain Adventure',
-            null // #424: trailing arg = booking locale (none stored here)
+            'en' // #424: trailing arg = booking locale (create payload carries 'en')
         );
 
         // Verify database state
@@ -840,7 +840,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         expect(mockEmailService.sendPaymentConfirmation).toHaveBeenCalledWith(
             traveler.email,
             'Mountain Adventure',
-            null // #424: trailing arg = booking locale (none stored here)
+            'en' // #424: trailing arg = booking locale (create payload carries 'en')
         );
     });
 
