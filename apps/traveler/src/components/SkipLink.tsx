@@ -1,10 +1,23 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export function SkipLink() {
   const { t, ready } = useTranslation();
-  if (!ready) return null;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  // Mount gate (#245): this link renders OUTSIDE <Providers>, so the
+  // providers' i18n-ready gate cannot protect it. Translations load over
+  // HTTP, so during SSR `ready` is always false and the server renders
+  // nothing here; on the client the translation load can finish before
+  // React hydrates, making the first client render include an anchor the
+  // server never sent — React hydration error #418 (text), caught by the
+  // production smoke suite. Rendering only after mount keeps the first
+  // client render identical to the server output in every environment.
+  if (!mounted || !ready) return null;
   return (
     <a
       href="#main-content"
