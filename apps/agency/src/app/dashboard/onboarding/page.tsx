@@ -46,6 +46,9 @@ type AgencyOnboardingValues = {
   travelLicenceType?: TravelLicenceType;
   travelLicenceNumber?: string;
   licenceExpiry?: string;
+  // B4: licence issue date + issuing authority (Law 31-08 seller block).
+  licenceIssuedAt?: string;
+  licenceIssuingAuthority?: string;
 };
 
 /** Form values plus the #415 document/insurance payload built from local state. */
@@ -105,6 +108,8 @@ type AgencyProfileLike = {
   travelLicenceType?: string | null;
   travelLicenceNumber?: string | null;
   licenceExpiry?: string | null;
+  licenceIssuedAt?: string | null;
+  licenceIssuingAuthority?: string | null;
   // #415: licence document, RC insurance artefact, expiry-sweep pause marker
   licenceDocumentKey?: string | null;
   licenceDocumentName?: string | null;
@@ -134,6 +139,8 @@ const profileToFormValues = (profile: AgencyProfileLike): AgencyOnboardingValues
   travelLicenceType: (profile?.travelLicenceType as TravelLicenceType | null) || undefined,
   travelLicenceNumber: profile?.travelLicenceNumber || '',
   licenceExpiry: profile?.licenceExpiry ? profile.licenceExpiry.slice(0, 10) : '',
+  licenceIssuedAt: profile?.licenceIssuedAt ? profile.licenceIssuedAt.slice(0, 10) : '',
+  licenceIssuingAuthority: profile?.licenceIssuingAuthority || '',
 });
 
 export default function OnboardingPage() {
@@ -175,6 +182,8 @@ export default function OnboardingPage() {
       travelLicenceType: undefined,
       travelLicenceNumber: '',
       licenceExpiry: '',
+      licenceIssuedAt: '',
+      licenceIssuingAuthority: '',
     }
   });
 
@@ -231,6 +240,11 @@ export default function OnboardingPage() {
       travelLicenceType: data.travelLicenceType || undefined,
       travelLicenceNumber: data.travelLicenceNumber?.trim() || undefined,
       licenceExpiry: data.licenceExpiry ? new Date(data.licenceExpiry).toISOString() : undefined,
+      // B4: the issue date + issuing authority complete the seller
+      // block — the API only moves the submission to PENDING_REVIEW
+      // when they are present too.
+      licenceIssuedAt: data.licenceIssuedAt ? new Date(data.licenceIssuedAt).toISOString() : undefined,
+      licenceIssuingAuthority: data.licenceIssuingAuthority?.trim() || undefined,
       // #415: the licence document makes the submission reviewable; the
       // API only moves it to PENDING_REVIEW when number + type + expiry
       // + document are all present.
@@ -255,6 +269,8 @@ export default function OnboardingPage() {
 
   const licenceNumberValue = useWatch({ control, name: 'travelLicenceNumber' });
   const licenceExpiryValue = useWatch({ control, name: 'licenceExpiry' });
+  const licenceIssuedAtValue = useWatch({ control, name: 'licenceIssuedAt' });
+  const licenceIssuingAuthorityValue = useWatch({ control, name: 'licenceIssuingAuthority' });
 
   if (!mounted) return null;
 
@@ -276,11 +292,26 @@ export default function OnboardingPage() {
   const licenceLocked = licenceStatus === 'VERIFIED';
   const insuranceStatus = effectiveInsuranceStatus(user?.agencyProfile);
   const insuranceLocked = insuranceStatus === 'VERIFIED';
-  const canSubmit = !isVerified || !licenceLocked || !insuranceLocked;
+  // B4: a legacy VERIFIED licence predates the issue-date / issuing-
+  // authority fields. Until the agency supplies them, exactly those
+  // two fields stay editable (everything else remains locked) and the
+  // form can be submitted — the server then returns the licence to
+  // PENDING_REVIEW for a fresh admin check, and admin's completeness
+  // list tracks the agencies that still owe the data.
+  const licenceIssueDetailsMissingOnRecord = Boolean(
+    licenceLocked
+      && (!user?.agencyProfile?.licenceIssuedAt || !user?.agencyProfile?.licenceIssuingAuthority),
+  );
+  const canSubmit = !isVerified || !licenceLocked || !insuranceLocked || licenceIssueDetailsMissingOnRecord;
   // #415: soft completeness hints — the server keeps an incomplete
   // submission NOT_SUBMITTED, so warn here instead of failing silently.
   const licenceIncomplete = Boolean(
     (licenceNumberValue || licenceExpiryValue) && !licenceDocument,
+  );
+  // B4: a started licence submission also stays NOT_SUBMITTED until the
+  // issue date and issuing authority are filled in.
+  const licenceIssueDetailsMissing = Boolean(
+    (licenceNumberValue || licenceDocument) && (!licenceIssuedAtValue || !licenceIssuingAuthorityValue),
   );
   const insuranceIncomplete = Boolean(
     (insurance.insurer || insurance.policyNumber || insurance.insuredName || insurance.expiry) &&
@@ -519,6 +550,28 @@ export default function OnboardingPage() {
                   disabled={licenceLocked}
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="licenceIssuedAt" className="font-semibold">{t('onboarding.licence.issuedAtLabel')}</Label>
+                <Input
+                  id="licenceIssuedAt"
+                  type="date"
+                  {...register('licenceIssuedAt')}
+                  className="h-12"
+                  disabled={licenceLocked && !licenceIssueDetailsMissingOnRecord}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="licenceIssuingAuthority" className="font-semibold">{t('onboarding.licence.issuingAuthorityLabel')}</Label>
+                <Input
+                  id="licenceIssuingAuthority"
+                  placeholder={t('onboarding.licence.issuingAuthorityPlaceholder')}
+                  {...register('licenceIssuingAuthority')}
+                  className="h-12"
+                  disabled={licenceLocked && !licenceIssueDetailsMissingOnRecord}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -531,6 +584,9 @@ export default function OnboardingPage() {
               />
               {licenceIncomplete && (
                 <p className="text-xs text-warning font-medium">{t('onboarding.licence.documentRequired')}</p>
+              )}
+              {licenceIssueDetailsMissing && (
+                <p className="text-xs text-warning font-medium">{t('onboarding.licence.issueDetailsRequired')}</p>
               )}
             </div>
             <p className="text-[10px] text-muted-foreground italic font-medium">{t('onboarding.licence.note')}</p>

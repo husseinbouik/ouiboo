@@ -194,6 +194,8 @@ export default function AgencyReviewModal({
               <p>{t('dashboard.labels.rc')}: <span className="text-foreground font-medium">{selectedAgency.rc || t('dashboard.labels.na')}</span></p>
               <p>{t('dashboard.labels.taxId')}: <span className="text-foreground font-medium">{selectedAgency.taxId || t('dashboard.labels.na')}</span></p>
               <p>{t('dashboard.labels.licenceExpiry')}: {expiryCell(selectedAgency.licenceExpiry)}</p>
+              <p>{t('dashboard.labels.licenceIssuedAt')}: <span className="text-foreground font-medium">{selectedAgency.licenceIssuedAt ? new Date(selectedAgency.licenceIssuedAt).toLocaleDateString() : t('dashboard.labels.na')}</span></p>
+              <p>{t('dashboard.labels.licenceIssuingAuthority')}: <span className="text-foreground font-medium">{selectedAgency.licenceIssuingAuthority || t('dashboard.labels.na')}</span></p>
               <p>{t('dashboard.labels.licenceVerifiedAt')}: <span className="text-foreground font-medium">{selectedAgency.licenceVerifiedAt ? new Date(selectedAgency.licenceVerifiedAt).toLocaleDateString() : t('dashboard.labels.na')}</span></p>
               {selectedAgency.licenceMinistryCheckedAt && (
                 <p>{t('dashboard.labels.ministryCheckedOn')}: <span className="text-foreground font-medium">{new Date(selectedAgency.licenceMinistryCheckedAt).toLocaleDateString()}</span></p>
@@ -215,6 +217,11 @@ export default function AgencyReviewModal({
             </div>
             {selectedAgency.licenceRejectionReason && (
               <p className="text-danger">{t('dashboard.labels.licenceRejectionReason')}: {selectedAgency.licenceRejectionReason}</p>
+            )}
+            {selectedAgency.sellerBlockMissingFields && selectedAgency.sellerBlockMissingFields.length > 0 && (
+              <p className="text-warning font-medium">
+                {t('dashboard.messages.sellerBlockIncomplete', { fields: selectedAgency.sellerBlockMissingFields.join(', ') })}
+              </p>
             )}
             {(() => {
               const canVerify = canVerifyLicence(licenceStatus);

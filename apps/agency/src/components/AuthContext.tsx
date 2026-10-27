@@ -36,6 +36,9 @@ interface User {
         travelLicenceStatus?: string;
         licenceVerifiedAt?: string;
         licenceExpiry?: string;
+        // B4: licence issue date + issuing authority (seller block).
+        licenceIssuedAt?: string;
+        licenceIssuingAuthority?: string;
         licenceRejectionReason?: string;
         // #415: licence document + Ministry-check stamp
         licenceDocumentKey?: string;

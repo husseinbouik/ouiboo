@@ -65,7 +65,11 @@ export const AgencyProfileSchema = z.object({
     licenceExpiry: z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Invalid licence expiry date").optional(),
     // B4 (Council Session #2): licence issue date + issuing authority —
     // part of a complete licence submission (Law 31-08 seller block).
-    licenceIssuedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Invalid licence issue date").optional(),
+    // The empty string is the form's "not supplied" value (converted to
+    // undefined on submit, like licenceExpiry's empty state) — it must
+    // not fail validation, or agencies could not submit anything else
+    // before filling it in. Completeness is enforced server-side.
+    licenceIssuedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Invalid licence issue date").optional().or(z.literal('')),
     licenceIssuingAuthority: z.string().optional(),
 });
 

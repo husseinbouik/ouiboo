@@ -464,6 +464,9 @@
   "seller": {
     "organisedAndSoldBy": "منظَّم ومباع من طرف {{name}}",
     "licence": "رخصة وكيل الأسفار: {{number}}",
+    "licenceTyped": "رخصة وكيل الأسفار: {{type}} {{number}}",
+    "licenceIssued": "صادرة بتاريخ {{date}} عن {{authority}}",
+    "licenceDetailsPending": "جارٍ تأكيد تفاصيل إصدار الرخصة مع الوكالة.",
     "licenceChecked": "تم التحقق من وثيقة الترخيص في {{date}}",
     "insuranceEvidenced": "تم إثبات تأمين المسؤولية المدنية في {{date}}",
     "poweredBy": "مدعوم من OuiBoo"

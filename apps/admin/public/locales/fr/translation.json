@@ -201,6 +201,8 @@
       "rc": "Registre de commerce (RC)",
       "taxId": "Identifiant fiscal (IF)",
       "licenceExpiry": "Expiration de la licence",
+      "licenceIssuedAt": "Licence délivrée le",
+      "licenceIssuingAuthority": "Autorité de délivrance",
       "licenceVerifiedAt": "Licence vérifiée le",
       "licenceRejectionReason": "Motif du rejet",
       "licenceDocument": "Document de licence",
@@ -235,6 +237,7 @@
     "messages": {
       "noBankDetails": "Aucune coordonnée bancaire enregistrée.",
       "noLicenceDocument": "Aucun document de licence téléversé",
+      "sellerBlockIncomplete": "Bloc d’identité du vendeur incomplet — manquant : {{fields}}. L’agence doit fournir ces éléments pour que le bloc s’affiche en entier.",
       "noInsuranceCertificate": "Aucun certificat d'assurance téléversé",
       "noPaymentProofs": "Aucun justificatif de paiement en attente.",
       "reviewVerification": "Vérifiez les détails et approuvez ou rejetez.",

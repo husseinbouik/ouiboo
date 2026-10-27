@@ -201,6 +201,8 @@
       "rc": "السجل التجاري (RC)",
       "taxId": "التعريف الضريبي (IF)",
       "licenceExpiry": "انتهاء الرخصة",
+      "licenceIssuedAt": "صدرت الرخصة في",
+      "licenceIssuingAuthority": "سلطة الإصدار",
       "licenceVerifiedAt": "تم التحقق من الرخصة في",
       "licenceRejectionReason": "سبب الرفض",
       "licenceDocument": "وثيقة الرخصة",
@@ -235,6 +237,7 @@
     "messages": {
       "noBankDetails": "لا توجد بيانات بنكية محفوظة.",
       "noLicenceDocument": "لم تُرفع أي وثيقة رخصة",
+      "sellerBlockIncomplete": "كتلة هوية البائع غير مكتملة — ينقصها: {{fields}}. يجب على الوكالة تقديم هذه العناصر حتى تظهر الكتلة كاملة.",
       "noInsuranceCertificate": "لم تُرفع أي شهادة تأمين",
       "noPaymentProofs": "لا توجد إثباتات دفع بانتظار المراجعة.",
       "reviewVerification": "راجع تفاصيل التحقق ثم وافق أو ارفض.",

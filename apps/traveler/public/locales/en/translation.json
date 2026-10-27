@@ -464,6 +464,9 @@
   "seller": {
     "organisedAndSoldBy": "Organised and sold by {{name}}",
     "licence": "Travel-agent licence: {{number}}",
+    "licenceTyped": "Travel-agent licence: {{type}} {{number}}",
+    "licenceIssued": "Issued on {{date}} by {{authority}}",
+    "licenceDetailsPending": "Licence issue details are being confirmed with the agency.",
     "licenceChecked": "Licence document checked on {{date}}",
     "insuranceEvidenced": "RC insurance evidenced on {{date}}",
     "poweredBy": "Powered by OuiBoo"

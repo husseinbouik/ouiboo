@@ -36,9 +36,13 @@ export type CheckoutTrip = {
     companyName?: string | null;
     /** #371: seller of record (legal name + verified licence). */
     legalName?: string | null;
+    /** B4: licence type + issue data for the complete seller block. */
+    travelLicenceType?: string | null;
     travelLicenceNumber?: string | null;
     travelLicenceStatus?: string | null;
     licenceExpiry?: string | null;
+    licenceIssuedAt?: string | null;
+    licenceIssuingAuthority?: string | null;
     /** #413 (Council B10): what+when verification statement dates. */
     licenceVerifiedAt?: string | null;
     insuranceStatus?: string | null;

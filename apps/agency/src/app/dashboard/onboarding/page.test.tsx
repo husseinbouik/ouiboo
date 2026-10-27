@@ -140,6 +140,50 @@ describe('OnboardingPage (#415 agency UI)', () => {
     expect(insurer.value).toBe('Wafa Assurance');
   });
 
+  it('lets a legacy verified agency supply the missing licence issue data (B4)', async () => {
+    // baseProfile's licence is VERIFIED but predates the issue fields.
+    setProfile(baseProfile);
+    renderPage();
+    const issuedAt = (await screen.findByLabelText(
+      'onboarding.licence.issuedAtLabel',
+    )) as HTMLInputElement;
+    const authority = screen.getByLabelText(
+      'onboarding.licence.issuingAuthorityLabel',
+    ) as HTMLInputElement;
+    // Exactly the two new fields are unlocked; the rest stays locked.
+    expect(issuedAt.disabled).toBe(false);
+    expect(authority.disabled).toBe(false);
+    expect((screen.getByLabelText('onboarding.licence.numberLabel') as HTMLInputElement).disabled).toBe(true);
+    expect(screen.getByText('onboarding.licence.issueDetailsRequired')).not.toBeNull();
+
+    fireEvent.change(issuedAt, { target: { value: '2024-03-15' } });
+    fireEvent.change(authority, { target: { value: 'Ministère du Tourisme' } });
+    fireEvent.click(screen.getByRole('button', { name: 'onboarding.submit' }));
+    await waitFor(() => {
+      const profileCall = postMock.mock.calls.find((c) => c[0] === '/users/agency-profile');
+      expect(profileCall).toBeDefined();
+      expect(profileCall[1]).toMatchObject({
+        licenceIssuedAt: new Date('2024-03-15').toISOString(),
+        licenceIssuingAuthority: 'Ministère du Tourisme',
+      });
+    });
+  });
+
+  it('locks the issue fields once they are on a verified record (B4)', async () => {
+    setProfile({
+      ...baseProfile,
+      licenceIssuedAt: '2024-03-15T00:00:00.000Z',
+      licenceIssuingAuthority: 'Ministère du Tourisme',
+    });
+    renderPage();
+    const issuedAt = (await screen.findByLabelText(
+      'onboarding.licence.issuedAtLabel',
+    )) as HTMLInputElement;
+    expect(issuedAt.disabled).toBe(true);
+    expect(issuedAt.value).toBe('2024-03-15');
+    expect(screen.queryByText('onboarding.licence.issueDetailsRequired')).toBeNull();
+  });
+
   it('shows the error feedback when the profile update fails', async () => {
     setProfile(baseProfile);
     postMock.mockImplementation((url: string) =>

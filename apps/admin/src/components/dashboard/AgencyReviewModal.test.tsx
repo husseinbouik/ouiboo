@@ -96,6 +96,29 @@ describe('AgencyReviewModal licence review (#415)', () => {
     renderModal({ licenceMinistryCheckedAt: '2026-10-20T00:00:00.000Z' });
     expect(screen.getByText(/dashboard\.labels\.ministryCheckedOn/)).not.toBeNull();
   });
+
+  it('shows the licence issue date and issuing authority (B4)', () => {
+    renderModal({
+      licenceIssuedAt: '2024-03-15T00:00:00.000Z',
+      licenceIssuingAuthority: 'Ministère du Tourisme',
+    });
+    expect(screen.getByText(/dashboard\.labels\.licenceIssuedAt/)).not.toBeNull();
+    expect(screen.getByText(/dashboard\.labels\.licenceIssuingAuthority/)).not.toBeNull();
+    expect(screen.getByText('Ministère du Tourisme')).not.toBeNull();
+  });
+
+  it('warns when a verified agency still lacks seller-block fields (B4)', () => {
+    renderModal({
+      travelLicenceStatus: 'VERIFIED',
+      sellerBlockMissingFields: ['licenceIssuedAt', 'licenceIssuingAuthority'],
+    });
+    expect(screen.getByText('dashboard.messages.sellerBlockIncomplete')).not.toBeNull();
+  });
+
+  it('shows no completeness warning for a complete record (B4)', () => {
+    renderModal({ sellerBlockMissingFields: [] });
+    expect(screen.queryByText('dashboard.messages.sellerBlockIncomplete')).toBeNull();
+  });
 });
 
 describe('AgencyReviewModal insurance review (#415)', () => {

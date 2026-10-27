@@ -18,9 +18,14 @@ import { BadgeCheck } from 'lucide-react';
 export interface SellerAgencyInfo {
     companyName?: string | null;
     legalName?: string | null;
+    /** B4: licence type (ODV/DV) — part of the seller block. */
+    travelLicenceType?: string | null;
     travelLicenceNumber?: string | null;
     travelLicenceStatus?: string | null;
     licenceExpiry?: string | Date | null;
+    /** B4: licence date of issue + issuing authority (Law 31-08 block). */
+    licenceIssuedAt?: string | Date | null;
+    licenceIssuingAuthority?: string | null;
     /** Pre-derived by the API (public profile endpoint). */
     licenceVerified?: boolean;
     /** #413 (Council B10): when the licence document was checked. */
@@ -71,10 +76,24 @@ export function isLicenceVerifiedForDisplay(agency: SellerAgencyInfo, now: Date 
 export function getSellerDisplay(agency: SellerAgencyInfo, now: Date = new Date()) {
     const name = agency.legalName?.trim() || agency.companyName?.trim() || '';
     const licenceVerified = isLicenceVerifiedForDisplay(agency, now);
+    // B4: the complete seller block needs the licence type, issue date,
+    // and issuing authority alongside the number. All three are licence
+    // facts, so they are withheld unless the licence is verified (the
+    // public profile endpoint already nulls them; trip/checkout payloads
+    // carry raw fields, so the gate is applied here too). A verified
+    // legacy record missing either issue field reports
+    // `licenceDetailsPending` so the surface shows the honest gap
+    // instead of a fabricated value.
+    const issuedAt = licenceVerified ? toValidDate(agency.licenceIssuedAt) : null;
+    const issuingAuthority = licenceVerified ? agency.licenceIssuingAuthority?.trim() || null : null;
     return {
         name,
         licenceVerified,
         licenceNumber: licenceVerified ? (agency.travelLicenceNumber ?? null) : null,
+        licenceType: licenceVerified ? (agency.travelLicenceType ?? null) : null,
+        licenceIssuedAt: issuedAt,
+        licenceIssuingAuthority: issuingAuthority,
+        licenceDetailsPending: licenceVerified && (!issuedAt || !issuingAuthority),
     };
 }
 
@@ -90,7 +109,15 @@ export default function SellerIdentity({
     if (!agency) {
         return null;
     }
-    const { name, licenceVerified, licenceNumber } = getSellerDisplay(agency);
+    const {
+        name,
+        licenceVerified,
+        licenceNumber,
+        licenceType,
+        licenceIssuedAt,
+        licenceIssuingAuthority,
+        licenceDetailsPending,
+    } = getSellerDisplay(agency);
     if (!name) {
         return null;
     }
@@ -123,10 +150,30 @@ export default function SellerIdentity({
                 {licenceVerified && licenceNumber && (
                     <span className="inline-flex items-center gap-1 font-medium text-foreground">
                         <BadgeCheck className="h-4 w-4 text-emerald-600" aria-hidden="true" />
-                        {t('seller.licence', { number: licenceNumber, defaultValue: `Travel-agent licence: ${licenceNumber}` })}
+                        {licenceType
+                            ? t('seller.licenceTyped', {
+                                  type: licenceType,
+                                  number: licenceNumber,
+                                  defaultValue: `Travel-agent licence: ${licenceType} ${licenceNumber}`,
+                              })
+                            : t('seller.licence', { number: licenceNumber, defaultValue: `Travel-agent licence: ${licenceNumber}` })}
                     </span>
                 )}
             </p>
+            {licenceVerified && licenceIssuedAt && licenceIssuingAuthority && (
+                <p className="text-xs">
+                    {t('seller.licenceIssued', {
+                        date: formatDate(licenceIssuedAt),
+                        authority: licenceIssuingAuthority,
+                        defaultValue: `Issued on ${formatDate(licenceIssuedAt)} by ${licenceIssuingAuthority}`,
+                    })}
+                </p>
+            )}
+            {licenceDetailsPending && (
+                <p className="text-xs">
+                    {t('seller.licenceDetailsPending', 'Licence issue details are being confirmed with the agency.')}
+                </p>
+            )}
             {checks.length > 0 && <p className="text-xs">{checks.join(' · ')}</p>}
             <p className="text-xs">{t('seller.poweredBy', 'Powered by OuiBoo')}</p>
         </div>

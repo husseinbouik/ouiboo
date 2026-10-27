@@ -10,6 +10,7 @@ import { Button, Card, CardContent, Badge } from '@ouiboo/ui';
 import { AlertCircle, CheckCircle2, Loader2, Landmark, Clock, UploadCloud } from 'lucide-react';
 import { cn } from '@ouiboo/ui/utils';
 import { BookingStatus, type BookingDetails } from '@ouiboo/types';
+import SellerIdentity from '@/components/SellerIdentity';
 
 type VerifyPaymentResult = {
   status: 'success' | 'failure' | 'pending';
@@ -152,6 +153,12 @@ export default function CheckoutConfirmationPage() {
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                   {t('checkout.confirmation.bookingReference', { reference: bookingReference })}
                 </p>
+              )}
+              {/* B4 (Council Session #2): the Law 31-08 seller identity
+                  block on the immediate booking confirmation — the same
+                  block the durable booking page and the email carry. */}
+              {booking?.session?.template?.agency && (
+                <SellerIdentity agency={booking.session.template.agency} className="text-left" />
               )}
             </div>
 
