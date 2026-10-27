@@ -24,10 +24,15 @@ describe('TravelerSupportPage (#419)', () => {
         expect(screen.getByText('support.safetyNote')).not.toBeNull();
     });
 
-    it('links the published support inbox', () => {
+    it('publishes no inbox while none is configured (Session #3 P0-7a)', () => {
+        // The old contract defaulted to support@ouiboo.com — an address
+        // on a domain with no DNS, so mail to it could never arrive.
+        // P0-7a: the address renders ONLY when NEXT_PUBLIC_SUPPORT_EMAIL
+        // configures one (the configured case is covered in
+        // lib/support.test.ts); the test env configures none.
         render(<TravelerSupportPage />);
 
-        const mail = screen.getByRole('link', { name: /support@ouiboo\.com/ });
-        expect(mail.getAttribute('href')).toBe('mailto:support@ouiboo.com');
+        expect(screen.queryByRole('link', { name: /@/ })).toBeNull();
+        expect(document.body.textContent).not.toContain('@ouiboo.com');
     });
 });
