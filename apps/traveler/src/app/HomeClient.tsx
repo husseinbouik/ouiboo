@@ -4,10 +4,10 @@ import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { 
-  MapPin, Calendar, Star, ArrowRight, Compass, Banknote, Zap, Heart, Mountain, Palmtree
+import {
+  MapPin, Calendar, Star, ArrowRight, Compass, Banknote, Zap, Heart, Mountain, Palmtree, AlertTriangle
 } from 'lucide-react';
-import { Button } from '@ouiboo/ui';
+import { Button, EmptyState } from '@ouiboo/ui';
 import { motion, Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { TripSession, TripTemplate, VerificationStatusType } from '@ouiboo/types';
@@ -21,6 +21,9 @@ interface HomeClientProps {
       verificationStatus?: VerificationStatusType;
     } | null;
   }>;
+  /** #575: true when the server catalogue fetch failed — render the
+   * error state, never the genuine-empty state, for an outage. */
+  featuredTripsFetchFailed?: boolean;
 }
 
 const fadeInUp: Variants = {
@@ -41,7 +44,7 @@ const staggerContainer: Variants = {
   }
 };
 
-export default function HomeClient({ featuredTrips }: HomeClientProps) {
+export default function HomeClient({ featuredTrips, featuredTripsFetchFailed = false }: HomeClientProps) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
@@ -157,7 +160,19 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
             viewport={{ once: true, margin: "-50px" }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12"
           >
-            {featuredTrips.length > 0 ? (
+            {featuredTripsFetchFailed ? (
+                <EmptyState
+                    className="col-span-full py-20 bg-card/70 rounded-3xl"
+                    icon={<AlertTriangle className="h-6 w-6 text-danger" aria-hidden="true" />}
+                    title={t('featured.loadErrorTitle')}
+                    description={t('featured.loadErrorSubtitle')}
+                    action={(
+                      <Button type="button" onClick={() => router.refresh()}>
+                        {t('common.tryAgain')}
+                      </Button>
+                    )}
+                />
+            ) : featuredTrips.length > 0 ? (
               featuredTrips.map((trip) => (
                 <motion.div key={trip.id} variants={fadeInUp}>
                   <TripCard trip={trip} />

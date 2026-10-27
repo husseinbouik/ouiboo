@@ -40,7 +40,7 @@ export function TripContactsCard({ booking }: { booking: BookingDetails }) {
     const telHref = emergencyPhone ? `tel:${emergencyPhone.replace(/[\s().-]/g, '')}` : null;
 
     return (
-        <Card className="rounded-[2rem] border border-border shadow-sm bg-card">
+        <Card className="rounded-3xl border border-border shadow-sm bg-card">
             <div className="p-8 space-y-6">
                 <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">

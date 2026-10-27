@@ -50,7 +50,7 @@ export function CancellationScaleCard({ scale, baseAmount, currency, className }
 
   return (
     <section aria-label={t('cancellation.title')} className={className}>
-      <div className="rounded-[2rem] border border-border bg-card p-6 space-y-5">
+      <div className="rounded-3xl border border-border bg-card p-6 space-y-5">
         <h3 className="flex items-center gap-2 text-lg font-black text-foreground font-display">
           <ShieldCheck className="h-5 w-5 text-sunset-orange" />
           {t('cancellation.title')}

@@ -8,9 +8,9 @@
   --font-sans: var(--font-manrope), var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-space-grotesk), var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
 
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
-  --radius-3xl: 2rem;
+  /* #572 remainder: no local radius overrides — the canonical scale
+     (--radius 0.625rem + derived steps incl. 2xl 1.5rem / 3xl 2rem /
+     4xl 2.5rem) lives in @ouiboo/tokens/tokens.css, imported above. */
 }
 
 :root {

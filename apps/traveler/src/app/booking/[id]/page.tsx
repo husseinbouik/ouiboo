@@ -142,7 +142,7 @@ export default function BookingDetailsPage() {
   if (!booking) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-6">
-        <Card className="max-w-xl w-full rounded-[2rem] p-8 text-center">
+        <Card className="max-w-xl w-full rounded-3xl p-8 text-center">
           <h1 className="text-2xl font-black text-foreground">Booking not found</h1>
           <p className="mt-3 text-muted-foreground">This booking may have been removed or you may not have access to it.</p>
           <Button asChild className="rounded-xl">
@@ -175,7 +175,7 @@ export default function BookingDetailsPage() {
             </Button>
         </div>
 
-        <Card className="group border border-border shadow-sm rounded-[2rem] overflow-hidden bg-card">
+        <Card className="group border border-border shadow-sm rounded-3xl overflow-hidden bg-card">
           <div className="flex flex-col lg:flex-row">
             <div className="w-full lg:w-96 h-64 lg:h-auto overflow-hidden relative">
               <Image
@@ -349,7 +349,7 @@ export default function BookingDetailsPage() {
           || booking.paymentStatus === BookingPaymentStatus.PartiallyPaid)
           && booking.status !== BookingStatus.Cancelled
           && !booking.refundStatus && (
-          <Card className="rounded-[2rem] border border-border shadow-sm bg-card">
+          <Card className="rounded-3xl border border-border shadow-sm bg-card">
             <div className="p-8 space-y-4">
               <h2 className="text-2xl font-black font-display tracking-tight text-foreground">Cancel this booking</h2>
               <p className="text-sm text-muted-foreground">
@@ -382,7 +382,7 @@ export default function BookingDetailsPage() {
         )}
 
         {(canReviewBooking || booking.review) && (
-          <Card className="rounded-[2rem] border border-border shadow-sm bg-card">
+          <Card className="rounded-3xl border border-border shadow-sm bg-card">
             <div className="p-8 space-y-6">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Trip Review</p>

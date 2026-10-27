@@ -1,7 +1,7 @@
 {
   "share": {
     "button": "مشاركة",
-    "text": "اكتشف هذه الرحلة على Ouiboo: {{title}}",
+    "text": "اكتشف هذه الرحلة على Ouiboo: ⁨{{title}}⁩",
     "copyLink": "نسخ الرابط",
     "copied": "تم نسخ الرابط!",
     "whatsapp": "واتساب",
@@ -57,7 +57,9 @@
     "viewAll": "عرض كل الرحلات",
     "from": "ابتداءً من",
     "emptyTitle": "لا توجد رحلات",
-    "emptySubtitle": "عد لاحقاً لاكتشاف مغامرات جديدة."
+    "emptySubtitle": "عد لاحقاً لاكتشاف مغامرات جديدة.",
+    "loadErrorTitle": "تعذر تحميل الرحلات",
+    "loadErrorSubtitle": "حدث خطأ أثناء تحميل الكتالوج. تحقق من اتصالك وحاول مرة أخرى."
   },
   "categories": {
     "title": "سافر بطريقتك",
@@ -481,7 +483,7 @@
     "licenceNotConfirmed": "تفاصيل الترخيص غير مؤكدة بعد — استفسر لدى الوكالة قبل الدفع.",
     "licenceChecked": "تم التحقق من وثيقة الترخيص في {{date}}",
     "insuranceEvidenced": "تم إثبات تأمين المسؤولية المدنية في {{date}}",
-    "poweredBy": "مدعوم من OuiBoo"
+    "poweredBy": "مدعوم من Ouiboo"
   },
   "languageNames": {
     "en": "الإنجليزية",
@@ -527,6 +529,8 @@
     "reviewsTitle": "التقييمات والآراء",
     "averageRating": "متوسط التقييم",
     "distribution": "التوزيع",
+    "distributionRating_one": "{{count}} نجمة",
+    "distributionRating_other": "{{count}} نجوم",
     "selectDate": "اختر تاريخاً",
     "spotsLeft_one": "تبقّى مقعد واحد",
     "spotsLeft_other": "تبقّت {{count}} مقاعد",
@@ -606,6 +610,14 @@
     "disputeWindowClosed": "لقد أُغلقت مهلة {{days}} يومًا للإبلاغ عن مشكلة. يرجى الاتصال بالمنظّم أو بدعم OuiBoo.",
     "disputed": "لقد أبلغتم عن مشكلة في هذا الاسترداد — أُعيد فتح الحالة وهي قيد المراجعة.",
     "actionFailed": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
+  },
+  "paymentPlan": {
+    "depositDue": "العربون مستحق: {{amount}} \u2014 ادفع العربون إلى {{agency}} لتأمين مكانك. تحتاج هذه الرحلة إلى {{count}} مشاركين على الأقل بحلول {{date}}.",
+    "depositPaid": "أكّد {{agency}} العربون. في انتظار تأكيد الرحلة \u2014 تحتاج هذه الرحلة إلى {{count}} مشاركين على الأقل بحلول {{date}}. إذا لم يتم بلوغ الحد الأدنى، سيُسترد عربونك.",
+    "balanceDue": "تم تأكيد الرحلة \u2014 الرصيد المتبقي مستحق: {{amount}}",
+    "balancePayBefore": " (يُدفع قبل {{date}})",
+    "uploadBalanceReceipt": "رفع إيصال الرصيد",
+    "refundDue": "لم يتم تأكيد هذه الرحلة \u2014 لم يتم بلوغ الحد الأدنى لحجم المجموعة. عربونك البالغ {{amount}} قابل للاسترداد؛ سيعالج {{agency}} استردادك."
   },
   "support": {
     "title": "الدعم",

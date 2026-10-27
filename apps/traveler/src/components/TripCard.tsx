@@ -188,7 +188,7 @@ export function TripCard({ trip }: TripCardProps) {
   };
 
   return (
-    <Card onMouseEnter={prefetchTrip} onFocus={prefetchTrip} onPointerDown={prefetchTrip} className="group border-border shadow-sm hover:shadow-xl transition-all duration-300 rounded-[2rem] overflow-hidden bg-card h-full flex flex-col">
+    <Card onMouseEnter={prefetchTrip} onFocus={prefetchTrip} onPointerDown={prefetchTrip} className="group border-border shadow-sm hover:shadow-xl transition-all duration-300 rounded-3xl overflow-hidden bg-card h-full flex flex-col">
       <div
         className="relative h-64 overflow-hidden touch-pan-y"
         onTouchStart={handleTouchStart}

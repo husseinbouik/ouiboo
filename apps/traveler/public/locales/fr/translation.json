@@ -57,7 +57,9 @@
     "viewAll": "Voir tous les voyages",
     "from": "À partir de",
     "emptyTitle": "Aucun voyage trouvé",
-    "emptySubtitle": "Revenez bientôt pour découvrir de nouvelles aventures."
+    "emptySubtitle": "Revenez bientôt pour découvrir de nouvelles aventures.",
+    "loadErrorTitle": "Impossible de charger les voyages",
+    "loadErrorSubtitle": "Un problème est survenu lors du chargement du catalogue. Vérifiez votre connexion et réessayez."
   },
   "categories": {
     "title": "Voyagez à votre façon",
@@ -527,6 +529,8 @@
     "reviewsTitle": "Avis et notes",
     "averageRating": "Note moyenne",
     "distribution": "Répartition",
+    "distributionRating_one": "{{count}} étoile",
+    "distributionRating_other": "{{count}} étoiles",
     "selectDate": "Choisir une date",
     "spotsLeft_one": "Il reste {{count}} place",
     "spotsLeft_other": "Il reste {{count}} places",
@@ -606,6 +610,14 @@
     "disputeWindowClosed": "Le délai de {{days}} jours pour signaler un problème est écoulé. Veuillez contacter l'organisateur ou le support OuiBoo.",
     "disputed": "Vous avez signalé un problème avec ce remboursement — le dossier a été rouvert et est en cours d'examen.",
     "actionFailed": "Une erreur est survenue. Veuillez réessayer."
+  },
+  "paymentPlan": {
+    "depositDue": "Acompte dû : {{amount}} \u2014 payez l'acompte à {{agency}} pour réserver votre place. Ce voyage nécessite au moins {{count}} participants avant le {{date}}.",
+    "depositPaid": "Acompte confirmé par {{agency}}. En attente de la confirmation du voyage \u2014 ce voyage nécessite au moins {{count}} participants avant le {{date}}. Si le minimum n'est pas atteint, votre acompte vous sera remboursé.",
+    "balanceDue": "Voyage confirmé \u2014 solde restant dû : {{amount}}",
+    "balancePayBefore": " (à payer avant le {{date}})",
+    "uploadBalanceReceipt": "Téléverser le reçu du solde",
+    "refundDue": "Ce voyage n'a pas été confirmé \u2014 la taille minimale du groupe n'a pas été atteinte. Votre acompte de {{amount}} est remboursable ; {{agency}} traitera votre remboursement."
   },
   "support": {
     "title": "Assistance",

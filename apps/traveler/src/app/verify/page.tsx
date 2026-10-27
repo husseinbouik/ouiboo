@@ -142,7 +142,7 @@ export default function VerifyEmailPage() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-card/90 backdrop-blur-xl p-12 rounded-[2.5rem] shadow-xl border border-border text-center max-w-md w-full space-y-8 relative z-10"
+          className="bg-card/90 backdrop-blur-xl p-12 rounded-4xl shadow-xl border border-border text-center max-w-md w-full space-y-8 relative z-10"
         >
           <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto shadow-sm">
             <ShieldCheck className="h-10 w-10 text-success" />
@@ -175,7 +175,7 @@ export default function VerifyEmailPage() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-card/90 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-xl border border-border max-w-md w-full space-y-8 relative z-10"
+        className="bg-card/90 backdrop-blur-xl p-10 rounded-4xl shadow-xl border border-border max-w-md w-full space-y-8 relative z-10"
       >
         <div className="text-center space-y-4">
              <div className="inline-flex items-center justify-center gap-2 mb-4 group">

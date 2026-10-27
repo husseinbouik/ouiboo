@@ -5,7 +5,9 @@ import { SITE_DESCRIPTION, absoluteTravelerUrl } from './site';
 describe('buildTripMetadata (#468)', () => {
   it('marks a missing trip as not found and noindex', () => {
     const metadata = buildTripMetadata(null);
-    expect(metadata.title).toBe('Trip not found — Ouiboo');
+    // #576: no manual brand suffix — the root layout template
+    // ("%s | Ouiboo") appends it, so the tab reads "Trip not found | Ouiboo".
+    expect(metadata.title).toBe('Trip not found');
     expect(metadata.robots).toEqual({ index: false, follow: false });
   });
 
@@ -19,7 +21,9 @@ describe('buildTripMetadata (#468)', () => {
       startLocation: 'Imlil',
     }, { sharingEnabled: true });
 
-    expect(metadata.title).toBe('Atlas Hike — Ouiboo');
+    // #576: page title has no manual suffix (layout template appends
+    // "| Ouiboo"); og:/twitter: titles keep the explicit brand suffix.
+    expect(metadata.title).toBe('Atlas Hike');
     expect(metadata.description).toBe('A great hike');
     expect(metadata.alternates?.canonical).toBe('/trip/trip%201');
 
@@ -87,7 +91,9 @@ describe('buildTripMetadata sharing gate (Council B12)', () => {
   it('serves only a generic, claim-free preview while the gate is off', () => {
     const metadata = buildTripMetadata(trip, { sharingEnabled: false });
 
-    expect(metadata.title).toBe('Ouiboo');
+    // #576: absolute title opts out of the "%s | Ouiboo" layout
+    // template — a plain 'Ouiboo' string rendered "Ouiboo | Ouiboo".
+    expect(metadata.title).toEqual({ absolute: 'Ouiboo' });
     expect(metadata.description).toBe(SITE_DESCRIPTION);
     expect(metadata.alternates?.canonical).toBe('/trip/trip%201');
 
@@ -110,9 +116,9 @@ describe('buildTripMetadata sharing gate (Council B12)', () => {
     const previous = process.env.NEXT_PUBLIC_SHARING_ENABLED;
     try {
       delete process.env.NEXT_PUBLIC_SHARING_ENABLED;
-      expect(buildTripMetadata(trip).title).toBe('Ouiboo');
+      expect(buildTripMetadata(trip).title).toEqual({ absolute: 'Ouiboo' });
       process.env.NEXT_PUBLIC_SHARING_ENABLED = 'true';
-      expect(buildTripMetadata(trip).title).toBe('Atlas Hike — Ouiboo');
+      expect(buildTripMetadata(trip).title).toBe('Atlas Hike');
     } finally {
       if (previous === undefined) delete process.env.NEXT_PUBLIC_SHARING_ENABLED;
       else process.env.NEXT_PUBLIC_SHARING_ENABLED = previous;
@@ -129,7 +135,7 @@ describe('buildTripMetadata sharing gate (Council B12)', () => {
       },
       { sharingEnabled: true },
     );
-    expect(metadata.title).toBe('Atlas Hike — Ouiboo');
+    expect(metadata.title).toBe('Atlas Hike');
     expect(metadata.description).toBe('A trek with a guide');
   });
 
