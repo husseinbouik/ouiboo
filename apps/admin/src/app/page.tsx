@@ -42,6 +42,7 @@ import type {
   AdminInvoice,
   AdminPendingGroup,
   AdminRefundCase,
+  AdminBetaMetrics,
   AdminOverviewCounts,
   ApiErrorResponse,
   FeedbackState,
@@ -58,6 +59,8 @@ import PaymentProofsTab from '@/components/dashboard/PaymentProofsTab';
 import AuditTab from '@/components/dashboard/AuditTab';
 import InvoicesTab from '@/components/dashboard/InvoicesTab';
 import RefundsTab from '@/components/dashboard/RefundsTab';
+import BetaMetricsPanel from '@/components/dashboard/BetaMetricsPanel';
+import { countRefundUrgency, filterRefundCasesByUrgency, type RefundUrgency } from '@/components/dashboard/refund-urgency';
 import SecurityTab from '@/components/dashboard/SecurityTab';
 import AgencyReviewModal from '@/components/dashboard/AgencyReviewModal';
 
@@ -85,6 +88,8 @@ export default function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   // #416C: refunds tab view — all cases, or the risk-based audit queue.
   const [refundsAuditQueue, setRefundsAuditQueue] = useState(false);
+  // #559: urgency pre-filter set by the summary-card deep links.
+  const [refundsUrgencyFilter, setRefundsUrgencyFilter] = useState<RefundUrgency | null>(null);
   const [agencyFeedback, setAgencyFeedback] = useState<FeedbackState | null>(null);
   const [paymentProofFeedback, setPaymentProofFeedback] = useState<FeedbackState | null>(null);
   const [bookingFeedback, setBookingFeedback] = useState<FeedbackState | null>(null);
@@ -148,6 +153,40 @@ export default function AdminDashboard() {
     },
     staleTime: 30_000,
   });
+
+  // #559: beta-metrics panel (#432 service) — the beta exit criteria the
+  // operator watches from the dashboard's landing tab.
+  const betaMetricsQuery = useQuery<AdminBetaMetrics>({
+    queryKey: ['admin-beta-metrics'],
+    queryFn: async () => {
+      const response = await apiClient.get('/admin/analytics/beta-metrics');
+      return response.data;
+    },
+    staleTime: 60_000,
+  });
+
+  // #559: refund urgency is derived client-side from one case list (the
+  // refunds API has no due-date filter). The same list + derivation feed
+  // both the summary counters and the pre-filtered queue, so they agree.
+  // The beta operates at a handful of agencies, well under this page size.
+  const refundsUrgencyRaw = useQuery<unknown>({
+    queryKey: ['admin-refunds-urgency'],
+    queryFn: async () => {
+      const response = await apiClient.get('/admin/refunds', { params: { page: 1, limit: 100 } });
+      return response.data;
+    },
+    staleTime: 30_000,
+  });
+  const { data: refundsUrgencyCases = [] } = toPaginatedList<AdminRefundCase>(refundsUrgencyRaw.data);
+  const refundUrgencyCounts = countRefundUrgency(refundsUrgencyCases);
+  const refundsOverdueCount = overviewCounts?.refundsOverdue ?? refundUrgencyCounts.overdue;
+  const refundsDue48Count = overviewCounts?.refundsDueWithin48h ?? refundUrgencyCounts.due48;
+  const openRefundsWithUrgency = (urgency: RefundUrgency) => {
+    setRefundsUrgencyFilter(urgency);
+    setRefundsAuditQueue(false);
+    setCurrentPage(1);
+    handleTabChange('REFUNDS');
+  };
 
   const pendingAgenciesList = useAdminListQuery<AdminAgency>('/admin/pending-agencies', 'pending-agencies', activeTab === 'PENDING', activeTab, debouncedQuery, currentPage);
   const pendingAgencies = pendingAgenciesList.data;
@@ -526,6 +565,21 @@ export default function AdminDashboard() {
       value: overviewCounts?.pendingPaymentProofs ?? pendingPaymentProofs.length,
       icon: CalendarClock,
       tone: 'bg-muted text-muted-foreground'
+    },
+    {
+      // #559: the solo operator's daily chase — one click to the queue.
+      label: t('dashboard.summary.refundsOverdue'),
+      value: refundsOverdueCount,
+      icon: RotateCcw,
+      tone: 'bg-danger/10 text-danger',
+      onClick: () => openRefundsWithUrgency('overdue')
+    },
+    {
+      label: t('dashboard.summary.refundsDue48'),
+      value: refundsDue48Count,
+      icon: CalendarClock,
+      tone: 'bg-warning/10 text-warning',
+      onClick: () => openRefundsWithUrgency('due48')
     }
   ];
 
@@ -679,6 +733,7 @@ export default function AdminDashboard() {
           <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
         )}
         {activeTab === 'PENDING' && !showPendingSkeleton && (
+          <>
           <PendingTab
             t={t}
             pendingAgencies={pendingAgencies}
@@ -698,6 +753,14 @@ export default function AdminDashboard() {
             onVerifyTrip={(id, status) => verifyTripMutation.mutate({ id, status })}
             isVerifyingTrip={verifyTripMutation.isPending}
           />
+          {/* #559: #432 beta-metrics panel on the operator's landing tab. */}
+          <BetaMetricsPanel
+            t={t}
+            metrics={betaMetricsQuery.data ?? null}
+            isLoading={betaMetricsQuery.isLoading}
+            isError={betaMetricsQuery.isError}
+          />
+          </>
         )}
         {activeTab === 'AGENCIES' && showAgenciesSkeleton && (
           <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
@@ -805,15 +868,22 @@ export default function AdminDashboard() {
         {activeTab === 'REFUNDS' && !showRefundsSkeleton && (
           <RefundsTab
             t={t}
-            cases={refundCases}
-            pagination={refundCasesPagination}
+            cases={
+              refundsUrgencyFilter
+                ? filterRefundCasesByUrgency(refundsUrgencyCases, refundsUrgencyFilter)
+                : refundCases
+            }
+            pagination={refundsUrgencyFilter ? null : refundCasesPagination}
             onPageChange={setCurrentPage}
             paginationLabels={paginationLabels}
             auditQueue={refundsAuditQueue}
             onAuditQueueChange={(value) => {
               setRefundsAuditQueue(value);
+              setRefundsUrgencyFilter(null);
               setCurrentPage(1);
             }}
+            urgencyFilter={refundsUrgencyFilter}
+            onClearUrgencyFilter={() => setRefundsUrgencyFilter(null)}
           />
         )}
       </DashboardShell>

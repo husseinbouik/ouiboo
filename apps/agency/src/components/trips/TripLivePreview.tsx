@@ -14,6 +14,33 @@ type Props = {
 export function TripLivePreview({ t, form, mode }: Props) {
   const { watch, watchedImages, watchedImageAlts } = form;
 
+  // #578: with nothing entered yet, the preview used to render its
+  // placeholder fallbacks styled as real content. Show an explicit
+  // empty state instead; the content card appears once anything exists.
+  const isEmpty =
+    !watch('title')?.trim() &&
+    !watch('description')?.trim() &&
+    !watch('startLocation')?.trim() &&
+    !watchedImages[0];
+
+  if (isEmpty) {
+    return (
+      <div className="hidden lg:block">
+        <div className="sticky top-24 space-y-4">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">{t('trips.create.livePreview')}</p>
+          <div
+            data-testid="live-preview-empty"
+            className="rounded-2xl border-2 border-dashed border-border bg-muted/30 p-8 text-center space-y-3"
+          >
+            <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground" />
+            <p className="font-bold text-foreground">{t('trips.create.livePreviewEmptyTitle')}</p>
+            <p className="text-sm text-muted-foreground">{t('trips.create.livePreviewEmptyBody')}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="hidden lg:block">
       <div className="sticky top-24 space-y-4">

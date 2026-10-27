@@ -265,6 +265,7 @@ export default function AgencyTripsPage() {
                           source="agency-share"
                           size="sm"
                           iconOnly
+                          showDisabledWhenOff
                           className="h-auto border-none bg-transparent p-2 text-muted-foreground shadow-none hover:bg-muted hover:text-primary rounded-lg"
                         />
                       )}

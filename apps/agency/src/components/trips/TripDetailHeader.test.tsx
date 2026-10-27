@@ -60,9 +60,12 @@ describe('TripDetailHeader (#468 share action)', () => {
     expect(screen.queryByRole('button', { name: 'share.button' })).toBeNull();
   });
 
-  it('hides the share action while the B12 sharing gate is off', () => {
+  it('shows a disabled share affordance while the B12 sharing gate is off (#561)', () => {
     delete process.env.NEXT_PUBLIC_SHARING_ENABLED;
     render(<TripDetailHeader {...baseProps} tripStatus={TripStatus.Active} />);
     expect(screen.queryByRole('button', { name: 'share.button' })).toBeNull();
+    const disabled = screen.getByRole('button', { name: 'share.opensAtLaunch' }) as HTMLButtonElement;
+    expect(disabled.disabled).toBe(true);
+    expect(screen.getByText('share.opensAtLaunch')).not.toBeNull();
   });
 });

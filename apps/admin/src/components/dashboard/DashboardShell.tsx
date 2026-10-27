@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Search, LogOut } from 'lucide-react';
 import { Card, CardContent, ThemeToggle, LanguageSwitcher, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, BetaBadge, Logo } from '@ouiboo/ui';
 import type { AdminTab } from './types';
+import FlagDiagnostics from './FlagDiagnostics';
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -21,6 +22,8 @@ type SummaryCard = {
   value: number | string;
   icon: React.ComponentType<{ className?: string }>;
   tone: string;
+  /** #559: cards with a deep link (e.g. refund urgency) render as buttons. */
+  onClick?: () => void;
 };
 
 type DashboardShellProps = {
@@ -81,6 +84,9 @@ export default function DashboardShell({
           );
         })}
      </nav>
+
+     {/* #580: build-stamped flag readout — ends "broken or gated?" reports. */}
+     <FlagDiagnostics t={t} />
   </aside>
 
   {/* Main Content */}
@@ -150,8 +156,8 @@ export default function DashboardShell({
      </header>
 
      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {summaryCards.map((card) => (
-          <Card key={card.label} className="border-none shadow-sm rounded-2xl">
+        {summaryCards.map((card) => {
+          const inner = (
             <CardContent className="p-6 flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{card.label}</p>
@@ -161,8 +167,23 @@ export default function DashboardShell({
                 <card.icon className="h-6 w-6" />
               </div>
             </CardContent>
-          </Card>
-        ))}
+          );
+          return card.onClick ? (
+            <button
+              key={card.label}
+              type="button"
+              onClick={card.onClick}
+              aria-label={card.label}
+              className="text-start rounded-2xl focus:outline-none focus:ring-2 focus:ring-sunset-orange/40"
+            >
+              <Card className="border-none shadow-sm rounded-2xl hover:shadow transition-shadow">{inner}</Card>
+            </button>
+          ) : (
+            <Card key={card.label} className="border-none shadow-sm rounded-2xl">
+              {inner}
+            </Card>
+          );
+        })}
      </section>
 
          {/* Content Area */}

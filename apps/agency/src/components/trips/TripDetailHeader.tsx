@@ -50,7 +50,7 @@ export function TripDetailHeader({
         {/* #468: share the public traveller URL — active trips only, their
             public page exists; drafts/inactive/archived ones do not. */}
         {tripStatus === TripStatus.Active && tripTitle && (
-          <ShareTripButton tripId={tripId} tripTitle={tripTitle} travelerBaseUrl={TRAVELER_URL} source="agency-share" size="sm" />
+          <ShareTripButton tripId={tripId} tripTitle={tripTitle} travelerBaseUrl={TRAVELER_URL} source="agency-share" size="sm" showDisabledWhenOff />
         )}
         {/* Deactivate/Activate toggle - always safe, keeps bookings */}
         {(tripStatus === TripStatus.Active || tripStatus === TripStatus.Inactive) && (

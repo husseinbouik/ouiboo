@@ -242,6 +242,33 @@ export type AdminOverviewCounts = {
   bookingsToday: number;
   pendingPaymentProofs: number;
   auditLogs: number;
+  /** #559: refund urgency counters, when a future API version provides them. */
+  refundsOverdue?: number;
+  refundsDueWithin48h?: number;
+};
+
+/** #559: shape of GET /admin/analytics/beta-metrics (#432 service output). */
+export type AdminBetaMetrics = {
+  window: { from: string; to: string };
+  generatedAt: string;
+  searches: { total: number; zeroResult: number; zeroResultRate: number | null };
+  bookings: { created: number; byStatus: Record<string, number>; completed: number };
+  refunds: {
+    opened: number;
+    byStatus: Record<string, number>;
+    completed: number;
+    sla: { initiated: number; initiatedWithin7d: number; percentWithin7d: number | null };
+    overdueNow: number;
+    proofToBankConfirmationLagHours: { samples: number; median: number | null; average: number | null };
+  };
+  disputes: { opened: number; per1000Bookings: number | null };
+  stuck: { bookingsAwaitingValidationOver48h: number; refundCasesPastDueOver48h: number; total: number };
+  duplicates: { duplicateBookings: number; rate: number | null };
+  terms: { nullTermsInWindow: number; recordedRate: number | null; nullTermsAllTime: number };
+  sweepPauses: { agenciesCurrentlyPaused: number; note: string };
+  interventions: { count: number; per100Bookings: number | null };
+  support: { responseWithin48hPercent: number | null; derivable: boolean; reason: string };
+  exitCriteria: Array<{ key: string; target: string; value: number | null; pass: boolean | null }>;
 };
 
 export type FeedbackState = {

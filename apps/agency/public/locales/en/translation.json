@@ -7,7 +7,8 @@
     "whatsapp": "WhatsApp",
     "facebook": "Facebook",
     "x": "X",
-    "telegram": "Telegram"
+    "telegram": "Telegram",
+    "opensAtLaunch": "Sharing opens at public launch"
   },
   "auth": {
     "errors": {
@@ -447,7 +448,9 @@
       "cancellationRemoveBand": "Remove band",
       "cancellationBandAtLeast": "{{days}} or more days before: {{percent}}% refund",
       "cancellationBandLessThan": "Less than {{days}} days before: {{percent}}% refund",
-      "structureNote": "Days are added and ordered in French, the canonical structure — this tab only translates each day's text."
+      "structureNote": "Days are added and ordered in French, the canonical structure — this tab only translates each day's text.",
+      "livePreviewEmptyTitle": "Nothing to preview yet",
+      "livePreviewEmptyBody": "Add a title, description, location or photo and the preview of your trip will appear here."
     }
   },
   "payments": {
@@ -1128,5 +1131,24 @@
         "ADMIN_REVIEW": "OuiBoo admin review"
       }
     }
+  },
+  "sharePreview": {
+    "title": "Link preview",
+    "liveNote": "Sharing is on: this is the preview social apps will render for this trip.",
+    "gatedNote": "Sharing is off for the beta: the live public preview is the generic Ouiboo card. This is the preview this trip will carry when sharing opens at public launch.",
+    "shareTextLabel": "Share text",
+    "noPublicBase": "No public traveller address is configured for this build, so no share link can be previewed."
+  },
+  "betaNotAvailable": {
+    "title": "Not in the beta",
+    "subtitle": "The closed beta is completely free.",
+    "billingTitle": "Billing & subscription are not part of the beta",
+    "walletTitle": "There is no Ouiboo wallet in the beta",
+    "body": "During the closed beta there is no platform fee, no subscription and no credits — nothing to pay Ouiboo and nothing to cancel. This surface opens when paid plans launch after the beta.",
+    "paymentsNote": "Traveller payments are separate: travellers pay your agency directly (bank transfer or your payment provider). Ouiboo never holds traveller money, so there is no Ouiboo balance to withdraw.",
+    "viewPayments": "View payments received directly",
+    "viewBookings": "View bookings",
+    "walletBannerTitle": "Free beta — no wallet, fees or credits",
+    "walletBannerBody": "This page records traveller payments made directly to your agency. Ouiboo does not hold the money and charges no fee during the beta; the totals below are a record, not a balance."
   }
 }

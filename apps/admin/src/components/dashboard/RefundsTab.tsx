@@ -30,6 +30,9 @@ type RefundsTabProps = {
   /** #416C: audit-queue view toggle (completed + auditRequired + unaudited). */
   auditQueue?: boolean;
   onAuditQueueChange?: (value: boolean) => void;
+  /** #559: urgency pre-filter applied from the summary cards (deep link). */
+  urgencyFilter?: 'overdue' | 'due48' | null;
+  onClearUrgencyFilter?: () => void;
 };
 
 type RefundAction = 'review' | 'approve' | 'reject' | 'initiate' | 'complete' | 'fail';
@@ -90,7 +93,7 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | '
  * the lifecycle and SLA; overdue cases restrict the agency's new
  * bookings (existing bookings are never affected).
  */
-export default function RefundsTab({ t, cases, pagination, onPageChange, paginationLabels, auditQueue = false, onAuditQueueChange }: RefundsTabProps) {
+export default function RefundsTab({ t, cases, pagination, onPageChange, paginationLabels, auditQueue = false, onAuditQueueChange, urgencyFilter = null, onClearUrgencyFilter }: RefundsTabProps) {
   const queryClient = useQueryClient();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [reviewTarget, setReviewTarget] = useState<AdminRefundCase | null>(null);
@@ -214,6 +217,20 @@ export default function RefundsTab({ t, cases, pagination, onPageChange, paginat
     setRepairTarget(refundCase);
   };
 
+  // #559: visible pre-filter chip when arriving from a summary card.
+  const urgencyBanner = urgencyFilter ? (
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-muted/40 px-4 py-2 text-sm">
+      <span className="font-semibold text-foreground">
+        {t(urgencyFilter === 'overdue' ? 'dashboard.refunds.urgency.overdueFilter' : 'dashboard.refunds.urgency.due48Filter')}
+      </span>
+      {onClearUrgencyFilter && (
+        <Button size="sm" variant="outline" onClick={onClearUrgencyFilter}>
+          {t('dashboard.refunds.urgency.clearFilter')}
+        </Button>
+      )}
+    </div>
+  ) : null;
+
   const viewToggle = onAuditQueueChange ? (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
@@ -241,6 +258,7 @@ export default function RefundsTab({ t, cases, pagination, onPageChange, paginat
   if (cases.length === 0) {
     return (
       <div className="space-y-4">
+        {urgencyBanner}
         {viewToggle}
         <Card className="p-10 text-center space-y-3">
           <RotateCcw className="h-10 w-10 mx-auto text-muted-foreground" />
@@ -257,6 +275,7 @@ export default function RefundsTab({ t, cases, pagination, onPageChange, paginat
 
   return (
     <div className="space-y-4">
+      {urgencyBanner}
       {viewToggle}
       {repairFeedback && <div className="text-sm font-medium text-success">{repairFeedback}</div>}
       {reviewFeedback && <div className="text-sm font-medium text-success">{reviewFeedback}</div>}
