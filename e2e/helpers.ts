@@ -174,6 +174,14 @@ export const mockTravelerApi = async (page: Page) => {
               insuranceStatus: 'VERIFIED',
               insuranceVerifiedAt: '2026-10-01T00:00:00.000Z',
             },
+            // #336: same data-URI images as the detail fixture and the
+            // mock API server — the list shape must mirror the server's
+            // (see the header note in mock-api-server.mjs), and SSR vs
+            // client refetch must not swap in differently-hosted images.
+            images: [
+              'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgR05oigAAAAASUVORK5CYII=',
+              'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgR05oigAAAAASUVORK5CYII=',
+            ],
             sessions: [
               {
                 id: 'session-1',
@@ -214,9 +222,12 @@ export const mockTravelerApi = async (page: Page) => {
         durationDays: 3,
         durationNights: 2,
         description: 'A guided mountain escape for launch testing.',
+        // #336: data-URI PNGs (mirrors e2e/mock-api-server.mjs) — the
+        // example.com URLs are outside the production next/image
+        // remotePatterns, so the optimizer 400'd them in the browser.
         images: [
-          'https://example.com/trip-1.jpg',
-          'https://example.com/trip-2.jpg',
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgR05oigAAAAASUVORK5CYII=',
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgR05oigAAAAASUVORK5CYII=',
         ],
         inclusions: ['Guide', 'Transport'],
         exclusions: ['Flights'],

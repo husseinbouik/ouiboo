@@ -48,9 +48,16 @@ const TRIP_1 = {
   durationDays: 3,
   durationNights: 2,
   description: 'A guided mountain escape for launch testing.',
+  // #336: fixture images are inline data-URI PNGs. The previous
+  // example.com URLs are not in the traveler app's production next/image
+  // remotePatterns, so the optimizer answered 400 for them and the
+  // console-hygiene gate failed; a remote mock-media URL fares no better
+  // (the optimizer refuses private-IP upstreams). Data URIs bypass the
+  // optimizer, load deterministically offline, and keep this suite
+  // hermetic — image CONTENT is not what these specs assert.
   images: [
-    'https://example.com/trip-1.jpg',
-    'https://example.com/trip-2.jpg',
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgR05oigAAAAASUVORK5CYII=',
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgR05oigAAAAASUVORK5CYII=',
   ],
   inclusions: ['Guide', 'Transport'],
   exclusions: ['Flights'],
