@@ -1,5 +1,6 @@
 export * from './src/booking-status'
 export * from './src/pagination'
+export * from './src/otp'
 export * from './src/share'
 export * from './src/support-contact'
 
