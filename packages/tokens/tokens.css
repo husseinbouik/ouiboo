@@ -6,6 +6,19 @@
  *
  * Color VALUES live here only. Apps keep app-specific concerns
  * (fonts, radius scale, component styles) in their own globals.
+ *
+ * Palette emphasis convention (founder decision, 2026-10-27):
+ * One shared brand palette for every app - deep blue #0A192F,
+ * sunset orange #FF6B35, sand #F7E1C3, ocean #2EC4B6. Apps
+ * differentiate by EMPHASIS, never by separate brand colours:
+ *   - Traveller: sunset orange leads (actions, gradients,
+ *     highlights); deep blue supports.
+ *   - Agency: deep blue leads (primary surfaces, navigation);
+ *     sunset orange only for actions and accents.
+ *   - Admin and Landing follow the agency (operator) emphasis,
+ *     unless a screen is traveller-facing marketing.
+ * The logo is unified across all apps and is never recoloured
+ * per app.
  */
 @theme inline {
   --color-background: var(--background);
