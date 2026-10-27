@@ -37,11 +37,13 @@ describe('email template safety', () => {
     const text = emailToPlainText(html)
 
     expect(html).toContain('name="viewport"')
-    // #570: the shell carries the one canonical (Open Graph) tagline —
-    // the retired third variant must not reappear. With no recorded
-    // locale the shell renders the French default.
-    expect(html).toContain('Des voyages qui laissent des souvenirs')
-    expect(html).not.toContain('Travel made personal')
+    // #563/#570: the shell carries the one canonical cross-surface
+    // tagline — the same line as the landing OG (PR #590) and the
+    // traveller OG (PR #593). The retired 'Find trips worth
+    // remembering' line must not reappear. With no recorded locale
+    // the shell renders the French default.
+    expect(html).toContain('Le voyage rendu personnel')
+    expect(html).not.toContain('Find trips worth remembering')
     expect(html).toContain('role="presentation"')
     const htmlEn = renderEmail({
       title: 'Booking received',
@@ -49,7 +51,14 @@ describe('email template safety', () => {
       content: emailParagraph('Hello'),
       locale: 'en',
     })
-    expect(htmlEn).toContain('Find trips worth remembering')
+    expect(htmlEn).toContain('Travel made personal')
+    const htmlAr = renderEmail({
+      title: 'Booking received',
+      preheader: 'Your booking is in.',
+      content: emailParagraph('Hello'),
+      locale: 'ar',
+    })
+    expect(htmlAr).toContain('سفر مصمم على مقاسك')
     expect(text).toContain('Booking received')
     expect(text).toContain('Your booking is ready.')
     expect(text).not.toContain('<p')

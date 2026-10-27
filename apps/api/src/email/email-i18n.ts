@@ -44,10 +44,11 @@ export function fillEmailCopy(
 
 const en = {
   layout: {
-    // #570: the one canonical tagline — the Open Graph line ("Ouiboo —
-    // Find trips worth remembering"). The email shell previously carried
-    // a third variant ("Travel made personal") found nowhere else.
-    tagline: 'Find trips worth remembering',
+    // #563/#570: the one canonical cross-surface tagline, as carried by
+    // the landing OG (PR #590) and the traveller OG (PR #593). Email is
+    // aligned to that same line here, so exactly one tagline exists
+    // across traveller OG, landing OG and email.
+    tagline: 'Travel made personal',
     serviceFooter: 'This is a service message from Ouiboo.',
     allRightsReserved: 'All rights reserved.',
     marketingReceivedBecause:
@@ -252,7 +253,7 @@ export type EmailStrings = typeof en
 
 const fr: EmailStrings = {
   layout: {
-    tagline: 'Des voyages qui laissent des souvenirs',
+    tagline: 'Le voyage rendu personnel',
     serviceFooter: 'Ceci est un message de service de Ouiboo.',
     allRightsReserved: 'Tous droits réservés.',
     marketingReceivedBecause:
@@ -448,7 +449,7 @@ const fr: EmailStrings = {
 
 const ar: EmailStrings = {
   layout: {
-    tagline: 'رحلات تستحق أن تبقى في الذاكرة',
+    tagline: 'سفر مصمم على مقاسك',
     serviceFooter: 'هذه رسالة خدمة من Ouiboo.',
     allRightsReserved: 'جميع الحقوق محفوظة.',
     marketingReceivedBecause:
