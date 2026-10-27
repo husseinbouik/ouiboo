@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { isSharingEnabled, scrubShareClaimWords } from '@ouiboo/utils';
+import { isBetaBadgeEnabled, isSharingEnabled, scrubShareClaimWords } from '@ouiboo/utils';
 import { absoluteTravelerUrl, metadataDescription, SITE_DESCRIPTION, SITE_NAME } from '@/lib/site';
 
 export type TripMetadataInput = {
@@ -31,6 +31,15 @@ export interface TripMetadataOptions {
    * env flag.
    */
   sharingEnabled?: boolean;
+  /**
+   * Council Session #2 B11 / Session #3 P0-5 (#553): while the closed
+   * beta runs, trip routes are invited-only — they serve `noindex` and
+   * stay out of the sitemap. Gated on the same beta condition as the
+   * BETA badge (NEXT_PUBLIC_BETA_BADGE, on unless exactly 'false'), so
+   * the public-launch flag flip lifts both together. Injectable for
+   * tests; defaults to the env flag.
+   */
+  betaMode?: boolean;
 }
 
 /**
@@ -58,11 +67,17 @@ export function buildTripMetadata(
 
   const canonicalPath = `/trip/${encodeURIComponent(trip.id)}`;
   const sharingEnabled = options.sharingEnabled ?? isSharingEnabled();
+  const betaMode = options.betaMode ?? isBetaBadgeEnabled();
+  // B11: invited-only slice — trip pages must not be indexed while beta.
+  const betaRobots: Metadata['robots'] = betaMode
+    ? { index: false, follow: false }
+    : undefined;
 
   if (!sharingEnabled) {
     return {
       title: SITE_NAME,
       description: SITE_DESCRIPTION,
+      robots: betaRobots,
       alternates: { canonical: canonicalPath },
       openGraph: {
         type: 'website',
@@ -92,6 +107,7 @@ export function buildTripMetadata(
   return {
     title,
     description,
+    robots: betaRobots,
     alternates: { canonical: canonicalPath },
     openGraph: {
       type: 'website',

@@ -132,6 +132,25 @@ describe('buildTripMetadata sharing gate (Council B12)', () => {
     expect(metadata.title).toBe('Atlas Hike — Ouiboo');
     expect(metadata.description).toBe('A trek with a guide');
   });
+
+  describe('B11 beta noindex (Session #3 P0-5, #553)', () => {
+    const trip = { id: 't9', title: 'Beta Trip', description: 'Desc', images: [] };
+
+    it('noindexes trip pages in beta mode with sharing on', () => {
+      const metadata = buildTripMetadata(trip, { sharingEnabled: true, betaMode: true });
+      expect(metadata.robots).toEqual({ index: false, follow: false });
+    });
+
+    it('noindexes trip pages in beta mode with sharing off', () => {
+      const metadata = buildTripMetadata(trip, { sharingEnabled: false, betaMode: true });
+      expect(metadata.robots).toEqual({ index: false, follow: false });
+    });
+
+    it('leaves trip pages indexable once beta mode is off', () => {
+      const metadata = buildTripMetadata(trip, { sharingEnabled: true, betaMode: false });
+      expect(metadata.robots).toBeUndefined();
+    });
+  });
 });
 
 describe('resolveTripCoverImage', () => {
