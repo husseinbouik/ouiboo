@@ -7,6 +7,9 @@ jest.mock('react-i18next', () => ({
         t: (key: string, options?: any) => {
             if (key === 'seller.organisedAndSoldBy') return `Organised and sold by ${options?.name}`;
             if (key === 'seller.licence') return `Travel-agent licence: ${options?.number}`;
+            if (key === 'seller.licenceTyped') return `Travel-agent licence: ${options?.type} ${options?.number}`;
+            if (key === 'seller.licenceIssued') return `Issued on ${options?.date} by ${options?.authority}`;
+            if (key === 'seller.licenceDetailsPending') return 'Licence issue details are being confirmed with the agency.';
             if (key === 'seller.licenceChecked') return `Licence document checked on ${options?.date}`;
             if (key === 'seller.insuranceEvidenced') return `RC insurance evidenced on ${options?.date}`;
             if (key === 'seller.poweredBy') return 'Powered by OuiBoo';
@@ -60,6 +63,61 @@ describe('getSellerDisplay (#371)', () => {
     it('honours the API-derived licenceVerified flag from the public endpoint', () => {
         expect(isLicenceVerifiedForDisplay({ licenceVerified: true })).toBe(true);
         expect(isLicenceVerifiedForDisplay({ licenceVerified: false, travelLicenceStatus: 'VERIFIED' })).toBe(false);
+    });
+});
+
+describe('seller block issue data (B4)', () => {
+    const verifiedAgency = {
+        companyName: 'Atlas Adventures',
+        legalName: 'Atlas Adventures SARL',
+        travelLicenceStatus: 'VERIFIED',
+        travelLicenceType: 'ODV',
+        travelLicenceNumber: 'AV-2024-0187',
+        licenceIssuedAt: '2024-03-15T00:00:00.000Z',
+        licenceIssuingAuthority: 'Ministère du Tourisme',
+    };
+
+    it('exposes the complete block — type, issue date, authority — when verified', () => {
+        const display = getSellerDisplay(verifiedAgency);
+        expect(display.licenceType).toBe('ODV');
+        expect(display.licenceIssuedAt?.toISOString()).toBe('2024-03-15T00:00:00.000Z');
+        expect(display.licenceIssuingAuthority).toBe('Ministère du Tourisme');
+        expect(display.licenceDetailsPending).toBe(false);
+    });
+
+    it('withholds type, issue date, and authority while the licence is not verified', () => {
+        const display = getSellerDisplay({ ...verifiedAgency, travelLicenceStatus: 'PENDING_REVIEW' });
+        expect(display.licenceType).toBeNull();
+        expect(display.licenceIssuedAt).toBeNull();
+        expect(display.licenceIssuingAuthority).toBeNull();
+        expect(display.licenceDetailsPending).toBe(false);
+    });
+
+    it('flags the legacy gap: verified but the issue data was never captured', () => {
+        const display = getSellerDisplay({
+            ...verifiedAgency,
+            licenceIssuedAt: null,
+            licenceIssuingAuthority: null,
+        });
+        expect(display.licenceDetailsPending).toBe(true);
+    });
+
+    it('renders type + number and the issued line for a complete verified record', () => {
+        render(<SellerIdentity agency={verifiedAgency} />);
+        expect(screen.getByText(/Travel-agent licence: ODV AV-2024-0187/)).not.toBeNull();
+        expect(screen.getByText(/Issued on .* by Ministère du Tourisme/)).not.toBeNull();
+        expect(screen.queryByText(/being confirmed with the agency/)).toBeNull();
+    });
+
+    it('renders the honest pending line for a legacy verified record', () => {
+        render(
+            <SellerIdentity
+                agency={{ ...verifiedAgency, licenceIssuedAt: null, licenceIssuingAuthority: null }}
+            />,
+        );
+        expect(screen.getByText(/Travel-agent licence: ODV AV-2024-0187/)).not.toBeNull();
+        expect(screen.getByText(/Licence issue details are being confirmed with the agency/)).not.toBeNull();
+        expect(screen.queryByText(/Issued on/)).toBeNull();
     });
 });
 

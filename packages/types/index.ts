@@ -407,6 +407,24 @@ export interface BookingAgencySummary {
      */
     emergencyContactName?: string;
     emergencyContactPhone?: string;
+    /**
+     * B4 (Council Session #2): seller-of-record fields for the
+     * Law 31-08 identity block on the durable booking confirmation
+     * (booking detail + post-checkout confirmation). Booking responses
+     * carry the agency profile; SellerIdentity withholds the licence
+     * facts unless the licence is verified, and shows the honest gap
+     * for legacy records missing the issue data.
+     */
+    legalName?: string | null;
+    travelLicenceType?: string | null;
+    travelLicenceNumber?: string | null;
+    travelLicenceStatus?: string | null;
+    licenceExpiry?: string | null;
+    licenceIssuedAt?: string | null;
+    licenceIssuingAuthority?: string | null;
+    licenceVerifiedAt?: string | null;
+    insuranceStatus?: string | null;
+    insuranceVerifiedAt?: string | null;
 }
 
 export interface BookingTemplateSummary {

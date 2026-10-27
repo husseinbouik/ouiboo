@@ -146,6 +146,15 @@ export type AdminAgency = {
   effectiveLicenceStatus?: string | null;
   licenceVerifiedAt?: string | null;
   licenceExpiry?: string | null;
+  // B4: licence issue date + issuing authority (Law 31-08 seller block)
+  licenceIssuedAt?: string | null;
+  licenceIssuingAuthority?: string | null;
+  /**
+   * B4: seller-block fields still missing on an effectively VERIFIED
+   * licence (server-derived data-completeness list). Absent/empty for
+   * complete records and for licences that are not verified.
+   */
+  sellerBlockMissingFields?: string[];
   licenceRejectionReason?: string | null;
   // #415: licence document (private upload) + Ministry-check stamp
   licenceDocumentKey?: string | null;

@@ -464,6 +464,9 @@
   "seller": {
     "organisedAndSoldBy": "Organisé et vendu par {{name}}",
     "licence": "Licence d'agent de voyages : {{number}}",
+    "licenceTyped": "Licence d'agent de voyages : {{type}} {{number}}",
+    "licenceIssued": "Délivrée le {{date}} par {{authority}}",
+    "licenceDetailsPending": "Les détails de délivrance de la licence sont en cours de confirmation auprès de l'agence.",
     "licenceChecked": "Document de licence vérifié le {{date}}",
     "insuranceEvidenced": "Assurance RC justifiée le {{date}}",
     "poweredBy": "Propulsé par OuiBoo"

@@ -201,6 +201,8 @@
       "rc": "Trade register (RC)",
       "taxId": "Tax ID (IF)",
       "licenceExpiry": "Licence expiry",
+      "licenceIssuedAt": "Licence issued on",
+      "licenceIssuingAuthority": "Issuing authority",
       "licenceVerifiedAt": "Licence verified on",
       "licenceRejectionReason": "Rejection reason",
       "licenceDocument": "Licence document",
@@ -235,6 +237,7 @@
     "messages": {
       "noBankDetails": "No bank details on file.",
       "noLicenceDocument": "No licence document uploaded",
+      "sellerBlockIncomplete": "Seller identity block incomplete — missing: {{fields}}. The agency must supply these before the block can render in full.",
       "noInsuranceCertificate": "No insurance certificate uploaded",
       "noPaymentProofs": "No payment proofs are waiting for review.",
       "reviewVerification": "Review verification details and approve or reject.",

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { CancellationScaleCard } from '@/components/CancellationScaleCard';
+import SellerIdentity from '@/components/SellerIdentity';
 import {
   canRetryTravelerPayment,
   canCancelTravelerBooking,
@@ -224,6 +225,13 @@ export default function BookingDetailsPage() {
                   </div>
                 </div>
               </div>
+
+              {/* B4 (Council Session #2): the Law 31-08 seller identity
+                  block on the durable booking confirmation — legal name,
+                  licence type + number, issue date, issuing authority,
+                  and the #413 what+when checks. Legacy records missing
+                  the issue data show the honest pending line. */}
+              <SellerIdentity agency={booking.session.template.agency} />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="rounded-2xl border border-border/60 bg-muted/20 p-5">
