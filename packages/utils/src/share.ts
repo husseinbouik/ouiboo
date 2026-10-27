@@ -154,11 +154,10 @@ export function scrubShareClaimWords(text: string): string {
       if (core.startsWith('و') && SHARE_CLAIM_WORDS.has(core.slice(1))) return false;
       return true;
     });
-  return kept
-    .join(' ')
-    .replace(/\s+([.,;:!?…])/g, '$1')
-    .replace(/\(\s*\)/g, '')
-    .trim();
+  // Join only — no regex tidy-up on the result (CodeQL: polynomial-regex
+  // rule). Dropping a token can leave a double space where punctuation was
+  // space-separated in the source; collapse literal double spaces instead.
+  return kept.join(' ').split('  ').join(' ').trim();
 }
 
 type ShareCapableNavigator = Pick<Navigator, 'share'>;
