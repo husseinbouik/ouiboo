@@ -1,5 +1,18 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsBoolean, IsString, IsInt, IsPositive, IsEnum, IsIn, IsOptional, IsNotEmpty, MaxLength } from 'class-validator';
+import { CURRENT_BOOKING_TERMS_VERSION } from '@ouiboo/types';
+
+/**
+ * B9 (Council Session #2, #481): the server-side allowlist of booking
+ * terms versions a NEW booking may be created under — the current
+ * version only. When the binding terms text changes, bump
+ * CURRENT_BOOKING_TERMS_VERSION in @ouiboo/types; the previous version
+ * is rejected for new bookings from that moment (existing bookings
+ * keep the version they were made under).
+ */
+export const ALLOWED_BOOKING_TERMS_VERSIONS: string[] = [
+    CURRENT_BOOKING_TERMS_VERSION,
+];
 
 export enum PaymentMethodEnum {
     BANK_TRANSFER = 'BANK_TRANSFER',
@@ -43,28 +56,35 @@ export class CreateBookingDto {
     @IsOptional()
     paymentMethod?: PaymentMethodEnum;
 
-    // #424 (Council P0-22): the traveller's active checkout UI locale.
-    // Persisted on the booking so every booking-journey email renders in
-    // the language the traveller booked in. Optional — older clients
-    // omit it and emails fall back to the default locale.
-    @ApiProperty({ enum: ['en', 'fr', 'ar'], example: 'fr', required: false, description: 'Checkout UI locale for transactional emails' })
+    // #424 (Council P0-22) + B9 (Council Session #2): the traveller's
+    // active checkout UI locale. Persisted on the booking so every
+    // booking-journey email renders in the language the traveller
+    // booked in. REQUIRED since B9 — the locale is part of the
+    // terms-acceptance record (version + locale + server timestamp);
+    // a booking without it is rejected (400).
+    @ApiProperty({ enum: ['en', 'fr', 'ar'], example: 'fr', description: 'Checkout UI locale for transactional emails' })
     @IsIn(['en', 'fr', 'ar'])
-    @IsOptional()
-    locale?: string;
+    locale!: string;
 
-    // #481: the version of the booking terms the checkout displayed and
-    // the traveller accepted (CURRENT_BOOKING_TERMS_VERSION in
-    // @ouiboo/types). Persisted on the booking with a server acceptance
-    // timestamp as the evidence of which terms the booking was made
-    // under. Optional — older clients omit it and the booking records
-    // NULL; a booking is never blocked on recording it. The whitelist
-    // pipe requires the field to be declared here for the checkout
-    // payload to be accepted at all.
-    @ApiProperty({ example: '1.0', required: false, description: 'Version of the booking terms accepted at checkout' })
+    // #481 + B9 (Council Session #2): explicit terms acceptance. The
+    // checkout's unchecked-by-default checkbox sends termsAccepted:
+    // true together with the version it displayed; the version alone
+    // is NOT acceptance. Both are REQUIRED for a new booking — a
+    // missing or false termsAccepted, a missing version, or a version
+    // outside the server allowlist is rejected (400) and no booking is
+    // created. This deliberately reverses #481's "never block a
+    // booking" clause for new bookings. The accepted version is
+    // persisted on the booking with a server acceptance timestamp as
+    // the evidence of which terms the booking was made under.
+    @ApiProperty({ example: true, description: 'Explicit acceptance of the booking terms (the checkout checkbox). Must be true.' })
+    @IsBoolean()
+    termsAccepted!: boolean;
+
+    @ApiProperty({ example: '1.0', enum: [...ALLOWED_BOOKING_TERMS_VERSIONS], description: 'Version of the booking terms accepted at checkout (server allowlist)' })
     @IsString()
-    @IsOptional()
+    @IsIn(ALLOWED_BOOKING_TERMS_VERSIONS)
     @MaxLength(32)
-    termsVersion?: string;
+    termsVersion!: string;
 }
 
 export class VerifyManualPaymentDto {

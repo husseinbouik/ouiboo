@@ -130,11 +130,14 @@
     "disclaimerTitle": "Important Disclaimer",
     "disclaimerBody": "Uploading a payment proof does not complete your payment. Your booking stays pending until the agency confirms the transfer in its bank account — accepting the proof image alone is not settlement. This usually takes 2-4 business hours.",
     "prevailingLanguage": "If there is any inconsistency between the language versions of these terms, the French version prevails.",
+    "termsAccept": "I accept the booking terms (version {{version}})",
+    "termsReadLink": "Read the terms",
     "errors": {
       "sessionRequired": "Session is required",
       "guestDetailsRequired": "Guest contact details are required",
       "bankDetailsMissing": "This agency has not configured verified bank transfer instructions yet",
-      "generic": "Unable to complete booking"
+      "generic": "Unable to complete booking",
+      "termsRequired": "You must accept the booking terms to complete your booking"
     },
     "confirmation": {
       "paymentCancelledBadge": "Payment cancelled",

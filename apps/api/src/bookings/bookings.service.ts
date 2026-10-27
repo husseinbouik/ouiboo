@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { UserRole } from '@ouiboo/types';
+import { CURRENT_BOOKING_TERMS_VERSION, UserRole } from '@ouiboo/types';
 import { DatabaseService } from '../database/database.service';
 import { CreateBookingDto, PaymentMethodEnum } from './dto/create-booking.dto';
 import { EmailService } from '../email/email.service';
@@ -41,6 +41,24 @@ export class BookingsService {
             if (typeof value !== 'string' || value.trim().length === 0) {
                 throw new BadRequestException(field + ' is required');
             }
+        }
+
+        // B9 (Council Session #2, #481): terms acceptance is a hard gate
+        // for NEW bookings — this deliberately reverses #481's "never
+        // block a booking" clause. The DTO pipe already rejects a
+        // missing termsAccepted / termsVersion / locale and any version
+        // outside the allowlist; these checks repeat the rule at the
+        // service boundary so no caller can create a booking without a
+        // complete acceptance record (explicit acceptance + allowlisted
+        // version + locale; the server stamps the timestamp below).
+        if (dto.termsAccepted !== true) {
+            throw new BadRequestException('The booking terms must be accepted to complete a booking');
+        }
+        if (dto.termsVersion !== CURRENT_BOOKING_TERMS_VERSION) {
+            throw new BadRequestException('Unknown booking terms version');
+        }
+        if (!dto.locale || !['en', 'fr', 'ar'].includes(dto.locale)) {
+            throw new BadRequestException('locale is required');
         }
 
         const session = await this.db.tripSession.findUnique({
@@ -183,15 +201,18 @@ export class BookingsService {
                     status: 'PENDING',
                     fullName: dto.fullName,
                     phoneNumber: dto.phoneNumber,
-                    // #424: persist the checkout locale so booking-journey
-                    // emails render in the traveller's language.
-                    locale: dto.locale ?? null,
-                    // #481: persist the accepted booking-terms version
-                    // with a server acceptance timestamp, so the booking
-                    // proves which terms it was made under. Clients that
-                    // send no version record NULL for both fields.
-                    termsVersion: dto.termsVersion ?? null,
-                    termsAcceptedAt: dto.termsVersion ? new Date() : null,
+                    // #424 + B9: persist the checkout locale so
+                    // booking-journey emails render in the traveller's
+                    // language; it is also part of the terms-acceptance
+                    // record. Required by the B9 gate above.
+                    locale: dto.locale,
+                    // #481 + B9: persist the accepted booking-terms
+                    // version with a server acceptance timestamp, so the
+                    // booking proves which terms it was made under. The
+                    // B9 gate guarantees both are always recorded for
+                    // new bookings (NULL survives only on pre-B9 rows).
+                    termsVersion: dto.termsVersion,
+                    termsAcceptedAt: new Date(),
                     paymentMethod: persistedPaymentMethod,
                 },
                 include: {

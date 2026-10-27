@@ -45,7 +45,12 @@ test.describe('traveler launch flow', () => {
     await expect(page.getByRole('heading', { name: /checkout/i })).toBeVisible();
     await page.getByPlaceholder(/abderrahmane/i).fill('Launch Traveler');
     await page.getByPlaceholder(/include country code/i).fill('+212600000000');
-    await page.getByRole('button', { name: /complete booking/i }).click();
+    // B9: the booking terms checkbox (unchecked by default) gates submit.
+    const completeButton = page.getByRole('button', { name: /complete booking/i });
+    await expect(completeButton).toBeDisabled();
+    await page.getByRole('checkbox', { name: /accept the booking terms/i }).check();
+    await expect(completeButton).toBeEnabled();
+    await completeButton.click();
 
     await page.waitForURL(/\/checkout\/confirmation\?bookingId=booking-1/);
     await expect(page.getByText(/booking submitted/i)).toBeVisible();

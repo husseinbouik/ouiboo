@@ -130,11 +130,14 @@
     "disclaimerTitle": "Avis important",
     "disclaimerBody": "Téléverser une preuve de paiement ne finalise pas votre paiement. Votre réservation reste en attente jusqu'à ce que l'agence confirme le virement sur son compte bancaire — l'acceptation de la seule image de la preuve ne vaut pas règlement. Cela prend généralement 2 à 4 heures ouvrables.",
     "prevailingLanguage": "En cas de divergence entre les versions linguistiques de ces conditions, la version française prévaut.",
+    "termsAccept": "J'accepte les conditions de réservation (version {{version}})",
+    "termsReadLink": "Lire les conditions",
     "errors": {
       "sessionRequired": "Une session est requise",
       "guestDetailsRequired": "Les coordonnées du voyageur sont requises",
       "bankDetailsMissing": "Cette agence n'a pas encore configuré d'instructions de virement bancaire vérifiées",
-      "generic": "Impossible de finaliser la réservation"
+      "generic": "Impossible de finaliser la réservation",
+      "termsRequired": "Vous devez accepter les conditions de réservation pour finaliser votre réservation"
     },
     "confirmation": {
       "paymentCancelledBadge": "Paiement annulé",

@@ -428,13 +428,20 @@ export interface BookingDetails extends Booking {
     /** #417: cancellation scale snapshotted at booking creation (resolved from the template for legacy bookings). */
     cancellationScale?: CancellationScaleSnapshot;
     /**
-     * #481: the booking-terms version the traveller accepted at
-     * checkout (see CURRENT_BOOKING_TERMS_VERSION) and the server
-     * timestamp of that acceptance. Null when not recorded (pre-#481
-     * bookings and clients that did not send a version).
+     * #481 + B9 (Council Session #2): the booking-terms version the
+     * traveller accepted at checkout (see CURRENT_BOOKING_TERMS_VERSION)
+     * and the server timestamp of that acceptance. Required on every new
+     * booking since B9; null only on pre-B9 bookings, which admin
+     * surfaces label "terms version unrecorded".
      */
     termsVersion?: string | null;
     termsAcceptedAt?: string | null;
+    /**
+     * #424 + B9: the checkout UI locale the booking was made in —
+     * part of the terms-acceptance record (version + locale + server
+     * timestamp). Null only on bookings that predate its capture.
+     */
+    locale?: string | null;
     review?: {
         id: string;
     };

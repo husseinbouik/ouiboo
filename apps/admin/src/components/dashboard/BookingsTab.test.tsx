@@ -239,8 +239,9 @@ describe('BookingsTab bank-confirmation state (#422)', () => {
     expect(screen.getByText(/dashboard\.table\.termsAccepted/)).not.toBeNull();
   });
 
-  it('renders no terms-acceptance line when none was recorded (#481)', () => {
+  it('labels a booking with no recorded terms as unrecorded, never with a version (B9)', () => {
     renderTab();
     expect(screen.queryByText(/dashboard\.table\.termsAccepted/)).toBeNull();
+    expect(screen.getByText('dashboard.table.termsUnrecorded')).not.toBeNull();
   });
 });

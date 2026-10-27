@@ -54,6 +54,7 @@ const baseOptions = {
     phoneNumber: '+212600000000',
     hasBankDetails: true,
     proofFile: null,
+    termsAccepted: true,
 };
 
 // CIN removal (founder decision 2026-10-25): booking creation needs name +
@@ -84,13 +85,31 @@ describe('useCheckoutBooking (CIN removal)', () => {
             // #424: the active checkout locale travels with the booking so
             // booking-journey emails render in the traveller's language.
             locale: 'en',
-            // #481: the version of the booking terms this checkout
-            // displays, persisted by the API with a server acceptance
+            // #481 + B9: the explicit acceptance flag plus the version
+            // of the booking terms this checkout displays — the API
+            // requires both and persists them with a server acceptance
             // timestamp.
+            termsAccepted: true,
             termsVersion: CURRENT_BOOKING_TERMS_VERSION,
         });
         expect(payload).not.toHaveProperty('documentNumber');
         expect(pushMock).toHaveBeenCalledWith('/checkout/confirmation?bookingId=booking-1&proof=0');
+    });
+
+    it('rejects when the terms were not accepted, without calling the API (B9)', async () => {
+        const { result } = renderHook(
+            () => useCheckoutBooking({ ...baseOptions, termsAccepted: false }),
+            { wrapper },
+        );
+        await act(async () => {
+            result.current.createBookingMutation.mutate();
+        });
+
+        await waitFor(() => expect(result.current.createBookingMutation.isError).toBe(true));
+        expect(postMock).not.toHaveBeenCalled();
+        expect(result.current.errorMessage).toBe(
+            'You must accept the booking terms to complete your booking',
+        );
     });
 
     it('rejects when guest contact details are missing, without calling the API', async () => {

@@ -109,15 +109,23 @@ export default function BookingsTab({
                  <td className="px-6 py-4">
                     <p className="font-bold text-sm line-clamp-1">{booking.session.template.title}</p>
                     <p className="text-[10px] text-muted-foreground font-mono italic">#{booking.id.substring(0, 8)}</p>
-                    {/* #481: read-only terms-acceptance evidence — the
-                        version the traveller accepted for this booking
-                        and when the server recorded it. */}
-                    {booking.termsVersion && (
+                    {/* #481 + B9: read-only terms-acceptance evidence —
+                        the version the traveller accepted for this
+                        booking, when the server recorded it, and the
+                        checkout locale. Bookings with no recorded
+                        version are pre-B9 rows: label them honestly as
+                        unrecorded, never with a fabricated version. */}
+                    {booking.termsVersion ? (
                       <p className="text-[10px] text-muted-foreground">
                         {t('dashboard.table.termsAccepted', { version: booking.termsVersion })}
                         {booking.termsAcceptedAt
                           ? ` · ${new Date(booking.termsAcceptedAt).toLocaleDateString()}`
                           : ''}
+                        {booking.locale ? ` · ${booking.locale}` : ''}
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground">
+                        {t('dashboard.table.termsUnrecorded')}
                       </p>
                     )}
                  </td>

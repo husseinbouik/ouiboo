@@ -145,7 +145,8 @@
       "actor": "Actor",
       "target": "Target",
       "metadata": "Metadata",
-      "termsAccepted": "Terms v{{version}} accepted"
+      "termsAccepted": "Terms v{{version}} accepted",
+      "termsUnrecorded": "Terms version unrecorded"
     },
     "actions": {
       "review": "Review",

@@ -120,6 +120,11 @@ describe('BookingsService', () => {
             guestsCount: 2,
             fullName: 'Test Traveler',
             phoneNumber: '+212600000000',
+            // B9: a complete terms-acceptance record is required for
+            // every new booking (flag + allowlisted version + locale).
+            termsAccepted: true,
+            termsVersion: '1.0',
+            locale: 'en',
         };
         const availableSession = {
             id: 'session-123',
@@ -337,13 +342,23 @@ describe('BookingsService', () => {
             expect(createData.locale).toBe('fr');
         });
 
-        it('records a null locale when the client does not send one (#424)', async () => {
+        it('rejects a booking without a locale — the acceptance record must be complete (B9)', async () => {
             mockSuccessfulCreate();
 
-            await service.create('user-123', createDto);
+            const { locale: _omitted, ...withoutLocale } = createDto;
+            await expect(service.create('user-123', withoutLocale as any)).rejects.toThrow(
+                'locale is required',
+            );
+            expect(db.booking.create).not.toHaveBeenCalled();
+        });
 
-            const createData = db.booking.create.mock.calls[0][0].data;
-            expect(createData.locale).toBeNull();
+        it('rejects a booking with an unsupported locale (B9)', async () => {
+            mockSuccessfulCreate();
+
+            await expect(service.create('user-123', { ...createDto, locale: 'de' } as any)).rejects.toThrow(
+                'locale is required',
+            );
+            expect(db.booking.create).not.toHaveBeenCalled();
         });
 
         it('persists the accepted terms version with a server timestamp (#481)', async () => {
@@ -359,14 +374,36 @@ describe('BookingsService', () => {
             expect(createData.termsAcceptedAt.getTime()).toBeLessThanOrEqual(Date.now());
         });
 
-        it('records null terms acceptance when the client sends no version (#481)', async () => {
+        it('rejects a booking whose terms were not explicitly accepted (B9)', async () => {
             mockSuccessfulCreate();
 
-            await service.create('user-123', createDto);
+            const { termsAccepted: _omitted, ...withoutFlag } = createDto;
+            await expect(service.create('user-123', withoutFlag as any)).rejects.toThrow(
+                'The booking terms must be accepted to complete a booking',
+            );
+            await expect(service.create('user-123', { ...createDto, termsAccepted: false })).rejects.toThrow(
+                'The booking terms must be accepted to complete a booking',
+            );
+            expect(db.booking.create).not.toHaveBeenCalled();
+        });
 
-            const createData = db.booking.create.mock.calls[0][0].data;
-            expect(createData.termsVersion).toBeNull();
-            expect(createData.termsAcceptedAt).toBeNull();
+        it('rejects a booking without a terms version (B9)', async () => {
+            mockSuccessfulCreate();
+
+            const { termsVersion: _omitted, ...withoutVersion } = createDto;
+            await expect(service.create('user-123', withoutVersion as any)).rejects.toThrow(
+                'Unknown booking terms version',
+            );
+            expect(db.booking.create).not.toHaveBeenCalled();
+        });
+
+        it('rejects a booking under an unknown terms version — the allowlist is the current version only (B9)', async () => {
+            mockSuccessfulCreate();
+
+            await expect(service.create('user-123', { ...createDto, termsVersion: '9.9' })).rejects.toThrow(
+                'Unknown booking terms version',
+            );
+            expect(db.booking.create).not.toHaveBeenCalled();
         });
 
         it('snapshots the platform default cancellation scale onto the booking (#417)', async () => {
@@ -560,6 +597,10 @@ describe('BookingsService', () => {
             guestsCount: 2,
             fullName: 'Test Traveler',
             phoneNumber: '+212600000000',
+            // B9: complete terms-acceptance record (see the create suite).
+            termsAccepted: true,
+            termsVersion: '1.0',
+            locale: 'en',
         };
         const stagedSession = {
             id: 'session-123',

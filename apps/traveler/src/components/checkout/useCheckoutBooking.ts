@@ -18,6 +18,8 @@ type UseCheckoutBookingOptions = {
   phoneNumber: string;
   hasBankDetails: boolean;
   proofFile: File | null;
+  /** B9: the traveller's explicit terms acceptance (checkout checkbox). */
+  termsAccepted: boolean;
 };
 
 export function useCheckoutBooking({
@@ -29,6 +31,7 @@ export function useCheckoutBooking({
   phoneNumber,
   hasBankDetails,
   proofFile,
+  termsAccepted,
 }: UseCheckoutBookingOptions) {
   const router = useRouter();
   const { t, i18n } = useTranslation();
@@ -45,6 +48,12 @@ export function useCheckoutBooking({
       }
       if (!hasBankDetails) {
         throw new Error(t('checkout.errors.bankDetailsMissing'));
+      }
+      // B9: never create a booking without the explicit acceptance —
+      // the API rejects it (400) either way; failing here keeps the
+      // traveller on the checkout with a clear message.
+      if (!retryBookingId && !termsAccepted) {
+        throw new Error(t('checkout.errors.termsRequired'));
       }
 
       // Retry path: a booking already exists (created by a previous attempt whose proof
@@ -63,10 +72,13 @@ export function useCheckoutBooking({
           // persists it on the booking so booking-journey emails render
           // in this language.
           locale: (i18n.language || 'en').split('-')[0],
-          // #481: the version of the booking terms this checkout
-          // displays — the API persists it on the booking with a server
-          // acceptance timestamp, so the booking proves which terms it
-          // was made under.
+          // #481 + B9: explicit acceptance of the booking terms this
+          // checkout displays. The API requires the termsAccepted flag
+          // (the version alone is not acceptance), rejects versions
+          // outside its allowlist, and persists version + locale with a
+          // server acceptance timestamp, so the booking proves which
+          // terms it was made under and in which language.
+          termsAccepted,
           termsVersion: CURRENT_BOOKING_TERMS_VERSION,
         });
         bookingId = response.data?.id ?? null;

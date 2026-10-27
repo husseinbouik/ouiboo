@@ -14,6 +14,7 @@ import { CheckoutHeader } from '@/components/checkout/CheckoutHeader';
 import { CheckoutGuestForm } from '@/components/checkout/CheckoutGuestForm';
 import { CheckoutPayment } from '@/components/checkout/CheckoutPayment';
 import { CheckoutDisclaimer } from '@/components/checkout/CheckoutDisclaimer';
+import { CheckoutTermsAcceptance } from '@/components/checkout/CheckoutTermsAcceptance';
 import { CheckoutSummary } from '@/components/checkout/CheckoutSummary';
 import { useCheckoutBooking } from '@/components/checkout/useCheckoutBooking';
 
@@ -34,6 +35,8 @@ export default function CheckoutPage() {
   const [guestCountOverride, setGuestCount] = useState<number | null>(null);
   const [fullNameOverride, setFullName] = useState<string | null>(null);
   const [phoneNumberOverride, setPhoneNumber] = useState<string | null>(null);
+  // B9: explicit terms acceptance — unchecked by default, gates submit.
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const retryBookingId = searchParams.get('retryBooking');
 
   useEffect(() => {
@@ -100,6 +103,7 @@ export default function CheckoutPage() {
     phoneNumber,
     hasBankDetails,
     proofFile,
+    termsAccepted,
   });
 
   const clearProof = () => {
@@ -131,11 +135,15 @@ export default function CheckoutPage() {
   );
   if (!trip) return <div className="min-h-screen flex items-center justify-center font-black">{t('checkout.tripNotFound')}</div>;
 
+  // B9: a retry only re-uploads proof for an existing booking (its
+  // acceptance is already recorded), so the checkbox gates new
+  // bookings only.
   const canSubmit = Boolean(
     selectedSessionId &&
     hasBankDetails &&
     fullName.trim() &&
-    phoneNumber.trim()
+    phoneNumber.trim() &&
+    (retryBookingId || termsAccepted)
   );
 
   return (
@@ -182,6 +190,8 @@ export default function CheckoutPage() {
             </Card>
 
             <CheckoutDisclaimer />
+
+            <CheckoutTermsAcceptance checked={termsAccepted} onChange={setTermsAccepted} />
           </div>
 
           {/* Right: Summary */}
