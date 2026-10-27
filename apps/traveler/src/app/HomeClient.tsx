@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { 
-  MapPin, Calendar, Star, ArrowRight, Compass, Shield, Zap, Heart, Mountain, Palmtree
+  MapPin, Calendar, Star, ArrowRight, Compass, Banknote, Zap, Heart, Mountain, Palmtree
 } from 'lucide-react';
 import { Button } from '@ouiboo/ui';
 import { motion, Variants } from 'framer-motion';
@@ -213,7 +213,7 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
             <div className="grid grid-cols-1 gap-y-16 lg:grid-cols-3 lg:gap-x-8">
                 <div className="flex flex-col items-center text-center">
                     <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-ocean-500/10">
-                        <Shield className="h-8 w-8 text-ocean-600 dark:text-ocean-300" />
+                        <Banknote className="h-8 w-8 text-ocean-600 dark:text-ocean-300" />
                     </div>
                     <h3 className="text-lg font-semibold text-foreground">{t('trust.secureTitle')}</h3>
                     <p className="mt-2 text-base text-muted-foreground max-w-xs">{t('trust.secureDescription')}</p>

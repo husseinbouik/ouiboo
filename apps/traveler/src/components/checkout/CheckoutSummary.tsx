@@ -4,7 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import Image from 'next/image';
 import { Card, CardContent, Button, Badge } from '@ouiboo/ui';
-import { MapPin, Calendar, Users, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { MapPin, Calendar, Users, Banknote, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '@ouiboo/utils';
 import type { CheckoutTrip } from './checkout-types';
 import SellerIdentity from '../SellerIdentity';
@@ -124,7 +124,7 @@ export function CheckoutSummary({
       {/* No opacity on this row (#332): opacity-50 dropped the muted
           text to ~2.1:1 contrast; the plain muted-foreground is AA. */}
       <div className="flex items-center justify-center gap-4 pt-4">
-        <ShieldCheck className="h-5 w-5" />
+        <Banknote className="h-5 w-5" />
         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('checkout.directPaymentNote')}</span>
       </div>
     </Card>

@@ -37,6 +37,13 @@ export function useCheckoutBooking({
   const { t, i18n } = useTranslation();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // #494 (B16): one idempotency key per booking attempt and one per
+  // proof attempt, generated once per checkout mount — double submits
+  // and retries replay the SAME key, so the API returns the original
+  // booking/proof instead of duplicating. A new visit = new keys.
+  const [bookingIdempotencyKey] = useState(() => crypto.randomUUID());
+  const [proofIdempotencyKey] = useState(() => crypto.randomUUID());
+
   const createBookingMutation = useMutation<BookingResponse, Error>({
     mutationFn: async () => {
       setErrorMessage(null);
@@ -80,6 +87,8 @@ export function useCheckoutBooking({
           // terms it was made under and in which language.
           termsAccepted,
           termsVersion: CURRENT_BOOKING_TERMS_VERSION,
+        }, {
+          headers: { 'Idempotency-Key': bookingIdempotencyKey },
         });
         bookingId = response.data?.id ?? null;
       }
@@ -89,7 +98,10 @@ export function useCheckoutBooking({
           const formData = new FormData();
           formData.append('file', proofFile);
           await apiClient.post(`/bookings/${bookingId}/payment-proof`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'Idempotency-Key': proofIdempotencyKey,
+            }
           });
         } catch {
           // The booking was created but the proof upload failed. Route the traveler to

@@ -11,7 +11,7 @@ export default function OpenGraphImage() {
         <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '960px' }}>
           <div style={{ color: '#FF8A4C', display: 'flex', fontSize: 42, fontWeight: 800 }}>Ouiboo</div>
           <div style={{ display: 'flex', fontSize: 72, fontWeight: 800, letterSpacing: '-3px', lineHeight: 1.05, marginTop: 36 }}>Travel experiences, made personal.</div>
-          <div style={{ color: '#DCE8F2', display: 'flex', fontSize: 30, lineHeight: 1.35, marginTop: 32 }}>Discover memorable trips from local experts and book with confidence.</div>
+          <div style={{ color: '#DCE8F2', display: 'flex', fontSize: 30, lineHeight: 1.35, marginTop: 32 }}>Discover memorable trips from local experts.</div>
         </div>
         <div style={{ background: '#FF8A4C', borderRadius: 999, bottom: 64, display: 'flex', height: 24, position: 'absolute', right: 72, width: 24 }} />
       </div>

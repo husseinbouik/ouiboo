@@ -4,7 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@ouiboo/ui';
-import { ChevronLeft, Lock } from 'lucide-react';
+import { ChevronLeft, Banknote } from 'lucide-react';
 import { cn } from '@ouiboo/ui/utils';
 
 export function CheckoutHeader() {
@@ -26,7 +26,7 @@ export function CheckoutHeader() {
         <div>
           <h1 className="text-4xl font-black font-display tracking-tight">{t('checkout.title')}</h1>
           <p className="text-muted-foreground font-medium flex items-center gap-2">
-            <Lock className="h-3.5 w-3.5" /> {t('checkout.secureProcess')}
+            <Banknote className="h-3.5 w-3.5" /> {t('checkout.secureProcess')}
           </p>
         </div>
       </div>

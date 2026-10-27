@@ -187,6 +187,7 @@ describe('E2E: booking + payment approval flow', () => {
             'booking-123',
             'traveler-123',
             expect.objectContaining({ mimetype: 'image/png' }),
+            undefined, // #494: no Idempotency-Key header on this request
         );
     });
 

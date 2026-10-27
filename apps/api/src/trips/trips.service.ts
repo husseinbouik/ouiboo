@@ -1,7 +1,7 @@
 import { Injectable, ForbiddenException, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripSessionDto } from './dto/create-trip.dto';
-import { BookingStatus, Prisma, SessionStatus, TripStatus } from '@ouiboo/database';
+import { BookingPaymentStatus, BookingStatus, Prisma, SessionStatus, TripStatus } from '@ouiboo/database';
 import { toMoneyDecimal } from '../common/money.util';
 import { canOrganise, getAgencyActivationBlock } from '../common/agency-licence.util';
 import { visibleBankDetails } from '../common/bank-details.util';
@@ -263,6 +263,14 @@ export class TripsService {
                                 // #317: the traveler card badges verified agencies from
                                 // this field; without it every card read "Agency Pending".
                                 verificationStatus: true,
+                                // #413 (Council B10): the card renders an explicit
+                                // what+when statement (what was checked + the date),
+                                // so the licence/insurance states and their
+                                // verification stamps ride along.
+                                travelLicenceStatus: true,
+                                licenceVerifiedAt: true,
+                                insuranceStatus: true,
+                                insuranceVerifiedAt: true,
                             },
                         },
                         _count: {
@@ -350,6 +358,12 @@ export class TripsService {
                         travelLicenceNumber: true,
                         travelLicenceStatus: true,
                         licenceExpiry: true,
+                        // #413 (Council B10): what+when verification statement
+                        // next to the seller identity — the licence check date
+                        // and the RC insurance evidence date.
+                        licenceVerifiedAt: true,
+                        insuranceStatus: true,
+                        insuranceVerifiedAt: true,
                     },
                 },
                 itinerary: {
@@ -624,6 +638,14 @@ export class TripsService {
                         BookingStatus.CONFIRMED,
                     ],
                 },
+                // #412 (Council Session #2, B15): a fully refunded
+                // booking (paymentStatus REFUNDED, derived from ledger
+                // totals when its refund cases complete) is
+                // economically closed — the traveller's money went
+                // back in full — so it must not block archiving the
+                // trip. Partially refunded bookings keep paymentStatus
+                // PAID/PARTIALLY_PAID and still count as active.
+                paymentStatus: { not: BookingPaymentStatus.REFUNDED },
             },
         });
     }

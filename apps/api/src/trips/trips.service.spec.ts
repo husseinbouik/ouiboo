@@ -286,6 +286,36 @@ describe('TripsService', () => {
         });
     });
 
+    describe('archiveTemplate (#412)', () => {
+        it('excludes fully refunded bookings from the active-booking block', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'ACTIVE' });
+            // The count query itself carries the exclusion, so a trip
+            // whose bookings all completed a full refund counts 0
+            // active bookings and archives.
+            db.booking.count.mockResolvedValue(0);
+            db.tripTemplate.update.mockResolvedValue({ ...mockTripTemplate, status: 'ARCHIVED' });
+
+            const result = await service.archiveTemplate('trip-123', 'agency-123');
+
+            expect(result.status).toBe('ARCHIVED');
+            const countWhere = db.booking.count.mock.calls[0][0].where;
+            expect(countWhere.session).toEqual({ templateId: 'trip-123' });
+            expect(countWhere.status.in).toEqual(['PENDING', 'AWAITING_VALIDATION', 'CONFIRMED']);
+            expect(countWhere.paymentStatus).toEqual({ not: 'REFUNDED' });
+        });
+
+        it('still blocks archiving while a non-refunded active booking exists', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'ACTIVE' });
+            db.booking.count.mockResolvedValue(1);
+
+            await expect(service.archiveTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(ConflictException);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+    });
+
     describe('findAllTemplates', () => {
         it('should pass q, category, and agencyId filters into the trip query', async () => {
             db.tripTemplate.findMany.mockResolvedValue([]);
@@ -316,6 +346,19 @@ describe('TripsService', () => {
                     agencyId: 'agency-123',
                 }),
             }));
+        });
+
+        it('selects the licence/insurance what+when fields for the card statement (#413)', async () => {
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(0);
+
+            await service.findAllTemplates({});
+
+            const args = db.tripTemplate.findMany.mock.calls[0][0];
+            expect(args.include.agency.select.travelLicenceStatus).toBe(true);
+            expect(args.include.agency.select.licenceVerifiedAt).toBe(true);
+            expect(args.include.agency.select.insuranceStatus).toBe(true);
+            expect(args.include.agency.select.insuranceVerifiedAt).toBe(true);
         });
     });
 
@@ -641,6 +684,10 @@ describe('TripsService', () => {
             expect(args.select.agency.select.travelLicenceNumber).toBe(true);
             expect(args.select.agency.select.travelLicenceStatus).toBe(true);
             expect(args.select.agency.select.licenceExpiry).toBe(true);
+            // #413 (Council B10): what+when statement dates.
+            expect(args.select.agency.select.licenceVerifiedAt).toBe(true);
+            expect(args.select.agency.select.insuranceStatus).toBe(true);
+            expect(args.select.agency.select.insuranceVerifiedAt).toBe(true);
         });
     });
 

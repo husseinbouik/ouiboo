@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { apiClient } from '@/lib/api-client';
 import { Button, Card, CardContent, Badge } from '@ouiboo/ui';
-import { AlertCircle, CheckCircle2, Loader2, ShieldCheck, Clock, UploadCloud } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, Landmark, Clock, UploadCloud } from 'lucide-react';
 import { cn } from '@ouiboo/ui/utils';
 import { BookingStatus, type BookingDetails } from '@ouiboo/types';
 
@@ -124,7 +124,7 @@ export default function CheckoutConfirmationPage() {
         : isConfirmed
         ? t('checkout.confirmation.agencyConfirmedNote')
         : t('checkout.confirmation.agencyPendingNote'),
-      icon: ShieldCheck,
+      icon: Landmark,
       state: isConfirmed ? 'complete' : 'pending'
     }
   ];

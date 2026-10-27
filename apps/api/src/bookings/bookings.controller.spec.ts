@@ -27,3 +27,42 @@ describe('BookingsController payment review routes (#422)', () => {
         expect(bookingsService.confirmBankPayment).toHaveBeenCalledWith('booking-1', 'agency-1', 'agency-user-1', dto);
     });
 });
+
+describe('BookingsController idempotency + duplicate-credit routes (#494)', () => {
+    const bookingsService = {
+        create: jest.fn(async () => ({ id: 'booking-1' })),
+        uploadPaymentProof: jest.fn(async () => ({ id: 'proof-1' })),
+        createDuplicateCreditFlag: jest.fn(async () => ({ id: 'flag-1', status: 'OPEN' })),
+    };
+    const controller = new BookingsController(bookingsService as any);
+
+    beforeEach(() => jest.clearAllMocks());
+
+    it('create forwards the Idempotency-Key header to the service', async () => {
+        const req = { user: { userId: 'traveler-1' } };
+        const dto = { sessionId: 'session-1', guestsCount: 2 };
+        await controller.create(req, dto as any, 'attempt-uuid-1');
+        expect(bookingsService.create).toHaveBeenCalledWith('traveler-1', dto, 'attempt-uuid-1');
+    });
+
+    it('create forwards an absent header as undefined (legacy behaviour)', async () => {
+        const req = { user: { userId: 'traveler-1' } };
+        const dto = { sessionId: 'session-1', guestsCount: 2 };
+        await controller.create(req, dto as any, undefined);
+        expect(bookingsService.create).toHaveBeenCalledWith('traveler-1', dto, undefined);
+    });
+
+    it('uploadPaymentProof forwards the Idempotency-Key header to the service', async () => {
+        const req = { user: { userId: 'traveler-1' } };
+        const file = { originalname: 'proof.png' };
+        await controller.uploadPaymentProof(req, 'booking-1', file as any, 'proof-uuid-1');
+        expect(bookingsService.uploadPaymentProof).toHaveBeenCalledWith('booking-1', 'traveler-1', file, 'proof-uuid-1');
+    });
+
+    it('flagDuplicateCredit forwards tenant, acting user and the report body', async () => {
+        const req = { tenantId: 'agency-1', user: { userId: 'agency-user-1' } };
+        const body = { amount: 200, bankReference: 'DUP-REF-1', note: null };
+        await controller.flagDuplicateCredit(req, 'booking-1', body);
+        expect(bookingsService.createDuplicateCreditFlag).toHaveBeenCalledWith('booking-1', 'agency-1', 'agency-user-1', body);
+    });
+});

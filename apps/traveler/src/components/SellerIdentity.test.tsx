@@ -1,12 +1,14 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import SellerIdentity, { getSellerDisplay, isLicenceVerifiedForDisplay } from './SellerIdentity';
+import SellerIdentity, { getSellerDisplay, getVerificationChecks, isLicenceVerifiedForDisplay } from './SellerIdentity';
 
 jest.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string, options?: any) => {
             if (key === 'seller.organisedAndSoldBy') return `Organised and sold by ${options?.name}`;
             if (key === 'seller.licence') return `Travel-agent licence: ${options?.number}`;
+            if (key === 'seller.licenceChecked') return `Licence document checked on ${options?.date}`;
+            if (key === 'seller.insuranceEvidenced') return `RC insurance evidenced on ${options?.date}`;
             if (key === 'seller.poweredBy') return 'Powered by OuiBoo';
             return key;
         },
@@ -98,5 +100,66 @@ describe('SellerIdentity (#371)', () => {
     it('renders nothing without an agency', () => {
         const { container } = render(<SellerIdentity agency={null} />);
         expect(container.firstChild).toBeNull();
+    });
+
+    it('renders the what+when checks line with the actual verification dates (#413)', () => {
+        const licenceDate = new Date('2026-10-24T00:00:00.000Z');
+        const insuranceDate = new Date('2026-10-25T00:00:00.000Z');
+        const fmt = (d: Date) => new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(d);
+        render(
+            <SellerIdentity
+                agency={{
+                    companyName: 'Atlas Adventures',
+                    legalName: 'Atlas Adventures SARL',
+                    travelLicenceStatus: 'VERIFIED',
+                    travelLicenceNumber: 'AV-2024-0187',
+                    licenceVerifiedAt: licenceDate.toISOString(),
+                    insuranceStatus: 'VERIFIED',
+                    insuranceVerifiedAt: insuranceDate.toISOString(),
+                }}
+            />,
+        );
+
+        expect(
+            screen.getByText(
+                `Licence document checked on ${fmt(licenceDate)} · RC insurance evidenced on ${fmt(insuranceDate)}`,
+            ),
+        ).not.toBeNull();
+    });
+
+    it('omits the checks line when the stamps are missing (#413)', () => {
+        render(
+            <SellerIdentity
+                agency={{
+                    companyName: 'Atlas Adventures',
+                    travelLicenceStatus: 'VERIFIED',
+                    travelLicenceNumber: 'AV-2024-0187',
+                }}
+            />,
+        );
+
+        expect(screen.queryByText(/Licence document checked on/)).toBeNull();
+        expect(screen.queryByText(/RC insurance evidenced on/)).toBeNull();
+    });
+});
+
+describe('getVerificationChecks (#413)', () => {
+    it('returns dates only for checks that passed', () => {
+        const checks = getVerificationChecks({
+            travelLicenceStatus: 'VERIFIED',
+            licenceVerifiedAt: '2026-10-24T00:00:00.000Z',
+            insuranceStatus: 'PENDING_REVIEW',
+            insuranceVerifiedAt: '2026-10-25T00:00:00.000Z',
+        });
+        expect(checks.licenceCheckedDate?.toISOString()).toBe('2026-10-24T00:00:00.000Z');
+        expect(checks.insuranceEvidencedDate).toBeNull();
+    });
+
+    it('returns no licence date when the licence is not verified', () => {
+        const checks = getVerificationChecks({
+            travelLicenceStatus: 'PENDING_REVIEW',
+            licenceVerifiedAt: '2026-10-24T00:00:00.000Z',
+        });
+        expect(checks.licenceCheckedDate).toBeNull();
     });
 });

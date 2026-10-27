@@ -8,6 +8,7 @@ import { UserRole } from '@ouiboo/types';
 import { DatabaseService } from '../database/database.service';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT, mapBookingDetails } from '../bookings/booking-response.util';
+import { serializeDuplicateCreditFlag } from '../bookings/bookings.service';
 import { toMoneyString } from '../common/money.util';
 import { UpdateAgencyProfileDto } from './dto/update-profile.dto';
 import { getAgencyActivationBlock } from '../common/agency-licence.util';
@@ -36,6 +37,17 @@ export class AgencyController {
         private readonly prisma: DatabaseService,
         private readonly externalPaymentsService: ExternalPaymentsService,
     ) { }
+
+    @Get('duplicate-credit-flags')
+    @ApiOperation({ summary: 'List this agency\'s duplicate-credit flags (#494)' })
+    async listDuplicateCreditFlags(@Request() req) {
+        const flags = await this.prisma.duplicateCreditFlag.findMany({
+            where: { agencyId: req.tenantId },
+            orderBy: { createdAt: 'desc' },
+            take: 200,
+        });
+        return flags.map(serializeDuplicateCreditFlag);
+    }
 
     @Post('subscription/cancel')
     @ApiOperation({ summary: 'Cancel the agency subscription at the end of the current period (#324)' })
