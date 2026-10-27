@@ -134,11 +134,29 @@ export const PLATFORM_DEFAULT_CANCELLATION_BANDS: Array<z.infer<typeof Cancellat
     { minDaysBeforeStart: 0, refundPercent: 0 },
 ];
 
+/**
+ * #546: one language's trip title + description inside the translations
+ * map. Entries may be partial (drafts, encouraged languages); the French
+ * entry is kept complete by the canonical title/description fields and
+ * the API's publish gate — not by this schema, so drafts stay saveable.
+ */
+export const TripTranslationEntrySchema = z.object({
+    title: z.string().max(300).optional(),
+    description: z.string().max(10000).optional(),
+});
+
+/** #546: language map keyed by ISO language code (fr/ar/en today, any future code by data). */
+export const TripTranslationsSchema = z.record(z.string(), TripTranslationEntrySchema);
+
 export const TripTemplateSchema = z.object({
     id: z.string(),
     agencyId: z.string(),
     title: z.string().min(3, "Title must be at least 3 characters"),
     description: z.string().min(10, "Description must be at least 10 characters"),
+    // #546: multilingual title + description. `title`/`description` above
+    // are the FRENCH text (required, canonical); translations carries the
+    // other languages (Arabic/English encouraged, never blocking).
+    translations: TripTranslationsSchema.optional(),
     category: z.nativeEnum(TripCategory),
     startLocation: z.string(),
     endLocation: z.string().optional(),
