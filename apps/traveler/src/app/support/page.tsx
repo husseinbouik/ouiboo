@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
-import { SUPPORT_EMAIL, supportMailto } from '@/lib/support';
+import { SUPPORT_EMAIL, isSupportEmailConfigured, supportMailto } from '@/lib/support';
 import { NORMAL_SUPPORT_RESPONSE_HOURS, REFUND_SLA_DAYS } from '@ouiboo/utils';
 
 /**
@@ -23,10 +23,16 @@ export default function TravelerSupportPage() {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
+  // Session #3 P0-7a (#555): when no monitored inbox is configured, the
+  // page explains the support split without publishing an address —
+  // the previous build published support@ouiboo.com, whose domain has
+  // no DNS and cannot receive mail.
   const sections = [
     {
       title: t('support.normalTitle'),
-      body: t('support.normalBody', { hours: NORMAL_SUPPORT_RESPONSE_HOURS, email: SUPPORT_EMAIL }),
+      body: isSupportEmailConfigured
+        ? t('support.normalBody', { hours: NORMAL_SUPPORT_RESPONSE_HOURS, email: SUPPORT_EMAIL ?? '' })
+        : t('support.normalBodyNoEmail', { hours: NORMAL_SUPPORT_RESPONSE_HOURS }),
     },
     {
       title: t('support.emergencyTitle'),
@@ -38,7 +44,9 @@ export default function TravelerSupportPage() {
     },
     {
       title: t('support.complaintsTitle'),
-      body: t('support.complaintsBody', { email: SUPPORT_EMAIL }),
+      body: isSupportEmailConfigured
+        ? t('support.complaintsBody', { email: SUPPORT_EMAIL ?? '' })
+        : t('support.complaintsBodyNoEmail'),
     },
   ];
 
@@ -51,12 +59,14 @@ export default function TravelerSupportPage() {
           </Link>
           <h1 className="text-4xl font-bold text-foreground">{t('support.title')}</h1>
           <p className="text-lg text-muted-foreground">{t('support.intro')}</p>
-          <a
-            href={supportMailto()}
-            className="inline-flex items-center gap-2 text-base font-black text-sunset-orange hover:text-orange-600"
-          >
-            {SUPPORT_EMAIL}
-          </a>
+          {isSupportEmailConfigured && supportMailto() ? (
+            <a
+              href={supportMailto() ?? undefined}
+              className="inline-flex items-center gap-2 text-base font-black text-sunset-orange hover:text-orange-600"
+            >
+              {SUPPORT_EMAIL}
+            </a>
+          ) : null}
         </div>
 
         <div className="mt-10 grid gap-6">

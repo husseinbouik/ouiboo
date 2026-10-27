@@ -4,15 +4,16 @@ import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button, ThemeToggle, LanguageSwitcher, BetaBadge, Logo } from '@ouiboo/ui';
-import { 
-  Menu, 
-  X, 
-  User, 
-  LogOut, 
-  Calendar as CalendarIcon, 
+import {
+  Menu,
+  X,
+  User,
+  LogOut,
+  Calendar as CalendarIcon,
   Heart,
   LayoutDashboard,
   Compass,
+  LifeBuoy,
   Zap
 } from 'lucide-react';
 import { useAuth } from './AuthContext';
@@ -104,6 +105,9 @@ const [isOpen, setIsOpen] = useState(false);
         { name: t('nav.explore'), href: '/search', icon: <Compass className="w-4 h-4" /> },
         { name: t('nav.featured'), href: '/trips/featured', icon: <Zap className="w-4 h-4" /> },
         { name: t('nav.wishlist'), href: '/wishlist', icon: <Heart className="w-4 h-4" /> },
+        // Session #3 P0-7b (#555): support was an orphan page — reachable
+        // only from a booking. It is a first-class nav route now.
+        { name: t('nav.support'), href: '/support', icon: <LifeBuoy className="w-4 h-4" /> },
     ];
 
   const isAuthPage = ['/login', '/signup', '/verify', '/forgot-password', '/reset-password', '/terms', '/privacy'].some(path => pathname.startsWith(path));
@@ -297,6 +301,9 @@ const [isOpen, setIsOpen] = useState(false);
                             {wishlistCountData?.count > 0 && (
                               <span className="ml-2 inline-flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-[12px] font-bold">{wishlistCountData.count}</span>
                             )}
+                        </Link>
+                        <Link onClick={() => setIsOpen(false)} href="/support" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
+                            {t('nav.support')} <LifeBuoy className="text-sunset-orange" />
                         </Link>
                </div>
 

@@ -3,8 +3,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Badge } from '@ouiboo/ui';
-import { Calendar, Info, Banknote, UploadCloud, CheckCircle2, X, Clock } from 'lucide-react';
+import { Calendar, Info, Banknote, UploadCloud, CheckCircle2, LifeBuoy, X, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
 import { formatCurrency } from '@ouiboo/utils';
@@ -179,6 +180,17 @@ export function CheckoutPayment({
           </div>
         </div>
       </div>
+
+      {/* Session #3 P0-7b (#555): a help route at the payment step —
+          checkout previously offered no route to support at the exact
+          moment a traveller is about to transfer money to an agency. */}
+      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+        <LifeBuoy className="h-4 w-4 text-sunset-orange" />
+        {t('checkout.helpQuestion')}{' '}
+        <Link href="/support" className="font-semibold text-sunset-orange hover:text-orange-600">
+          {t('support.fullSupportPage')}
+        </Link>
+      </p>
     </div>
   );
 }

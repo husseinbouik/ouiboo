@@ -31,6 +31,7 @@
     "profile": "Profile",
     "bookings": "My Bookings",
     "wishlist": "Wishlist",
+    "support": "Support",
     "logout": "Sign Out",
     "agencyPanel": "Agency Panel",
     "joinNow": "Join Now",
@@ -94,6 +95,7 @@
     "idNote": "We never ask for your ID number online. The agency may check your ID at departure, so please bring it with you.",
     "bankTransfer": "Bank Transfer",
     "bankTransferTitle": "Virement Bancaire",
+    "helpQuestion": "Questions about this payment?",
     "fallbackAgencyName": "the agency",
     "bankInstructionsHint": "Use the bank transfer instructions below",
     "paymentInstructionsUnavailable": "Payment instructions unavailable",
@@ -178,7 +180,10 @@
     "instantDescription": "Send a booking request and the agency confirms availability. No hidden fees."
   },
   "footer": {
-    "rights": "Copyright {{year}} Ouiboo. All rights reserved."
+    "rights": "Copyright {{year}} Ouiboo. All rights reserved.",
+    "support": "Support",
+    "privacy": "Privacy",
+    "terms": "Terms"
   },
   "login": {
     "title": "Welcome back",
@@ -290,7 +295,8 @@
     "highlightThree": "We protect sensitive data with encryption and secure access.",
     "highlightFour": "You can request data deletion at any time.",
     "contactTitle": "Questions?",
-    "contactBody": "Reach out to privacy@ouiboo.com and we'll respond quickly."
+    "contactBody": "Reach out to {{email}} and we'll respond quickly.",
+    "contactBodyNoEmail": "Reach out via the support page and we'll respond quickly."
   },
   "resetPassword": {
     "backToLogin": "Back to login",
@@ -514,6 +520,10 @@
     "refundsBody": "When a refund is owed, the agency has {{days}} days to complete it and OuiBoo chases it if it slips. You'll get an email as soon as a refund case is opened for you, and you can follow its status in your bookings.",
     "complaintsTitle": "Complaints",
     "complaintsBody": "To complain about a trip, an agency, or OuiBoo itself, email {{email}} with the subject \"Complaint\" and your booking reference. Complaints are answered on the normal support timeline.",
-    "safetyNote": "If anyone is in danger or needs urgent medical help, contact local emergency services first — then your agency."
+    "safetyNote": "If anyone is in danger or needs urgent medical help, contact local emergency services first — then your agency.",
+    "normalBodyNoEmail": "For everything else — bookings, payments, refunds, your account — your booking page carries your agency's contact and, during your trip, the OuiBoo escalation route. We reply within {{hours}} hours on the normal support lane.",
+    "complaintsBodyNoEmail": "To complain about a trip, an agency, or OuiBoo itself, use the contacts on your booking page and mention your booking reference. Complaints are answered on the normal support timeline.",
+    "escalationCall": "Call OuiBoo",
+    "escalationWhatsApp": "WhatsApp"
   }
 }

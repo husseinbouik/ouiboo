@@ -31,6 +31,7 @@
     "profile": "Profil",
     "bookings": "Mes réservations",
     "wishlist": "Favoris",
+    "support": "Assistance",
     "logout": "Se déconnecter",
     "agencyPanel": "Espace agence",
     "joinNow": "Rejoindre",
@@ -94,6 +95,7 @@
     "idNote": "Nous ne demandons jamais votre numéro de pièce d'identité en ligne. L'agence pourra vérifier votre pièce d'identité au départ, veuillez donc l'apporter avec vous.",
     "bankTransfer": "Virement bancaire",
     "bankTransferTitle": "Virement Bancaire",
+    "helpQuestion": "Des questions sur ce paiement ?",
     "fallbackAgencyName": "l'agence",
     "bankInstructionsHint": "Utilisez les instructions de virement ci-dessous",
     "paymentInstructionsUnavailable": "Instructions de paiement indisponibles",
@@ -178,7 +180,10 @@
     "instantDescription": "Envoyez une demande de réservation et l'agence confirmera la disponibilité. Aucun frais caché."
   },
   "footer": {
-    "rights": "Copyright {{year}} Ouiboo. Tous droits réservés."
+    "rights": "Copyright {{year}} Ouiboo. Tous droits réservés.",
+    "support": "Assistance",
+    "privacy": "Confidentialité",
+    "terms": "Conditions"
   },
   "login": {
     "title": "Bon retour",
@@ -290,7 +295,8 @@
     "highlightThree": "Nous protégeons les données sensibles par chiffrement et accès sécurisé.",
     "highlightFour": "Vous pouvez demander la suppression de vos données à tout moment.",
     "contactTitle": "Des questions ?",
-    "contactBody": "Écrivez à privacy@ouiboo.com et nous répondrons rapidement."
+    "contactBody": "Écrivez à {{email}} et nous répondrons rapidement.",
+    "contactBodyNoEmail": "Contactez-nous via la page d'assistance et nous répondrons rapidement."
   },
   "resetPassword": {
     "backToLogin": "Retour à la connexion",
@@ -514,6 +520,10 @@
     "refundsBody": "Quand un remboursement est dû, l'agence dispose de {{days}} jours pour l'effectuer et OuiBoo la relance en cas de retard. Vous recevez un e-mail dès qu'un dossier de remboursement est ouvert pour vous, et vous pouvez suivre son état dans vos réservations.",
     "complaintsTitle": "Réclamations",
     "complaintsBody": "Pour vous plaindre d'un voyage, d'une agence ou d'OuiBoo, écrivez à {{email}} avec l'objet « Réclamation » et votre référence de réservation. Les réclamations sont traitées dans les délais de l'assistance normale.",
-    "safetyNote": "Si une personne est en danger ou a besoin d'une aide médicale urgente, contactez d'abord les services d'urgence locaux — puis votre agence."
+    "safetyNote": "Si une personne est en danger ou a besoin d'une aide médicale urgente, contactez d'abord les services d'urgence locaux — puis votre agence.",
+    "normalBodyNoEmail": "Pour tout le reste — réservations, paiements, remboursements, votre compte — votre page de réservation indique le contact de votre agence et, pendant votre voyage, la voie d'escalade OuiBoo. Nous répondons sous {{hours}} heures dans le cadre de l'assistance normale.",
+    "complaintsBodyNoEmail": "Pour vous plaindre d'un voyage, d'une agence ou d'OuiBoo, utilisez les contacts figurant sur votre page de réservation en mentionnant votre référence de réservation. Les réclamations sont traitées dans les délais de l'assistance normale.",
+    "escalationCall": "Appeler OuiBoo",
+    "escalationWhatsApp": "WhatsApp"
   }
 }

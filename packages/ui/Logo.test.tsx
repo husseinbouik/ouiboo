@@ -22,7 +22,7 @@ const LOCKUPS: Record<string, string> = {
   'traveller navbar (desktop + mobile)': 'apps/traveler/src/components/Navbar.tsx',
   'traveller auth lockup': 'apps/traveler/src/components/AuthBrandLockup.tsx',
   'traveller auth side wordmark': 'apps/traveler/src/components/AuthSideWordmark.tsx',
-  'traveller home footer': 'apps/traveler/src/app/HomeClient.tsx',
+  'traveller global footer': 'apps/traveler/src/components/Footer.tsx',
   'agency sidebar': 'apps/agency/src/components/layout/AgencySidebar.tsx',
   'agency mobile nav': 'apps/agency/src/components/AgencyMobileNav.tsx',
   'agency auth side wordmark': 'apps/agency/src/components/AuthSideWordmark.tsx',
