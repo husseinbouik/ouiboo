@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider } from './AuthContext';
 import { AuthModal } from './AuthModal';
+import { ToastProvider } from '@ouiboo/ui';
 import { ThemeProvider } from 'next-themes';
 import '@/lib/i18n';
 import { restorePublicQueryCache, subscribePublicQueryCache } from '@/lib/query-persistence';
@@ -58,8 +59,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
                 <MotionConfig reducedMotion="user">
                     <AuthProvider>
-                        {children}
-                        <AuthModal />
+                        {/* #485: shared toast host (Undo actions, error
+                            surfacing for optimistic mutations). */}
+                        <ToastProvider>
+                            {children}
+                            <AuthModal />
+                        </ToastProvider>
                     </AuthProvider>
                 </MotionConfig>
             </ThemeProvider>

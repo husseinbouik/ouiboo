@@ -40,6 +40,14 @@ export interface ShareTripButtonProps {
    * rather than sharing a localhost (or agency-origin) link.
    */
   allowRuntimeOriginFallback?: boolean;
+  /**
+   * #561 (Council S3 P1-3): when sharing is gated off, render a disabled
+   * share affordance with "sharing opens at public launch" copy instead
+   * of nothing. Opt-in per surface: the agency app sets it for signed-in
+   * agency users (a fully built feature must be discoverable); surfaces
+   * that leave it off keep the B12 render-nothing behaviour exactly.
+   */
+  showDisabledWhenOff?: boolean;
   /** Value of the `src` parameter on the shared URL (attribution). */
   source?: string;
   iconOnly?: boolean;
@@ -66,6 +74,7 @@ export function ShareTripButton({
   tripTitle,
   travelerBaseUrl,
   allowRuntimeOriginFallback = false,
+  showDisabledWhenOff = false,
   source,
   iconOnly = false,
   size = 'default',
@@ -90,9 +99,46 @@ export function ShareTripButton({
   );
 
   // Council B12 gate (after hooks, per the rules of hooks): no share
-  // affordance at all while sharing is disabled.
+  // affordance at all while sharing is disabled — unless the surface
+  // opted into the #561 disabled state, which explains the gate instead
+  // of hiding the feature.
   if (!isSharingEnabled()) {
-    return null;
+    if (!showDisabledWhenOff) {
+      return null;
+    }
+    if (iconOnly) {
+      return (
+        <Button
+          type="button"
+          variant="outline"
+          size={size}
+          className={className}
+          disabled
+          aria-disabled="true"
+          title={t('share.opensAtLaunch')}
+          aria-label={t('share.opensAtLaunch')}
+        >
+          <Share2 className="h-4 w-4" />
+        </Button>
+      );
+    }
+    return (
+      <span className="inline-flex flex-col gap-1">
+        <Button
+          type="button"
+          variant="outline"
+          size={size}
+          className={className}
+          disabled
+          aria-disabled="true"
+          aria-label={t('share.opensAtLaunch')}
+        >
+          <Share2 className="h-4 w-4" />
+          <span className="ms-2">{t('share.button')}</span>
+        </Button>
+        <span className="text-xs text-muted-foreground">{t('share.opensAtLaunch')}</span>
+      </span>
+    );
   }
 
   // #468: resolve the share base so a deployed build can never emit a

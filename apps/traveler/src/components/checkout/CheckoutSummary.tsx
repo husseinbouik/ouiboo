@@ -70,7 +70,7 @@ export function CheckoutSummary({
         <div className="space-y-4 pt-6 border-t border-border/50">
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground font-medium">{t('checkout.subtotal')}</span>
-            <span className="font-bold">{formatCurrency(totalPrice, selectedCurrency, language)}</span>
+            <span className="oui-numeric font-bold">{formatCurrency(totalPrice, selectedCurrency, language)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground font-medium">{t('checkout.serviceFee')}</span>
@@ -80,12 +80,12 @@ export function CheckoutSummary({
             <>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground font-medium">{t('checkout.balanceAfterConfirmation')}</span>
-                <span className="font-bold">{formatCurrency(stagedAmounts.balanceDue, selectedCurrency, language)}</span>
+                <span className="oui-numeric font-bold">{formatCurrency(stagedAmounts.balanceDue, selectedCurrency, language)}</span>
               </div>
               <div className="flex justify-between items-end pt-4 border-t border-border/50">
                 <span className="text-lg font-black font-display tracking-tight text-foreground">{t('checkout.depositToPayNow')}</span>
                 <div className="text-end">
-                  <span className="text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatCurrency(stagedAmounts.depositDue, selectedCurrency, language)}</span>
+                  <span className="oui-numeric text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatCurrency(stagedAmounts.depositDue, selectedCurrency, language)}</span>
                 </div>
               </div>
             </>
@@ -93,7 +93,7 @@ export function CheckoutSummary({
             <div className="flex justify-between items-end pt-4 border-t border-border/50">
               <span className="text-lg font-black font-display tracking-tight text-foreground">{t('checkout.totalToPay')}</span>
               <div className="text-end">
-                <span className="text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatCurrency(totalPrice, selectedCurrency, language)}</span>
+                <span className="oui-numeric text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatCurrency(totalPrice, selectedCurrency, language)}</span>
               </div>
             </div>
           )}
@@ -116,7 +116,7 @@ export function CheckoutSummary({
       <Button
         disabled={!canSubmit || isSubmitting}
         onClick={onSubmit}
-        className="w-full h-20 rounded-[2rem] text-xl font-black bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 border-none group px-10"
+        className="w-full h-20 rounded-3xl text-xl font-black bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 border-none group px-10"
       >
         {isSubmitting ? t('checkout.submitting') : t('checkout.completeBooking')} <CheckCircle2 className="h-6 w-6 ms-4 group-hover:scale-110 transition-transform" />
       </Button>

@@ -37,11 +37,43 @@ describe('email template safety', () => {
     const text = emailToPlainText(html)
 
     expect(html).toContain('name="viewport"')
-    expect(html).toContain('Travel made personal')
+    // #563/#570: the shell carries the one canonical cross-surface
+    // tagline — the same line as the landing OG (PR #590) and the
+    // traveller OG (PR #593). The retired 'Find trips worth
+    // remembering' line must not reappear. With no recorded locale
+    // the shell renders the French default.
+    expect(html).toContain('Le voyage rendu personnel')
+    expect(html).not.toContain('Find trips worth remembering')
     expect(html).toContain('role="presentation"')
+    const htmlEn = renderEmail({
+      title: 'Booking received',
+      preheader: 'Your booking is in.',
+      content: emailParagraph('Hello'),
+      locale: 'en',
+    })
+    expect(htmlEn).toContain('Travel made personal')
+    const htmlAr = renderEmail({
+      title: 'Booking received',
+      preheader: 'Your booking is in.',
+      content: emailParagraph('Hello'),
+      locale: 'ar',
+    })
+    expect(htmlAr).toContain('سفر مصمم على مقاسك')
     expect(text).toContain('Booking received')
     expect(text).toContain('Your booking is ready.')
     expect(text).not.toContain('<p')
+  })
+
+  it('renders the pin mark in the header lockup (#570)', () => {
+    const html = renderEmail({
+      title: 'Booking received',
+      preheader: 'Your booking is in.',
+      content: emailParagraph('Hello'),
+    })
+    // The adopted pin logo: navy tile, white O ring, sunset-orange pin.
+    expect(html).toContain('<svg width="36" height="36" viewBox="0 0 32 32"')
+    expect(html).toContain('fill="#FF6B35"')
+    expect(html).toContain('fill="#0A192F"')
   })
 
   it('prevents header injection and masks recipient logs', () => {
@@ -61,6 +93,9 @@ describe('marketing email layout (#322)', () => {
       content: emailParagraph('Hello!'),
       unsubscribeUrl: 'https://api.ouiboo.test/api/v1/email/unsubscribe?t=abc.def',
       postalAddress: 'Ouiboo, 12 Rue Example, Casablanca, Morocco',
+      // Explicit locale: this test pins the English marketing copy
+      // (#570 made French the unrecorded-locale default).
+      locale: 'en',
     })
     expect(html).toContain('Ouiboo, 12 Rue Example, Casablanca, Morocco')
     expect(html).toContain('href="https://api.ouiboo.test/api/v1/email/unsubscribe?t=abc.def"')

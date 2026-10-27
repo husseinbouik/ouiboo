@@ -21,7 +21,7 @@ export function CheckoutTermsAcceptance({ checked, onChange }: CheckoutTermsAcce
   const { t } = useTranslation();
 
   return (
-    <div className="p-8 bg-card rounded-[2.5rem] border border-border shadow-xl shadow-black/5 flex gap-4 items-start">
+    <div className="p-8 bg-card rounded-4xl border border-border shadow-xl shadow-black/5 flex gap-4 items-start">
       <input
         id="checkout-terms-accept"
         type="checkbox"

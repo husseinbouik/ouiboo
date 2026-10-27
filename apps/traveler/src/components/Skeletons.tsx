@@ -15,7 +15,7 @@ import { cn } from '@ouiboo/ui/utils';
 export function BookingCardSkeleton({ className }: { className?: string }) {
   return (
     <div
-      className={cn('overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm', className)}
+      className={cn('overflow-hidden rounded-3xl border border-border bg-card shadow-sm', className)}
       aria-hidden="true"
     >
       <div className="flex flex-col md:flex-row">
@@ -63,7 +63,7 @@ export function BookingDetailSkeleton({ className }: { className?: string }) {
         <Skeleton className="h-10 w-64 max-w-full" />
         <Skeleton className="h-4 w-80 max-w-full" />
       </div>
-      <div className="overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm">
+      <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
         <div className="flex flex-col lg:flex-row">
           <Skeleton className="h-64 w-full rounded-none lg:h-auto lg:w-96 lg:shrink-0" />
           <div className="flex-1 space-y-8 p-8">
@@ -88,7 +88,7 @@ export function CheckoutSkeleton({ className }: { className?: string }) {
   return (
     <div className={cn('grid grid-cols-1 items-start gap-12 lg:grid-cols-12', className)} aria-hidden="true">
       <div className="space-y-8 lg:col-span-8">
-        <div className="space-y-10 rounded-[2.5rem] bg-card p-10 shadow-xl shadow-black/5">
+        <div className="space-y-10 rounded-4xl bg-card p-10 shadow-xl shadow-black/5">
           <div className="space-y-4">
             <Skeleton className="h-7 w-56" />
             <Skeleton className="h-12 w-full rounded-xl" />
@@ -106,7 +106,7 @@ export function CheckoutSkeleton({ className }: { className?: string }) {
           <Skeleton className="h-28 w-full rounded-2xl" />
         </div>
       </div>
-      <div className="space-y-4 rounded-[2.5rem] bg-card p-8 shadow-xl shadow-black/5 lg:col-span-4">
+      <div className="space-y-4 rounded-4xl bg-card p-8 shadow-xl shadow-black/5 lg:col-span-4">
         <Skeleton className="h-40 w-full rounded-2xl" />
         <Skeleton className="h-6 w-2/3" />
         <Skeleton className="h-4 w-full" />

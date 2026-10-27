@@ -66,7 +66,9 @@
       "pendingAgencies": "Pending agencies",
       "tripsInReview": "Trips in review",
       "bookingsToday": "Bookings today",
-      "paymentProofs": "Payment proofs"
+      "paymentProofs": "Payment proofs",
+      "refundsOverdue": "Refunds overdue",
+      "refundsDue48": "Refunds due ≤48h"
     },
     "tabs": {
       "pending": "Verification Queue",
@@ -343,6 +345,7 @@
       "bookingRejected": "Rejected",
       "bookingCancelled": "Cancelled",
       "bookingCompleted": "Completed",
+      "bookingNoShow": "No-Show",
       "verificationPending": "Pending",
       "verificationVerified": "Verified",
       "verificationRejected": "Rejected",
@@ -444,6 +447,11 @@
         "BANK_REFERENCE": "Bank reference + retained document",
         "TRAVELLER_CONFIRMATION": "Traveller confirmation",
         "ADMIN_REVIEW": "Admin review"
+      },
+      "urgency": {
+        "overdueFilter": "Showing overdue refunds only",
+        "due48Filter": "Showing refunds due within 48 hours only",
+        "clearFilter": "Clear filter"
       }
     },
     "groups": {
@@ -512,6 +520,47 @@
       "ADMIN_BREAK_GLASS_USED": "Break-glass sign-in used",
       "ADMIN_BREAK_GLASS_REVOKED": "Break-glass credential revoked",
       "ADMIN_BREAK_GLASS_FAILED": "Break-glass sign-in failed"
+    },
+    "betaMetrics": {
+      "title": "Beta metrics",
+      "subtitle": "Beta exit criteria from the #432 metrics service (last 30 days by default).",
+      "window": "Window: {{from}} – {{to}}",
+      "loading": "Loading beta metrics…",
+      "error": "Beta metrics are unavailable right now.",
+      "zeroResultRate": "Zero-result search rate",
+      "searchesDetail": "{{zero}} of {{total}} searches",
+      "bookingsCreated": "Bookings created",
+      "bookingsCompleted": "{{count}} completed",
+      "refundSla": "Refunds initiated within 7 days",
+      "refundsOpened": "{{count}} refund cases opened",
+      "disputesPer1000": "Disputes per 1,000 bookings",
+      "disputesOpened": "{{count}} disputes opened",
+      "stuckTotal": "Stuck states >48h",
+      "stuckHint": "Bookings awaiting validation + refund cases past due",
+      "termsRecorded": "Terms recorded on bookings",
+      "duplicates": "{{count}} duplicate bookings",
+      "exitCriteria": "Exit criteria",
+      "pass": "Pass",
+      "fail": "Fail",
+      "noData": "Not enough data",
+      "supportNotDerivable": "Support response rate is not derivable"
+    },
+    "diagnostics": {
+      "title": "Build & flags",
+      "build": "Build",
+      "sharing": "Sharing",
+      "betaBadge": "Beta badge",
+      "serverFlags": "Server flags: not visible from this build",
+      "on": "on",
+      "off": "off"
+    },
+    "sharePreview": {
+      "title": "Link preview (Open Graph)",
+      "toggle": "Preview",
+      "liveNote": "Sharing is on: this is the preview social apps will render.",
+      "gatedNote": "Sharing is off: the live public preview is the generic Ouiboo card. This is the preview this trip will carry when sharing opens at public launch.",
+      "shareTextLabel": "Share text",
+      "shareText": "Check out this trip on Ouiboo: {{title}}"
     }
   },
   "meta": {
@@ -599,5 +648,15 @@
       "revoked": "Revoked",
       "expired": "Expired"
     }
+  },
+  "commandPalette": {
+    "open": "Open command palette",
+    "trigger": "Search or jump to…",
+    "placeholder": "Search sections, agencies, trips, bookings…",
+    "empty": "No matches found.",
+    "groupNavigation": "Go to",
+    "groupAgencies": "Agencies",
+    "groupTrips": "Trips",
+    "groupBookings": "Bookings"
   }
 }

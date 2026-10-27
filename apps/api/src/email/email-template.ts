@@ -84,9 +84,19 @@ type EmailLayoutOptions = {
   content: string
   footerHtml?: string
   /** #424: recipient locale — sets <html lang>/dir and localizes the
-   * shell (tagline, default footer). Defaults to English. */
+   * shell (tagline, default footer). Defaults to French (#570). */
   locale?: EmailLocale | string | null
 }
+
+/**
+ * #570 (Council Session #3, P1-12): the pin mark in the email lockup.
+ * Transactional mail previously rendered the wordmark alone, without the
+ * pin that identifies Ouiboo everywhere else. This is the adopted pin
+ * logo (packages/ui/Logo.tsx — navy tile, white O ring, sunset-orange
+ * pin, navy centre dot) inlined as SVG, the only image form email
+ * clients render without a hosted asset.
+ */
+export const EMAIL_PIN_LOGO_SVG = `<svg width="36" height="36" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ouiboo"><rect width="32" height="32" rx="8" fill="#0A192F"/><path d="M16 8C11.5817 8 8 11.5817 8 16C8 20.4183 11.5817 24 16 24C20.4183 24 24 20.4183 24 16C24 11.5817 20.4183 8 16 8ZM16 22C12.6863 22 10 19.3137 10 16C10 12.6863 12.6863 10 16 10C19.3137 10 22 12.6863 22 16C22 19.3137 19.3137 22 16 22Z" fill="white"/><path d="M16 23.2C14.9 21 11.4 18.6 11.4 14.4A4.6 4.6 0 1 1 20.6 14.4C20.6 18.6 17.1 21 16 23.2Z" fill="#FF6B35"/><circle cx="16" cy="14.4" r="1.8" fill="#0A192F"/></svg>`
 
 export function renderEmail({ title, preheader, content, footerHtml, locale }: EmailLayoutOptions): string {
   const year = new Date().getFullYear()
@@ -116,8 +126,15 @@ export function renderEmail({ title, preheader, content, footerHtml, locale }: E
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="ouiboo-card" style="max-width:600px;background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:22px;overflow:hidden;">
             <tr>
               <td class="ouiboo-header" style="padding:24px 32px;background:${BRAND.navy};">
-                <div style="color:${BRAND.white};font-size:24px;font-weight:900;letter-spacing:-0.03em;">Oui<span style="color:#FF8A4C;">boo</span></div>
-                <div style="color:#C9D8E5;font-size:12px;margin-top:4px;letter-spacing:0.04em;">${escapeHtml(strings.layout.tagline)}</div>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="padding-right:12px;vertical-align:middle;">${EMAIL_PIN_LOGO_SVG}</td>
+                    <td style="vertical-align:middle;">
+                      <div style="color:${BRAND.white};font-size:24px;font-weight:900;letter-spacing:-0.03em;">Oui<span style="color:#FF8A4C;">boo</span></div>
+                      <div style="color:#C9D8E5;font-size:12px;margin-top:4px;letter-spacing:0.04em;">${escapeHtml(strings.layout.tagline)}</div>
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
             <tr>

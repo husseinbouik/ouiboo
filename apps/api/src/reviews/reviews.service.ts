@@ -68,10 +68,31 @@ export class ReviewsService {
       throw new ForbiddenException('Not authorized to review this booking');
     }
 
+    // #434 (Council P1-08): a traveller the agency recorded as NO_SHOW
+    // can never review the trip they did not attend.
+    if (booking.status === 'NO_SHOW' || booking.attendance === 'NO_SHOW') {
+      throw new BadRequestException(
+        'Bookings recorded as no-show cannot be reviewed',
+      );
+    }
+
     // Verify booking is completed
     if (booking.status !== 'COMPLETED') {
       throw new BadRequestException(
         'Can only review completed bookings',
+      );
+    }
+
+    // #434 (Council P1-08): review eligibility attaches to ATTENDANCE,
+    // not to the date-based completion job. A booking the job completed
+    // on session end stays unreviewable until the agency records the
+    // traveller as ATTENDED (BookingsService.markAttendance — agencies
+    // can still record attendance for a COMPLETED booking, which is
+    // the remediation path for pre-#434 completed bookings whose
+    // attendance is still null).
+    if (booking.attendance !== 'ATTENDED') {
+      throw new BadRequestException(
+        'Can only review bookings with recorded attendance',
       );
     }
 

@@ -66,7 +66,9 @@
       "pendingAgencies": "وكالات بانتظار المراجعة",
       "tripsInReview": "رحلات قيد المراجعة",
       "bookingsToday": "حجوزات اليوم",
-      "paymentProofs": "إثباتات الدفع"
+      "paymentProofs": "إثباتات الدفع",
+      "refundsOverdue": "مبالغ مستردة متأخرة",
+      "refundsDue48": "مبالغ مستردة مستحقة ≤48 ساعة"
     },
     "tabs": {
       "pending": "قائمة التحقق",
@@ -343,6 +345,7 @@
       "bookingRejected": "مرفوض",
       "bookingCancelled": "ملغي",
       "bookingCompleted": "مكتمل",
+      "bookingNoShow": "لم يحضر",
       "verificationPending": "قيد الانتظار",
       "verificationVerified": "تم التحقق",
       "verificationRejected": "مرفوض",
@@ -444,6 +447,11 @@
         "BANK_REFERENCE": "مرجع بنكي + وثيقة محفوظة",
         "TRAVELLER_CONFIRMATION": "تأكيد المسافر",
         "ADMIN_REVIEW": "مراجعة المسؤول"
+      },
+      "urgency": {
+        "overdueFilter": "عرض المبالغ المستردة المتأخرة فقط",
+        "due48Filter": "عرض المبالغ المستردة المستحقة خلال 48 ساعة فقط",
+        "clearFilter": "مسح المرشح"
       }
     },
     "groups": {
@@ -512,11 +520,52 @@
       "ADMIN_BREAK_GLASS_USED": "استُخدم تسجيل دخول الطوارئ",
       "ADMIN_BREAK_GLASS_REVOKED": "أُلغيت بيانات الطوارئ",
       "ADMIN_BREAK_GLASS_FAILED": "فشل تسجيل دخول الطوارئ"
+    },
+    "betaMetrics": {
+      "title": "مقاييس النسخة التجريبية",
+      "subtitle": "معايير الخروج من النسخة التجريبية من خدمة المقاييس #432 (آخر 30 يومًا افتراضيًا).",
+      "window": "الفترة: {{from}} – {{to}}",
+      "loading": "جارٍ تحميل مقاييس النسخة التجريبية…",
+      "error": "مقاييس النسخة التجريبية غير متاحة الآن.",
+      "zeroResultRate": "معدل البحث بدون نتائج",
+      "searchesDetail": "{{zero}} من {{total}} عملية بحث",
+      "bookingsCreated": "الحجوزات المنشأة",
+      "bookingsCompleted": "{{count}} مكتملة",
+      "refundSla": "مبالغ مستردة بدأت خلال 7 أيام",
+      "refundsOpened": "{{count}} حالة استرداد مفتوحة",
+      "disputesPer1000": "النزاعات لكل 1000 حجز",
+      "disputesOpened": "{{count}} نزاع مفتوح",
+      "stuckTotal": "حالات عالقة >48 ساعة",
+      "stuckHint": "حجوزات بانتظار التحقق + حالات استرداد فات موعدها",
+      "termsRecorded": "الشروط المسجلة على الحجوزات",
+      "duplicates": "{{count}} حجز مكرر",
+      "exitCriteria": "معايير الخروج",
+      "pass": "ناجح",
+      "fail": "فاشل",
+      "noData": "بيانات غير كافية",
+      "supportNotDerivable": "معدل استجابة الدعم غير قابل للاشتقاق"
+    },
+    "diagnostics": {
+      "title": "البناء والعلامات",
+      "build": "البناء",
+      "sharing": "المشاركة",
+      "betaBadge": "شارة النسخة التجريبية",
+      "serverFlags": "علامات الخادم: غير مرئية من هذا البناء",
+      "on": "مفعّلة",
+      "off": "معطّلة"
+    },
+    "sharePreview": {
+      "title": "معاينة الرابط (Open Graph)",
+      "toggle": "معاينة",
+      "liveNote": "المشاركة مفعّلة: هذه هي المعاينة التي ستعرضها تطبيقات التواصل.",
+      "gatedNote": "المشاركة معطّلة: المعاينة العامة الحالية هي بطاقة Ouiboo العامة. هذه هي المعاينة التي ستحملها هذه الرحلة عند فتح المشاركة عند الإطلاق العام.",
+      "shareTextLabel": "نص المشاركة",
+      "shareText": "اكتشف هذه الرحلة على Ouiboo: ⁨{{title}}⁩"
     }
   },
   "meta": {
     "titleDefault": "إدارة المنصة",
-    "titleTemplate": "%s | إدارة Ouiboo",
+    "titleTemplate": "%s | Ouiboo إدارة",
     "description": "مساحة إدارة خاصة لمنصة Ouiboo."
   },
   "common": {
@@ -599,5 +648,15 @@
       "revoked": "ملغاة",
       "expired": "منتهية"
     }
+  },
+  "commandPalette": {
+    "open": "فتح لوحة الأوامر",
+    "trigger": "ابحث أو انتقل إلى…",
+    "placeholder": "ابحث في الأقسام والوكالات والرحلات والحجوزات…",
+    "empty": "لا توجد نتائج مطابقة.",
+    "groupNavigation": "انتقل إلى",
+    "groupAgencies": "الوكالات",
+    "groupTrips": "الرحلات",
+    "groupBookings": "الحجوزات"
   }
 }

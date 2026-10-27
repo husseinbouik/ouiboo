@@ -957,6 +957,134 @@ describe('BookingsService', () => {
         });
     });
 
+    describe('awaited email sends (#436)', () => {
+        const createDto = {
+            sessionId: 'session-123',
+            guestsCount: 2,
+            fullName: 'Test Traveler',
+            phoneNumber: '+212600000000',
+            termsAccepted: true,
+            termsVersion: '1.0',
+            locale: 'en',
+        };
+        const future = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+        const session = {
+            id: 'session-123',
+            status: 'OPEN',
+            startDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            price: 250,
+            currency: 'MAD',
+            template: {
+                status: 'ACTIVE',
+                title: 'Atlas Escape',
+                cancellationPolicy: null,
+                agencyId: 'agency-123',
+                agency: {
+                    id: 'agency-123',
+                    userId: 'agency-user-123',
+                    verificationStatus: 'VERIFIED',
+                    travelLicenceStatus: 'VERIFIED',
+                    licenceExpiry: future,
+                    insuranceStatus: 'VERIFIED',
+                    insuranceExpiry: future,
+                    subscriptionStatus: 'TRIAL',
+                    trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                    subscriptionEndsAt: null,
+                    legalName: 'Atlas SARL',
+                    companyName: 'Atlas',
+                    travelLicenceType: 'ODV',
+                    travelLicenceNumber: 'AV-1',
+                    licenceIssuedAt: new Date(),
+                    licenceIssuingAuthority: 'Ministry',
+                },
+            },
+        };
+
+        const arrangeSuccessfulCreate = () => {
+            db.tripSession.findUnique.mockResolvedValue(session);
+            db.tripSession.updateMany.mockResolvedValue({ count: 1 });
+            db.booking.findFirst.mockResolvedValue(null);
+            db.user.findUnique.mockResolvedValue({ email: 'someone@example.com' });
+            db.booking.create.mockResolvedValue({
+                id: 'booking-new',
+                sessionId: 'session-123',
+                travelerId: 'user-123',
+                bookingDate: new Date(),
+                status: 'PENDING',
+                totalAmount: '500.00',
+                currency: 'MAD',
+                guestsCount: 2,
+                paymentMethod: 'MANUAL',
+                paymentStatus: 'UNPAID',
+                paymentPlan: null,
+                paymentProof: null,
+                review: null,
+                locale: 'en',
+                traveler: { email: 'traveler@example.com', name: 'Test Traveler' },
+                session: {
+                    id: 'session-123',
+                    template: { id: 'template-1', title: 'Atlas Escape', agency: session.template.agency },
+                },
+            });
+        };
+
+        it('create() does not return before the booking notification settles', async () => {
+            arrangeSuccessfulCreate();
+            let emailSettled = false;
+            ((service as any).emailService.sendBookingNotification as jest.Mock).mockImplementation(
+                () => new Promise<void>((resolve) => setTimeout(() => { emailSettled = true; resolve(); }, 0)),
+            );
+
+            await service.create('user-123', createDto as any);
+
+            // Fire-and-forget (the pre-#436 code) returned while the send
+            // was still pending — on serverless the freeze then lost it.
+            expect(emailSettled).toBe(true);
+        });
+
+        it('create() still succeeds when the booking notification fails', async () => {
+            arrangeSuccessfulCreate();
+            ((service as any).emailService.sendBookingNotification as jest.Mock)
+                .mockRejectedValue(new Error('SMTP down'));
+            const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            await expect(service.create('user-123', createDto as any)).resolves.toBeDefined();
+            expect(errorSpy).toHaveBeenCalled();
+            errorSpy.mockRestore();
+        });
+
+        it('confirmBankPayment() awaits the payment confirmation and survives its failure', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.paymentProof.updateMany.mockResolvedValue({ count: 1 });
+            db.booking.updateMany.mockResolvedValue({ count: 1 });
+            db.booking.findUnique.mockResolvedValue({
+                id: 'booking-123',
+                travelerId: 'user-123',
+                status: 'AWAITING_VALIDATION',
+                totalAmount: 780,
+                currency: 'MAD',
+                locale: 'en',
+                paymentPlan: null,
+                paymentProofId: 'proof-1',
+                paymentProof: { id: 'proof-1', status: 'ACCEPTED' },
+                session: { template: { agencyId: 'agency-123', title: 'Atlas Escape' } },
+                traveler: { email: 'traveler@example.com' },
+            });
+            db.booking.findUniqueOrThrow.mockResolvedValue({ id: 'booking-123', status: 'CONFIRMED', paymentStatus: 'PAID' });
+            ((service as any).emailService.sendPaymentConfirmation as jest.Mock)
+                .mockRejectedValue(new Error('SMTP down'));
+            const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            await expect(service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: '780.00',
+                bankReference: 'TRX-1',
+            })).resolves.toBeDefined();
+            expect((service as any).emailService.sendPaymentConfirmation).toHaveBeenCalled();
+            expect(errorSpy).toHaveBeenCalled();
+            errorSpy.mockRestore();
+        });
+    });
+
     describe('proof != settlement (#422)', () => {
         const reviewBooking = (proofStatus: string) => ({
             id: 'booking-123',

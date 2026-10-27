@@ -117,6 +117,19 @@ enum BookingStatus {
   // #369: staged payments — the confirmation deadline passed without the
   // minimum group size; the deposit is refund-due (see BookingPaymentPlan).
   NOT_CONFIRMED
+  // #434 (Council P1-08): the agency recorded that the traveller did not
+  // attend the trip. Terminal for review purposes: a NO_SHOW booking is
+  // never review-eligible (see Booking.attendance).
+  NO_SHOW
+}
+
+// #434 (Council P1-08): attendance recorded by the agency for a booking.
+// Null on the booking = not recorded yet. ATTENDED is the ONLY value
+// that makes a booking review-eligible; NO_SHOW mirrors the booking
+// status of the same name.
+enum BookingAttendance {
+  ATTENDED
+  NO_SHOW
 }
 
 enum PayoutStatus {
@@ -633,6 +646,14 @@ model Booking {
   cancelledBy                 String?
   cancellationReason          String?
   confirmedAt                 DateTime?
+  // #434 (Council P1-08): attendance recorded by the owning agency once
+  // the trip has started. attendanceRecordedBy is the agency user id
+  // that recorded it; both stamps stay null until recording. Review
+  // eligibility requires attendance = ATTENDED (ReviewsService) — the
+  // date-based completion job no longer confers it on its own.
+  attendance                  BookingAttendance?
+  attendanceRecordedAt        DateTime?
+  attendanceRecordedBy        String?
   // #417 (Council P0-11): snapshot of the trip's resolved cancellation
   // scale ({ version, bands, floorRefundPercent, refundInitiationDays })
   // taken at booking creation. Later template edits can never rewrite

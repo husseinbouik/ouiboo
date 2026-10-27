@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { TripCard } from '@/components/TripCard';
-import { Button, Badge, TripCardSkeletonGrid } from '@ouiboo/ui';
+import { Button, Badge, EmptyState, TripCardSkeletonGrid } from '@ouiboo/ui';
 import { Calendar } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 
@@ -83,13 +83,12 @@ export default function WishlistPage() {
             </div>
           </div>
         ) : wishlist.length === 0 ? (
-          <div className="text-center py-28 bg-card/70 rounded-2xl border border-dashed border-border">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <Calendar className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-xl font-bold">Your wishlist is empty</h3>
-            <p className="text-muted-foreground mt-2 max-w-sm mx-auto">Start adding trips to your wishlist to see them here</p>
-          </div>
+          <EmptyState
+            className="py-28"
+            icon={<Calendar className="h-6 w-6" />}
+            title="Your wishlist is empty"
+            description="Start adding trips to your wishlist to see them here"
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {wishlist.map((t) => (

@@ -22,23 +22,64 @@ const toastVariants = cva(
   }
 )
 
+/**
+ * #485: how long a toast stays on screen. Toasts carrying an action
+ * (e.g. Undo) get a longer window so the action is actually reachable —
+ * including by keyboard users — before it vanishes.
+ */
+export const TOAST_DEFAULT_DURATION_MS = 4000
+export const TOAST_ACTION_DURATION_MS = 8000
+
+/** #485: an optional action rendered inside a toast (label + handler). */
+export interface ToastActionObject {
+  label: string
+  onClick: () => void
+}
+
 export interface ToastProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof toastVariants> {
   icon?: React.ReactNode
+  /**
+   * #485: optional action (e.g. Undo for a destructive action). Accepts
+   * either a `{ label, onClick }` object or a rendered <ToastAction>.
+   * The action button is focusable and announced with the toast, but the
+   * toast never steals focus — keyboard users reach it by tabbing.
+   * Existing call sites that pass no action render exactly as before.
+   */
+  action?: ToastActionObject | React.ReactNode
+}
+
+function isActionObject(action: unknown): action is ToastActionObject {
+  return (
+    typeof action === 'object' &&
+    action !== null &&
+    'label' in (action as Record<string, unknown>) &&
+    'onClick' in (action as Record<string, unknown>)
+  )
 }
 
 const Toast = React.forwardRef<HTMLDivElement, ToastProps>(
-  ({ className, variant, icon, children, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(toastVariants({ variant }), className)}
-      {...props}
-    >
-      {icon ? <div className="mt-0.5 flex-shrink-0">{icon}</div> : null}
-      <div className="flex-1 space-y-1">{children}</div>
-    </div>
-  )
+  ({ className, variant, icon, action, children, ...props }, ref) => {
+    const actionNode = isActionObject(action) ? (
+      <ToastAction onClick={action.onClick}>{action.label}</ToastAction>
+    ) : (
+      (action as React.ReactNode)
+    )
+    return (
+      <div
+        ref={ref}
+        className={cn(toastVariants({ variant }), className)}
+        {...props}
+      >
+        {icon ? <div className="mt-0.5 flex-shrink-0">{icon}</div> : null}
+        <div className="flex-1 space-y-1">{children}</div>
+        {actionNode ? (
+          <div className="flex-shrink-0 self-center">{actionNode}</div>
+        ) : null}
+      </div>
+    )
+  }
 )
 Toast.displayName = 'Toast'
 
@@ -58,4 +99,25 @@ const ToastDescription = React.forwardRef<
 ))
 ToastDescription.displayName = 'ToastDescription'
 
-export { Toast, ToastTitle, ToastDescription, toastVariants }
+/**
+ * #485: the action button inside a toast. A real <button> with a 44px
+ * minimum touch height (#490) achieved with padding inside the toast's
+ * own box — no negative margins, so no global positioning side-effects.
+ */
+const ToastAction = React.forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement>
+>(({ className, type = 'button', ...props }, ref) => (
+  <button
+    ref={ref}
+    type={type}
+    className={cn(
+      'inline-flex min-h-[44px] items-center justify-center rounded-lg px-3 text-sm font-semibold underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+      className,
+    )}
+    {...props}
+  />
+))
+ToastAction.displayName = 'ToastAction'
+
+export { Toast, ToastTitle, ToastDescription, ToastAction, toastVariants }

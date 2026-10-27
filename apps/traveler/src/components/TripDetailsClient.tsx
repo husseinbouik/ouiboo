@@ -25,9 +25,11 @@ import { useAuth } from '@/components/AuthContext';
 import { ReviewList } from '@/components/ReviewList';
 import SellerIdentity from '@/components/SellerIdentity';
 import { TRAVELER_URL } from '@/lib/site';
+import { tripCoverViewTransitionName } from '@/lib/view-transition';
 import { SessionStatus, type CancellationScaleSnapshot, type SessionStatusType } from '@ouiboo/types';
 import { formatCurrency } from '@ouiboo/utils';
 import { CancellationScaleCard } from '@/components/CancellationScaleCard';
+import { RatingDistribution } from '@/components/RatingDistribution';
 
 type TripDay = {
   dayNumber: number;
@@ -69,6 +71,10 @@ type TripDetails = {
   images?: string[];
   /** #332: agency-provided alt text per image (index-aligned); may be absent. */
   imageAlts?: string[];
+  /** #486: stored blur placeholders per image (index-aligned data-URLs);
+   * may be absent/null per image — SafeImage falls back to the shared
+   * palette placeholder, so existing media renders correctly. */
+  imageBlurDataURLs?: (string | null)[];
   /** #371: seller of record (legal name + verified licence) from GET /trips/:id. */
   agency?: {
     id?: string;
@@ -288,7 +294,7 @@ export default function TripDetailsClient({
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className={cn(
-                  "relative h-[280px] sm:h-[400px] lg:h-full rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden shadow-2xl shadow-black/5 dark:shadow-black/20 group border border-border/50 touch-pan-y",
+                  "relative h-[280px] sm:h-[400px] lg:h-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl shadow-black/5 dark:shadow-black/20 group border border-border/50 touch-pan-y",
                   (trip.images?.length ?? 0) > 1 ? "lg:col-span-7" : "lg:col-span-12",
                 )}
                 onTouchStart={handleTouchStart}
@@ -301,6 +307,8 @@ export default function TripDetailsClient({
                     alt={trip.imageAlts?.[activeImage]?.trim() || trip.title}
                     fill
                     sizes="(min-width: 1024px) 60vw, 100vw"
+                    blurDataURL={trip.imageBlurDataURLs?.[activeImage] ?? undefined}
+                    style={{ viewTransitionName: tripCoverViewTransitionName(trip.id) }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
                 <div className="absolute bottom-6 start-6 flex gap-2">
@@ -324,7 +332,7 @@ export default function TripDetailsClient({
               <div className="flex lg:hidden gap-3 overflow-x-auto pb-1" aria-label={t('tripDetails.photosLabel')}>
                   {galleryTiles.map(({ src, index }) => (
                       <button key={index} type="button" className="relative h-20 w-28 shrink-0 rounded-2xl overflow-hidden shadow-md border border-border/50" onClick={() => setActiveImage(index)} aria-label={t('tripCard.viewImage', { count: index + 1 })}>
-                          <SafeImage src={src} className="w-full h-full object-cover" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - ${index + 1}`} fill sizes="112px" />
+                          <SafeImage src={src} className="w-full h-full object-cover" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - ${index + 1}`} fill sizes="112px" blurDataURL={trip.imageBlurDataURLs?.[index] ?? undefined} />
                       </button>
                   ))}
               </div>
@@ -337,13 +345,13 @@ export default function TripDetailsClient({
                   className="hidden lg:grid lg:col-span-5 grid-cols-2 auto-rows-fr gap-4 md:gap-6"
               >
                   {desktopTiles.map(({ src, index }, tilePos) => (
-                      <button key={index} type="button" className={cn("relative min-h-36 rounded-[1.5rem] overflow-hidden shadow-lg border border-border/50 group", spanLastRailCell && hiddenTileCount === 0 && tilePos === desktopTiles.length - 1 && "lg:col-span-2")} onClick={() => setActiveImage(index)} aria-label={`View image ${index + 1}`}>
-                          <SafeImage src={src} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - image ${index + 1}`} fill sizes="20vw" />
+                      <button key={index} type="button" className={cn("relative min-h-36 rounded-2xl overflow-hidden shadow-lg border border-border/50 group", spanLastRailCell && hiddenTileCount === 0 && tilePos === desktopTiles.length - 1 && "lg:col-span-2")} onClick={() => setActiveImage(index)} aria-label={`View image ${index + 1}`}>
+                          <SafeImage src={src} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - image ${index + 1}`} fill sizes="20vw" blurDataURL={trip.imageBlurDataURLs?.[index] ?? undefined} />
                           <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                       </button>
                   ))}
                   {hiddenTileCount > 0 ? (
-                    <button type="button" onClick={() => setActiveImage(firstHiddenTileIndex)} className={cn("bg-muted/50 rounded-[1.5rem] flex items-center justify-center hover:bg-muted transition-colors border border-border", spanLastRailCell && "lg:col-span-2")} aria-label={t('tripDetails.viewMoreImages', { count: hiddenTileCount })}>
+                    <button type="button" onClick={() => setActiveImage(firstHiddenTileIndex)} className={cn("bg-muted/50 rounded-2xl flex items-center justify-center hover:bg-muted transition-colors border border-border", spanLastRailCell && "lg:col-span-2")} aria-label={t('tripDetails.viewMoreImages', { count: hiddenTileCount })}>
                         <span className="flex flex-col items-center gap-2">
                             <span className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground font-bold shadow-sm">
                                 +{hiddenTileCount}
@@ -379,7 +387,9 @@ export default function TripDetailsClient({
                         <div className="flex items-center gap-1.5 bg-yellow-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                             <span className="font-bold text-sm text-amber-700 dark:text-yellow-400">{reviewStats?.totalReviews ? (reviewStats.averageRating ?? 0).toFixed(1) : t('tripDetails.newTrip')}</span>
-                            <span className="text-xs text-amber-700 dark:text-yellow-400/70 font-medium">{t('tripDetails.reviewsCount', { count: reviewStats?.totalReviews || 0 })}</span>
+                            {/* #579: at zero reviews show the localised
+                                "No reviews yet", not a "(0 reviews)" count. */}
+                            <span className="text-xs text-amber-700 dark:text-yellow-400/70 font-medium">{reviewStats?.totalReviews ? t('tripDetails.reviewsCount', { count: reviewStats.totalReviews }) : t('reviews.noReviewsYet')}</span>
                         </div>
                         {/* #468: share this trip (native sheet / intent menu).
                             allowRuntimeOriginFallback: this app serves the trip
@@ -474,7 +484,7 @@ export default function TripDetailsClient({
                   </div>
                </div>
               ) : (
-                 <div className="p-8 rounded-[2rem] bg-muted/30 border border-dashed border-border flex flex-col items-center justify-center gap-3 text-center">
+                 <div className="p-8 rounded-3xl bg-muted/30 border border-dashed border-border flex flex-col items-center justify-center gap-3 text-center">
                       <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                           <ClipboardList className="h-6 w-6 text-muted-foreground" />
                       </div>
@@ -567,7 +577,8 @@ export default function TripDetailsClient({
                <div className="flex items-center justify-between">
                  <h2 className="text-2xl font-bold text-foreground font-display">{t('tripDetails.reviewsTitle')}</h2>
                  <Badge variant="outline" className="text-[10px] font-bold px-3 py-1 bg-muted/30">
-                   {t('tripDetails.reviewsBadge', { count: reviewStats?.totalReviews || 0 })}
+                   {/* #579: zero reviews reads "No reviews yet", not "0 Reviews". */}
+                   {reviewStats?.totalReviews ? t('tripDetails.reviewsBadge', { count: reviewStats.totalReviews }) : t('reviews.noReviewsYet')}
                  </Badge>
                </div>
                
@@ -596,27 +607,11 @@ export default function TripDetailsClient({
                      </div>
                    </div>
 
-                   {/* Rating Distribution */}
+                   {/* Rating Distribution (#587: extracted so the row
+                       labels are pinned by RatingDistribution.test.tsx) */}
                    <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6 space-y-4">
                      <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{t('tripDetails.distribution')}</p>
-                     <div className="space-y-2">
-                       {[5, 4, 3, 2, 1].map((rating) => {
-                         const count = reviewStats.distribution?.[rating] || 0;
-                         const percentage = reviewStats.totalReviews > 0 ? (count / reviewStats.totalReviews * 100) : 0;
-                         return (
-                           <div key={rating} className="flex items-center gap-2">
-                             <span className="text-xs font-bold text-muted-foreground w-6">{rating}?</span>
-                             <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                               <div
-                                 className="h-full bg-gradient-to-r from-sunset-orange to-orange-600"
-                                 style={{ width: `${percentage}%` }}
-                               />
-                             </div>
-                             <span className="text-xs font-medium text-muted-foreground w-8 text-end">{count}</span>
-                           </div>
-                         );
-                       })}
-                     </div>
+                     <RatingDistribution distribution={reviewStats.distribution} totalReviews={reviewStats.totalReviews} />
                    </div>
                  </div>
                )}
@@ -633,7 +628,7 @@ export default function TripDetailsClient({
                 animate={{ opacity: 1, y: 0 }}
                 className="sticky top-32"
             >
-                <div className="bg-card/80 backdrop-blur-xl border border-border/50 shadow-xl rounded-[2.5rem] p-8 space-y-8 relative overflow-hidden">
+                <div className="bg-card/80 backdrop-blur-xl border border-border/50 shadow-xl rounded-4xl p-8 space-y-8 relative overflow-hidden">
                     
                     {/* Price Header */}
                     <div className="space-y-1 text-center pb-6 border-b border-border">

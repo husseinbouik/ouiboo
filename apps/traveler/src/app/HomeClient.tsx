@@ -4,10 +4,10 @@ import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { 
-  MapPin, Calendar, Star, ArrowRight, Compass, Banknote, Zap, Heart, Mountain, Palmtree
+import {
+  MapPin, Calendar, Star, ArrowRight, Compass, Banknote, Zap, Heart, Mountain, Palmtree, AlertTriangle
 } from 'lucide-react';
-import { Button } from '@ouiboo/ui';
+import { Button, EmptyState } from '@ouiboo/ui';
 import { motion, Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { TripSession, TripTemplate, VerificationStatusType } from '@ouiboo/types';
@@ -21,6 +21,9 @@ interface HomeClientProps {
       verificationStatus?: VerificationStatusType;
     } | null;
   }>;
+  /** #575: true when the server catalogue fetch failed — render the
+   * error state, never the genuine-empty state, for an outage. */
+  featuredTripsFetchFailed?: boolean;
 }
 
 const fadeInUp: Variants = {
@@ -41,7 +44,7 @@ const staggerContainer: Variants = {
   }
 };
 
-export default function HomeClient({ featuredTrips }: HomeClientProps) {
+export default function HomeClient({ featuredTrips, featuredTripsFetchFailed = false }: HomeClientProps) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
@@ -142,7 +145,7 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div className="max-w-2xl">
-              <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">{t('featured.title')}</h2>
+              <h2 className="oui-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">{t('featured.title')}</h2>
               <p className="text-lg text-muted-foreground">{t('featured.subtitle')}</p>
             </div>
             <Link href="/search" className="text-sunset-orange-dark font-semibold hover:text-orange-800 flex items-center gap-2 transition-colors">
@@ -157,20 +160,31 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
             viewport={{ once: true, margin: "-50px" }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12"
           >
-            {featuredTrips.length > 0 ? (
+            {featuredTripsFetchFailed ? (
+                <EmptyState
+                    className="col-span-full py-20 bg-card/70 rounded-3xl"
+                    icon={<AlertTriangle className="h-6 w-6 text-danger" aria-hidden="true" />}
+                    title={t('featured.loadErrorTitle')}
+                    description={t('featured.loadErrorSubtitle')}
+                    action={(
+                      <Button type="button" onClick={() => router.refresh()}>
+                        {t('common.tryAgain')}
+                      </Button>
+                    )}
+                />
+            ) : featuredTrips.length > 0 ? (
               featuredTrips.map((trip) => (
                 <motion.div key={trip.id} variants={fadeInUp}>
                   <TripCard trip={trip} />
                 </motion.div>
               ))
             ) : (
-                <div className="col-span-full py-20 text-center bg-card/70 rounded-3xl border border-dashed border-border">
-                    <div className="mx-auto h-12 w-12 text-muted-foreground">
-                        <Compass className="h-full w-full" />
-                    </div>
-                    <h3 className="mt-2 text-sm font-semibold text-foreground">{t('featured.emptyTitle')}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">{t('featured.emptySubtitle')}</p>
-                </div>
+                <EmptyState
+                    className="col-span-full py-20 rounded-3xl"
+                    icon={<Compass className="h-6 w-6" />}
+                    title={t('featured.emptyTitle')}
+                    description={t('featured.emptySubtitle')}
+                />
             )}
           </motion.div>
         </div>
@@ -180,7 +194,7 @@ export default function HomeClient({ featuredTrips }: HomeClientProps) {
       <section className="py-24 bg-muted/35">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="mx-auto max-w-2xl text-center mb-16">
-                <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">{t('categories.title')}</h2>
+                <h2 className="oui-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl">{t('categories.title')}</h2>
                 <p className="mt-4 text-lg text-muted-foreground">{t('categories.subtitle')}</p>
             </div>
             

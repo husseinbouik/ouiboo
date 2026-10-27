@@ -16,7 +16,19 @@ export const metadata: Metadata = {
   openGraph: { url: '/' },
 };
 
-async function getFeaturedTrips() {
+/**
+ * #575: a catalogue fetch failure must not be swallowed into the same
+ * empty array as a genuinely empty catalogue — an API outage rendered
+ * as "No trips found" hides the outage from travellers (and from us).
+ * The result therefore carries an explicit fetchFailed flag so the
+ * home page can render its error state instead of the empty state.
+ */
+export interface FeaturedTripsResult {
+  trips: FeaturedTrip[];
+  fetchFailed: boolean;
+}
+
+async function getFeaturedTrips(): Promise<FeaturedTripsResult> {
   try {
     const extractTrips = (payload: unknown): FeaturedTrip[] => {
       if (Array.isArray(payload)) return payload as FeaturedTrip[];
@@ -34,17 +46,17 @@ async function getFeaturedTrips() {
       response = await apiClient.get(`/trips?status=ACTIVE&locale=${locale}`);
       trips = extractTrips(response.data);
     }
-    return trips;
+    return { trips, fetchFailed: false };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.warn(`Failed to fetch featured trips: ${message}`);
-    return [];
+    return { trips: [], fetchFailed: true };
   }
 }
 
 export default async function HomePage() {
-  const featuredTrips = await getFeaturedTrips();
+  const { trips: featuredTrips, fetchFailed } = await getFeaturedTrips();
 
-  return <HomeClient featuredTrips={featuredTrips} />;
+  return <HomeClient featuredTrips={featuredTrips} featuredTripsFetchFailed={fetchFailed} />;
 }
 // Trigger fresh traveler deployment

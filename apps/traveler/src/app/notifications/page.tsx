@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { Button } from '@ouiboo/ui';
+import { Button, EmptyState } from '@ouiboo/ui';
 import { Bell } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/components/AuthContext';
@@ -74,10 +74,11 @@ export default function NotificationsPage() {
     <div className="mx-auto max-w-4xl px-6 py-12">
       <h1 className="text-3xl font-bold mb-8">Notifications</h1>
       {notifications.length === 0 ? (
-        <div className="text-center py-16 bg-card/70 rounded-2xl border border-dashed border-border">
-          <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">{t('notifications.emptyBody')}</p>
-        </div>
+        <EmptyState
+          icon={<Bell className="h-6 w-6" />}
+          title={t('notifications.emptyTitle')}
+          description={t('notifications.emptyBody')}
+        />
       ) : (
         <div className="space-y-3">
           {notifications.map((n) => (

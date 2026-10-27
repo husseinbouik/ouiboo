@@ -137,7 +137,7 @@ export default function TravelerSignupPage() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative w-full max-w-md bg-card backdrop-blur-xl border border-border shadow-2xl rounded-[2.5rem] p-8 md:p-12"
+        className="relative w-full max-w-md bg-card backdrop-blur-xl border border-border shadow-2xl rounded-4xl p-8 md:p-12"
       >
         <div className="text-center mb-10">
           <Link href="/" className="inline-flex items-center justify-center gap-2 mb-8 group">

@@ -39,8 +39,19 @@ const baseProps = {
 describe('CheckoutPayment (#424 localized payment step)', () => {
     it('renders the bank-transfer block and upload step in the shipped copy', () => {
         render(<CheckoutPayment {...baseProps} />);
-        expect(screen.getByText(en.bankTransfer)).toBeTruthy();
-        expect(screen.getByText(en.bankTransferTitle)).toBeTruthy();
+        // #568: bankTransferTitle now also ships as "Bank Transfer" in EN
+        // (was the French "Virement Bancaire"), so the section heading
+        // (checkout.bankTransfer, <h2>) and the block heading
+        // (checkout.bankTransferTitle, <h4>) share the same text and a
+        // single-match getByText throws on multiple elements. Assert both
+        // headings render the shipped copy instead.
+        expect(screen.getAllByText(en.bankTransfer)).toHaveLength(2);
+        expect(
+            screen.getByRole('heading', { level: 2, name: en.bankTransfer }),
+        ).toBeTruthy();
+        expect(
+            screen.getByRole('heading', { level: 4, name: en.bankTransferTitle }),
+        ).toBeTruthy();
         expect(screen.getByText(en.bankInstructionsHint)).toBeTruthy();
         expect(screen.getByText(en.bankTransferInstructions)).toBeTruthy();
         expect(screen.getByText(baseProps.bankDetails)).toBeTruthy();

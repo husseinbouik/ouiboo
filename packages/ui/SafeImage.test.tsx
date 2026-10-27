@@ -44,3 +44,28 @@ describe('SafeImage (Session #3 P0-2)', () => {
     expect(screen.getByAltText('Trip').tagName).toBe('IMG');
   });
 });
+
+describe('SafeImage blur-up placeholders (#486)', () => {
+  it('renders placeholder="blur" with the palette fallback when no stored placeholder exists', () => {
+    render(<SafeImage src="https://cdn.example/trip.jpg" alt="Atlas trek" fill />);
+    const img = screen.getByAltText('Atlas trek') as HTMLImageElement;
+    expect(img.getAttribute('placeholder')).toBe('blur');
+    expect((img.getAttribute('blurdataurl') || '').startsWith('data:image/svg+xml')).toBe(true);
+  });
+
+  it('prefers a stored per-image blurDataURL when one is provided', () => {
+    const stored = 'data:image/jpeg;base64,/9j/stored';
+    render(
+      <SafeImage src="https://cdn.example/trip.jpg" alt="Atlas trek" fill blurDataURL={stored} />,
+    );
+    const img = screen.getByAltText('Atlas trek') as HTMLImageElement;
+    expect(img.getAttribute('placeholder')).toBe('blur');
+    expect(img.getAttribute('blurdataurl')).toBe(stored);
+  });
+
+  it('can be opted out with blur={false}', () => {
+    render(<SafeImage src="https://cdn.example/trip.jpg" alt="Atlas trek" fill blur={false} />);
+    const img = screen.getByAltText('Atlas trek') as HTMLImageElement;
+    expect(img.getAttribute('placeholder')).toBeNull();
+  });
+});

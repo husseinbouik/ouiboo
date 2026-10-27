@@ -3,7 +3,7 @@ import { DatabaseService } from '../database/database.service';
 import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripSessionDto } from './dto/create-trip.dto';
 import { BookingPaymentStatus, BookingStatus, Prisma, SessionStatus, TripStatus } from '@ouiboo/database';
 import { toMoneyDecimal } from '../common/money.util';
-import { canOrganise, getAgencyActivationBlock, sellerBlockMissingFields } from '../common/agency-licence.util';
+import { canOrganise, effectiveVerificationStatus, getAgencyActivationBlock, sellerBlockMissingFields } from '../common/agency-licence.util';
 import { visibleBankDetails } from '../common/bank-details.util';
 import { BETA_CATALOG_CURRENCY, isCatalogCurrencyAllowed, isMadOnlyCatalogEnabled } from '../common/catalog-currency.util';
 import { resolveStagedSessionConfig } from '../staged-payments/staged-payments.util';
@@ -382,6 +382,11 @@ export class TripsService {
                                 licenceVerifiedAt: true,
                                 insuranceStatus: true,
                                 insuranceVerifiedAt: true,
+                                // #569: the expiries feed the umbrella
+                                // reconciliation below; they are stripped
+                                // from the payload, never exposed.
+                                licenceExpiry: true,
+                                insuranceExpiry: true,
                             },
                         },
                         _count: {
@@ -405,15 +410,22 @@ export class TripsService {
                 // (stored full URLs are provider-coupled — #411).
                 data: templates.map((template) => {
                     const localized = localizeTripPayload(template, locale);
+                    const images = derivePublicMediaUrls((template as any).images);
+                    if (!localized.agency) return { ...localized, images };
+                    // #569: never publish an umbrella VERIFIED the
+                    // components do not support — reconcile on read and
+                    // strip the expiry inputs from the payload.
+                    const { licenceExpiry: _licenceExpiry, insuranceExpiry: _insuranceExpiry, ...agency } =
+                        localized.agency as typeof localized.agency & { licenceExpiry?: unknown; insuranceExpiry?: unknown };
                     return {
                         ...localized,
-                        images: derivePublicMediaUrls((template as any).images),
-                        agency: (template as any).agency
-                            ? {
-                                ...(localized as any).agency,
-                                logo: derivePublicMediaUrl((template as any).agency.logo) ?? null,
-                            }
-                            : (localized as any).agency,
+                        images,
+                        agency: {
+                            ...agency,
+                            // #447: logo re-derived at read time like trip images.
+                            logo: derivePublicMediaUrl((template as any).agency.logo) ?? null,
+                            verificationStatus: effectiveVerificationStatus(localized.agency),
+                        },
                     };
                 }),
                 pagination: {
@@ -509,6 +521,9 @@ export class TripsService {
                         licenceVerifiedAt: true,
                         insuranceStatus: true,
                         insuranceVerifiedAt: true,
+                        // #569: feeds the umbrella reconciliation below;
+                        // stripped from the payload, never exposed.
+                        insuranceExpiry: true,
                     },
                 },
                 itinerary: {
@@ -525,7 +540,7 @@ export class TripsService {
         // attestation. During a replacement review the previously
         // verified instructions stay live (visibleBankDetails encodes
         // that rule); the verification stamp itself is not exposed.
-        const { bankDetailsVerifiedAt: _verificationStamp, ...publicAgency } = result.agency;
+        const { bankDetailsVerifiedAt: _verificationStamp, insuranceExpiry: _insuranceExpiry, ...publicAgency } = result.agency;
         // #546: resolve title/description into the request locale
         // (fallback French -> any language; no locale = French columns,
         // identical to the pre-#546 payload).
@@ -545,6 +560,8 @@ export class TripsService {
                 ...publicAgency,
                 // #447: logo re-derived at read time like trip images.
                 logo: derivePublicMediaUrl((result.agency as any).logo) ?? null,
+                // #569: umbrella reconciled with licence + insurance.
+                verificationStatus: effectiveVerificationStatus(result.agency),
                 bankDetails: visibleBankDetails(result.agency),
             },
         };

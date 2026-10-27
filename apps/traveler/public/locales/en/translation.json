@@ -57,7 +57,9 @@
     "viewAll": "View all trips",
     "from": "From",
     "emptyTitle": "No trips found",
-    "emptySubtitle": "Check back later for new adventures."
+    "emptySubtitle": "Check back later for new adventures.",
+    "loadErrorTitle": "We couldn't load trips",
+    "loadErrorSubtitle": "Something went wrong while loading the catalogue. Check your connection and try again."
   },
   "categories": {
     "title": "Travel your way",
@@ -94,7 +96,7 @@
     "phonePlaceholder": "Include country code",
     "idNote": "We never ask for your ID number online. The agency may check your ID at departure, so please bring it with you.",
     "bankTransfer": "Bank Transfer",
-    "bankTransferTitle": "Virement Bancaire",
+    "bankTransferTitle": "Bank Transfer",
     "helpQuestion": "Questions about this payment?",
     "fallbackAgencyName": "the agency",
     "bankInstructionsHint": "Use the bank transfer instructions below",
@@ -326,7 +328,8 @@
     "notFoundTitle": "This route is not on the map",
     "notFoundDescription": "The page may have moved or the trip may no longer be available.",
     "exploreTrips": "Explore available trips",
-    "closeDialog": "Close dialog"
+    "closeDialog": "Close dialog",
+    "undo": "Undo"
   },
   "tripCard": {
     "previousImage": "Previous image",
@@ -389,7 +392,9 @@
     "emptySubtitle": "Start adding trips to your wishlist to see them here",
     "previous": "Previous",
     "next": "Next",
-    "pageOf": "Page {{page}} of {{pages}}"
+    "pageOf": "Page {{page}} of {{pages}}",
+    "removed": "Removed from your wishlist",
+    "updateFailed": "Could not update your wishlist. Please try again."
   },
   "verify": {
     "title": "Check your email",
@@ -527,6 +532,8 @@
     "reviewsTitle": "Reviews & Ratings",
     "averageRating": "Average Rating",
     "distribution": "Distribution",
+    "distributionRating_one": "{{count}} star",
+    "distributionRating_other": "{{count}} stars",
     "selectDate": "Select Date",
     "spotsLeft_one": "{{count}} spot left",
     "spotsLeft_other": "{{count}} spots left",
@@ -606,6 +613,14 @@
     "disputeWindowClosed": "The {{days}}-day window to report a problem has closed. Please contact the organiser or OuiBoo support.",
     "disputed": "You reported a problem with this refund — the case has been reopened and is under review.",
     "actionFailed": "Something went wrong. Please try again."
+  },
+  "paymentPlan": {
+    "depositDue": "Deposit due: {{amount}} \u2014 pay the deposit to {{agency}} to secure your spot. This trip needs at least {{count}} participants by {{date}}.",
+    "depositPaid": "Deposit confirmed by {{agency}}. Waiting for trip confirmation \u2014 this trip needs at least {{count}} participants by {{date}}. If the minimum is not reached, your deposit is refunded.",
+    "balanceDue": "Trip confirmed \u2014 remaining balance due: {{amount}}",
+    "balancePayBefore": " (pay before {{date}})",
+    "uploadBalanceReceipt": "Upload Balance Receipt",
+    "refundDue": "This trip was not confirmed \u2014 the minimum group size was not reached. Your deposit of {{amount}} is refundable; {{agency}} will process your refund."
   },
   "support": {
     "title": "Support",

@@ -399,6 +399,15 @@ export class NotificationJobsService {
     }
   }
 
+  /**
+   * Date-based completion of finished CONFIRMED bookings. #434
+   * (Council P1-08): completion alone no longer makes a booking
+   * review-eligible — ReviewsService additionally requires the agency
+   * to have recorded the traveller as ATTENDED, and a booking the
+   * agency marks NO_SHOW leaves CONFIRMED before this job can complete
+   * it. This job intentionally keeps completing unmarked bookings so
+   * completion-based metrics/analytics keep their existing meaning.
+   */
   async completeFinishedBookings() {
     const now = new Date();
     const affected = await this.prisma.booking.findMany({

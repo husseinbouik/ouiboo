@@ -23,6 +23,8 @@ export const getTravelerBookingStatusTone = (status: BookingStatusType) => {
       return 'bg-amber-500 text-white';
     case BookingStatus.Cancelled:
     case BookingStatus.Rejected:
+    // #434: the traveller did not attend.
+    case BookingStatus.NoShow:
     // #369: the trip was not confirmed (minimum not reached).
     case BookingStatus.NotConfirmed:
       return 'bg-rose-500 text-white';
@@ -35,7 +37,36 @@ export const shouldShowUploadAction = (status: BookingStatusType, hasPaymentProo
   status === BookingStatus.Pending && !hasPaymentProof;
 
 export const canCancelTravelerBooking = (status: BookingStatusType) =>
-  status !== BookingStatus.Cancelled && status !== BookingStatus.Completed;
+  status !== BookingStatus.Cancelled &&
+  status !== BookingStatus.Completed &&
+  // #434: a no-show is a recorded outcome, not a cancellable booking.
+  status !== BookingStatus.NoShow;
+
+/**
+ * #434 (Council P1-08): review eligibility attaches to attendance.
+ * A booking is reviewable only when it is COMPLETED and the agency
+ * recorded the traveller as ATTENDED — date-based completion alone
+ * (attendance still null) is not enough, and NO_SHOW never is.
+ */
+export const isReviewEligibleBooking = (booking: {
+  status: BookingStatusType;
+  attendance?: string | null;
+}) => booking.status === BookingStatus.Completed && booking.attendance === 'ATTENDED';
+
+/**
+ * #434: the agency may record attendance once the trip has started,
+ * while the booking is CONFIRMED, or after the completion job has
+ * completed it — until an outcome is recorded.
+ */
+export const canMarkAttendance = (
+  booking: { status: BookingStatusType; attendance?: string | null; session?: { startDate?: string | null } | null },
+  now: Date = new Date(),
+) => {
+  if (booking.attendance) return false;
+  if (booking.status !== BookingStatus.Confirmed && booking.status !== BookingStatus.Completed) return false;
+  const start = booking.session?.startDate ? new Date(booking.session.startDate) : null;
+  return !!start && !Number.isNaN(start.getTime()) && start.getTime() <= now.getTime();
+};
 
 export const getTravelerProofStatus = (status?: VerificationStatusType | null) => {
   if (!status) {
@@ -219,6 +250,14 @@ export const getAgencyBookingStatusMeta = (status: BookingStatusType) => {
     return {
       className: 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-400/20',
       icon: 'pending',
+    };
+  }
+
+  // #434: the traveller did not attend.
+  if (status === BookingStatus.NoShow) {
+    return {
+      className: 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-900/20 dark:text-rose-400 dark:ring-rose-400/20',
+      icon: 'no-show',
     };
   }
 
