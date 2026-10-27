@@ -96,7 +96,7 @@
     "phonePlaceholder": "Include country code",
     "idNote": "We never ask for your ID number online. The agency may check your ID at departure, so please bring it with you.",
     "bankTransfer": "Bank Transfer",
-    "bankTransferTitle": "Virement Bancaire",
+    "bankTransferTitle": "Bank Transfer",
     "helpQuestion": "Questions about this payment?",
     "fallbackAgencyName": "the agency",
     "bankInstructionsHint": "Use the bank transfer instructions below",

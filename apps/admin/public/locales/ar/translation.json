@@ -647,5 +647,15 @@
       "revoked": "ملغاة",
       "expired": "منتهية"
     }
+  },
+  "commandPalette": {
+    "open": "فتح لوحة الأوامر",
+    "trigger": "ابحث أو انتقل إلى…",
+    "placeholder": "ابحث في الأقسام والوكالات والرحلات والحجوزات…",
+    "empty": "لا توجد نتائج مطابقة.",
+    "groupNavigation": "انتقل إلى",
+    "groupAgencies": "الوكالات",
+    "groupTrips": "الرحلات",
+    "groupBookings": "الحجوزات"
   }
 }

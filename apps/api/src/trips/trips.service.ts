@@ -3,7 +3,7 @@ import { DatabaseService } from '../database/database.service';
 import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripSessionDto } from './dto/create-trip.dto';
 import { BookingPaymentStatus, BookingStatus, Prisma, SessionStatus, TripStatus } from '@ouiboo/database';
 import { toMoneyDecimal } from '../common/money.util';
-import { canOrganise, getAgencyActivationBlock, sellerBlockMissingFields } from '../common/agency-licence.util';
+import { canOrganise, effectiveVerificationStatus, getAgencyActivationBlock, sellerBlockMissingFields } from '../common/agency-licence.util';
 import { visibleBankDetails } from '../common/bank-details.util';
 import { BETA_CATALOG_CURRENCY, isCatalogCurrencyAllowed, isMadOnlyCatalogEnabled } from '../common/catalog-currency.util';
 import { resolveStagedSessionConfig } from '../staged-payments/staged-payments.util';
@@ -376,6 +376,11 @@ export class TripsService {
                                 licenceVerifiedAt: true,
                                 insuranceStatus: true,
                                 insuranceVerifiedAt: true,
+                                // #569: the expiries feed the umbrella
+                                // reconciliation below; they are stripped
+                                // from the payload, never exposed.
+                                licenceExpiry: true,
+                                insuranceExpiry: true,
                             },
                         },
                         _count: {
@@ -394,7 +399,22 @@ export class TripsService {
                 // locale (fallback French -> any language). Without a
                 // locale this resolves to the French columns, i.e. the
                 // payload is byte-identical to the pre-#546 shape.
-                data: templates.map((template) => localizeTripPayload(template, locale)),
+                data: templates.map((template) => {
+                    const localized = localizeTripPayload(template, locale);
+                    if (!localized.agency) return localized;
+                    // #569: never publish an umbrella VERIFIED the
+                    // components do not support — reconcile on read and
+                    // strip the expiry inputs from the payload.
+                    const { licenceExpiry: _licenceExpiry, insuranceExpiry: _insuranceExpiry, ...agency } =
+                        localized.agency as typeof localized.agency & { licenceExpiry?: unknown; insuranceExpiry?: unknown };
+                    return {
+                        ...localized,
+                        agency: {
+                            ...agency,
+                            verificationStatus: effectiveVerificationStatus(localized.agency),
+                        },
+                    };
+                }),
                 pagination: {
                     total,
                     page: safePage,
@@ -488,6 +508,9 @@ export class TripsService {
                         licenceVerifiedAt: true,
                         insuranceStatus: true,
                         insuranceVerifiedAt: true,
+                        // #569: feeds the umbrella reconciliation below;
+                        // stripped from the payload, never exposed.
+                        insuranceExpiry: true,
                     },
                 },
                 itinerary: {
@@ -504,7 +527,7 @@ export class TripsService {
         // attestation. During a replacement review the previously
         // verified instructions stay live (visibleBankDetails encodes
         // that rule); the verification stamp itself is not exposed.
-        const { bankDetailsVerifiedAt: _verificationStamp, ...publicAgency } = result.agency;
+        const { bankDetailsVerifiedAt: _verificationStamp, insuranceExpiry: _insuranceExpiry, ...publicAgency } = result.agency;
         // #546: resolve title/description into the request locale
         // (fallback French -> any language; no locale = French columns,
         // identical to the pre-#546 payload).
@@ -520,6 +543,8 @@ export class TripsService {
             cancellationScale: buildCancellationScaleSnapshot(result.cancellationPolicy),
             agency: {
                 ...publicAgency,
+                // #569: umbrella reconciled with licence + insurance.
+                verificationStatus: effectiveVerificationStatus(result.agency),
                 bankDetails: visibleBankDetails(result.agency),
             },
         };

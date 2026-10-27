@@ -647,5 +647,15 @@
       "revoked": "Révoqué",
       "expired": "Expiré"
     }
+  },
+  "commandPalette": {
+    "open": "Ouvrir la palette de commandes",
+    "trigger": "Rechercher ou accéder à…",
+    "placeholder": "Rechercher parmi les sections, agences, voyages, réservations…",
+    "empty": "Aucun résultat.",
+    "groupNavigation": "Accéder à",
+    "groupAgencies": "Agences",
+    "groupTrips": "Voyages",
+    "groupBookings": "Réservations"
   }
 }

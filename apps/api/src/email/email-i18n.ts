@@ -4,7 +4,10 @@
 // layout sets <html lang> (and dir="rtl" for Arabic) and all subjects,
 // headings and body copy come from this table. The booking journey passes
 // the traveller's checkout locale (persisted on the Booking at creation);
-// recipients whose locale is not recorded keep the English default.
+// recipients whose locale is not recorded default to French (#570,
+// Council Session #3 P1-12) — French is the canonical language of this
+// Morocco-first product, so an unrecorded locale must not silently fall
+// back to English.
 //
 // Key parity across locales is enforced two ways: the FR/AR tables are
 // typed as EmailStrings (compile time) and email-i18n.spec.ts walks the
@@ -14,7 +17,7 @@
 export const EMAIL_LOCALES = ['en', 'fr', 'ar'] as const
 export type EmailLocale = (typeof EMAIL_LOCALES)[number]
 
-export const DEFAULT_EMAIL_LOCALE: EmailLocale = 'en'
+export const DEFAULT_EMAIL_LOCALE: EmailLocale = 'fr'
 
 export function normalizeEmailLocale(value?: string | null): EmailLocale {
   const base = value?.split('-')[0]?.toLowerCase()
@@ -41,6 +44,10 @@ export function fillEmailCopy(
 
 const en = {
   layout: {
+    // #563/#570: the one canonical cross-surface tagline, as carried by
+    // the landing OG (PR #590) and the traveller OG (PR #593). Email is
+    // aligned to that same line here, so exactly one tagline exists
+    // across traveller OG, landing OG and email.
     tagline: 'Travel made personal',
     serviceFooter: 'This is a service message from Ouiboo.',
     allRightsReserved: 'All rights reserved.',

@@ -14,6 +14,7 @@ export {
 export * from './Button';
 export * from './Card';
 export * from './ConfirmDialog';
+export * from './CommandPalette';
 export * from './Dialog';
 export * from './ValidatedDynamicForm';
 export * from './DropdownMenu';

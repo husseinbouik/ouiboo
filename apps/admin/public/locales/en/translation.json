@@ -647,5 +647,15 @@
       "revoked": "Revoked",
       "expired": "Expired"
     }
+  },
+  "commandPalette": {
+    "open": "Open command palette",
+    "trigger": "Search or jump to…",
+    "placeholder": "Search sections, agencies, trips, bookings…",
+    "empty": "No matches found.",
+    "groupNavigation": "Go to",
+    "groupAgencies": "Agencies",
+    "groupTrips": "Trips",
+    "groupBookings": "Bookings"
   }
 }

@@ -98,9 +98,12 @@ export function WishlistButton({ tripId, className }: WishlistButtonProps) {
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
       className={cn(
-        'inline-flex items-center justify-center p-3 rounded-full backdrop-blur-md transition-all duration-300',
-        'bg-white/20 hover:bg-white/30',
-        'border border-white/30',
+        'inline-flex items-center justify-center p-3 rounded-full backdrop-blur-md transition-all duration-300 shadow-md',
+        // #571: white/20 over a bright photo made the heart nearly
+        // invisible. A dark scrim keeps it legible on any photo while
+        // staying recognisably an overlay control.
+        'bg-black/40 hover:bg-black/55',
+        'border border-white/40',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         className
       )}

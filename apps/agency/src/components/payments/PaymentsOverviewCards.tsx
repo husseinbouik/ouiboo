@@ -43,7 +43,7 @@ export function PaymentsOverviewCards({
           </div>
           <div>
             <p className="text-primary-foreground/80 text-xs font-bold uppercase tracking-wider">{t('payments.received')}</p>
-            <h2 className="text-4xl font-black mt-1">
+            <h2 className="oui-numeric text-4xl font-black mt-1">
               {formatCurrency(totalReceived, currency, language)}
             </h2>
             <p className="text-primary-foreground/70 text-xs font-medium mt-2">{t('payments.receivedHint')}</p>
@@ -63,7 +63,7 @@ export function PaymentsOverviewCards({
           </div>
           <div>
             <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('payments.pending')}</p>
-            <h2 className="text-4xl font-black mt-1 text-foreground">
+            <h2 className="oui-numeric text-4xl font-black mt-1 text-foreground">
               {formatCurrency(pendingVerificationAmount, currency, language)}
             </h2>
             <p className="text-muted-foreground text-xs font-medium mt-2">{t('payments.pendingHint')}</p>
@@ -81,7 +81,7 @@ export function PaymentsOverviewCards({
           </div>
           <div>
             <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider">{t('payments.refunded')}</p>
-            <h2 className="text-4xl font-black mt-1 text-foreground">
+            <h2 className="oui-numeric text-4xl font-black mt-1 text-foreground">
               {formatCurrency(totalRefunded, currency, language)}
             </h2>
             <p className="text-muted-foreground text-xs font-medium mt-2">{t('payments.refundedHint')}</p>

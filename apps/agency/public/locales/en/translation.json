@@ -1143,12 +1143,20 @@
     "title": "Not in the beta",
     "subtitle": "The closed beta is completely free.",
     "billingTitle": "Billing & subscription are not part of the beta",
-    "walletTitle": "There is no Ouiboo wallet in the beta",
+    "walletTitle": "Payments are not active in the beta",
     "body": "During the closed beta there is no platform fee, no subscription and no credits — nothing to pay Ouiboo and nothing to cancel. This surface opens when paid plans launch after the beta.",
     "paymentsNote": "Traveller payments are separate: travellers pay your agency directly (bank transfer or your payment provider). Ouiboo never holds traveller money, so there is no Ouiboo balance to withdraw.",
     "viewPayments": "View payments received directly",
     "viewBookings": "View bookings",
-    "walletBannerTitle": "Free beta — no wallet, fees or credits",
+    "walletBannerTitle": "Free beta — no fees or credits",
     "walletBannerBody": "This page records traveller payments made directly to your agency. Ouiboo does not hold the money and charges no fee during the beta; the totals below are a record, not a balance."
+  },
+  "commandPalette": {
+    "open": "Open command palette",
+    "trigger": "Search or jump to…",
+    "placeholder": "Search sections and your trips…",
+    "empty": "No matches found.",
+    "groupNavigation": "Go to",
+    "groupTrips": "Your trips"
   }
 }

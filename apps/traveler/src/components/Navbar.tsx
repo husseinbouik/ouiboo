@@ -34,6 +34,31 @@ export function Navbar() {
 const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  // #495: hover intent for the profile menu. A plain mouseenter/leave
+  // pair snaps the menu shut when the pointer travels diagonally from
+  // the trigger toward the menu (it briefly leaves both). The wrapper
+  // below keeps the menu open while the pointer is anywhere inside it,
+  // and leaving schedules a short intent delay instead of closing
+  // instantly — crossing the gap/diagonal inside that window cancels
+  // the close (the safe-triangle effect), while moving away still
+  // closes promptly. Keyboard (focus/Esc) and touch (click toggle)
+  // behaviour are explicit and unchanged in spirit.
+  const profileCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const profileTriggerRef = useRef<HTMLButtonElement>(null);
+  const cancelProfileClose = () => {
+    if (profileCloseTimer.current) {
+      clearTimeout(profileCloseTimer.current);
+      profileCloseTimer.current = null;
+    }
+  };
+  const scheduleProfileClose = () => {
+    cancelProfileClose();
+    profileCloseTimer.current = setTimeout(() => setProfileOpen(false), 350);
+  };
+  const closeProfileNow = () => {
+    cancelProfileClose();
+    setProfileOpen(false);
+  };
   const pathname = usePathname();
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuCloseRef = useRef<HTMLButtonElement>(null);
@@ -170,12 +195,24 @@ const [isOpen, setIsOpen] = useState(false);
                     <div className="h-9 w-24 rounded-md bg-muted/50 animate-pulse" />
                 </div>
             ) : user ? (
-                <div className="relative">
-                    <button 
-                        onMouseEnter={() => setProfileOpen(true)}
-                        onFocus={() => setProfileOpen(true)}
+                <div
+                    className="relative"
+                    onMouseEnter={() => { cancelProfileClose(); setProfileOpen(true); }}
+                    onMouseLeave={scheduleProfileClose}
+                >
+                    <button
+                        ref={profileTriggerRef}
+                        onClick={() => (profileOpen ? closeProfileNow() : setProfileOpen(true))}
+                        onFocus={() => { cancelProfileClose(); setProfileOpen(true); }}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Escape') {
+                                closeProfileNow();
+                                profileTriggerRef.current?.focus();
+                            }
+                        }}
                         aria-label={t('nav.openProfileMenu', 'Open profile menu')}
                         aria-expanded={profileOpen}
+                        aria-haspopup="menu"
                         className="flex items-center gap-2 p-1.5 rounded-full hover:bg-muted/50 transition-colors"
                     >
                         <div className="w-8 h-8 rounded-full bg-deep-blue text-white flex items-center justify-center font-bold text-xs overflow-hidden">
@@ -199,7 +236,9 @@ const [isOpen, setIsOpen] = useState(false);
                                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                onMouseLeave={() => setProfileOpen(false)}
+                                role="menu"
+                                onMouseEnter={cancelProfileClose}
+                                onMouseLeave={scheduleProfileClose}
                                 className="absolute right-0 mt-2 w-64 bg-card rounded-xl shadow-lg border border-border overflow-hidden z-[60]"
                             >
                                 <div className="p-4 border-b border-border">

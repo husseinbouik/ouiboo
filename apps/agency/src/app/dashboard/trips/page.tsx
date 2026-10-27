@@ -12,7 +12,7 @@ import {
   Filter,
   ArrowUpDown
 } from 'lucide-react';
-import { Button, Card, CardContent, Input, ShareTripButton, SafeImage } from '@ouiboo/ui';
+import { Button, Card, CardContent, EmptyState, Input, ShareTripButton, SafeImage } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -287,22 +287,22 @@ export default function AgencyTripsPage() {
           ))
         ) : (
           <div className="col-span-full">
-            <Card className="border-none shadow-sm bg-card border border-border">
-              <CardContent className="py-16 text-center">
-                <p className="text-lg font-bold text-foreground">{t('trips.emptyTitle')}</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {t('trips.emptyBody')}
-                </p>
-                <div className="mt-6 flex items-center justify-center gap-3">
+            {/* #574: shared EmptyState instead of a hand-rolled card. */}
+            <EmptyState
+              className="py-16"
+              title={t('trips.emptyTitle')}
+              description={t('trips.emptyBody')}
+              action={
+                <div className="flex items-center justify-center gap-3">
                   <Button variant="outline" onClick={() => { setSearchTerm(''); setStatusFilter('ALL'); setSortBy('recent'); }}>
                     {t('trips.clearFilters')}
                   </Button>
                   <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90 border-none">
-              <Link href="/dashboard/trips/create">{t('trips.createCta')}</Link>
-            </Button>
+                    <Link href="/dashboard/trips/create">{t('trips.createCta')}</Link>
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
+              }
+            />
           </div>
         )}
 
