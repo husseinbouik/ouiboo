@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { mockTravelerApi } from './helpers';
+import { mockTravelerApi, seedLocalStorage } from './helpers';
 
 test.describe('traveler launch flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -32,6 +32,10 @@ test.describe('traveler launch flow', () => {
   });
 
   test('traveler can go from trip detail to checkout confirmation', async ({ page }) => {
+    // Checkout needs the signed-in traveler the mock API returns for
+    // /users/me. Since #245 that probe only fires when a session may
+    // exist, so seed the login hint a real login would have written.
+    await seedLocalStorage(page, { 'ouiboo.session.hint': '1' });
     await page.goto('/search', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: 'Atlas Weekend Escape' })).toBeVisible();
     // "View details" is rendered as a link (Next.js Link), not a button.
