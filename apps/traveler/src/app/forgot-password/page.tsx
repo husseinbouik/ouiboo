@@ -6,7 +6,8 @@ import { useForm } from 'react-hook-form';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowLeft, CheckCircle, Mail } from 'lucide-react';
-import { Button, Input, BetaBadge } from '@ouiboo/ui';
+import { Button, Input } from '@ouiboo/ui';
+import { AuthSideWordmark } from '../../components/AuthSideWordmark';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ForgotPasswordSchema, type ForgotPasswordInput } from '@ouiboo/schemas';
 import { useTranslation } from 'react-i18next';
@@ -66,7 +67,7 @@ export default function TravelerForgotPasswordPage() {
           />
         </motion.div>
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
-          <div className="flex items-center gap-2.5"><span className="text-3xl font-bold tracking-tight">Ouiboo</span><BetaBadge /></div>
+          <AuthSideWordmark />
           <div className="mb-12 space-y-4">
             <h2 className="text-4xl font-bold leading-tight">{t('forgotPassword.sideTitle')}</h2>
             <p className="text-lg text-gray-200 max-w-md">{t('forgotPassword.sideSubtitle')}</p>

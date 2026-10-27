@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ShieldCheck, RefreshCw } from 'lucide-react';
-import { Button, OtpCodeInput, ThemeToggle, LanguageSwitcher, BetaBadge } from '@ouiboo/ui';
+import { Button, OtpCodeInput, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
+import { AuthBrandLockup } from '../../components/AuthBrandLockup';
 import { apiClient } from '@/lib/api-client';
 import { useMutation } from '@tanstack/react-query';
 import { setBrowserAccessToken } from '@ouiboo/api-client';
@@ -178,9 +179,7 @@ export default function VerifyEmailPage() {
       >
         <div className="text-center space-y-4">
              <div className="inline-flex items-center justify-center gap-2 mb-4 group">
-                <div className="w-10 h-10 rounded-xl bg-deep-blue dark:bg-sunset-orange text-white flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">O</div>
-                <span className="text-2xl font-bold text-deep-blue dark:text-foreground">Ouiboo</span>
-                <BetaBadge />
+                <AuthBrandLockup />
             </div>
           <h2 className="text-3xl font-bold text-foreground tracking-tight">{t('verify.title', 'Check your email')}</h2>
           <p className="text-muted-foreground font-medium text-sm">{t('verify.subtitle', 'We have sent a 6-digit verification code to')} <br/> <span className="font-semibold text-foreground">{email}</span></p>

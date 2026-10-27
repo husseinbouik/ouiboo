@@ -8,7 +8,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { Button, Input, ThemeToggle, LanguageSwitcher, BetaBadge } from '@ouiboo/ui';
+import { Button, Input, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
+import { AuthBrandLockup } from '../../components/AuthBrandLockup';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/components/AuthContext';
 import { setBrowserAccessToken, getAuthErrorMessage } from '@ouiboo/api-client';
@@ -107,9 +108,7 @@ export default function TravelerLoginPage() {
       >
         <div className="text-center mb-10">
             <Link href="/" className="inline-flex items-center justify-center gap-2 mb-8 group">
-                <div className="w-10 h-10 rounded-xl bg-deep-blue dark:bg-sunset-orange text-white flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">O</div>
-                <span className="text-2xl font-bold text-deep-blue dark:text-foreground">Ouiboo</span>
-                <BetaBadge />
+                <AuthBrandLockup />
             </Link>
             <h2 className="text-3xl font-bold text-foreground mb-2">{t('login.title', 'Welcome Back')}</h2>
             <p className="text-muted-foreground font-medium text-sm">{t('login.subtitle', 'Enter your details to sign in')}</p>
