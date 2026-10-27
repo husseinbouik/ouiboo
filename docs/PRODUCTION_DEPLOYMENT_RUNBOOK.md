@@ -1,100 +1,62 @@
-> ⚠️ **DO NOT USE — wrong architecture.** This document describes a
-> Docker/workers deployment that is **not** the live system. Ouiboo runs
-> on Vercel serverless (apps) + Neon + Upstash + Backblaze. The governing
-> release process is `docs/launch-ops/RELEASE_RUNBOOK.md`; monitoring
-> truth is `docs/OPERATIONS_MONITORING.md`. Kept for history only.
-> (Marked 2026-10-27, Council Session #2 item B17.)
+# Production Deployment Runbook — RETIRED, do not use
 
-# Production Deployment Runbook
+> **This document no longer contains a deploy procedure.** Its previous
+> body described a Docker/workers architecture — immutable Docker images
+> for API, worker, Traveler, Agency and Admin containers, a controlled
+> migration container, worker heartbeat checks — that is **not** the live
+> system and never was the production path. An operator following it
+> would prepare the wrong artefacts, look for containers that do not
+> exist, and miss the gates that actually protect a release. The body was
+> replaced with this redirect on 2026-10-27 (Council item P1-17, #442).
+> The old text remains in git history only.
 
-Target: Docker-based API, worker, Traveler, Agency, and Admin services with managed Postgres, Redis, object storage, SMTP, logging, and monitoring.
+## The live architecture (what production actually is)
 
-## Required Managed Services
+- **Apps:** five Vercel projects per environment — Traveler, Agency,
+  Admin, Landing (Next.js) and the API (NestJS) — deployed serverless
+  from their branches: staging twins from `staging`, production from
+  `master`. There are no Docker images, no worker containers, and no
+  Kubernetes in the live stack.
+- **Database:** Neon Postgres (Prisma ORM). Staging project
+  `hidden-mountain-93789107`, production project
+  `delicate-tree-54473957`.
+- **Cache / rate limiting:** Upstash Redis.
+- **Object storage:** Backblaze (S3-compatible) for uploads and payment
+  proofs.
+- **Email:** SMTP, configured purely by environment
+  (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`).
+- **Payments at launch:** bank transfer + manual payment proof. The
+  traveller pays the **agency directly**; Ouiboo never holds traveller
+  money, runs no wallet/payout flow, and applies no gateway in the beta
+  path.
 
-- Postgres with automated daily backups and point-in-time recovery.
-- Redis with persistence enabled for rate limiting and BullMQ queues.
-- S3-compatible object storage for uploads and payment proofs.
-- Centralized logs and alerts for API, worker, database, Redis, and storage errors.
+## Where the real procedures live
 
-## Required Secrets
+| Need | Governing document |
+| --- | --- |
+| Promote `staging` → production (the gated manual path, Gate A attestation + Gate B promotion, manual migration procedure, attestation record) | [`docs/launch-ops/RELEASE_RUNBOOK.md`](./launch-ops/RELEASE_RUNBOOK.md) |
+| Beta operations: support lanes, escalation, refund-chase, alerting status | [`docs/launch-ops/BETA_OPS_CHECKLIST.md`](./launch-ops/BETA_OPS_CHECKLIST.md) |
+| First actions in an incident (API down, active-trip escalation, refund overdue, proof dispute, lockout) | [`docs/launch-ops/INCIDENT_CARD.md`](./launch-ops/INCIDENT_CARD.md) |
+| When and how to roll back, post-deploy validation | [`docs/launch-ops/ROLLBACK_AND_POST_DEPLOY_CHECKLIST.md`](./launch-ops/ROLLBACK_AND_POST_DEPLOY_CHECKLIST.md) |
+| Monitoring and alerting truth (uptime monitor, dashboard logs) | [`docs/OPERATIONS_MONITORING.md`](./OPERATIONS_MONITORING.md) |
 
-Do not commit `.env.production`.
+## Non-negotiables an operator must not relearn the hard way
 
-Required values:
+- **Migrations never auto-apply.** A Vercel deploy does not run Prisma
+  migrations, and CI never applies them. The release's named migration
+  owner applies each migration by hand in the Neon Console, exactly
+  once, per the procedure in the Release Runbook. An endpoint that
+  selects new columns will 500 until its migration is applied.
+- **No workflow promotes code.** The gated path is the manual checklist
+  in the Release Runbook. Legacy dispatch workflows in the repo
+  (`release.yml`, `production-release.yml`) are **not** part of it;
+  using one to bypass the checklist voids the release.
+- **One immutable SHA.** Every piece of release evidence (CI, Security,
+  Browser-E2E, deployments, smoke) must name the same staging SHA; any
+  new push voids the attestation.
+- **Verify on the deployed environment**, per surface, with
+  served-content proof — a 200 response is not proof, and the traveller
+  staging alias (`ouiboo-traveler-staging.vercel.app`) is static and
+  must be re-pointed after every traveller staging deploy.
 
-- `DATABASE_URL`
-- `REDIS_URL`
-- `JWT_SECRET`
-- `JWT_REFRESH_SECRET`
-- `CORS_ORIGINS`
-- `API_URL`
-- `TRAVELER_APP_URL`
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`
-- `STORAGE_PROVIDER=s3`
-- `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`
-- Payment provider secrets for enabled providers.
-
-## Pre-Deploy Checklist
-
-1. Confirm the latest database backup completed successfully.
-2. Run `npm run check:env`.
-3. Run `npm run lint`.
-4. Run `npm test`.
-5. Run `npm run build`.
-6. Run `npm audit --audit-level=high`.
-7. Build and publish immutable Docker images for API, worker, Traveler, Agency, Admin, and Landing.
-8. Confirm the deployment hook is configured and authenticated.
-
-## Migration Procedure
-
-1. Put the deployment in maintenance mode if payment/write traffic is active.
-2. Take a manual Postgres backup.
-3. Run Prisma migrations once from a controlled migration job/container:
-   - `npx prisma migrate deploy --schema packages/database/prisma/schema.prisma`
-4. Verify Decimal columns:
-   - `TripSession.price`, `TripSession.deposit`
-   - `Booking.totalAmount`, `Booking.refundAmount`
-   - `Wallet.availableBalance`, `Wallet.pendingBalance`
-   - `WalletTransaction.amount`
-   - `PayoutRequest.amount`
-   - `PaymentTransaction.amount`
-   - `ExchangeRate.rate`
-5. Deploy API.
-6. Deploy worker.
-7. Deploy frontends.
-8. Check `/api/v1/health/ready`, `/api/v1/health/db`, and `/api/v1/health/redis`.
-9. Confirm `node dist/apps/api/src/worker-healthcheck` succeeds in the worker container.
-10. Disable maintenance mode.
-
-## Rollback Procedure
-
-1. Stop new deployments and pause worker processing.
-2. Roll back API/frontends to the previous image if the issue is application-only.
-3. If the issue is caused by a migration, restore the manual pre-migration backup.
-4. Re-enable API only after `/health/db` and `/health/redis` are healthy.
-5. Re-enable worker last.
-
-## Monitoring And Alerts
-
-Alert on:
-
-- API `/health` failure for 2 consecutive checks.
-- Worker heartbeat stale or worker Redis probe failing.
-- Redis unavailable.
-- BullMQ failed job count above threshold.
-- Postgres connection saturation or slow queries.
-- Payment webhook signature failures spike.
-- Refund or payout failure rate above threshold.
-- Object storage upload/download failures.
-
-## Backup And Restore
-
-- Postgres: daily automated backup plus point-in-time recovery.
-- Object storage: versioning enabled for payment proofs and agency assets.
-- Redis: persistence enabled; queues are recoverable, but financial state must remain in Postgres.
-
-## Production Blockers Still Requiring Verification
-
-- API-backed E2E is wired into CI with PostgreSQL and Redis and must be green on the release commit and repeated against staging.
-- Payment provider webhooks need replay/idempotency tests.
-- Managed malware/CDR scanning must be selected and verified for production uploads; built-in MIME/signature/EICAR/active-PDF/path-safety checks are implemented.
+*Superseded 2026-10-27 — Council Session #1 item P1-17 (#442).*
