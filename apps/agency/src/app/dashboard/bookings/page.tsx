@@ -238,7 +238,7 @@ export default function BookingsManager() {
                               : 'outline'
                           }
                           size="sm"
-                          className={`opacity-0 group-hover:opacity-100 transition-opacity gap-2 ${
+                          className={`opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity gap-2 ${
                             booking.paymentProof?.status === VerificationStatus.Pending ||
                             booking.paymentProof?.status === VerificationStatus.Accepted
                               ? 'bg-primary hover:bg-primary/90'
@@ -252,7 +252,7 @@ export default function BookingsManager() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity cursor-not-allowed"
+                          className="opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity cursor-not-allowed"
                           disabled
                         >
                           {t('bookings.noProof')}

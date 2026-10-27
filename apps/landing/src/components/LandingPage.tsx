@@ -343,7 +343,7 @@ export default function LandingPage() {
                     >
                         <motion.h1 
                           variants={fadeInUp} 
-                          className="text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl text-deep-blue leading-tight"
+                          className="oui-balance text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl text-deep-blue leading-tight"
                         >
                           {/* #332: orange-800 here — sunset-orange-dark measures
                               4.41:1 on this badge's deeper /10 tint over the hero
@@ -420,7 +420,7 @@ export default function LandingPage() {
       <section className="bg-off-white py-20 sm:py-24">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('highlights.title')}</h2>
+            <h2 className="oui-balance text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('highlights.title')}</h2>
             <p className="mt-4 text-lg text-gray-600">{t('highlights.subtitle')}</p>
           </motion.div>
           <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-3">
