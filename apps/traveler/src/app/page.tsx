@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import type { Metadata } from 'next';
 import { getInitialLanguage } from '@ouiboo/i18n/server';
 import type { TripSession, TripTemplate, VerificationStatusType } from '@ouiboo/types';
+import { OG_LOCALES, SITE_COPY } from '@/lib/site';
 
 const HomeClient = dynamic(() => import('./HomeClient'));
 
@@ -11,10 +12,27 @@ type FeaturedTrip = TripTemplate & {
   agency?: { verificationStatus?: VerificationStatusType } | null;
 };
 
-export const metadata: Metadata = {
-  alternates: { canonical: '/' },
-  openGraph: { url: '/' },
-};
+/**
+ * #563 rework: this page previously exported a static `openGraph:
+ * { url: '/' }`, which REPLACED the root layout's openGraph object in
+ * Next's metadata merge — the deployed home page served no og:locale
+ * at all. The metadata is generated per-locale here so the home page
+ * serves og:locale + alternateLocale like every other surface.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getInitialLanguage();
+  const copy = SITE_COPY[locale];
+  return {
+    alternates: { canonical: '/' },
+    openGraph: {
+      url: '/',
+      title: copy.title,
+      description: copy.description,
+      locale: copy.ogLocale,
+      alternateLocale: OG_LOCALES.filter((value) => value !== copy.ogLocale),
+    },
+  };
+}
 
 /**
  * #575: a catalogue fetch failure must not be swallowed into the same

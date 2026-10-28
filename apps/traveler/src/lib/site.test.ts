@@ -117,3 +117,18 @@ describe('site TRAVELER_URL resolution (#468)', () => {
     expect(site.TRAVELER_URL).toBe('http://localhost:3001');
   });
 });
+
+describe('home-page og:locale path (#563 rework)', () => {
+  // src/app/page.tsx generateMetadata builds the home page's openGraph
+  // from exactly these expressions (its previous static openGraph
+  // export replaced the root layout's object and dropped og:locale).
+  it('yields a locale + alternates for every supported language', () => {
+    for (const locale of ['en', 'fr', 'ar'] as const) {
+      const copy = SITE_COPY[locale];
+      const alternates = OG_LOCALES.filter((value) => value !== copy.ogLocale);
+      expect(copy.ogLocale).toBeTruthy();
+      expect(alternates).toHaveLength(2);
+      expect(alternates).not.toContain(copy.ogLocale);
+    }
+  });
+});

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { isBetaBadgeEnabled, isSharingEnabled, scrubShareClaimWords } from '@ouiboo/utils';
-import { absoluteTravelerUrl, metadataDescription, SITE_DESCRIPTION, SITE_NAME } from '@/lib/site';
+import { absoluteTravelerUrl, metadataDescription, OG_LOCALES, SITE_COPY, SITE_DESCRIPTION, SITE_NAME } from '@/lib/site';
+import type { SupportedLanguage } from '@ouiboo/i18n/server';
 
 export type TripMetadataInput = {
   id: string;
@@ -25,6 +26,16 @@ export function resolveTripCoverImage(trip: TripMetadataInput): string | undefin
 }
 
 export interface TripMetadataOptions {
+  /**
+   * #563 rework: the visitor locale the OG copy was resolved in. The
+   * builder ALWAYS emits openGraph.locale (this locale's og:locale)
+   * plus alternateLocale (the other locales) — previously it omitted
+   * both, and because Next replaces the openGraph object when a child
+   * segment defines one, the root layout's locale tags never reached
+   * trip pages (deployed traveller served zero og:locale tags).
+   * Defaults to 'en' for callers that have no locale context.
+   */
+  locale?: SupportedLanguage;
   /**
    * Council B12: rich trip previews are gated by NEXT_PUBLIC_SHARING_ENABLED
    * (default OFF for the closed beta). Injectable for tests; defaults to the
@@ -58,6 +69,10 @@ export function buildTripMetadata(
   trip: TripMetadataInput | null,
   options: TripMetadataOptions = {},
 ): Metadata {
+  const locale = options.locale ?? 'en';
+  const ogLocale = SITE_COPY[locale].ogLocale;
+  const alternateLocale = OG_LOCALES.filter((value) => value !== ogLocale);
+
   if (!trip) {
     return {
       // #576: no manual brand suffix — the root layout template
@@ -65,6 +80,7 @@ export function buildTripMetadata(
       // rendered the tab title as "Trip not found — Ouiboo | Ouiboo".
       title: 'Trip not found',
       robots: { index: false, follow: false },
+      openGraph: { locale: ogLocale, alternateLocale },
     };
   }
 
@@ -89,6 +105,8 @@ export function buildTripMetadata(
         title: SITE_NAME,
         description: SITE_DESCRIPTION,
         url: canonicalPath,
+        locale: ogLocale,
+        alternateLocale,
       },
       twitter: {
         card: 'summary',
@@ -123,6 +141,8 @@ export function buildTripMetadata(
       title: socialTitle,
       description,
       url: canonicalPath,
+      locale: ogLocale,
+      alternateLocale,
       images: coverImage ? [{ url: coverImage, alt: trip.title }] : undefined,
     },
     twitter: {

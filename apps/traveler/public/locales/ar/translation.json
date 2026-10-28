@@ -40,7 +40,8 @@
     "openProfileMenu": "فتح قائمة الملف الشخصي",
     "openMenu": "فتح قائمة التنقل",
     "mobileMenu": "قائمة التنقل",
-    "closeMenu": "إغلاق قائمة التنقل"
+    "closeMenu": "إغلاق قائمة التنقل",
+    "displayCurrency": "عملة العرض"
   },
   "hero": {
     "tagline": "اكتشف ما هو غير متوقع",
