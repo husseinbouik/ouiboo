@@ -96,7 +96,7 @@ type EmailLayoutOptions = {
  * pin, navy centre dot) inlined as SVG, the only image form email
  * clients render without a hosted asset.
  */
-export const EMAIL_PIN_LOGO_SVG = `<svg width="36" height="36" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ouiboo"><rect width="32" height="32" rx="8" fill="#0A192F"/><path d="M16 8C11.5817 8 8 11.5817 8 16C8 20.4183 11.5817 24 16 24C20.4183 24 24 20.4183 24 16C24 11.5817 20.4183 8 16 8ZM16 22C12.6863 22 10 19.3137 10 16C10 12.6863 12.6863 10 16 10C19.3137 10 22 12.6863 22 16C22 19.3137 19.3137 22 16 22Z" fill="white"/><path d="M16 23.2C14.9 21 11.4 18.6 11.4 14.4A4.6 4.6 0 1 1 20.6 14.4C20.6 18.6 17.1 21 16 23.2Z" fill="#FF6B35"/><circle cx="16" cy="14.4" r="1.8" fill="#0A192F"/></svg>`
+export const EMAIL_PIN_LOGO_SVG = `<svg width="36" height="36" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ouiboo"><rect width="32" height="32" rx="8" fill="#0A192F"/><path d="M16 8C11.5817 8 8 11.5817 8 16C8 20.4183 11.5817 24 16 24C20.4183 24 24 20.4183 24 16C24 11.5817 20.4183 8 16 8ZM16 22C12.6863 22 10 19.3137 10 16C10 12.6863 12.6863 10 16 10C19.3137 10 22 12.6863 22 16C22 19.3137 19.3137 22 16 22Z" fill="white"/><path d="M16 21.4C15.3 19.8 12.6 17.9 12.6 14.8A3.4 3.4 0 1 1 19.4 14.8C19.4 17.9 16.7 19.8 16 21.4Z" fill="#FF6B35"/><circle cx="16" cy="14.8" r="1.5" fill="#0A192F"/></svg>`
 
 export function renderEmail({ title, preheader, content, footerHtml, locale }: EmailLayoutOptions): string {
   const year = new Date().getFullYear()

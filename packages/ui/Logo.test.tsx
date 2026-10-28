@@ -32,23 +32,72 @@ const LOCKUPS: Record<string, string> = {
 };
 
 describe('Logo geometry (Session #3 P0-4)', () => {
-  it('pin head radius is at least 4.6 units', () => {
-    const m = logoSource.match(/A(\d+(?:\.\d+)?) \d+(?:\.\d+)? 0 1 1/);
-    expect(m).not.toBeNull();
-    expect(parseFloat(m![1])).toBeGreaterThanOrEqual(4.6);
+  // Rework (#552, verification FAIL 2026-10-28): the ring is an annulus
+  // with INNER radius 6 around centre (16, 16). The previous pin (head
+  // r=4.6 at (16, 14.4), tip y=23.2 = radius 7.2) painted over the ring
+  // and read as a dot bursting out of the circle. The pin must stay
+  // CONTAINED inside the ring: every point within radius < 6 of
+  // (16, 16). Draft geometry, verified numerically by sampling the
+  // path: head r=3.4 centred (16, 14.8), tip (16, 21.4) at radius 5.4,
+  // sampled max radius 5.40 < 5.9.
+  const pinPath = logoSource.match(/d="(M16 21\.4[^"]+)"/);
+
+  it('pin path is present with tip at (16, 21.4) — radius 5.4 from centre', () => {
+    expect(pinPath).not.toBeNull();
+    expect(Math.hypot(16 - 16, 21.4 - 16)).toBeLessThan(5.9);
   });
 
-  it('pin tip reaches y≈23.2 (pin height ≥13 units)', () => {
-    // Anchor on the pin path specifically (its C14.9 21 shoulder is
-    // unique) — the O-ring path also starts "M16 <n>C" and a naive
-    // first-match reads the ring's 8 instead of the pin's tip.
-    const m = logoSource.match(/M16 (\d+(?:\.\d+)?)C14\.9 21/);
+  it('pin head radius is 3.4 units centred at (16, 14.8)', () => {
+    const m = logoSource.match(/A(\d+(?:\.\d+)?) \d+(?:\.\d+)? 0 1 1/);
     expect(m).not.toBeNull();
-    expect(parseFloat(m![1])).toBeGreaterThanOrEqual(23);
+    expect(parseFloat(m![1])).toBeCloseTo(3.4);
+    // Head top (14.8 - 3.4 = 11.4) is the farthest head point from the
+    // ring centre: radius 4.6, still inside the ring's inner radius 6.
+    expect(16 - (14.8 - 3.4)).toBeLessThan(6);
+  });
+
+  it('every sampled point of the pin stays within radius < 5.9 of (16, 16)', () => {
+    expect(pinPath).not.toBeNull();
+    // Sample the two cubic shoulders and the head arc of the pin path.
+    const cubic = (p0: number[], p1: number[], p2: number[], p3: number[]) => {
+      const pts: number[][] = [];
+      for (let i = 0; i <= 200; i++) {
+        const t = i / 200;
+        const u = 1 - t;
+        pts.push([
+          u ** 3 * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t ** 3 * p3[0],
+          u ** 3 * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t ** 3 * p3[1],
+        ]);
+      }
+      return pts;
+    };
+    const pts = [
+      ...cubic([16, 21.4], [15.3, 19.8], [12.6, 17.9], [12.6, 14.8]),
+      ...cubic([19.4, 14.8], [19.4, 17.9], [16.7, 19.8], [16, 21.4]),
+    ];
+    for (let i = 0; i <= 200; i++) {
+      const a = Math.PI - (Math.PI * i) / 200;
+      pts.push([16 + 3.4 * Math.cos(a), 14.8 - 3.4 * Math.sin(a)]);
+    }
+    const maxRadius = Math.max(...pts.map(([x, y]) => Math.hypot(x - 16, y - 16)));
+    expect(maxRadius).toBeLessThan(5.9);
   });
 
   it('keeps the navy centre dot of the adopted concept', () => {
-    expect(logoSource).toContain('<circle cx="16" cy="14.4" r="1.8" fill="#0A192F" />');
+    expect(logoSource).toContain('<circle cx="16" cy="14.8" r="1.5" fill="#0A192F" />');
+  });
+
+  it('no other copy of the pin geometry still paints over the ring', () => {
+    const copies = [
+      'apps/api/src/email/email-template.ts',
+      'apps/landing/src/lib/og-image.tsx',
+      'apps/traveler/src/app/opengraph-image.tsx',
+    ];
+    for (const file of copies) {
+      const src = repoFile(file);
+      expect(src).toContain('M16 21.4C15.3 19.8 12.6 17.9 12.6 14.8A3.4 3.4 0 1 1 19.4 14.8');
+      expect(src).not.toContain('M16 23.2');
+    }
   });
 });
 
