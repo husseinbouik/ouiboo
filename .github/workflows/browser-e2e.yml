@@ -44,7 +44,16 @@ jobs:
           npm run build --workspace apps/admin
 
       - name: Run browser launch suite
-        run: npm run test:e2e
+        # Local mock-backed projects only. The production-smoke project
+        # targets LIVE deployments (SMOKE_* URLs, canonical prod domains
+        # by default in the spec) — in this PR gate it would test the
+        # previously released production build, not this PR, and it
+        # failed deterministically on surfaces the staging fixes had
+        # already landed for (localhost metadataBase, #418, anonymous
+        # 401s) because production still served the older master build.
+        # It keeps its own gate: production-smoke.yml runs the spec
+        # explicitly against the staging deployments on every PR.
+        run: npm run test:e2e -- --project=traveler --project=traveler-mobile --project=agency --project=admin
 
       - name: Upload Playwright report
         if: always()

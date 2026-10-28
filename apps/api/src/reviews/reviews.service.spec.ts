@@ -255,6 +255,11 @@ describe('Review hardening (#439): pre-publication moderation, edit limits, self
       id: 'booking-1',
       travelerId: 'traveler-1',
       status: 'COMPLETED',
+      // #434 attendance gate (merged from staging after this block was
+      // written): createReview requires a recorded ATTENDED attendance,
+      // so the #439 fixtures must model an attended booking — the same
+      // shape reviews-attendance.spec.ts uses.
+      attendance: 'ATTENDED',
       session: { template: { id: 'trip-1', agencyId: 'agency-profile-1' } },
     };
     const db: any = {

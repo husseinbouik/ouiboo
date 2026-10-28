@@ -81,7 +81,16 @@ export default defineConfig({
       // LIVE deployments (URLs from SMOKE_* env vars, canonical prod
       // defaults in the spec) — run it explicitly with
       // `npx playwright test --project=production-smoke`; it is not part
-      // of the local mock-backed projects above.
+      // of the local mock-backed projects above. Because a bare
+      // `playwright test` runs EVERY project, the browser-e2e workflow
+      // enumerates the local projects explicitly — otherwise this suite
+      // grades the previously released production build in the PR gate
+      // (it failed on the pre-#468/#582/#583 production build's
+      // localhost canonical, hydration #418 and anonymous 401s, none of
+      // which reproduce on current code: the local traveler-console
+      // gate, which exercises the same pages anonymously and
+      // authenticated against the mock API, is clean). Its live gate is
+      // production-smoke.yml (staging URLs, every PR).
       name: 'production-smoke',
       testMatch: /production\/smoke\.spec\.ts/,
       use: {

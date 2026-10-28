@@ -48,13 +48,28 @@ export const OG_LOCALES = Object.values(SITE_COPY).map((copy) => copy.ogLocale)
 const LOCAL_DEV_TRAVELER_URL = 'http://localhost:3001'
 
 /**
+ * Canonical production origin, used only when a production build has
+ * neither a configured NEXT_PUBLIC_TRAVELER_URL nor a Vercel host to
+ * derive one from (e.g. the CI e2e build, which sets neither). It is
+ * the same canonical domain the smoke suite and the API's
+ * TRAVELER_APP_URL default already use. A production build must NEVER
+ * fall through to the loopback default: Next resolves the page's
+ * relative canonical/OG URLs against metadataBase, so a localhost
+ * TRAVELER_URL bakes http://localhost:3001 into the canonical link,
+ * og:url, og:image and twitter:image of every page — exactly what the
+ * production smoke suite caught (href="http://localhost/...).
+ */
+const PRODUCTION_TRAVELER_URL = 'https://ouiboo-traveler.vercel.app'
+
+/**
  * The traveller app's public origin: the metadata base for canonical/OG
  * URLs, the sitemap URLs and the #468 share-link base.
  *
  * NEXT_PUBLIC_TRAVELER_URL is the configured source and is set on every
  * deployed project. The loopback default exists for local development
  * only: in a production build whose configured value is missing or
- * loopback, fall back to this deployment's own Vercel host rather than
+ * loopback, fall back to this deployment's own Vercel host, and then
+ * to the canonical production origin, rather than
  * baking localhost into canonical URLs, the sitemap and share links
  * (founder report, 2026-10-27 — staging shared localhost links because
  * the variable was missing on the staging traveller project).
@@ -66,6 +81,7 @@ function resolveTravelerUrl(): string {
     const vercelHost =
       process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL
     if (vercelHost) return `https://${vercelHost}`
+    return PRODUCTION_TRAVELER_URL
   }
   return configured || LOCAL_DEV_TRAVELER_URL
 }

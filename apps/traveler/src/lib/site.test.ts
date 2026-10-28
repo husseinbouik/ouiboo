@@ -89,6 +89,21 @@ describe('site TRAVELER_URL resolution (#468)', () => {
     expect(site.TRAVELER_URL).toBe('https://ouiboo-traveler-staging.vercel.app');
   });
 
+  it('never emits a loopback URL from a production build without a configured URL or Vercel host', async () => {
+    const site = await loadSite({ NODE_ENV: 'production' });
+    expect(site.TRAVELER_URL).toBe('https://ouiboo-traveler.vercel.app');
+    expect(site.TRAVELER_URL).not.toContain('localhost');
+    expect(site.absoluteTravelerUrl('/')).toBe('https://ouiboo-traveler.vercel.app/');
+  });
+
+  it('treats a loopback configured URL as missing in production even without a Vercel host', async () => {
+    const site = await loadSite({
+      NEXT_PUBLIC_TRAVELER_URL: 'http://localhost:3001',
+      NODE_ENV: 'production',
+    });
+    expect(site.TRAVELER_URL).toBe('https://ouiboo-traveler.vercel.app');
+  });
+
   it('keeps the loopback default outside production (local development)', async () => {
     const site = await loadSite({ NODE_ENV: 'development' });
     expect(site.TRAVELER_URL).toBe('http://localhost:3001');
