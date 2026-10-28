@@ -41,9 +41,9 @@ export default function OpenGraphImage() {
               />
               <path
                 fill="#FF6B35"
-                d="M16 21.4C15.3 19.8 12.6 17.9 12.6 14.8A3.4 3.4 0 1 1 19.4 14.8C19.4 17.9 16.7 19.8 16 21.4Z"
+                d="M16 21.6C15.3 19.9 13.1 17.4 13.1 13.8A2.9 2.9 0 1 1 18.9 13.8C18.9 17.4 16.7 19.9 16 21.6Z"
               />
-              <circle fill="#0A192F" cx="16" cy="14.8" r="1.5" />
+              <circle fill="#0A192F" cx="16" cy="13.8" r="1.5" />
             </svg>
             <div style={{ color: '#FF6B35', display: 'flex', fontSize: 42, fontWeight: 800 }}>Ouiboo</div>
           </div>

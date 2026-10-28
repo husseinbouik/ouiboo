@@ -27,18 +27,23 @@ export const Logo = React.forwardRef<SVGSVGElement, LogoProps>(
             (head r=4.6 centred (16, 14.4), tip y=23.2) painted OVER the
             white ring — the ring is an annulus with inner radius 6
             around (16, 16), and the tip sat at radius 7.2, so the pin
-            read as an orange dot bursting out of the circle. Redrawn
-            CONTAINED inside the ring: head r=3.4 centred (16, 14.8),
-            tip at (16, 21.4) — every point of the pin stays within
-            radius 5.4 of (16, 16), inside the ring's inner radius 6 —
-            bold and centred so it still reads as a pin at 20–35px,
-            with the navy centre dot (r=1.5). Tile, ring and colours
+            read as an orange dot bursting out of the circle.
+            Round 1 contained it (head r=3.4 at (16, 14.8), tip
+            (16, 21.4), max radius 5.4) — but at the traveller navbar's
+            ~30px the near-disc head still read as a target dot.
+            Round 2 strengthens the SILHOUETTE while staying
+            contained: smaller head (r=2.9) raised to (16, 13.8) and a
+            longer taper to the tip at (16, 21.6) — sampled max radius
+            5.6, still inside the ring's inner radius 6 — so the point
+            protrudes visibly below the head at 20–30px (at-size
+            renders verified locally before deploy). Navy centre dot
+            (r=1.5) follows the head. Tile, ring and colours
             unchanged. */}
         <path
-          d="M16 21.4C15.3 19.8 12.6 17.9 12.6 14.8A3.4 3.4 0 1 1 19.4 14.8C19.4 17.9 16.7 19.8 16 21.4Z"
+          d="M16 21.6C15.3 19.9 13.1 17.4 13.1 13.8A2.9 2.9 0 1 1 18.9 13.8C18.9 17.4 16.7 19.9 16 21.6Z"
           fill="#FF6B35"
         />
-        <circle cx="16" cy="14.8" r="1.5" fill="#0A192F" />
+        <circle cx="16" cy="13.8" r="1.5" fill="#0A192F" />
       </svg>
     );
   }
