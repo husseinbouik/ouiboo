@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { BetaMetricsService } from './beta-metrics.service';
+import { LeakageDetectionService } from './leakage-detection.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
@@ -88,6 +89,7 @@ export class AdminAnalyticsController {
   constructor(
     private analyticsService: AnalyticsService,
     private betaMetricsService: BetaMetricsService,
+    private leakageDetectionService: LeakageDetectionService,
   ) {}
 
   /**
@@ -109,6 +111,22 @@ export class AdminAnalyticsController {
     @Query('to') to?: string,
   ) {
     return this.betaMetricsService.getBetaMetrics(
+      from ? new Date(from) : undefined,
+      to ? new Date(to) : undefined,
+    );
+  }
+
+  /**
+   * Leakage / fee-capture detection (admin only) — #444 (Council
+   * P2-05). Optional `from`/`to` ISO dates; defaults to the last 30
+   * days. Definitions: docs/launch-ops/LEAKAGE_DEFENCES.md.
+   */
+  @Get('leakage')
+  async getLeakageReport(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.leakageDetectionService.getLeakageReport(
       from ? new Date(from) : undefined,
       to ? new Date(to) : undefined,
     );

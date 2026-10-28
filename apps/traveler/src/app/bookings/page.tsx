@@ -16,6 +16,7 @@ import { useAuth } from '@/components/AuthContext';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { ReviewForm } from '@/components/ReviewForm';
+import { RebookingSuggestions, type RebookingSuggestionItem } from '@/components/RebookingSuggestions';
 import { TravelerRefundActions } from '@/components/TravelerRefundActions';
 import {
     canRetryTravelerPayment,
@@ -113,6 +114,19 @@ export default function MyBookingsPage() {
         placeholderData: (prev: unknown) => prev,
     });
     const { data: bookings = [], pagination: bookingsPagination } = toPaginatedList<BookingDetails>(rawBookings);
+
+    // #444 (Council P2-05): book-again suggestions — upcoming departures
+    // from agencies this traveller has already booked with.
+    const { data: rebookingSuggestions = [] } = useQuery<RebookingSuggestionItem[]>({
+        queryKey: ['rebooking-suggestions', i18n.language],
+        queryFn: async () => {
+            const response = await apiClient.get('/bookings/rebooking-suggestions', {
+                params: { locale: i18n.language },
+            });
+            return Array.isArray(response.data) ? (response.data as RebookingSuggestionItem[]) : [];
+        },
+        enabled: !!user,
+    });
 
     // #370: refund cases for this traveller, latest case per booking.
     const { data: rawRefundCases } = useQuery<unknown>({
@@ -546,6 +560,7 @@ export default function MyBookingsPage() {
                     )}
                 </div>
                 <Pagination pagination={bookingsPagination} onPageChange={setCurrentPage} className="mt-8" />
+                <RebookingSuggestions suggestions={rebookingSuggestions} />
             </div>
 
             {reviewModalOpen && (

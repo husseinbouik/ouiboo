@@ -75,7 +75,12 @@ export default function MessagesPage() {
           sent through chat — warn on the messaging surface itself. */}
       <div className="rounded-2xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 p-5 text-sm mb-8 flex gap-3" role="note">
         <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-        <p className="font-medium text-foreground">{t('messages.idDocumentWarning')}</p>
+        <div className="space-y-2">
+          <p className="font-medium text-foreground">{t('messages.idDocumentWarning')}</p>
+          {/* #444 (Council P2-05): the leakage nudge — booking directly
+              leaves the trip with no record, terms or refund tracking. */}
+          <p className="text-muted-foreground">{t('messages.keepOnOuibooWarning')}</p>
+        </div>
       </div>
       {conversations.length === 0 ? (
         <EmptyState

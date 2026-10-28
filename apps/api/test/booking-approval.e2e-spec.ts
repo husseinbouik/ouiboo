@@ -4,6 +4,7 @@ import * as request from 'supertest';
 import * as path from 'path';
 import { BookingsController } from '../src/bookings/bookings.controller';
 import { BookingsService } from '../src/bookings/bookings.service';
+import { RebookingService } from '../src/bookings/rebooking.service';
 import { AdminController } from '../src/admin/admin.controller';
 import { DatabaseService } from '../src/database/database.service';
 import { ExternalPaymentsService } from '../src/external-payments/external-payments.service';
@@ -58,6 +59,8 @@ describe('E2E: booking + payment approval flow', () => {
             controllers: [BookingsController, AdminController],
             providers: [
                 { provide: BookingsService, useValue: bookingsService },
+                // #444: BookingsController also serves rebooking suggestions.
+                { provide: RebookingService, useValue: { getSuggestions: jest.fn(async () => []) } },
                 { provide: DatabaseService, useValue: dbMock },
                 { provide: ExternalPaymentsService, useValue: externalPaymentsService },
                 { provide: StagedPaymentsService, useValue: { applyProofRejectionInTransaction: jest.fn(), applyBankConfirmationInTransaction: jest.fn() } },
