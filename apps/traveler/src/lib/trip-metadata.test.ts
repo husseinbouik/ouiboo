@@ -175,3 +175,38 @@ describe('resolveTripCoverImage', () => {
     expect(resolveTripCoverImage({ id: 'x', title: 'X' })).toBeUndefined();
   });
 });
+
+describe('buildTripMetadata og:locale (#563 rework)', () => {
+  const trip = {
+    id: 't-locale',
+    title: 'Atlas Hike',
+    description: 'A great hike',
+    images: ['https://cdn.example.com/a.jpg'],
+  };
+
+  it('always sets openGraph.locale + alternateLocale in the rich-preview branch', () => {
+    const metadata = buildTripMetadata(trip, { sharingEnabled: true, locale: 'fr' });
+    const og = metadata.openGraph as { locale?: string; alternateLocale?: string[] };
+    expect(og.locale).toBe('fr_FR');
+    expect(og.alternateLocale).toEqual(expect.arrayContaining(['en_US', 'ar_MA']));
+    expect(og.alternateLocale).not.toContain('fr_FR');
+  });
+
+  it('sets og:locale in the sharing-gated branch too', () => {
+    const metadata = buildTripMetadata(trip, { sharingEnabled: false, locale: 'ar' });
+    const og = metadata.openGraph as { locale?: string; alternateLocale?: string[] };
+    expect(og.locale).toBe('ar_MA');
+    expect(og.alternateLocale).toEqual(expect.arrayContaining(['en_US', 'fr_FR']));
+  });
+
+  it('sets og:locale for a missing trip and defaults to en_US without a locale', () => {
+    const missing = buildTripMetadata(null, { locale: 'fr' });
+    const ogMissing = missing.openGraph as { locale?: string; alternateLocale?: string[] };
+    expect(ogMissing.locale).toBe('fr_FR');
+    expect(ogMissing.alternateLocale).toEqual(expect.arrayContaining(['en_US', 'ar_MA']));
+
+    const fallback = buildTripMetadata(trip, { sharingEnabled: true });
+    const ogFallback = fallback.openGraph as { locale?: string };
+    expect(ogFallback.locale).toBe('en_US');
+  });
+});

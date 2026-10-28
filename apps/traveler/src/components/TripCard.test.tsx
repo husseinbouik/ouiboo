@@ -35,6 +35,9 @@ jest.mock('framer-motion', () => ({
 
 jest.mock('@tanstack/react-query', () => ({
     useQueryClient: () => ({ prefetchQuery: jest.fn() }),
+    // #498 rework: TripCard's display-price hook queries FX rates; with
+    // no provider the display currency stays MAD and no rate is needed.
+    useQuery: () => ({ data: undefined }),
 }));
 
 jest.mock('@/lib/api-client', () => ({

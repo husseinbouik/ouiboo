@@ -40,7 +40,8 @@
     "openProfileMenu": "Open profile menu",
     "openMenu": "Open navigation menu",
     "mobileMenu": "Navigation menu",
-    "closeMenu": "Close navigation menu"
+    "closeMenu": "Close navigation menu",
+    "displayCurrency": "Display currency"
   },
   "hero": {
     "tagline": "Discover the Uncharted",

@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { Card, CardContent, CardHeader, CardTitle, Input, Button, Label } from '@ouiboo/ui';
 import { Mail, Palette, Save, Shield, User } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { CurrencySelector } from '@/components/CurrencySelector';
 import { useAuth } from '@/components/AuthContext';
 import Link from 'next/link';
 
@@ -190,6 +191,18 @@ export default function ProfilePage() {
                 </Button>
               </div>
             </form>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-2xl shadow-deep-blue/5 dark:shadow-none dark:ring-1 dark:ring-border rounded-4xl overflow-hidden bg-card">
+          <CardContent className="p-10 flex flex-wrap items-center justify-between gap-6">
+            <div>
+              <p className="text-lg font-black text-foreground font-display">Display Currency</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Prices are shown in this currency. Bookings are always charged in the trip&apos;s own currency.
+              </p>
+            </div>
+            <CurrencySelector className="h-12 px-4 bg-muted/50 dark:bg-card rounded-2xl" />
           </CardContent>
         </Card>
       </div>

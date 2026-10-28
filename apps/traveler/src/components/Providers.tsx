@@ -6,6 +6,7 @@ import { MotionConfig } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider } from './AuthContext';
+import { DisplayCurrencyProvider } from '@/lib/display-currency';
 import { AuthModal } from './AuthModal';
 import { ToastProvider } from '@ouiboo/ui';
 import { ThemeProvider } from 'next-themes';
@@ -59,12 +60,19 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
                 <MotionConfig reducedMotion="user">
                     <AuthProvider>
+                        {/* #498 rework: display-currency context (profile
+                            value for signed-in travellers, local guest
+                            preference otherwise). Inside AuthProvider —
+                            it reads the profile — and inside the query
+                            client, which caches the FX rates. */}
+                        <DisplayCurrencyProvider>
                         {/* #485: shared toast host (Undo actions, error
                             surfacing for optimistic mutations). */}
                         <ToastProvider>
                             {children}
                             <AuthModal />
                         </ToastProvider>
+                        </DisplayCurrencyProvider>
                     </AuthProvider>
                 </MotionConfig>
             </ThemeProvider>

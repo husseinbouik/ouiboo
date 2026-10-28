@@ -9,9 +9,9 @@ import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { cn } from '@ouiboo/ui/utils';
-import { formatCurrency } from '@ouiboo/utils';
 import { SessionStatus, type SessionStatusType, VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 import { WishlistButton } from './WishlistButton';
+import { useDisplayPrice } from '@/lib/display-currency';
 import { tripCoverViewTransitionName } from '@/lib/view-transition';
 
 export interface TripCardTrip {
@@ -79,6 +79,11 @@ export function TripCard({ trip }: TripCardProps) {
       ? null
       : (sessions.find((session) => Number(session.price || 0) === minPrice) ?? null);
   const priceCurrency = cheapestSession?.currency ?? trip.currency;
+  // #498 rework: render the price in the traveller's display currency
+  // (converted through the MAD-base rates, React-Query cached). When no
+  // rate exists the hook falls back to this authoritative currency.
+  // Display only — checkout still charges priceCurrency.
+  const displayPrice = useDisplayPrice(minPrice, priceCurrency, i18n.language);
   const isAgencyVerified = trip.agency?.verificationStatus === VerificationStatus.Verified;
 
   // #413 (Council B10): the what+when verification statement. Each part is
@@ -332,7 +337,7 @@ export function TripCard({ trip }: TripCardProps) {
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{t('tripCard.from')}</span>
             <div className="flex items-baseline gap-1">
                 <span className="oui-numeric text-xl font-bold text-foreground">
-                   {minPrice !== null ? formatCurrency(minPrice, priceCurrency, i18n.language) : '---'}
+                   {minPrice !== null ? (displayPrice ?? '---') : '---'}
                 </span>
             </div>
           </div>

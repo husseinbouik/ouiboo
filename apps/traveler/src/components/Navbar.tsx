@@ -22,6 +22,7 @@ import { apiClient } from '@/lib/api-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
 import { useTranslation } from 'react-i18next';
+import { CurrencySelector } from './CurrencySelector';
 
 export function Navbar() {
   const { t } = useTranslation();
@@ -45,6 +46,27 @@ const [isOpen, setIsOpen] = useState(false);
   // behaviour are explicit and unchanged in spirit.
   const profileCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  // Set when Escape closes the menu and focus is returned to the
+  // trigger programmatically: that synthetic focus must not re-open
+  // the menu through the keyboard-focus path below.
+  const profileSuppressFocusOpenRef = useRef(false);
+  // #495 rework: hover open/close is a mouse-only affordance. Touch and
+  // pen pointers (and click) must not fight it — the previous build
+  // opened on any mouseenter and the click handler read the stale
+  // profileOpen closure, so a click that landed right after a hover
+  // open re-opened instead of closing (the menu "did not open on click
+  // or hover" witness, 2026-10-28). Hover handling is now gated on
+  // (hover: hover) and (pointer: fine), tracked live via matchMedia.
+  const [hoverCapable, setHoverCapable] = useState(false);
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const query = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const update = () => setHoverCapable(query.matches);
+    update();
+    query.addEventListener?.('change', update);
+    return () => query.removeEventListener?.('change', update);
+  }, []);
   const cancelProfileClose = () => {
     if (profileCloseTimer.current) {
       clearTimeout(profileCloseTimer.current);
@@ -59,6 +81,34 @@ const [isOpen, setIsOpen] = useState(false);
     cancelProfileClose();
     setProfileOpen(false);
   };
+  // #495 rework: while the profile menu is open, a pointerdown
+  // anywhere outside the trigger+menu closes it, and Escape closes it
+  // regardless of which element holds focus. Both are document-level
+  // so they behave identically for mouse, touch and keyboard users.
+  useEffect(() => {
+    if (!profileOpen) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        closeProfileNow();
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        profileSuppressFocusOpenRef.current = true;
+        closeProfileNow();
+        profileTriggerRef.current?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+    // closeProfileNow is a stable render-scope helper over refs/setState.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileOpen]);
+
   const pathname = usePathname();
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuCloseRef = useRef<HTMLButtonElement>(null);
@@ -186,6 +236,7 @@ const [isOpen, setIsOpen] = useState(false);
         <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-2">
                 <LanguageSwitcher />
+                <CurrencySelector />
                 <ThemeToggle />
             </div>
 
@@ -196,16 +247,29 @@ const [isOpen, setIsOpen] = useState(false);
                 </div>
             ) : user ? (
                 <div
+                    ref={profileMenuRef}
                     className="relative"
-                    onMouseEnter={() => { cancelProfileClose(); setProfileOpen(true); }}
-                    onMouseLeave={scheduleProfileClose}
+                    onMouseEnter={() => { if (hoverCapable) { cancelProfileClose(); setProfileOpen(true); } }}
+                    onMouseLeave={() => { if (hoverCapable) scheduleProfileClose(); }}
                 >
                     <button
                         ref={profileTriggerRef}
-                        onClick={() => (profileOpen ? closeProfileNow() : setProfileOpen(true))}
-                        onFocus={() => { cancelProfileClose(); setProfileOpen(true); }}
+                        onClick={() => { cancelProfileClose(); setProfileOpen((value) => !value); }}
+                        onFocus={(event) => {
+                            if (profileSuppressFocusOpenRef.current) {
+                                profileSuppressFocusOpenRef.current = false;
+                                return;
+                            }
+                            // Keyboard focus opens the menu; pointer-driven
+                            // focus must not, or the click that follows it
+                            // would toggle the just-opened menu shut.
+                            let focusVisible = false;
+                            try { focusVisible = event.currentTarget.matches(':focus-visible'); } catch { focusVisible = false; }
+                            if (focusVisible) { cancelProfileClose(); setProfileOpen(true); }
+                        }}
                         onKeyDown={(event) => {
                             if (event.key === 'Escape') {
+                                profileSuppressFocusOpenRef.current = true;
                                 closeProfileNow();
                                 profileTriggerRef.current?.focus();
                             }
@@ -237,8 +301,8 @@ const [isOpen, setIsOpen] = useState(false);
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                                 role="menu"
-                                onMouseEnter={cancelProfileClose}
-                                onMouseLeave={scheduleProfileClose}
+                                onMouseEnter={() => { if (hoverCapable) cancelProfileClose(); }}
+                                onMouseLeave={() => { if (hoverCapable) scheduleProfileClose(); }}
                                 className="absolute right-0 mt-2 w-64 bg-card rounded-xl shadow-lg border border-border overflow-hidden z-[60]"
                             >
                                 <div className="p-4 border-b border-border">
