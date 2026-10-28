@@ -189,8 +189,11 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
     }
 
     async function createTripSession(templateId: string, overrides?: any) {
+        // #428: sessions carry the template's tenant.
+        const owner = await db.tripTemplate.findUnique({ where: { id: templateId }, select: { agencyId: true } });
         const defaultData = {
             templateId,
+            agencyId: owner?.agencyId,
             startDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             endDate: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000),
             price: 1200,
@@ -457,6 +460,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 2400,
@@ -929,6 +933,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: traveler.id,
                 guestsCount: 1,
                 totalAmount: session.price,
@@ -938,7 +943,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             } as any,
         });
         await db.review.create({
-            data: { bookingId: booking.id, tripTemplateId: template.id, travelerId: traveler.id, rating: 5, comment: 'Excellent' },
+            data: { bookingId: booking.id, agencyId: template.agencyId, tripTemplateId: template.id, travelerId: traveler.id, rating: 5, comment: 'Excellent' },
         });
 
         const res = await request(app.getHttpServer())

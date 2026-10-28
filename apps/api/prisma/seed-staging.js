@@ -308,6 +308,7 @@ async function main() {
       await prisma.tripSession.create({
         data: {
           templateId: template.id,
+          agencyId: profile.id,
           currency: 'MAD',
           startDate,
           endDate,

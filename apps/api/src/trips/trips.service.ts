@@ -615,6 +615,8 @@ export class TripsService {
         const session = await this.db.tripSession.create({
             data: {
                 templateId,
+                // #428: stamp the tenant on the row (composite-FK chain).
+                agencyId,
                 price,
                 deposit,
                 totalSeats: dto.totalSeats,

@@ -73,6 +73,9 @@ export class PaymentsService {
     await this.prisma.paymentTransaction.create({
       data: {
         bookingId: dto.bookingId,
+        // #428: stamp the tenant from the booking row (backfilled for
+        // legacy rows by the #428 migration).
+        agencyId: booking.agencyId,
         amount: expectedAmount,
         method: PaymentMethod.GATEWAY,
         transactionId: paymentSession.sessionId,
@@ -1129,7 +1132,7 @@ export class PaymentsService {
 
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
-      include: { traveler: true, session: { include: { template: { include: { agency: { include: { wallet: true } } } } } } },
+      include: { traveler: true, session: { include: { template: { include: { agency: true } } } } },
     });
 
     if (!booking) {

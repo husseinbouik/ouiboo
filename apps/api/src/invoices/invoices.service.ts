@@ -192,6 +192,11 @@ export class InvoicesService {
             return {
                 bookingId: booking.id,
                 description: booking.session.template.title,
+                // #428: no agencyId here on purpose — the nested create
+                // derives it from the parent invoice through the shared
+                // (invoiceId, agencyId) composite FK column, and the
+                // (bookingId, agencyId) composite FK then binds the line
+                // to this agency's booking in the database.
                 bookingDate: booking.confirmedAt ?? booking.bookingDate,
                 grossAmount,
                 commissionRate: rate,

@@ -163,6 +163,7 @@ describe('Golden Path E2E: booking → payment → invoice → refund (#431)', (
             data: {
                 id: 'session-golden',
                 templateId: template.id,
+                agencyId: agency.id,
                 startDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
                 endDate: new Date(Date.now() + 33 * 24 * 60 * 60 * 1000),
                 price: 390,

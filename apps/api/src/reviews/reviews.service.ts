@@ -129,6 +129,9 @@ export class ReviewsService {
     const review = await this.prisma.review.create({
       data: {
         bookingId,
+        // #428: stamp the tenant so the composite FKs bind this review
+        // to the booking's and the template's agency simultaneously.
+        agencyId: booking.agencyId ?? booking.session.template.agencyId,
         travelerId,
         tripTemplateId: booking.session.template.id,
         rating: dto.rating,
