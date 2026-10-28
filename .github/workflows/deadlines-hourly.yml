@@ -1,0 +1,41 @@
+name: Hourly Deadline Cron
+
+# Issue #433 (Council P1-07): group-expiry / refund-due evaluation must
+# run at <=1h cadence. The endpoint (POST /cron/deadlines on the API) is
+# ready and auth-guarded, but Vercel Hobby rejects sub-daily crons, so
+# apps/api/vercel.json keeps only the daily crons as a backstop and this
+# external pinger provides the hourly cadence at zero platform cost.
+#
+# Requires the repository Actions secret STAGING_CRON_SECRET, whose
+# value must equal the CRON_SECRET env var of the staging API project.
+# The job fails on any non-2xx response so a broken cadence is visible
+# in the Actions tab instead of silently reverting to daily.
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deadlines-hourly
+  cancel-in-progress: false
+
+jobs:
+  ping-deadlines:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping staging deadlines endpoint
+        env:
+          STAGING_CRON_SECRET: ${{ secrets.STAGING_CRON_SECRET }}
+        run: |
+          if [ -z "$STAGING_CRON_SECRET" ]; then
+            echo "::error::STAGING_CRON_SECRET Actions secret is not set — hourly deadline cadence is NOT running."
+            exit 1
+          fi
+          curl --fail-with-body -sS -X POST \
+            -H "Authorization: Bearer $STAGING_CRON_SECRET" \
+            https://ouiboo-api-staging.vercel.app/api/v1/cron/deadlines

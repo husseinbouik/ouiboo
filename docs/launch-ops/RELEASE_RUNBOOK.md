@@ -18,10 +18,13 @@ This runbook is the single governing process for promoting Ouiboo code from
   Other dispatch workflows in the repo (`release.yml`,
   `production-release.yml`) are legacy helpers and are **not** part of the
   gated path; using one to bypass this checklist voids the release.
-- `production-smoke.yml` is **advisory only**: it runs against the staging
-  URLs on pull requests and on a daily schedule with `continue-on-error` and
-  auto-files issues on failure. It never gates a release. The blocking smoke
-  in this runbook is a human pass, defined below.
+- `production-smoke.yml` is **merge-blocking**: it runs against the staging
+  URLs on pull requests to `staging`/`master` and on a daily schedule, with
+  no `continue-on-error` — a smoke failure fails the job (PR #545 removed
+  `continue-on-error` and made the `smoke` check required by branch
+  protection), and it auto-files issues on failure. It still never gates a
+  release itself. The blocking smoke in this runbook is a human pass,
+  defined below.
 - Council Session #2 (2026-10-27, item B13/D3): this gated path is the
   promotion requirement for public launch, with no exception. For the capped
   closed beta, a staging attestation under this runbook is the interim
