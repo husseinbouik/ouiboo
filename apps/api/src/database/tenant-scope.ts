@@ -31,6 +31,21 @@ import { currentTenantAgencyId } from './tenant-context';
  * and transitively-owned rows like PaymentProof or Message) are not
  * scoped here; their parents are, and RLS remains out of scope until
  * the app connects per-tenant (see the #428 audit).
+ *
+ * Deliberate exception — `findUnique` / `findUniqueOrThrow` are NOT
+ * scoped. A unique-key point lookup is how every service in this
+ * codebase loads a row before applying its explicit ownership check,
+ * and that check owns the API's denial contract: the #425 suite pins
+ * 403 for a foreign direct-ID read, which the service can only
+ * produce when the lookup returns the row (a scoped null surfaces as
+ * the service's not-found idiom instead — a silent contract rewrite
+ * across every service, which is not this layer's call to make).
+ * `findFirst` IS scoped: a first-match on a non-unique business key
+ * (reference, idempotency key, …) can silently land on another
+ * tenant's row, which is exactly the missed-where leak this layer
+ * exists to close. The residual discipline — a service must still
+ * ownership-check what its point lookup returns — is the layer the
+ * #425 suite polices.
  */
 
 /**
@@ -75,11 +90,15 @@ const READ_OPERATIONS: ReadonlySet<string> = new Set([
     'findMany',
     'findFirst',
     'findFirstOrThrow',
-    'findUnique',
-    'findUniqueOrThrow',
     'count',
     'aggregate',
     'groupBy',
+]);
+
+/** Point lookups by unique key: deliberately passed through (header). */
+const UNIQUE_LOOKUP_OPERATIONS: ReadonlySet<string> = new Set([
+    'findUnique',
+    'findUniqueOrThrow',
 ]);
 
 const CREATE_OPERATIONS: ReadonlySet<string> = new Set([
@@ -168,6 +187,9 @@ export function scopeOperationArgs(
     args: any,
     agencyId: string,
 ): any {
+    if (UNIQUE_LOOKUP_OPERATIONS.has(operation)) {
+        return args;
+    }
     if (READ_OPERATIONS.has(operation)) {
         return { ...args, where: scopeWhere(model, operation, args?.where, agencyId) };
     }

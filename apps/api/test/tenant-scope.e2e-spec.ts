@@ -55,12 +55,23 @@ describe('Tenant scope extension E2E (tenant-scope.e2e-spec)', () => {
                 { id: TRAVELER, email: 'ts-traveler@ouiboo.test', name: 'Tenant Scope Traveler', password: 'x', role: 'TRAVELER', isEmailVerified: true },
             ] as any,
         });
-        await db.agencyProfile.create({
-            data: { id: AGENCY_A, userId: AGENCY_A_USER, companyName: 'Tenant Scope Agency A', verificationStatus: 'VERIFIED', subscriptionStatus: 'ACTIVE' } as any,
+        const agencyFixture = (id: string, userId: string, suffix: string) => ({
+            id,
+            userId,
+            companyName: `Tenant Scope Agency ${suffix}`,
+            ice: `TS-ICE-000${suffix}`,
+            patente: `TS-PAT-000${suffix}`,
+            rib: `TS-RIB-000${suffix}`,
+            bankDetails: `Agency ${suffix} bank details`,
+            bankAccountHolderName: `Tenant Scope Agency ${suffix}`,
+            travelLicenceNumber: `TS-LIC-${suffix}`,
+            insuranceInsurer: 'TS Insurance',
+            insurancePolicyNumber: `TS-POL-${suffix}`,
+            verificationStatus: 'VERIFIED',
+            subscriptionStatus: 'ACTIVE',
         });
-        await db.agencyProfile.create({
-            data: { id: AGENCY_B, userId: AGENCY_B_USER, companyName: 'Tenant Scope Agency B', verificationStatus: 'VERIFIED', subscriptionStatus: 'ACTIVE' } as any,
-        });
+        await db.agencyProfile.create({ data: agencyFixture(AGENCY_A, AGENCY_A_USER, 'A') as any });
+        await db.agencyProfile.create({ data: agencyFixture(AGENCY_B, AGENCY_B_USER, 'B') as any });
         await db.tripTemplate.create({
             data: tripTemplateFixture({ id: TEMPLATE_A, agencyId: AGENCY_A }) as any,
         });
@@ -123,11 +134,30 @@ describe('Tenant scope extension E2E (tenant-scope.e2e-spec)', () => {
         expect(rows.map((r) => r.id)).toEqual([BOOKING_A, BOOKING_B]);
     });
 
-    it('a direct-id findUnique for another tenant\'s row resolves to null, not the row', async () => {
+    it('a business-key findFirst for another tenant\'s row resolves to null, not the row', async () => {
+        // findFirst on a non-unique key is the missed-where leak this
+        // layer closes: BOOKING_B's traveller name must not match
+        // under agency A's context.
+        const row = await runWithTenantContext(AGENCY_A, async () =>
+            db.booking.findFirst({ where: { fullName: 'Tenant Scope Traveler', id: BOOKING_B } }),
+        );
+        expect(row).toBeNull();
+        const own = await runWithTenantContext(AGENCY_A, async () =>
+            db.booking.findFirst({ where: { fullName: 'Tenant Scope Traveler', id: BOOKING_A } }),
+        );
+        expect(own?.id).toBe(BOOKING_A);
+    });
+
+    it('findUnique by id is deliberately NOT scoped — the service ownership check owns that denial', async () => {
+        // Documented exception (tenant-scope.ts header): services load
+        // by id and then ownership-check, which is what produces the
+        // 403 the #425 suite pins for foreign direct-ID reads. The
+        // data layer returning the row here is the contract, not a
+        // leak — no service may serialize a point lookup unchecked.
         const row = await runWithTenantContext(AGENCY_A, async () =>
             db.booking.findUnique({ where: { id: BOOKING_B } }),
         );
-        expect(row).toBeNull();
+        expect(row?.id).toBe(BOOKING_B);
     });
 
     it('a where pinning a different tenant fails closed', async () => {

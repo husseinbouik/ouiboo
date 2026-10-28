@@ -31,8 +31,20 @@ describe('scopeOperationArgs (#428 PR-C)', () => {
 
         it('fails closed when a read pins a different tenant', () => {
             expect(() =>
-                scopeOperationArgs('Booking', 'findUnique', { where: { id: 'x', agencyId: OTHER } }, TENANT),
+                scopeOperationArgs('Booking', 'findMany', { where: { agencyId: OTHER } }, TENANT),
             ).toThrow(TenantScopeViolationError);
+            expect(() =>
+                scopeOperationArgs('Booking', 'findFirst', { where: { agencyId: OTHER } }, TENANT),
+            ).toThrow(TenantScopeViolationError);
+        });
+
+        it('passes unique-key lookups through untouched — services own the denial contract', () => {
+            // Deliberate exception (see tenant-scope.ts header): the
+            // #425 suite pins 403 for foreign direct-ID reads, which
+            // only the service's ownership check can produce.
+            const args = { where: { id: 'x' } };
+            expect(scopeOperationArgs('Booking', 'findUnique', args, TENANT)).toBe(args);
+            expect(scopeOperationArgs('Booking', 'findUniqueOrThrow', args, TENANT)).toBe(args);
         });
 
         it('AND-wraps a complex agencyId filter with the tenant equality', () => {
