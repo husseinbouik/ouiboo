@@ -5,6 +5,7 @@ import { AuthController } from '../auth/auth.controller';
 import { AuthService } from '../auth/auth.service';
 import { BookingsController } from '../bookings/bookings.controller';
 import { BookingsService } from '../bookings/bookings.service';
+import { RebookingService } from '../bookings/rebooking.service';
 import { UsersController } from '../users/users.controller';
 import { UsersService } from '../users/users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -65,6 +66,8 @@ describe('MVP smoke: auth + booking flow', () => {
             providers: [
                 { provide: AuthService, useValue: authService },
                 { provide: BookingsService, useValue: bookingsService },
+                // #444: BookingsController also serves rebooking suggestions.
+                { provide: RebookingService, useValue: { getSuggestions: jest.fn(async () => []) } },
                 { provide: UsersService, useValue: usersService },
                 { provide: EmailService, useValue: emailService },
                 { provide: UploadService, useValue: uploadService },

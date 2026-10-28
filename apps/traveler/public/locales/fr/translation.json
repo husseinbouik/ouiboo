@@ -466,7 +466,8 @@
     "emptyTitle": "Aucune conversation pour le moment",
     "emptyBody": "Commencez à discuter avec une agence depuis une page de voyage.",
     "title": "Messages",
-    "idDocumentWarning": "N'envoyez pas de documents d'identité (passeport ou carte d'identité nationale) ni d'informations de paiement (carte ou coordonnées bancaires) dans les messages. Ouiboo ne vous les demandera jamais ici."
+    "idDocumentWarning": "N'envoyez pas de documents d'identité (passeport ou carte d'identité nationale) ni d'informations de paiement (carte ou coordonnées bancaires) dans les messages. Ouiboo ne vous les demandera jamais ici.",
+    "keepOnOuibooWarning": "Gardez vos réservations et vos paiements sur Ouiboo. Partager un numéro de téléphone, une adresse e-mail ou des coordonnées bancaires pour réserver en direct laisse ce voyage sans enregistrement de réservation, sans conditions d'annulation ni suivi de remboursement."
   },
   "notifications": {
     "signInTitle": "Connectez-vous pour voir vos notifications",
@@ -621,6 +622,15 @@
     "balancePayBefore": " (à payer avant le {{date}})",
     "uploadBalanceReceipt": "Téléverser le reçu du solde",
     "refundDue": "Ce voyage n'a pas été confirmé \u2014 la taille minimale du groupe n'a pas été atteinte. Votre acompte de {{amount}} est remboursable ; {{agency}} traitera votre remboursement."
+  },
+  "rebooking": {
+    "title": "Réservez à nouveau auprès d'agences que vous connaissez",
+    "subtitle": "De nouveaux départs proposés par des agences avec lesquelles vous avez déjà voyagé. Réserver sur Ouiboo conserve vos conditions d'annulation, le suivi du paiement et l'historique de remboursement pour chaque voyage.",
+    "withAgency": "avec {{agency}}",
+    "tripsBooked_one": "{{count}} voyage réservé auprès de cette agence",
+    "tripsBooked_other": "{{count}} voyages réservés auprès de cette agence",
+    "from": "À partir de {{price}} {{currency}}",
+    "viewTrip": "Voir le voyage"
   },
   "support": {
     "title": "Assistance",

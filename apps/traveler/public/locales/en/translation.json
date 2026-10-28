@@ -466,7 +466,8 @@
     "emptyTitle": "No conversations yet",
     "emptyBody": "Start chatting with an agency from a trip page.",
     "title": "Messages",
-    "idDocumentWarning": "Do not send ID documents (passport or national ID card) or payment credentials (card or bank details) in messages. Ouiboo never asks for them here."
+    "idDocumentWarning": "Do not send ID documents (passport or national ID card) or payment credentials (card or bank details) in messages. Ouiboo never asks for them here.",
+    "keepOnOuibooWarning": "Keep bookings and payments on Ouiboo. Sharing a phone number, email address or bank details to book directly leaves that trip without a booking record, cancellation terms or refund tracking."
   },
   "notifications": {
     "signInTitle": "Sign in to view your notifications",
@@ -621,6 +622,15 @@
     "balancePayBefore": " (pay before {{date}})",
     "uploadBalanceReceipt": "Upload Balance Receipt",
     "refundDue": "This trip was not confirmed \u2014 the minimum group size was not reached. Your deposit of {{amount}} is refundable; {{agency}} will process your refund."
+  },
+  "rebooking": {
+    "title": "Book again with agencies you know",
+    "subtitle": "New departures from agencies you have already travelled with. Booking on Ouiboo keeps your cancellation terms, payment tracking and refund record together for every trip.",
+    "withAgency": "with {{agency}}",
+    "tripsBooked_one": "{{count}} trip booked with this agency",
+    "tripsBooked_other": "{{count}} trips booked with this agency",
+    "from": "From {{price}} {{currency}}",
+    "viewTrip": "View trip"
   },
   "support": {
     "title": "Support",
