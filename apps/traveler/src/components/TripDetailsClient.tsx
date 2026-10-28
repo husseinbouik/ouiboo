@@ -359,11 +359,17 @@ export default function TripDetailsClient({
                         solid fill, white bold 14px text; amber when the
                         next departure has fewer than 5 seats, dark red
                         when there is no open departure left. */}
-                    <div
+                    <button
+                      type="button"
                       data-testid="trip-spots-indicator"
                       data-state={!nextDepartureSession ? 'sold-out' : nextDepartureSession.availableSeats < 5 ? 'low' : 'available'}
+                      disabled={!nextDepartureSession}
+                      aria-pressed={nextDepartureSession ? selectedSession === nextDepartureSession.id : undefined}
+                      onClick={() => {
+                        if (nextDepartureSession) setSelectedSession(nextDepartureSession.id);
+                      }}
                       className={cn(
-                        "mt-5 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-md",
+                        "mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-md",
                         !nextDepartureSession
                           ? "bg-rose-800"
                           : nextDepartureSession.availableSeats < 5
@@ -375,7 +381,7 @@ export default function TripDetailsClient({
                       {nextDepartureSession
                         ? t('tripDetails.spotsLeft', { count: nextDepartureSession.availableSeats })
                         : t('tripDetails.spotsBannerSoldOut')}
-                    </div>
+                    </button>
 
                     {/* Session #3 P0-11 (#546): when the content resolved
                         in a language other than the reader's UI language,
