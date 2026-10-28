@@ -110,9 +110,6 @@ describe('Golden Path E2E: booking → payment → invoice → refund (#431)', (
         await db.invoice.deleteMany();
         await db.paymentStatusLedgerEntry.deleteMany();
         await db.externalPayment.deleteMany();
-        await db.walletTransaction.deleteMany();
-        await db.wallet.deleteMany();
-        await db.payoutRequest.deleteMany();
         await db.paymentProof.deleteMany();
         await db.booking.deleteMany();
         await db.tripSession.deleteMany();

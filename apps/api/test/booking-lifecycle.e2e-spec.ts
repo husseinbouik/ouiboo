@@ -108,9 +108,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         if (!db) return;
         await db.paymentStatusLedgerEntry.deleteMany();
         await db.externalPayment.deleteMany();
-        await db.walletTransaction.deleteMany();
-        await db.wallet.deleteMany();
-        await db.payoutRequest.deleteMany();
         await db.paymentProof.deleteMany();
         await db.booking.deleteMany();
         await db.tripSession.deleteMany();
@@ -404,10 +401,11 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             `booking:${booking.id}:payment-verified`,
         );
 
-        const wallet = await db.wallet.findUnique({
-            where: { agencyId: agency.id },
-        });
-        expect(wallet).toBeNull();
+        // The "no wallet is credited" invariant this test used to
+        // assert against the Wallet table is structural since #429:
+        // the custody tables are deleted, so a withdrawable OuiBoo
+        // balance cannot exist. The ledger assertions above are the
+        // live pin.
         expect(mockEmailService.sendPaymentConfirmation).toHaveBeenCalledTimes(1);
     });
 

@@ -132,26 +132,11 @@ enum BookingAttendance {
   NO_SHOW
 }
 
-enum PayoutStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  PAID
-}
-
 enum SubscriptionStatus {
   TRIAL
   ACTIVE
   CANCELLED
   EXPIRED
-}
-
-enum TransactionType {
-  CREDIT
-  DEBIT
-  REFUND
-  PAYMENT_GATEWAY
-  BOOKING
 }
 
 enum PaymentMethod {
@@ -406,8 +391,6 @@ model AgencyProfile {
   paymentTransactions PaymentTransaction[]
   reviews            Review[]
   invoiceLineItems   InvoiceLineItem[]
-  wallet             Wallet?
-  payoutRequests     PayoutRequest[]
   conversations      Conversation[]     @relation("AgencyConversations")
   subscriptionStatus SubscriptionStatus @default(TRIAL)
   trialEndsAt        DateTime?
@@ -957,44 +940,14 @@ model PaymentStatusLedgerEntry {
   @@index([externalPaymentId, createdAt])
 }
 
-model Wallet {
-  id               String              @id @default(cuid())
-  agencyId         String              @unique
-  agency           AgencyProfile       @relation(fields: [agencyId], references: [id])
-  availableBalance Decimal             @default(0) @db.Decimal(18, 2)
-  pendingBalance   Decimal             @default(0) @db.Decimal(18, 2)
-  currency         String              @default("MAD")
-  transactions     WalletTransaction[]
-}
-
-model WalletTransaction {
-  id             String          @id @default(cuid())
-  walletId       String
-  wallet         Wallet          @relation(fields: [walletId], references: [id])
-  amount         Decimal         @db.Decimal(18, 2)
-  type           TransactionType
-  reason         String
-  referenceId    String?
-  idempotencyKey String?         @unique
-  createdAt      DateTime        @default(now())
-
-  @@index([walletId, createdAt])
-}
-
-model PayoutRequest {
-  id          String        @id @default(cuid())
-  agencyId    String
-  agency      AgencyProfile @relation(fields: [agencyId], references: [id])
-  amount      Decimal       @db.Decimal(18, 2)
-  currency    String        @default("MAD")
-  status      PayoutStatus  @default(PENDING)
-  requestedAt DateTime      @default(now())
-  processedAt DateTime?
-  bankDetails String
-
-  @@index([agencyId, status, requestedAt])
-  @@index([status, requestedAt])
-}
+// #429: the dormant custody models (Wallet, WalletTransaction,
+// PayoutRequest) and their enums (PayoutStatus, TransactionType) were
+// removed — traveller money has moved directly between travellers and
+// agencies since #368, no code wrote to these tables, and the only
+// reader was the caller's own data export. The retained financial
+// ledger is Booking / PaymentTransaction / ExternalPayment /
+// PaymentStatusLedgerEntry. Dropped by migration
+// 20261028130000_drop_dormant_wallet_tables.
 
 model AuditLog {
   id         String   @id @default(cuid())

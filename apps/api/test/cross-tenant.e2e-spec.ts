@@ -89,12 +89,13 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
     const CONVERSATION_ID = 'ct-conversation-1';
     const MESSAGE_ID = 'ct-message-1';
     const MERCHANT_A = 'CT-MERCH-A-001';
-    // B22(e) wallet/payout fixtures: legacy custody rows for agency A.
-    // No wallet/payout HTTP routes exist anymore — the only surface
-    // that can still serialize them is the caller's own data export.
-    const WALLET_A = 'ct-wallet-a';
-    const WALLET_TX_A = 'ct-wallet-tx-a';
-    const PAYOUT_A = 'ct-payout-a';
+    // B22(e) export-scoping fixture: a retained-ledger payment record
+    // on agency A's proof booking. The legacy custody tables this
+    // block used before #429 (Wallet / WalletTransaction /
+    // PayoutRequest) are deleted; the data export's financial content
+    // is now the retained ledger, so the export-isolation property is
+    // pinned against a booking payment transaction instead.
+    const PAYTXN_A = 'ct-paytxn-a';
 
     const PROOF_PNG = path.resolve(__dirname, 'fixtures', 'proof.png');
 
@@ -187,9 +188,6 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
 
     async function clearWorld() {
         if (!db) return;
-        await db.walletTransaction.deleteMany();
-        await db.payoutRequest.deleteMany();
-        await db.wallet.deleteMany();
         await db.message.deleteMany();
         await db.conversation.deleteMany();
         await db.refundEvidence.deleteMany();
@@ -215,9 +213,6 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
         await clearWorld();
         await db.review.deleteMany();
         await db.wishlist.deleteMany();
-        await db.walletTransaction.deleteMany();
-        await db.payoutRequest.deleteMany();
-        await db.wallet.deleteMany();
         await db.refreshToken.deleteMany();
         await db.agencyProfile.deleteMany();
         await db.user.deleteMany();
@@ -421,15 +416,14 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
             } as any,
         });
 
-        // B22(e): legacy wallet + payout rows belonging to agency A.
-        await db.wallet.create({
-            data: { id: WALLET_A, agencyId: AGENCY_A, availableBalance: 7777, pendingBalance: 0 } as any,
-        });
-        await db.walletTransaction.create({
-            data: { id: WALLET_TX_A, walletId: WALLET_A, amount: 7777, type: 'CREDIT', reason: 'Cross-tenant probe credit' } as any,
-        });
-        await db.payoutRequest.create({
-            data: { id: PAYOUT_A, agencyId: AGENCY_A, amount: 5555, bankDetails: 'Agency A bank details' } as any,
+        // B22(e): a retained-ledger payment record on agency A's
+        // proof booking — the export-isolation probe (see the
+        // 'legacy custody surfaces' block below).
+        await db.paymentTransaction.create({
+            data: {
+                id: PAYTXN_A, bookingId: BOOKING_PROOF, agencyId: AGENCY_A,
+                amount: 7777, method: 'MANUAL', status: 'SUCCESS',
+            } as any,
         });
 
         await db.conversation.create({
@@ -960,18 +954,19 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
     });
 
     // ------------------------------------------------------------------
-    // Wallet / payout surfaces (B22(e) — #425 completion)
+    // Legacy custody surfaces (B22(e) — #425 completion, revised #429)
     //
-    // Custody was removed from the product: the Wallet /
-    // WalletTransaction / PayoutRequest tables survive in the schema
-    // (legacy rows included in a user's own data export), but no
-    // wallet or payout HTTP routes exist. These tests pin both halves:
-    // the historical route shapes stay 404 for every actor, and the
-    // one remaining serialization surface — GET /users/me/export — is
-    // scoped to the caller's own user id, so agency A's wallet and
-    // payout rows can never appear in agency B's (or a traveller's)
-    // export. If a wallet route or a cross-tenant export leak is ever
-    // reintroduced, these tests fail.
+    // Custody was removed from the product in #368, and the dormant
+    // Wallet / WalletTransaction / PayoutRequest tables were deleted
+    // in #429 once the founder adopted the retention schedule (the
+    // retained financial ledger is bookings + payment transactions +
+    // external payments + the payment status ledger). These tests pin
+    // both halves of what remains: the historical wallet/payout route
+    // shapes stay 404 for every actor, and the data export —
+    // GET /users/me/export, scoped to the caller's own user id —
+    // carries the caller's own retained payment records and never
+    // another tenant's. If a wallet route or a cross-tenant export
+    // leak is ever reintroduced, these tests fail.
     // ------------------------------------------------------------------
     // ------------------------------------------------------------------
     // Structural tenant isolation (#428, Council P1-01)
@@ -1117,7 +1112,7 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
         });
     });
 
-    describe('wallet and payout surfaces (B22(e))', () => {
+    describe('legacy custody surfaces (B22(e))', () => {
         it('exposes no wallet/payout HTTP routes to any actor', async () => {
             for (const token of [tokenA, tokenB, tokenT1, tokenAdmin]) {
                 await request(app.getHttpServer()).get('/wallet').set(auth(token)).expect(404);
@@ -1128,23 +1123,21 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
             }
         });
 
-        it('data export contains only the caller’s own wallet and payout rows', async () => {
+        it('data export contains only the caller’s own retained payment records', async () => {
             const exportA = await request(app.getHttpServer()).get('/users/me/export').set(auth(tokenA)).expect(200);
             // Positive control: agency A's own export DOES carry its
-            // wallet, transaction and payout request — the scoping is
-            // per-user, not a blanket omission.
-            expect(bodyText(exportA)).toContain(WALLET_A);
-            expect(bodyText(exportA)).toContain(WALLET_TX_A);
-            expect(bodyText(exportA)).toContain(PAYOUT_A);
+            // retained-ledger payment record (via its bookings) — the
+            // scoping is per-user, not a blanket omission.
+            expect(bodyText(exportA)).toContain(PAYTXN_A);
 
             const exportB = await request(app.getHttpServer()).get('/users/me/export').set(auth(tokenB)).expect(200);
-            expect(bodyText(exportB)).not.toContain(WALLET_A);
-            expect(bodyText(exportB)).not.toContain(WALLET_TX_A);
-            expect(bodyText(exportB)).not.toContain(PAYOUT_A);
+            expect(bodyText(exportB)).not.toContain(PAYTXN_A);
 
-            const exportT1 = await request(app.getHttpServer()).get('/users/me/export').set(auth(tokenT1)).expect(200);
-            expect(bodyText(exportT1)).not.toContain(WALLET_A);
-            expect(bodyText(exportT1)).not.toContain(PAYOUT_A);
+            // An unrelated traveller's export must not carry it either
+            // (the booking's own traveller legitimately sees the
+            // payment record on their booking, so the probe uses T2).
+            const exportT2 = await request(app.getHttpServer()).get('/users/me/export').set(auth(tokenT2)).expect(200);
+            expect(bodyText(exportT2)).not.toContain(PAYTXN_A);
         });
     });
 
