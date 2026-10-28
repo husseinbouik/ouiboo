@@ -9,6 +9,13 @@
  * - a mouse drag scrolls the rail (drag-to-scroll), and the click
  *   that follows a real drag is swallowed,
  * - native scroll position drives the counter (touch swipe path).
+ *
+ * Round 4 adds the mechanism contracts the live failure exposed:
+ * scroll-snap is suspended for the duration of a mouse drag (a
+ * mandatory snap engine left active re-snaps scrollLeft mid-drag
+ * and starves the release logic), and the viewport's touch-action
+ * permits native horizontal panning (pan-y alone disabled it and
+ * orphaned every touch drag).
  */
 import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
@@ -216,5 +223,89 @@ describe('SnapRail (#490 round 2)', () => {
             expect(counter().textContent).toBe('1 / 3');
             expect(vp.scrollTo).not.toHaveBeenCalled();
         });
+    });
+});
+
+describe('SnapRail (#490 round 4 — snap suspension + touch contract)', () => {
+    /** The round-4 root cause is invisible to the tests above: jsdom
+     * stores scrollLeft as a plain property and has no snap engine,
+     * so a mandatory snap container re-snapping scrollLeft mid-drag
+     * (what the real browser did, starving every release-time read)
+     * cannot be reproduced here. These tests therefore lock the
+     * MECHANISM the fix relies on: scroll-snap is suspended for the
+     * whole drag, the release decision is made while it is still
+     * suspended, and snap returns only when the settle scroll ends.
+     * On the pre-fix code the style assertions fail — snap was never
+     * suspended at all. */
+    function renderWideRail(withFlag: boolean) {
+        const utils = render(
+            <SnapRail
+                images={IMAGES}
+                imageAlts={['First alt', 'Second alt', 'Third alt']}
+                captionFallback="Fallback title"
+                ariaLabel="Trip photos"
+                counterTestId="rail-counter"
+                dragAdvanceOnRelease={withFlag}
+            />,
+        );
+        const vp = utils.container.querySelector('[role="group"]') as HTMLDivElement;
+        Object.defineProperty(vp, 'clientWidth', { value: 1200, configurable: true });
+        vp.scrollTo = jest.fn();
+        vp.setPointerCapture = jest.fn();
+        return { ...utils, vp };
+    }
+
+    it('suspends scroll-snap for the whole drag; the advance settle is issued before snap returns on scrollend', () => {
+        const { vp } = renderWideRail(true);
+        act(() => { vp.dispatchEvent(pointer('pointerdown', { pointerType: 'mouse', pointerId: 11, clientX: 900 })); });
+        expect(vp.style.scrollSnapType).toBe('none');
+        act(() => { vp.dispatchEvent(pointer('pointermove', { pointerType: 'mouse', pointerId: 11, clientX: 600 })); });
+        expect(vp.scrollLeft).toBe(300);
+        // Still suspended mid-drag: nothing can re-snap the position
+        // back to the start slide behind the handler's back.
+        expect(vp.style.scrollSnapType).toBe('none');
+        act(() => { vp.dispatchEvent(pointer('pointerup', { pointerType: 'mouse', pointerId: 11, clientX: 600 })); });
+        // The release read the true 300px offset and settles forward…
+        expect(vp.scrollTo).toHaveBeenLastCalledWith({ left: 1200, behavior: 'smooth' });
+        expect(counter().textContent).toBe('2 / 3');
+        // …while snap is STILL suspended, so the returning snap
+        // engine cannot override the settle mid-flight.
+        expect(vp.style.scrollSnapType).toBe('none');
+        act(() => { vp.dispatchEvent(new Event('scrollend')); });
+        expect(vp.style.scrollSnapType).toBe('');
+    });
+
+    it('restores scroll-snap immediately when the drag keeps the native settle', () => {
+        const { vp } = renderWideRail(true);
+        act(() => { vp.dispatchEvent(pointer('pointerdown', { pointerType: 'mouse', pointerId: 12, clientX: 900 })); });
+        act(() => { vp.dispatchEvent(pointer('pointermove', { pointerType: 'mouse', pointerId: 12, clientX: 870 })); });
+        act(() => { vp.dispatchEvent(pointer('pointerup', { pointerType: 'mouse', pointerId: 12, clientX: 870 })); });
+        // Sub-threshold drag: no programmatic settle, snap is back
+        // at once and the native settle proceeds exactly as before.
+        expect(vp.scrollTo).not.toHaveBeenCalled();
+        expect(vp.style.scrollSnapType).toBe('');
+    });
+
+    it('a press without movement restores scroll-snap', () => {
+        const { vp } = renderWideRail(true);
+        act(() => { vp.dispatchEvent(pointer('pointerdown', { pointerType: 'mouse', pointerId: 13, clientX: 100 })); });
+        expect(vp.style.scrollSnapType).toBe('none');
+        act(() => { vp.dispatchEvent(pointer('pointerup', { pointerType: 'mouse', pointerId: 13, clientX: 100 })); });
+        expect(vp.style.scrollSnapType).toBe('');
+    });
+
+    it('touch: the viewport permits native horizontal panning and script starts no drag for touch pointers', () => {
+        const { vp } = renderWideRail(true);
+        // touch-action must allow pan-x, or the browser hands
+        // horizontal touch gestures to script (which ignores them)
+        // and touch drags move nothing — the founder's phone report.
+        expect(vp.className).toContain('[touch-action:pan-x_pan-y]');
+        expect(vp.className).not.toContain('touch-pan-y');
+        act(() => { vp.dispatchEvent(pointer('pointerdown', { pointerType: 'touch', pointerId: 14, clientX: 900 })); });
+        act(() => { vp.dispatchEvent(pointer('pointermove', { pointerType: 'touch', pointerId: 14, clientX: 600 })); });
+        // No script drag state, no snap suspension: the browser's
+        // native pan owns the gesture end to end.
+        expect(vp.scrollLeft).toBe(0);
+        expect(vp.style.scrollSnapType).toBe('');
     });
 });

@@ -39,6 +39,29 @@ import { cn } from '@ouiboo/ui/utils';
  * started on. Hosts with wide slides opt into `dragAdvanceOnRelease`
  * (below) so a moved drag settles one slide over, exactly the
  * outcome the same drag produces on a card.
+ *
+ * Round 4 (2026-10-28): round 3's geometry story was INCOMPLETE —
+ * live reproduction showed the gallery image never moved AT ALL
+ * during a mouse drag (not even at ~50% of a slide width), while a
+ * card advanced discretely, mid-drag, with no partial slide shown.
+ * Confirmed cause: `scroll-snap-type: x mandatory` stayed ACTIVE
+ * for the whole drag (only `scroll-behavior` was suspended), and a
+ * mandatory snap engine re-snaps `scrollLeft` to the nearest snap
+ * point whenever the scroll rests — so between the discrete steps
+ * of a real drag the position was silently reset to the start
+ * slide (a card only APPEARED to drag because once cumulative
+ * travel crossed its halfway point the snap target flipped and the
+ * strip jumped a full slide), and at release `endDrag` read the
+ * already-re-snapped `scrollLeft`, starving the round-3 guard.
+ * The drag now suspends scroll-snap itself for its duration, and a
+ * release settle is issued while snap is still suspended, restored
+ * on scrollend. Round 4 also fixed touch: the rail carried
+ * `touch-action: pan-y`, which DISABLES native horizontal panning
+ * and hands horizontal gestures to script — and the script ignores
+ * touch pointers by design — so touch drags were handled by
+ * nobody on either surface. The rail is now `pan-x pan-y`: the
+ * browser scrolls it natively with axis locking (vertical drags
+ * still scroll the page).
  */
 export interface SnapRailProps {
   images: string[];
@@ -130,14 +153,54 @@ export function SnapRail({
     setActive(clamped);
   };
 
-  // Mouse drag-to-scroll. Touch and pen keep native scrolling (the
-  // viewport is touch-pan-y, so vertical gestures still scroll the
-  // page and horizontal ones pan the rail natively). Pointer capture
-  // retargets the follow-up click to the rail, and the click-capture
-  // handler below swallows it when the drag actually moved, so a
-  // drag never follows a link or toggles an overlay control.
+  // Mouse drag-to-scroll. Touch and pen keep native scrolling: the
+  // viewport's touch-action is `pan-x pan-y`, so the browser itself
+  // pans the rail horizontally and scrolls the page vertically,
+  // axis-locked — script drag state is created for the mouse only.
+  // (Round 4: the rail previously carried `pan-y` alone, which
+  // disables native horizontal panning and hands the gesture to
+  // script; combined with the mouse-only handler below, touch
+  // drags were handled by nobody.) Pointer capture retargets the
+  // follow-up click to the rail, and the click-capture handler
+  // below swallows it when the drag actually moved, so a drag
+  // never follows a link or toggles an overlay control.
   const dragRef = useRef<{ pointerId: number; startX: number; startScrollLeft: number; startIndex: number; moved: boolean } | null>(null);
   const suppressClickRef = useRef(false);
+
+  // #490 round 4: a release settle issued while scroll-snap was
+  // suspended (below) restores snap only once the programmatic
+  // scroll ends, so the returning snap engine cannot override the
+  // settle mid-flight. Tracked here so a new drag can cancel a
+  // pending restore instead of having snap reappear mid-gesture.
+  const snapRestoreRef = useRef<{ el: HTMLDivElement; timer: number; onScrollEnd: () => void } | null>(null);
+
+  const cancelPendingSnapRestore = () => {
+    const pending = snapRestoreRef.current;
+    if (!pending) return;
+    snapRestoreRef.current = null;
+    window.clearTimeout(pending.timer);
+    pending.el.removeEventListener('scrollend', pending.onScrollEnd);
+  };
+
+  const restoreSnapOnScrollEnd = (el: HTMLDivElement) => {
+    cancelPendingSnapRestore();
+    const restore = () => {
+      snapRestoreRef.current = null;
+      el.style.scrollSnapType = '';
+    };
+    const onScrollEnd = () => {
+      window.clearTimeout(timer);
+      restore();
+    };
+    // Fallback for engines without a scrollend event: the settle
+    // scroll is well under this bound.
+    const timer = window.setTimeout(() => {
+      el.removeEventListener('scrollend', onScrollEnd);
+      restore();
+    }, 700);
+    snapRestoreRef.current = { el, timer, onScrollEnd };
+    el.addEventListener('scrollend', onScrollEnd, { once: true });
+  };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== 'mouse' || imageCount <= 1) return;
@@ -154,6 +217,15 @@ export function SnapRail({
     // must track the pointer 1:1, so smooth behaviour is suspended
     // for the duration of the drag and restored on release.
     el.style.scrollBehavior = 'auto';
+    // #490 round 4: scroll-snap is suspended for the drag too. Left
+    // active, the mandatory snap engine re-snaps scrollLeft to the
+    // nearest snap point every time the scroll rests — between the
+    // steps of a real drag the position was silently reset to the
+    // start slide (so the wide gallery appeared not to move at
+    // all), and the release handler read the already-re-snapped
+    // scrollLeft, starving its settle decision.
+    cancelPendingSnapRestore();
+    el.style.scrollSnapType = 'none';
     try {
       el.setPointerCapture?.(event.pointerId);
     } catch {
@@ -177,36 +249,55 @@ export function SnapRail({
     if (!drag || event.pointerId !== drag.pointerId) return;
     dragRef.current = null;
     const el = railRef.current;
-    if (el) el.style.scrollBehavior = '';
-    if (drag.moved) {
-      suppressClickRef.current = true;
-      // Safety net: if no click follows (e.g. pointer released
-      // outside), do not swallow a later genuine click.
-      window.setTimeout(() => {
-        suppressClickRef.current = false;
-      }, 350);
-      // #490 round 3: wide-slide hosts (dragAdvanceOnRelease) — if
-      // the drag moved a real swipe distance but native snap would
-      // settle it back onto the slide it started from (the drag
-      // never crossed that slide's halfway point), settle one slide
-      // over in the drag direction instead. The direction uses the
-      // same |scrollLeft| model as handleRailScroll, so it holds in
-      // LTR and RTL alike. A drag that already crossed into a
-      // neighbouring slide's range keeps the native settle.
-      if (dragAdvanceOnRelease && el && el.clientWidth > 0) {
-        const width = el.clientWidth;
-        const settleIndex = Math.max(
-          0,
-          Math.min(imageCount - 1, Math.round(Math.abs(el.scrollLeft) / width)),
-        );
-        if (
-          settleIndex === drag.startIndex &&
-          Math.abs(el.scrollLeft - drag.startScrollLeft) >= DRAG_ADVANCE_MIN_PX
-        ) {
-          const towardNext = Math.abs(el.scrollLeft) > drag.startIndex * width;
-          scrollToImage(drag.startIndex + (towardNext ? 1 : -1));
-        }
+    if (!el) return;
+    el.style.scrollBehavior = '';
+    if (!drag.moved) {
+      // A press, not a drag: hand scroll-snap straight back.
+      el.style.scrollSnapType = '';
+      return;
+    }
+    suppressClickRef.current = true;
+    // Safety net: if no click follows (e.g. pointer released
+    // outside), do not swallow a later genuine click.
+    window.setTimeout(() => {
+      suppressClickRef.current = false;
+    }, 350);
+    // #490 round 3: wide-slide hosts (dragAdvanceOnRelease) — if
+    // the drag moved a real swipe distance but native snap would
+    // settle it back onto the slide it started from (the drag
+    // never crossed that slide's halfway point), settle one slide
+    // over in the drag direction instead. The direction uses the
+    // same |scrollLeft| model as handleRailScroll, so it holds in
+    // LTR and RTL alike. A drag that already crossed into a
+    // neighbouring slide's range keeps the native settle.
+    // #490 round 4: snap was suspended for the whole drag, so the
+    // scrollLeft read here is the position the pointer actually
+    // reached — not the start slide the snap engine used to reset
+    // it to before this handler ran.
+    let advancing = false;
+    if (dragAdvanceOnRelease && el.clientWidth > 0) {
+      const width = el.clientWidth;
+      const settleIndex = Math.max(
+        0,
+        Math.min(imageCount - 1, Math.round(Math.abs(el.scrollLeft) / width)),
+      );
+      if (
+        settleIndex === drag.startIndex &&
+        Math.abs(el.scrollLeft - drag.startScrollLeft) >= DRAG_ADVANCE_MIN_PX
+      ) {
+        const towardNext = Math.abs(el.scrollLeft) > drag.startIndex * width;
+        scrollToImage(drag.startIndex + (towardNext ? 1 : -1));
+        advancing = true;
       }
+    }
+    if (advancing) {
+      // The settle scroll is already running with snap suspended;
+      // restore snap when it ends so the returning engine cannot
+      // override the settle mid-flight. Every other drag restores
+      // snap immediately and keeps the native settle it had.
+      restoreSnapOnScrollEnd(el);
+    } else {
+      el.style.scrollSnapType = '';
     }
   };
 
@@ -237,7 +328,7 @@ export function SnapRail({
         role="group"
         aria-label={ariaLabel}
         className={cn(
-          'flex overflow-x-auto snap-x snap-mandatory scroll-smooth touch-pan-y select-none cursor-grab active:cursor-grabbing [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+          'flex overflow-x-auto snap-x snap-mandatory scroll-smooth [touch-action:pan-x_pan-y] select-none cursor-grab active:cursor-grabbing [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
           viewportClassName,
         )}
       >
