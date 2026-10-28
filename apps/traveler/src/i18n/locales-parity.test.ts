@@ -97,4 +97,52 @@ describe('traveller locale parity (#424)', () => {
         expect(enCheckout.prevailingLanguage).toContain('French version prevails');
         expect(frCheckout.prevailingLanguage).toContain('version française prévaut');
     });
+
+    it('translates the booking-detail blocks in every locale (#567)', () => {
+        for (const locale of [en, fr, ar]) {
+            const detail = (locale as Record<string, unknown>).bookingDetail as Record<string, unknown>;
+            expect(detail).toBeDefined();
+            expect(detail.proofStatus).toBeDefined();
+            expect(detail.paymentStatus).toBeDefined();
+            expect(detail.status).toBeDefined();
+        }
+        for (const key of ['reference', 'travelerDetails', 'paymentSnapshot']) {
+            expect((fr as any).bookingDetail[key]).not.toBe((en as any).bookingDetail[key]);
+            expect((ar as any).bookingDetail[key]).not.toBe((en as any).bookingDetail[key]);
+        }
+        expect((ar as any).bookingDetail.proofStatus.paymentConfirmed).not.toBe(
+            (en as any).bookingDetail.proofStatus.paymentConfirmed,
+        );
+        expect((ar as any).bookingDetail.paymentStatus.paid).not.toBe(
+            (en as any).bookingDetail.paymentStatus.paid,
+        );
+    });
+
+    it('ships every Arabic plural category for the trip session labels (#567)', () => {
+        // Intl.PluralRules for Arabic yields zero/one/two/few/many/other;
+        // with only one/other shipped, counts of 2, 3-10 and 11-99 fell
+        // back to English on the trip page ("2 open", "4 Days",
+        // "20 spots left").
+        const stems: Array<[string, string]> = [
+            ['tripCard', 'days'],
+            ['tripCard', 'spots'],
+            ['tripDetails', 'spotsLeft'],
+            ['tripDetails', 'openDates'],
+            ['tripDetails', 'viewMoreImages'],
+            ['bookingDetail', 'guests'],
+        ];
+        for (const locale of [en, fr, ar]) {
+            for (const [ns, stem] of stems) {
+                for (const cat of ['zero', 'one', 'two', 'few', 'many', 'other']) {
+                    // en/fr/ar ship one/other from the source strings; the
+                    // rework adds zero/two/few/many to all three (parity).
+                    if (cat === 'one' || cat === 'other') continue;
+                    expect((locale as any)[ns][`${stem}_${cat}`]).toBeDefined();
+                }
+            }
+        }
+        expect((ar as any).tripDetails.spotsLeft_two).not.toContain('spots left');
+        expect((ar as any).tripDetails.openDates_two).not.toContain('open');
+        expect((ar as any).tripCard.days_few).not.toContain('Days');
+    });
 });

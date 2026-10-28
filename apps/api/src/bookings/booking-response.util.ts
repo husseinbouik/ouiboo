@@ -14,6 +14,7 @@ import {
 import { type Prisma } from '@ouiboo/database';
 import { type MoneyInput, toMoneyString } from '../common/money.util';
 import { buildCancellationScaleSnapshot } from '../cancellation/cancellation.util';
+import { resolveTripText } from '../trips/trip-translations.util';
 
 /**
  * #422 (Council P0-20): the only ExternalPayment fields booking/payment
@@ -144,6 +145,9 @@ type BookingMapperInput = {
       agencyId?: string;
       id: string;
       title: string;
+      /** #567: language-keyed title/description map (TripTemplate.translations);
+       * present when the caller loaded the full template row. */
+      translations?: unknown;
       startLocation: string;
       /** #417: stored cancellation bands (Json); legacy-snapshot fallback. */
       cancellationPolicy?: unknown;
@@ -236,7 +240,10 @@ export const resolveBankConfirmation = (
   };
 };
 
-export const mapBookingDetails = (booking: BookingMapperInput): BookingDetails => ({
+export const mapBookingDetails = (
+  booking: BookingMapperInput,
+  locale?: string | null,
+): BookingDetails => ({
   id: booking.id,
   sessionId: booking.sessionId,
   travelerId: booking.travelerId,
@@ -340,7 +347,17 @@ export const mapBookingDetails = (booking: BookingMapperInput): BookingDetails =
     groupStatus: booking.session.groupStatus as SessionGroupStatusType | undefined,
     template: {
       id: booking.session.template.id,
-      title: booking.session.template.title,
+      // #567: resolve the trip title in the reader's locale (requested
+      // -> canonical French -> any language) instead of always serving
+      // the canonical French column — the AR booking detail previously
+      // showed a French title. No locale = legacy behaviour unchanged.
+      title:
+        typeof locale === 'string' && locale
+          ? resolveTripText(
+              { title: booking.session.template.title, translations: booking.session.template.translations },
+              locale,
+            ).title
+          : booking.session.template.title,
       startLocation: booking.session.template.startLocation,
       images: booking.session.template.images,
       imageAlts: booking.session.template.imageAlts,

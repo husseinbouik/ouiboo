@@ -532,7 +532,7 @@ export class BookingsService {
         ]);
 
         return {
-            data: bookings.map(mapBookingDetails),
+            data: bookings.map((booking) => mapBookingDetails(booking)),
             pagination: {
                 total,
                 page: safePage,
@@ -542,7 +542,7 @@ export class BookingsService {
         };
     }
 
-    async findOneForUser(bookingId: string, userId: string, role?: string) {
+    async findOneForUser(bookingId: string, userId: string, role?: string, locale?: string | null) {
         const booking = await this.db.booking.findUnique({
             where: { id: bookingId },
             include: {
@@ -586,7 +586,7 @@ export class BookingsService {
             throw new ForbiddenException('Forbidden');
         }
 
-        return mapBookingDetails(booking);
+        return mapBookingDetails(booking, locale);
     }
 
     async uploadPaymentProof(bookingId: string, userId: string, file: Express.Multer.File, rawIdempotencyKey?: string) {

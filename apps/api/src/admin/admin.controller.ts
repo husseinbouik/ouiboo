@@ -992,7 +992,7 @@ export class AdminController {
         ]);
 
         return {
-            data: bookings.map(mapBookingDetails),
+            data: bookings.map((booking) => mapBookingDetails(booking)),
             pagination: buildPaginationMeta(total, safePage, safeLimit),
         };
     }

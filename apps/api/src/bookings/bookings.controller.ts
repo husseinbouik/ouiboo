@@ -68,8 +68,18 @@ export class BookingsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Get a booking by ID for the traveler, owning agency, or admin' })
-    findOne(@Request() req, @Param('id') id: string) {
-        return this.bookingsService.findOneForUser(id, req.user.userId, req.user?.role);
+    findOne(
+        @Request() req,
+        @Param('id') id: string,
+        @Query('locale') locale?: string,
+        @Headers('x-ouiboo-language') languageHeader?: string,
+    ) {
+        return this.bookingsService.findOneForUser(
+            id,
+            req.user.userId,
+            req.user?.role,
+            normalizeTripLocale(locale) ?? normalizeTripLocale(languageHeader),
+        );
     }
 
     @Post(':id/payment-proof')

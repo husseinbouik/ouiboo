@@ -136,3 +136,57 @@ describe('TripCard verification statement (#413, Council B10)', () => {
         expect(screen.queryByText(/RC insurance evidenced/)).toBeNull();
     });
 });
+
+describe('TripCard spots badge + carousel controls (#571/#490 rework)', () => {
+    const future = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
+    function tripWithSeats(seats: number | null): TripCardTrip {
+        return {
+            id: 'trip-2',
+            title: 'Sahara Nights',
+            startLocation: 'Merzouga',
+            durationDays: 2,
+            images: ['https://cdn.example.com/a.jpg', 'https://cdn.example.com/b.jpg'],
+            sessions:
+                seats === null
+                    ? []
+                    : [{ id: 's1', status: 'OPEN' as any, availableSeats: seats, price: 900, startDate: future }],
+            agency: null,
+        };
+    }
+
+    it('renders a solid deep-green badge at 12px when plenty of spots remain', () => {
+        const { container } = render(<TripCard trip={tripWithSeats(20)} />);
+        const badge = container.querySelector('[data-testid="trip-card-spots-badge"]');
+        expect(badge).not.toBeNull();
+        expect(badge?.getAttribute('data-state')).toBe('available');
+        expect(badge?.className).toContain('bg-emerald-700');
+        expect(badge?.className).toContain('text-white');
+        expect(badge?.className).toContain('text-xs');
+        expect(badge?.className).not.toContain('text-[10px]');
+    });
+
+    it('switches to a solid amber badge when fewer than 5 seats remain', () => {
+        const { container } = render(<TripCard trip={tripWithSeats(3)} />);
+        const badge = container.querySelector('[data-testid="trip-card-spots-badge"]');
+        expect(badge?.getAttribute('data-state')).toBe('low');
+        expect(badge?.className).toContain('bg-amber-600');
+    });
+
+    it('renders a visually distinct sold-out badge when no open session remains', () => {
+        const { container } = render(<TripCard trip={tripWithSeats(null)} />);
+        const badge = container.querySelector('[data-testid="trip-card-spots-badge"]');
+        expect(badge?.getAttribute('data-state')).toBe('sold-out');
+        expect(badge?.className).toContain('bg-rose-800');
+    });
+
+    it('keeps carousel arrows at a genuine 44px and always visible', () => {
+        render(<TripCard trip={tripWithSeats(20)} />);
+        for (const label of ['tripCard.previousImage', 'tripCard.nextImage']) {
+            const btn = screen.getByLabelText(label);
+            expect(btn.className).toContain('w-11');
+            expect(btn.className).toContain('h-11');
+            expect(btn.className).not.toContain('opacity-0');
+            expect(btn.className).not.toContain('w-8');
+        }
+    });
+});
