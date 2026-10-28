@@ -38,10 +38,10 @@ export function renderOgImage(locale: SupportedLanguage) {
                 fill="white"
               />
               <path
-                d="M16 21.4C15.3 19.8 12.6 17.9 12.6 14.8A3.4 3.4 0 1 1 19.4 14.8C19.4 17.9 16.7 19.8 16 21.4Z"
+                d="M16 21.6C15.3 19.9 13.1 17.4 13.1 13.8A2.9 2.9 0 1 1 18.9 13.8C18.9 17.4 16.7 19.9 16 21.6Z"
                 fill="#FF6B35"
               />
-              <circle cx="16" cy="14.8" r="1.5" fill="#0A192F" />
+              <circle cx="16" cy="13.8" r="1.5" fill="#0A192F" />
             </svg>
             <div style={{ color: '#FF6B35', display: 'flex', fontSize: 42, fontWeight: 800 }}>
               Ouiboo
