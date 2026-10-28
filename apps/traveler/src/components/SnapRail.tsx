@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { SafeImage } from '@ouiboo/ui';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -18,9 +18,8 @@ import { cn } from '@ouiboo/ui/utils';
  *   LTR one, the same convention scrollToImage already used);
  * - the counter (current / total) and the caption are ALWAYS
  *   visible — the card previously showed dots only;
- * - prev/next arrows are genuine 44px, always visible, and DISABLE
- *   at the ends — there is NO loop (the card previously wrapped
- *   from the last photo back to the first);
+ * - prev/next arrows are genuine 44px and always visible; since
+ *   round 5 they never disable — the rail loops (below);
  * - a drag that actually moved suppresses the click that follows it,
  *   so drags never follow links or toggle the wishlist.
  *
@@ -62,6 +61,18 @@ import { cn } from '@ouiboo/ui/utils';
  * nobody on either surface. The rail is now `pan-x pan-y`: the
  * browser scrolls it natively with axis locking (vertical drags
  * still scroll the page).
+ *
+ * Round 5 (2026-10-28, founder decision — SUPERSEDES the round-2
+ * "no loop / arrows disable at the ends" spec): the rail LOOPS
+ * seamlessly on both surfaces. With more than one photo, the
+ * strip carries a clone of the last photo before the first and a
+ * clone of the first photo after the last (extended positions
+ * 0..count+1), so dragging or arrowing past either end continues
+ * onto the wrapped photo with no jump-cut; when the scroll
+ * settles on a clone, the rail silently repositions to the real
+ * copy of the same photo (identical image at the identical
+ * offset — invisible). Arrows never disable; the counter,
+ * caption and dots always report the REAL position (1..count).
  */
 export interface SnapRailProps {
   images: string[];
@@ -128,6 +139,21 @@ export function SnapRail({
   const currentRef = useRef(0);
   const imageCount = images.length;
 
+  // #490 round 5: loop coordinates. With more than one photo the
+  // strip is one photo longer at each end (see the header note):
+  // extended position 0 is the last photo's clone, 1..imageCount
+  // are the real photos, imageCount+1 is the first photo's clone.
+  // currentImage / currentRef always hold the REAL index; extRef /
+  // extIndex track the extended position the strip is resting on.
+  const loop = imageCount > 1;
+  const extCount = loop ? imageCount + 2 : imageCount;
+  const toReal = (ext: number) => (loop ? (ext - 1 + imageCount) % imageCount : ext);
+  const extRef = useRef(loop ? 1 : 0);
+  const [extIndex, setExtIndex] = useState(loop ? 1 : 0);
+
+  const dragRef = useRef<{ pointerId: number; startX: number; startScrollLeft: number; startExtIndex: number; moved: boolean } | null>(null);
+  const suppressClickRef = useRef(false);
+
   const setActive = (idx: number) => {
     if (currentRef.current === idx) return;
     currentRef.current = idx;
@@ -135,22 +161,95 @@ export function SnapRail({
     onActiveChange?.(idx);
   };
 
+  const setExt = (ext: number) => {
+    extRef.current = ext;
+    setExtIndex(ext);
+  };
+
+  // Silently reposition from a clone to the real copy of the same
+  // photo: an instant assignment (scroll-behavior forced off for
+  // the jump) to the identical image at the identical offset, so
+  // nothing visibly moves. A no-op anywhere else, and never during
+  // a mouse drag (the drag's own release path owns settling then).
+  const normalizeLoop = () => {
+    const el = railRef.current;
+    if (!el || !loop || el.clientWidth === 0 || dragRef.current) return;
+    const width = el.clientWidth;
+    const ext = Math.round(Math.abs(el.scrollLeft) / width);
+    if (ext !== 0 && ext !== imageCount + 1) return;
+    const target = ext === 0 ? imageCount : 1;
+    el.style.scrollBehavior = 'auto';
+    el.scrollLeft = (i18n.dir() === 'rtl' ? -1 : 1) * target * width;
+    el.style.scrollBehavior = '';
+    setExt(target);
+  };
+  const settleTimerRef = useRef<number | null>(null);
+
   const handleRailScroll = () => {
     const el = railRef.current;
     if (!el || el.clientWidth === 0) return;
-    const idx = Math.round(Math.abs(el.scrollLeft) / el.clientWidth);
-    setActive(Math.max(0, Math.min(imageCount - 1, idx)));
+    const ext = Math.max(0, Math.min(extCount - 1, Math.round(Math.abs(el.scrollLeft) / el.clientWidth)));
+    setExt(ext);
+    setActive(toReal(ext));
+    // Loop normalization for engines without scrollend: once the
+    // scroll comes to rest, reposition if it stopped on a clone.
+    // (The scrollend listener below is the primary trigger.)
+    if (settleTimerRef.current) window.clearTimeout(settleTimerRef.current);
+    settleTimerRef.current = window.setTimeout(normalizeLoop, 150);
   };
 
-  const scrollToImage = (idx: number) => {
+  // Starting position: a looped strip starts on the REAL first
+  // photo (position 1), not on the clone of the last that occupies
+  // scroll position 0.
+  useEffect(() => {
+    const el = railRef.current;
+    if (!el || !loop || el.clientWidth === 0) return;
+    el.scrollLeft = (i18n.dir() === 'rtl' ? -1 : 1) * el.clientWidth;
+    setExt(1);
+    setActive(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [images]);
+
+  // Primary loop-normalization trigger: scrollend → reposition if
+  // the strip came to rest on a clone. Re-registered every render
+  // so the handler always closes over the current geometry; the
+  // cleanup also drops any pending debounce timer on unmount.
+  useEffect(() => {
     const el = railRef.current;
     if (!el) return;
-    const clamped = Math.max(0, Math.min(imageCount - 1, idx));
+    const onScrollEnd = () => normalizeLoop();
+    el.addEventListener('scrollend', onScrollEnd);
+    return () => {
+      el.removeEventListener('scrollend', onScrollEnd);
+      if (settleTimerRef.current) window.clearTimeout(settleTimerRef.current);
+    };
+  });
+
+  const scrollToExt = (ext: number) => {
+    const el = railRef.current;
+    if (!el) return;
+    const clamped = Math.max(0, Math.min(extCount - 1, ext));
     el.scrollTo({
       left: (i18n.dir() === 'rtl' ? -1 : 1) * clamped * el.clientWidth,
       behavior: 'smooth',
     });
-    setActive(clamped);
+    setExt(clamped);
+    setActive(toReal(clamped));
+  };
+
+  const scrollToImage = (realIdx: number) => {
+    const clamped = Math.max(0, Math.min(imageCount - 1, realIdx));
+    scrollToExt(loop ? clamped + 1 : clamped);
+  };
+
+  // Arrow step: normalize first (a click can land in the brief
+  // window where the strip rests on a clone), then move exactly
+  // one extended position — from the last photo that is the first
+  // photo's clone, which settles and repositions to the real
+  // first: a seamless wrap, never a rewind through every slide.
+  const step = (dir: 1 | -1) => {
+    normalizeLoop();
+    scrollToExt(extRef.current + dir);
   };
 
   // Mouse drag-to-scroll. Touch and pen keep native scrolling: the
@@ -164,9 +263,6 @@ export function SnapRail({
   // follow-up click to the rail, and the click-capture handler
   // below swallows it when the drag actually moved, so a drag
   // never follows a link or toggles an overlay control.
-  const dragRef = useRef<{ pointerId: number; startX: number; startScrollLeft: number; startIndex: number; moved: boolean } | null>(null);
-  const suppressClickRef = useRef(false);
-
   // #490 round 4: a release settle issued while scroll-snap was
   // suspended (below) restores snap only once the programmatic
   // scroll ends, so the returning snap engine cannot override the
@@ -182,11 +278,12 @@ export function SnapRail({
     pending.el.removeEventListener('scrollend', pending.onScrollEnd);
   };
 
-  const restoreSnapOnScrollEnd = (el: HTMLDivElement) => {
+  const restoreSnapOnScrollEnd = (el: HTMLDivElement, onRestored?: () => void) => {
     cancelPendingSnapRestore();
     const restore = () => {
       snapRestoreRef.current = null;
       el.style.scrollSnapType = '';
+      onRestored?.();
     };
     const onScrollEnd = () => {
       window.clearTimeout(timer);
@@ -210,7 +307,14 @@ export function SnapRail({
       pointerId: event.pointerId,
       startX: event.clientX,
       startScrollLeft: el.scrollLeft,
-      startIndex: currentRef.current,
+      // Extended position the drag starts from (round 5): with
+      // the loop clones this is the strip position, not the real
+      // photo index — the release math below works in the same
+      // coordinates the scroll position does.
+      startExtIndex:
+        el.clientWidth > 0
+          ? Math.max(0, Math.min(extCount - 1, Math.round(Math.abs(el.scrollLeft) / el.clientWidth)))
+          : extRef.current,
       moved: false,
     };
     // The viewport carries scroll-smooth for arrow navigation; a drag
@@ -274,28 +378,33 @@ export function SnapRail({
     // scrollLeft read here is the position the pointer actually
     // reached — not the start slide the snap engine used to reset
     // it to before this handler ran.
+    // #490 round 5: all of this runs in extended (loop) positions;
+    // a settle can legitimately target a clone position, which
+    // normalizeLoop then repositions to the real copy.
     let advancing = false;
     if (dragAdvanceOnRelease && el.clientWidth > 0) {
       const width = el.clientWidth;
-      const settleIndex = Math.max(
+      const settleExt = Math.max(
         0,
-        Math.min(imageCount - 1, Math.round(Math.abs(el.scrollLeft) / width)),
+        Math.min(extCount - 1, Math.round(Math.abs(el.scrollLeft) / width)),
       );
       if (
-        settleIndex === drag.startIndex &&
+        settleExt === drag.startExtIndex &&
         Math.abs(el.scrollLeft - drag.startScrollLeft) >= DRAG_ADVANCE_MIN_PX
       ) {
-        const towardNext = Math.abs(el.scrollLeft) > drag.startIndex * width;
-        scrollToImage(drag.startIndex + (towardNext ? 1 : -1));
+        const towardNext = Math.abs(el.scrollLeft) > drag.startExtIndex * width;
+        scrollToExt(drag.startExtIndex + (towardNext ? 1 : -1));
         advancing = true;
       }
     }
     if (advancing) {
       // The settle scroll is already running with snap suspended;
       // restore snap when it ends so the returning engine cannot
-      // override the settle mid-flight. Every other drag restores
-      // snap immediately and keeps the native settle it had.
-      restoreSnapOnScrollEnd(el);
+      // override the settle mid-flight, then reposition if the
+      // settle landed on a clone. Every other drag restores snap
+      // immediately and keeps the native settle it had (whose own
+      // scrollend/debounce normalization handles clones).
+      restoreSnapOnScrollEnd(el, normalizeLoop);
     } else {
       el.style.scrollSnapType = '';
     }
@@ -332,19 +441,27 @@ export function SnapRail({
           viewportClassName,
         )}
       >
-        {images.map((src, idx) => (
-          <div key={idx} className="relative h-full w-full shrink-0 snap-center snap-always">
-            <SafeImage
-              src={src}
-              className="w-full h-full object-cover"
-              alt={imageAlts?.[idx]?.trim() || captionFallback}
-              fill
-              sizes={sizes}
-              blurDataURL={imageBlurDataURLs?.[idx] ?? undefined}
-              style={slideStyle?.(idx, idx === currentImage)}
-            />
-          </div>
-        ))}
+        {Array.from({ length: extCount }, (_, pos) => {
+          const logical = toReal(pos);
+          const isClone = loop && (pos === 0 || pos === extCount - 1);
+          return (
+            <div
+              key={pos}
+              aria-hidden={isClone || undefined}
+              className="relative h-full w-full shrink-0 snap-center snap-always"
+            >
+              <SafeImage
+                src={images[logical]}
+                className="w-full h-full object-cover"
+                alt={imageAlts?.[logical]?.trim() || captionFallback}
+                fill
+                sizes={sizes}
+                blurDataURL={imageBlurDataURLs?.[logical] ?? undefined}
+                style={slideStyle?.(logical, pos === extIndex)}
+              />
+            </div>
+          );
+        })}
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent" />
@@ -353,8 +470,7 @@ export function SnapRail({
         <>
           <button
             type="button"
-            onClick={() => scrollToImage(currentImage - 1)}
-            disabled={currentImage === 0}
+            onClick={() => step(-1)}
             aria-label={t('tripCard.previousImage')}
             className={cn(
               'absolute start-4 top-1/2 flex w-11 h-11 min-w-11 min-h-11 -translate-y-1/2 items-center justify-center rounded-full bg-card/95 text-foreground shadow-md backdrop-blur-sm transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100',
@@ -365,8 +481,7 @@ export function SnapRail({
           </button>
           <button
             type="button"
-            onClick={() => scrollToImage(currentImage + 1)}
-            disabled={currentImage >= imageCount - 1}
+            onClick={() => step(1)}
             aria-label={t('tripCard.nextImage')}
             className={cn(
               'absolute end-4 top-1/2 flex w-11 h-11 min-w-11 min-h-11 -translate-y-1/2 items-center justify-center rounded-full bg-card/95 text-foreground shadow-md backdrop-blur-sm transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100',
