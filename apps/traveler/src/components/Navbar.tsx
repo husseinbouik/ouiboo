@@ -47,6 +47,18 @@ const [isOpen, setIsOpen] = useState(false);
   const profileCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  // #495 round 2: WHO opened the menu decides what a click does.
+  // Witnessed defect on the round-1 build: the first click on the
+  // trigger did nothing and a second click was required — on a
+  // hover-capable device the pointer's arrival fires mouseenter
+  // (hover-open) BEFORE the click lands, so the click's blind toggle
+  // shut the just-opened menu. The menu now tracks its open source:
+  // a click toggles only a menu it opened itself; against a hover-
+  // or focus-opened menu the click PINS it open instead. Decisions
+  // read profileOpenRef (synced synchronously by every open/close
+  // path) so no handler can act on a stale render closure.
+  const profileOpenSourceRef = useRef<'hover' | 'focus' | 'click'>('click');
+  const profileOpenRef = useRef(false);
   // Set when Escape closes the menu and focus is returned to the
   // trigger programmatically: that synthetic focus must not re-open
   // the menu through the keyboard-focus path below.
@@ -75,10 +87,20 @@ const [isOpen, setIsOpen] = useState(false);
   };
   const scheduleProfileClose = () => {
     cancelProfileClose();
-    profileCloseTimer.current = setTimeout(() => setProfileOpen(false), 350);
+    profileCloseTimer.current = setTimeout(() => {
+      profileOpenRef.current = false;
+      setProfileOpen(false);
+    }, 350);
+  };
+  const openProfileMenu = (source: 'hover' | 'focus' | 'click') => {
+    cancelProfileClose();
+    profileOpenSourceRef.current = source;
+    profileOpenRef.current = true;
+    setProfileOpen(true);
   };
   const closeProfileNow = () => {
     cancelProfileClose();
+    profileOpenRef.current = false;
     setProfileOpen(false);
   };
   // #495 rework: while the profile menu is open, a pointerdown
@@ -249,12 +271,29 @@ const [isOpen, setIsOpen] = useState(false);
                 <div
                     ref={profileMenuRef}
                     className="relative"
-                    onMouseEnter={() => { if (hoverCapable) { cancelProfileClose(); setProfileOpen(true); } }}
+                    onMouseEnter={() => {
+                        if (!hoverCapable) return;
+                        if (profileOpenRef.current) cancelProfileClose();
+                        else openProfileMenu('hover');
+                    }}
                     onMouseLeave={() => { if (hoverCapable) scheduleProfileClose(); }}
                 >
                     <button
                         ref={profileTriggerRef}
-                        onClick={() => { cancelProfileClose(); setProfileOpen((value) => !value); }}
+                        onClick={() => {
+                            cancelProfileClose();
+                            if (!profileOpenRef.current) {
+                                openProfileMenu('click');
+                            } else if (profileOpenSourceRef.current !== 'click') {
+                                // Pin: hover/focus opened the menu during
+                                // this same gesture — the click confirms it
+                                // open instead of toggling it shut (the
+                                // round-1 "first click does nothing" defect).
+                                profileOpenSourceRef.current = 'click';
+                            } else {
+                                closeProfileNow();
+                            }
+                        }}
                         onFocus={(event) => {
                             if (profileSuppressFocusOpenRef.current) {
                                 profileSuppressFocusOpenRef.current = false;
@@ -265,7 +304,7 @@ const [isOpen, setIsOpen] = useState(false);
                             // would toggle the just-opened menu shut.
                             let focusVisible = false;
                             try { focusVisible = event.currentTarget.matches(':focus-visible'); } catch { focusVisible = false; }
-                            if (focusVisible) { cancelProfileClose(); setProfileOpen(true); }
+                            if (focusVisible) openProfileMenu('focus');
                         }}
                         onKeyDown={(event) => {
                             if (event.key === 'Escape') {

@@ -270,8 +270,8 @@ export default function MyBookingsPage() {
             <div className="max-w-5xl mx-auto px-6 pt-32 pb-20">
                 <div className="flex items-center justify-between mb-12">
                     <div>
-                        <h1 className="text-4xl md:text-5xl font-bold text-foreground tracking-tight mb-2">My Bookings</h1>
-                        <p className="text-lg text-muted-foreground">Manage your past and upcoming trips.</p>
+                        <h1 className="text-4xl md:text-5xl font-bold text-foreground tracking-tight mb-2">{t('bookings.title')}</h1>
+                        <p className="text-lg text-muted-foreground">{t('bookings.subtitle')}</p>
                     </div>
                 </div>
 

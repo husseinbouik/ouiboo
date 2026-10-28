@@ -173,6 +173,17 @@ export default function BookingDetailsPage() {
         : booking.paymentProof.status === VerificationStatus.Accepted
           ? t('bookingDetail.proofStatus.acceptedPending')
           : t('bookingDetail.proofStatus.receivedAwaiting');
+  // #616: the payment snapshot's system values (payment method,
+  // refund status) are enum codes — render their locale strings,
+  // falling back to the raw value for any unmapped code.
+  const paymentMethodLabel = t(`bookingDetail.paymentMethodValue.${booking.paymentMethod}`, {
+    defaultValue: booking.paymentMethod,
+  });
+  const refundStatusLabel = booking.refundStatus
+    ? t(`bookingDetail.refundStatusValue.${booking.refundStatus}`, {
+        defaultValue: booking.refundStatus.replace('_', ' '),
+      })
+    : '';
   const paymentLabel =
     booking.refundStatus === RefundStatus.Processed &&
     (booking.paymentStatus === BookingPaymentStatus.Paid || booking.paymentStatus === BookingPaymentStatus.PartiallyPaid)
@@ -282,10 +293,10 @@ export default function BookingDetailsPage() {
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('bookingDetail.paymentSnapshot')}</p>
                   <div className="mt-4 space-y-2 text-sm">
                     <p><span className="font-black text-foreground">{t('bookingDetail.total')}:</span> {formatCurrency(booking.totalAmount, booking.currency, i18n.language)}</p>
-                    <p><span className="font-black text-foreground">{t('bookingDetail.method')}:</span> {booking.paymentMethod}</p>
+                    <p><span className="font-black text-foreground">{t('bookingDetail.method')}:</span> {paymentMethodLabel}</p>
                     <p><span className="font-black text-foreground">{t('bookingDetail.proof')}:</span> {proofLabel}</p>
                     {booking.refundStatus && (
-                      <p><span className="font-black text-foreground">{t('bookingDetail.refund')}:</span> {booking.refundStatus.replace('_', ' ')}</p>
+                      <p><span className="font-black text-foreground">{t('bookingDetail.refund')}:</span> {refundStatusLabel}</p>
                     )}
                     {booking.confirmedAt && (
                       <p><span className="font-black text-foreground">{t('bookingDetail.confirmed')}:</span> {formatDate(booking.confirmedAt)}</p>
@@ -326,7 +337,7 @@ export default function BookingDetailsPage() {
                   )}
                   {booking.refundStatus && (
                     <p className={booking.paymentProof?.rejectionReason ? 'mt-2' : ''}>
-                      <span className="font-black text-foreground">{t('bookingDetail.refundStatus')}:</span> {booking.refundStatus.replace('_', ' ')}
+                      <span className="font-black text-foreground">{t('bookingDetail.refundStatus')}:</span> {refundStatusLabel}
                     </p>
                   )}
                 </div>

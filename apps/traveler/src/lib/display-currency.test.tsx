@@ -14,6 +14,7 @@ import {
   convertViaMadRates,
   DisplayCurrencyProvider,
   DISPLAY_CURRENCY_STORAGE_KEY,
+  useDisplayAmountConverter,
   useDisplayCurrency,
   useDisplayPrice,
 } from './display-currency';
@@ -146,6 +147,55 @@ describe('DisplayCurrencyProvider', () => {
     expect(mockRefetch).toHaveBeenCalled();
     expect(window.localStorage.getItem(DISPLAY_CURRENCY_STORAGE_KEY)).toBeNull();
     await waitFor(() => expect(screen.getByTestId('display').textContent).toBe('EUR'));
+  });
+});
+
+describe('useDisplayAmountConverter (#615: numeric conversion for derived amounts)', () => {
+  function ConverterProbe({ amount, from }: { amount: number; from: string }) {
+    const convert = useDisplayAmountConverter(from);
+    const converted = convert(amount);
+    return (
+      <div>
+        <span data-testid="converted-amount">{converted?.amount}</span>
+        <span data-testid="converted-currency">{converted?.currency}</span>
+      </div>
+    );
+  }
+
+  it('converts a MAD base into the display currency numerically (cancellation-scale path)', () => {
+    mockUser = { id: 'u1', name: 'Sara', email: 's@x.io', role: 'TRAVELER', displayCurrency: 'EUR' };
+    mockQueryData = { '["currency","rate","EUR"]': 0.092 };
+    render(
+      <DisplayCurrencyProvider>
+        <ConverterProbe amount={2200} from="MAD" />
+      </DisplayCurrencyProvider>,
+    );
+    // 2200 MAD x 0.092 = EUR 202.40 — the #615 witness figures.
+    expect(Number(screen.getByTestId('converted-amount').textContent)).toBeCloseTo(202.4);
+    expect(screen.getByTestId('converted-currency').textContent).toBe('EUR');
+  });
+
+  it('returns the authoritative amount/currency when no rate exists', () => {
+    mockUser = { id: 'u1', name: 'Sara', email: 's@x.io', role: 'TRAVELER', displayCurrency: 'EUR' };
+    mockQueryData = {}; // no cached rate
+    render(
+      <DisplayCurrencyProvider>
+        <ConverterProbe amount={2200} from="MAD" />
+      </DisplayCurrencyProvider>,
+    );
+    expect(screen.getByTestId('converted-amount').textContent).toBe('2200');
+    expect(screen.getByTestId('converted-currency').textContent).toBe('MAD');
+  });
+
+  it('is the identity when the display currency is the trip currency', () => {
+    mockUser = { id: 'u1', name: 'Sara', email: 's@x.io', role: 'TRAVELER', displayCurrency: 'MAD' };
+    render(
+      <DisplayCurrencyProvider>
+        <ConverterProbe amount={2200} from="MAD" />
+      </DisplayCurrencyProvider>,
+    );
+    expect(screen.getByTestId('converted-amount').textContent).toBe('2200');
+    expect(screen.getByTestId('converted-currency').textContent).toBe('MAD');
   });
 });
 

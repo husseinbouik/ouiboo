@@ -337,6 +337,7 @@
     "previousImage": "الصورة السابقة",
     "nextImage": "الصورة التالية",
     "viewImage": "عرض الصورة {{count}}",
+    "imageCounter": "{{current}} / {{total}}",
     "defaultCategory": "مغامرة",
     "priceTba": "السعر قريباً",
     "spots_one": "مقعد واحد",
@@ -758,6 +759,10 @@
     "searchPlaceholder": "ابحث بكلمة مفتاحية — حجز، دفع، استرداد…",
     "title": "مركز المساعدة"
   },
+  "bookings": {
+    "title": "حجوزاتي",
+    "subtitle": "إدارة رحلاتك السابقة والقادمة."
+  },
   "bookingDetail": {
     "reference": "مرجع الحجز",
     "subtitle": "راجع تفاصيل حجزك وحالة الدفع والخطوات التالية.",
@@ -783,6 +788,10 @@
     "paymentSnapshot": "ملخص الدفع",
     "total": "المجموع",
     "method": "طريقة الدفع",
+    "paymentMethodValue": {
+      "MANUAL": "تحويل يدوي",
+      "GATEWAY": "دفع عبر الإنترنت"
+    },
     "proof": "الإثبات",
     "refund": "الاسترداد",
     "confirmed": "تم التأكيد في",
@@ -792,6 +801,11 @@
     "proofReceived": "تم استلام الإثبات. ما زال على {{agency}} تأكيد التحويل في حسابها البنكي — لا يُعدّ دفعك مسوّى حتى ذلك الحين.",
     "paymentProofNote": "ملاحظة حول إثبات الدفع",
     "refundStatus": "حالة الاسترداد",
+    "refundStatusValue": {
+      "PENDING": "قيد الانتظار",
+      "PROCESSED": "تمت المعالجة",
+      "FAILED": "فشل"
+    },
     "uploadReceipt": "رفع الإيصال",
     "retryPayment": "إعادة محاولة الدفع",
     "cancelBooking": "إلغاء الحجز",
