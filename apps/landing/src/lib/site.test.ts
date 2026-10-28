@@ -58,6 +58,21 @@ describe('site LANDING_URL resolution (#564)', () => {
     expect(site.LANDING_URL).toBe('https://ouiboo-landing-staging.vercel.app');
   });
 
+  it('never emits a loopback URL from a production build without a configured URL or Vercel host', async () => {
+    const site = await loadSite({ NODE_ENV: 'production' });
+    expect(site.LANDING_URL).toBe('https://ouiboo-landing.vercel.app');
+    expect(site.LANDING_URL).not.toContain('localhost');
+    expect(site.absoluteLandingUrl('/')).toBe('https://ouiboo-landing.vercel.app/');
+  });
+
+  it('treats a loopback configured URL as missing in production even without a Vercel host', async () => {
+    const site = await loadSite({
+      NEXT_PUBLIC_LANDING_URL: 'http://localhost:3004',
+      NODE_ENV: 'production',
+    });
+    expect(site.LANDING_URL).toBe('https://ouiboo-landing.vercel.app');
+  });
+
   it('keeps the loopback default outside production (local development)', async () => {
     const site = await loadSite({ NODE_ENV: 'development' });
     expect(site.LANDING_URL).toBe('http://localhost:3004');

@@ -2,6 +2,7 @@ import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { DatabaseService } from '../database/database.service';
 import { effectiveInsuranceStatus, effectiveLicenceStatus, effectiveVerificationStatus } from '../common/agency-licence.util';
+import { derivePublicMediaUrl } from '../upload/media-url.util';
 
 @ApiTags('Agency Public')
 @Controller('agencies')
@@ -53,7 +54,10 @@ export class AgencyPublicController {
             id: agency.id,
             companyName: agency.companyName,
             bio: agency.bio,
-            logo: agency.logo,
+            // #447: the stored logo is a file reference, not an address —
+            // re-derive it against the current public media base at read
+            // time (same adoption as the trip payloads in PR #601).
+            logo: derivePublicMediaUrl(agency.logo) ?? null,
             // #569: the umbrella is reconciled with its components on
             // read — VERIFIED only when identity + licence + insurance
             // are all effectively verified (see agency-licence.util).

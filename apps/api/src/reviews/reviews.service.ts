@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateReviewDto, UpdateReviewDto, ReviewResponseDto } from './dto/create-review.dto';
+import { derivePublicMediaUrl } from '../upload/media-url.util';
 
 export type ReviewStatusValue = 'PENDING' | 'VISIBLE' | 'HIDDEN' | 'REMOVED';
 export type ReviewModerationAction = 'HIDE' | 'REMOVE' | 'RESTORE';
@@ -181,7 +182,14 @@ export class ReviewsService {
     ]);
 
     return {
-      reviews,
+      // #447: traveller avatars are stored file references — re-derive
+      // them against the current public media base at read time.
+      reviews: reviews.map((review) => ({
+        ...review,
+        traveler: review.traveler
+          ? { ...review.traveler, avatar: derivePublicMediaUrl(review.traveler.avatar) }
+          : review.traveler,
+      })),
       total,
       page: normalizedPage,
       pages: Math.ceil(total / normalizedLimit),
