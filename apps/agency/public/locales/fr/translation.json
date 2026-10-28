@@ -69,7 +69,8 @@
     "signOut": "Se déconnecter",
     "expandSidebar": "Déplier la barre latérale",
     "collapseSidebar": "Replier la barre latérale",
-    "refunds": "Remboursements"
+    "refunds": "Remboursements",
+    "support": "Assistance"
   },
   "login": {
     "title": "Portail agence",
@@ -810,7 +811,34 @@
     "title": "Assistance OuiBoo",
     "body": "Une question sur la vérification, un justificatif de paiement suspect ou un dossier de remboursement bloqué ? Écrivez-nous — nous répondons sous {{hours}} heures dans le cadre de l'assistance normale.",
     "bodyNoEmail": "Une question sur la vérification, un justificatif de paiement suspect ou un dossier de remboursement bloqué ? Pendant la bêta fermée, contactez OuiBoo via la personne qui a accompagné l'inscription de votre agence — nous répondons sous {{hours}} heures dans le cadre de l'assistance normale.",
-    "escalationRole": "Pendant un voyage en cours, vous êtes le premier appel du voyageur — gardez votre contact d'urgence à jour dans les Paramètres. Si vous ne pouvez pas résoudre un problème pendant un voyage, faites-le remonter immédiatement à OuiBoo."
+    "escalationRole": "Pendant un voyage en cours, vous êtes le premier appel du voyageur — gardez votre contact d'urgence à jour dans les Paramètres. Si vous ne pouvez pas résoudre un problème pendant un voyage, faites-le remonter immédiatement à OuiBoo.",
+    "intro": "Comment joindre l'assistance OuiBoo — et quoi faire en premier pendant un voyage en cours. L'assistance normale répond sous {{hours}} heures.",
+    "contactLine": "Boîte surveillée : {{email}}",
+    "openPage": "Ouvrir la page d'assistance",
+    "form": {
+      "title": "Ouvrir un ticket d’assistance",
+      "intro": "Dites-nous ce qui bloque — une question de vérification, un justificatif de paiement suspect ou un dossier de remboursement bloqué. Nous répondons sous {{hours}} heures dans le cadre de l'assistance normale.",
+      "name": "Votre nom",
+      "email": "Votre e-mail",
+      "category": "Sujet",
+      "categoryBooking": "Réservation",
+      "categoryPayment": "Paiement",
+      "categoryRefund": "Remboursement",
+      "categoryAccount": "Compte",
+      "categoryTrip": "Voyage",
+      "categoryComplaint": "Réclamation",
+      "categoryTechnical": "Problème technique",
+      "categoryOther": "Autre",
+      "subject": "Objet",
+      "bookingRef": "Référence de réservation",
+      "bookingRefOptional": "facultatif",
+      "message": "Message",
+      "submit": "Envoyer le ticket",
+      "submitting": "Envoi...",
+      "receivedTitle": "Ticket reçu",
+      "receivedBody": "Merci — votre ticket est chez l'assistance. Nous répondons sous {{hours}} heures dans le cadre de l'assistance normale.",
+      "error": "Nous n'avons pas pu envoyer votre ticket. Vérifiez les champs et réessayez, ou écrivez-nous si une adresse est affichée ci-dessus."
+    }
   },
   "routeError": {
     "title": "Cet espace de travail n'a pas pu se charger",

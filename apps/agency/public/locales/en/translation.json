@@ -69,7 +69,8 @@
     "signOut": "Sign Out",
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar",
-    "refunds": "Refunds"
+    "refunds": "Refunds",
+    "support": "Support"
   },
   "login": {
     "title": "Agency Portal",
@@ -810,7 +811,34 @@
     "title": "OuiBoo support",
     "body": "Questions about verification, a payment proof that looks wrong, or a refund case that's stuck? Email us — we reply within {{hours}} hours on the normal support lane.",
     "bodyNoEmail": "Questions about verification, a payment proof that looks wrong, or a refund case that's stuck? During the closed beta, reach OuiBoo through the contact who onboarded your agency — we reply within {{hours}} hours on the normal support lane.",
-    "escalationRole": "During an active trip, you are the traveller's first call — keep your emergency contact up to date in Settings. If you cannot resolve a problem during a trip, escalate it to OuiBoo right away."
+    "escalationRole": "During an active trip, you are the traveller's first call — keep your emergency contact up to date in Settings. If you cannot resolve a problem during a trip, escalate it to OuiBoo right away.",
+    "intro": "How to reach OuiBoo support — and what to do first while a trip is running. Normal support replies within {{hours}} hours.",
+    "contactLine": "Monitored inbox: {{email}}",
+    "openPage": "Open the support page",
+    "form": {
+      "title": "Open a support ticket",
+      "intro": "Tell us what is blocked — a verification question, a payment proof that looks wrong, or a refund case that's stuck. We reply within {{hours}} hours on the normal lane.",
+      "name": "Your name",
+      "email": "Your email",
+      "category": "Topic",
+      "categoryBooking": "Booking",
+      "categoryPayment": "Payment",
+      "categoryRefund": "Refund",
+      "categoryAccount": "Account",
+      "categoryTrip": "Trip",
+      "categoryComplaint": "Complaint",
+      "categoryTechnical": "Technical problem",
+      "categoryOther": "Other",
+      "subject": "Subject",
+      "bookingRef": "Booking reference",
+      "bookingRefOptional": "optional",
+      "message": "Message",
+      "submit": "Send ticket",
+      "submitting": "Sending...",
+      "receivedTitle": "Ticket received",
+      "receivedBody": "Thanks — your ticket is with support. We reply within {{hours}} hours on the normal lane.",
+      "error": "We could not send your ticket. Check the fields and try again, or email us if an address is shown above."
+    }
   },
   "routeError": {
     "title": "This workspace could not load",

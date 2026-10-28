@@ -10,6 +10,7 @@ import type { AdminAgency, AdminTrip, FeedbackState } from './types';
 import { getAdminVerificationBadgeClass, getAdminVerificationBadgeLabel, getAdminSubscriptionBadgeLabel } from '../../app/status-mappers';
 import { canApproveAgency, canRejectAgency, canApproveTrip, canRejectTrip } from './formatters';
 import SharePreviewCard from './SharePreviewCard';
+import ShareSignalPanel from './ShareSignalPanel';
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -57,6 +58,8 @@ export default function PendingTab({
   const [previewTripId, setPreviewTripId] = React.useState<string | null>(null);
   return (
 <div className="space-y-12">
+   {/* #561 rework: always-rendered share-signal surface (see ShareSignalPanel). */}
+   <ShareSignalPanel t={t} trips={pendingTrips} />
    <section className="space-y-6">
 <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
           <ShieldCheck className="h-5 w-5 text-sunset-orange" />

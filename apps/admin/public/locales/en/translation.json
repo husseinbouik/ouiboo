@@ -79,7 +79,8 @@
       "invoices": "Invoices",
       "refunds": "Refunds",
       "groups": "Pending Groups",
-      "security": "Security"
+      "security": "Security",
+      "support": "Support Queue"
     },
     "meta": {
       "pending": {
@@ -126,6 +127,11 @@
         "title": "Admin Security",
         "description": "Two-factor authentication and break-glass recovery for admin accounts.",
         "searchPlaceholder": "Security settings"
+      },
+      "support": {
+        "title": "Support Queue",
+        "description": "Help-centre tickets from travellers, agencies and guests. The first status change out of Open counts as the first response.",
+        "searchPlaceholder": "Search tickets by requester or subject..."
       }
     },
     "sections": {
@@ -546,9 +552,15 @@
       "build": "Build",
       "sharing": "Sharing",
       "betaBadge": "Beta badge",
-      "serverFlags": "Server flags: not visible from this build",
+      "serverFlags": "Server flags",
       "on": "on",
-      "off": "off"
+      "off": "off",
+      "serverFlagsLoading": "Loading server flags...",
+      "serverFlagsUnavailable": "Server flags: unavailable (the diagnostics endpoint did not answer)",
+      "serverEnv": "Server env",
+      "madOnlyCatalog": "MAD-only catalogue",
+      "adminMfaRequired": "Admin MFA required",
+      "noFeatureFlags": "No FEATURE_* flags are set on the API"
     },
     "sharePreview": {
       "title": "Link preview (Open Graph)",
@@ -556,7 +568,34 @@
       "liveNote": "Sharing is on: this is the preview social apps will render.",
       "gatedNote": "Sharing is off: the live public preview is the generic Ouiboo card. This is the preview this trip will carry when sharing opens at public launch.",
       "shareTextLabel": "Share text",
-      "shareText": "Check out this trip on Ouiboo: {{title}}"
+      "shareText": "Check out this trip on Ouiboo: {{title}}",
+      "panelTitle": "Sharing & link preview",
+      "panelLive": "Sharing is on for this admin build: previews below are what social apps will render.",
+      "panelGated": "Sharing is off for this admin build: the live public preview is the generic Ouiboo card. Previews below show what each trip will carry when sharing opens.",
+      "panelAdminNote": "This state is this admin build's own flag. On staging, sharing was enabled for the traveller and agency apps only (founder directive), so this build reading off is expected.",
+      "panelEmpty": "No trips are waiting in the verification queue right now. When a trip arrives for review, its link preview appears here per trip."
+    },
+    "support": {
+      "title": "Support tickets",
+      "count": "{{count}} tickets",
+      "filterStatus": "Status",
+      "filterCategory": "Category",
+      "allStatuses": "All statuses",
+      "allCategories": "All categories",
+      "details": "Details",
+      "bookingRef": "Booking reference",
+      "firstResponse": "First response",
+      "resolvedAt": "Resolved",
+      "ticketId": "Ticket",
+      "setStatus": "Set status",
+      "updating": "Updating...",
+      "loading": "Loading tickets...",
+      "loadError": "Could not load support tickets. Try again.",
+      "empty": "No support tickets match these filters.",
+      "feedback": {
+        "updated": "Ticket updated.",
+        "updateError": "Could not update this ticket. Try again."
+      }
     }
   },
   "meta": {

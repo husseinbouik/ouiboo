@@ -79,7 +79,8 @@
       "invoices": "Factures",
       "refunds": "Remboursements",
       "groups": "Groupes en attente",
-      "security": "Sécurité"
+      "security": "Sécurité",
+      "support": "File d'assistance"
     },
     "meta": {
       "pending": {
@@ -126,6 +127,11 @@
         "title": "Sécurité administrateur",
         "description": "Authentification à deux facteurs et récupération d’urgence pour les comptes administrateurs.",
         "searchPlaceholder": "Paramètres de sécurité"
+      },
+      "support": {
+        "title": "File d'assistance",
+        "description": "Tickets du centre d'aide des voyageurs, agences et invités. Le premier changement de statut depuis Ouvert compte comme première réponse.",
+        "searchPlaceholder": "Rechercher des tickets par demandeur ou objet..."
       }
     },
     "sections": {
@@ -546,9 +552,15 @@
       "build": "Build",
       "sharing": "Partage",
       "betaBadge": "Badge bêta",
-      "serverFlags": "Drapeaux serveur : non visibles depuis ce build",
+      "serverFlags": "Drapeaux serveur",
       "on": "activé",
-      "off": "désactivé"
+      "off": "désactivé",
+      "serverFlagsLoading": "Chargement des drapeaux serveur...",
+      "serverFlagsUnavailable": "Drapeaux serveur : indisponibles (le point de diagnostic n'a pas répondu)",
+      "serverEnv": "Env. serveur",
+      "madOnlyCatalog": "Catalogue MAD uniquement",
+      "adminMfaRequired": "MFA admin requise",
+      "noFeatureFlags": "Aucun drapeau FEATURE_* n'est défini sur l'API"
     },
     "sharePreview": {
       "title": "Aperçu du lien (Open Graph)",
@@ -556,7 +568,34 @@
       "liveNote": "Le partage est activé : voici l’aperçu que les réseaux sociaux afficheront.",
       "gatedNote": "Le partage est désactivé : l’aperçu public actuel est la carte générique Ouiboo. Voici l’aperçu que ce voyage affichera à l’ouverture du partage au lancement public.",
       "shareTextLabel": "Texte de partage",
-      "shareText": "Découvrez ce voyage sur Ouiboo : {{title}}"
+      "shareText": "Découvrez ce voyage sur Ouiboo : {{title}}",
+      "panelTitle": "Partage et aperçu du lien",
+      "panelLive": "Le partage est activé pour ce build admin : les aperçus ci-dessous sont ceux que les réseaux sociaux afficheront.",
+      "panelGated": "Le partage est désactivé pour ce build admin : l'aperçu public actuel est la carte générique Ouiboo. Les aperçus ci-dessous montrent ce que chaque voyage affichera à l'ouverture du partage.",
+      "panelAdminNote": "Cet état est le drapeau propre à ce build admin. Sur staging, le partage a été activé pour les applications voyageur et agence uniquement (directive du fondateur), il est donc normal que ce build l'affiche désactivé.",
+      "panelEmpty": "Aucun voyage n'attend dans la file de vérification pour le moment. Quand un voyage arrivera pour examen, son aperçu de lien apparaîtra ici, voyage par voyage."
+    },
+    "support": {
+      "title": "Tickets d'assistance",
+      "count": "{{count}} tickets",
+      "filterStatus": "Statut",
+      "filterCategory": "Catégorie",
+      "allStatuses": "Tous les statuts",
+      "allCategories": "Toutes les catégories",
+      "details": "Détails",
+      "bookingRef": "Référence de réservation",
+      "firstResponse": "Première réponse",
+      "resolvedAt": "Résolu",
+      "ticketId": "Ticket",
+      "setStatus": "Définir le statut",
+      "updating": "Mise à jour...",
+      "loading": "Chargement des tickets...",
+      "loadError": "Impossible de charger les tickets d'assistance. Réessayez.",
+      "empty": "Aucun ticket d'assistance ne correspond à ces filtres.",
+      "feedback": {
+        "updated": "Ticket mis à jour.",
+        "updateError": "Impossible de mettre à jour ce ticket. Réessayez."
+      }
     }
   },
   "meta": {
