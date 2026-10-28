@@ -83,10 +83,65 @@ describe('AgencyPublicController (#371, #413)', () => {
         expect(result.insuranceVerifiedAt).toBeNull();
     });
 
+    it('does not publish an umbrella VERIFIED while licence+insurance are NOT_SUBMITTED (#569)', async () => {
+        const { controller } = makeController({
+            ...baseAgency,
+            travelLicenceStatus: 'NOT_SUBMITTED',
+            licenceExpiry: null,
+            insuranceStatus: 'NOT_SUBMITTED',
+            insuranceExpiry: null,
+        });
+
+        const result = await controller.getPublicProfile('agency-1');
+
+        expect(result.verificationStatus).toBe('PENDING');
+        expect(result.licenceVerified).toBe(false);
+    });
+
+    it('keeps the umbrella VERIFIED when every component is verified (#569)', async () => {
+        const { controller } = makeController({ ...baseAgency });
+        const result = await controller.getPublicProfile('agency-1');
+        expect(result.verificationStatus).toBe('VERIFIED');
+    });
+
     it('throws when the agency does not exist', async () => {
         const { controller } = makeController(null);
         await expect(controller.getPublicProfile('missing')).rejects.toBeInstanceOf(
             NotFoundException,
         );
+    });
+
+    describe('public media derivation (#447)', () => {
+        const ORIGINAL_S3_PUBLIC_URL = process.env.S3_PUBLIC_URL;
+
+        beforeEach(() => {
+            process.env.S3_PUBLIC_URL = 'https://cdn.ouiboo.test';
+        });
+
+        afterEach(() => {
+            if (ORIGINAL_S3_PUBLIC_URL === undefined) {
+                delete process.env.S3_PUBLIC_URL;
+            } else {
+                process.env.S3_PUBLIC_URL = ORIGINAL_S3_PUBLIC_URL;
+            }
+        });
+
+        it('re-derives a logo persisted under an old public base', async () => {
+            const { controller } = makeController({
+                ...baseAgency,
+                logo: 'https://old-bucket.s3.eu-west-1.amazonaws.com/trips/agency-1/logo.png',
+            });
+            const result = await controller.getPublicProfile('agency-1');
+            expect(result.logo).toBe('https://cdn.ouiboo.test/trips/agency-1/logo.png');
+        });
+
+        it('leaves an external logo URL untouched', async () => {
+            const { controller } = makeController({
+                ...baseAgency,
+                logo: 'https://images.unsplash.com/photo-123?w=800',
+            });
+            const result = await controller.getPublicProfile('agency-1');
+            expect(result.logo).toBe('https://images.unsplash.com/photo-123?w=800');
+        });
     });
 });

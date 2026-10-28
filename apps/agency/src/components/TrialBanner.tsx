@@ -7,6 +7,7 @@ import { Button } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import { isFreeBeta } from '@/lib/beta';
 
 export function TrialBanner() {
   const { user } = useAuth();
@@ -21,6 +22,8 @@ export function TrialBanner() {
 
   const isVisible = useMemo(() => {
     return (
+      // #566: no subscription/trial upsell in the completely free beta.
+      !isFreeBeta() &&
       !dismissed &&
       !isDismissed &&
       user?.role === 'AGENCY' &&

@@ -2,7 +2,6 @@ import { z } from "zod";
 import {
     BookingPaymentStatus,
     BookingStatus,
-    PayoutStatus,
     PaymentMethod,
     PaymentProvider,
     RefundStatus,
@@ -140,9 +139,22 @@ export const PLATFORM_DEFAULT_CANCELLATION_BANDS: Array<z.infer<typeof Cancellat
  * entry is kept complete by the canonical title/description fields and
  * the API's publish gate — not by this schema, so drafts stay saveable.
  */
+/** #584 (phase 2): one itinerary day's text inside a language entry. */
+export const TripTranslationDaySchema = z.object({
+    dayNumber: z.number().int().positive().optional(),
+    title: z.string().max(300).optional(),
+    description: z.string().max(10000).optional(),
+    activities: z.array(z.string().max(200)).max(30).optional(),
+});
+
 export const TripTranslationEntrySchema = z.object({
     title: z.string().max(300).optional(),
     description: z.string().max(10000).optional(),
+    // #584 (phase 2): section content in this language.
+    itinerary: z.array(TripTranslationDaySchema).max(60).optional(),
+    inclusions: z.array(z.string().max(500)).max(100).optional(),
+    exclusions: z.array(z.string().max(500)).max(100).optional(),
+    checklist: z.array(z.string().max(500)).max(100).optional(),
 });
 
 /** #546: language map keyed by ISO language code (fr/ar/en today, any future code by data). */
@@ -234,26 +246,6 @@ export const PaymentProofSchema = z.object({
     uploadedAt: z.string().datetime(),
     status: z.nativeEnum(VerificationStatus),
     rejectionReason: z.string().optional(),
-});
-
-export const PayoutRequestSchema = z.object({
-    id: z.string(),
-    agencyId: z.string(),
-    amount: DecimalStringSchema,
-    status: z.nativeEnum(PayoutStatus),
-    requestedAt: z.string().datetime(),
-    processedAt: z.string().datetime().optional(),
-    bankDetails: z.string(),
-});
-
-export const PayoutDetailsSchema = PayoutRequestSchema.extend({
-    agency: z.object({
-        companyName: z.string(),
-        id: z.string(),
-        user: z.object({
-            email: z.string().email().nullable().optional(),
-        }).nullable().optional(),
-    }),
 });
 
 export const BookingDetailsSchema = BookingSchema.extend({

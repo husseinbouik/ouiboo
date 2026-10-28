@@ -23,10 +23,17 @@ export const Logo = React.forwardRef<SVGSVGElement, LogoProps>(
           d="M16 8C11.5817 8 8 11.5817 8 16C8 20.4183 11.5817 24 16 24C20.4183 24 24 20.4183 24 16C24 11.5817 20.4183 8 16 8ZM16 22C12.6863 22 10 19.3137 10 16C10 12.6863 12.6863 10 16 10C19.3137 10 22 12.6863 22 16C22 19.3137 19.3137 22 16 22Z"
           fill="white"
         />
+        {/* Council Session #3 P0-4 (#552): the pin was drawn at ~9 of 32
+            units (head r=3.2, tip y=20.2) — a ~6px blob at navbar size
+            that could not read as a pin. Redrawn to fill the ring: head
+            r=4.6 centred (16, 14.4), tip to y=23.2 (height 13.4 units),
+            with the navy centre dot of the adopted concept. Tile, ring
+            and colours unchanged. */}
         <path
-          d="M16 20.2C15 18.3 12.8 16.5 12.8 14.1A3.2 3.2 0 1 1 19.2 14.1C19.2 16.5 17 18.3 16 20.2Z"
+          d="M16 23.2C14.9 21 11.4 18.6 11.4 14.4A4.6 4.6 0 1 1 20.6 14.4C20.6 18.6 17.1 21 16 23.2Z"
           fill="#FF6B35"
         />
+        <circle cx="16" cy="14.4" r="1.8" fill="#0A192F" />
       </svg>
     );
   }

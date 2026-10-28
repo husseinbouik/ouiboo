@@ -233,7 +233,9 @@ function SessionCard({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* #573: session row actions were hover-only — visible
+                  on coarse pointers and whenever focus is inside. */}
+              <div className="flex items-center gap-2 opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                 <Button
                   variant="outline"
                   size="icon"

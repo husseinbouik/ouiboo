@@ -4,6 +4,7 @@ import { Job } from 'bullmq';
 import { CurrencyService } from '../currency/currency.service';
 import { NotificationJobsService } from '../notifications/notification-jobs.service';
 import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
+import { RefundsService } from '../refunds/refunds.service';
 import { MAINTENANCE_QUEUE, MaintenanceJobName } from './worker-queue.constants';
 
 @Injectable()
@@ -15,6 +16,7 @@ export class MaintenanceProcessor extends WorkerHost {
     private readonly notificationJobs: NotificationJobsService,
     private readonly currencyService: CurrencyService,
     private readonly stagedPaymentsService: StagedPaymentsService,
+    private readonly refundsService: RefundsService,
   ) {
     super();
   }
@@ -37,6 +39,10 @@ export class MaintenanceProcessor extends WorkerHost {
         return this.notificationJobs.completeFinishedBookings();
       case MaintenanceJobName.GroupConfirmationDeadlines:
         return this.stagedPaymentsService.evaluateConfirmationDeadlines();
+      case MaintenanceJobName.RefundDueCaseSync:
+        return this.refundsService.syncRefundDueCases();
+      case MaintenanceJobName.RefundOverdueSweep:
+        return this.refundsService.markOverdueCases();
       default:
         throw new Error(`Unknown maintenance job: ${job.name}`);
     }

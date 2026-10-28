@@ -32,7 +32,7 @@ with the reason — never estimated.
 | Terms recorded | A booking whose `termsVersion` is non-null (B9 acceptance record). `nullTermsAllTime` is the pre-B9 legacy backlog and is expected to be non-zero; the exit criterion applies to new bookings only. |
 | Sweep pause | An agency currently paused by the verification-expiry sweep (`AgencyProfile.verificationPausedAt` set). Point-in-time only — historical pause counts are **not derivable** (the field is overwritten on unpause; no pause-history table exists). |
 | Admin intervention | An `AuditLog` row written by the #423 intervention service (`ADMIN_BOOKING_REPAIRED`, `ADMIN_GROUP_FORCE_CONFIRMED`, `ADMIN_GROUP_CLOSED`, `ADMIN_DEADLINE_EXTENDED`). Reported as a count and per 100 bookings created. |
-| Support response (48h) | **Not derivable.** Platform support runs over email (support@ouiboo.com, #419 split); no ticket or response timestamps are stored. The endpoint returns `derivable: false` instead of a number. Measure manually from the mailbox during the beta. |
+| Support response (48h) | Derived from help-centre tickets (#446): tickets opened in the window with a recorded first response (`SupportTicket.firstResponseAt`, stamped when an admin first moves a ticket out of OPEN), and the share of those responded to within 48 hours of `createdAt`. The endpoint also returns tickets opened, counts by status and category, and open tickets awaiting a first response for over 48 hours. Email-only contacts (#419 split) store no timestamps and are **never** estimated into this rate: when no ticket in the window has a first response — or the #446 migration has not been applied to the environment — the endpoint returns `derivable: false` with the reason instead of a number. |
 
 ## Beta exit criteria (adopted)
 
@@ -44,6 +44,7 @@ with the reason — never estimated.
 | Stuck states | 0 unresolved > 48h | `stuck.total` |
 | Duplicate bookings | < 1% | `duplicates.rate` |
 | Terms recorded | 100% of new bookings | `terms.recordedRate` |
+| Fee capture (#431) | ≥ 98% of platform service fees captured | `feeCapture` — wired as a gate value in `BETA_EXIT_GATES`, **inactive** while the beta is free (no fee exists to capture); activates with the monetisation gate (#426) |
 
 The endpoint returns each criterion with its measured value and a
 `pass` flag (`null` when the window has no data to judge — an empty

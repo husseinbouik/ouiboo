@@ -33,7 +33,8 @@ import { apiClient } from '@/lib/api-client';
 import Link from 'next/link';
 import { PaymentProofReviewModal } from '@/components/PaymentProofReviewModal';
 import { usePaymentProofReview } from '@/components/usePaymentProofReview';
-import { getAgencyBookingStatusMeta, getAgencyPaymentStatusMeta, getAgencyProofStatusLabel, formatCurrency, formatLocalDate } from '@ouiboo/utils';
+import { useAttendanceMarking } from '@/components/useAttendanceMarking';
+import { getAgencyBookingStatusMeta, getAgencyPaymentStatusMeta, getAgencyProofStatusLabel, formatCurrency, formatLocalDate, canMarkAttendance } from '@ouiboo/utils';
 import { Pagination } from '@ouiboo/ui';
 import { TableBodySkeleton } from '@/components/Skeletons';
 import { toPaginatedList } from '@ouiboo/utils';
@@ -64,6 +65,9 @@ export default function BookingsManager() {
     confirmBankPayment,
   } = usePaymentProofReview();
 
+  // #434: attendance recording (attended / no-show) per booking.
+  const { markAttendance, isMarkingAttendance, attendanceError } = useAttendanceMarking();
+
   const bookings = result?.data ?? [];
   const bookingsPagination = result?.pagination ?? null;
 
@@ -81,6 +85,8 @@ export default function BookingsManager() {
         return t('status.bookingCancelled');
       case BookingStatus.Completed:
         return t('status.bookingCompleted');
+      case BookingStatus.NoShow:
+        return t('status.bookingNoShow');
       default:
         return status;
     }
@@ -229,6 +235,35 @@ export default function BookingsManager() {
                       )}
                     </td>
                     <td className="px-6 py-5 text-end">
+                      {canMarkAttendance(booking) && (
+                        <div className="mb-2 flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isMarkingAttendance}
+                            onClick={() => markAttendance(booking.id, true)}
+                          >
+                            {t('bookings.markAttended')}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isMarkingAttendance}
+                            onClick={() => markAttendance(booking.id, false)}
+                          >
+                            {t('bookings.markNoShow')}
+                          </Button>
+                        </div>
+                      )}
+                      {booking.attendance && (
+                        <p className="mb-2 text-[11px] font-medium text-muted-foreground">
+                          {t(
+                            booking.attendance === 'ATTENDED'
+                              ? 'bookings.attendanceAttended'
+                              : 'bookings.attendanceNoShow',
+                          )}
+                        </p>
+                      )}
                       {booking.paymentProof?.imageUrl ? (
                         <Button
                           variant={
@@ -238,7 +273,7 @@ export default function BookingsManager() {
                               : 'outline'
                           }
                           size="sm"
-                          className={`opacity-0 group-hover:opacity-100 transition-opacity gap-2 ${
+                          className={`opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity gap-2 ${
                             booking.paymentProof?.status === VerificationStatus.Pending ||
                             booking.paymentProof?.status === VerificationStatus.Accepted
                               ? 'bg-primary hover:bg-primary/90'
@@ -252,7 +287,7 @@ export default function BookingsManager() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity cursor-not-allowed"
+                          className="opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity cursor-not-allowed"
                           disabled
                         >
                           {t('bookings.noProof')}
@@ -267,6 +302,12 @@ export default function BookingsManager() {
           </div>
         </CardContent>
       </Card>
+
+      {attendanceError && (
+        <p className="mt-4 text-sm font-medium text-danger" role="alert">
+          {attendanceError}
+        </p>
+      )}
 
       <Pagination pagination={bookingsPagination} onPageChange={setCurrentPage} className="mt-4" />
 

@@ -1,9 +1,12 @@
 import {
     buildTripTranslations,
+    frenchSectionsMissing,
     hasCompleteFrenchText,
     normalizeTripLocale,
     normalizeTripTranslations,
+    resolveTripSections,
     resolveTripText,
+    stripSeedMarker,
 } from './trip-translations.util';
 
 describe('trip-translations.util (#546)', () => {
@@ -104,6 +107,7 @@ describe('trip-translations.util (#546)', () => {
             expect(resolveTripText(trip, 'en')).toEqual({
                 title: 'Title EN',
                 description: 'Description EN',
+                language: 'en',
             });
         });
 
@@ -111,6 +115,8 @@ describe('trip-translations.util (#546)', () => {
             expect(resolveTripText(trip, 'ar')).toEqual({
                 title: 'عنوان AR',
                 description: 'Description FR',
+                // P0-11: the reported language follows the title's source.
+                language: 'ar',
             });
         });
 
@@ -118,13 +124,14 @@ describe('trip-translations.util (#546)', () => {
             expect(resolveTripText(trip, 'es')).toEqual({
                 title: 'Titre FR',
                 description: 'Description FR',
+                language: 'fr',
             });
             expect(
                 resolveTripText(
                     { title: '', description: '', translations: { ar: { title: 'فقط', description: 'وصف فقط' } } },
                     'en',
                 ),
-            ).toEqual({ title: 'فقط', description: 'وصف فقط' });
+            ).toEqual({ title: 'فقط', description: 'وصف فقط', language: 'ar' });
         });
 
         it('legacy trip without a map renders its (French) columns in every locale', () => {
@@ -133,6 +140,7 @@ describe('trip-translations.util (#546)', () => {
                 expect(resolveTripText(legacy, locale)).toEqual({
                     title: 'Ancien titre',
                     description: 'Ancienne description',
+                    language: 'fr',
                 });
             }
         });
@@ -141,7 +149,107 @@ describe('trip-translations.util (#546)', () => {
             expect(resolveTripText({ title: '', description: '', translations: null }, 'ar')).toEqual({
                 title: '',
                 description: '',
+                language: 'fr',
             });
         });
+    });
+
+    describe('seed marker stripping (Session #3 P0-6, #554)', () => {
+        it('stripSeedMarker removes trailing and inline markers', () => {
+            expect(stripSeedMarker('A trek.\n\n[staging-seed-v1]')).toBe('A trek.');
+            expect(stripSeedMarker('A [staging-seed-v2] trek')).toBe('A trek');
+            expect(stripSeedMarker('No marker here')).toBe('No marker here');
+        });
+
+        it('resolved public text never carries the marker, whichever language holds it', () => {
+            const seeded = {
+                title: 'Atlas Mountains Trek',
+                description: 'Challenge yourself.\n\n[staging-seed-v1]',
+                translations: {
+                    fr: { title: 'Atlas Mountains Trek', description: 'Challenge yourself.\n\n[staging-seed-v1]' },
+                },
+            };
+            for (const locale of ['fr', 'ar', 'en', undefined]) {
+                const resolved = resolveTripText(seeded, locale);
+                expect(resolved.description).toBe('Challenge yourself.');
+                expect(resolved.description).not.toContain('staging-seed');
+            }
+        });
+    });
+});
+
+describe('trip-translations.util phase 2 (#584)', () => {
+    const canonical = {
+        itinerary: [
+            { dayNumber: 1, title: 'Arrivée', description: 'Accueil à Marrakech', activities: ['Transfert'] },
+            { dayNumber: 2, title: 'Atlas', description: 'Randonnée guidée', activities: [] },
+        ],
+        inclusions: ['Guide', 'Repas'],
+        exclusions: ['Vols'],
+        checklist: ['Chaussures de marche'],
+    };
+
+    it('normalizes section content and drops garbage shapes', () => {
+        const map = normalizeTripTranslations({
+            ar: {
+                itinerary: [{ dayNumber: 1, title: 'الوصول', activities: ['نقل', 42, ''] }],
+                inclusions: ['دليل', ''],
+                exclusions: 'not-a-list',
+            },
+        });
+        expect(map.ar.itinerary).toEqual([{ dayNumber: 1, title: 'الوصول', activities: ['نقل'] }]);
+        expect(map.ar.inclusions).toEqual(['دليل']);
+        expect(map.ar.exclusions).toBeUndefined();
+    });
+
+    it('buildTripTranslations mirrors the canonical sections into fr and stamps positional dayNumbers', () => {
+        const map = buildTripTranslations(
+            { ar: { itinerary: [{ title: 'الوصول' }, { title: 'الأطلس', description: 'رحلة' }] } },
+            { title: 'Titre', description: 'Description', ...canonical },
+        );
+        expect(map.fr.itinerary?.[0]).toEqual({
+            dayNumber: 1, title: 'Arrivée', description: 'Accueil à Marrakech', activities: ['Transfert'],
+        });
+        expect(map.fr.inclusions).toEqual(['Guide', 'Repas']);
+        expect(map.ar.itinerary?.map((d) => d.dayNumber)).toEqual([1, 2]);
+    });
+
+    it('resolves sections per locale: translated day/list wins, gaps fall back to French', () => {
+        const trip = {
+            ...canonical,
+            translations: {
+                ar: {
+                    itinerary: [{ dayNumber: 2, title: 'الأطلس', description: 'رحلة مصحوبة', activities: ['جولة'] }],
+                    inclusions: ['دليل', 'وجبات'],
+                },
+            },
+        };
+        const ar = resolveTripSections(trip, 'ar');
+        expect(ar.itinerary[0].title).toBe('Arrivée'); // untranslated day → French
+        expect(ar.itinerary[1].title).toBe('الأطلس');
+        expect(ar.itinerary[1].activities).toEqual(['جولة']);
+        expect(ar.inclusions).toEqual(['دليل', 'وجبات']); // wholesale
+        expect(ar.exclusions).toEqual(['Vols']); // no Arabic list → French
+        const fr = resolveTripSections(trip, 'fr');
+        expect(fr.itinerary[1].title).toBe('Atlas');
+    });
+
+    it('frenchSectionsMissing flags days and lists that exist only outside French', () => {
+        const incomplete = {
+            itinerary: [{ dayNumber: 1, title: 'Arrivée', description: 'Accueil' }],
+            inclusions: [],
+            translations: {
+                ar: {
+                    itinerary: [{ dayNumber: 2, title: 'يوم إضافي', description: 'وصف' }],
+                    inclusions: ['دليل'],
+                },
+            },
+        };
+        expect(frenchSectionsMissing(incomplete)).toEqual(['itinerary day 2', 'inclusions']);
+        const complete = {
+            ...canonical,
+            translations: { ar: { itinerary: [{ dayNumber: 1, title: 'الوصول' }] } },
+        };
+        expect(frenchSectionsMissing(complete)).toEqual([]);
     });
 });

@@ -122,10 +122,90 @@ describe('BetaMetricsService', () => {
     expect(criteria.stuckStates).toMatchObject({ value: 0, pass: true });
   });
 
+  it('derives the support 48h first-response rate from help-centre tickets (#446)', async () => {
+    const mock = buildMock({
+      supportTicket: {
+        findMany: jest.fn(async () => [
+          // responded within 48h
+          { status: 'RESOLVED', category: 'BOOKING', createdAt: hoursAgo(100), firstResponseAt: hoursAgo(80) },
+          // responded after 48h
+          { status: 'IN_PROGRESS', category: 'REFUND', createdAt: hoursAgo(200), firstResponseAt: hoursAgo(100) },
+          // responded within 48h
+          { status: 'RESOLVED', category: 'PAYMENT', createdAt: hoursAgo(50), firstResponseAt: hoursAgo(49) },
+          // still open, older than 48h, no first response
+          { status: 'OPEN', category: 'BOOKING', createdAt: hoursAgo(72), firstResponseAt: null },
+        ]),
+      },
+    });
+    const service = new BetaMetricsService(mock as any);
+    const m = await service.getBetaMetrics(undefined, undefined, NOW);
+
+    expect(m.support.derivable).toBe(true);
+    // 2 of 3 responded tickets were answered within 48h
+    expect(m.support.responseWithin48hPercent).toBe(66.7);
+    expect(m.support.ticketsOpened).toBe(4);
+    expect(m.support.ticketsWithFirstResponse).toBe(3);
+    expect(m.support.firstResponsesWithin48h).toBe(2);
+    expect(m.support.awaitingFirstResponseOver48h).toBe(1);
+    expect(m.support.ticketsByCategory).toEqual({ BOOKING: 2, REFUND: 1, PAYMENT: 1 });
+  });
+
+  it('keeps support not-derivable when tickets exist but none has a first response (#446)', async () => {
+    const mock = buildMock({
+      supportTicket: {
+        findMany: jest.fn(async () => [
+          { status: 'OPEN', category: 'OTHER', createdAt: hoursAgo(5), firstResponseAt: null },
+        ]),
+      },
+    });
+    const service = new BetaMetricsService(mock as any);
+    const m = await service.getBetaMetrics(undefined, undefined, NOW);
+    expect(m.support.derivable).toBe(false);
+    expect(m.support.responseWithin48hPercent).toBeNull();
+    expect(m.support.ticketsOpened).toBe(1);
+  });
+
+  it('keeps support not-derivable when the ticket store cannot be read (#446 migration not applied)', async () => {
+    const throwing = buildMock({
+      supportTicket: {
+        findMany: jest.fn(async () => {
+          throw new Error('relation "SupportTicket" does not exist');
+        }),
+      },
+    });
+    const service = new BetaMetricsService(throwing as any);
+    const m = await service.getBetaMetrics(undefined, undefined, NOW);
+    expect(m.support.derivable).toBe(false);
+    expect(m.support.responseWithin48hPercent).toBeNull();
+    expect(m.support.reason).toContain('could not be read');
+    // the rest of the metrics still resolve
+    expect(m.bookings.created).toBe(40);
+  });
+
   it('rejects an inverted window', async () => {
     const service = new BetaMetricsService(buildMock() as any);
     await expect(
       service.getBetaMetrics(new Date('2026-10-28T00:00:00Z'), new Date('2026-10-27T00:00:00Z'), NOW),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+});
+
+describe('Beta exit gate values (#431)', () => {
+  it('wires QA thresholds as documented gate constants', async () => {
+    const { BETA_EXIT_GATES } = await import('./beta-metrics.service');
+    expect(BETA_EXIT_GATES.zeroResultRateMaxPercent).toBe(20);
+    expect(BETA_EXIT_GATES.feeCaptureMinPercent).toBe(98);
+    expect(BETA_EXIT_GATES.disputesMaxPer1000Bookings).toBe(30);
+  });
+
+  it('carries the fee-capture criterion as present-but-inactive while the beta is free', async () => {
+    const service = new BetaMetricsService(buildMock() as any);
+    const m = await service.getBetaMetrics(undefined, undefined, NOW);
+    const fee = m.exitCriteria.find((c) => c.key === 'feeCapture') as any;
+    expect(fee).toBeDefined();
+    expect(fee.target).toContain('98%');
+    expect(fee.value).toBeNull();
+    expect(fee.pass).toBeNull();
+    expect(fee.active).toBe(false);
   });
 });

@@ -5,6 +5,7 @@ import { Bell, LogOut } from 'lucide-react';
 import { ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
 import { useAuth } from '../AuthContext';
 import { useTranslation } from 'react-i18next';
+import { AgencyCommandPalette } from '../AgencyCommandPalette';
 
 export function AgencyNavbar() {
   const { user, logout } = useAuth();
@@ -16,7 +17,11 @@ export function AgencyNavbar() {
 
   return (
     <header className="h-16 bg-background border-b border-border flex items-center justify-between px-8 sticky top-0 z-10 transition-colors duration-200">
-      <div className="flex-1" />
+      {/* #487: command-palette trigger (⌘K) in the previously empty
+          start-side slot; the palette itself is mounted here too. */}
+      <div className="flex-1">
+        <AgencyCommandPalette />
+      </div>
 
       <div className="flex items-center gap-4">
         <LanguageSwitcher />

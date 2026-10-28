@@ -32,7 +32,7 @@ describe('loading skeletons (#469)', () => {
     const { container } = render(<TripCardSkeleton />);
     const root = container.firstElementChild as HTMLElement;
     expect(root.getAttribute('aria-hidden')).toBe('true');
-    expect(root.className).toContain('rounded-[2rem]');
+    expect(root.className).toContain('rounded-3xl');
     expect(container.querySelector('.h-64')).not.toBeNull();
   });
 

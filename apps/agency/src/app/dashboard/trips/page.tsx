@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 import {
   Plus,
@@ -13,7 +12,7 @@ import {
   Filter,
   ArrowUpDown
 } from 'lucide-react';
-import { Button, Card, CardContent, Input, ShareTripButton } from '@ouiboo/ui';
+import { Button, Card, CardContent, EmptyState, Input, ShareTripButton, SafeImage } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -208,7 +207,7 @@ export default function AgencyTripsPage() {
           filteredTrips.map((trip) => (
             <Card key={trip.id} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden bg-card border border-border flex flex-col">
               <div className="relative h-48 overflow-hidden">
-                 <Image
+                 <SafeImage
                    src={trip.images?.[0] || `https://ui-avatars.com/api/?name=${encodeURIComponent(trip.title)}&background=0A192F&color=fff`}
                    alt={trip.imageAlts?.[0]?.trim() || trip.title}
                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
@@ -266,6 +265,7 @@ export default function AgencyTripsPage() {
                           source="agency-share"
                           size="sm"
                           iconOnly
+                          showDisabledWhenOff
                           className="h-auto border-none bg-transparent p-2 text-muted-foreground shadow-none hover:bg-muted hover:text-primary rounded-lg"
                         />
                       )}
@@ -287,22 +287,22 @@ export default function AgencyTripsPage() {
           ))
         ) : (
           <div className="col-span-full">
-            <Card className="border-none shadow-sm bg-card border border-border">
-              <CardContent className="py-16 text-center">
-                <p className="text-lg font-bold text-foreground">{t('trips.emptyTitle')}</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {t('trips.emptyBody')}
-                </p>
-                <div className="mt-6 flex items-center justify-center gap-3">
+            {/* #574: shared EmptyState instead of a hand-rolled card. */}
+            <EmptyState
+              className="py-16"
+              title={t('trips.emptyTitle')}
+              description={t('trips.emptyBody')}
+              action={
+                <div className="flex items-center justify-center gap-3">
                   <Button variant="outline" onClick={() => { setSearchTerm(''); setStatusFilter('ALL'); setSortBy('recent'); }}>
                     {t('trips.clearFilters')}
                   </Button>
                   <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90 border-none">
-              <Link href="/dashboard/trips/create">{t('trips.createCta')}</Link>
-            </Button>
+                    <Link href="/dashboard/trips/create">{t('trips.createCta')}</Link>
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
+              }
+            />
           </div>
         )}
 

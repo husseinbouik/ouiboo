@@ -4,6 +4,7 @@ import { Prisma } from '@ouiboo/database';
 import { DatabaseService } from '../database/database.service';
 import { PRIVATE_FILE_PREFIX } from '../upload/upload.constants';
 import { UploadService } from '../upload/upload.service';
+import { derivePublicMediaUrl } from '../upload/media-url.util';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 
 @Injectable()
@@ -19,6 +20,19 @@ export class UsersService {
         }
 
         const safeUser = { ...user };
+        // #447: avatar and agency logo are stored file references, not
+        // addresses — re-derive them against the current public media
+        // base at read time so a base change never strands them on the
+        // host that was configured at upload time.
+        if (safeUser.avatar) {
+            safeUser.avatar = derivePublicMediaUrl(safeUser.avatar);
+        }
+        if (safeUser.agencyProfile?.logo) {
+            safeUser.agencyProfile = {
+                ...safeUser.agencyProfile,
+                logo: derivePublicMediaUrl(safeUser.agencyProfile.logo),
+            };
+        }
         delete safeUser.password;
         delete safeUser.passwordResetTokenHash;
         delete safeUser.passwordResetExpiresAt;
@@ -241,7 +255,12 @@ export class UsersService {
             select: {
                 id: true, name: true, email: true, role: true, avatar: true,
                 isEmailVerified: true, displayCurrency: true, createdAt: true, updatedAt: true,
-                agencyProfile: { include: { wallet: { include: { transactions: true } }, payoutRequests: true, templates: { include: { itinerary: true, sessions: true } } } },
+                // #429: the export's agency financial records used to
+                // come from the Wallet/WalletTransaction/PayoutRequest
+                // custody tables (deleted in this change); they now
+                // come from the retained ledger — the agency's booking
+                // payment transactions.
+                agencyProfile: { include: { paymentTransactions: true, templates: { include: { itinerary: true, sessions: true } } } },
                 bookings: { include: { paymentProof: true, paymentTransactions: true, review: true } },
                 reviews: true, wishlist: true, notificationPreferences: true,
                 travelerConversations: { include: { messages: true } },
@@ -270,9 +289,10 @@ export class UsersService {
      *     UploadService.resolveStorageKey and deduplicated first.
      *  2. The database tombstone scrubs every personal-data category.
      *     Rows that double as financial/ledger evidence (bookings,
-     *     payments, refund cases and evidence rows, invoices, wallet
-     *     ledger) are retained with their personal fields nulled — the
-     *     retention table in the doc states what is kept and why.
+     *     payments, refund cases and evidence rows, invoices, payment
+     *     status ledger entries) are retained with their personal
+     *     fields nulled — the retention table in the doc states what
+     *     is kept and why.
      *
      * Storage deletion is best-effort per object and runs BEFORE the
      * database scrub: a storage outage must not block erasure of the

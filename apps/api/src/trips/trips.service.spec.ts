@@ -31,6 +31,11 @@ const mockDatabaseService = {
         update: jest.fn(),
         delete: jest.fn(),
     },
+    // #584: the publish gate fetches canonical itinerary days when a
+    // transition does not carry them.
+    itineraryDay: {
+        findMany: jest.fn().mockResolvedValue([]),
+    },
     tripSession: {
         create: jest.fn(),
         update: jest.fn(),
@@ -341,6 +346,8 @@ describe('TripsService', () => {
                         { title: { contains: 'atlas', mode: 'insensitive' } },
                         { description: { contains: 'atlas', mode: 'insensitive' } },
                         { startLocation: { contains: 'atlas', mode: 'insensitive' } },
+                        // #440: destination (endLocation) is searchable.
+                        { endLocation: { contains: 'atlas', mode: 'insensitive' } },
                     ],
                 }),
             }));
@@ -617,6 +624,9 @@ describe('TripsService', () => {
             travelLicenceType: 'ODV',
             insuranceStatus: 'VERIFIED',
             insuranceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            // Session #3 P0-13: a complete licence record (issue facts).
+            licenceIssuedAt: new Date('2024-03-01'),
+            licenceIssuingAuthority: 'Ministère du Tourisme',
         };
 
         beforeEach(() => {
@@ -695,6 +705,30 @@ describe('TripsService', () => {
 
             await expect(service.activateTemplate('trip-123', 'agency-123'))
                 .rejects.toThrow(/distributor \(DV\) licence does not permit organising/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks re-activation when the licence issue date is missing (Session #3 P0-13)', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                licenceIssuedAt: null,
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/licence record is incomplete/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks re-activation when the licence issuing authority is missing (Session #3 P0-13)', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                licenceIssuingAuthority: null,
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/licence record is incomplete/i);
             expect(db.tripTemplate.update).not.toHaveBeenCalled();
         });
 
@@ -824,6 +858,9 @@ describe('TripsService', () => {
             travelLicenceType: 'ODV',
             insuranceStatus: 'VERIFIED',
             insuranceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            // Session #3 P0-13: complete licence record (issue facts).
+            licenceIssuedAt: new Date('2024-03-01'),
+            licenceIssuingAuthority: 'Ministère du Tourisme',
         };
 
         beforeEach(() => {

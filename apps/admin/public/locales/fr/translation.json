@@ -66,7 +66,9 @@
       "pendingAgencies": "Agences en attente",
       "tripsInReview": "Voyages en revue",
       "bookingsToday": "Réservations du jour",
-      "paymentProofs": "Justificatifs de paiement"
+      "paymentProofs": "Justificatifs de paiement",
+      "refundsOverdue": "Remboursements en retard",
+      "refundsDue48": "Remboursements dus ≤48 h"
     },
     "tabs": {
       "pending": "File de vérification",
@@ -343,6 +345,7 @@
       "bookingRejected": "Rejetée",
       "bookingCancelled": "Annulée",
       "bookingCompleted": "Terminée",
+      "bookingNoShow": "Absent",
       "verificationPending": "En attente",
       "verificationVerified": "Vérifiée",
       "verificationRejected": "Rejetée",
@@ -356,14 +359,6 @@
       "paymentPaid": "Payé",
       "paymentRefunded": "Remboursé",
       "paymentFailed": "Échoué",
-      "payoutPaidLabel": "Payé",
-      "payoutPaidHelper": "Virement effectué",
-      "payoutRejectedLabel": "Rejeté",
-      "payoutRejectedHelper": "Fonds renvoyés à l'agence",
-      "payoutApprovedLabel": "Approuvé",
-      "payoutApprovedHelper": "Approuvé et en attente de traitement du paiement",
-      "payoutPendingLabel": "En attente",
-      "payoutPendingHelper": "En attente de révision par l'admin",
       "licenceNotSubmitted": "Licence non envoyée",
       "licencePendingReview": "Licence en examen",
       "licenceVerified": "Licence vérifiée",
@@ -444,6 +439,11 @@
         "BANK_REFERENCE": "Référence bancaire + document conservé",
         "TRAVELLER_CONFIRMATION": "Confirmation du voyageur",
         "ADMIN_REVIEW": "Examen administrateur"
+      },
+      "urgency": {
+        "overdueFilter": "Remboursements en retard uniquement",
+        "due48Filter": "Remboursements dus sous 48 heures uniquement",
+        "clearFilter": "Effacer le filtre"
       }
     },
     "groups": {
@@ -512,6 +512,51 @@
       "ADMIN_BREAK_GLASS_USED": "Connexion d’urgence utilisée",
       "ADMIN_BREAK_GLASS_REVOKED": "Identifiant d’urgence révoqué",
       "ADMIN_BREAK_GLASS_FAILED": "Échec de connexion d’urgence"
+    },
+    "betaMetrics": {
+      "title": "Indicateurs bêta",
+      "subtitle": "Critères de sortie de la bêta, issus du service d’indicateurs #432 (30 derniers jours par défaut).",
+      "window": "Période : {{from}} – {{to}}",
+      "loading": "Chargement des indicateurs bêta…",
+      "error": "Les indicateurs bêta sont indisponibles pour le moment.",
+      "zeroResultRate": "Taux de recherches sans résultat",
+      "searchesDetail": "{{zero}} sur {{total}} recherches",
+      "bookingsCreated": "Réservations créées",
+      "bookingsCompleted": "{{count}} terminées",
+      "refundSla": "Remboursements initiés sous 7 jours",
+      "refundsOpened": "{{count}} dossiers de remboursement ouverts",
+      "disputesPer1000": "Litiges pour 1 000 réservations",
+      "disputesOpened": "{{count}} litiges ouverts",
+      "stuckTotal": "États bloqués >48 h",
+      "stuckHint": "Réservations en attente de validation + remboursements échus",
+      "termsRecorded": "Conditions enregistrées sur les réservations",
+      "duplicates": "{{count}} réservations en double",
+      "exitCriteria": "Critères de sortie",
+      "pass": "Réussi",
+      "fail": "Échoué",
+      "noData": "Données insuffisantes",
+      "supportNotDerivable": "Le taux de réponse du support n’est pas dérivable",
+      "supportResponseRate": "Première réponse du support sous 48 heures",
+      "supportTickets": "{{count}} tickets d'assistance ouverts",
+      "supportTicketsDetail": "{{responded}} avec une première réponse, dont {{within}} sous 48 heures",
+      "supportAwaiting": "{{count}} tickets ouverts sans première réponse depuis plus de 48 heures"
+    },
+    "diagnostics": {
+      "title": "Build et drapeaux",
+      "build": "Build",
+      "sharing": "Partage",
+      "betaBadge": "Badge bêta",
+      "serverFlags": "Drapeaux serveur : non visibles depuis ce build",
+      "on": "activé",
+      "off": "désactivé"
+    },
+    "sharePreview": {
+      "title": "Aperçu du lien (Open Graph)",
+      "toggle": "Aperçu",
+      "liveNote": "Le partage est activé : voici l’aperçu que les réseaux sociaux afficheront.",
+      "gatedNote": "Le partage est désactivé : l’aperçu public actuel est la carte générique Ouiboo. Voici l’aperçu que ce voyage affichera à l’ouverture du partage au lancement public.",
+      "shareTextLabel": "Texte de partage",
+      "shareText": "Découvrez ce voyage sur Ouiboo : {{title}}"
     }
   },
   "meta": {
@@ -599,5 +644,15 @@
       "revoked": "Révoqué",
       "expired": "Expiré"
     }
+  },
+  "commandPalette": {
+    "open": "Ouvrir la palette de commandes",
+    "trigger": "Rechercher ou accéder à…",
+    "placeholder": "Rechercher parmi les sections, agences, voyages, réservations…",
+    "empty": "Aucun résultat.",
+    "groupNavigation": "Accéder à",
+    "groupAgencies": "Agences",
+    "groupTrips": "Voyages",
+    "groupBookings": "Réservations"
   }
 }

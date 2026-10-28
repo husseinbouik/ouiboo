@@ -113,7 +113,9 @@ describe('EmailService delivery', () => {
     await service.sendEmail(
       'traveler@example.com',
       'Booking confirmed\r\nBcc: attacker@example.com',
-      service.getWelcomeTemplate('Amina'),
+      // Explicit 'en': #570 made French the unrecorded-locale default,
+      // and this test pins the English welcome copy.
+      service.getWelcomeTemplate('Amina', 'en'),
     )
 
     expect(sendMail).toHaveBeenCalledWith(expect.objectContaining({

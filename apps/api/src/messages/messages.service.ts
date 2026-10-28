@@ -4,6 +4,11 @@ import { SendMessageDto } from './dto/send-message.dto';
 import { UploadService } from '../upload/upload.service';
 import { PRIVATE_FILE_PREFIX } from '../upload/upload.constants';
 import { UserRole } from '@ouiboo/types';
+import {
+  CONTACT_EXCHANGE_AUDIT_ACTION,
+  detectContactExchange,
+  type ContactExchangeCategory,
+} from './contact-exchange.util';
 
 const normalizePagination = (page: number, limit: number, max: number) => ({
   page: Number.isFinite(page) ? Math.max(1, Math.floor(page)) : 1,
@@ -54,6 +59,18 @@ export class MessagesService {
       this.assertMessageAttachmentAllowed(dto.attachmentUrl);
     }
 
+    // #444 (Council P2-05): leakage detection. Contact exchange is by
+    // design AFTER a booking exists, so detection only runs for a pair
+    // with no live booking — and it never blocks the message. A flagged
+    // send is delivered, the sender gets a keep-it-on-Ouiboo warning in
+    // the response, and an audit row records the CATEGORIES seen
+    // (never the matched text) as a fee-capture signal for the leakage
+    // report (analytics/leakage-detection.service.ts).
+    const contactExchangeCategories = detectContactExchange(dto.content);
+    const isPreBookingExchange =
+      contactExchangeCategories.length > 0 &&
+      (await this.countPairBookings(travelerId, agencyId)) === 0;
+
     // Get or create conversation
     const conversation = await this.prisma.conversation.upsert({
       where: {
@@ -85,7 +102,69 @@ export class MessagesService {
       data: { lastMessageAt: new Date() },
     });
 
-    return message;
+    if (!isPreBookingExchange) {
+      return message;
+    }
+
+    await this.recordContactExchangeDetection(
+      senderId,
+      conversation.id,
+      contactExchangeCategories,
+      senderRole,
+    );
+
+    return {
+      ...message,
+      contactExchange: {
+        detected: true,
+        phase: 'PRE_BOOKING' as const,
+        categories: contactExchangeCategories,
+      },
+    };
+  }
+
+  /**
+   * #444: live bookings between one traveller and one agency (any
+   * status except CANCELLED/REJECTED — a pair whose only booking was
+   * cancelled has no booking relationship to protect, so pre-booking
+   * rules apply to it again).
+   */
+  private async countPairBookings(travelerId: string, agencyId: string): Promise<number> {
+    return this.prisma.booking.count({
+      where: {
+        travelerId,
+        status: { notIn: ['CANCELLED', 'REJECTED'] },
+        session: { template: { agencyId } },
+      },
+    });
+  }
+
+  /**
+   * #444: record a pre-booking contact-exchange detection in the
+   * AuditLog. Categories and phase only — the message content and the
+   * matched values are NEVER written here (they are contact/bank data,
+   * which must not be copied into logs). Best-effort: a failed audit
+   * write must never fail the message send.
+   */
+  private async recordContactExchangeDetection(
+    senderId: string,
+    conversationId: string,
+    categories: ContactExchangeCategory[],
+    senderRole: string,
+  ): Promise<void> {
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId: senderId,
+          action: CONTACT_EXCHANGE_AUDIT_ACTION,
+          targetType: 'CONVERSATION',
+          targetId: conversationId,
+          metadata: { categories, phase: 'PRE_BOOKING', senderRole },
+        },
+      });
+    } catch {
+      // Detection is a signal, not a gate: the message already sent.
+    }
   }
 
   /**

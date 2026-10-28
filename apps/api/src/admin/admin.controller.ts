@@ -28,6 +28,7 @@ import { PaymentsService } from '../payments/payments.service';
 import { serializeDuplicateCreditFlag } from '../bookings/bookings.service';
 import { type MoneyInput } from '../common/money.util';
 import { effectiveInsuranceStatus, effectiveLicenceStatus, getAgencyActivationBlock, sellerBlockMissingFields } from '../common/agency-licence.util';
+import { derivePublicMediaUrl } from '../upload/media-url.util';
 
 const parseEnumQuery = <T extends string>(value: string | undefined, allowedValues: readonly T[]) => {
     if (!value) {
@@ -310,7 +311,10 @@ export class AdminController {
         });
 
         if (result.fullyPaid && result.travelerEmail) {
-            this.emailService.sendPaymentConfirmation(
+            // #436 (Council P1-10): awaited — an un-awaited send races the
+            // serverless freeze after the response returns (#409). The
+            // failure is logged, never thrown: the review already settled.
+            await this.emailService.sendPaymentConfirmation(
                 result.travelerEmail,
                 result.tripTitle,
                 result.locale,
@@ -406,6 +410,13 @@ export class AdminController {
         return {
             data: agencies.map((agency) => ({
                 ...agency,
+                // #447: the agency logo and the owner avatar are stored
+                // file references — re-derive them against the current
+                // public media base at read time.
+                logo: derivePublicMediaUrl(agency.logo) ?? null,
+                user: agency.user
+                    ? { ...agency.user, avatar: derivePublicMediaUrl(agency.user.avatar) }
+                    : agency.user,
                 effectiveLicenceStatus: effectiveLicenceStatus(agency),
                 effectiveInsuranceStatus: effectiveInsuranceStatus(agency),
             })),
@@ -871,6 +882,13 @@ export class AdminController {
         return {
             data: agencies.map((agency) => ({
                 ...agency,
+                // #447: the agency logo and the owner avatar are stored
+                // file references — re-derive them against the current
+                // public media base at read time.
+                logo: derivePublicMediaUrl(agency.logo) ?? null,
+                user: agency.user
+                    ? { ...agency.user, avatar: derivePublicMediaUrl(agency.user.avatar) }
+                    : agency.user,
                 effectiveLicenceStatus: effectiveLicenceStatus(agency),
                 effectiveInsuranceStatus: effectiveInsuranceStatus(agency),
                 sellerBlockMissingFields: effectiveLicenceStatus(agency) === 'VERIFIED'

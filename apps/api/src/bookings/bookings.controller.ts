@@ -1,7 +1,9 @@
 import { Controller, HttpCode, Post, Get, Body, Headers, UseGuards, Request, Param, Patch, UploadedFile, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Res, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
-import { ConfirmBankPaymentDto, CreateBookingDto, VerifyManualPaymentDto } from './dto/create-booking.dto';
+import { RebookingService } from './rebooking.service';
+import { normalizeTripLocale } from '../trips/trip-translations.util';
+import { ConfirmBankPaymentDto, CreateBookingDto, MarkAttendanceDto, VerifyManualPaymentDto } from './dto/create-booking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
@@ -15,7 +17,10 @@ import { RateLimit, RateLimitGuard, RateLimitSensitive } from '../common/rate-li
 @ApiTags('Bookings')
 @Controller('bookings')
 export class BookingsController {
-    constructor(private readonly bookingsService: BookingsService) { }
+    constructor(
+        private readonly bookingsService: BookingsService,
+        private readonly rebookingService: RebookingService,
+    ) { }
 
     @Post()
     @ApiBearerAuth()
@@ -41,6 +46,21 @@ export class BookingsController {
             req.user.userId,
             page ? Number(page) : 1,
             limit ? Number(limit) : 10,
+        );
+    }
+
+    @Get('rebooking-suggestions')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Book-again suggestions from agencies the traveler has booked with (#444)' })
+    findRebookingSuggestions(
+        @Request() req,
+        @Query('locale') locale?: string,
+        @Headers('x-ouiboo-language') languageHeader?: string,
+    ) {
+        return this.rebookingService.getSuggestions(
+            req.user.userId,
+            normalizeTripLocale(locale) ?? normalizeTripLocale(languageHeader),
         );
     }
 
@@ -162,6 +182,21 @@ export class BookingsController {
         res.setHeader('Content-Type', result.contentType);
         res.setHeader('Content-Disposition', 'inline');
         return res.send(result.buffer);
+    }
+
+    @Patch(':id/attendance')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, RateLimitGuard)
+    @Roles(UserRole.Agency)
+    @RateLimit({ points: 30, windowMs: 60_000, keyPrefix: 'bookings:attendance' })
+    @RateLimitSensitive()
+    @ApiOperation({ summary: 'Record attendance for an agency-owned booking: attended completes it and makes it review-eligible; absent marks it NO_SHOW (#434)' })
+    markAttendance(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() dto: MarkAttendanceDto,
+    ) {
+        return this.bookingsService.markAttendance(id, req.tenantId, req.user.userId ?? req.user.id, dto.attended);
     }
 
     @Patch(':id/cancel')

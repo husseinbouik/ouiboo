@@ -8,6 +8,7 @@ import { Dialog } from '@headlessui/react'
 import { useTranslation } from 'react-i18next'
 import Image from 'next/image'
 import { Logo, ThemeToggle, LanguageSwitcher, BetaBadge } from '@ouiboo/ui'
+import { isBetaBadgeEnabled } from '@ouiboo/utils'
 import { CookiePreferencesButton } from './AnalyticsConsent'
 
 const PricingSection = dynamic(() => import('./PricingSection'));
@@ -342,7 +343,7 @@ export default function LandingPage() {
                     >
                         <motion.h1 
                           variants={fadeInUp} 
-                          className="text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl text-deep-blue leading-tight"
+                          className="oui-balance text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl text-deep-blue leading-tight"
                         >
                           {/* #332: orange-800 here — sunset-orange-dark measures
                               4.41:1 on this badge's deeper /10 tint over the hero
@@ -358,6 +359,19 @@ export default function LandingPage() {
                         >
                           {t('hero.subtitle')}
                         </motion.p>
+                        {/* #565: the BETA pill (header) is explained where
+                            travellers land — one plain sentence, shown
+                            only while the beta badge itself is on. */}
+                        {isBetaBadgeEnabled() && (
+                          <motion.p
+                            variants={fadeInUp}
+                            data-testid="beta-explainer"
+                            className="mx-auto mt-6 flex max-w-2xl items-center justify-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900"
+                          >
+                            <BetaBadge />
+                            <span>{t('beta.explainer')}</span>
+                          </motion.p>
+                        )}
                         <motion.div 
                           variants={fadeInUp} 
                           className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-x-6 gap-y-4"
@@ -406,7 +420,7 @@ export default function LandingPage() {
       <section className="bg-off-white py-20 sm:py-24">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }} className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('highlights.title')}</h2>
+            <h2 className="oui-balance text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('highlights.title')}</h2>
             <p className="mt-4 text-lg text-gray-600">{t('highlights.subtitle')}</p>
           </motion.div>
           <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-3">

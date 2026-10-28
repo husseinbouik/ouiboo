@@ -10,6 +10,7 @@ jest.mock('react-i18next', () => ({
             if (key === 'seller.licenceTyped') return `Travel-agent licence: ${options?.type} ${options?.number}`;
             if (key === 'seller.licenceIssued') return `Issued on ${options?.date} by ${options?.authority}`;
             if (key === 'seller.licenceDetailsPending') return 'Licence issue details are being confirmed with the agency.';
+            if (key === 'seller.licenceNotConfirmed') return 'Licence details not yet confirmed — ask the agency before paying.';
             if (key === 'seller.licenceChecked') return `Licence document checked on ${options?.date}`;
             if (key === 'seller.insuranceEvidenced') return `RC insurance evidenced on ${options?.date}`;
             if (key === 'seller.poweredBy') return 'Powered by OuiBoo';
@@ -152,7 +153,38 @@ describe('SellerIdentity (#371)', () => {
         );
 
         expect(screen.getByText(/Organised and sold by Atlas Adventures/)).not.toBeNull();
-        expect(screen.queryByText(/Travel-agent licence/)).toBeNull();
+        expect(screen.queryByText(/Travel-agent licence:/)).toBeNull();
+    });
+
+    it('states the negative explicitly when the licence is unverified (Session #3 P0-13)', () => {
+        render(
+            <SellerIdentity
+                agency={{
+                    companyName: 'Atlas Adventures',
+                    travelLicenceStatus: 'PENDING_REVIEW',
+                    travelLicenceNumber: 'AV-2024-0187',
+                }}
+            />,
+        );
+
+        // No silence, no implied verification: the not-confirmed line
+        // renders and the licence number stays hidden.
+        expect(screen.getByText(/Licence details not yet confirmed/)).not.toBeNull();
+        expect(screen.queryByText(/AV-2024-0187/)).toBeNull();
+    });
+
+    it('does not render the not-confirmed line for a verified agency (Session #3 P0-13)', () => {
+        render(
+            <SellerIdentity
+                agency={{
+                    companyName: 'Atlas Adventures',
+                    travelLicenceStatus: 'VERIFIED',
+                    travelLicenceNumber: 'AV-2024-0187',
+                }}
+            />,
+        );
+
+        expect(screen.queryByText(/Licence details not yet confirmed/)).toBeNull();
     });
 
     it('renders nothing without an agency', () => {

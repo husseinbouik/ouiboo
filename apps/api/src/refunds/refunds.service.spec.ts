@@ -1852,13 +1852,15 @@ describe('RefundsService traveller notification (#419)', () => {
         expect(email.sendEmail).toHaveBeenCalledTimes(1);
         const [to, subject, html] = (email.sendEmail as jest.Mock).mock.calls[0];
         expect(to).toBe('traveler@example.test');
-        expect(subject).toBe('Your refund is on its way');
+        // #570: the seeded booking records no locale, so the mail renders
+        // in the French default (previously English).
+        expect(subject).toBe("Votre dossier de remboursement est ouvert — l'agence a jusqu'au 22 janvier 2027");
         expect(html).toContain('Atlas Trek');
         expect(html).toContain('200');
         expect(html).toContain('MAD');
         expect(html).toContain('Atlas Adventures SARL');
-        expect(html).toContain('22 January 2027');
-        expect(html).toContain('48 hours');
+        expect(html).toContain('22 janvier 2027');
+        expect(html).toContain('48 heures');
         expect(refundCase.travelerNotifiedAt).toBeInstanceOf(Date);
 
         // Idempotent: a second call (another cascade path) sends nothing.
@@ -1878,7 +1880,7 @@ describe('RefundsService traveller notification (#419)', () => {
 
         expect(sent).toBe(true);
         const [, subject, html] = (email.sendEmail as jest.Mock).mock.calls[0];
-        expect(subject).toBe('Votre remboursement est en route');
+        expect(subject).toBe("Votre dossier de remboursement est ouvert — l'agence a jusqu'au 22 janvier 2027");
         expect(html).toContain('<html lang="fr" dir="ltr">');
         expect(html).toContain('22 janvier 2027');
         expect(html).toContain('Atlas Trek');
@@ -1896,13 +1898,14 @@ describe('RefundsService traveller notification (#419)', () => {
 
         expect(sent).toBe(true);
         const [, subject, html] = (email.sendEmail as jest.Mock).mock.calls[0];
-        expect(subject).toBe('استردادك في الطريق إليك');
+        expect(subject).toContain('تم فتح ملف الاسترداد الخاص بك — أمام الوكالة مهلة حتى');
+        expect(subject).toContain('2027');
         expect(html).toContain('<html lang="ar" dir="rtl">');
         expect(html).toContain('لم تصل رحلتك');
         expect(html).not.toContain('Your refund is on its way');
     });
 
-    it('falls back to English when the booking has no recorded locale (#424)', async () => {
+    it('falls back to French when the booking has no recorded locale (#424, #570)', async () => {
         const db = makeFakeDb();
         const refundCase = seedRefundDueCase(db);
         const { service, email } = makeService(db);
@@ -1911,8 +1914,8 @@ describe('RefundsService traveller notification (#419)', () => {
 
         expect(sent).toBe(true);
         const [, subject, html] = (email.sendEmail as jest.Mock).mock.calls[0];
-        expect(subject).toBe('Your refund is on its way');
-        expect(html).toContain('<html lang="en" dir="ltr">');
+        expect(subject).toBe("Votre dossier de remboursement est ouvert — l'agence a jusqu'au 22 janvier 2027");
+        expect(html).toContain('<html lang="fr" dir="ltr">');
     });
 
     it('does not email when the traveller has no address on file', async () => {
@@ -1985,7 +1988,9 @@ describe('RefundsService traveller notification branches (#419)', () => {
         expect(sent).toBe(true);
         const [, , html] = (email.sendEmail as jest.Mock).mock.calls[0];
         expect(html).toContain('150');
-        expect(html).toContain('the agency');
+        // #570: no recorded locale → French default, incl. the fallback
+        // agency name (HTML-escaped apostrophe).
+        expect(html).toContain('l&#039;agence');
         expect(html).not.toContain('agency has until');
     });
 

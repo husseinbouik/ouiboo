@@ -7,6 +7,7 @@ import { Badge, Button } from '@ouiboo/ui';
 import { ListRowSkeleton } from '@/components/Skeletons';
 import { Star, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ReviewListProps {
@@ -36,6 +37,10 @@ type ReviewListResponse = {
 };
 
 export function ReviewList({ tripId }: ReviewListProps) {
+  // Session #3 P0-12 (#557): this component rendered entirely in
+  // hardcoded English — it now uses the reviews namespace like the
+  // rest of the trip page.
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortBy>('recent');
   const [expandedReviewIds, setExpandedReviewIds] = useState<Set<string>>(new Set());
@@ -66,9 +71,9 @@ export function ReviewList({ tripId }: ReviewListProps) {
 
   if (isLoading) {
     return (
-      <div role="status" aria-label="Loading reviews">
+      <div role="status" aria-label={t('reviews.loading')}>
         <ListRowSkeleton rows={3} />
-        <span className="sr-only">Loading reviews...</span>
+        <span className="sr-only">{t('reviews.loading')}</span>
       </div>
     );
   }
@@ -83,8 +88,8 @@ export function ReviewList({ tripId }: ReviewListProps) {
         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
           <Star className="h-8 w-8 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-bold text-foreground">No reviews yet</h3>
-        <p className="text-muted-foreground mt-2">Be the first to share your experience!</p>
+        <h3 className="text-lg font-bold text-foreground">{t('reviews.noReviewsYet')}</h3>
+        <p className="text-muted-foreground mt-2">{t('reviews.beFirst')}</p>
       </div>
     );
   }
@@ -94,7 +99,7 @@ export function ReviewList({ tripId }: ReviewListProps) {
       {/* Sort Controls */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Sort by:</span>
+          <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{t('reviews.sortBy')}</span>
           <select
             value={sortBy}
             onChange={(e) => {
@@ -103,13 +108,13 @@ export function ReviewList({ tripId }: ReviewListProps) {
             }}
             className="h-10 px-4 rounded-lg border border-border/50 bg-background text-foreground font-medium text-sm focus:outline-none focus:ring-2 focus:ring-sunset-orange dark:bg-muted dark:border-border"
           >
-            <option value="recent">Most Recent</option>
-            <option value="highest">Highest Rated</option>
-            <option value="lowest">Lowest Rated</option>
+            <option value="recent">{t('reviews.sortRecent')}</option>
+            <option value="highest">{t('reviews.sortHighest')}</option>
+            <option value="lowest">{t('reviews.sortLowest')}</option>
           </select>
         </div>
         <span className="text-sm text-muted-foreground font-medium">
-          {totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}
+          {t('reviews.count', { count: totalReviews })}
         </span>
       </div>
 
@@ -132,7 +137,7 @@ export function ReviewList({ tripId }: ReviewListProps) {
                     {review.traveler?.name?.charAt(0).toUpperCase() || 'T'}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-bold text-foreground">{review.traveler?.name || 'Anonymous'}</h4>
+                    <h4 className="font-bold text-foreground">{review.traveler?.name || t('reviews.anonymous')}</h4>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
                       {format(new Date(review.createdAt), 'MMM dd, yyyy')}
                     </p>
@@ -143,7 +148,7 @@ export function ReviewList({ tripId }: ReviewListProps) {
                 <div className="flex flex-wrap gap-2 justify-end">
                   {review.isVerifiedBooking && (
                     <Badge className="bg-success/100/10 text-success dark:text-emerald-400 border border-success/20 dark:border-emerald-500/30 px-3 py-1 rounded-full text-[10px] font-bold">
-                      Verified Booking
+                      {t('reviews.verifiedBooking')}
                     </Badge>
                   )}
                 </div>
@@ -181,7 +186,7 @@ export function ReviewList({ tripId }: ReviewListProps) {
                       onClick={() => toggleExpanded(review.id)}
                       className="mt-2 text-sunset-orange hover:text-orange-600 h-auto p-0 font-bold text-xs uppercase tracking-widest"
                     >
-                      {expandedReviewIds.has(review.id) ? 'Show less' : 'Read more'}
+                      {expandedReviewIds.has(review.id) ? t('reviews.showLess') : t('reviews.readMore')}
                     </Button>
                   )}
                 </div>
@@ -201,7 +206,7 @@ export function ReviewList({ tripId }: ReviewListProps) {
                         <MessageCircle className="h-3.5 w-3.5 text-ocean-600 dark:text-ocean-300 dark:text-blue-400" />
                       </div>
                       <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                        Agency Response
+                        {t('reviews.agencyResponse')}
                       </span>
                     </div>
                     <p className="text-foreground text-sm leading-relaxed bg-ocean-500/10 rounded-xl p-3 border border-ocean-500/20">
@@ -219,7 +224,7 @@ export function ReviewList({ tripId }: ReviewListProps) {
       {totalPages > 1 && (
         <div className="pt-6 border-t border-border/50 flex items-center justify-between">
           <div className="text-sm text-muted-foreground font-medium">
-            Page {page} of {totalPages}
+            {t('reviews.pageOf', { page, total: totalPages })}
           </div>
           <div className="flex gap-3">
             <Button
@@ -228,7 +233,7 @@ export function ReviewList({ tripId }: ReviewListProps) {
               onClick={() => setPage(p => Math.max(1, p - 1))}
               className="h-10 px-6 text-sm font-bold uppercase tracking-widest"
             >
-              Previous
+              {t('reviews.previous')}
             </Button>
             <Button
               variant="outline"
@@ -236,7 +241,7 @@ export function ReviewList({ tripId }: ReviewListProps) {
               onClick={() => setPage(p => p + 1)}
               className="h-10 px-6 text-sm font-bold uppercase tracking-widest"
             >
-              Next
+              {t('reviews.next')}
             </Button>
           </div>
         </div>

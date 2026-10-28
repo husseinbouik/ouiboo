@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import type { AxiosInstance } from 'axios';
-import { clearBrowserAccessToken, createBrowserApiClient } from '@ouiboo/api-client';
+import { clearBrowserAccessToken, createBrowserApiClient, hasPossibleBrowserSession } from '@ouiboo/api-client';
 
 const defaultApiClient = createBrowserApiClient(
     process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1',
@@ -49,6 +49,19 @@ export function createAuthContext<TUser extends AuthBaseUser>(options: AuthConte
         const { data: user, isLoading, refetch } = useQuery({
             queryKey,
             queryFn: async (): Promise<TUser | null> => {
+                // #245: don't probe /users/me when no session can exist
+                // (no in-memory token, no persisted session hint). The
+                // unconditional probe 401'd for every anonymous visitor,
+                // and the api-client's refresh-on-401 added a second 401
+                // — console noise on every page of every portal, masking
+                // real errors (it hid next to a real hydration error in
+                // the production smoke run). Returning users keep the
+                // restore path: the hint survives reloads, so the probe
+                // fires and a stale token is refreshed + retried by the
+                // api-client interceptor.
+                if (!hasPossibleBrowserSession()) {
+                    return null;
+                }
                 try {
                     const response = await apiClient.get('/users/me');
                     return response.data as TUser;

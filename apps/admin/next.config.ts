@@ -50,6 +50,15 @@ const apiConnectSrc = (() => {
 })();
 
 const nextConfig: NextConfig = {
+  // #580: build stamp for the admin shell's flag diagnostics. Vercel
+  // provides the git SHA / environment at build time; they are baked in
+  // here as public values (a commit SHA is not a secret) so the deployed
+  // admin can report exactly which build it is. Locally both stay unset
+  // and the readout honestly reports "unknown".
+  env: {
+    NEXT_PUBLIC_BUILD_SHA: process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_SHA || '',
+    NEXT_PUBLIC_BUILD_ENV: process.env.VERCEL_ENV || '',
+  },
   output: "standalone",
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion', 'date-fns', 'recharts'],

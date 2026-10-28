@@ -104,7 +104,6 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         await db.itineraryDay.deleteMany();
         await db.tripTemplate.deleteMany();
         await db.agencyProfile.deleteMany();
-        await db.wallet.deleteMany();
         await db.user.deleteMany();
     }
 
@@ -126,7 +125,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             data: {
                 id: 'agency-profile-123',
                 userId: agencyUser1.id,
-                companyName: 'Test Agency', ice: 'ICE100004', patente: 'PAT100004', rib: 'RIB100004', verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', travelLicenceNumber: 'LIC-100004', licenceExpiry: new Date('2030-01-01T00:00:00.000Z'), travelLicenceType: 'ODV', insuranceStatus: 'VERIFIED', insuranceExpiry: new Date('2030-01-01T00:00:00.000Z'),
+                companyName: 'Test Agency', ice: 'ICE100004', patente: 'PAT100004', rib: 'RIB100004', verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', travelLicenceNumber: 'LIC-100004', licenceExpiry: new Date('2030-01-01T00:00:00.000Z'), licenceIssuedAt: new Date('2024-01-15T00:00:00.000Z'), licenceIssuingAuthority: 'Ministère du Tourisme', travelLicenceType: 'ODV', insuranceStatus: 'VERIFIED', insuranceExpiry: new Date('2030-01-01T00:00:00.000Z'),
             } as any,
         });
 
@@ -147,7 +146,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             data: {
                 id: 'agency-profile-456',
                 userId: agencyUser2.id,
-                companyName: 'Other Agency', ice: 'ICE100005', patente: 'PAT100005', rib: 'RIB100005', verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', travelLicenceNumber: 'LIC-100005', licenceExpiry: new Date('2030-01-01T00:00:00.000Z'), travelLicenceType: 'ODV', insuranceStatus: 'VERIFIED', insuranceExpiry: new Date('2030-01-01T00:00:00.000Z'),
+                companyName: 'Other Agency', ice: 'ICE100005', patente: 'PAT100005', rib: 'RIB100005', verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', travelLicenceNumber: 'LIC-100005', licenceExpiry: new Date('2030-01-01T00:00:00.000Z'), licenceIssuedAt: new Date('2024-01-15T00:00:00.000Z'), licenceIssuingAuthority: 'Ministère du Tourisme', travelLicenceType: 'ODV', insuranceStatus: 'VERIFIED', insuranceExpiry: new Date('2030-01-01T00:00:00.000Z'),
             } as any,
         });
 
@@ -189,8 +188,11 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
     }
 
     async function createTripSession(templateId: string, overrides?: any) {
+        // #428: sessions carry the template's tenant.
+        const owner = await db.tripTemplate.findUnique({ where: { id: templateId }, select: { agencyId: true } });
         const defaultData = {
             templateId,
+            agencyId: owner?.agencyId,
             startDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             endDate: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000),
             price: 1200,
@@ -457,6 +459,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 2400,
@@ -929,6 +932,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: traveler.id,
                 guestsCount: 1,
                 totalAmount: session.price,
@@ -938,7 +942,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             } as any,
         });
         await db.review.create({
-            data: { bookingId: booking.id, tripTemplateId: template.id, travelerId: traveler.id, rating: 5, comment: 'Excellent' },
+            data: { bookingId: booking.id, agencyId: template.agencyId, tripTemplateId: template.id, travelerId: traveler.id, rating: 5, comment: 'Excellent' },
         });
 
         const res = await request(app.getHttpServer())
@@ -973,7 +977,13 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             .expect(201);
 
         expect(res.body.translations).toEqual({
-            fr: { title: 'Aventure dans le désert', description: 'Une aventure complète dans le désert marocain' },
+            // #584: the fr entry also mirrors the canonical sections
+            // (here: inclusions) alongside title + description.
+            fr: {
+                title: 'Aventure dans le désert',
+                description: 'Une aventure complète dans le désert marocain',
+                inclusions: ['Transport'],
+            },
             ar: { title: 'مغامرة في الصحراء', description: 'مغامرة كاملة في الصحراء المغربية' },
             en: { title: 'Desert Adventure', description: 'A complete adventure in the Moroccan desert' },
         });

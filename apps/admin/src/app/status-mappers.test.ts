@@ -1,4 +1,4 @@
-import { BookingStatus, LicenceStatus, PayoutStatus, VerificationStatus } from '@ouiboo/types';
+import { BookingStatus, LicenceStatus, VerificationStatus } from '@ouiboo/types';
 import {
   getAdminAuditActionLabel,
   getAdminBankDetailsBadgeClass,
@@ -8,12 +8,10 @@ import {
   getAdminInsuranceBadgeLabel,
   getAdminLicenceBadgeClass,
   getAdminLicenceBadgeLabel,
-  getAdminPayoutBadgeMeta,
   getAdminProofBankConfirmationMeta,
   getAdminVerificationBadgeClass,
   getEffectiveInsuranceStatus,
   getEffectiveLicenceStatus,
-  isRejectedPayout,
 } from './status-mappers';
 
 describe('admin status mappers', () => {
@@ -48,17 +46,6 @@ describe('admin status mappers', () => {
     expect(getAdminProofBankConfirmationMeta(VerificationStatus.Pending)).toBeNull();
     expect(getAdminProofBankConfirmationMeta(VerificationStatus.Rejected)).toBeNull();
     expect(getAdminProofBankConfirmationMeta(undefined)).toBeNull();
-  });
-
-  it('identifies rejected payouts using the canonical payout enum', () => {
-    expect(isRejectedPayout(PayoutStatus.Rejected)).toBe(true);
-    expect(isRejectedPayout(PayoutStatus.Paid)).toBe(false);
-  });
-
-  it('maps payout statuses to consistent badge metadata', () => {
-    expect(getAdminPayoutBadgeMeta(PayoutStatus.Pending).label).toBe('Pending');
-    expect(getAdminPayoutBadgeMeta(PayoutStatus.Rejected).helperText).toContain('returned');
-    expect(getAdminPayoutBadgeMeta(PayoutStatus.Paid).className).toContain('success');
   });
 
   it('maps licence statuses to badge classes (#371)', () => {

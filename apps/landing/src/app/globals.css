@@ -5,20 +5,11 @@
 
 @variant dark (&:where(.dark, .dark *));
 
-@theme inline {
-  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-space-grotesk), var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: ui-monospace, monospace;
-
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-}
-
-:root {
-  --radius: 0.625rem;
-}
+/* #572: font stacks and the radius scale are shared tokens now
+   (@ouiboo/tokens declares --font-sans/--font-display/--font-mono and
+   the --radius-* scale). Landing previously re-declared its own
+   copies here; they are removed so this app converges on the shared
+   tokens instead of drifting from them. */
 
 @layer base {
   * {

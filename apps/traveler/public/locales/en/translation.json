@@ -31,6 +31,7 @@
     "profile": "Profile",
     "bookings": "My Bookings",
     "wishlist": "Wishlist",
+    "support": "Support",
     "logout": "Sign Out",
     "agencyPanel": "Agency Panel",
     "joinNow": "Join Now",
@@ -56,7 +57,9 @@
     "viewAll": "View all trips",
     "from": "From",
     "emptyTitle": "No trips found",
-    "emptySubtitle": "Check back later for new adventures."
+    "emptySubtitle": "Check back later for new adventures.",
+    "loadErrorTitle": "We couldn't load trips",
+    "loadErrorSubtitle": "Something went wrong while loading the catalogue. Check your connection and try again."
   },
   "categories": {
     "title": "Travel your way",
@@ -93,7 +96,8 @@
     "phonePlaceholder": "Include country code",
     "idNote": "We never ask for your ID number online. The agency may check your ID at departure, so please bring it with you.",
     "bankTransfer": "Bank Transfer",
-    "bankTransferTitle": "Virement Bancaire",
+    "bankTransferTitle": "Bank Transfer",
+    "helpQuestion": "Questions about this payment?",
     "fallbackAgencyName": "the agency",
     "bankInstructionsHint": "Use the bank transfer instructions below",
     "paymentInstructionsUnavailable": "Payment instructions unavailable",
@@ -114,7 +118,7 @@
     "statusPendingTitle": "Pending payment",
     "statusPendingBody": "We are waiting for your transfer to be initiated.",
     "statusProofTitle": "Payment proof uploaded",
-    "statusProofBody": "Upload your receipt to lock in your reservation.",
+    "statusProofBody": "Upload your receipt so the agency can verify your transfer — your reservation is confirmed by the agency, not by the upload.",
     "statusBankTitle": "Bank confirmation",
     "statusBankBody": "Your payment is confirmed only when the agency confirms the transfer in its bank account — accepting your proof alone does not settle it.",
     "selectedDate": "Selected Date",
@@ -178,7 +182,11 @@
     "instantDescription": "Send a booking request and the agency confirms availability. No hidden fees."
   },
   "footer": {
-    "rights": "Copyright {{year}} Ouiboo. All rights reserved."
+    "rights": "Copyright {{year}} Ouiboo. All rights reserved.",
+    "support": "Support",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "help": "Help centre"
   },
   "login": {
     "title": "Welcome back",
@@ -290,7 +298,8 @@
     "highlightThree": "We protect sensitive data with encryption and secure access.",
     "highlightFour": "You can request data deletion at any time.",
     "contactTitle": "Questions?",
-    "contactBody": "Reach out to privacy@ouiboo.com and we'll respond quickly."
+    "contactBody": "Reach out to {{email}} and we'll respond quickly.",
+    "contactBodyNoEmail": "Reach out via the support page and we'll respond quickly."
   },
   "resetPassword": {
     "backToLogin": "Back to login",
@@ -308,6 +317,9 @@
     "sideSubtitle": "Update your password and return to your travel dashboard in minutes."
   },
   "common": {
+    "switchLanguage": "Switch language current is {{language}}",
+    "switchFrom": "Switch from {{language}}",
+    "toggleTheme": "Toggle theme",
     "skipToContent": "Skip to content",
     "loading": "Loading...",
     "errorTitle": "Something went wrong",
@@ -317,11 +329,13 @@
     "notFoundTitle": "This route is not on the map",
     "notFoundDescription": "The page may have moved or the trip may no longer be available.",
     "exploreTrips": "Explore available trips",
-    "closeDialog": "Close dialog"
+    "closeDialog": "Close dialog",
+    "undo": "Undo"
   },
   "tripCard": {
     "previousImage": "Previous image",
     "nextImage": "Next image",
+    "viewImage": "View image {{count}}",
     "defaultCategory": "Adventure",
     "priceTba": "Price TBA",
     "spots_one": "{{count}} spot",
@@ -379,7 +393,9 @@
     "emptySubtitle": "Start adding trips to your wishlist to see them here",
     "previous": "Previous",
     "next": "Next",
-    "pageOf": "Page {{page}} of {{pages}}"
+    "pageOf": "Page {{page}} of {{pages}}",
+    "removed": "Removed from your wishlist",
+    "updateFailed": "Could not update your wishlist. Please try again."
   },
   "verify": {
     "title": "Check your email",
@@ -451,7 +467,8 @@
     "emptyTitle": "No conversations yet",
     "emptyBody": "Start chatting with an agency from a trip page.",
     "title": "Messages",
-    "idDocumentWarning": "Do not send ID documents (passport or national ID card) or payment credentials (card or bank details) in messages. Ouiboo never asks for them here."
+    "idDocumentWarning": "Do not send ID documents (passport or national ID card) or payment credentials (card or bank details) in messages. Ouiboo never asks for them here.",
+    "keepOnOuibooWarning": "Keep bookings and payments on Ouiboo. Sharing a phone number, email address or bank details to book directly leaves that trip without a booking record, cancellation terms or refund tracking."
   },
   "notifications": {
     "signInTitle": "Sign in to view your notifications",
@@ -468,16 +485,125 @@
     "licenceTyped": "Travel-agent licence: {{type}} {{number}}",
     "licenceIssued": "Issued on {{date}} by {{authority}}",
     "licenceDetailsPending": "Licence issue details are being confirmed with the agency.",
+    "licenceNotConfirmed": "Licence details not yet confirmed — ask the agency before paying.",
     "licenceChecked": "Licence document checked on {{date}}",
     "insuranceEvidenced": "RC insurance evidenced on {{date}}",
     "poweredBy": "Powered by OuiBoo"
   },
+  "languageNames": {
+    "en": "English",
+    "fr": "French",
+    "ar": "Arabic"
+  },
   "tripDetails": {
     "payment": "Payment",
     "directToAgency": "Direct to the agency",
-    "directPaymentNote": "You pay the agency directly — Ouiboo never holds your money. Uploading a payment proof does not settle the payment."
+    "directPaymentNote": "You pay the agency directly — Ouiboo never holds your money. Uploading a payment proof does not settle the payment.",
+    "morePhotos": "More photos",
+    "contentLanguageNotice": "Shown in {{language}} — the agency hasn't published this trip in your language yet.",
+    "loading": "Preparing your adventure...",
+    "loadErrorTitle": "We could not load this trip",
+    "loadErrorBody": "Check your connection and try again.",
+    "browseOtherTrips": "Browse other trips",
+    "notFoundTitle": "Adventure not found",
+    "exploreOtherTrips": "Explore other trips",
+    "backToCatalog": "Back to Catalog",
+    "photosLabel": "Trip photos",
+    "viewMoreImages_one": "View {{count}} more image",
+    "viewMoreImages_other": "View {{count}} more images",
+    "newTrip": "New",
+    "reviewsCount_one": "({{count}} review)",
+    "reviewsCount_other": "({{count}} reviews)",
+    "reviewsBadge_one": "{{count}} Review",
+    "reviewsBadge_other": "{{count}} Reviews",
+    "durationLabel": "Duration",
+    "durationValue": "{{days}}D / {{nights}}N",
+    "availableDatesLabel": "Available dates",
+    "openDates_one": "{{count}} open",
+    "openDates_other": "{{count}} open",
+    "onRequest": "On request",
+    "experienceTitle": "The Experience",
+    "dailyPlanTitle": "Daily Plan",
+    "dayLabel": "Day {{number}}",
+    "dayNoDescription": "The agency has not provided a description for this day.",
+    "flexibleTitle": "Flexible trip structure",
+    "flexibleBody": "This experience is available for booking now. Use the description, inclusions, and session dates below to review the current trip scope.",
+    "includedTitle": "What's Included",
+    "excludedTitle": "What's Excluded",
+    "checklistTitle": "Traveler Checklist",
+    "reviewsTitle": "Reviews & Ratings",
+    "averageRating": "Average Rating",
+    "distribution": "Distribution",
+    "distributionRating_one": "{{count}} star",
+    "distributionRating_other": "{{count}} stars",
+    "selectDate": "Select Date",
+    "spotsLeft_one": "{{count}} spot left",
+    "spotsLeft_other": "{{count}} spots left",
+    "depositDue": "Deposit due at checkout",
+    "balanceAfterConfirmation": "Balance after confirmation",
+    "totalDue": "Total due at checkout",
+    "minParticipants": "This trip needs at least {{count}} participants to run.",
+    "confirmedByRefund": "Confirmed by {{date}} — if the minimum is not reached, your deposit is refunded.",
+    "minNotReachedRefund": "If the minimum is not reached, your deposit is refunded.",
+    "fullAmountRequired": "The full amount is required at checkout.",
+    "noDates": "No available dates currently.",
+    "bookNow": "Book Now",
+    "chooseDate": "Choose a date",
+    "viewAvailability": "View availability"
+  },
+  "reviews": {
+      "loading": "Loading reviews...",
+      "noReviewsYet": "No reviews yet",
+      "beFirst": "Be the first to share your experience!",
+      "sortBy": "Sort by:",
+      "sortRecent": "Most Recent",
+      "sortHighest": "Highest Rated",
+      "sortLowest": "Lowest Rated",
+      "count_one": "{{count}} review",
+      "count_other": "{{count}} reviews",
+      "anonymous": "Anonymous",
+      "verifiedBooking": "Verified Booking",
+      "showLess": "Show less",
+      "readMore": "Read more",
+      "agencyResponse": "Agency Response",
+      "pageOf": "Page {{page}} of {{total}}",
+      "previous": "Previous",
+      "next": "Next"
   },
   "refunds": {
+    "panelTitle": "Refund",
+    "defaultOrganiser": "the organiser",
+    "expectedBy": " Expected by {{date}}.",
+    "requestPrompt": "Need a refund for this booking? Refunds are handled by {{agency}}, which received your payment.",
+    "requestButton": "Request refund",
+    "trackingLine": "We track this refund until the organiser completes it.",
+    "nextUpdateOverdue": "We are following up with the organiser \u2014 if you hear nothing, reach us via the Support page.",
+    "status": {
+      "REFUND_REQUESTED": "Requested",
+      "ELIGIBILITY_REVIEW": "Under review",
+      "REFUND_APPROVED": "Approved",
+      "AGENCY_ACTION_REQUIRED": "Organiser action needed",
+      "REFUND_INITIATED": "On its way",
+      "REFUND_COMPLETED": "Completed",
+      "REFUND_REJECTED": "Not approved",
+      "REFUND_FAILED": "Attempt failed",
+      "REFUND_OVERDUE": "Overdue"
+    },
+    "case": {
+      "requested": "Refund of {{amount}} requested. {{agency}} will review your request.",
+      "underReview": "Your refund of {{amount}} is under review.",
+      "approved": "Refund of {{amount}} approved. {{agency}} will process your refund.{{due}}",
+      "initiated": "Your refund of {{amount}} is on its way from {{agency}}.",
+      "completed": "Refund of {{amount}} completed by {{agency}}.",
+      "rejected": "Your refund request of {{amount}} was not approved. You can contact {{agency}} for details.",
+      "failed": "A refund attempt by {{agency}} failed. Your case stays open and {{agency}} must retry.",
+      "overdue": "Your refund of {{amount}} is overdue. We are following up with {{agency}}.",
+      "unknown": "Refund status: {{status}}."
+    },
+    "paidInFull": "Paid in full \u2014 deposit and balance confirmed by {{agency}}.",
+    "defaultAgency": "the agency",
+    "proofAccepted": "Proof accepted by {{agency}} \u2014 they still have to confirm the transfer in their bank account. Your payment is not settled until then.",
+    "proofReceived": "Proof received. {{agency}} still has to confirm the transfer in its bank account \u2014 your payment is not settled until then.",
     "confirmReceipt": "Confirm receipt",
     "confirmReceiptHint": "The organiser says the refund has been sent. If the money has arrived in your account, you can confirm it here. Confirming is optional: it helps close the case, but the refund is only ever marked completed on the bank's or payment provider's confirmation — never on the organiser's word alone, and your confirmation does not replace that check.",
     "receiptConfirmed": "You confirmed receipt on {{date}}.",
@@ -489,6 +615,23 @@
     "disputeWindowClosed": "The {{days}}-day window to report a problem has closed. Please contact the organiser or OuiBoo support.",
     "disputed": "You reported a problem with this refund — the case has been reopened and is under review.",
     "actionFailed": "Something went wrong. Please try again."
+  },
+  "paymentPlan": {
+    "depositDue": "Deposit due: {{amount}} \u2014 pay the deposit to {{agency}} to secure your spot. This trip needs at least {{count}} participants by {{date}}.",
+    "depositPaid": "Deposit confirmed by {{agency}}. Waiting for trip confirmation \u2014 this trip needs at least {{count}} participants by {{date}}. If the minimum is not reached, your deposit is refunded.",
+    "balanceDue": "Trip confirmed \u2014 remaining balance due: {{amount}}",
+    "balancePayBefore": " (pay before {{date}})",
+    "uploadBalanceReceipt": "Upload Balance Receipt",
+    "refundDue": "This trip was not confirmed \u2014 the minimum group size was not reached. Your deposit of {{amount}} is refundable; {{agency}} will process your refund."
+  },
+  "rebooking": {
+    "title": "Book again with agencies you know",
+    "subtitle": "New departures from agencies you have already travelled with. Booking on Ouiboo keeps your cancellation terms, payment tracking and refund record together for every trip.",
+    "withAgency": "with {{agency}}",
+    "tripsBooked_one": "{{count}} trip booked with this agency",
+    "tripsBooked_other": "{{count}} trips booked with this agency",
+    "from": "From {{price}} {{currency}}",
+    "viewTrip": "View trip"
   },
   "support": {
     "title": "Support",
@@ -512,6 +655,84 @@
     "refundsBody": "When a refund is owed, the agency has {{days}} days to complete it and OuiBoo chases it if it slips. You'll get an email as soon as a refund case is opened for you, and you can follow its status in your bookings.",
     "complaintsTitle": "Complaints",
     "complaintsBody": "To complain about a trip, an agency, or OuiBoo itself, email {{email}} with the subject \"Complaint\" and your booking reference. Complaints are answered on the normal support timeline.",
-    "safetyNote": "If anyone is in danger or needs urgent medical help, contact local emergency services first — then your agency."
+    "safetyNote": "If anyone is in danger or needs urgent medical help, contact local emergency services first — then your agency.",
+    "normalBodyNoEmail": "For everything else — bookings, payments, refunds, your account — your booking page carries your agency's contact and, during your trip, the OuiBoo escalation route. We reply within {{hours}} hours on the normal support lane.",
+    "complaintsBodyNoEmail": "To complain about a trip, an agency, or OuiBoo itself, use the contacts on your booking page and mention your booking reference. Complaints are answered on the normal support timeline.",
+    "escalationCall": "Call OuiBoo",
+    "escalationWhatsApp": "WhatsApp",
+    "helpCentre": "Help centre",
+    "helpCentreBody": "Search the frequently asked questions or open a support ticket — your ticket is recorded and answered on the normal support lane."
+  },
+  "help": {
+    "backToSupport": "Back to support",
+    "faq": {
+      "bookingConfirmation": {
+        "answer": "You pay the agency directly by bank transfer and upload your payment proof from your booking page. Your booking is confirmed once the agency confirms the transfer arrived in its bank account — accepting the proof alone does not settle the booking.",
+        "question": "How is my booking confirmed?"
+      },
+      "complaint": {
+        "answer": "Open a ticket below with the Complaint category and your booking reference, or email support if an address is shown on the support page. Complaints are answered on the normal support timeline.",
+        "question": "How do I make a complaint?"
+      },
+      "normalSupport": {
+        "answer": "Normal support replies within {{hours}} hours. There is no 24/7 hotline: during an active trip, your agency is your first call and Ouiboo is the escalation.",
+        "question": "How quickly will support reply?"
+      },
+      "paymentProof": {
+        "answer": "It is the receipt or screenshot of your bank transfer to the agency. Upload it from your booking page so the agency can match your payment to your booking and confirm it against its bank account.",
+        "question": "What is a payment proof?"
+      },
+      "paymentRejected": {
+        "answer": "The agency could not match the proof to its bank account. Check the reason shown on your booking, upload a corrected proof, or open a ticket below and we will chase it for you.",
+        "question": "My payment proof was rejected — what now?"
+      },
+      "refundStatus": {
+        "answer": "You receive an email as soon as a refund case is opened for you, and you can follow its status any time in your bookings.",
+        "question": "How can I follow my refund?"
+      },
+      "refundTiming": {
+        "answer": "Refunds are paid by the agency directly — Ouiboo never holds your money. The agency has 7 days to initiate your refund once a refund case is opened, and Ouiboo chases it if it slips.",
+        "question": "How long does a refund take?"
+      },
+      "tripEmergency": {
+        "answer": "First call your agency's emergency contact — you will find it on your booking page. If they do not respond, contact Ouiboo support and we will escalate with the agency during your trip period. If anyone is in danger, contact local emergency services first.",
+        "question": "Something is wrong during my trip — who do I call first?"
+      }
+    },
+    "faqTitle": "Frequently asked questions",
+    "form": {
+      "bookingRef": "Booking reference",
+      "bookingRefOptional": "optional",
+      "category": "Topic",
+      "categoryAccount": "Account",
+      "categoryBooking": "Booking",
+      "categoryComplaint": "Complaint",
+      "categoryOther": "Other",
+      "categoryPayment": "Payment",
+      "categoryRefund": "Refund",
+      "categoryTechnical": "Technical problem",
+      "categoryTrip": "Trip",
+      "email": "Your email",
+      "emailFallback": "Or email support directly",
+      "error": "We could not send your ticket. Check the fields and try again.",
+      "intro": "Tell us what happened and we will reply by email within {{hours}} hours on the normal support lane.",
+      "message": "How can we help?",
+      "name": "Your full name",
+      "receivedBody": "Thank you. Your ticket is recorded and we will reply to your email within {{hours}} hours on the normal support lane.",
+      "receivedTitle": "Ticket received",
+      "role": "I am a…",
+      "roleAgency": "Agency",
+      "roleGuest": "Visitor (no account)",
+      "roleTraveler": "Traveller",
+      "subject": "Subject",
+      "submit": "Send ticket",
+      "submitting": "Sending…",
+      "title": "Open a support ticket"
+    },
+    "intro": "Find an answer below, or open a support ticket. Normal support replies within {{hours}} hours.",
+    "noResults": "No answer matches your search. Open a ticket below and we will help you directly.",
+    "searchLabel": "Search the help centre",
+    "searchPlaceholder": "Search by keyword — booking, payment, refund…",
+    "title": "Help centre"
   }
 }

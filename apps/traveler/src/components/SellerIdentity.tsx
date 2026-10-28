@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { BadgeCheck } from 'lucide-react';
+import { BadgeCheck, ShieldAlert } from 'lucide-react';
 
 /**
  * #371: seller-of-record display (implementation plan §6).
@@ -160,6 +160,16 @@ export default function SellerIdentity({
                     </span>
                 )}
             </p>
+            {/* Session #3 P0-13 (#415): an UNVERIFIED licence used to
+                render as silence — just the agency name, indistinguishable
+                from a verified seller at a glance. State the negative
+                explicitly: details not confirmed, ask before paying. */}
+            {!licenceVerified && (
+                <p className="flex items-center gap-1.5 font-medium text-amber-700 dark:text-amber-400">
+                    <ShieldAlert className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    {t('seller.licenceNotConfirmed', 'Licence details not yet confirmed — ask the agency before paying.')}
+                </p>
+            )}
             {licenceVerified && licenceIssuedAt && licenceIssuingAuthority && (
                 <p className="text-xs">
                     {t('seller.licenceIssued', {

@@ -180,6 +180,7 @@ describe('E2E: payment records replace the traveller-money wallet', () => {
             data: {
                 id: 'session-payments-1',
                 templateId: 'template-payments-1',
+                agencyId: AGENCY_PROFILE_ID,
                 startDate: new Date(Date.now() + 7 * 86_400_000),
                 endDate: new Date(Date.now() + 9 * 86_400_000),
                 price: 390,
@@ -192,6 +193,7 @@ describe('E2E: payment records replace the traveller-money wallet', () => {
             data: {
                 id: BOOKING_ID,
                 sessionId: 'session-payments-1',
+                agencyId: AGENCY_PROFILE_ID,
                 travelerId: 'traveler-payments-user',
                 guestsCount: 2,
                 totalAmount: 780,
@@ -275,9 +277,10 @@ describe('E2E: payment records replace the traveller-money wallet', () => {
         expect(entries).toHaveLength(1);
         expect(entries[0].type).toBe('PAYMENT_VERIFIED');
 
-        // The invariant: no wallet row — and therefore no withdrawable
-        // balance — exists for this agency.
-        expect(await db.wallet.count({ where: { agencyId: AGENCY_PROFILE_ID } })).toBe(0);
+        // The invariant this suite originally pinned here — no wallet
+        // row, therefore no withdrawable balance, for this agency — is
+        // structural since #429 deleted the custody tables; the
+        // overview assertions below pin the retained-ledger behaviour.
 
         await request(app.getHttpServer())
             .get('/agency/payments/overview')

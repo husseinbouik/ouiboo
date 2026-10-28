@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { isSharingEnabled, scrubShareClaimWords } from '@ouiboo/utils';
+import { isBetaBadgeEnabled, isSharingEnabled, scrubShareClaimWords } from '@ouiboo/utils';
 import { absoluteTravelerUrl, metadataDescription, SITE_DESCRIPTION, SITE_NAME } from '@/lib/site';
 
 export type TripMetadataInput = {
@@ -31,6 +31,15 @@ export interface TripMetadataOptions {
    * env flag.
    */
   sharingEnabled?: boolean;
+  /**
+   * Council Session #2 B11 / Session #3 P0-5 (#553): while the closed
+   * beta runs, trip routes are invited-only — they serve `noindex` and
+   * stay out of the sitemap. Gated on the same beta condition as the
+   * BETA badge (NEXT_PUBLIC_BETA_BADGE, on unless exactly 'false'), so
+   * the public-launch flag flip lifts both together. Injectable for
+   * tests; defaults to the env flag.
+   */
+  betaMode?: boolean;
 }
 
 /**
@@ -51,18 +60,29 @@ export function buildTripMetadata(
 ): Metadata {
   if (!trip) {
     return {
-      title: 'Trip not found — Ouiboo',
+      // #576: no manual brand suffix — the root layout template
+      // ("%s | Ouiboo") appends the brand. A suffixed string here
+      // rendered the tab title as "Trip not found — Ouiboo | Ouiboo".
+      title: 'Trip not found',
       robots: { index: false, follow: false },
     };
   }
 
   const canonicalPath = `/trip/${encodeURIComponent(trip.id)}`;
   const sharingEnabled = options.sharingEnabled ?? isSharingEnabled();
+  const betaMode = options.betaMode ?? isBetaBadgeEnabled();
+  // B11: invited-only slice — trip pages must not be indexed while beta.
+  const betaRobots: Metadata['robots'] = betaMode
+    ? { index: false, follow: false }
+    : undefined;
 
   if (!sharingEnabled) {
     return {
-      title: SITE_NAME,
+      // #576: `absolute` opts out of the root layout's "%s | Ouiboo"
+      // template — a plain SITE_NAME string rendered "Ouiboo | Ouiboo".
+      title: { absolute: SITE_NAME },
       description: SITE_DESCRIPTION,
+      robots: betaRobots,
       alternates: { canonical: canonicalPath },
       openGraph: {
         type: 'website',
@@ -78,7 +98,11 @@ export function buildTripMetadata(
     };
   }
 
-  const title = `${scrubShareClaimWords(trip.title)} — Ouiboo`;
+  // #576: the page title carries no manual brand suffix (the root
+  // layout template appends "| Ouiboo"); social previews are not
+  // templated, so og:/twitter: titles keep the explicit suffix.
+  const title = scrubShareClaimWords(trip.title);
+  const socialTitle = `${title} — Ouiboo`;
   const trimmedDescription = trip.description?.replace(/\s+/g, ' ').trim();
   const description = scrubShareClaimWords(
     trimmedDescription
@@ -92,17 +116,18 @@ export function buildTripMetadata(
   return {
     title,
     description,
+    robots: betaRobots,
     alternates: { canonical: canonicalPath },
     openGraph: {
       type: 'website',
-      title,
+      title: socialTitle,
       description,
       url: canonicalPath,
       images: coverImage ? [{ url: coverImage, alt: trip.title }] : undefined,
     },
     twitter: {
       card: 'summary_large_image',
-      title,
+      title: socialTitle,
       description,
       images: coverImage ? [coverImage] : undefined,
     },

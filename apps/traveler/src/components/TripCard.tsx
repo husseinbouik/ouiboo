@@ -1,10 +1,9 @@
 'use client';
 
-import Image from 'next/image';
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, Badge, Button } from '@ouiboo/ui';
-import { MapPin, Star, ChevronLeft, ChevronRight, Zap, Ticket } from 'lucide-react';
+import { Card, Badge, Button, SafeImage } from '@ouiboo/ui';
+import { MapPin, Star, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -13,6 +12,7 @@ import { cn } from '@ouiboo/ui/utils';
 import { formatCurrency } from '@ouiboo/utils';
 import { SessionStatus, type SessionStatusType, VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 import { WishlistButton } from './WishlistButton';
+import { tripCoverViewTransitionName } from '@/lib/view-transition';
 
 export interface TripCardTrip {
   id: string;
@@ -27,6 +27,10 @@ export interface TripCardTrip {
   images?: string[];
   /** #332: agency-provided alt text per image (index-aligned); may be absent. */
   imageAlts?: string[];
+  /** #486: stored blur placeholders per image (index-aligned data-URLs);
+   * may be absent/null per image — SafeImage falls back to the shared
+   * palette placeholder, so existing media renders correctly. */
+  imageBlurDataURLs?: (string | null)[];
   averageRating?: number | null;
   reviewCount?: number;
   sessions?: Array<{
@@ -108,7 +112,11 @@ export function TripCard({ trip }: TripCardProps) {
   const queryClient = useQueryClient();
   const prefetchTrip = () => {
     void queryClient.prefetchQuery({
-      queryKey: ['trip', trip.id],
+      // Content-language audit (#546): the key carries the UI locale,
+      // exactly matching TripDetailsClient — prefetching into a
+      // locale-less key warmed a stale-language entry for the detail
+      // page to serve after a language switch.
+      queryKey: ['trip', trip.id, (i18n.language || 'en').split('-')[0]],
       queryFn: async () => {
         // #546: warm the detail in the current UI language, matching
         // TripDetailsClient's fetcher below.
@@ -185,7 +193,7 @@ export function TripCard({ trip }: TripCardProps) {
   };
 
   return (
-    <Card onMouseEnter={prefetchTrip} onFocus={prefetchTrip} onPointerDown={prefetchTrip} className="group border-border shadow-sm hover:shadow-xl transition-all duration-300 rounded-[2rem] overflow-hidden bg-card h-full flex flex-col">
+    <Card onMouseEnter={prefetchTrip} onFocus={prefetchTrip} onPointerDown={prefetchTrip} className="group border-border shadow-sm hover:shadow-xl transition-all duration-300 rounded-3xl overflow-hidden bg-card h-full flex flex-col">
       <div
         className="relative h-64 overflow-hidden touch-pan-y"
         onTouchStart={handleTouchStart}
@@ -195,54 +203,75 @@ export function TripCard({ trip }: TripCardProps) {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentImage}
-            initial={{ opacity: 0, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.5 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
             className="absolute inset-0"
           >
-            <Image
+            <SafeImage
               src={images[currentImage]}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="w-full h-full object-cover"
               alt={trip.imageAlts?.[currentImage]?.trim() || (trip.startLocation ? `${trip.title} · ${trip.startLocation}` : trip.title)}
               fill
               sizes="(min-width: 1024px) 33vw, 100vw"
+              blurDataURL={trip.imageBlurDataURLs?.[currentImage] ?? undefined}
+              style={{ viewTransitionName: tripCoverViewTransitionName(trip.id) }}
             />
           </motion.div>
         </AnimatePresence>
         
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
+        {/* #571: the photo previously carried five overlay layers and
+            the price appeared twice (badge here + footer). What remains:
+            this legibility gradient (indicators only), the category
+            badge, ONE availability badge, the wishlist button and the
+            carousel controls — the footer is the single price surface.
+            #573: the crossfade above is opacity-only; the image no
+            longer also scales on hover (double transform). */}
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/50 to-transparent opacity-50" />
 
         {/* Navigation Arrows */}
         {images.length > 1 && (
           <>
-            <button 
+            <button
               onClick={prevImage}
               aria-label={t('tripCard.previousImage')}
-              className="absolute start-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-110 hit-slop"
+              className="absolute start-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-70 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100 transition-all hover:scale-110 hit-slop"
             >
               <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
             </button>
-            <button 
+            <button
               onClick={nextImage}
               aria-label={t('tripCard.nextImage')}
-              className="absolute end-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-110 hit-slop"
+              className="absolute end-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-70 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100 transition-all hover:scale-110 hit-slop"
             >
               <ChevronRight className="h-4 w-4 rtl:rotate-180" />
             </button>
           </>
         )}
 
-        {/* Indicators */}
+        {/* Indicators — real buttons (Session #3 P0-1): keyboard/touch
+            reachable, not decorative divs. */}
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
           {images.map((_: string, i: number) => (
-            <div 
-              key={i} 
-              className={cn(
-                "h-1.5 rounded-full transition-all duration-300 shadow-sm",
-                currentImage === i ? "w-6 bg-white" : "w-1.5 bg-white/60"
-              )} 
-            />
+            <button
+              key={i}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                setCurrentImage(i);
+              }}
+              aria-label={t('tripCard.viewImage', { count: i + 1 })}
+              aria-current={currentImage === i || undefined}
+              className="p-1 -m-0.5 flex items-center justify-center"
+            >
+              <span
+                className={cn(
+                  "h-1.5 rounded-full transition-all duration-300 shadow-sm block",
+                  currentImage === i ? "w-6 bg-white" : "w-1.5 bg-white/60"
+                )}
+              />
+            </button>
           ))}
         </div>
 
@@ -253,10 +282,6 @@ export function TripCard({ trip }: TripCardProps) {
         </div>
 
         <div className="absolute top-3 end-14 flex flex-col items-end gap-2">
-          <Badge className="bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none flex items-center gap-1">
-            <Ticket className="h-3 w-3" />
-            {minPrice !== null ? formatCurrency(minPrice, priceCurrency, i18n.language) : t('tripCard.priceTba')}
-          </Badge>
           <Badge className={cn(
             "text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none flex items-center gap-1",
             nextSession ? "bg-success/15 text-success-dark" : "bg-warning/15 text-warning-dark"
@@ -306,7 +331,7 @@ export function TripCard({ trip }: TripCardProps) {
           <div className="flex flex-col">
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{t('tripCard.from')}</span>
             <div className="flex items-baseline gap-1">
-                <span className="text-xl font-bold text-foreground">
+                <span className="oui-numeric text-xl font-bold text-foreground">
                    {minPrice !== null ? formatCurrency(minPrice, priceCurrency, i18n.language) : '---'}
                 </span>
             </div>

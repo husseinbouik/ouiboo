@@ -49,7 +49,7 @@ export function DeleteConfirmation({
             aria-modal="true"
             aria-labelledby="delete-confirmation-title"
             aria-describedby="delete-confirmation-description"
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-card rounded-[2rem] shadow-2xl z-[101] overflow-hidden border border-border"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-card rounded-3xl shadow-2xl z-[101] overflow-hidden border border-border"
           >
             <div className="p-8">
               <div className="flex justify-between items-start mb-6">

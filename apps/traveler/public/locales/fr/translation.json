@@ -31,6 +31,7 @@
     "profile": "Profil",
     "bookings": "Mes réservations",
     "wishlist": "Favoris",
+    "support": "Assistance",
     "logout": "Se déconnecter",
     "agencyPanel": "Espace agence",
     "joinNow": "Rejoindre",
@@ -56,7 +57,9 @@
     "viewAll": "Voir tous les voyages",
     "from": "À partir de",
     "emptyTitle": "Aucun voyage trouvé",
-    "emptySubtitle": "Revenez bientôt pour découvrir de nouvelles aventures."
+    "emptySubtitle": "Revenez bientôt pour découvrir de nouvelles aventures.",
+    "loadErrorTitle": "Impossible de charger les voyages",
+    "loadErrorSubtitle": "Un problème est survenu lors du chargement du catalogue. Vérifiez votre connexion et réessayez."
   },
   "categories": {
     "title": "Voyagez à votre façon",
@@ -94,6 +97,7 @@
     "idNote": "Nous ne demandons jamais votre numéro de pièce d'identité en ligne. L'agence pourra vérifier votre pièce d'identité au départ, veuillez donc l'apporter avec vous.",
     "bankTransfer": "Virement bancaire",
     "bankTransferTitle": "Virement Bancaire",
+    "helpQuestion": "Des questions sur ce paiement ?",
     "fallbackAgencyName": "l'agence",
     "bankInstructionsHint": "Utilisez les instructions de virement ci-dessous",
     "paymentInstructionsUnavailable": "Instructions de paiement indisponibles",
@@ -114,7 +118,7 @@
     "statusPendingTitle": "Paiement en attente",
     "statusPendingBody": "Nous attendons l'initiation de votre virement.",
     "statusProofTitle": "Preuve de paiement téléversée",
-    "statusProofBody": "Téléversez votre reçu pour verrouiller votre réservation.",
+    "statusProofBody": "Téléversez votre reçu pour que l'agence puisse vérifier votre virement — votre réservation est confirmée par l'agence, pas par le téléversement.",
     "statusBankTitle": "Confirmation bancaire",
     "statusBankBody": "Votre paiement n'est confirmé que lorsque l'agence confirme le virement sur son compte bancaire — l'acceptation de votre preuve seule ne vaut pas règlement.",
     "selectedDate": "Date sélectionnée",
@@ -178,7 +182,11 @@
     "instantDescription": "Envoyez une demande de réservation et l'agence confirmera la disponibilité. Aucun frais caché."
   },
   "footer": {
-    "rights": "Copyright {{year}} Ouiboo. Tous droits réservés."
+    "rights": "Copyright {{year}} Ouiboo. Tous droits réservés.",
+    "support": "Assistance",
+    "privacy": "Confidentialité",
+    "terms": "Conditions",
+    "help": "Centre d'aide"
   },
   "login": {
     "title": "Bon retour",
@@ -290,7 +298,8 @@
     "highlightThree": "Nous protégeons les données sensibles par chiffrement et accès sécurisé.",
     "highlightFour": "Vous pouvez demander la suppression de vos données à tout moment.",
     "contactTitle": "Des questions ?",
-    "contactBody": "Écrivez à privacy@ouiboo.com et nous répondrons rapidement."
+    "contactBody": "Écrivez à {{email}} et nous répondrons rapidement.",
+    "contactBodyNoEmail": "Contactez-nous via la page d'assistance et nous répondrons rapidement."
   },
   "resetPassword": {
     "backToLogin": "Retour à la connexion",
@@ -308,6 +317,9 @@
     "sideSubtitle": "Mettez à jour votre mot de passe et revenez à votre tableau de bord de voyage en quelques minutes."
   },
   "common": {
+    "switchLanguage": "Changer de langue — actuelle : {{language}}",
+    "switchFrom": "Passer de {{language}}",
+    "toggleTheme": "Basculer le thème",
     "skipToContent": "Aller au contenu",
     "loading": "Chargement...",
     "errorTitle": "Une erreur est survenue",
@@ -317,11 +329,13 @@
     "notFoundTitle": "Cette page n'est pas sur la carte",
     "notFoundDescription": "La page a peut-être été déplacée ou le voyage n'est plus disponible.",
     "exploreTrips": "Explorer les voyages disponibles",
-    "closeDialog": "Fermer la boîte de dialogue"
+    "closeDialog": "Fermer la boîte de dialogue",
+    "undo": "Annuler"
   },
   "tripCard": {
     "previousImage": "Image précédente",
     "nextImage": "Image suivante",
+    "viewImage": "Voir l'image {{count}}",
     "defaultCategory": "Aventure",
     "priceTba": "Prix à venir",
     "spots_one": "{{count}} place",
@@ -379,7 +393,9 @@
     "emptySubtitle": "Ajoutez des voyages à vos favoris pour les voir ici",
     "previous": "Précédent",
     "next": "Suivant",
-    "pageOf": "Page {{page}} sur {{pages}}"
+    "pageOf": "Page {{page}} sur {{pages}}",
+    "removed": "Retiré de vos favoris",
+    "updateFailed": "Impossible de mettre à jour vos favoris. Veuillez réessayer."
   },
   "verify": {
     "title": "Vérifiez votre email",
@@ -451,7 +467,8 @@
     "emptyTitle": "Aucune conversation pour le moment",
     "emptyBody": "Commencez à discuter avec une agence depuis une page de voyage.",
     "title": "Messages",
-    "idDocumentWarning": "N'envoyez pas de documents d'identité (passeport ou carte d'identité nationale) ni d'informations de paiement (carte ou coordonnées bancaires) dans les messages. Ouiboo ne vous les demandera jamais ici."
+    "idDocumentWarning": "N'envoyez pas de documents d'identité (passeport ou carte d'identité nationale) ni d'informations de paiement (carte ou coordonnées bancaires) dans les messages. Ouiboo ne vous les demandera jamais ici.",
+    "keepOnOuibooWarning": "Gardez vos réservations et vos paiements sur Ouiboo. Partager un numéro de téléphone, une adresse e-mail ou des coordonnées bancaires pour réserver en direct laisse ce voyage sans enregistrement de réservation, sans conditions d'annulation ni suivi de remboursement."
   },
   "notifications": {
     "signInTitle": "Connectez-vous pour voir vos notifications",
@@ -468,16 +485,125 @@
     "licenceTyped": "Licence d'agent de voyages : {{type}} {{number}}",
     "licenceIssued": "Délivrée le {{date}} par {{authority}}",
     "licenceDetailsPending": "Les détails de délivrance de la licence sont en cours de confirmation auprès de l'agence.",
+    "licenceNotConfirmed": "Détails de la licence non encore confirmés — renseignez-vous auprès de l'agence avant de payer.",
     "licenceChecked": "Document de licence vérifié le {{date}}",
     "insuranceEvidenced": "Assurance RC justifiée le {{date}}",
     "poweredBy": "Propulsé par OuiBoo"
   },
+  "languageNames": {
+    "en": "anglais",
+    "fr": "français",
+    "ar": "arabe"
+  },
   "tripDetails": {
     "payment": "Paiement",
     "directToAgency": "Directement à l'agence",
-    "directPaymentNote": "Vous payez l'agence directement — Ouiboo ne détient jamais votre argent. L'envoi d'un justificatif ne règle pas le paiement."
+    "directPaymentNote": "Vous payez l'agence directement — Ouiboo ne détient jamais votre argent. L'envoi d'un justificatif ne règle pas le paiement.",
+    "morePhotos": "Plus de photos",
+    "contentLanguageNotice": "Affiché en {{language}} — l'agence n'a pas encore publié ce voyage dans votre langue.",
+    "loading": "Préparation de votre aventure...",
+    "loadErrorTitle": "Impossible de charger ce voyage",
+    "loadErrorBody": "Vérifiez votre connexion et réessayez.",
+    "browseOtherTrips": "Voir d'autres voyages",
+    "notFoundTitle": "Aventure introuvable",
+    "exploreOtherTrips": "Découvrir d'autres voyages",
+    "backToCatalog": "Retour au catalogue",
+    "photosLabel": "Photos du voyage",
+    "viewMoreImages_one": "Voir {{count}} image de plus",
+    "viewMoreImages_other": "Voir {{count}} images de plus",
+    "newTrip": "Nouveau",
+    "reviewsCount_one": "({{count}} avis)",
+    "reviewsCount_other": "({{count}} avis)",
+    "reviewsBadge_one": "{{count}} avis",
+    "reviewsBadge_other": "{{count}} avis",
+    "durationLabel": "Durée",
+    "durationValue": "{{days}} j / {{nights}} nuits",
+    "availableDatesLabel": "Dates disponibles",
+    "openDates_one": "{{count}} date ouverte",
+    "openDates_other": "{{count}} dates ouvertes",
+    "onRequest": "Sur demande",
+    "experienceTitle": "L'expérience",
+    "dailyPlanTitle": "Programme quotidien",
+    "dayLabel": "Jour {{number}}",
+    "dayNoDescription": "L'agence n'a pas fourni de description pour cette journée.",
+    "flexibleTitle": "Structure de voyage flexible",
+    "flexibleBody": "Cette expérience est réservable dès maintenant. Consultez la description, les inclusions et les dates de session ci-dessous pour connaître le périmètre actuel du voyage.",
+    "includedTitle": "Ce qui est inclus",
+    "excludedTitle": "Ce qui n'est pas inclus",
+    "checklistTitle": "Check-list du voyageur",
+    "reviewsTitle": "Avis et notes",
+    "averageRating": "Note moyenne",
+    "distribution": "Répartition",
+    "distributionRating_one": "{{count}} étoile",
+    "distributionRating_other": "{{count}} étoiles",
+    "selectDate": "Choisir une date",
+    "spotsLeft_one": "Il reste {{count}} place",
+    "spotsLeft_other": "Il reste {{count}} places",
+    "depositDue": "Acompte dû à la réservation",
+    "balanceAfterConfirmation": "Solde après confirmation",
+    "totalDue": "Total dû à la réservation",
+    "minParticipants": "Ce voyage nécessite au moins {{count}} participants pour avoir lieu.",
+    "confirmedByRefund": "Confirmé avant le {{date}} — si le minimum n'est pas atteint, votre acompte est remboursé.",
+    "minNotReachedRefund": "Si le minimum n'est pas atteint, votre acompte est remboursé.",
+    "fullAmountRequired": "Le montant total est requis lors de la réservation.",
+    "noDates": "Aucune date disponible pour le moment.",
+    "bookNow": "Réserver",
+    "chooseDate": "Choisir une date",
+    "viewAvailability": "Voir les disponibilités"
+  },
+  "reviews": {
+      "loading": "Chargement des avis...",
+      "noReviewsYet": "Pas encore d'avis",
+      "beFirst": "Soyez le premier à partager votre expérience !",
+      "sortBy": "Trier par :",
+      "sortRecent": "Plus récents",
+      "sortHighest": "Meilleures notes",
+      "sortLowest": "Notes les plus basses",
+      "count_one": "{{count}} avis",
+      "count_other": "{{count}} avis",
+      "anonymous": "Anonyme",
+      "verifiedBooking": "Réservation vérifiée",
+      "showLess": "Afficher moins",
+      "readMore": "Lire la suite",
+      "agencyResponse": "Réponse de l'agence",
+      "pageOf": "Page {{page}} sur {{total}}",
+      "previous": "Précédent",
+      "next": "Suivant"
   },
   "refunds": {
+    "panelTitle": "Remboursement",
+    "defaultOrganiser": "l'organisateur",
+    "expectedBy": " Attendu avant le {{date}}.",
+    "requestPrompt": "Besoin d'un remboursement pour cette r\u00e9servation ? Les remboursements sont g\u00e9r\u00e9s par {{agency}}, qui a re\u00e7u votre paiement.",
+    "requestButton": "Demander un remboursement",
+    "trackingLine": "Nous suivons ce remboursement jusqu'\u00e0 ce que l'organisateur le termine.",
+    "nextUpdateOverdue": "Nous relan\u00e7ons l'organisateur \u2014 sans nouvelles, contactez-nous via la page Assistance.",
+    "status": {
+      "REFUND_REQUESTED": "Demand\u00e9",
+      "ELIGIBILITY_REVIEW": "En cours d'examen",
+      "REFUND_APPROVED": "Approuv\u00e9",
+      "AGENCY_ACTION_REQUIRED": "Action de l'organisateur requise",
+      "REFUND_INITIATED": "En cours d'envoi",
+      "REFUND_COMPLETED": "Termin\u00e9",
+      "REFUND_REJECTED": "Non approuv\u00e9",
+      "REFUND_FAILED": "Tentative \u00e9chou\u00e9e",
+      "REFUND_OVERDUE": "En retard"
+    },
+    "case": {
+      "requested": "Remboursement de {{amount}} demand\u00e9. {{agency}} examinera votre demande.",
+      "underReview": "Votre remboursement de {{amount}} est en cours d'examen.",
+      "approved": "Remboursement de {{amount}} approuv\u00e9. {{agency}} traitera votre remboursement.{{due}}",
+      "initiated": "Votre remboursement de {{amount}} est en route depuis {{agency}}.",
+      "completed": "Remboursement de {{amount}} effectu\u00e9 par {{agency}}.",
+      "rejected": "Votre demande de remboursement de {{amount}} n'a pas \u00e9t\u00e9 approuv\u00e9e. Contactez {{agency}} pour plus de d\u00e9tails.",
+      "failed": "Une tentative de remboursement par {{agency}} a \u00e9chou\u00e9. Votre dossier reste ouvert et {{agency}} doit r\u00e9essayer.",
+      "overdue": "Votre remboursement de {{amount}} est en retard. Nous relan\u00e7ons {{agency}}.",
+      "unknown": "Statut du remboursement : {{status}}."
+    },
+    "paidInFull": "Pay\u00e9 int\u00e9gralement \u2014 acompte et solde confirm\u00e9s par {{agency}}.",
+    "defaultAgency": "l'agence",
+    "proofAccepted": "Justificatif accept\u00e9 par {{agency}} \u2014 l'agence doit encore confirmer le virement sur son compte bancaire. Votre paiement n'est pas r\u00e9gl\u00e9 avant cela.",
+    "proofReceived": "Justificatif re\u00e7u. {{agency}} doit encore confirmer le virement sur son compte bancaire \u2014 votre paiement n'est pas r\u00e9gl\u00e9 avant cela.",
     "confirmReceipt": "Confirmer la réception",
     "confirmReceiptHint": "L'organisateur indique que le remboursement a été envoyé. Si l'argent est arrivé sur votre compte, vous pouvez le confirmer ici. La confirmation est facultative : elle aide à clore le dossier, mais un remboursement n'est marqué terminé que sur la confirmation de la banque ou du prestataire de paiement — jamais sur la seule parole de l'organisateur, et votre confirmation ne remplace pas cette vérification.",
     "receiptConfirmed": "Vous avez confirmé la réception le {{date}}.",
@@ -489,6 +615,23 @@
     "disputeWindowClosed": "Le délai de {{days}} jours pour signaler un problème est écoulé. Veuillez contacter l'organisateur ou le support OuiBoo.",
     "disputed": "Vous avez signalé un problème avec ce remboursement — le dossier a été rouvert et est en cours d'examen.",
     "actionFailed": "Une erreur est survenue. Veuillez réessayer."
+  },
+  "paymentPlan": {
+    "depositDue": "Acompte dû : {{amount}} \u2014 payez l'acompte à {{agency}} pour réserver votre place. Ce voyage nécessite au moins {{count}} participants avant le {{date}}.",
+    "depositPaid": "Acompte confirmé par {{agency}}. En attente de la confirmation du voyage \u2014 ce voyage nécessite au moins {{count}} participants avant le {{date}}. Si le minimum n'est pas atteint, votre acompte vous sera remboursé.",
+    "balanceDue": "Voyage confirmé \u2014 solde restant dû : {{amount}}",
+    "balancePayBefore": " (à payer avant le {{date}})",
+    "uploadBalanceReceipt": "Téléverser le reçu du solde",
+    "refundDue": "Ce voyage n'a pas été confirmé \u2014 la taille minimale du groupe n'a pas été atteinte. Votre acompte de {{amount}} est remboursable ; {{agency}} traitera votre remboursement."
+  },
+  "rebooking": {
+    "title": "Réservez à nouveau auprès d'agences que vous connaissez",
+    "subtitle": "De nouveaux départs proposés par des agences avec lesquelles vous avez déjà voyagé. Réserver sur Ouiboo conserve vos conditions d'annulation, le suivi du paiement et l'historique de remboursement pour chaque voyage.",
+    "withAgency": "avec {{agency}}",
+    "tripsBooked_one": "{{count}} voyage réservé auprès de cette agence",
+    "tripsBooked_other": "{{count}} voyages réservés auprès de cette agence",
+    "from": "À partir de {{price}} {{currency}}",
+    "viewTrip": "Voir le voyage"
   },
   "support": {
     "title": "Assistance",
@@ -512,6 +655,84 @@
     "refundsBody": "Quand un remboursement est dû, l'agence dispose de {{days}} jours pour l'effectuer et OuiBoo la relance en cas de retard. Vous recevez un e-mail dès qu'un dossier de remboursement est ouvert pour vous, et vous pouvez suivre son état dans vos réservations.",
     "complaintsTitle": "Réclamations",
     "complaintsBody": "Pour vous plaindre d'un voyage, d'une agence ou d'OuiBoo, écrivez à {{email}} avec l'objet « Réclamation » et votre référence de réservation. Les réclamations sont traitées dans les délais de l'assistance normale.",
-    "safetyNote": "Si une personne est en danger ou a besoin d'une aide médicale urgente, contactez d'abord les services d'urgence locaux — puis votre agence."
+    "safetyNote": "Si une personne est en danger ou a besoin d'une aide médicale urgente, contactez d'abord les services d'urgence locaux — puis votre agence.",
+    "normalBodyNoEmail": "Pour tout le reste — réservations, paiements, remboursements, votre compte — votre page de réservation indique le contact de votre agence et, pendant votre voyage, la voie d'escalade OuiBoo. Nous répondons sous {{hours}} heures dans le cadre de l'assistance normale.",
+    "complaintsBodyNoEmail": "Pour vous plaindre d'un voyage, d'une agence ou d'OuiBoo, utilisez les contacts figurant sur votre page de réservation en mentionnant votre référence de réservation. Les réclamations sont traitées dans les délais de l'assistance normale.",
+    "escalationCall": "Appeler OuiBoo",
+    "escalationWhatsApp": "WhatsApp",
+    "helpCentre": "Centre d'aide",
+    "helpCentreBody": "Recherchez dans les questions fréquentes ou ouvrez un ticket d'assistance — votre ticket est enregistré et traité dans les délais de l'assistance normale."
+  },
+  "help": {
+    "backToSupport": "Retour à l'assistance",
+    "faq": {
+      "bookingConfirmation": {
+        "answer": "Vous payez l'agence directement par virement bancaire et vous téléversez votre justificatif de paiement depuis votre page de réservation. Votre réservation est confirmée lorsque l'agence confirme que le virement est arrivé sur son compte bancaire — l'acceptation du justificatif seul ne règle pas la réservation.",
+        "question": "Comment ma réservation est-elle confirmée ?"
+      },
+      "complaint": {
+        "answer": "Ouvrez un ticket ci-dessous avec la catégorie Réclamation et votre référence de réservation, ou écrivez à l'assistance si une adresse est indiquée sur la page d'assistance. Les réclamations sont traitées dans les délais de l'assistance normale.",
+        "question": "Comment déposer une réclamation ?"
+      },
+      "normalSupport": {
+        "answer": "L'assistance normale répond sous {{hours}} heures. Il n'y a pas de ligne d'urgence 24h/24 : pendant un voyage en cours, votre agence est votre premier appel et Ouiboo prend le relais.",
+        "question": "Sous quel délai l'assistance répond-elle ?"
+      },
+      "paymentProof": {
+        "answer": "C'est le reçu ou la capture d'écran de votre virement bancaire à l'agence. Téléversez-le depuis votre page de réservation afin que l'agence puisse associer votre paiement à votre réservation et le confirmer sur son compte bancaire.",
+        "question": "Qu'est-ce qu'un justificatif de paiement ?"
+      },
+      "paymentRejected": {
+        "answer": "L'agence n'a pas pu associer le justificatif à son compte bancaire. Vérifiez le motif indiqué sur votre réservation, téléversez un justificatif corrigé ou ouvrez un ticket ci-dessous et nous relancerons l'agence pour vous.",
+        "question": "Mon justificatif de paiement a été rejeté — que faire ?"
+      },
+      "refundStatus": {
+        "answer": "Vous recevez un e-mail dès qu'un dossier de remboursement est ouvert pour vous, et vous pouvez suivre son état à tout moment dans vos réservations.",
+        "question": "Comment suivre mon remboursement ?"
+      },
+      "refundTiming": {
+        "answer": "Les remboursements sont payés directement par l'agence — Ouiboo ne détient jamais votre argent. L'agence dispose de 7 jours pour initier votre remboursement dès l'ouverture d'un dossier de remboursement, et Ouiboo la relance en cas de retard.",
+        "question": "Combien de temps prend un remboursement ?"
+      },
+      "tripEmergency": {
+        "answer": "Appelez d'abord le contact d'urgence de votre agence — il figure sur votre page de réservation. S'il ne répond pas, contactez l'assistance Ouiboo et nous ferons remonter le problème auprès de l'agence pendant la période de votre voyage. Si une personne est en danger, contactez d'abord les services d'urgence locaux.",
+        "question": "Un problème pendant mon voyage — qui appeler en premier ?"
+      }
+    },
+    "faqTitle": "Questions fréquentes",
+    "form": {
+      "bookingRef": "Référence de réservation",
+      "bookingRefOptional": "facultatif",
+      "category": "Sujet",
+      "categoryAccount": "Compte",
+      "categoryBooking": "Réservation",
+      "categoryComplaint": "Réclamation",
+      "categoryOther": "Autre",
+      "categoryPayment": "Paiement",
+      "categoryRefund": "Remboursement",
+      "categoryTechnical": "Problème technique",
+      "categoryTrip": "Voyage",
+      "email": "Votre e-mail",
+      "emailFallback": "Ou écrivez directement à l'assistance",
+      "error": "Nous n'avons pas pu envoyer votre ticket. Vérifiez les champs et réessayez.",
+      "intro": "Dites-nous ce qui s'est passé et nous vous répondrons par e-mail sous {{hours}} heures dans le cadre de l'assistance normale.",
+      "message": "Comment pouvons-nous vous aider ?",
+      "name": "Votre nom complet",
+      "receivedBody": "Merci. Votre ticket est enregistré et nous répondrons à votre e-mail sous {{hours}} heures dans le cadre de l'assistance normale.",
+      "receivedTitle": "Ticket reçu",
+      "role": "Je suis…",
+      "roleAgency": "Agence",
+      "roleGuest": "Visiteur (sans compte)",
+      "roleTraveler": "Voyageur",
+      "subject": "Objet",
+      "submit": "Envoyer le ticket",
+      "submitting": "Envoi…",
+      "title": "Ouvrir un ticket d'assistance"
+    },
+    "intro": "Trouvez une réponse ci-dessous ou ouvrez un ticket d'assistance. L'assistance normale répond sous {{hours}} heures.",
+    "noResults": "Aucune réponse ne correspond à votre recherche. Ouvrez un ticket ci-dessous et nous vous aiderons directement.",
+    "searchLabel": "Rechercher dans le centre d'aide",
+    "searchPlaceholder": "Rechercher par mot-clé — réservation, paiement, remboursement…",
+    "title": "Centre d'aide"
   }
 }

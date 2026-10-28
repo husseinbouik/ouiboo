@@ -8,9 +8,9 @@
   --font-sans: var(--font-manrope), var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-space-grotesk), var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
 
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
-  --radius-3xl: 2rem;
+  /* #572 remainder: no local radius overrides — the canonical scale
+     (--radius 0.625rem + derived steps incl. 2xl 1.5rem / 3xl 2rem /
+     4xl 2.5rem) lives in @ouiboo/tokens/tokens.css, imported above. */
 }
 
 :root {
@@ -62,4 +62,31 @@ h1, h2, h3, h4, .font-display {
   0% { transform: translateY(0px); }
   50% { transform: translateY(-20px); }
   100% { transform: translateY(0px); }
+}
+
+/* #488: view transitions for trip navigation. The trip cover shared
+   element (viewTransitionName from src/lib/view-transition.ts) morphs
+   card → detail hero; the rest of the page cross-fades quickly.
+   `@view-transition { navigation: auto }` opts into cross-document
+   transitions where the browser supports them; browsers without
+   support ignore these rules entirely (navigation behaves exactly as
+   before), and prefers-reduced-motion disables the morph outright. */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.25s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    scroll-behavior: auto;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }

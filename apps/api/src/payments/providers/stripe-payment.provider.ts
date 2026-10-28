@@ -73,15 +73,36 @@ export class StripePaymentProvider implements PaymentProvider {
     bookingId: string,
   ): Promise<PaymentVerificationResult> {
     try {
-      void bookingId;
       const session = await this.stripe.checkout.sessions.retrieve(
         transactionId,
       );
+
+      // #496: the provider session must belong to the booking being
+      // verified. A paid session created for a different booking is a
+      // failure for THIS booking — never a success.
+      const sessionBookingId = session.metadata?.bookingId;
+      if (!sessionBookingId || sessionBookingId !== bookingId) {
+        return {
+          status: 'failure',
+          errorMessage: 'Payment session does not belong to this booking',
+          bookingId: sessionBookingId ?? undefined,
+          metadata: { ...session },
+        };
+      }
 
       if (session.payment_status === 'paid') {
         return {
           status: 'success',
           transactionId: session.payment_intent as string,
+          bookingId: sessionBookingId,
+          // Stripe reports the paid amount in minor units and the session
+          // currency; surface both so the service can validate them
+          // against the authoritative local transaction (#496).
+          amount:
+            session.amount_total != null
+              ? (session.amount_total / 100).toFixed(2)
+              : undefined,
+          currency: session.currency ?? undefined,
           metadata: { ...session },
         };
       } else if (session.payment_status === 'unpaid') {
@@ -108,12 +129,18 @@ export class StripePaymentProvider implements PaymentProvider {
   async processRefund(
     transactionId: string,
     amount: MoneyInput,
+    idempotencyKey?: string,
   ): Promise<{ success: boolean; refundId?: string; error?: string }> {
     try {
-      const refund = await this.stripe.refunds.create({
-        payment_intent: transactionId,
-        amount: toMinorUnits(amount),
-      });
+      const refund = await this.stripe.refunds.create(
+        {
+          payment_intent: transactionId,
+          amount: toMinorUnits(amount),
+        },
+        // #497: deterministic key — a retry of the same refund claim
+        // replays the same Stripe refund instead of creating a second one.
+        idempotencyKey ? { idempotencyKey } : undefined,
+      );
 
       return {
         success: true,

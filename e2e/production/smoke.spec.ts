@@ -8,8 +8,8 @@ import { expect, test } from '@playwright/test';
  * URLs come from env vars (set in CI) with production defaults.
  */
 
-const TRAVELER_URL = process.env.SMOKE_TRAVELER_URL || 'https://ouiboo-traveler-nu.vercel.app';
-const AGENCY_URL = process.env.SMOKE_AGENCY_URL || 'https://ouiboo-agency-gold.vercel.app';
+const TRAVELER_URL = process.env.SMOKE_TRAVELER_URL || 'https://ouiboo-traveler.vercel.app';
+const AGENCY_URL = process.env.SMOKE_AGENCY_URL || 'https://ouiboo-agency.vercel.app';
 const ADMIN_URL = process.env.SMOKE_ADMIN_URL || 'https://ouiboo-admin.vercel.app';
 const LANDING_URL = process.env.SMOKE_LANDING_URL || 'https://ouiboo.vercel.app';
 const API_URL = process.env.SMOKE_API_URL || 'https://ouiboo-api.vercel.app/api/v1';

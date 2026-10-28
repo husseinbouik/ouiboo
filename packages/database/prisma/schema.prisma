@@ -117,13 +117,19 @@ enum BookingStatus {
   // #369: staged payments — the confirmation deadline passed without the
   // minimum group size; the deposit is refund-due (see BookingPaymentPlan).
   NOT_CONFIRMED
+  // #434 (Council P1-08): the agency recorded that the traveller did not
+  // attend the trip. Terminal for review purposes: a NO_SHOW booking is
+  // never review-eligible (see Booking.attendance).
+  NO_SHOW
 }
 
-enum PayoutStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  PAID
+// #434 (Council P1-08): attendance recorded by the agency for a booking.
+// Null on the booking = not recorded yet. ATTENDED is the ONLY value
+// that makes a booking review-eligible; NO_SHOW mirrors the booking
+// status of the same name.
+enum BookingAttendance {
+  ATTENDED
+  NO_SHOW
 }
 
 enum SubscriptionStatus {
@@ -131,14 +137,6 @@ enum SubscriptionStatus {
   ACTIVE
   CANCELLED
   EXPIRED
-}
-
-enum TransactionType {
-  CREDIT
-  DEBIT
-  REFUND
-  PAYMENT_GATEWAY
-  BOOKING
 }
 
 enum PaymentMethod {
@@ -388,8 +386,11 @@ model AgencyProfile {
   bio                String?
   logo               String?
   templates          TripTemplate[]
-  wallet             Wallet?
-  payoutRequests     PayoutRequest[]
+  tripSessions       TripSession[]
+  bookings           Booking[]
+  paymentTransactions PaymentTransaction[]
+  reviews            Review[]
+  invoiceLineItems   InvoiceLineItem[]
   conversations      Conversation[]     @relation("AgencyConversations")
   subscriptionStatus SubscriptionStatus @default(TRIAL)
   trialEndsAt        DateTime?
@@ -471,6 +472,7 @@ model AgencyProfile {
   verificationPauseReason   String?
   refundCases                 RefundCase[]
   duplicateCreditFlags        DuplicateCreditFlag[]
+  paymentStatusLedgerEntries  PaymentStatusLedgerEntry[]
   // #370: refund enforcement ladder (plan §16, level 2). Set while the
   // agency has an overdue refund case: NEW bookings are refused, existing
   // bookings are never touched. Null = not restricted.
@@ -536,6 +538,8 @@ model TripTemplate {
   updatedAt          DateTime       @updatedAt
 
   @@unique([id, currency])
+  @@unique([id, agencyId])
+  @@unique([id, agencyId, currency])
   @@index([agencyId, status, createdAt])
   @@index([status, featured])
   @@index([category, status])
@@ -558,7 +562,12 @@ model ItineraryDay {
 model TripSession {
   id                 String        @id @default(cuid())
   templateId         String
-  template           TripTemplate  @relation(fields: [templateId, currency], references: [id, currency], onDelete: Cascade, onUpdate: Restrict)
+  // #428 (Council P1-01): structural tenant isolation — the tenant is
+  // stamped on the row and bound by composite FKs, so a row of one
+  // agency can never be paired with another agency's rows in the DB.
+  agencyId           String
+  agency             AgencyProfile @relation(fields: [agencyId], references: [id])
+  template           TripTemplate  @relation(fields: [templateId, agencyId, currency], references: [id, agencyId, currency], onDelete: Cascade, onUpdate: Restrict)
   startDate          DateTime
   endDate            DateTime
   price              Decimal       @db.Decimal(18, 2)
@@ -579,6 +588,8 @@ model TripSession {
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
+  @@unique([id, agencyId])
+  @@index([agencyId])
   @@index([startDate])
   @@index([endDate])
   @@index([templateId, status, startDate])
@@ -589,7 +600,12 @@ model TripSession {
 model Booking {
   id                          String               @id @default(cuid())
   sessionId                   String
-  session                     TripSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  // #428 (Council P1-01): structural tenant isolation — the tenant is
+  // stamped on the row and bound by composite FKs, so a row of one
+  // agency can never be paired with another agency's rows in the DB.
+  agencyId                    String
+  agency                      AgencyProfile        @relation(fields: [agencyId], references: [id])
+  session                     TripSession          @relation(fields: [sessionId, agencyId], references: [id, agencyId], onDelete: Cascade)
   travelerId                  String
   traveler                    User                 @relation(fields: [travelerId], references: [id])
   bookingDate                 DateTime             @default(now())
@@ -633,6 +649,14 @@ model Booking {
   cancelledBy                 String?
   cancellationReason          String?
   confirmedAt                 DateTime?
+  // #434 (Council P1-08): attendance recorded by the owning agency once
+  // the trip has started. attendanceRecordedBy is the agency user id
+  // that recorded it; both stamps stay null until recording. Review
+  // eligibility requires attendance = ATTENDED (ReviewsService) — the
+  // date-based completion job no longer confers it on its own.
+  attendance                  BookingAttendance?
+  attendanceRecordedAt        DateTime?
+  attendanceRecordedBy        String?
   // #417 (Council P0-11): snapshot of the trip's resolved cancellation
   // scale ({ version, bands, floorRefundPercent, refundInitiationDays })
   // taken at booking creation. Later template edits can never rewrite
@@ -648,6 +672,7 @@ model Booking {
   updatedAt                   DateTime             @updatedAt
   paymentTransactions         PaymentTransaction[]
   invoiceLineItems            InvoiceLineItem[]
+  paymentStatusLedgerEntries  PaymentStatusLedgerEntry[]
   externalPayments            ExternalPayment[]
   paymentAttempts             PaymentAttempt[]
   paymentPlan                 BookingPaymentPlan?
@@ -655,6 +680,8 @@ model Booking {
   duplicateCreditFlags        DuplicateCreditFlag[]
 
   @@unique([travelerId, idempotencyKey])
+  @@unique([id, agencyId])
+  @@index([agencyId])
   @@index([travelerId])
   @@index([sessionId])
   @@index([sessionId, status])
@@ -688,7 +715,7 @@ model PaymentProof {
 model ExternalPayment {
   id                String                @id @default(cuid())
   bookingId         String
-  booking           Booking               @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking           Booking               @relation(fields: [bookingId, agencyId], references: [id, agencyId], onDelete: Cascade)
   agencyId          String
   agency            AgencyProfile         @relation(fields: [agencyId], references: [id])
   travelerId        String
@@ -719,6 +746,7 @@ model ExternalPayment {
   paymentAttempts   PaymentAttempt[]
 
   @@unique([bookingId, stage])
+  @@unique([id, agencyId])
   @@index([agencyId, status, createdAt])
   @@index([travelerId])
 }
@@ -730,9 +758,9 @@ model ExternalPayment {
 model BookingPaymentPlan {
   id                    String                   @id @default(cuid())
   bookingId             String                   @unique
-  booking               Booking                  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking               Booking                  @relation(fields: [bookingId, agencyId], references: [id, agencyId], onDelete: Cascade)
   sessionId             String
-  session               TripSession              @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session               TripSession              @relation(fields: [sessionId, agencyId], references: [id, agencyId], onDelete: Cascade)
   agencyId              String
   totalAmount           Decimal                  @db.Decimal(18, 2)
   depositAmount         Decimal                  @db.Decimal(18, 2)
@@ -748,6 +776,7 @@ model BookingPaymentPlan {
   createdAt             DateTime                 @default(now())
   updatedAt             DateTime                 @updatedAt
 
+  @@unique([bookingId, agencyId])
   @@index([sessionId, status])
   @@index([agencyId, status])
   @@index([status, confirmationDeadline])
@@ -762,7 +791,7 @@ model BookingPaymentPlan {
 model RefundCase {
   id                       String           @id @default(cuid())
   bookingId                String
-  booking                  Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking                  Booking          @relation(fields: [bookingId, agencyId], references: [id, agencyId], onDelete: Cascade)
   travelerId               String
   traveler                 User             @relation(fields: [travelerId], references: [id])
   agencyId                 String
@@ -837,7 +866,7 @@ enum DuplicateCreditFlagStatus {
 model DuplicateCreditFlag {
   id                String                    @id @default(cuid())
   bookingId         String
-  booking           Booking                   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking           Booking                   @relation(fields: [bookingId, agencyId], references: [id, agencyId], onDelete: Cascade)
   // The recorded payment the duplicate relates to, when one exists.
   externalPaymentId String?
   agencyId          String
@@ -887,9 +916,11 @@ model RefundEvidence {
 model PaymentStatusLedgerEntry {
   id                    String                 @id @default(cuid())
   externalPaymentId     String
-  externalPayment       ExternalPayment        @relation(fields: [externalPaymentId], references: [id], onDelete: Cascade)
+  externalPayment       ExternalPayment        @relation(fields: [externalPaymentId, agencyId], references: [id, agencyId], onDelete: Cascade)
   bookingId             String
+  booking               Booking                @relation(fields: [bookingId, agencyId], references: [id, agencyId], onDelete: Cascade)
   agencyId              String
+  agency                AgencyProfile          @relation(fields: [agencyId], references: [id])
   travelerId            String
   type                  PaymentLedgerEntryType
   amount                Decimal                @db.Decimal(18, 2)
@@ -909,44 +940,14 @@ model PaymentStatusLedgerEntry {
   @@index([externalPaymentId, createdAt])
 }
 
-model Wallet {
-  id               String              @id @default(cuid())
-  agencyId         String              @unique
-  agency           AgencyProfile       @relation(fields: [agencyId], references: [id])
-  availableBalance Decimal             @default(0) @db.Decimal(18, 2)
-  pendingBalance   Decimal             @default(0) @db.Decimal(18, 2)
-  currency         String              @default("MAD")
-  transactions     WalletTransaction[]
-}
-
-model WalletTransaction {
-  id             String          @id @default(cuid())
-  walletId       String
-  wallet         Wallet          @relation(fields: [walletId], references: [id])
-  amount         Decimal         @db.Decimal(18, 2)
-  type           TransactionType
-  reason         String
-  referenceId    String?
-  idempotencyKey String?         @unique
-  createdAt      DateTime        @default(now())
-
-  @@index([walletId, createdAt])
-}
-
-model PayoutRequest {
-  id          String        @id @default(cuid())
-  agencyId    String
-  agency      AgencyProfile @relation(fields: [agencyId], references: [id])
-  amount      Decimal       @db.Decimal(18, 2)
-  currency    String        @default("MAD")
-  status      PayoutStatus  @default(PENDING)
-  requestedAt DateTime      @default(now())
-  processedAt DateTime?
-  bankDetails String
-
-  @@index([agencyId, status, requestedAt])
-  @@index([status, requestedAt])
-}
+// #429: the dormant custody models (Wallet, WalletTransaction,
+// PayoutRequest) and their enums (PayoutStatus, TransactionType) were
+// removed — traveller money has moved directly between travellers and
+// agencies since #368, no code wrote to these tables, and the only
+// reader was the caller's own data export. The retained financial
+// ledger is Booking / PaymentTransaction / ExternalPayment /
+// PaymentStatusLedgerEntry. Dropped by migration
+// 20261028130000_drop_dormant_wallet_tables.
 
 model AuditLog {
   id         String   @id @default(cuid())
@@ -984,6 +985,7 @@ model SearchEvent {
 
 // Reviews & Ratings
 enum ReviewStatus {
+  PENDING
   VISIBLE
   HIDDEN
   REMOVED
@@ -992,16 +994,23 @@ enum ReviewStatus {
 model Review {
   id                String       @id @default(cuid())
   bookingId         String       @unique
-  booking           Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  // #428 (Council P1-01): structural tenant isolation — the tenant is
+  // stamped on the row and bound by composite FKs, so a row of one
+  // agency can never be paired with another agency's rows in the DB.
+  agencyId          String
+  agency            AgencyProfile @relation(fields: [agencyId], references: [id])
+  booking           Booking      @relation(fields: [bookingId, agencyId], references: [id, agencyId], onDelete: Cascade)
   travelerId        String
   traveler          User         @relation(fields: [travelerId], references: [id])
   tripTemplateId    String
-  tripTemplate      TripTemplate @relation(fields: [tripTemplateId], references: [id], onDelete: Cascade)
+  tripTemplate      TripTemplate @relation(fields: [tripTemplateId, agencyId], references: [id, agencyId], onDelete: Cascade)
   rating            Int // 1-5
   comment           String?      @db.Text
   response          String?      @db.Text
   isVerifiedBooking Boolean      @default(true)
   status            ReviewStatus @default(VISIBLE)
+  // #439: author edit budget (service-enforced: max edits + edit window).
+  editCount         Int          @default(0)
   moderatedById     String?
   moderatedBy       User?        @relation("ReviewModerator", fields: [moderatedById], references: [id], onDelete: SetNull)
   moderatedAt       DateTime?
@@ -1009,6 +1018,8 @@ model Review {
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
+  @@unique([bookingId, agencyId])
+  @@index([agencyId])
   @@index([tripTemplateId])
   @@index([travelerId])
   @@index([tripTemplateId, rating])
@@ -1067,7 +1078,12 @@ model NotificationLog {
 model PaymentTransaction {
   id            String        @id @default(cuid())
   bookingId     String
-  booking       Booking       @relation(fields: [bookingId], references: [id])
+  // #428 (Council P1-01): structural tenant isolation — the tenant is
+  // stamped on the row and bound by composite FKs, so a row of one
+  // agency can never be paired with another agency's rows in the DB.
+  agencyId      String
+  agency        AgencyProfile @relation(fields: [agencyId], references: [id])
+  booking       Booking       @relation(fields: [bookingId, agencyId], references: [id, agencyId])
   amount        Decimal       @db.Decimal(18, 2)
   method        PaymentMethod
   transactionId String?
@@ -1078,6 +1094,7 @@ model PaymentTransaction {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
+  @@index([agencyId])
   @@index([bookingId])
   @@index([transactionId])
   @@index([provider, status, createdAt])
@@ -1161,6 +1178,62 @@ model CopyrightReport {
   resolvedBy    String?
 }
 
+enum SupportTicketCategory {
+  BOOKING
+  PAYMENT
+  REFUND
+  ACCOUNT
+  TRIP
+  COMPLAINT
+  TECHNICAL
+  OTHER
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum SupportRequesterRole {
+  TRAVELER
+  AGENCY
+  GUEST
+}
+
+// #446 (Council P2-07): help-centre support tickets. Email remains a
+// published lane (#419); a ticket is what a traveller or agency opens
+// from the help centre instead of — or alongside — that email, so the
+// support operation gains stored timestamps. firstResponseAt is set
+// exactly once, when support first responds (admin update from OPEN),
+// which is what makes the 48-hour first-response rate in
+// BetaMetricsService derivable instead of honestly not-derivable.
+// No traveller/agency foreign key: a guest with no account can still
+// ask for help before signing in, mirroring the public copyright
+// report. bookingRef is a free-text reference the requester supplies,
+// never a trusted booking lookup.
+model SupportTicket {
+  id             String                @id @default(cuid())
+  requesterName  String
+  requesterEmail String
+  requesterRole  SupportRequesterRole  @default(GUEST)
+  category       SupportTicketCategory @default(OTHER)
+  subject        String
+  message        String                @db.Text
+  bookingRef     String?
+  status         SupportTicketStatus   @default(OPEN)
+  firstResponseAt DateTime?
+  resolvedAt     DateTime?
+  resolvedBy     String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([category, createdAt])
+}
+
 enum InvoiceStatus {
   ISSUED
 }
@@ -1194,6 +1267,7 @@ model Invoice {
   issuedAt       DateTime      @default(now())
   createdAt      DateTime      @default(now())
 
+  @@unique([id, agencyId])
   @@unique([agencyId, periodStart, periodEnd])
   @@index([agencyId, issuedAt])
   @@index([issuedAt])
@@ -1202,15 +1276,21 @@ model Invoice {
 model InvoiceLineItem {
   id               String  @id @default(cuid())
   invoiceId        String
-  invoice          Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  // #428 (Council P1-01): structural tenant isolation — the tenant is
+  // stamped on the row and bound by composite FKs, so a row of one
+  // agency can never be paired with another agency's rows in the DB.
+  agencyId         String
+  agency           AgencyProfile @relation(fields: [agencyId], references: [id])
+  invoice          Invoice @relation(fields: [invoiceId, agencyId], references: [id, agencyId], onDelete: Cascade)
   bookingId        String
-  booking          Booking @relation(fields: [bookingId], references: [id])
+  booking          Booking @relation(fields: [bookingId, agencyId], references: [id, agencyId])
   description      String
   bookingDate      DateTime
   grossAmount      Decimal @db.Decimal(18, 2)
   commissionRate   Decimal @db.Decimal(5, 2)
   commissionAmount Decimal @db.Decimal(18, 2)
 
+  @@index([agencyId])
   @@index([invoiceId])
   @@index([bookingId])
 }
@@ -1240,17 +1320,18 @@ model AgencyPaymentProfile {
   updatedAt           DateTime                      @updatedAt
   paymentAttempts     PaymentAttempt[]
 
+  @@unique([id, agencyId])
   @@index([provider, onboardingStatus])
 }
 
 model PaymentAttempt {
   id                    String             @id @default(cuid())
   bookingId             String
-  booking               Booking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking               Booking            @relation(fields: [bookingId, agencyId], references: [id, agencyId], onDelete: Cascade)
   agencyId              String
   agency                AgencyProfile      @relation(fields: [agencyId], references: [id], onDelete: Cascade)
   paymentProfileId      String
-  paymentProfile        AgencyPaymentProfile @relation(fields: [paymentProfileId], references: [id], onDelete: Cascade)
+  paymentProfile        AgencyPaymentProfile @relation(fields: [paymentProfileId, agencyId], references: [id, agencyId], onDelete: Cascade)
   stage                 ExternalPaymentStage
   amount                Decimal            @db.Decimal(18, 2)
   currency              String             @default("MAD")

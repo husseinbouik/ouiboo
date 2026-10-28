@@ -247,3 +247,166 @@ describe('Admin moderation endpoint role checks (#393)', () => {
     expect(guard.canActivate(contextFor(undefined))).toBe(false);
   });
 });
+
+describe('Review hardening (#439): pre-publication moderation, edit limits, self-booking friction', () => {
+  function makeCreateDb(options: { priorReviews?: number; agencyOwnerId?: string } = {}) {
+    const created: any[] = [];
+    const booking = {
+      id: 'booking-1',
+      travelerId: 'traveler-1',
+      status: 'COMPLETED',
+      // #434 attendance gate (merged from staging after this block was
+      // written): createReview requires a recorded ATTENDED attendance,
+      // so the #439 fixtures must model an attended booking — the same
+      // shape reviews-attendance.spec.ts uses.
+      attendance: 'ATTENDED',
+      session: { template: { id: 'trip-1', agencyId: 'agency-profile-1' } },
+    };
+    const db: any = {
+      booking: { findUnique: jest.fn(async () => booking) },
+      agencyProfile: {
+        findUnique: jest.fn(async () => ({ userId: options.agencyOwnerId ?? 'someone-else' })),
+      },
+      review: {
+        findUnique: jest.fn(async () => null),
+        count: jest.fn(async () => options.priorReviews ?? 0),
+        create: jest.fn(async ({ data }: any) => {
+          const row = { id: 'rev-new', createdAt: new Date(), editCount: 0, ...data };
+          created.push(row);
+          return row;
+        }),
+        aggregate: jest.fn(async () => ({ _avg: { rating: 5 }, _count: { _all: 1 } })),
+        groupBy: jest.fn(async () => []),
+      },
+      tripTemplate: { update: jest.fn(async () => ({})) },
+      auditLog: { create: jest.fn(async () => ({})) },
+    };
+    return { db, created };
+  }
+
+  it("holds a traveller's FIRST review in PENDING and does not move the trip rating", async () => {
+    const { db, created } = makeCreateDb({ priorReviews: 0 });
+    const svc = new ReviewsService(db);
+    const review = await svc.createReview('booking-1', 'traveler-1', { rating: 5, comment: 'Great' } as any);
+    expect(review.status).toBe('PENDING');
+    expect(created[0].status).toBe('PENDING');
+    expect(db.tripTemplate.update).not.toHaveBeenCalled();
+  });
+
+  it('publishes a returning traveller\'s review immediately (VISIBLE)', async () => {
+    const { db } = makeCreateDb({ priorReviews: 2 });
+    const svc = new ReviewsService(db);
+    const review = await svc.createReview('booking-1', 'traveler-1', { rating: 4 } as any);
+    expect(review.status).toBe('VISIBLE');
+    expect(db.tripTemplate.update).toHaveBeenCalled();
+  });
+
+  it('always holds a self-booking review (agency owner reviewing own trip), even with history', async () => {
+    const { db } = makeCreateDb({ priorReviews: 5, agencyOwnerId: 'traveler-1' });
+    const svc = new ReviewsService(db);
+    const review = await svc.createReview('booking-1', 'traveler-1', { rating: 5 } as any);
+    expect(review.status).toBe('PENDING');
+  });
+
+  it('admin can approve a PENDING review (RESTORE -> VISIBLE) and reject it (reject -> REMOVED)', async () => {
+    const db = makeFakeDb([review({ status: 'PENDING' })]);
+    const svc = new ReviewsService(db);
+    const approved = await svc.moderateReview('rev-1', ADMIN, 'RESTORE');
+    expect(approved.status).toBe('VISIBLE');
+
+    const db2 = makeFakeDb([review({ status: 'PENDING' })]);
+    const svc2 = new ReviewsService(db2);
+    const removed = await svc2.moderateReview('rev-1', ADMIN, 'reject', 'Self-review spam');
+    expect(removed.status).toBe('REMOVED');
+  });
+
+  it('PENDING reviews are excluded from the public list and stats', async () => {
+    const db = makeFakeDb([
+      review({ id: 'rev-p', status: 'PENDING' }),
+      review({ id: 'rev-v', status: 'VISIBLE' }),
+    ]);
+    const svc = new ReviewsService(db);
+    const list = await svc.getReviewsByTrip('trip-1');
+    expect(list.total).toBe(1);
+    expect(list.reviews.map((r: any) => r.id)).toEqual(['rev-v']);
+    const stats = await svc.getReviewStats('trip-1');
+    expect(stats.totalReviews).toBe(1);
+  });
+
+  function makeUpdateDb(existing: any) {
+    const withBooking = {
+      booking: { session: { template: { id: 'trip-1' } } },
+      ...existing,
+    };
+    const db: any = {
+      review: {
+        findUnique: jest.fn(async () => withBooking),
+        update: jest.fn(async ({ data }: any) => ({ ...withBooking, ...data })),
+        aggregate: jest.fn(async () => ({ _avg: { rating: 5 }, _count: { _all: 1 } })),
+        groupBy: jest.fn(async () => []),
+      },
+      tripTemplate: { update: jest.fn(async () => ({})) },
+    };
+    return db;
+  }
+
+  it('editing a VISIBLE review increments editCount and returns it to PENDING moderation', async () => {
+    const existing = review({ editCount: 1, createdAt: new Date() });
+    const db = makeUpdateDb(existing);
+    const svc = new ReviewsService(db);
+    const updated = await svc.updateReview('rev-1', 'traveler-1', { comment: 'Edited' } as any);
+    expect(updated.editCount).toBe(2);
+    expect(updated.status).toBe('PENDING');
+  });
+
+  it('rejects edits beyond the edit limit and beyond the edit window', async () => {
+    const atLimit = makeUpdateDb(review({ editCount: 3, createdAt: new Date() }));
+    await expect(
+      new ReviewsService(atLimit).updateReview('rev-1', 'traveler-1', { comment: 'x' } as any),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    const tooOld = makeUpdateDb(
+      review({ editCount: 0, createdAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) }),
+    );
+    await expect(
+      new ReviewsService(tooOld).updateReview('rev-1', 'traveler-1', { comment: 'x' } as any),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+});
+
+describe('Public list traveller avatar derivation (#447)', () => {
+  const ORIGINAL_S3_PUBLIC_URL = process.env.S3_PUBLIC_URL;
+
+  beforeEach(() => {
+    process.env.S3_PUBLIC_URL = 'https://cdn.ouiboo.test';
+  });
+
+  afterEach(() => {
+    if (ORIGINAL_S3_PUBLIC_URL === undefined) {
+      delete process.env.S3_PUBLIC_URL;
+    } else {
+      process.env.S3_PUBLIC_URL = ORIGINAL_S3_PUBLIC_URL;
+    }
+  });
+
+  it('re-derives traveller avatars against the current public media base', async () => {
+    const svc = new ReviewsService(
+      makeFakeDb([
+        review({
+          id: 'rev-avatar',
+          traveler: {
+            id: 'traveler-1',
+            name: 'Sara',
+            avatar:
+              'https://old-bucket.s3.eu-west-1.amazonaws.com/trips/traveler-1/avatar.png',
+          },
+        }),
+      ]),
+    );
+    const result = await svc.getReviewsByTrip('trip-1');
+    expect(result.total).toBe(1);
+    expect((result.reviews[0] as any).traveler.avatar).toBe(
+      'https://cdn.ouiboo.test/trips/traveler-1/avatar.png',
+    );
+  });
+});

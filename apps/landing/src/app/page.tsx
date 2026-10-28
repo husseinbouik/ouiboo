@@ -1,33 +1,18 @@
 import type { Metadata } from 'next';
 import LandingPage from '../components/LandingPage';
+import { getInitialLanguage } from '@ouiboo/i18n/server';
+import { buildLandingMetadata } from '../lib/metadata';
 
-// Static generation: the landing page is fully static marketing content.
-// All interactivity lives in the <LandingPage /> client component.
-export const dynamic = 'force-static';
-
+// Metadata is locale-driven (#563): the root layout already resolves
+// the same metadata from the request locale, and this page-level
+// generateMetadata keeps the home route's OG/Twitter/canonical values
+// identical to the layout's (previously this file hard-coded English
+// copy, a second description and a third tagline). Because the locale
+// comes from request headers/cookies, this route renders dynamically
+// instead of the former force-static export.
 export async function generateMetadata(): Promise<Metadata> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ouiboo.vercel.app';
-  const title = 'Ouiboo — Travel experiences, made personal';
-  const description =
-    'Discover handpicked trips across Morocco and beyond. Book unique travel experiences with local travel agencies.';
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      url: siteUrl,
-      siteName: 'Ouiboo',
-      type: 'website',
-      images: [{ url: `${siteUrl}/og-image.png`, width: 1200, height: 630, alt: 'Ouiboo' }],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-    },
-    alternates: { canonical: siteUrl },
-  };
+  const locale = await getInitialLanguage();
+  return buildLandingMetadata(locale);
 }
 
 export default function Page() {

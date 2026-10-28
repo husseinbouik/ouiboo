@@ -10,7 +10,7 @@ describe('BookingsController payment review routes (#422)', () => {
         verifyPayment: jest.fn(async () => ({ id: 'booking-1' })),
         confirmBankPayment: jest.fn(async () => ({ id: 'booking-1', status: 'CONFIRMED' })),
     };
-    const controller = new BookingsController(bookingsService as any);
+    const controller = new BookingsController(bookingsService as any, { getSuggestions: jest.fn(async () => []) } as any);
 
     beforeEach(() => jest.clearAllMocks());
 
@@ -34,7 +34,7 @@ describe('BookingsController idempotency + duplicate-credit routes (#494)', () =
         uploadPaymentProof: jest.fn(async () => ({ id: 'proof-1' })),
         createDuplicateCreditFlag: jest.fn(async () => ({ id: 'flag-1', status: 'OPEN' })),
     };
-    const controller = new BookingsController(bookingsService as any);
+    const controller = new BookingsController(bookingsService as any, { getSuggestions: jest.fn(async () => []) } as any);
 
     beforeEach(() => jest.clearAllMocks());
 
@@ -64,5 +64,28 @@ describe('BookingsController idempotency + duplicate-credit routes (#494)', () =
         const body = { amount: 200, bankReference: 'DUP-REF-1', note: null };
         await controller.flagDuplicateCredit(req, 'booking-1', body);
         expect(bookingsService.createDuplicateCreditFlag).toHaveBeenCalledWith('booking-1', 'agency-1', 'agency-user-1', body);
+    });
+});
+
+
+describe('BookingsController rebooking suggestions route (#444)', () => {
+    const rebookingService = {
+        getSuggestions: jest.fn(async () => [{ tripId: 'trip-1' }]),
+    };
+    const controller = new BookingsController({} as any, rebookingService as any);
+
+    beforeEach(() => jest.clearAllMocks());
+
+    it('forwards the traveller id and the resolved locale to the service', async () => {
+        const req = { user: { userId: 'traveler-1' } };
+        const result = await controller.findRebookingSuggestions(req, 'en', undefined);
+        expect(rebookingService.getSuggestions).toHaveBeenCalledWith('traveler-1', 'en');
+        expect(result).toEqual([{ tripId: 'trip-1' }]);
+    });
+
+    it('falls back to the x-ouiboo-language header when no locale query is given', async () => {
+        const req = { user: { userId: 'traveler-1' } };
+        await controller.findRebookingSuggestions(req, undefined, 'ar');
+        expect(rebookingService.getSuggestions).toHaveBeenCalledWith('traveler-1', 'ar');
     });
 });

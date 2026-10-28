@@ -42,7 +42,7 @@ export function CheckoutGuestForm({
   return (
     <div className="space-y-6">
       {retryBooking && (
-        <div className="rounded-[2rem] border border-amber-200 bg-amber-50 p-5">
+        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5">
           <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">{t('checkout.retryTitle')}</p>
           <p className="mt-2 text-sm font-semibold text-amber-900">
             {t('checkout.retryBody', { reference: retryBooking.id.slice(0, 8) })}

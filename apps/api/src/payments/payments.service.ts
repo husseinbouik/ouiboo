@@ -3,6 +3,7 @@ import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
 import { PaymentProviderFactory } from './providers/payment-provider.factory';
 import { InitiatePaymentDto, VerifyPaymentDto, ProcessRefundDto } from './dto/payment.dto';
+import { PaymentVerificationResult } from './interfaces/payment-provider.interface';
 import { PaymentMethod, BookingStatus, BookingPaymentStatus, RefundStatus, PaymentCustodian, PaymentLedgerEntryType, PaymentLedgerSource } from '@ouiboo/database';
 import { MoneyInput, decimalEqualsMoney, multiplyMoney, toMoneyDecimal, toMoneyString } from '../common/money.util';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
@@ -72,6 +73,9 @@ export class PaymentsService {
     await this.prisma.paymentTransaction.create({
       data: {
         bookingId: dto.bookingId,
+        // #428: stamp the tenant from the booking row (backfilled for
+        // legacy rows by the #428 migration).
+        agencyId: booking.agencyId,
         amount: expectedAmount,
         method: PaymentMethod.GATEWAY,
         transactionId: paymentSession.sessionId,
@@ -106,6 +110,13 @@ export class PaymentsService {
 
   /**
    * Verify payment status
+   *
+   * #496: the local PaymentTransaction is the authority. Verification first
+   * resolves exactly one local transaction bound to (booking, provider,
+   * provider transaction reference); the provider result must agree with
+   * it on booking reference, amount and currency; and the transaction is
+   * claimed with a conditional update — a provider "success" that updates
+   * zero local rows can never confirm the booking.
    */
   async verifyPayment(dto: VerifyPaymentDto, requesterId?: string) {
     this.ensureGatewayPaymentsEnabled();
@@ -124,6 +135,41 @@ export class PaymentsService {
       throw new BadRequestException('Booking does not belong to the authenticated traveler');
     }
 
+    // #496: resolve the authoritative local transaction BEFORE trusting
+    // any provider answer. Client-supplied identifiers alone prove nothing.
+    const localTransaction = await this.resolveAuthoritativeTransaction(
+      dto.bookingId,
+      dto.provider,
+      dto.transactionId,
+    );
+
+    // Idempotent replay: this transaction already succeeded and the booking
+    // is already paid — a duplicate verification (double submit, return-path
+    // refresh, webhook race) is a no-op success, never a second confirmation.
+    if (
+      localTransaction.status === 'SUCCESS' &&
+      booking.paymentStatus === BookingPaymentStatus.PAID
+    ) {
+      this.logger.log(
+        `Payment already verified for booking ${dto.bookingId}; duplicate verification ignored`,
+      );
+      return {
+        status: 'success' as const,
+        transactionId: dto.transactionId,
+        metadata: (localTransaction.providerData as Record<string, any>) ?? undefined,
+      };
+    }
+
+    if (
+      localTransaction.status !== 'INITIATED' &&
+      localTransaction.status !== 'PENDING' &&
+      localTransaction.status !== 'SUCCESS'
+    ) {
+      throw new BadRequestException(
+        `Payment transaction is not in a verifiable state (${localTransaction.status})`,
+      );
+    }
+
     const provider = this.paymentProviderFactory.getProvider(
       dto.provider as any,
     );
@@ -133,18 +179,57 @@ export class PaymentsService {
       dto.bookingId,
     );
 
+    // #496: whenever the provider asserts which booking its transaction
+    // belongs to, it must be THIS booking — on every outcome, so a foreign
+    // transaction can neither confirm nor cancel this booking.
+    const providerBookingId = this.providerAssertedBookingId(result);
+    if (providerBookingId && providerBookingId !== dto.bookingId) {
+      this.logger.warn(
+        `Provider ${dto.provider} transaction ${dto.transactionId} belongs to booking ${providerBookingId}, not ${dto.bookingId}; verification rejected`,
+      );
+      throw new BadRequestException(
+        'Payment transaction does not belong to this booking',
+      );
+    }
+
     if (result.status === 'success') {
-      // Update payment transaction
-      await this.prisma.paymentTransaction.updateMany({
+      // #496: the paid amount/currency the provider reports must match the
+      // authoritative local transaction amount and the booking currency.
+      this.assertProviderAmountCurrency(result, localTransaction, booking);
+
+      // Atomically claim the local transaction. The conditional update only
+      // matches while the transaction is still in the state we resolved, so
+      // concurrent verifications cannot both proceed to confirmation.
+      const claimed = await this.prisma.paymentTransaction.updateMany({
         where: {
+          id: localTransaction.id,
           bookingId: dto.bookingId,
           transactionId: dto.transactionId,
+          status: localTransaction.status,
         },
         data: {
           status: 'SUCCESS',
           providerData: result.metadata,
         },
       });
+
+      if (claimed.count !== 1) {
+        // Zero rows updated: another flow already moved this transaction.
+        // Confirm nothing here — succeed idempotently only if that flow
+        // already paid the booking.
+        const current = await this.prisma.booking.findUnique({
+          where: { id: dto.bookingId },
+        });
+        if (current?.paymentStatus === BookingPaymentStatus.PAID) {
+          this.logger.log(
+            `Payment for booking ${dto.bookingId} already confirmed by a concurrent flow; verification is idempotent`,
+          );
+          return result;
+        }
+        throw new BadRequestException(
+          'Payment could not be bound to the booking transaction; booking was not confirmed',
+        );
+      }
 
       // Transition booking to CONFIRMED state and update payment status
       await this.transitionBookingToConfirmed(dto.bookingId, result.metadata);
@@ -164,35 +249,139 @@ export class PaymentsService {
 
   /**
    * Process refund
+   *
+   * #497: the refund target is resolved from the booking's successful local
+   * payment transaction — never from caller-supplied identifiers alone.
+   * The amount is validated against the remaining refundable balance, and
+   * the refund is claimed with a conditional state transition BEFORE the
+   * provider is called, so concurrent/refreshed requests cannot
+   * double-refund. A deterministic provider idempotency key makes a retry
+   * of the same claim replay one provider operation.
    */
   async processRefund(dto: ProcessRefundDto) {
     this.ensureGatewayPaymentsEnabled();
     const booking = await this.prisma.booking.findUnique({
       where: { id: dto.bookingId },
+      include: { paymentTransactions: true },
     });
 
     if (!booking) {
       throw new BadRequestException('Booking not found');
     }
 
+    if (booking.paymentStatus !== BookingPaymentStatus.PAID) {
+      throw new BadRequestException('Only paid bookings can be refunded');
+    }
+
+    if (booking.refundStatus === RefundStatus.PENDING) {
+      throw new BadRequestException('A refund is already in progress for this booking');
+    }
+
+    // #497: prove the caller-supplied reference IS the booking's successful
+    // payment, from the local ledger — not merely a plausible identifier.
+    const transactions =
+      (booking as any).paymentTransactions ??
+      (await this.prisma.paymentTransaction.findMany({
+        where: { bookingId: dto.bookingId },
+      }));
+    const successfulMatches = (transactions as any[]).filter(
+      (transaction) =>
+        transaction.status === 'SUCCESS' &&
+        transaction.transactionId === dto.transactionId &&
+        transaction.provider &&
+        transaction.provider.toUpperCase() === dto.provider.toUpperCase(),
+    );
+
+    if (successfulMatches.length !== 1) {
+      throw new BadRequestException(
+        'No successful payment transaction for this booking matches the refund request',
+      );
+    }
+
+    const transaction = successfulMatches[0];
+
+    // #497: bound the refund by the authoritative paid amount (the local
+    // transaction, in the booking's currency) less refunds already made.
+    const paidAmount = toMoneyDecimal(transaction.amount);
+    const alreadyRefunded = booking.refundAmount
+      ? toMoneyDecimal(booking.refundAmount)
+      : toMoneyDecimal(0);
+    const requestedAmount = toMoneyDecimal(dto.amount);
+
+    if (!requestedAmount.greaterThan(0)) {
+      throw new BadRequestException('Refund amount must be positive');
+    }
+
+    const refundedTotal = alreadyRefunded.plus(requestedAmount);
+    if (refundedTotal.greaterThan(paidAmount)) {
+      throw new BadRequestException(
+        `Refund amount exceeds the remaining refundable balance (${toMoneyString(paidAmount.minus(alreadyRefunded))} ${booking.currency})`,
+      );
+    }
+
+    // #497: atomically claim the refund BEFORE calling the provider. The
+    // claim only matches while the booking still shows the exact refund
+    // state we validated (status PENDING is the in-flight marker), so a
+    // concurrent or refreshed duplicate loses the race here and never
+    // reaches the provider.
+    const claimed = await this.prisma.booking.updateMany({
+      where: {
+        id: dto.bookingId,
+        paymentStatus: BookingPaymentStatus.PAID,
+        refundStatus: booking.refundStatus ?? null,
+        refundAmount: booking.refundAmount ?? null,
+      },
+      data: {
+        refundStatus: RefundStatus.PENDING,
+      },
+    });
+
+    if (claimed.count !== 1) {
+      throw new BadRequestException(
+        'Refund could not be claimed; another refund may already be in progress for this booking',
+      );
+    }
+
     const provider = this.paymentProviderFactory.getProvider(
       dto.provider as any,
     );
 
-    const refundResult = await provider.processRefund(
-      dto.transactionId,
-      toMoneyDecimal(dto.amount),
-    );
+    // Deterministic: the same (booking, transaction, cumulative total)
+    // always produces the same key, so a retry replays one provider refund.
+    const idempotencyKey = `ouiboo-refund-${dto.bookingId}-${transaction.transactionId}-${toMoneyString(refundedTotal)}`;
+
+    let refundResult: { success: boolean; refundId?: string; error?: string };
+    try {
+      refundResult = await provider.processRefund(
+        transaction.transactionId,
+        requestedAmount,
+        idempotencyKey,
+      );
+    } catch (error) {
+      await this.releaseRefundClaim(dto.bookingId);
+      throw error;
+    }
+
+    if (!refundResult.success) {
+      // Recoverable, support-visible failure: the claim is released to
+      // FAILED (booking.refundStatus) and no refund totals move, so the
+      // refund can be retried without corrupting payment state.
+      await this.releaseRefundClaim(dto.bookingId);
+      return refundResult;
+    }
 
     if (refundResult.success) {
-      // Update booking with refund info
+      // Update booking with refund info. Totals accumulate across partial
+      // refunds; the booking is REFUNDED only once fully refunded.
       await this.prisma.booking.update({
         where: { id: dto.bookingId },
         data: {
-          refundAmount: toMoneyDecimal(dto.amount),
+          refundAmount: refundedTotal,
           refundStatus: RefundStatus.PROCESSED,
           refundProcessedAt: new Date(),
-          paymentStatus: BookingPaymentStatus.REFUNDED,
+          paymentStatus: decimalEqualsMoney(refundedTotal, paidAmount)
+            ? BookingPaymentStatus.REFUNDED
+            : BookingPaymentStatus.PAID,
         },
       });
 
@@ -216,7 +405,7 @@ export class PaymentsService {
             method: PaymentMethod.GATEWAY,
             provider: dto.provider,
             externalReference: refundResult.refundId || null,
-            externalTransactionId: dto.transactionId,
+            externalTransactionId: transaction.transactionId,
             custodian: PaymentCustodian.AGENCY_PSP,
             source: PaymentLedgerSource.GATEWAY_REFUND,
           });
@@ -256,6 +445,10 @@ export class PaymentsService {
       throw new BadRequestException('Only paid bookings can be refunded');
     }
 
+    if (booking.refundStatus === RefundStatus.PENDING) {
+      throw new BadRequestException('A refund is already in progress for this booking');
+    }
+
     const successfulTransaction = booking.paymentTransactions.find(
       (transaction) => transaction.status === 'SUCCESS' && transaction.provider && transaction.transactionId,
     );
@@ -267,11 +460,279 @@ export class PaymentsService {
       throw new BadRequestException('Missing provider transaction data for this booking');
     }
 
+    // #497: with no explicit amount, refund only what remains refundable
+    // on the authoritative transaction — never the full booking total
+    // after a partial refund has already been made.
+    const alreadyRefunded = booking.refundAmount
+      ? toMoneyDecimal(booking.refundAmount)
+      : toMoneyDecimal(0);
+    const remainingAmount = successfulTransaction
+      ? toMoneyDecimal(successfulTransaction.amount).minus(alreadyRefunded)
+      : toMoneyDecimal(booking.totalAmount);
+
     return this.processRefund({
       bookingId,
-      amount: amount ?? booking.totalAmount,
+      amount: amount ?? remainingAmount,
       provider,
       transactionId,
+    });
+  }
+
+  /**
+   * #496: resolve exactly one authoritative local payment transaction for
+   * (booking, provider transaction reference) and prove it belongs to the
+   * requested provider. Throws when there is no such transaction, when the
+   * reference is ambiguous, or when the provider does not match.
+   */
+  private async resolveAuthoritativeTransaction(
+    bookingId: string,
+    provider: string,
+    transactionId: string,
+  ) {
+    const matches = await this.prisma.paymentTransaction.findMany({
+      where: { bookingId, transactionId },
+    });
+
+    if (!matches || matches.length !== 1) {
+      throw new BadRequestException(
+        'No authoritative payment transaction found for this booking and provider reference',
+      );
+    }
+
+    const transaction = matches[0];
+    if (
+      !transaction.provider ||
+      transaction.provider.toUpperCase() !== provider.toUpperCase()
+    ) {
+      throw new BadRequestException(
+        'Payment transaction does not belong to the requested provider',
+      );
+    }
+
+    return transaction;
+  }
+
+  /**
+   * #596: provider id-mapping for webhook confirmations.
+   *
+   * A webhook's transaction id is NOT necessarily the initiation
+   * session id stored in `PaymentTransaction.transactionId`: CMI and
+   * CashPlus report a distinct transaction id in their webhooks, while
+   * the initiation response carried both ids. The mapping is therefore
+   * resolved from data already stored on the local transaction — no
+   * schema change is needed:
+   *
+   * - `transactionId` itself (the initiation session id; for Stripe
+   *   this is the checkout session id the webhook also reports), and
+   * - every provider id recorded in `providerData` / `metadata` at
+   *   initiation (the CMI/CashPlus adapters store the full initiation
+   *   response there, including the provider's own transaction id)
+   *   or by an earlier bound flow (e.g. a Stripe session object, which
+   *   carries its payment-intent id).
+   *
+   * A webhook confirmation may proceed only when its candidate ids
+   * resolve to EXACTLY ONE local transaction for the booking and
+   * provider. Zero matches — or an ambiguous mapping — parks the
+   * confirmation: nothing is confirmed, an error-level (alerting) log
+   * is emitted, and the webhook is rejected so the provider retries
+   * and the parked event stays visible instead of silently confirming
+   * a booking on an unmatched payment. Log lines on this path carry
+   * no payment identifiers or payload data.
+   */
+  private providerIdAliases(record: any): string[] {
+    if (!record || typeof record !== 'object') return [];
+    const keys = [
+      'id',
+      'transactionId',
+      'sessionId',
+      'session_id',
+      'paymentIntentId',
+      'payment_intent',
+      'chargeId',
+      'charge_id',
+      'providerTransactionId',
+      'initiationId',
+    ];
+    const ids: string[] = [];
+    for (const key of keys) {
+      const value = record[key];
+      if (typeof value === 'string' && value) ids.push(value);
+    }
+    if (record.metadata && typeof record.metadata === 'object') {
+      ids.push(...this.providerIdAliases(record.metadata));
+    }
+    return ids;
+  }
+
+  private webhookCandidateIds(event: any): string[] {
+    return [...new Set(this.providerIdAliases(event))];
+  }
+
+  private async resolveWebhookTransaction(
+    bookingId: string,
+    provider: string,
+    candidateIds: string[],
+  ) {
+    if (!candidateIds.length) return null;
+
+    const rows = await this.prisma.paymentTransaction.findMany({
+      where: { bookingId },
+    });
+
+    const matches = (rows ?? []).filter((transaction: any) => {
+      if (
+        transaction.provider &&
+        transaction.provider.toUpperCase() !== provider.toUpperCase()
+      ) {
+        return false;
+      }
+      const aliases = new Set<string>([
+        transaction.transactionId,
+        ...this.providerIdAliases(transaction.providerData),
+        ...this.providerIdAliases(transaction.metadata),
+      ]);
+      return candidateIds.some((id) => aliases.has(id));
+    });
+
+    return matches.length === 1 ? matches[0] : null;
+  }
+
+  private parkUnmatchedWebhookConfirmation(provider: string): never {
+    // Alerting on the park path: error-level log, deliberately free of
+    // payment identifiers and payload data (repo rule: never log
+    // payment payloads). The booking is NOT confirmed.
+    this.logger.error(
+      `Webhook payment confirmation parked for provider ${provider}: no unique local transaction mapping; booking was not confirmed`,
+    );
+    throw new BadRequestException(
+      'Webhook payment could not be matched to a local payment transaction; booking was not confirmed',
+    );
+  }
+
+  /**
+   * #596: claim the one local transaction a webhook confirmation maps
+   * to, conditionally on the state it was resolved in — the webhook
+   * equivalent of the #496 zero-row claim block. A claim that updates
+   * zero rows parks the confirmation instead of confirming.
+   */
+  private async claimWebhookTransaction(
+    bookingId: string,
+    provider: string,
+    candidateIds: string[],
+    providerData: any,
+  ) {
+    const transaction = await this.resolveWebhookTransaction(
+      bookingId,
+      provider,
+      candidateIds,
+    );
+
+    if (!transaction) {
+      this.parkUnmatchedWebhookConfirmation(provider);
+    }
+
+    // Idempotent replay: a duplicate webhook for an already-claimed
+    // transaction is a no-op; the booking transition is itself
+    // conditional and idempotent.
+    if (transaction.status === 'SUCCESS') {
+      return transaction;
+    }
+
+    if (
+      transaction.status !== 'INITIATED' &&
+      transaction.status !== 'PENDING'
+    ) {
+      this.parkUnmatchedWebhookConfirmation(provider);
+    }
+
+    const claimed = await this.prisma.paymentTransaction.updateMany({
+      where: {
+        id: transaction.id,
+        bookingId,
+        status: transaction.status,
+      },
+      data: {
+        status: 'SUCCESS',
+        providerData,
+      },
+    });
+
+    if (claimed.count !== 1) {
+      // Zero rows claimed: another flow moved this transaction.
+      // Proceed only if that flow already claimed it successfully.
+      const rows = await this.prisma.paymentTransaction.findMany({
+        where: { bookingId },
+      });
+      const current = (rows ?? []).find(
+        (row: any) => row.id === transaction.id,
+      );
+      if (current?.status === 'SUCCESS') {
+        return current;
+      }
+      this.parkUnmatchedWebhookConfirmation(provider);
+    }
+
+    return transaction;
+  }
+
+  /**
+   * #496: the booking reference a provider result asserts, if any —
+   * structured field first, then the metadata/order-reference shapes the
+   * provider adapters return.
+   */
+  private providerAssertedBookingId(
+    result: PaymentVerificationResult,
+  ): string | undefined {
+    const metadata: any = result.metadata ?? {};
+    return (
+      result.bookingId ??
+      metadata.bookingId ??
+      metadata.orderId ??
+      metadata.metadata?.bookingId ??
+      undefined
+    );
+  }
+
+  /**
+   * #496: when the provider reports a paid amount or currency, both must
+   * match the authoritative local transaction amount and booking currency.
+   */
+  private assertProviderAmountCurrency(
+    result: PaymentVerificationResult,
+    localTransaction: { amount: MoneyInput },
+    booking: { currency?: string | null },
+  ) {
+    const metadata: any = result.metadata ?? {};
+    const reportedAmount = result.amount ?? metadata.amount ?? undefined;
+
+    if (reportedAmount !== undefined && reportedAmount !== null) {
+      if (!decimalEqualsMoney(reportedAmount, localTransaction.amount)) {
+        throw new BadRequestException(
+          'Provider amount does not match the booking payment transaction',
+        );
+      }
+    }
+
+    const reportedCurrency = result.currency ?? metadata.currency ?? undefined;
+    if (reportedCurrency) {
+      const expectedCurrency = (booking.currency || 'MAD').toUpperCase();
+      if (String(reportedCurrency).toUpperCase() !== expectedCurrency) {
+        throw new BadRequestException(
+          'Provider currency does not match the booking currency',
+        );
+      }
+    }
+  }
+
+  /**
+   * #497: release an in-flight refund claim to a recoverable, support-
+   * visible FAILED state after a provider failure, without moving any
+   * refund totals or booking payment state.
+   */
+  private async releaseRefundClaim(bookingId: string) {
+    await this.prisma.booking.updateMany({
+      where: { id: bookingId, refundStatus: RefundStatus.PENDING },
+      data: { refundStatus: RefundStatus.FAILED },
     });
   }
 
@@ -377,17 +838,15 @@ export class PaymentsService {
       return;
     }
 
-    // Update payment transaction
-    await this.prisma.paymentTransaction.updateMany({
-      where: {
-        bookingId,
-        transactionId: session.id,
-      },
-      data: {
-        status: 'SUCCESS',
-        providerData: session,
-      },
-    });
+    // #596: Stripe's webhook session id IS the initiation session id
+    // stored on the local transaction, so the mapping resolves
+    // directly; a zero-match parks instead of confirming.
+    await this.claimWebhookTransaction(
+      bookingId,
+      'STRIPE',
+      this.webhookCandidateIds(session),
+      session,
+    );
 
     // Transition booking to confirmed
     await this.transitionBookingToConfirmed(bookingId, {
@@ -487,6 +946,15 @@ export class PaymentsService {
       return;
     }
 
+    // #596: claim the mapped local transaction (zero-row claim parks)
+    // before confirming on a payment-intent success.
+    await this.claimWebhookTransaction(
+      transaction.booking.id,
+      'STRIPE',
+      this.webhookCandidateIds(paymentIntent),
+      paymentIntent,
+    );
+
     // Only process if not already confirmed
     if (transaction.booking.paymentStatus !== BookingPaymentStatus.PAID) {
       await this.transitionBookingToConfirmed(transaction.booking.id, {
@@ -544,17 +1012,16 @@ export class PaymentsService {
       return;
     }
 
-    // Update payment transaction
-    await this.prisma.paymentTransaction.updateMany({
-      where: {
-        bookingId,
-        transactionId: event.transactionId,
-      },
-      data: {
-        status: 'SUCCESS',
-        providerData: event,
-      },
-    });
+    // #596: the CMI webhook transaction id differs from the initiation
+    // session id stored on the local transaction; resolve it through
+    // the provider id-mapping (ids recorded in providerData at
+    // initiation). A zero-match parks instead of confirming.
+    await this.claimWebhookTransaction(
+      bookingId,
+      'CMI',
+      this.webhookCandidateIds(event),
+      event,
+    );
 
     // Transition booking to confirmed
     await this.transitionBookingToConfirmed(bookingId, {
@@ -665,7 +1132,7 @@ export class PaymentsService {
 
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
-      include: { traveler: true, session: { include: { template: { include: { agency: { include: { wallet: true } } } } } } },
+      include: { traveler: true, session: { include: { template: { include: { agency: true } } } } },
     });
 
     if (!booking) {
@@ -673,17 +1140,16 @@ export class PaymentsService {
       return;
     }
 
-    // Update payment transaction
-    await this.prisma.paymentTransaction.updateMany({
-      where: {
-        bookingId,
-        transactionId: event.transactionId,
-      },
-      data: {
-        status: 'SUCCESS',
-        providerData: event,
-      },
-    });
+    // #596: same id-mapping as CMI — the CashPlus webhook transaction
+    // id differs from the initiation session id; resolve it through
+    // the ids recorded in providerData at initiation. A zero-match
+    // parks instead of confirming.
+    await this.claimWebhookTransaction(
+      bookingId,
+      'CASHPLUS',
+      this.webhookCandidateIds(event),
+      event,
+    );
 
     // Transition booking to confirmed
     await this.transitionBookingToConfirmed(bookingId, {

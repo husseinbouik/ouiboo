@@ -8,6 +8,7 @@ import { toPaginatedList } from '@ouiboo/utils';
 import { PaymentsOverviewCards } from '@/components/payments/PaymentsOverviewCards';
 import { PaymentsActivityList, type AgencyPaymentListItem } from '@/components/payments/PaymentsActivityList';
 import { PaymentsHelp } from '@/components/payments/PaymentsHelp';
+import { isFreeBeta } from '@/lib/beta';
 
 type PaymentsOverviewResponse = {
   currency: string;
@@ -61,6 +62,19 @@ export default function PaymentsPage() {
           {t('payments.subtitle')}
         </p>
       </div>
+
+      {/* #566: in the free beta there is no wallet, balance, fee or
+          credits here — this page is a read-only record of payments made
+          directly to the agency. Say so before any totals render. */}
+      {isFreeBeta() && (
+        <div
+          data-testid="free-beta-payments-note"
+          className="rounded-2xl border border-primary/20 bg-primary/5 p-5 space-y-1"
+        >
+          <p className="text-sm font-bold text-foreground">{t('betaNotAvailable.walletBannerTitle')}</p>
+          <p className="text-sm text-muted-foreground">{t('betaNotAvailable.walletBannerBody')}</p>
+        </div>
+      )}
 
       <PaymentsOverviewCards
         totalReceived={Number(overview?.totalReceived || 0)}

@@ -1,13 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { LifeBuoy, Mail, Phone } from 'lucide-react';
+import { LifeBuoy, Mail, MessageCircle, Phone } from 'lucide-react';
 import { Card } from '@ouiboo/ui';
 import type { BookingDetails } from '@ouiboo/types';
 import { isTripActiveWindow, NORMAL_SUPPORT_RESPONSE_HOURS, shouldShowTripContacts } from '@ouiboo/utils';
 import { useTranslation } from 'react-i18next';
 import '../lib/i18n';
-import { SUPPORT_EMAIL, supportMailto } from '@/lib/support';
+import {
+    SUPPORT_EMAIL,
+    SUPPORT_PHONE,
+    supportMailto,
+    supportTelHref,
+    supportWhatsAppHref,
+} from '@/lib/support';
 
 /**
  * #419 (Council P0-16): the departure pack. On a booking, the traveller
@@ -34,7 +40,7 @@ export function TripContactsCard({ booking }: { booking: BookingDetails }) {
     const telHref = emergencyPhone ? `tel:${emergencyPhone.replace(/[\s().-]/g, '')}` : null;
 
     return (
-        <Card className="rounded-[2rem] border border-border shadow-sm bg-card">
+        <Card className="rounded-3xl border border-border shadow-sm bg-card">
             <div className="p-8 space-y-6">
                 <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
@@ -78,12 +84,42 @@ export function TripContactsCard({ booking }: { booking: BookingDetails }) {
                             {t('support.escalationTitle')}
                         </p>
                         <p className="mt-2 text-sm text-muted-foreground">{t('support.escalationBody')}</p>
-                        <a
-                            href={supportMailto('Trip emergency — escalation')}
-                            className="mt-4 inline-flex items-center gap-2 text-sm font-black text-sunset-orange hover:text-orange-600"
-                        >
-                            <Mail className="h-4 w-4" /> {SUPPORT_EMAIL}
-                        </a>
+                        {/* Session #3 P0-8 (#419): a telephonic escalation
+                            channel — the founder number (call / WhatsApp)
+                            renders only when NEXT_PUBLIC_SUPPORT_PHONE is
+                            configured; the number itself is founder-provided
+                            (BETA_OPS_CHECKLIST §4), never hardcoded. */}
+                        {SUPPORT_PHONE && supportTelHref ? (
+                            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+                                <a
+                                    href={supportTelHref}
+                                    className="inline-flex items-center gap-2 text-sm font-black text-sunset-orange hover:text-orange-600"
+                                >
+                                    <Phone className="h-4 w-4" /> {t('support.escalationCall')} · {SUPPORT_PHONE}
+                                </a>
+                                {supportWhatsAppHref ? (
+                                    <a
+                                        href={supportWhatsAppHref}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-2 text-sm font-black text-sunset-orange hover:text-orange-600"
+                                    >
+                                        <MessageCircle className="h-4 w-4" /> {t('support.escalationWhatsApp')}
+                                    </a>
+                                ) : null}
+                            </div>
+                        ) : null}
+                        {/* Session #3 P0-7a (#555): the escalation mailto
+                            renders only when a monitored inbox is
+                            configured — never a dead default address. */}
+                        {SUPPORT_EMAIL && supportMailto('Trip emergency — escalation') ? (
+                            <a
+                                href={supportMailto('Trip emergency — escalation') ?? undefined}
+                                className="mt-4 inline-flex items-center gap-2 text-sm font-black text-sunset-orange hover:text-orange-600"
+                            >
+                                <Mail className="h-4 w-4" /> {SUPPORT_EMAIL}
+                            </a>
+                        ) : null}
                     </div>
                 </div>
 

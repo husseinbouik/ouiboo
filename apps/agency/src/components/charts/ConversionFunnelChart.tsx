@@ -28,20 +28,20 @@ export default function ConversionFunnelChart({ data }: FunnelProps) {
   }, [data, t]);
 
   if (!data) return (
-    <Card className="rounded-[2.5rem] shadow-xl shadow-black/5 p-6">
+    <Card className="rounded-4xl shadow-xl shadow-black/5 p-6">
       <div className="animate-pulse h-64 bg-muted rounded-lg" />
     </Card>
   );
 
   if (data && !transformed?.length) return (
-    <Card className="rounded-[2.5rem] shadow-xl shadow-black/5 p-6 text-muted-foreground">{t('charts.funnel.noData')}</Card>
+    <Card className="rounded-4xl shadow-xl shadow-black/5 p-6 text-muted-foreground">{t('charts.funnel.noData')}</Card>
   );
 
   const rate = data.completionRate || 0;
   const badgeColor = rate > 5 ? 'bg-success' : rate >= 2 ? 'bg-warning' : 'bg-danger';
 
   return (
-    <Card className="rounded-[2.5rem] shadow-xl shadow-black/5 p-6">
+    <Card className="rounded-4xl shadow-xl shadow-black/5 p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-display font-black text-lg text-foreground">{t('charts.funnel.title')}</h3>

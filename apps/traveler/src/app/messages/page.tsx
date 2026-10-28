@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { Button } from '@ouiboo/ui';
+import { Button, EmptyState } from '@ouiboo/ui';
 import { AlertTriangle, MessageCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/components/AuthContext';
@@ -75,16 +75,24 @@ export default function MessagesPage() {
           sent through chat — warn on the messaging surface itself. */}
       <div className="rounded-2xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 p-5 text-sm mb-8 flex gap-3" role="note">
         <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-        <p className="font-medium text-foreground">{t('messages.idDocumentWarning')}</p>
+        <div className="space-y-2">
+          <p className="font-medium text-foreground">{t('messages.idDocumentWarning')}</p>
+          {/* #444 (Council P2-05): the leakage nudge — booking directly
+              leaves the trip with no record, terms or refund tracking. */}
+          <p className="text-muted-foreground">{t('messages.keepOnOuibooWarning')}</p>
+        </div>
       </div>
       {conversations.length === 0 ? (
-        <div className="text-center py-16 bg-card/70 rounded-2xl border border-dashed border-border">
-          <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">{t('messages.emptyBody')}</p>
-          <Button asChild variant="outline">
+        <EmptyState
+          icon={<MessageCircle className="h-6 w-6" />}
+          title={t('messages.emptyTitle')}
+          description={t('messages.emptyBody')}
+          action={
+            <Button asChild variant="outline">
               <Link href="/search">{t('messages.browseTrips')}</Link>
             </Button>
-        </div>
+          }
+        />
       ) : (
         <div className="space-y-3">
           {conversations.map((c) => (

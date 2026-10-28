@@ -48,6 +48,8 @@ jest.mock('@ouiboo/ui', () => ({
   ThemeToggle: () => null,
   LanguageSwitcher: () => null,
   BetaBadge: () => null,
+  // Session #3 P0-4 (#552): the login page renders the shared <Logo>.
+  Logo: () => null,
 }));
 
 jest.mock('qrcode', () => ({

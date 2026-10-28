@@ -48,9 +48,13 @@ export default function CheckoutPage() {
   }, [proofPreview]);
 
   const { data: trip, isLoading } = useQuery<CheckoutTrip>({
-    queryKey: ['trip', tripId],
+    // Content-language audit (#546): checkout fetched the trip with NO
+    // locale — the API default (French) rendered at checkout whatever
+    // the UI language. Same locale-scoped key as the detail page, so
+    // both surfaces share the correctly-languaged entry.
+    queryKey: ['trip', tripId, (i18n.language || 'en').split('-')[0]],
     queryFn: async () => {
-      const response = await apiClient.get(`/trips/${tripId}`);
+      const response = await apiClient.get(`/trips/${tripId}?locale=${i18n.language}`);
       return response.data;
     }
   });
@@ -154,7 +158,7 @@ export default function CheckoutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           {/* Left: Form */}
           <div className="lg:col-span-8 space-y-8">
-            <Card className="border-none shadow-xl shadow-black/5 rounded-[2.5rem] overflow-hidden">
+            <Card className="border-none shadow-xl shadow-black/5 rounded-4xl overflow-hidden">
               <CardContent className="p-10 space-y-10">
                 <CheckoutGuestForm
                   trip={trip}

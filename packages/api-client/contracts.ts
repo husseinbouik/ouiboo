@@ -5,15 +5,12 @@ import type {
   BookingStatus,
   DecimalString,
   PaymentProvider,
-  PayoutDetails,
-  PayoutRequest,
   TripCategory,
   TripSession,
   TripStatus,
   TripTemplate,
   User,
   VerificationStatus,
-  Wallet,
 } from '@ouiboo/types'
 
 export interface PaginationMeta {
@@ -144,7 +141,6 @@ export interface AgencyStats {
   activeTrips: number
   totalBookings: number
   totalCustomers: number
-  wallet: Wallet | Pick<Wallet, 'availableBalance' | 'pendingBalance'>
 }
 
 export interface AgencyBookingsParams extends PageParams {
@@ -158,11 +154,6 @@ export interface UpdateAgencyProfileInput {
   bio?: string
   logo?: string
   bankDetails?: string
-}
-
-export interface RequestPayoutInput {
-  amount: DecimalString | number
-  bankDetails: string
 }
 
 export interface UpdateUserInput {
@@ -208,11 +199,6 @@ export interface AdminVerifyInput {
   rejectionReason?: string
 }
 
-export interface AdminProcessPayoutInput {
-  id: string
-  status: string
-}
-
 export interface AdminRefundBookingInput {
   id: string
   amount: number
@@ -242,8 +228,6 @@ export interface AuditLogRecord {
 export type {
   AgencyProfile,
   BookingDetails,
-  PayoutDetails,
-  PayoutRequest,
   TripSession,
   TripTemplate,
   User,

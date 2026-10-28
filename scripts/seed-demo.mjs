@@ -10,7 +10,6 @@ import {
   BookingStatus,
   BookingPaymentStatus,
   PaymentMethod,
-  TransactionType,
 } from '../packages/database/generated-client/index.js';
 
 const prisma = new PrismaClient();
@@ -117,6 +116,7 @@ async function main() {
     create: {
       id: 'demo-session-sahara',
       templateId: template.id,
+      agencyId: agency.id,
       startDate,
       endDate,
       price: '1200.00',
@@ -139,6 +139,7 @@ async function main() {
     create: {
       id: 'demo-booking-confirmed',
       sessionId: session.id,
+      agencyId: agency.id,
       travelerId: traveler.id,
       status: BookingStatus.CONFIRMED,
       paymentStatus: BookingPaymentStatus.PAID,
@@ -148,19 +149,6 @@ async function main() {
       fullName: traveler.name,
       phoneNumber: '+212600000000',
       confirmedAt: new Date(),
-    },
-  });
-
-  const wallet = await prisma.wallet.upsert({
-    where: { agencyId: agency.id },
-    update: {
-      availableBalance: '2400.00',
-      pendingBalance: '0.00',
-    },
-    create: {
-      agencyId: agency.id,
-      availableBalance: '2400.00',
-      pendingBalance: '0.00',
     },
   });
 
@@ -174,29 +162,13 @@ async function main() {
     create: {
       id: 'demo-payment-transaction',
       bookingId: booking.id,
+      agencyId: agency.id,
       amount: '2400.00',
       method: PaymentMethod.GATEWAY,
       transactionId: 'demo-gateway-transaction',
       status: 'SUCCESS',
       provider: 'DEMO',
       metadata: { seeded: true },
-    },
-  });
-
-  await prisma.walletTransaction.upsert({
-    where: { id: 'demo-wallet-transaction' },
-    update: {
-      amount: '2400.00',
-      type: TransactionType.BOOKING,
-      reason: 'Demo confirmed booking revenue',
-    },
-    create: {
-      id: 'demo-wallet-transaction',
-      walletId: wallet.id,
-      amount: '2400.00',
-      type: TransactionType.BOOKING,
-      reason: 'Demo confirmed booking revenue',
-      referenceId: booking.id,
     },
   });
 

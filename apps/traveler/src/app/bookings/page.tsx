@@ -13,7 +13,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthContext';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { ReviewForm } from '@/components/ReviewForm';
+import { RebookingSuggestions, type RebookingSuggestionItem } from '@/components/RebookingSuggestions';
 import { TravelerRefundActions } from '@/components/TravelerRefundActions';
 import {
     canRetryTravelerPayment,
@@ -22,6 +25,7 @@ import {
     getTravelerPaymentStatusMeta,
     getTravelerProofStatus,
     shouldShowUploadAction,
+    isReviewEligibleBooking,
 } from '@ouiboo/utils';
 
 /** #370: refund case as returned by GET /refunds/mine (amounts are strings). */
@@ -55,36 +59,42 @@ const REFUND_ACTIVE_STATUSES = new Set([
  * organiser (agency) that received the payment — never promise that
  * OuiBoo guarantees or pays the refund.
  */
-function refundCaseCopy(refundCase: TravelerRefundCase, agencyName: string): string {
+function refundCaseCopy(refundCase: TravelerRefundCase, agencyName: string, t: TFunction, locale: string): string {
+    // Session #3 P0-12 (#557): this copy was hardcoded English (and the
+    // panel header printed the raw status enum). All strings now come
+    // from the refunds locale namespace, with a human label per status.
     const amount = `${refundCase.approvedAmount ?? refundCase.requestedAmount} ${refundCase.currency}`;
     const due = refundCase.refundDueAt
-        ? ` Expected by ${format(new Date(refundCase.refundDueAt), 'MMM dd, yyyy')}.`
+        ? t('refunds.expectedBy', {
+            date: new Date(refundCase.refundDueAt).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' }),
+        })
         : '';
     switch (refundCase.status) {
         case 'REFUND_REQUESTED':
-            return `Refund of ${amount} requested. ${agencyName} will review your request.`;
+            return t('refunds.case.requested', { amount, agency: agencyName });
         case 'ELIGIBILITY_REVIEW':
-            return `Your refund of ${amount} is under review.`;
+            return t('refunds.case.underReview', { amount });
         case 'REFUND_APPROVED':
         case 'AGENCY_ACTION_REQUIRED':
-            return `Refund of ${amount} approved. ${agencyName} will process your refund.${due}`;
+            return t('refunds.case.approved', { amount, agency: agencyName, due });
         case 'REFUND_INITIATED':
-            return `Your refund of ${amount} is on its way from ${agencyName}.`;
+            return t('refunds.case.initiated', { amount, agency: agencyName });
         case 'REFUND_COMPLETED':
-            return `Refund of ${amount} completed by ${agencyName}.`;
+            return t('refunds.case.completed', { amount, agency: agencyName });
         case 'REFUND_REJECTED':
-            return `Your refund request of ${amount} was not approved. You can contact ${agencyName} for details.`;
+            return t('refunds.case.rejected', { amount, agency: agencyName });
         case 'REFUND_FAILED':
-            return `A refund attempt by ${agencyName} failed. Your case stays open and ${agencyName} must retry.`;
+            return t('refunds.case.failed', { amount, agency: agencyName });
         case 'REFUND_OVERDUE':
-            return `Your refund of ${amount} is overdue. We are following up with ${agencyName}.`;
+            return t('refunds.case.overdue', { amount, agency: agencyName });
         default:
-            return `Refund status: ${refundCase.status.replaceAll('_', ' ')}.`;
+            return t('refunds.case.unknown', { status: refundCase.status.replaceAll('_', ' ') });
     }
 }
 
 export default function MyBookingsPage() {
     const { user } = useAuth();
+    const { t, i18n } = useTranslation();
     const queryClient = useQueryClient();
     const [uploadingId, setUploadingId] = useState<string | null>(null);
     const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -104,6 +114,19 @@ export default function MyBookingsPage() {
         placeholderData: (prev: unknown) => prev,
     });
     const { data: bookings = [], pagination: bookingsPagination } = toPaginatedList<BookingDetails>(rawBookings);
+
+    // #444 (Council P2-05): book-again suggestions — upcoming departures
+    // from agencies this traveller has already booked with.
+    const { data: rebookingSuggestions = [] } = useQuery<RebookingSuggestionItem[]>({
+        queryKey: ['rebooking-suggestions', i18n.language],
+        queryFn: async () => {
+            const response = await apiClient.get('/bookings/rebooking-suggestions', {
+                params: { locale: i18n.language },
+            });
+            return Array.isArray(response.data) ? (response.data as RebookingSuggestionItem[]) : [];
+        },
+        enabled: !!user,
+    });
 
     // #370: refund cases for this traveller, latest case per booking.
     const { data: rawRefundCases } = useQuery<unknown>({
@@ -216,7 +239,7 @@ export default function MyBookingsPage() {
         return (
             <div className="min-h-screen bg-background font-sans text-foreground overflow-hidden relative">
                 <div className="max-w-5xl mx-auto px-6 pt-32 pb-20">
-                    <div className="text-center py-20 bg-card/70 rounded-[2rem] border border-dashed border-border">
+                    <div className="text-center py-20 bg-card/70 rounded-3xl border border-dashed border-border">
                         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                             <Calendar className="h-8 w-8 text-muted-foreground" />
                         </div>
@@ -267,7 +290,7 @@ export default function MyBookingsPage() {
                             const showRetryPayment = canRetryTravelerPayment(booking);
 
                             return (
-                                <Card key={booking.id} className="group border border-border shadow-sm hover:shadow-lg transition-all duration-300 rounded-[2rem] overflow-hidden bg-card">
+                                <Card key={booking.id} className="group border border-border shadow-sm hover:shadow-lg transition-all duration-300 rounded-3xl overflow-hidden bg-card">
                                     <div className="flex flex-col md:flex-row">
                                         <div className="w-full md:w-72 h-48 md:h-auto overflow-hidden relative">
                                             <div className="absolute inset-0 bg-muted animate-pulse" />
@@ -322,30 +345,42 @@ export default function MyBookingsPage() {
                                                 </div>
                                             </div>
 
-                                            {/* #369: staged payment plan strip (plan §42 copy) */}
+                                            {/* #369: staged payment plan strip (plan §42 copy).
+                                                #588: copy lives in the paymentPlan locale
+                                                namespace (en/fr/ar parity) — it was hardcoded
+                                                English while the rest of the page localised. */}
                                             {booking.paymentPlan && (
                                                 <div className="rounded-2xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 px-5 py-4 space-y-2">
                                                     {booking.paymentPlan.status === BookingPaymentPlanStatus.DepositDue && (
                                                         <p className="text-sm font-semibold text-foreground">
-                                                            Deposit due: {booking.paymentPlan.depositAmount} {booking.paymentPlan.currency} — pay the deposit to {booking.session.template.agency?.companyName || 'the agency'} to secure your spot. This trip needs at least {booking.paymentPlan.minimumParticipants} participants by {format(new Date(booking.paymentPlan.confirmationDeadline), 'MMM dd, yyyy')}.
+                                                            {t('paymentPlan.depositDue', {
+                                                                amount: `${booking.paymentPlan.depositAmount} ${booking.paymentPlan.currency}`,
+                                                                agency: booking.session.template.agency?.companyName || t('refunds.defaultAgency'),
+                                                                count: booking.paymentPlan.minimumParticipants,
+                                                                date: new Date(booking.paymentPlan.confirmationDeadline).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' }),
+                                                            })}
                                                         </p>
                                                     )}
                                                     {booking.paymentPlan.status === BookingPaymentPlanStatus.DepositPaid && (
                                                         <p className="text-sm font-semibold text-foreground">
-                                                            Deposit confirmed by {booking.session.template.agency?.companyName || 'the agency'}. Waiting for trip confirmation — this trip needs at least {booking.paymentPlan.minimumParticipants} participants by {format(new Date(booking.paymentPlan.confirmationDeadline), 'MMM dd, yyyy')}. If the minimum is not reached, your deposit is refunded.
+                                                            {t('paymentPlan.depositPaid', {
+                                                                agency: booking.session.template.agency?.companyName || t('refunds.defaultAgency'),
+                                                                count: booking.paymentPlan.minimumParticipants,
+                                                                date: new Date(booking.paymentPlan.confirmationDeadline).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' }),
+                                                            })}
                                                         </p>
                                                     )}
                                                     {booking.paymentPlan.status === BookingPaymentPlanStatus.BalanceDue && (
                                                         <>
                                                             <p className="text-sm font-semibold text-foreground">
-                                                                Trip confirmed — remaining balance due: {booking.paymentPlan.balanceAmount} {booking.paymentPlan.currency}
-                                                                {booking.paymentPlan.balanceDueAt ? <> (pay before {format(new Date(booking.paymentPlan.balanceDueAt), 'MMM dd, yyyy')})</> : null}.
+                                                                {t('paymentPlan.balanceDue', { amount: `${booking.paymentPlan.balanceAmount} ${booking.paymentPlan.currency}` })}
+                                                                {booking.paymentPlan.balanceDueAt ? t('paymentPlan.balancePayBefore', { date: new Date(booking.paymentPlan.balanceDueAt).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' }) }) : null}.
                                                             </p>
                                                             {booking.status === BookingStatus.Confirmed && (
                                                                 <label className="cursor-pointer inline-block">
                                                                     <input type="file" className="sr-only" onChange={(e) => handleFileUpload(e, booking.id)} disabled={!!uploadingId} />
                                                                     <Button disabled={!!uploadingId} className="h-11 px-6 bg-sunset-orange hover:bg-orange-600 border-none rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-orange-900/10 active:scale-95 transition-all">
-                                                                        {uploadingId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4 mr-2" /> Upload Balance Receipt</>}
+                                                                        {uploadingId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4 mr-2" /> {t('paymentPlan.uploadBalanceReceipt')}</>}
                                                                     </Button>
                                                                 </label>
                                                             )}
@@ -353,12 +388,15 @@ export default function MyBookingsPage() {
                                                     )}
                                                     {booking.paymentPlan.status === BookingPaymentPlanStatus.RefundDue && (
                                                         <p className="text-sm font-semibold text-foreground">
-                                                            This trip was not confirmed — the minimum group size was not reached. Your deposit of {booking.paymentPlan.depositAmount} {booking.paymentPlan.currency} is refundable; {booking.session.template.agency?.companyName || 'the agency'} will process your refund.
+                                                            {t('paymentPlan.refundDue', {
+                                                                amount: `${booking.paymentPlan.depositAmount} ${booking.paymentPlan.currency}`,
+                                                                agency: booking.session.template.agency?.companyName || t('refunds.defaultAgency'),
+                                                            })}
                                                         </p>
                                                     )}
                                                     {booking.paymentPlan.status === BookingPaymentPlanStatus.FullyPaid && (
                                                         <p className="text-sm font-semibold text-foreground">
-                                                            Paid in full — deposit and balance confirmed by {booking.session.template.agency?.companyName || 'the agency'}.
+                                                            {t('refunds.paidInFull', { agency: booking.session.template.agency?.companyName || t('refunds.defaultAgency') })}
                                                         </p>
                                                     )}
                                                 </div>
@@ -371,8 +409,8 @@ export default function MyBookingsPage() {
                                                 <div className="rounded-2xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 px-5 py-4">
                                                     <p className="text-sm font-semibold text-foreground">
                                                         {booking.paymentProof.status === VerificationStatus.Accepted
-                                                            ? <>Proof accepted by {booking.session.template.agency?.companyName || 'the agency'} — they still have to confirm the transfer in their bank account. Your payment is not settled until then.</>
-                                                            : <>Proof received. {booking.session.template.agency?.companyName || 'The agency'} still has to confirm the transfer in its bank account — your payment is not settled until then.</>}
+                                                            ? <>{t('refunds.proofAccepted', { agency: booking.session.template.agency?.companyName || t('refunds.defaultAgency') })}</>
+                                                            : <>{t('refunds.proofReceived', { agency: booking.session.template.agency?.companyName || t('refunds.defaultAgency') })}</>}
                                                     </p>
                                                 </div>
                                             )}
@@ -381,16 +419,16 @@ export default function MyBookingsPage() {
                                             {(refundCase || canRequestRefund) && (
                                                 <div className="rounded-2xl border border-border/60 bg-muted/20 px-5 py-4 space-y-2">
                                                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                                                        Refund {refundCase ? `· ${refundCase.status.replaceAll('_', ' ')}` : ''}
+                                                        {t('refunds.panelTitle')}{refundCase && t(`refunds.status.${refundCase.status}`, { defaultValue: '' }) ? ` · ${t(`refunds.status.${refundCase.status}`)}` : ''}
                                                     </p>
                                                     {refundCase ? (
                                                         <p className="text-sm font-semibold text-foreground">
-                                                            {refundCaseCopy(refundCase, booking.session.template.agency?.companyName || 'The organiser')}
+                                                            {refundCaseCopy(refundCase, booking.session.template.agency?.companyName || t('refunds.defaultOrganiser'), t, i18n.language)}
                                                         </p>
                                                     ) : (
                                                         <>
                                                             <p className="text-sm font-semibold text-foreground">
-                                                                Need a refund for this booking? Refunds are handled by {booking.session.template.agency?.companyName || 'the organiser'}, which received your payment.
+                                                                {t('refunds.requestPrompt', { agency: booking.session.template.agency?.companyName || t('refunds.defaultOrganiser') })}
                                                             </p>
                                                             <Button
                                                                 variant="outline"
@@ -401,7 +439,7 @@ export default function MyBookingsPage() {
                                                                     requestRefundMutation.mutate(booking.id);
                                                                 }}
                                                             >
-                                                                {requestingRefundId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Request refund'}
+                                                                {requestingRefundId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : t('refunds.requestButton')}
                                                             </Button>
                                                         </>
                                                     )}
@@ -409,7 +447,12 @@ export default function MyBookingsPage() {
                                                     {refundCase && <TravelerRefundActions refundCase={refundCase} />}
                                                     {refundCase && REFUND_ACTIVE_STATUSES.has(refundCase.status) && (
                                                         <p className="text-xs text-muted-foreground">
-                                                            We track this refund until the organiser completes it.
+                                                            {t('refunds.trackingLine')}
+                                                        </p>
+                                                    )}
+                                                    {refundCase?.status === 'REFUND_OVERDUE' && (
+                                                        <p className="text-xs font-semibold text-foreground">
+                                                            {t('refunds.nextUpdateOverdue')}
                                                         </p>
                                                     )}
                                                 </div>
@@ -436,7 +479,8 @@ export default function MyBookingsPage() {
                                                             </Button>
                                                         </label>
                                                     )}
-                                                    {booking.status === BookingStatus.Completed && !booking.review && (
+                                                    {/* #434: review eligibility attaches to recorded ATTENDED attendance, not completion alone. */}
+                                                    {isReviewEligibleBooking(booking) && !booking.review && (
                                                         <Button
                                                             onClick={() => setReviewModalOpen(booking.id)}
                                                             className="h-12 px-8 bg-deep-blue hover:bg-blue-900 rounded-xl text-xs font-black uppercase tracking-widest border-none"
@@ -506,7 +550,7 @@ export default function MyBookingsPage() {
                             );
                         })
                     ) : (
-<div className="text-center py-20 bg-card/70 rounded-[2rem] border border-dashed border-border">
+<div className="text-center py-20 bg-card/70 rounded-3xl border border-dashed border-border">
                             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Calendar className="h-8 w-8 text-muted-foreground" />
                             </div>
@@ -516,6 +560,7 @@ export default function MyBookingsPage() {
                     )}
                 </div>
                 <Pagination pagination={bookingsPagination} onPageChange={setCurrentPage} className="mt-8" />
+                <RebookingSuggestions suggestions={rebookingSuggestions} />
             </div>
 
             {reviewModalOpen && (
