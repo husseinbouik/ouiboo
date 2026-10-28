@@ -3,6 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, Input, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
+import { AuthSideWordmark } from '../../components/AuthSideWordmark';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, Mail, Lock, Building2, Eye, EyeOff, Calendar } from 'lucide-react';
@@ -184,7 +185,7 @@ export default function AgencySignupPage() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder={t('signup.passwordPlaceholder')}
                     className="ps-10 pe-12 h-12 bg-muted border-border focus:bg-background transition-all duration-200"
-                    {...register('password', { required: t('signup.passwordRequired'), minLength: { value: 6, message: t('signup.passwordMinLength') } })}
+                    {...register('password', { required: t('signup.passwordRequired'), minLength: { value: 8, message: t('signup.passwordMinLength') } })}
                   />
                   <button
                     type="button"
@@ -279,7 +280,7 @@ export default function AgencySignupPage() {
         <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.08)_0,rgba(255,255,255,0.08)_1px,transparent_1px,transparent_32px)]" />
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full h-full">
           <div className="flex justify-end">
-             <div className="text-3xl font-bold tracking-tight">Ouiboo</div>
+             <AuthSideWordmark />
           </div>
           <motion.div
             initial={{ y: 20, opacity: 0 }}

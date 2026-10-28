@@ -7,10 +7,14 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@ouiboo/types';
 import { DatabaseService } from '../database/database.service';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
-import { mapBookingDetails } from '../bookings/booking-response.util';
+import { BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT, mapBookingDetails } from '../bookings/booking-response.util';
+import { serializeDuplicateCreditFlag } from '../bookings/bookings.service';
 import { toMoneyString } from '../common/money.util';
 import { UpdateAgencyProfileDto } from './dto/update-profile.dto';
 import { getAgencyActivationBlock } from '../common/agency-licence.util';
+import { isBankDestinationVerified } from '../common/bank-details.util';
+import { Prisma } from '@ouiboo/database';
+import { derivePublicMediaUrl } from '../upload/media-url.util';
 
 const clampListLimit = (value?: string, fallback = 50, max = 200) => {
     const parsed = Number(value);
@@ -34,6 +38,17 @@ export class AgencyController {
         private readonly prisma: DatabaseService,
         private readonly externalPaymentsService: ExternalPaymentsService,
     ) { }
+
+    @Get('duplicate-credit-flags')
+    @ApiOperation({ summary: 'List this agency\'s duplicate-credit flags (#494)' })
+    async listDuplicateCreditFlags(@Request() req) {
+        const flags = await this.prisma.duplicateCreditFlag.findMany({
+            where: { agencyId: req.tenantId },
+            orderBy: { createdAt: 'desc' },
+            take: 200,
+        });
+        return flags.map(serializeDuplicateCreditFlag);
+    }
 
     @Post('subscription/cancel')
     @ApiOperation({ summary: 'Cancel the agency subscription at the end of the current period (#324)' })
@@ -216,7 +231,11 @@ export class AgencyController {
                             email: true,
                         }
                     },
-                    paymentProof: true
+                    paymentProof: true,
+                    paymentPlan: true,
+                    // #422: lets mapBookingDetails embed the proof's
+                    // bank-confirmation state (see booking-response.util).
+                    externalPayments: { select: BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT }
                 },
                 orderBy: {
                     bookingDate: 'desc'
@@ -228,7 +247,7 @@ export class AgencyController {
         ]);
 
         return {
-            data: bookings.map(mapBookingDetails),
+            data: bookings.map((booking) => mapBookingDetails(booking)),
             pagination: {
                 total,
                 page: currentPage,
@@ -309,7 +328,11 @@ export class AgencyController {
             response: r.response,
             isVerifiedBooking: r.isVerifiedBooking,
             createdAt: r.createdAt,
-            traveler: r.traveler,
+            // #447: the traveller avatar is a stored file reference —
+            // re-derive it against the current public media base.
+            traveler: r.traveler
+                ? { ...r.traveler, avatar: derivePublicMediaUrl(r.traveler.avatar) }
+                : r.traveler,
             trip: {
                 id: r.booking.session.template.id,
                 title: r.booking.session.template.title
@@ -371,23 +394,110 @@ export class AgencyController {
             where: { id: req.tenantId },
             select: {
                 bankDetails: true,
+                pendingBankDetails: true,
+                bankDetailsStatus: true,
+                bankDetailsVerifiedAt: true,
+                // #419 fix: the activation gate below compares the
+                // submitted holder name / attestation against the stored
+                // values, so they must be selected — previously the
+                // controller could not tell "present but unchanged" from
+                // "changed" for these fields at all.
+                bankAccountHolderName: true,
+                bankAttestationUrl: true,
                 verificationStatus: true,
                 travelLicenceStatus: true,
                 licenceExpiry: true,
+                // #415: the activation block also requires verified RC
+                // insurance (first bank-destination submission = payment
+                // activation), so the gate needs the insurance fields.
+                insuranceStatus: true,
+                insuranceExpiry: true,
             },
         });
         if (!existing) throw new NotFoundException('Agency profile not found');
-        const bankDetails = data.bankDetails?.trim();
-        const bankDetailsChanged = data.bankDetails !== undefined
-            && bankDetails !== (existing.bankDetails || '');
 
-        // #371: setting payment instructions is payment activation. It
-        // requires a verified identity AND a verified travel licence, so
-        // no agency can start receiving traveller payments by bypassing
-        // onboarding. Clearing the instructions (deactivation) stays open.
-        if (bankDetailsChanged && bankDetails) {
+        // #419 fix: the #371/#415 activation gate guards CHANGES to the
+        // payment destination — it must not reject the whole profile
+        // PATCH just because bank fields are present in the payload.
+        // The agency Settings form always submits every field bundled
+        // together, so the old placement (gate inside the bankDetails
+        // branch, whose no-change exemption only recognised a
+        // resubmission of the pending value, or of the live value while
+        // the destination was verified) meant an agency whose RC
+        // insurance was not yet verified could not save ANY setting —
+        // emergency contacts, bio, company name — whenever the bundled
+        // bankDetails did not exactly match the pending submission.
+        // Scoped rule: compare each payment-destination field against
+        // what is stored; only an actual change is gated, and only
+        // while the agency has no verified destination yet (replacing
+        // a verified destination stays review-gated, not agency-gated,
+        // as before). Clearing the details is a deactivation, not an
+        // activation, and stays ungated.
+        const normalized = (value?: string | null) => (value ?? '').trim();
+        const submittedBankDetails =
+            data.bankDetails !== undefined ? data.bankDetails.trim() : undefined;
+        const bankDetailsChanged =
+            submittedBankDetails !== undefined &&
+            submittedBankDetails !== '' &&
+            submittedBankDetails !== normalized(existing.pendingBankDetails) &&
+            submittedBankDetails !== normalized(existing.bankDetails);
+        const holderNameChanged =
+            data.bankAccountHolderName !== undefined &&
+            normalized(data.bankAccountHolderName) !==
+                normalized(existing.bankAccountHolderName);
+        const attestationChanged =
+            data.bankAttestationUrl !== undefined &&
+            normalized(data.bankAttestationUrl) !==
+                normalized(existing.bankAttestationUrl);
+        if (
+            (bankDetailsChanged || holderNameChanged || attestationChanged) &&
+            !isBankDestinationVerified(existing)
+        ) {
             const block = getAgencyActivationBlock(existing);
             if (block) throw new ForbiddenException(block);
+        }
+
+        // #421 (Council P0-19): bank details are a payment DESTINATION,
+        // not free text that goes live on save. A submission is stored in
+        // pendingBankDetails (with holder name + bank attestation) and
+        // only an admin verification promotes it to the live bankDetails
+        // travellers see. While a replacement is under review the
+        // previously verified instructions stay live, and a submission no
+        // longer resets the whole-agency verificationStatus — destination
+        // review replaces that side effect.
+        const destination: Prisma.AgencyProfileUpdateInput = {};
+        if (data.bankDetails !== undefined) {
+            const submitted = data.bankDetails.trim();
+            if (!submitted) {
+                // Clearing the instructions deactivates the destination:
+                // nothing remains traveller-visible and the status resets.
+                destination.bankDetails = null;
+                destination.pendingBankDetails = null;
+                destination.bankDetailsStatus = 'UNVERIFIED';
+                destination.bankDetailsVerifiedAt = null;
+                destination.bankDetailsVerifiedBy = null;
+                destination.bankDetailsRejectionReason = null;
+            } else if (
+                submitted !== existing.pendingBankDetails &&
+                submitted !== existing.bankDetails
+            ) {
+                // A genuinely new destination submission. The #371/#415
+                // activation gate (verified identity + licence + RC
+                // insurance) has already been applied above, scoped to
+                // actual destination changes (#419 fix) — a submission
+                // identical to the stored live details is a no-op here
+                // regardless of the destination's verification state, so
+                // it can never re-gate or re-pend what is already stored.
+                destination.pendingBankDetails = submitted;
+                destination.bankDetailsStatus = 'PENDING_REVIEW';
+                destination.bankDetailsRejectionReason = null;
+            }
+        }
+        if (data.bankAccountHolderName !== undefined) {
+            destination.bankAccountHolderName = data.bankAccountHolderName.trim() || null;
+        }
+        if (data.bankAttestationUrl !== undefined) {
+            destination.bankAttestationUrl = data.bankAttestationUrl.trim() || null;
         }
 
         return this.prisma.agencyProfile.update({
@@ -401,10 +511,18 @@ export class AgencyController {
                 taxId: data.taxId?.trim(),
                 legalRepresentative: data.legalRepresentative?.trim(),
                 businessAddress: data.businessAddress?.trim(),
-                bankDetails,
-                verificationStatus: bankDetailsChanged && existing.verificationStatus === 'VERIFIED'
-                    ? 'PENDING'
-                    : undefined,
+                // #419: emergency contact — undefined skips the field,
+                // an empty string clears it (same semantics as the
+                // nullable profile fields above).
+                emergencyContactName:
+                    data.emergencyContactName !== undefined
+                        ? data.emergencyContactName.trim() || null
+                        : undefined,
+                emergencyContactPhone:
+                    data.emergencyContactPhone !== undefined
+                        ? data.emergencyContactPhone.trim() || null
+                        : undefined,
+                ...destination,
             }
         });
     }

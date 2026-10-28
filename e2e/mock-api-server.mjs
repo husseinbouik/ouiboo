@@ -36,12 +36,28 @@ const TRIP_1 = {
   title: 'Atlas Weekend Escape',
   category: 'Adventure',
   startLocation: 'Marrakech',
+  // #560: beta fields (mirrors e2e/helpers.ts) — currency, endLocation,
+  // translations, licence/insurance verification.
+  endLocation: 'Imlil',
+  currency: 'MAD',
+  translations: {
+    fr: { title: "Escapade week-end dans l'Atlas", description: 'Une escapade guidée en montagne pour les tests de lancement.' },
+    ar: { title: 'عطلة نهاية أسبوع في الأطلس', description: 'رحلة جبلية مصحوبة بمرشد لاختبارات الإطلاق.' },
+    en: { title: 'Atlas Weekend Escape', description: 'A guided mountain escape for launch testing.' },
+  },
   durationDays: 3,
   durationNights: 2,
   description: 'A guided mountain escape for launch testing.',
+  // #336: fixture images are inline data-URI PNGs. The previous
+  // example.com URLs are not in the traveler app's production next/image
+  // remotePatterns, so the optimizer answered 400 for them and the
+  // console-hygiene gate failed; a remote mock-media URL fares no better
+  // (the optimizer refuses private-IP upstreams). Data URIs bypass the
+  // optimizer, load deterministically offline, and keep this suite
+  // hermetic — image CONTENT is not what these specs assert.
   images: [
-    'https://example.com/trip-1.jpg',
-    'https://example.com/trip-2.jpg',
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgR05oigAAAAASUVORK5CYII=',
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgR05oigAAAAASUVORK5CYII=',
   ],
   inclusions: ['Guide', 'Transport'],
   exclusions: ['Flights'],
@@ -51,6 +67,12 @@ const TRIP_1 = {
     companyName: 'Atlas Co',
     bankDetails: 'RIB 1234567890',
     verificationStatus: 'VERIFIED',
+    travelLicenceStatus: 'VERIFIED',
+    travelLicenceType: 'ODV',
+    travelLicenceNumber: 'LIC-E2E-1',
+    licenceVerifiedAt: '2026-10-01T00:00:00.000Z',
+    insuranceStatus: 'VERIFIED',
+    insuranceVerifiedAt: '2026-10-01T00:00:00.000Z',
   },
   sessions: [
     {
@@ -133,7 +155,7 @@ const server = createServer((req, res) => {
     const q = (url.searchParams.get('q') || '').toLowerCase();
     const category = url.searchParams.get('category');
     const agencyId = url.searchParams.get('agencyId');
-    const matchesSearch = !q || 'atlas weekend escape'.includes(q) || 'marrakech'.includes(q);
+    const matchesSearch = !q || 'atlas weekend escape'.includes(q) || 'marrakech'.includes(q) || 'imlil'.includes(q);
     const matchesCategory = !category || category.toLowerCase() === 'adventure';
     const matchesAgency = !agencyId || agencyId === 'agency-1';
     const trips = matchesSearch && matchesCategory && matchesAgency ? [TRIP_1] : [];
@@ -178,7 +200,6 @@ const server = createServer((req, res) => {
       guestsCount: 2,
       fullName: 'Launch Traveler',
       phoneNumber: '+212600000000',
-      documentNumber: 'AB123456',
       traveler: { id: 'traveler-1', name: 'Launch Traveler', email: 'traveler@example.com' },
       session: {
         id: 'session-1',

@@ -13,7 +13,11 @@ import type { QueryClient } from '@tanstack/react-query';
  * @ouiboo/api-client and the traveler app's `['trip', id]` detail key).
  */
 
-const STORAGE_KEY = 'ouiboo.public-query-cache.v1';
+// v2 (content-language audit, #546): trip detail keys now carry the UI
+// locale, so snapshots restore per language. The version bump drops
+// every v1 snapshot — they were keyed locale-lessly and could replay a
+// payload in the wrong language.
+const STORAGE_KEY = 'ouiboo.public-query-cache.v2';
 const MAX_AGE_MS = 24 * 60 * 60 * 1000; // snapshots older than a day are dropped
 const MAX_BYTES = 2 * 1024 * 1024; // stay well under the localStorage quota
 

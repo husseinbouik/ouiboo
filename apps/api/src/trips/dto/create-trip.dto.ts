@@ -1,5 +1,5 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsString, IsEnum, IsPositive, IsInt, Min, IsArray, MinLength, IsOptional, ValidateNested, IsDateString, Matches, MaxLength } from 'class-validator';
+import { IsString, IsEnum, IsPositive, IsInt, Min, Max, IsArray, ArrayMinSize, ArrayMaxSize, MinLength, IsOptional, IsObject, ValidateNested, IsDateString, Matches, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TripCategory, TripStatus } from '@ouiboo/types';
 import { IsDecimalMoney } from '../../common/validators/is-decimal-money.decorator';
@@ -25,6 +25,110 @@ export class ItineraryDayDto {
     activities!: string[];
 }
 
+/**
+ * #417 (Council P0-11): one band of an agency's per-trip cancellation
+ * scale for traveller-initiated cancellations. Semantic rules (coverage
+ * down to 0 days, no duplicate thresholds) are enforced in
+ * TripsService via cancellation.util; the platform floor (agency fault /
+ * minimum group not reached = 100% refund) is not configurable here and
+ * always overrides the bands.
+ */
+export class CancellationBandDto {
+    @ApiProperty({ example: 30, description: 'Whole days before the trip starts at which this band begins.' })
+    @IsInt()
+    @Min(0)
+    @Max(365)
+    minDaysBeforeStart!: number;
+
+    @ApiProperty({ example: 100, description: 'Percent of the amount actually paid that is refunded when cancelling in this band.' })
+    @IsInt()
+    @Min(0)
+    @Max(100)
+    refundPercent!: number;
+}
+
+export class CancellationPolicyDto {
+    @ApiProperty({ type: [CancellationBandDto], description: 'Bands covering every cancellation timing; must include a band starting at 0 days.' })
+    @IsArray()
+    @ArrayMinSize(1)
+    @ArrayMaxSize(10)
+    @ValidateNested({ each: true })
+    @Type(() => CancellationBandDto)
+    bands!: CancellationBandDto[];
+}
+
+/**
+ * #546: one language's title + description inside the trip translations
+ * map. Both fields are optional at the DTO level (drafts may be
+ * incomplete in any language); completeness is a publish-time rule —
+ * French must be complete before a trip can go ACTIVE (TripsService).
+ */
+/** #584 (phase 2): one itinerary day's text inside a language entry. */
+export class TripTranslationDayDto {
+    @ApiProperty({ required: false, example: 1 })
+    @IsOptional()
+    @IsInt()
+    dayNumber?: number;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsString()
+    @MaxLength(300)
+    title?: string;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsString()
+    @MaxLength(10000)
+    description?: string;
+
+    @ApiProperty({ required: false, type: [String] })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    activities?: string[];
+}
+
+export class TripTranslationEntryDto {
+    @ApiProperty({ example: 'Aventure dans le désert de Marrakech', required: false })
+    @IsOptional()
+    @IsString()
+    @MaxLength(300)
+    title?: string;
+
+    @ApiProperty({ example: 'Découvrez la magie du désert marocain...', required: false })
+    @IsOptional()
+    @IsString()
+    @MaxLength(10000)
+    description?: string;
+
+    // #584 (phase 2): section content in this language — itinerary days
+    // (aligned to the canonical days by dayNumber; positional entries
+    // are stamped at the write boundary) and whole-list translations.
+    @ApiProperty({ required: false, type: [TripTranslationDayDto] })
+    @IsOptional()
+    @IsArray()
+    itinerary?: TripTranslationDayDto[];
+
+    @ApiProperty({ required: false, type: [String] })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    inclusions?: string[];
+
+    @ApiProperty({ required: false, type: [String] })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    exclusions?: string[];
+
+    @ApiProperty({ required: false, type: [String] })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    checklist?: string[];
+}
+
 export class CreateTripTemplateDto {
     @ApiProperty({ example: 'Marrakech Desert Adventure' })
     @IsString()
@@ -35,6 +139,21 @@ export class CreateTripTemplateDto {
     @IsString()
     @MinLength(10)
     description!: string;
+
+    // #546: multilingual title + description, keyed by ISO language
+    // code ({ fr: { title, description }, ar: { ... } }). The top-level
+    // `title`/`description` above are the FRENCH text (canonical) and
+    // mirror the map's `fr` entry on every write. The map is sanitized
+    // server-side (trip-translations.util); a future language is added
+    // by sending a new key — no API change needed.
+    @ApiProperty({
+        required: false,
+        description: 'Title + description per language code: { [languageCode]: { title?, description? } }',
+        example: { ar: { title: 'مغامرة في صحراء مراكش', description: '...' } },
+    })
+    @IsOptional()
+    @IsObject()
+    translations?: Record<string, TripTranslationEntryDto>;
 
     @ApiProperty({ enum: TripCategory, example: TripCategory.Adventure })
     @IsEnum(TripCategory)
@@ -99,6 +218,15 @@ export class CreateTripTemplateDto {
     @ApiProperty({ enum: TripStatus, example: TripStatus.Draft })
     @IsEnum(TripStatus)
     status!: TripStatus;
+
+    // #417 (Council P0-11): agency per-trip cancellation bands. Omit to
+    // use the platform default scale. The platform floor (agency fault /
+    // minimum group not reached = 100% refund) always applies on top.
+    @ApiProperty({ type: CancellationPolicyDto, required: false })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => CancellationPolicyDto)
+    cancellationPolicy?: CancellationPolicyDto;
 
     @ApiProperty({ type: [ItineraryDayDto], required: false })
     @IsOptional()

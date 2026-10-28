@@ -5,8 +5,10 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { toPaginatedList } from '@ouiboo/utils';
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Pagination } from '@ouiboo/ui';
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Pagination, CardListSkeleton } from '@ouiboo/ui';
 import { AlertTriangle, Loader2 } from 'lucide-react';
+import { RefundEvidenceForm, RefundEvidenceList, type RefundEvidenceRow } from '@/components/RefundEvidenceForm';
+import { SupportBlock } from '@/components/SupportBlock';
 
 /**
  * #370: agency refund cases. Refunds are paid by the agency (which
@@ -26,9 +28,22 @@ interface AgencyRefundCase {
   initiatedAt: string | null;
   completedAt: string | null;
   failureReason: string | null;
+  completionTier?: string | null;
+  evidence?: RefundEvidenceRow[];
   traveler?: { name: string | null; email: string } | null;
   booking?: { session?: { template?: { title?: string | null } | null } | null } | null;
 }
+
+/** Mirrors the API: evidence can only be attached while a case is open. */
+const EVIDENCE_OPEN_STATUSES = new Set([
+  'REFUND_REQUESTED',
+  'ELIGIBILITY_REVIEW',
+  'REFUND_APPROVED',
+  'AGENCY_ACTION_REQUIRED',
+  'REFUND_INITIATED',
+  'REFUND_FAILED',
+  'REFUND_OVERDUE',
+]);
 
 const PAGE_LIMIT = 10;
 
@@ -117,6 +132,9 @@ export default function RefundsPage() {
         <p className="text-muted-foreground mt-1">{t('refunds.subtitle')}</p>
       </div>
 
+      {/* Session #3 P0-9 (#556): stuck case? The support route lives here too. */}
+      <SupportBlock />
+
       {!!actionCount?.count && (
         <div className="flex items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 px-5 py-4">
           <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
@@ -132,9 +150,9 @@ export default function RefundsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoading ? (
-            <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              <span>{t('common.loading')}</span>
+            <div role="status" aria-label={t('common.loading')}>
+              <CardListSkeleton rows={3} />
+              <span className="sr-only">{t('common.loading')}</span>
             </div>
           ) : cases.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">{t('refunds.empty')}</p>
@@ -177,6 +195,24 @@ export default function RefundsPage() {
                     <p className="text-xs text-destructive">
                       {t('refunds.failureReason')}: {refundCase.failureReason}
                     </p>
+                  )}
+
+                  <RefundEvidenceList
+                    evidence={refundCase.evidence}
+                    currency={refundCase.currency}
+                    status={refundCase.status}
+                    completionTier={refundCase.completionTier}
+                  />
+
+                  {EVIDENCE_OPEN_STATUSES.has(refundCase.status) && (
+                    <RefundEvidenceForm
+                      caseId={refundCase.id}
+                      expectedAmount={refundCase.approvedAmount ?? refundCase.requestedAmount}
+                      currency={refundCase.currency}
+                      onSubmitted={() => {
+                        void queryClient.invalidateQueries({ queryKey: ['agency-refunds'] });
+                      }}
+                    />
                   )}
 
                   {actions.length > 0 && (

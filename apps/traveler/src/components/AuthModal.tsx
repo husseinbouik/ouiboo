@@ -75,7 +75,7 @@ export function AuthModal() {
                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    className="relative w-full max-w-md bg-card rounded-[2.5rem] shadow-2xl border border-white/20 dark:border-border overflow-hidden"
+                    className="relative w-full max-w-md bg-card rounded-4xl shadow-2xl border border-white/20 dark:border-border overflow-hidden"
                 >
                     <button 
                         onClick={() => setShowLoginModal(false)}

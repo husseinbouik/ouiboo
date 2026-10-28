@@ -1,28 +1,36 @@
 'use client';
 
-import Image from 'next/image';
-import React, { useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
 import { Card, Badge, Button } from '@ouiboo/ui';
-import { MapPin, Star, ChevronLeft, ChevronRight, Zap, ShieldCheck, Ticket } from 'lucide-react';
+import { MapPin, Star, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { cn } from '@ouiboo/ui/utils';
-import { formatCurrency } from '@ouiboo/utils';
 import { SessionStatus, type SessionStatusType, VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 import { WishlistButton } from './WishlistButton';
+import { SnapRail } from './SnapRail';
+import { useDisplayPrice } from '@/lib/display-currency';
+import { tripCoverViewTransitionName } from '@/lib/view-transition';
 
 export interface TripCardTrip {
   id: string;
   title: string;
   category?: string;
+  /** #498: authoritative trip currency. The API enforces a single currency
+   * per trip (every session must match the template currency), and the trip
+   * payload already carries it — the card type just never declared it. */
+  currency?: string;
   startLocation?: string;
   durationDays?: number;
   images?: string[];
   /** #332: agency-provided alt text per image (index-aligned); may be absent. */
   imageAlts?: string[];
+  /** #486: stored blur placeholders per image (index-aligned data-URLs);
+   * may be absent/null per image — SafeImage falls back to the shared
+   * palette placeholder, so existing media renders correctly. */
+  imageBlurDataURLs?: (string | null)[];
   averageRating?: number | null;
   reviewCount?: number;
   sessions?: Array<{
@@ -30,10 +38,16 @@ export interface TripCardTrip {
     status: SessionStatusType | string;
     availableSeats: number;
     price: number | string;
+    currency?: string;
     startDate: string;
   }>;
   agency?: {
     verificationStatus?: VerificationStatusType;
+    /** #413 (Council B10): what+when verification statement fields. */
+    travelLicenceStatus?: string;
+    licenceVerifiedAt?: string | null;
+    insuranceStatus?: string;
+    insuranceVerifiedAt?: string | null;
   } | null;
 }
 
@@ -43,8 +57,7 @@ interface TripCardProps {
 
 export function TripCard({ trip }: TripCardProps) {
   const { t, i18n } = useTranslation();
-  const [currentImage, setCurrentImage] = useState(0);
-  const images = trip.images && trip.images.length > 0 
+  const images = trip.images && trip.images.length > 0
     ? trip.images 
     : ['https://images.unsplash.com/photo-1489749798305-4fea3ae63d43'];
   const sessions = trip.sessions || [];
@@ -57,7 +70,44 @@ export function TripCard({ trip }: TripCardProps) {
   const minPrice = sessions.length
     ? Math.min(...sessions.map((session) => Number(session.price || 0)))
     : null;
+  // #498: format the price in the currency of the session that set it (which,
+  // per the API invariant, is the trip currency). Fall back to the trip-level
+  // currency, then to the formatter default when neither is present.
+  const cheapestSession =
+    minPrice === null
+      ? null
+      : (sessions.find((session) => Number(session.price || 0) === minPrice) ?? null);
+  const priceCurrency = cheapestSession?.currency ?? trip.currency;
+  // #498 rework: render the price in the traveller's display currency
+  // (converted through the MAD-base rates, React-Query cached). When no
+  // rate exists the hook falls back to this authoritative currency.
+  // Display only — checkout still charges priceCurrency.
+  const displayPrice = useDisplayPrice(minPrice, priceCurrency, i18n.language);
   const isAgencyVerified = trip.agency?.verificationStatus === VerificationStatus.Verified;
+
+  // #413 (Council B10): the what+when verification statement. Each part is
+  // present only when that check actually passed and carries its real date;
+  // with no dated check on record the card falls back to the plain
+  // disclaimer text (never a shield, never a bare "verified" claim).
+  const formatCheckDate = (value?: string | null) => {
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? null
+      : new Intl.DateTimeFormat(i18n.language || 'en', { dateStyle: 'medium' }).format(date);
+  };
+  const licenceCheckedDate =
+    trip.agency?.travelLicenceStatus === 'VERIFIED'
+      ? formatCheckDate(trip.agency?.licenceVerifiedAt)
+      : null;
+  const insuranceEvidencedDate =
+    trip.agency?.insuranceStatus === 'VERIFIED'
+      ? formatCheckDate(trip.agency?.insuranceVerifiedAt)
+      : null;
+  const verificationChecks = [
+    licenceCheckedDate ? t('tripCard.licenceChecked', { date: licenceCheckedDate }) : null,
+    insuranceEvidencedDate ? t('tripCard.insuranceEvidenced', { date: insuranceEvidencedDate }) : null,
+  ].filter((part): part is string => Boolean(part));
 
   // #333: warm the trip-detail query on hover/focus/press so tapping a card
   // paints instantly instead of starting a cold request chain. Uses the exact
@@ -66,141 +116,47 @@ export function TripCard({ trip }: TripCardProps) {
   const queryClient = useQueryClient();
   const prefetchTrip = () => {
     void queryClient.prefetchQuery({
-      queryKey: ['trip', trip.id],
+      // Content-language audit (#546): the key carries the UI locale,
+      // exactly matching TripDetailsClient — prefetching into a
+      // locale-less key warmed a stale-language entry for the detail
+      // page to serve after a language switch.
+      queryKey: ['trip', trip.id, (i18n.language || 'en').split('-')[0]],
       queryFn: async () => {
-        const response = await apiClient.get(`/trips/${trip.id}`);
+        // #546: warm the detail in the current UI language, matching
+        // TripDetailsClient's fetcher below.
+        const response = await apiClient.get(`/trips/${trip.id}?locale=${i18n.language}`);
         return response.data;
       },
       staleTime: 60 * 1000,
     });
   };
 
-  const goToNextImage = () => {
-    setCurrentImage((prev) => (prev + 1) % images.length);
-  };
-
-  const goToPrevImage = () => {
-    setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
-  };
-
-  const nextImage = (e: React.MouseEvent) => {
-    e.preventDefault();
-    goToNextImage();
-  };
-
-  const prevImage = (e: React.MouseEvent) => {
-    e.preventDefault();
-    goToPrevImage();
-  };
-
-  // Touch swipe support for the image carousel (mobile): a horizontal swipe
-  // changes the image, while vertical gestures still scroll the page. The
-  // container uses `touch-pan-y`, so the browser natively handles vertical
-  // panning and only horizontal-dominant gestures reach these handlers.
-  const SWIPE_THRESHOLD_PX = 40;
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-  const swipeHandledRef = useRef(false);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    swipeHandledRef.current = false;
-    if (images.length <= 1) return;
-    const touch = e.touches[0];
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (images.length <= 1 || !touchStartRef.current) return;
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - touchStartRef.current.x;
-    const dy = touch.clientY - touchStartRef.current.y;
-    touchStartRef.current = null;
-    if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) <= Math.abs(dy)) return;
-    swipeHandledRef.current = true;
-    window.setTimeout(() => {
-      swipeHandledRef.current = false;
-    }, 400);
-    // In RTL the carousel is mirrored (next sits on the left), so the swipe
-    // direction that advances to the next image flips with it.
-    const advancesNext = i18n.dir() === 'rtl' ? dx > 0 : dx < 0;
-    if (advancesNext) {
-      goToNextImage();
-    } else {
-      goToPrevImage();
-    }
-  };
-
-  // A real swipe is followed by a synthetic click on the touched element;
-  // swallow it so a swipe never toggles the wishlist or follows a link.
-  // Plain taps are unaffected because the flag is only set after a swipe.
-  const handleClickCapture = (e: React.MouseEvent) => {
-    if (swipeHandledRef.current) {
-      e.preventDefault();
-      e.stopPropagation();
-      swipeHandledRef.current = false;
-    }
-  };
-
   return (
-    <Card onMouseEnter={prefetchTrip} onFocus={prefetchTrip} onPointerDown={prefetchTrip} className="group border-border shadow-sm hover:shadow-xl transition-all duration-300 rounded-[2rem] overflow-hidden bg-card h-full flex flex-col">
-      <div
-        className="relative h-64 overflow-hidden touch-pan-y"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onClickCapture={handleClickCapture}
-      >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentImage}
-            initial={{ opacity: 0, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.5 }}
-            className="absolute inset-0"
-          >
-            <Image
-              src={images[currentImage]}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              alt={trip.imageAlts?.[currentImage]?.trim() || (trip.startLocation ? `${trip.title} · ${trip.startLocation}` : trip.title)}
-              fill
-              sizes="(min-width: 1024px) 33vw, 100vw"
-            />
-          </motion.div>
-        </AnimatePresence>
-        
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
-
-        {/* Navigation Arrows */}
-        {images.length > 1 && (
-          <>
-            <button 
-              onClick={prevImage}
-              aria-label={t('tripCard.previousImage')}
-              className="absolute start-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
-            >
-              <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
-            </button>
-            <button 
-              onClick={nextImage}
-              aria-label={t('tripCard.nextImage')}
-              className="absolute end-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
-            >
-              <ChevronRight className="h-4 w-4 rtl:rotate-180" />
-            </button>
-          </>
-        )}
-
-        {/* Indicators */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-          {images.map((_: string, i: number) => (
-            <div 
-              key={i} 
-              className={cn(
-                "h-1.5 rounded-full transition-all duration-300 shadow-sm",
-                currentImage === i ? "w-6 bg-white" : "w-1.5 bg-white/60"
-              )} 
-            />
-          ))}
-        </div>
+    <Card onMouseEnter={prefetchTrip} onFocus={prefetchTrip} onPointerDown={prefetchTrip} className="group border-border shadow-sm hover:shadow-xl transition-all duration-300 rounded-3xl overflow-hidden bg-card h-full flex flex-col">
+      <div className="relative h-64 overflow-hidden">
+        {/* #490 round 2: the card renders the SAME Snap Rail component
+            as the trip-page gallery — native scroll-snap glide (touch
+            swipe and mouse drag both advance it), counter + caption
+            always visible, 44px arrows that DISABLE at the ends with
+            NO loop. The old crossfade carousel looped its arrows,
+            showed dots only, and its drag/swipe advanced nothing.
+            #571: the overlays stay minimal — category badge, ONE
+            availability badge, the wishlist button and the rail
+            controls; the footer is the single price surface. */}
+        <SnapRail
+          images={images}
+          imageAlts={trip.imageAlts}
+          imageBlurDataURLs={trip.imageBlurDataURLs}
+          captionFallback={trip.startLocation ? `${trip.title} · ${trip.startLocation}` : trip.title}
+          ariaLabel={t('tripDetails.photosLabel')}
+          rootClassName="absolute inset-0"
+          viewportClassName="h-full"
+          sizes="(min-width: 1024px) 33vw, 100vw"
+          showIndicators
+          slideStyle={(idx, isActive) =>
+            isActive ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined
+          }
+        />
 
         <div className="absolute top-3 start-3">
           <Badge className="bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none">
@@ -208,16 +164,24 @@ export function TripCard({ trip }: TripCardProps) {
           </Badge>
         </div>
 
-        <div className="absolute top-3 end-14 flex flex-col items-end gap-2">
-          <Badge className="bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none flex items-center gap-1">
-            <Ticket className="h-3 w-3" />
-            {minPrice !== null ? formatCurrency(minPrice, undefined, i18n.language) : t('tripCard.priceTba')}
-          </Badge>
-          <Badge className={cn(
-            "text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none flex items-center gap-1",
-            nextSession ? "bg-success/15 text-success-dark" : "bg-warning/15 text-warning-dark"
-          )}>
-            <Zap className="h-3 w-3" />
+        <div className="absolute top-3 end-16 flex flex-col items-end gap-2">
+          {/* #571 rework: solid, legible spots badge — white bold text at
+              12px on a solid deep-green fill; solid amber when fewer
+              than 5 seats remain; solid dark red when sold out. The old
+              10px dark-green text on a 15%-tint pill was unreadable on
+              photographic backgrounds. */}
+          <Badge
+            data-testid="trip-card-spots-badge"
+            data-state={nextSession ? (nextSession.availableSeats < 5 ? 'low' : 'available') : 'sold-out'}
+            className={cn(
+              "text-xs font-bold rounded-lg uppercase px-3 py-1.5 shadow-md tracking-wide border-none flex items-center gap-1 text-white",
+              nextSession
+                ? nextSession.availableSeats < 5
+                  ? "bg-amber-600"
+                  : "bg-emerald-700"
+                : "bg-rose-800"
+            )}>
+            <Zap className="h-3.5 w-3.5" />
             {nextSession ? t('tripCard.spots', { count: nextSession.availableSeats }) : t('tripCard.soldOut')}
           </Badge>
         </div>
@@ -238,16 +202,18 @@ export function TripCard({ trip }: TripCardProps) {
           </div>
 
           {/* #317: public cards never display an internal approval state.
-              The badge exists only as a positive verified signal; a pending,
-              rejected, or unknown state renders no badge at all. */}
-          {isAgencyVerified && (
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge className="border-none text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 bg-success/15 text-success-dark">
-                <ShieldCheck className="h-3 w-3" />
-                {t('tripCard.verifiedAgency')}
-              </Badge>
-            </div>
-          )}
+              #413 (Council B10): no ShieldCheck beside disclaimer text and
+              no bare "verified" badge — the dated what+when statement when
+              the checks are on record, else the plain disclaimer as text. */}
+          {verificationChecks.length > 0 ? (
+            <p className="text-[11px] font-medium text-muted-foreground">
+              {verificationChecks.join(' · ')}
+            </p>
+          ) : isAgencyVerified ? (
+            <p className="text-[11px] font-medium text-muted-foreground">
+              {t('tripCard.verifiedAgency')}
+            </p>
+          ) : null}
           
           <div className="flex items-center gap-3 text-muted-foreground text-xs font-medium">
             <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {trip.startLocation}</span>
@@ -260,8 +226,8 @@ export function TripCard({ trip }: TripCardProps) {
           <div className="flex flex-col">
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{t('tripCard.from')}</span>
             <div className="flex items-baseline gap-1">
-                <span className="text-xl font-bold text-foreground">
-                   {minPrice !== null ? formatCurrency(minPrice, undefined, i18n.language) : '---'}
+                <span className="oui-numeric text-xl font-bold text-foreground">
+                   {minPrice !== null ? (displayPrice ?? '---') : '---'}
                 </span>
             </div>
           </div>

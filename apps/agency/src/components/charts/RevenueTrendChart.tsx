@@ -24,7 +24,7 @@ export default function RevenueTrendChart({ data, period, rangeLabel }: { data?:
 
   if (!data) {
     return (
-      <Card className="rounded-[2.5rem] shadow-xl shadow-black/5 p-6">
+      <Card className="rounded-4xl shadow-xl shadow-black/5 p-6">
         <div className="animate-pulse h-64 bg-muted rounded-lg" />
       </Card>
     );
@@ -32,14 +32,14 @@ export default function RevenueTrendChart({ data, period, rangeLabel }: { data?:
 
   if (data.length === 0) {
     return (
-      <Card className="rounded-[2.5rem] shadow-xl shadow-black/5 p-6">
+      <Card className="rounded-4xl shadow-xl shadow-black/5 p-6">
         <div className="text-sm text-muted-foreground">{t('charts.revenue.noData')}</div>
       </Card>
     );
   }
 
   return (
-    <Card className="rounded-[2.5rem] shadow-xl shadow-black/5 p-6">
+    <Card className="rounded-4xl shadow-xl shadow-black/5 p-6">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="font-display font-black text-lg text-foreground">{t('charts.revenue.title')}</h3>

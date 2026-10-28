@@ -21,7 +21,7 @@ test.describe('agency launch flow', () => {
     await expect(page.getByText(/available balance/i)).toHaveCount(0);
   });
 
-  test('agency can inspect proof but not finalize bank-transfer verification', async ({ page }) => {
+  test('agency reviews proof in two steps — accepting is not settlement, bank confirmation settles', async ({ page }) => {
     await page.goto('/dashboard/bookings', { waitUntil: 'domcontentloaded' });
 
     await expect(page.getByRole('heading', { name: /booking manager/i })).toBeVisible();
@@ -30,8 +30,21 @@ test.describe('agency launch flow', () => {
     await page.getByRole('button', { name: /inspect proof/i }).click();
 
     await expect(page.getByRole('heading', { name: /review payment proof/i })).toBeVisible();
-    await expect(page.getByText(/admin finance review/i)).toBeVisible();
+    // #422: the single "approve = paid" action is gone. Step 1 only
+    // accepts or rejects the proof image.
     await expect(page.getByRole('button', { name: /approve payment/i })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /reject payment/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /accept proof/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /reject payment/i })).toBeVisible();
+
+    await page.getByRole('button', { name: /accept proof/i }).click();
+
+    // Step 2: accepted ≠ settled — the bank-confirmation step appears and
+    // its action stays disabled until a bank reference is entered.
+    await expect(page.getByText(/awaiting bank confirmation/i)).toBeVisible();
+    const confirmButton = page.getByRole('button', { name: /confirm bank receipt/i });
+    await expect(confirmButton).toBeVisible();
+    await expect(confirmButton).toBeDisabled();
+    await page.getByLabel(/bank reference/i).fill('TRX-E2E-001');
+    await expect(confirmButton).toBeEnabled();
   });
 });

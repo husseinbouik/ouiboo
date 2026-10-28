@@ -14,10 +14,13 @@ import {
   CalendarClock,
   FileText,
   LayoutDashboard,
+  Layers,
   Receipt,
   RotateCcw,
+  KeyRound,
+  LifeBuoy,
 } from 'lucide-react';
-import { ConfirmDialog } from '@ouiboo/ui';
+import { ConfirmDialog, CardListSkeleton } from '@ouiboo/ui';
 import { useAuth } from '@/components/AuthContext';
 import { toPaginatedList } from '@ouiboo/utils';
 import {
@@ -38,7 +41,9 @@ import type {
   AdminPaymentProof,
   AdminAuditLog,
   AdminInvoice,
+  AdminPendingGroup,
   AdminRefundCase,
+  AdminBetaMetrics,
   AdminOverviewCounts,
   ApiErrorResponse,
   FeedbackState,
@@ -50,11 +55,30 @@ import DashboardShell from '@/components/dashboard/DashboardShell';
 import PendingTab from '@/components/dashboard/PendingTab';
 import AgenciesTab from '@/components/dashboard/AgenciesTab';
 import BookingsTab from '@/components/dashboard/BookingsTab';
+import GroupsTab from '@/components/dashboard/GroupsTab';
 import PaymentProofsTab from '@/components/dashboard/PaymentProofsTab';
 import AuditTab from '@/components/dashboard/AuditTab';
 import InvoicesTab from '@/components/dashboard/InvoicesTab';
 import RefundsTab from '@/components/dashboard/RefundsTab';
+import BetaMetricsPanel from '@/components/dashboard/BetaMetricsPanel';
+import { countRefundUrgency, filterRefundCasesByUrgency, type RefundUrgency } from '@/components/dashboard/refund-urgency';
+import SecurityTab from '@/components/dashboard/SecurityTab';
+import SupportTab from '@/components/dashboard/SupportTab';
 import AgencyReviewModal from '@/components/dashboard/AgencyReviewModal';
+
+/**
+ * #469: first-load placeholder for a dashboard tab. Shown only while the
+ * tab's list query is cold-loading with nothing to display, so tabs no
+ * longer flash their empty state before data arrives.
+ */
+function AdminTabSkeleton({ label, text }: { label: string; text: string }) {
+  return (
+    <div role="status" aria-label={label}>
+      <CardListSkeleton rows={5} />
+      <span className="sr-only">{text}</span>
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const { logout } = useAuth();
@@ -64,6 +88,10 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  // #416C: refunds tab view — all cases, or the risk-based audit queue.
+  const [refundsAuditQueue, setRefundsAuditQueue] = useState(false);
+  // #559: urgency pre-filter set by the summary-card deep links.
+  const [refundsUrgencyFilter, setRefundsUrgencyFilter] = useState<RefundUrgency | null>(null);
   const [agencyFeedback, setAgencyFeedback] = useState<FeedbackState | null>(null);
   const [paymentProofFeedback, setPaymentProofFeedback] = useState<FeedbackState | null>(null);
   const [bookingFeedback, setBookingFeedback] = useState<FeedbackState | null>(null);
@@ -128,6 +156,40 @@ export default function AdminDashboard() {
     staleTime: 30_000,
   });
 
+  // #559: beta-metrics panel (#432 service) — the beta exit criteria the
+  // operator watches from the dashboard's landing tab.
+  const betaMetricsQuery = useQuery<AdminBetaMetrics>({
+    queryKey: ['admin-beta-metrics'],
+    queryFn: async () => {
+      const response = await apiClient.get('/admin/analytics/beta-metrics');
+      return response.data;
+    },
+    staleTime: 60_000,
+  });
+
+  // #559: refund urgency is derived client-side from one case list (the
+  // refunds API has no due-date filter). The same list + derivation feed
+  // both the summary counters and the pre-filtered queue, so they agree.
+  // The beta operates at a handful of agencies, well under this page size.
+  const refundsUrgencyRaw = useQuery<unknown>({
+    queryKey: ['admin-refunds-urgency'],
+    queryFn: async () => {
+      const response = await apiClient.get('/admin/refunds', { params: { page: 1, limit: 100 } });
+      return response.data;
+    },
+    staleTime: 30_000,
+  });
+  const { data: refundsUrgencyCases = [] } = toPaginatedList<AdminRefundCase>(refundsUrgencyRaw.data);
+  const refundUrgencyCounts = countRefundUrgency(refundsUrgencyCases);
+  const refundsOverdueCount = overviewCounts?.refundsOverdue ?? refundUrgencyCounts.overdue;
+  const refundsDue48Count = overviewCounts?.refundsDueWithin48h ?? refundUrgencyCounts.due48;
+  const openRefundsWithUrgency = (urgency: RefundUrgency) => {
+    setRefundsUrgencyFilter(urgency);
+    setRefundsAuditQueue(false);
+    setCurrentPage(1);
+    handleTabChange('REFUNDS');
+  };
+
   const pendingAgenciesList = useAdminListQuery<AdminAgency>('/admin/pending-agencies', 'pending-agencies', activeTab === 'PENDING', activeTab, debouncedQuery, currentPage);
   const pendingAgencies = pendingAgenciesList.data;
   const pendingAgenciesPagination = pendingAgenciesList.pagination;
@@ -144,6 +206,10 @@ export default function AdminDashboard() {
   const allBookings = allBookingsList.data;
   const allBookingsPagination = allBookingsList.pagination;
 
+  const pendingGroupsList = useAdminListQuery<AdminPendingGroup>('/admin/groups/pending', 'pending-groups', activeTab === 'GROUPS', activeTab, debouncedQuery, currentPage);
+  const pendingGroups = pendingGroupsList.data;
+  const pendingGroupsPagination = pendingGroupsList.pagination;
+
   const pendingPaymentProofsList = useAdminListQuery<AdminPaymentProof>('/admin/pending-payments', 'pending-payments', activeTab === 'PAYMENT_PROOFS', activeTab, debouncedQuery, currentPage);
   const pendingPaymentProofs = pendingPaymentProofsList.data;
   const pendingPaymentProofsPagination = pendingPaymentProofsList.pagination;
@@ -152,7 +218,7 @@ export default function AdminDashboard() {
   const invoices = invoicesList.data;
   const invoicesPagination = invoicesList.pagination;
 
-  const refundCasesList = useAdminListQuery<AdminRefundCase>('/admin/refunds', 'refunds', activeTab === 'REFUNDS', activeTab, debouncedQuery, currentPage);
+  const refundCasesList = useAdminListQuery<AdminRefundCase>('/admin/refunds', 'refunds', activeTab === 'REFUNDS', activeTab, debouncedQuery, currentPage, refundsAuditQueue ? { auditQueue: 'true' } : undefined);
   const refundCases = refundCasesList.data;
   const refundCasesPagination = refundCasesList.pagination;
 
@@ -180,13 +246,17 @@ export default function AdminDashboard() {
   });
 
   // #371: travel licence verification (Law 11-16) — separate from identity.
+  // #415: verifying now requires the admin's Ministry-list attestation.
   const verifyLicenceMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string, status: LicenceStatusType }) => {
-      return apiClient.post(`/admin/agencies/${id}/licence/verify`, { status });
+    mutationFn: async ({ id, status, ministryChecked }: { id: string, status: LicenceStatusType, ministryChecked?: boolean }) => {
+      return apiClient.post(`/admin/agencies/${id}/licence/verify`, {
+        status,
+        ministryChecked: status === LicenceStatus.Verified ? ministryChecked === true : undefined,
+      });
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
-      queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
+      void queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
+      void queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
       setAgencyFeedback({
         type: 'success',
         message: variables.status === LicenceStatus.Verified
@@ -201,6 +271,75 @@ export default function AdminDashboard() {
       });
     }
   });
+
+  // #415: RC insurance artefact verification — mirrors the licence flow.
+  const verifyInsuranceMutation = useMutation({
+    mutationFn: async ({ id, status, reason }: { id: string, status: LicenceStatusType, reason?: string }) => {
+      return apiClient.post(`/admin/agencies/${id}/insurance/verify`, { status, reason });
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
+      void queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
+      setAgencyFeedback({
+        type: 'success',
+        message: variables.status === LicenceStatus.Verified
+          ? t('dashboard.feedback.insuranceVerified')
+          : t('dashboard.feedback.insuranceRejected')
+      });
+    },
+    onError: (error: AxiosError<ApiErrorResponse>) => {
+      setAgencyFeedback({
+        type: 'error',
+        message: getErrorMessage(error, t('dashboard.feedback.insuranceUpdateError'))
+      });
+    }
+  });
+
+  // #421: payment-destination verification — a holder-name mismatch can
+  // only pass with a recorded override reason; rejection needs a reason.
+  const verifyBankDetailsMutation = useMutation({
+    mutationFn: async ({ id, status, reason, overrideReason }: { id: string, status: VerificationStatusType, reason?: string, overrideReason?: string }) => {
+      return apiClient.post(`/admin/agencies/${id}/bank-details/verify`, { status, reason, overrideReason });
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
+      void queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
+      setAgencyFeedback({
+        type: 'success',
+        message: variables.status === VerificationStatus.Verified
+          ? t('dashboard.feedback.bankDetailsVerified')
+          : t('dashboard.feedback.bankDetailsRejected')
+      });
+    },
+    onError: (error: AxiosError<ApiErrorResponse>) => {
+      setAgencyFeedback({
+        type: 'error',
+        message: getErrorMessage(error, t('dashboard.feedback.bankDetailsUpdateError'))
+      });
+    }
+  });
+
+  // #415: private verification documents (licence scan, RC certificate)
+  // are only ever opened through a short-lived signed URL — never the
+  // public media route. The API allows admins to mint one for any key.
+  const handleViewPrivateDocument = async (key: string) => {
+    if (!key) {
+      return;
+    }
+    try {
+      const response = await apiClient.get('/upload/signed-url', { params: { key } });
+      const url = response.data?.url as string | undefined;
+      if (!url) {
+        throw new Error('Missing signed URL');
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      setAgencyFeedback({
+        type: 'error',
+        message: getErrorMessage(error as AxiosError<ApiErrorResponse>, t('dashboard.feedback.documentLoadError')),
+      });
+    }
+  };
 
   const updateAgencyStatusMutation = useMutation({
     mutationFn: async ({
@@ -221,7 +360,7 @@ export default function AdminDashboard() {
     },
   });
 
-  const { data: auditLogsRaw } = useQuery<unknown>({
+  const { data: auditLogsRaw, isLoading: auditLogsLoading } = useQuery<unknown>({
     queryKey: ['audit-logs', debouncedQuery, currentPage],
     queryFn: async () => {
       const resp = await apiClient.get('/admin/audit-logs', {
@@ -257,6 +396,9 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
       setPaymentProofFeedback({
         type: 'success',
+        // #422: the VERIFIED wire value is the API's accept decision — the
+        // feedback copy (paymentProofApproved) says "accepted — pending
+        // bank confirmation", never that the payment is settled.
         message: variables.status === VerificationStatus.Verified
           ? t('dashboard.feedback.paymentProofApproved')
           : t('dashboard.feedback.paymentProofRejected')
@@ -425,6 +567,21 @@ export default function AdminDashboard() {
       value: overviewCounts?.pendingPaymentProofs ?? pendingPaymentProofs.length,
       icon: CalendarClock,
       tone: 'bg-muted text-muted-foreground'
+    },
+    {
+      // #559: the solo operator's daily chase — one click to the queue.
+      label: t('dashboard.summary.refundsOverdue'),
+      value: refundsOverdueCount,
+      icon: RotateCcw,
+      tone: 'bg-danger/10 text-danger',
+      onClick: () => openRefundsWithUrgency('overdue')
+    },
+    {
+      label: t('dashboard.summary.refundsDue48'),
+      value: refundsDue48Count,
+      icon: CalendarClock,
+      tone: 'bg-warning/10 text-warning',
+      onClick: () => openRefundsWithUrgency('due48')
     }
   ];
 
@@ -443,6 +600,11 @@ export default function AdminDashboard() {
       title: t('dashboard.meta.bookings.title'),
       description: t('dashboard.meta.bookings.description'),
       searchPlaceholder: t('dashboard.meta.bookings.searchPlaceholder')
+    },
+    GROUPS: {
+      title: t('dashboard.meta.groups.title'),
+      description: t('dashboard.meta.groups.description'),
+      searchPlaceholder: t('dashboard.meta.groups.searchPlaceholder')
     },
     PAYMENT_PROOFS: {
       title: t('dashboard.meta.paymentProofs.title'),
@@ -464,6 +626,16 @@ export default function AdminDashboard() {
       title: t('dashboard.meta.refunds.title'),
       description: t('dashboard.meta.refunds.description'),
       searchPlaceholder: t('dashboard.meta.refunds.searchPlaceholder')
+    },
+    SECURITY: {
+      title: t('dashboard.meta.security.title'),
+      description: t('dashboard.meta.security.description'),
+      searchPlaceholder: t('dashboard.meta.security.searchPlaceholder')
+    },
+    SUPPORT: {
+      title: t('dashboard.meta.support.title'),
+      description: t('dashboard.meta.support.description'),
+      searchPlaceholder: t('dashboard.meta.support.searchPlaceholder')
     }
   } as const;
 
@@ -489,6 +661,12 @@ export default function AdminDashboard() {
       count: overviewCounts?.bookings ?? allBookings.length,
     },
     {
+      key: 'GROUPS',
+      label: t('dashboard.tabs.groups'),
+      icon: Layers,
+      count: pendingGroupsPagination?.total ?? pendingGroups.length,
+    },
+    {
       key: 'PAYMENT_PROOFS',
       label: t('dashboard.tabs.paymentProofs'),
       icon: CreditCard,
@@ -512,9 +690,36 @@ export default function AdminDashboard() {
       icon: RotateCcw,
       count: refundCasesPagination?.total ?? refundCases.length,
     },
+    {
+      key: 'SECURITY',
+      label: t('dashboard.tabs.security'),
+      icon: KeyRound,
+    },
+    {
+      // #581 rework: support queue tab. DashboardShell turns this one
+      // nav item into BOTH the sidebar entry and the ⌘K palette entry.
+      key: 'SUPPORT',
+      label: t('dashboard.tabs.support'),
+      icon: LifeBuoy,
+    },
   ] as const;
 
   const currentTab = tabMeta[activeTab];
+
+  // #469: a tab shows its skeleton only on a cold load with no rows yet;
+  // with placeholder/cached data the tab itself stays on screen.
+  const showPendingSkeleton =
+    (pendingAgenciesList.isLoading || pendingTripsList.isLoading) &&
+    pendingAgencies.length === 0 &&
+    pendingTrips.length === 0;
+  const showAgenciesSkeleton = allAgenciesList.isLoading && allAgencies.length === 0;
+  const showBookingsSkeleton = allBookingsList.isLoading && allBookings.length === 0;
+  const showGroupsSkeleton = pendingGroupsList.isLoading && pendingGroups.length === 0;
+  const showPaymentProofsSkeleton =
+    pendingPaymentProofsList.isLoading && pendingPaymentProofs.length === 0;
+  const showAuditSkeleton = auditLogsLoading && auditLogs.length === 0;
+  const showInvoicesSkeleton = invoicesList.isLoading && invoices.length === 0;
+  const showRefundsSkeleton = refundCasesList.isLoading && refundCases.length === 0;
 
   const paginationLabels = {
     showing: t('pagination.showing'),
@@ -536,9 +741,40 @@ export default function AdminDashboard() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         summaryCards={summaryCards}
+        paletteItems={[
+          // #487: entity items from the lists this page already loads
+          // (tab-scoped queries — a list contributes once it has loaded).
+          // Selecting one only switches tab and seeds the tab search:
+          // navigation, never a mutation.
+          ...allAgencies.map((agency) => ({
+            id: `agency-${agency.id}`,
+            label: agency.companyName,
+            group: t('commandPalette.groupAgencies'),
+            keywords: agency.id,
+            perform: () => { handleTabChange('AGENCIES'); setSearchQuery(agency.companyName); },
+          })),
+          ...pendingTrips.map((trip) => ({
+            id: `trip-${trip.id}`,
+            label: trip.title,
+            group: t('commandPalette.groupTrips'),
+            keywords: `${trip.id} ${trip.agency?.companyName ?? ''}`,
+            perform: () => { handleTabChange('PENDING'); setSearchQuery(trip.title); },
+          })),
+          ...allBookings.map((booking) => ({
+            id: `booking-${booking.id}`,
+            label: booking.session?.template?.title || booking.id,
+            group: t('commandPalette.groupBookings'),
+            keywords: `${booking.id} ${booking.traveler?.name ?? ''} ${booking.traveler?.email ?? ''}`,
+            perform: () => { handleTabChange('BOOKINGS'); setSearchQuery(booking.id); },
+          })),
+        ]}
         onLogout={logout}
       >
-        {activeTab === 'PENDING' && (
+        {activeTab === 'PENDING' && showPendingSkeleton && (
+          <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
+        )}
+        {activeTab === 'PENDING' && !showPendingSkeleton && (
+          <>
           <PendingTab
             t={t}
             pendingAgencies={pendingAgencies}
@@ -558,8 +794,19 @@ export default function AdminDashboard() {
             onVerifyTrip={(id, status) => verifyTripMutation.mutate({ id, status })}
             isVerifyingTrip={verifyTripMutation.isPending}
           />
+          {/* #559: #432 beta-metrics panel on the operator's landing tab. */}
+          <BetaMetricsPanel
+            t={t}
+            metrics={betaMetricsQuery.data ?? null}
+            isLoading={betaMetricsQuery.isLoading}
+            isError={betaMetricsQuery.isError}
+          />
+          </>
         )}
-        {activeTab === 'AGENCIES' && (
+        {activeTab === 'AGENCIES' && showAgenciesSkeleton && (
+          <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
+        )}
+        {activeTab === 'AGENCIES' && !showAgenciesSkeleton && (
           <AgenciesTab
             t={t}
             agencies={allAgencies}
@@ -575,7 +822,10 @@ export default function AdminDashboard() {
             }
           />
         )}
-        {activeTab === 'BOOKINGS' && (
+        {activeTab === 'BOOKINGS' && showBookingsSkeleton && (
+          <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
+        )}
+        {activeTab === 'BOOKINGS' && !showBookingsSkeleton && (
           <BookingsTab
             t={t}
             bookings={allBookings}
@@ -587,7 +837,22 @@ export default function AdminDashboard() {
             onRequestRefund={(booking) => setPendingConfirmation({ kind: 'refund-booking', booking })}
           />
         )}
-        {activeTab === 'PAYMENT_PROOFS' && (
+        {activeTab === 'GROUPS' && showGroupsSkeleton && (
+          <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
+        )}
+        {activeTab === 'GROUPS' && !showGroupsSkeleton && (
+          <GroupsTab
+            t={t}
+            groups={pendingGroups}
+            pagination={pendingGroupsPagination}
+            onPageChange={setCurrentPage}
+            paginationLabels={paginationLabels}
+          />
+        )}
+        {activeTab === 'PAYMENT_PROOFS' && showPaymentProofsSkeleton && (
+          <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
+        )}
+        {activeTab === 'PAYMENT_PROOFS' && !showPaymentProofsSkeleton && (
           <PaymentProofsTab
             t={t}
             proofs={pendingPaymentProofs}
@@ -601,7 +866,10 @@ export default function AdminDashboard() {
             onVerifyPayment={(id, status) => verifyPaymentMutation.mutate({ id, status })}
           />
         )}
-        {activeTab === 'AUDIT' && (
+        {activeTab === 'AUDIT' && showAuditSkeleton && (
+          <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
+        )}
+        {activeTab === 'AUDIT' && !showAuditSkeleton && (
           <AuditTab
             t={t}
             logs={auditLogs}
@@ -618,7 +886,10 @@ export default function AdminDashboard() {
           />
         )}
 
-        {activeTab === 'INVOICES' && (
+        {activeTab === 'INVOICES' && showInvoicesSkeleton && (
+          <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
+        )}
+        {activeTab === 'INVOICES' && !showInvoicesSkeleton && (
           <InvoicesTab
             t={t}
             invoices={invoices}
@@ -628,13 +899,36 @@ export default function AdminDashboard() {
           />
         )}
 
-        {activeTab === 'REFUNDS' && (
+        {activeTab === 'SECURITY' && (
+          <SecurityTab t={t} />
+        )}
+
+        {activeTab === 'SUPPORT' && (
+          <SupportTab t={t} />
+        )}
+
+        {activeTab === 'REFUNDS' && showRefundsSkeleton && (
+          <AdminTabSkeleton label={t('loading.label')} text={t('loading.text')} />
+        )}
+        {activeTab === 'REFUNDS' && !showRefundsSkeleton && (
           <RefundsTab
             t={t}
-            cases={refundCases}
-            pagination={refundCasesPagination}
+            cases={
+              refundsUrgencyFilter
+                ? filterRefundCasesByUrgency(refundsUrgencyCases, refundsUrgencyFilter)
+                : refundCases
+            }
+            pagination={refundsUrgencyFilter ? null : refundCasesPagination}
             onPageChange={setCurrentPage}
             paginationLabels={paginationLabels}
+            auditQueue={refundsAuditQueue}
+            onAuditQueueChange={(value) => {
+              setRefundsAuditQueue(value);
+              setRefundsUrgencyFilter(null);
+              setCurrentPage(1);
+            }}
+            urgencyFilter={refundsUrgencyFilter}
+            onClearUrgencyFilter={() => setRefundsUrgencyFilter(null)}
           />
         )}
       </DashboardShell>
@@ -663,9 +957,14 @@ export default function AdminDashboard() {
           agencyFeedback={agencyFeedback}
           isVerifying={verifyAgencyMutation.isPending}
           isVerifyingLicence={verifyLicenceMutation.isPending}
+          isVerifyingInsurance={verifyInsuranceMutation.isPending}
+          isVerifyingBankDetails={verifyBankDetailsMutation.isPending}
           onClose={() => setSelectedAgency(null)}
           onVerify={(id, status) => verifyAgencyMutation.mutate({ id, status })}
-          onVerifyLicence={(id, status) => verifyLicenceMutation.mutate({ id, status })}
+          onVerifyLicence={(id, status, opts) => verifyLicenceMutation.mutate({ id, status, ministryChecked: opts?.ministryChecked })}
+          onVerifyInsurance={(id, status, reason) => verifyInsuranceMutation.mutate({ id, status, reason })}
+          onVerifyBankDetails={(id, status, opts) => verifyBankDetailsMutation.mutate({ id, status, reason: opts?.reason, overrideReason: opts?.overrideReason })}
+          onViewDocument={handleViewPrivateDocument}
         />
       )}
     </>

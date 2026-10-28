@@ -1,8 +1,51 @@
 import {
+    canOrganise,
+    effectiveInsuranceStatus,
     effectiveLicenceStatus,
+    effectiveVerificationStatus,
     getAgencyActivationBlock,
+    getAgencyInsuranceBlock,
+    isInsuranceVerified,
     isLicenceVerified,
+    sellerBlockMissingFields,
 } from './agency-licence.util';
+
+describe('sellerBlockMissingFields (B4)', () => {
+    const complete = {
+        legalName: 'Atlas Adventures SARL',
+        travelLicenceType: 'ODV',
+        travelLicenceNumber: 'AV-2024-0187',
+        licenceIssuedAt: new Date('2024-03-15T00:00:00.000Z'),
+        licenceIssuingAuthority: 'Ministère du Tourisme',
+    };
+
+    it('reports nothing missing for a complete seller block', () => {
+        expect(sellerBlockMissingFields(complete)).toEqual([]);
+    });
+
+    it('flags the legacy gap: a verified record without issue data', () => {
+        expect(sellerBlockMissingFields({
+            ...complete,
+            licenceIssuedAt: null,
+            licenceIssuingAuthority: null,
+        })).toEqual(['licenceIssuedAt', 'licenceIssuingAuthority']);
+    });
+
+    it('treats blank strings and unparseable dates as missing', () => {
+        expect(sellerBlockMissingFields({
+            ...complete,
+            licenceIssuedAt: 'not-a-date',
+            licenceIssuingAuthority: '   ',
+        })).toEqual(['licenceIssuedAt', 'licenceIssuingAuthority']);
+        expect(sellerBlockMissingFields({})).toEqual([
+            'legalName',
+            'travelLicenceType',
+            'travelLicenceNumber',
+            'licenceIssuedAt',
+            'licenceIssuingAuthority',
+        ]);
+    });
+});
 
 const NOW = new Date('2026-10-23T12:00:00.000Z');
 const FUTURE = new Date('2027-06-01T00:00:00.000Z');
@@ -23,7 +66,12 @@ describe('agency licence utilities (#371)', () => {
 
         it('keeps a VERIFIED licence with a future expiry verified', () => {
             expect(effectiveLicenceStatus({ travelLicenceStatus: 'VERIFIED', licenceExpiry: FUTURE }, NOW)).toBe('VERIFIED');
-            expect(effectiveLicenceStatus({ travelLicenceStatus: 'VERIFIED', licenceExpiry: null }, NOW)).toBe('VERIFIED');
+        });
+
+        it('does NOT treat a VERIFIED licence with no expiry as verified forever (#415)', () => {
+            expect(effectiveLicenceStatus({ travelLicenceStatus: 'VERIFIED', licenceExpiry: null }, NOW)).toBe('PENDING_REVIEW');
+            expect(effectiveLicenceStatus({ travelLicenceStatus: 'VERIFIED' }, NOW)).toBe('PENDING_REVIEW');
+            expect(effectiveLicenceStatus({ travelLicenceStatus: 'VERIFIED', licenceExpiry: 'not-a-date' }, NOW)).toBe('PENDING_REVIEW');
         });
 
         it('derives EXPIRED for a VERIFIED licence past its expiry (check on read)', () => {
@@ -36,6 +84,7 @@ describe('agency licence utilities (#371)', () => {
         it('is true only for an unexpired verified licence', () => {
             expect(isLicenceVerified({ travelLicenceStatus: 'VERIFIED', licenceExpiry: FUTURE }, NOW)).toBe(true);
             expect(isLicenceVerified({ travelLicenceStatus: 'VERIFIED', licenceExpiry: PAST }, NOW)).toBe(false);
+            expect(isLicenceVerified({ travelLicenceStatus: 'VERIFIED', licenceExpiry: null }, NOW)).toBe(false);
             expect(isLicenceVerified({ travelLicenceStatus: 'PENDING_REVIEW' }, NOW)).toBe(false);
         });
     });
@@ -63,13 +112,125 @@ describe('agency licence utilities (#371)', () => {
             )).toMatch(/licence has expired/i);
         });
 
-        it('allows a verified agency with a verified, unexpired licence', () => {
+        it('allows a verified agency with a verified, unexpired licence and insurance', () => {
             expect(getAgencyActivationBlock(
-                { verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', licenceExpiry: FUTURE }, NOW,
+                {
+                    verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', licenceExpiry: FUTURE,
+                    insuranceStatus: 'VERIFIED', insuranceExpiry: FUTURE,
+                }, NOW,
             )).toBeNull();
+        });
+
+        it('blocks a verified agency without verified RC insurance (#415 gates)', () => {
+            const base = { verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', licenceExpiry: FUTURE };
+            expect(getAgencyActivationBlock({ ...base, insuranceStatus: 'NOT_SUBMITTED' }, NOW))
+                .toMatch(/insurance must be submitted and verified/i);
+            expect(getAgencyActivationBlock({ ...base, insuranceStatus: 'PENDING_REVIEW' }, NOW))
+                .toMatch(/insurance must be submitted and verified/i);
+            expect(getAgencyActivationBlock({ ...base, insuranceStatus: 'REJECTED' }, NOW))
+                .toMatch(/insurance must be submitted and verified/i);
+            expect(getAgencyActivationBlock({ ...base }, NOW))
+                .toMatch(/insurance must be submitted and verified/i);
+        });
+
+        it('blocks a verified agency whose RC insurance has expired (#415 gates)', () => {
+            expect(getAgencyActivationBlock(
+                {
+                    verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', licenceExpiry: FUTURE,
+                    insuranceStatus: 'VERIFIED', insuranceExpiry: PAST,
+                }, NOW,
+            )).toMatch(/insurance has expired/i);
+        });
+
+        it('blocks a verified agency whose VERIFIED insurance has no expiry on file (#415 gates)', () => {
+            expect(getAgencyActivationBlock(
+                {
+                    verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', licenceExpiry: FUTURE,
+                    insuranceStatus: 'VERIFIED', insuranceExpiry: null,
+                }, NOW,
+            )).toMatch(/insurance must be submitted and verified/i);
+        });
+
+        it('blocks a verified agency whose VERIFIED licence has no expiry on file (#415)', () => {
             expect(getAgencyActivationBlock(
                 { verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', licenceExpiry: null }, NOW,
-            )).toBeNull();
+            )).toMatch(/licence must be submitted and verified/i);
+        });
+    });
+
+    describe('effectiveInsuranceStatus (#415)', () => {
+        it('defaults to NOT_SUBMITTED and passes stored statuses through', () => {
+            expect(effectiveInsuranceStatus({}, NOW)).toBe('NOT_SUBMITTED');
+            expect(effectiveInsuranceStatus({ insuranceStatus: 'PENDING_REVIEW' }, NOW)).toBe('PENDING_REVIEW');
+            expect(effectiveInsuranceStatus({ insuranceStatus: 'REJECTED' }, NOW)).toBe('REJECTED');
+        });
+
+        it('keeps VERIFIED insurance with a future expiry verified', () => {
+            expect(effectiveInsuranceStatus({ insuranceStatus: 'VERIFIED', insuranceExpiry: FUTURE }, NOW)).toBe('VERIFIED');
+            expect(isInsuranceVerified({ insuranceStatus: 'VERIFIED', insuranceExpiry: FUTURE }, NOW)).toBe(true);
+        });
+
+        it('derives EXPIRED for VERIFIED insurance past its expiry', () => {
+            expect(effectiveInsuranceStatus({ insuranceStatus: 'VERIFIED', insuranceExpiry: PAST }, NOW)).toBe('EXPIRED');
+            expect(isInsuranceVerified({ insuranceStatus: 'VERIFIED', insuranceExpiry: PAST }, NOW)).toBe(false);
+        });
+
+        it('does NOT treat VERIFIED insurance with no expiry as verified forever', () => {
+            expect(effectiveInsuranceStatus({ insuranceStatus: 'VERIFIED', insuranceExpiry: null }, NOW)).toBe('PENDING_REVIEW');
+            expect(isInsuranceVerified({ insuranceStatus: 'VERIFIED', insuranceExpiry: null }, NOW)).toBe(false);
+        });
+    });
+
+    describe('getAgencyInsuranceBlock (#415)', () => {
+        it('is null for verified, unexpired insurance', () => {
+            expect(getAgencyInsuranceBlock({ insuranceStatus: 'VERIFIED', insuranceExpiry: FUTURE }, NOW)).toBeNull();
+        });
+
+        it('blocks missing, pending, rejected, and expired insurance', () => {
+            expect(getAgencyInsuranceBlock({ insuranceStatus: 'NOT_SUBMITTED' }, NOW)).toMatch(/must be submitted and verified/i);
+            expect(getAgencyInsuranceBlock({ insuranceStatus: 'PENDING_REVIEW' }, NOW)).toMatch(/must be submitted and verified/i);
+            expect(getAgencyInsuranceBlock({ insuranceStatus: 'VERIFIED', insuranceExpiry: null }, NOW)).toMatch(/must be submitted and verified/i);
+            expect(getAgencyInsuranceBlock({ insuranceStatus: 'VERIFIED', insuranceExpiry: PAST }, NOW)).toMatch(/has expired/i);
+        });
+    });
+
+    describe('effectiveVerificationStatus (#569)', () => {
+        const fullyVerified = {
+            verificationStatus: 'VERIFIED',
+            travelLicenceStatus: 'VERIFIED', licenceExpiry: FUTURE,
+            insuranceStatus: 'VERIFIED', insuranceExpiry: FUTURE,
+        };
+
+        it('stays VERIFIED only when identity, licence and insurance are all verified', () => {
+            expect(effectiveVerificationStatus(fullyVerified, NOW)).toBe('VERIFIED');
+        });
+
+        it('downgrades to PENDING while licence or insurance is NOT_SUBMITTED', () => {
+            expect(effectiveVerificationStatus(
+                { ...fullyVerified, travelLicenceStatus: 'NOT_SUBMITTED', licenceExpiry: null }, NOW,
+            )).toBe('PENDING');
+            expect(effectiveVerificationStatus(
+                { ...fullyVerified, insuranceStatus: 'NOT_SUBMITTED', insuranceExpiry: null }, NOW,
+            )).toBe('PENDING');
+        });
+
+        it('downgrades when a component is expired or lacks an expiry', () => {
+            expect(effectiveVerificationStatus({ ...fullyVerified, licenceExpiry: PAST }, NOW)).toBe('PENDING');
+            expect(effectiveVerificationStatus({ ...fullyVerified, insuranceExpiry: null }, NOW)).toBe('PENDING');
+        });
+
+        it('passes a non-VERIFIED identity status through unchanged', () => {
+            expect(effectiveVerificationStatus({ ...fullyVerified, verificationStatus: 'PENDING' }, NOW)).toBe('PENDING');
+            expect(effectiveVerificationStatus({ ...fullyVerified, verificationStatus: 'REJECTED' }, NOW)).toBe('REJECTED');
+        });
+    });
+
+    describe('canOrganise (#415)', () => {
+        it('allows only ODV agencies to organise', () => {
+            expect(canOrganise({ travelLicenceType: 'ODV' })).toBe(true);
+            expect(canOrganise({ travelLicenceType: 'DV' })).toBe(false);
+            expect(canOrganise({ travelLicenceType: null })).toBe(false);
+            expect(canOrganise({})).toBe(false);
         });
     });
 });

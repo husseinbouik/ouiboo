@@ -4,17 +4,20 @@ import React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { apiClient } from '@/lib/api-client';
 import { Button, Card, CardContent, Badge } from '@ouiboo/ui';
-import { AlertCircle, CheckCircle2, Loader2, ShieldCheck, Clock, UploadCloud } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, Landmark, Clock, UploadCloud } from 'lucide-react';
 import { cn } from '@ouiboo/ui/utils';
 import { BookingStatus, type BookingDetails } from '@ouiboo/types';
+import SellerIdentity from '@/components/SellerIdentity';
 
 type VerifyPaymentResult = {
   status: 'success' | 'failure' | 'pending';
 };
 
 export default function CheckoutConfirmationPage() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const isProofUploaded = searchParams.get('proof') === '1';
@@ -98,31 +101,31 @@ export default function CheckoutConfirmationPage() {
 
   const statusItems = [
     {
-      title: 'Pending payment',
+      title: t('checkout.statusPendingTitle'),
       description: isCancelled
-        ? 'The online payment was cancelled before confirmation.'
+        ? t('checkout.confirmation.pendingCancelled')
         : isConfirmed
-        ? 'Your payment has been processed successfully.'
+        ? t('checkout.confirmation.pendingConfirmed')
         : isGatewayVerificationInProgress
-        ? 'We are confirming your payment with the gateway right now.'
-        : 'Your payment is waiting for review or gateway confirmation.',
+        ? t('checkout.confirmation.pendingVerifying')
+        : t('checkout.confirmation.pendingWaiting'),
       icon: Clock,
       state: hasUploadedProof || isConfirmed ? 'complete' : isCancelled ? 'pending' : 'active'
     },
     {
-      title: 'Payment proof uploaded',
-      description: 'We have received your receipt and attached it to the booking.',
+      title: t('checkout.statusProofTitle'),
+      description: t('checkout.confirmation.proofReceived'),
       icon: UploadCloud,
       state: hasUploadedProof ? 'complete' : 'pending'
     },
     {
-      title: 'Agency verification',
+      title: t('checkout.confirmation.agencyVerification'),
       description: isCancelled
-        ? 'You can safely retry the payment from your bookings page.'
+        ? t('checkout.confirmation.agencyCancelledNote')
         : isConfirmed
-        ? 'Your booking is confirmed and the agency has approved the payment.'
-        : 'The agency will confirm availability and validate the payment.',
-      icon: ShieldCheck,
+        ? t('checkout.confirmation.agencyConfirmedNote')
+        : t('checkout.confirmation.agencyPendingNote'),
+      icon: Landmark,
       state: isConfirmed ? 'complete' : 'pending'
     }
   ];
@@ -133,44 +136,49 @@ export default function CheckoutConfirmationPage() {
         <Card className="border-none shadow-2xl shadow-black/10 rounded-[3rem] overflow-hidden">
           <CardContent className="p-10 space-y-10">
             <div className="text-center space-y-4">
-              <div className="mx-auto h-20 w-20 rounded-[2rem] bg-success/10 text-success flex items-center justify-center">
+              <div className="mx-auto h-20 w-20 rounded-3xl bg-success/10 text-success flex items-center justify-center">
                 <CheckCircle2 className="h-10 w-10" />
               </div>
               <Badge className="mx-auto bg-success/10 text-success border-none px-4 py-1.5 rounded-full font-black uppercase text-[10px] tracking-widest">
-                {isCancelled ? 'Payment cancelled' : isConfirmed ? 'Booking confirmed' : 'Booking submitted'}
+                {isCancelled ? t('checkout.confirmation.paymentCancelledBadge') : isConfirmed ? t('checkout.confirmation.bookingConfirmedBadge') : t('checkout.confirmation.bookingSubmittedBadge')}
               </Badge>
               <h1 className="text-4xl font-black font-display tracking-tight text-foreground">
-                {isCancelled ? 'Your payment was cancelled.' : isConfirmed ? 'Your booking is confirmed.' : 'Thanks! Your booking is being processed.'}
+                {isCancelled ? t('checkout.confirmation.cancelledTitle') : isConfirmed ? t('checkout.confirmation.confirmedTitle') : t('checkout.confirmation.submittedTitle')}
               </h1>
               <p className="text-muted-foreground font-medium text-lg">
-                {tripTitle
-                  ? `Trip: ${tripTitle}. ${isCancelled ? 'You can retry payment from your bookings page whenever you are ready.' : isConfirmed ? 'You are all set for departure.' : 'We will notify you once the agency confirms the payment and availability.'}`
-                  : isCancelled ? 'You can retry payment from your bookings page whenever you are ready.' : 'We will notify you once the agency confirms the payment and availability.'}
+                {tripTitle ? t('checkout.confirmation.tripLine', { title: tripTitle }) : ''}
+                {isCancelled ? t('checkout.confirmation.cancelledNote') : isConfirmed ? t('checkout.confirmation.confirmedNote') : t('checkout.confirmation.submittedNote')}
               </p>
               {bookingReference && (
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  Booking reference: {bookingReference}
+                  {t('checkout.confirmation.bookingReference', { reference: bookingReference })}
                 </p>
+              )}
+              {/* B4 (Council Session #2): the Law 31-08 seller identity
+                  block on the immediate booking confirmation — the same
+                  block the durable booking page and the email carry. */}
+              {booking?.session?.template?.agency && (
+                <SellerIdentity agency={booking.session.template.agency} className="text-left" />
               )}
             </div>
 
             <div className="space-y-4">
-              <p className="text-xs font-black uppercase tracking-widest text-foreground">Confirmation status</p>
+              <p className="text-xs font-black uppercase tracking-widest text-foreground">{t('checkout.confirmation.statusTitle')}</p>
               {isLoading && (
-                <div className="rounded-[2rem] border border-border/60 bg-muted/20 px-5 py-4 text-sm font-semibold text-muted-foreground">
-                  Loading your latest booking status...
+                <div className="rounded-3xl border border-border/60 bg-muted/20 px-5 py-4 text-sm font-semibold text-muted-foreground">
+                  {t('checkout.confirmation.loadingStatus')}
                 </div>
               )}
               {isGatewayVerificationInProgress && (
-                <div className="rounded-[2rem] border border-ocean-500/20 bg-ocean-500/10 px-5 py-4 text-sm font-semibold text-ocean-700 dark:text-ocean-300 flex items-center gap-3">
+                <div className="rounded-3xl border border-ocean-500/20 bg-ocean-500/10 px-5 py-4 text-sm font-semibold text-ocean-700 dark:text-ocean-300 flex items-center gap-3">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Finalizing your gateway payment...
+                  {t('checkout.confirmation.finalizingGateway')}
                 </div>
               )}
               {verifyPaymentMutation.isError && (
-                <div className="rounded-[2rem] border border-danger/20 bg-danger/10 px-5 py-4 text-sm font-semibold text-danger flex items-center gap-3">
+                <div className="rounded-3xl border border-danger/20 bg-danger/10 px-5 py-4 text-sm font-semibold text-danger flex items-center gap-3">
                   <AlertCircle className="h-4 w-4" />
-                  We could not confirm the payment automatically yet. Please check your bookings page in a moment.
+                  {t('checkout.confirmation.gatewayError')}
                 </div>
               )}
               <div className="space-y-3">
@@ -180,7 +188,7 @@ export default function CheckoutConfirmationPage() {
                     <div
                       key={item.title}
                       className={cn(
-                        "flex items-start gap-4 rounded-[2rem] border p-5",
+                        "flex items-start gap-4 rounded-3xl border p-5",
                         item.state === 'complete' ? "border-success/20 bg-success/10" : "border-border/60 bg-muted/20"
                       )}
                     >
@@ -204,17 +212,17 @@ export default function CheckoutConfirmationPage() {
 
               <div className="flex flex-col sm:flex-row gap-4">
               {isCancelled && retryCheckoutHref && (
-                <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-[1.5rem] bg-sunset-orange hover:bg-orange-600 text-white font-black border-none">
+                <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-sunset-orange hover:bg-orange-600 text-white font-black border-none">
                   <Link href={retryCheckoutHref} className="w-full sm:w-auto">
-                    Retry payment
+                    {t('checkout.confirmation.retryPayment')}
                   </Link>
                 </Button>
               )}
-              <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-[1.5rem] bg-deep-blue dark:bg-card text-white font-black">
-              <Link href="/bookings">View my bookings</Link>
+              <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-deep-blue dark:bg-card text-white font-black">
+              <Link href="/bookings">{t('checkout.confirmation.viewBookings')}</Link>
             </Button>
-              <Button asChild variant="outline" className="w-full sm:w-auto h-14 px-8 rounded-[1.5rem] font-black">
-              <Link href="/">Back to home</Link>
+              <Button asChild variant="outline" className="w-full sm:w-auto h-14 px-8 rounded-2xl font-black">
+              <Link href="/">{t('checkout.confirmation.backHome')}</Link>
             </Button>
             </div>
           </CardContent>

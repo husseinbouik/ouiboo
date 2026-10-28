@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { Button, Textarea } from '@ouiboo/ui';
-import { Star, Upload, Loader2, Check, AlertCircle } from 'lucide-react';
+import { Star, Loader2, Check, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ReviewFormProps {
@@ -25,7 +25,6 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState('');
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -38,7 +37,6 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
       setSuccessMessage('Review submitted successfully!');
       setRating(0);
       setComment('');
-      setUploadedFile(null);
       setTimeout(() => {
         setSuccessMessage('');
         onSuccess?.();
@@ -48,16 +46,6 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
       setErrorMessage(error?.response?.data?.message || 'Failed to submit review');
     }
   });
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      setUploadedFile(file);
-      setErrorMessage('');
-    } else {
-      setErrorMessage('Please select a valid image file');
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,48 +108,10 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
           </div>
         </div>
 
-        {/* Photo Upload Section */}
-        <div className="space-y-3">
-          <label className="text-sm font-bold text-foreground uppercase tracking-widest">Add Photo (Optional)</label>
-          <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:bg-muted transition-colors">
-            {uploadedFile ? (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-sunset-orange/10 rounded-lg flex items-center justify-center">
-                    <Check className="h-6 w-6 text-sunset-orange" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-semibold text-foreground text-sm">{uploadedFile.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{(uploadedFile.size / 1024).toFixed(2)} KB</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setUploadedFile(null)}
-                  className="text-red-500 hover:text-danger font-bold text-sm"
-                >
-                  Remove
-                </button>
-              </div>
-            ) : (
-              <label className="cursor-pointer">
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                />
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 bg-ocean-500/10 rounded-lg flex items-center justify-center">
-                    <Upload className="h-6 w-6 text-blue-500" />
-                  </div>
-                  <p className="font-semibold text-foreground text-sm">Click to upload image</p>
-                  <p className="text-[10px] text-muted-foreground">JPG, PNG, WebP (Max 10MB)</p>
-                </div>
-              </label>
-            )}
-          </div>
-        </div>
+        {/* #503: no photo affordance — the review endpoint accepts only
+            rating + comment, and the previous picker silently discarded the
+            selected file. Removed (Council B20) until an end-to-end,
+            moderated media flow exists. */}
 
         {/* Messages */}
         <AnimatePresence>

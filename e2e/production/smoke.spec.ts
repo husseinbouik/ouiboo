@@ -8,8 +8,8 @@ import { expect, test } from '@playwright/test';
  * URLs come from env vars (set in CI) with production defaults.
  */
 
-const TRAVELER_URL = process.env.SMOKE_TRAVELER_URL || 'https://ouiboo-traveler-nu.vercel.app';
-const AGENCY_URL = process.env.SMOKE_AGENCY_URL || 'https://ouiboo-agency-gold.vercel.app';
+const TRAVELER_URL = process.env.SMOKE_TRAVELER_URL || 'https://ouiboo-traveler.vercel.app';
+const AGENCY_URL = process.env.SMOKE_AGENCY_URL || 'https://ouiboo-agency.vercel.app';
 const ADMIN_URL = process.env.SMOKE_ADMIN_URL || 'https://ouiboo-admin.vercel.app';
 const LANDING_URL = process.env.SMOKE_LANDING_URL || 'https://ouiboo.vercel.app';
 const API_URL = process.env.SMOKE_API_URL || 'https://ouiboo-api.vercel.app/api/v1';
@@ -140,7 +140,17 @@ test.describe('production smoke: no console errors on load', () => {
           errors.push(msg.text());
         }
       });
-      await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+      await page.goto(url, { waitUntil: 'load', timeout: 30000 });
+      // Do not gate on 'networkidle': the traveller homepage streams RSC
+      // and loads many third-party trip images plus link prefetches, so
+      // total network silence can exceed 30s in CI even though the app
+      // itself opens no long-lived connections (audited: no WebSocket,
+      // EventSource or polling intervals in the traveller source). Give
+      // the page a bounded settle window instead - the listeners above
+      // collect errors from before navigation through the settle, so a
+      // severe console error still fails this test.
+      await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => undefined);
+      await page.waitForTimeout(2000);
       expect(errors).toEqual([]);
     });
   }

@@ -5,7 +5,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   BookingStatus,
   type BookingDetails,
-  type VerificationStatusType,
   VerificationStatus,
 } from '@ouiboo/types';
 import { toPaginatedList } from '@ouiboo/utils';
@@ -20,6 +19,9 @@ import {
   TableRow,
   Badge,
   Button,
+  DashboardStatsSkeleton,
+  CardListSkeleton,
+  Skeleton,
 } from '@ouiboo/ui';
 import {
   TrendingUp,
@@ -35,13 +37,18 @@ import {
   FileText,
   CreditCard,
   MessageSquareText,
-  Loader2,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthContext';
+import { VerificationPausedBanner } from '@/components/VerificationPausedBanner';
+import { SupportBlock } from '@/components/SupportBlock';
+import {
+  activationBlockMessageKey,
+  getAgencyActivationState,
+} from '@/lib/agency-verification';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
@@ -65,7 +72,11 @@ type AgencyStatsResponse = {
   };
 };
 
-const formatCurrency = (amount: number) => amount.toLocaleString(undefined, {
+// Session #3 P0-10 (#432): coerce before formatting. The API returns
+// some totals as strings; String.prototype.toLocaleString ignores the
+// fraction/grouping options, which is how the dashboard rendered
+// "2,400.00" beside "2000.00" for the same currency on one screen.
+const formatCurrency = (amount: number) => Number(amount).toLocaleString(undefined, {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
@@ -133,18 +144,33 @@ export default function AgencyDashboard() {
     payments: { currency: 'MAD', totalReceived: '0', totalRefunded: '0', pendingVerificationCount: 0, pendingVerificationAmount: '0' },
   };
 
+  // #422: both PENDING proofs (awaiting image review) and ACCEPTED proofs
+  // (awaiting bank confirmation) still need agency action before settlement.
   const pendingPaymentReviews = recentBookings.filter(
-    (booking) => booking.paymentProof?.status === VerificationStatus.Pending,
+    (booking) =>
+      booking.paymentProof?.status === VerificationStatus.Pending ||
+      booking.paymentProof?.status === VerificationStatus.Accepted,
   ).length;
   const bookingsNeedingAttention = recentBookings.filter(
     (booking) => booking.status === BookingStatus.AwaitingValidation || booking.status === BookingStatus.Pending,
   ).length;
   const latestBookings = recentBookings.slice(0, 5);
-  const verificationStatus: VerificationStatusType | undefined = user?.agencyProfile?.verificationStatus;
+  // #415: headline verification state comes from the shared activation
+  // derivation (identity + licence + RC insurance), never the legacy
+  // identity field alone — the API gate would still block this agency.
+  const activation = getAgencyActivationState(user?.agencyProfile);
+  const activationBlock = activation.block;
 
+  // Session #3 P0-10 (#432, debate D3 "definitions, not deletion"): the
+  // received total and the booked total are different computations that
+  // SHOULD differ — keep both, Payments Received stays the hero, the
+  // other is labelled by what it is (gross booked value), and every card
+  // carries a one-line definition so the difference is explained on the
+  // card itself.
   const summaryCards = [
     {
       label: t('dashboard.paymentsReceived'),
+      caption: t('dashboard.paymentsReceivedCaption'),
       value: formatCurrency(Number(stats.payments.totalReceived || 0)),
       currency: t('dashboard.currency'),
       icon: Wallet,
@@ -154,6 +180,7 @@ export default function AgencyDashboard() {
     },
     {
       label: t('dashboard.paymentsPending'),
+      caption: t('dashboard.paymentsPendingCaption'),
       value: formatCurrency(Number(stats.payments.pendingVerificationAmount || 0)),
       currency: t('dashboard.currency'),
       icon: Clock,
@@ -162,8 +189,9 @@ export default function AgencyDashboard() {
       trendUp: null,
     },
     {
-      label: t('dashboard.totalRevenue'),
-      value: formatCurrency(stats.revenue || 0),
+      label: t('dashboard.grossBookedValue'),
+      caption: t('dashboard.grossBookedValueCaption'),
+      value: formatCurrency(Number(stats.revenue || 0)),
       currency: t('dashboard.currency'),
       icon: TrendingUp,
       color: 'bg-muted-foreground',
@@ -172,13 +200,13 @@ export default function AgencyDashboard() {
     },
   ];
 
-  const isVerified = verificationStatus === VerificationStatus.Verified;
+  const isVerified = activation.fullyVerified;
   const quickActions = [
     {
-      title: isVerified ? t('dashboard.quickActions.verifiedTitle') : t('dashboard.quickActions.finishVerificationTitle'),
-      description: isVerified
+      title: isVerified ? t('dashboard.quickActions.verifiedTitle') : t('verification.incomplete'),
+      description: isVerified || !activationBlock
         ? t('dashboard.quickActions.verifiedDescription')
-        : t('dashboard.quickActions.finishVerificationDescription'),
+        : t(activationBlockMessageKey(activationBlock)),
       href: '/dashboard/onboarding',
       cta: isVerified ? t('dashboard.quickActions.verifiedCta') : t('dashboard.quickActions.finishVerificationCta'),
       icon: BadgeCheck,
@@ -212,17 +240,21 @@ export default function AgencyDashboard() {
 
   if (isUserLoading && statsLoading && bookingsLoading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="flex items-center gap-3 text-muted-foreground font-semibold">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          {t('dashboard.loadingCommandCenter')}
+      <div className="space-y-12 max-w-7xl mx-auto" role="status" aria-label={t('dashboard.loadingCommandCenter')}>
+        <div className="space-y-3" aria-hidden="true">
+          <Skeleton className="h-10 w-72 max-w-full" />
+          <Skeleton className="h-5 w-96 max-w-full" />
         </div>
+        <DashboardStatsSkeleton count={3} className="md:grid-cols-3 lg:grid-cols-3" />
+        <CardListSkeleton rows={3} />
+        <span className="sr-only">{t('dashboard.loadingCommandCenter')}</span>
       </div>
     );
   }
 
   return (
     <div className="space-y-12 max-w-7xl mx-auto">
+      <VerificationPausedBanner />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
           <h1 className="text-4xl font-black font-display tracking-tight">{t('dashboard.greeting', { name: companyName })}</h1>
@@ -250,7 +282,7 @@ export default function AgencyDashboard() {
             animate="animate"
             transition={{ delay: i * 0.1 }}
           >
-            <Card className="border-none shadow-xl shadow-black/5 rounded-[2.5rem] overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+            <Card className="border-none shadow-xl shadow-black/5 rounded-4xl overflow-hidden group hover:-translate-y-1 transition-all duration-300">
               <CardContent className="p-8">
                 <div className="flex justify-between items-start mb-6">
                   <div className={cn('w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg', stat.color)}>
@@ -275,6 +307,7 @@ export default function AgencyDashboard() {
                   <h3 className="text-4xl font-black font-display tracking-tighter">
                     {stat.value} <span className="text-sm font-bold text-muted-foreground">{stat.currency}</span>
                   </h3>
+                  <p className="text-xs text-muted-foreground mt-1">{stat.caption}</p>
                 </div>
               </CardContent>
             </Card>
@@ -294,7 +327,7 @@ export default function AgencyDashboard() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {quickActions.map((action) => (
-            <Card key={action.title} className="border-none shadow-lg shadow-black/5 rounded-[2rem] overflow-hidden">
+            <Card key={action.title} className="border-none shadow-lg shadow-black/5 rounded-3xl overflow-hidden">
               <CardContent className="p-6 flex flex-col gap-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2">
@@ -315,7 +348,7 @@ export default function AgencyDashboard() {
       </div>
 
       <div className="space-y-6">
-        <div className="flex justify-between items-center bg-card p-6 rounded-[2rem] border border-border/50 shadow-sm">
+        <div className="flex justify-between items-center bg-card p-6 rounded-3xl border border-border/50 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center"><AlertCircle className="h-5 w-5 text-primary" /></div>
             <div>
@@ -328,7 +361,7 @@ export default function AgencyDashboard() {
             </Button>
         </div>
 
-        <Card className="border-none shadow-xl shadow-black/5 rounded-[2.5rem] overflow-hidden">
+        <Card className="border-none shadow-xl shadow-black/5 rounded-4xl overflow-hidden">
           <CardContent className="p-0">
             <Table>
               <TableHeader className="bg-muted/30">
@@ -399,13 +432,16 @@ export default function AgencyDashboard() {
         <div className="relative z-10 space-y-4 max-w-xl text-center md:text-start">
           <h3 className="text-3xl font-black font-display tracking-tight leading-none">{t('dashboard.growTitle')}</h3>
           <p className="text-white/80 font-medium text-lg leading-relaxed">
-            {t('dashboard.growBody', { tripCount: stats.activeTrips, travelerCount: stats.totalCustomers })}
+            {t('dashboard.growTrips', { count: stats.activeTrips })} {t('dashboard.growTravelers', { count: stats.totalCustomers })} {t('dashboard.growCta')}
           </p>
         </div>
-        <Button asChild className="h-20 px-12 rounded-[2rem] bg-white text-primary hover:bg-slate-100 font-black text-xl border-none shadow-2xl transition-all hover:scale-105 active:scale-95">
+        <Button asChild className="h-20 px-12 rounded-3xl bg-white text-primary hover:bg-slate-100 font-black text-xl border-none shadow-2xl transition-all hover:scale-105 active:scale-95">
               <Link href="/dashboard/trips/create">{t('dashboard.createNewTrip')}</Link>
             </Button>
       </div>
+
+      {/* Session #3 P0-9 (#556): the agency support surface. */}
+      <SupportBlock />
     </div>
   );
 }

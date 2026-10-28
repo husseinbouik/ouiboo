@@ -3,16 +3,17 @@
 import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Button, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
-import { 
-  Menu, 
-  X, 
-  User, 
-  LogOut, 
-  Calendar as CalendarIcon, 
+import { Button, ThemeToggle, LanguageSwitcher, BetaBadge, Logo } from '@ouiboo/ui';
+import {
+  Menu,
+  X,
+  User,
+  LogOut,
+  Calendar as CalendarIcon,
   Heart,
   LayoutDashboard,
   Compass,
+  LifeBuoy,
   Zap
 } from 'lucide-react';
 import { useAuth } from './AuthContext';
@@ -21,6 +22,7 @@ import { apiClient } from '@/lib/api-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
 import { useTranslation } from 'react-i18next';
+import { CurrencySelector } from './CurrencySelector';
 
 export function Navbar() {
   const { t } = useTranslation();
@@ -33,6 +35,102 @@ export function Navbar() {
 const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  // #495: hover intent for the profile menu. A plain mouseenter/leave
+  // pair snaps the menu shut when the pointer travels diagonally from
+  // the trigger toward the menu (it briefly leaves both). The wrapper
+  // below keeps the menu open while the pointer is anywhere inside it,
+  // and leaving schedules a short intent delay instead of closing
+  // instantly — crossing the gap/diagonal inside that window cancels
+  // the close (the safe-triangle effect), while moving away still
+  // closes promptly. Keyboard (focus/Esc) and touch (click toggle)
+  // behaviour are explicit and unchanged in spirit.
+  const profileCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const profileTriggerRef = useRef<HTMLButtonElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  // #495 round 2: WHO opened the menu decides what a click does.
+  // Witnessed defect on the round-1 build: the first click on the
+  // trigger did nothing and a second click was required — on a
+  // hover-capable device the pointer's arrival fires mouseenter
+  // (hover-open) BEFORE the click lands, so the click's blind toggle
+  // shut the just-opened menu. The menu now tracks its open source:
+  // a click toggles only a menu it opened itself; against a hover-
+  // or focus-opened menu the click PINS it open instead. Decisions
+  // read profileOpenRef (synced synchronously by every open/close
+  // path) so no handler can act on a stale render closure.
+  const profileOpenSourceRef = useRef<'hover' | 'focus' | 'click'>('click');
+  const profileOpenRef = useRef(false);
+  // Set when Escape closes the menu and focus is returned to the
+  // trigger programmatically: that synthetic focus must not re-open
+  // the menu through the keyboard-focus path below.
+  const profileSuppressFocusOpenRef = useRef(false);
+  // #495 rework: hover open/close is a mouse-only affordance. Touch and
+  // pen pointers (and click) must not fight it — the previous build
+  // opened on any mouseenter and the click handler read the stale
+  // profileOpen closure, so a click that landed right after a hover
+  // open re-opened instead of closing (the menu "did not open on click
+  // or hover" witness, 2026-10-28). Hover handling is now gated on
+  // (hover: hover) and (pointer: fine), tracked live via matchMedia.
+  const [hoverCapable, setHoverCapable] = useState(false);
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const query = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const update = () => setHoverCapable(query.matches);
+    update();
+    query.addEventListener?.('change', update);
+    return () => query.removeEventListener?.('change', update);
+  }, []);
+  const cancelProfileClose = () => {
+    if (profileCloseTimer.current) {
+      clearTimeout(profileCloseTimer.current);
+      profileCloseTimer.current = null;
+    }
+  };
+  const scheduleProfileClose = () => {
+    cancelProfileClose();
+    profileCloseTimer.current = setTimeout(() => {
+      profileOpenRef.current = false;
+      setProfileOpen(false);
+    }, 350);
+  };
+  const openProfileMenu = (source: 'hover' | 'focus' | 'click') => {
+    cancelProfileClose();
+    profileOpenSourceRef.current = source;
+    profileOpenRef.current = true;
+    setProfileOpen(true);
+  };
+  const closeProfileNow = () => {
+    cancelProfileClose();
+    profileOpenRef.current = false;
+    setProfileOpen(false);
+  };
+  // #495 rework: while the profile menu is open, a pointerdown
+  // anywhere outside the trigger+menu closes it, and Escape closes it
+  // regardless of which element holds focus. Both are document-level
+  // so they behave identically for mouse, touch and keyboard users.
+  useEffect(() => {
+    if (!profileOpen) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        closeProfileNow();
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        profileSuppressFocusOpenRef.current = true;
+        closeProfileNow();
+        profileTriggerRef.current?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+    // closeProfileNow is a stable render-scope helper over refs/setState.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileOpen]);
+
   const pathname = usePathname();
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuCloseRef = useRef<HTMLButtonElement>(null);
@@ -104,6 +202,9 @@ const [isOpen, setIsOpen] = useState(false);
         { name: t('nav.explore'), href: '/search', icon: <Compass className="w-4 h-4" /> },
         { name: t('nav.featured'), href: '/trips/featured', icon: <Zap className="w-4 h-4" /> },
         { name: t('nav.wishlist'), href: '/wishlist', icon: <Heart className="w-4 h-4" /> },
+        // Session #3 P0-7b (#555): support was an orphan page — reachable
+        // only from a booking. It is a first-class nav route now.
+        { name: t('nav.support'), href: '/support', icon: <LifeBuoy className="w-4 h-4" /> },
     ];
 
   const isAuthPage = ['/login', '/signup', '/verify', '/forgot-password', '/reset-password', '/terms', '/privacy'].some(path => pathname.startsWith(path));
@@ -124,14 +225,19 @@ const [isOpen, setIsOpen] = useState(false);
             : "bg-transparent"
         )}
       >
-        {/* Logo Section */}
+        {/* Logo Section — #552 round 3: at 32px the shared pin
+            mark's taper is ~5px and the mark collapsed to a dot in
+            this bar (witnessed on the deployed build, while the
+            agency/admin/landing lockups passed). 40px is the size
+            at which the same mark already reads as a pin on the
+            traveller auth pages and the admin login, so the navbar
+            lockup renders at 40. Shared asset unchanged. */}
         <Link href="/" className="flex items-center gap-2 group shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-deep-blue text-white flex items-center justify-center font-bold text-lg">
-                O
-            </div>
+            <Logo size={40} />
             <span className="text-xl font-bold tracking-tight text-deep-blue dark:text-foreground">
                 Ouiboo
             </span>
+            <BetaBadge />
         </Link>
 
         <div className="hidden md:flex items-center gap-8 mx-6">
@@ -158,6 +264,7 @@ const [isOpen, setIsOpen] = useState(false);
         <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-2">
                 <LanguageSwitcher />
+                <CurrencySelector />
                 <ThemeToggle />
             </div>
 
@@ -167,12 +274,54 @@ const [isOpen, setIsOpen] = useState(false);
                     <div className="h-9 w-24 rounded-md bg-muted/50 animate-pulse" />
                 </div>
             ) : user ? (
-                <div className="relative">
-                    <button 
-                        onMouseEnter={() => setProfileOpen(true)}
-                        onFocus={() => setProfileOpen(true)}
+                <div
+                    ref={profileMenuRef}
+                    className="relative"
+                    onMouseEnter={() => {
+                        if (!hoverCapable) return;
+                        if (profileOpenRef.current) cancelProfileClose();
+                        else openProfileMenu('hover');
+                    }}
+                    onMouseLeave={() => { if (hoverCapable) scheduleProfileClose(); }}
+                >
+                    <button
+                        ref={profileTriggerRef}
+                        onClick={() => {
+                            cancelProfileClose();
+                            if (!profileOpenRef.current) {
+                                openProfileMenu('click');
+                            } else if (profileOpenSourceRef.current !== 'click') {
+                                // Pin: hover/focus opened the menu during
+                                // this same gesture — the click confirms it
+                                // open instead of toggling it shut (the
+                                // round-1 "first click does nothing" defect).
+                                profileOpenSourceRef.current = 'click';
+                            } else {
+                                closeProfileNow();
+                            }
+                        }}
+                        onFocus={(event) => {
+                            if (profileSuppressFocusOpenRef.current) {
+                                profileSuppressFocusOpenRef.current = false;
+                                return;
+                            }
+                            // Keyboard focus opens the menu; pointer-driven
+                            // focus must not, or the click that follows it
+                            // would toggle the just-opened menu shut.
+                            let focusVisible = false;
+                            try { focusVisible = event.currentTarget.matches(':focus-visible'); } catch { focusVisible = false; }
+                            if (focusVisible) openProfileMenu('focus');
+                        }}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Escape') {
+                                profileSuppressFocusOpenRef.current = true;
+                                closeProfileNow();
+                                profileTriggerRef.current?.focus();
+                            }
+                        }}
                         aria-label={t('nav.openProfileMenu', 'Open profile menu')}
                         aria-expanded={profileOpen}
+                        aria-haspopup="menu"
                         className="flex items-center gap-2 p-1.5 rounded-full hover:bg-muted/50 transition-colors"
                     >
                         <div className="w-8 h-8 rounded-full bg-deep-blue text-white flex items-center justify-center font-bold text-xs overflow-hidden">
@@ -196,7 +345,9 @@ const [isOpen, setIsOpen] = useState(false);
                                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                onMouseLeave={() => setProfileOpen(false)}
+                                role="menu"
+                                onMouseEnter={() => { if (hoverCapable) cancelProfileClose(); }}
+                                onMouseLeave={() => { if (hoverCapable) scheduleProfileClose(); }}
                                 className="absolute right-0 mt-2 w-64 bg-card rounded-xl shadow-lg border border-border overflow-hidden z-[60]"
                             >
                                 <div className="p-4 border-b border-border">
@@ -244,7 +395,7 @@ const [isOpen, setIsOpen] = useState(false);
                 aria-expanded={isOpen}
                 aria-controls="traveler-mobile-menu"
                 className={cn(
-                    "md:hidden w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                    "md:hidden w-10 h-10 rounded-xl flex items-center justify-center transition-all hit-slop",
                     isTransparent ? "bg-white/10 text-white" : "bg-muted text-foreground"
                 )}
             >
@@ -277,10 +428,12 @@ const [isOpen, setIsOpen] = useState(false);
             >
                <div className="flex justify-between items-center text-foreground">
                   <div className="flex items-center gap-2">
-                     <div className="w-8 h-8 rounded-xl bg-sunset-orange-dark text-white flex items-center justify-center font-black text-lg">O</div>
+                     {/* #552 round 3: same lockup size as the desktop bar (40). */}
+                     <Logo size={40} />
                      <span className="text-xl font-black">Ouiboo</span>
+                     <BetaBadge />
                   </div>
-                  <button ref={mobileMenuCloseRef} onClick={() => setIsOpen(false)} aria-label={t('nav.closeMenu', 'Close navigation menu')} className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                  <button ref={mobileMenuCloseRef} onClick={() => setIsOpen(false)} aria-label={t('nav.closeMenu', 'Close navigation menu')} className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center hit-slop">
                      <X className="h-5 w-5" />
                   </button>
                </div>
@@ -297,6 +450,9 @@ const [isOpen, setIsOpen] = useState(false);
                             {wishlistCountData?.count > 0 && (
                               <span className="ml-2 inline-flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-[12px] font-bold">{wishlistCountData.count}</span>
                             )}
+                        </Link>
+                        <Link onClick={() => setIsOpen(false)} href="/support" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
+                            {t('nav.support')} <LifeBuoy className="text-sunset-orange" />
                         </Link>
                </div>
 

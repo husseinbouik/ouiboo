@@ -1,22 +1,23 @@
 'use client';
 
-import Image from 'next/image';
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { 
-  MapPin, 
-  Clock, 
-  Users, 
-  Check, 
-  ChevronLeft, 
-  ShieldCheck,
+import {
+  MapPin,
+  Clock,
+  Users,
+  Check,
+  ChevronLeft,
+  Banknote,
+  Languages,
   Star,
   X,
+  Zap,
   ClipboardList
 } from 'lucide-react';
-import { Button, Badge } from '@ouiboo/ui';
+import { Button, Badge, TripDetailSkeleton, ShareTripButton, SafeImage } from '@ouiboo/ui';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -24,8 +25,14 @@ import { cn } from '@ouiboo/ui/utils';
 import { useAuth } from '@/components/AuthContext';
 import { ReviewList } from '@/components/ReviewList';
 import SellerIdentity from '@/components/SellerIdentity';
-import { SessionStatus, type SessionStatusType } from '@ouiboo/types';
+import { TRAVELER_URL } from '@/lib/site';
+import { tripCoverViewTransitionName } from '@/lib/view-transition';
+import { SessionStatus, type CancellationScaleSnapshot, type SessionStatusType } from '@ouiboo/types';
 import { formatCurrency } from '@ouiboo/utils';
+import { CancellationScaleCard } from '@/components/CancellationScaleCard';
+import { RatingDistribution } from '@/components/RatingDistribution';
+import { SnapRail } from '@/components/SnapRail';
+import { useDisplayAmountConverter } from '@/lib/display-currency';
 
 type TripDay = {
   dayNumber: number;
@@ -56,6 +63,9 @@ const isStagedSession = (session: TripSession) =>
 type TripDetails = {
   id: string;
   title: string;
+  /** Session #3 P0-11 (#546): language the API actually resolved the
+   * title/description in — the page says so when it is not the reader's. */
+  contentLanguage?: string;
   category?: string;
   startLocation: string;
   durationDays: number;
@@ -64,6 +74,10 @@ type TripDetails = {
   images?: string[];
   /** #332: agency-provided alt text per image (index-aligned); may be absent. */
   imageAlts?: string[];
+  /** #486: stored blur placeholders per image (index-aligned data-URLs);
+   * may be absent/null per image — SafeImage falls back to the shared
+   * palette placeholder, so existing media renders correctly. */
+  imageBlurDataURLs?: (string | null)[];
   /** #371: seller of record (legal name + verified licence) from GET /trips/:id. */
   agency?: {
     id?: string;
@@ -72,9 +86,15 @@ type TripDetails = {
     travelLicenceNumber?: string | null;
     travelLicenceStatus?: string | null;
     licenceExpiry?: string | null;
+    /** #413 (Council B10): what+when verification statement dates. */
+    licenceVerifiedAt?: string | null;
+    insuranceStatus?: string | null;
+    insuranceVerifiedAt?: string | null;
   } | null;
   sessions?: TripSession[];
   itinerary?: TripDay[];
+  /** #417: the resolved cancellation scale from GET /trips/:id (bands + floor). */
+  cancellationScale?: CancellationScaleSnapshot | null;
   inclusions?: string[];
   exclusions?: string[];
   checklist?: string[];
@@ -99,16 +119,31 @@ export default function TripDetailsClient({
   const { t, i18n } = useTranslation();
   const { user, setShowLoginModal } = useAuth();
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
-  const [activeImage, setActiveImage] = useState(0);
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-  const swipeHandledRef = useRef(false);
 
+  // Content-language audit (2026-10-27, #546): the server fetch sends
+  // no locale, so the ISR payload is canonical French. It previously
+  // seeded a locale-less query entry (['trip', tripId]) that the
+  // switcher never invalidated — content stayed in whichever language
+  // the last fetch used, French by default. The key now carries the UI
+  // locale: a language switch mounts a different entry and fetches in
+  // the new language immediately, and the persisted cache (keyed the
+  // same way) can only restore a snapshot in the language it was
+  // fetched in.
+  const uiLocale = (i18n.language || 'en').split('-')[0];
   const { data: trip, isLoading, isError, refetch } = useQuery<TripDetails | null>({
-    queryKey: ['trip', tripId],
+    queryKey: ['trip', tripId, uiLocale],
     enabled: !!tripId,
-    initialData: initialTrip ?? undefined,
+    // Seed from the ISR payload only when it already matches the UI
+    // locale (P0-11's contentLanguage says which) — never a
+    // stale-language first render after a switch.
+    initialData:
+      initialTrip && (initialTrip.contentLanguage ?? 'fr') === uiLocale
+        ? initialTrip
+        : undefined,
     queryFn: async () => {
-      const response = await apiClient.get(`/trips/${tripId}`);
+      // #546: trip text in the current UI language (the ISR server
+      // payload is the canonical French; this refetch localizes it).
+      const response = await apiClient.get(`/trips/${tripId}?locale=${i18n.language}`);
       return response.data;
     }
   });
@@ -123,10 +158,20 @@ export default function TripDetailsClient({
     }
   });
 
+  // #615: every price on this page honours the traveller's display
+  // currency, exactly like the cards. All of a trip's sessions share
+  // the trip currency (API invariant), so one converter bound to the
+  // first session's currency covers the price header, the session
+  // rows and the cancellation scale. Display only — checkout still
+  // charges the session currency.
+  const convertDisplayAmount = useDisplayAmountConverter(trip?.sessions?.[0]?.currency);
+
   if (isLoading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center space-y-4 bg-background">
-      <div className="w-16 h-16 border-4 border-sunset-orange border-t-transparent rounded-full animate-spin" />
-      <p className="text-xl font-bold text-foreground animate-pulse font-display">Preparing your adventure...</p>
+    <div className="min-h-screen bg-background pb-32" role="status" aria-label={t('tripDetails.loading')}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32">
+        <TripDetailSkeleton />
+      </div>
+      <span className="sr-only">{t('tripDetails.loading')}</span>
     </div>
   );
 
@@ -136,12 +181,12 @@ export default function TripDetailsClient({
         <X className="h-8 w-8 text-danger" />
       </div>
       <div className="space-y-2">
-        <h1 className="text-2xl font-black text-foreground font-display">We could not load this trip</h1>
-        <p className="text-muted-foreground">Check your connection and try again.</p>
+        <h1 className="text-2xl font-black text-foreground font-display">{t('tripDetails.loadErrorTitle')}</h1>
+        <p className="text-muted-foreground">{t('tripDetails.loadErrorBody')}</p>
       </div>
       <div className="flex flex-wrap justify-center gap-3">
-        <Button type="button" onClick={() => void refetch()}>Try again</Button>
-        <Button type="button" variant="outline" onClick={() => router.push('/search')}>Browse other trips</Button>
+        <Button type="button" onClick={() => void refetch()}>{t('common.tryAgain')}</Button>
+        <Button type="button" variant="outline" onClick={() => router.push('/search')}>{t('tripDetails.browseOtherTrips')}</Button>
       </div>
     </div>
   );
@@ -151,9 +196,9 @@ export default function TripDetailsClient({
         <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center">
           <MapPin className="h-10 w-10 text-muted-foreground" />
         </div>
-        <h1 className="text-3xl font-black text-foreground font-display">Adventure not found</h1>
+        <h1 className="text-3xl font-black text-foreground font-display">{t('tripDetails.notFoundTitle')}</h1>
         <Button onClick={() => router.push('/')} className="bg-sunset-orange hover:bg-orange-600 px-8 py-6 rounded-2xl font-bold">
-            Explore other trips
+            {t('tripDetails.exploreOtherTrips')}
         </Button>
     </div>
   );
@@ -165,64 +210,29 @@ export default function TripDetailsClient({
     if (!Number.isFinite(Number(session.price))) return lowest;
     return !lowest || Number(session.price) < Number(lowest.price) ? session : lowest;
   }, null);
+  // #615: the "from" price renders in the display currency (converted
+  // through the MAD-base rates), not the session currency.
+  const formatDisplayAmount = (amount: number | string | null | undefined): string => {
+    const converted = convertDisplayAmount(amount);
+    return converted ? formatCurrency(converted.amount, converted.currency, i18n.language) : '—';
+  };
   const minPriceLabel = lowestPricedSession
-    ? formatCurrency(lowestPricedSession.price, lowestPricedSession.currency, i18n.language)
-    : 'On request';
+    ? formatDisplayAmount(lowestPricedSession.price)
+    : t('tripDetails.onRequest');
 
-  // Gallery tiles/thumbnails never include the photo currently shown in the
-  // main viewer, so the same photo is never on screen twice. Indices are the
-  // original positions in trip.images so clicks/dots keep their meaning.
-  const galleryTiles = (trip.images ?? [])
-    .map((src, index) => ({ src, index }))
-    .filter(({ index }) => index !== activeImage);
-  const desktopTiles = galleryTiles.slice(0, 3);
-  const hiddenTileCount = galleryTiles.length - desktopTiles.length;
-  const firstHiddenTileIndex = hiddenTileCount > 0 ? galleryTiles[desktopTiles.length].index : -1;
+  // #417: refund amounts on the cancellation scale are computed on the
+  // selected session's price, falling back to the lowest open price.
+  // #615: the scale's base is converted to the display currency too,
+  // so the refund amounts it derives match the cards.
+  const selectedSessionData = openSessions.find((session) => session.id === selectedSession) ?? null;
+  const scaleBaseSession = selectedSessionData ?? lowestPricedSession;
+  const scaleBaseConverted = scaleBaseSession ? convertDisplayAmount(scaleBaseSession.price) : null;
 
-  // Touch swipe support for the main gallery image (mobile): a horizontal
-  // swipe changes the photo, while vertical gestures still scroll the page.
-  // The container uses `touch-pan-y`, so the browser natively handles
-  // vertical panning and only horizontal-dominant gestures reach these
-  // handlers. Mirrors the TripCard carousel pattern (PR #306).
-  const SWIPE_THRESHOLD_PX = 40;
-  const imageCount = trip.images?.length ?? 0;
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    swipeHandledRef.current = false;
-    if (imageCount <= 1) return;
-    const touch = e.touches[0];
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (imageCount <= 1 || !touchStartRef.current) return;
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - touchStartRef.current.x;
-    const dy = touch.clientY - touchStartRef.current.y;
-    touchStartRef.current = null;
-    if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) <= Math.abs(dy)) return;
-    swipeHandledRef.current = true;
-    window.setTimeout(() => {
-      swipeHandledRef.current = false;
-    }, 400);
-    // In RTL the gallery is mirrored, so the swipe direction that advances
-    // to the next image flips with it (same convention as TripCard).
-    const advancesNext = i18n.dir() === 'rtl' ? dx > 0 : dx < 0;
-    setActiveImage((prev) => advancesNext
-      ? (prev + 1) % imageCount
-      : (prev - 1 + imageCount) % imageCount);
-  };
-
-  // A real swipe is followed by a synthetic click on the touched element;
-  // swallow it so a swipe ending on a dot never also jumps via that dot.
-  // Plain taps are unaffected because the flag is only set after a swipe.
-  const handleClickCapture = (e: React.MouseEvent) => {
-    if (swipeHandledRef.current) {
-      e.preventDefault();
-      e.stopPropagation();
-      swipeHandledRef.current = false;
-    }
-  };
+  // #571 rework: prominent trip-level spots indicator (previously the
+  // count existed only as 10px text inside session-picker rows).
+  const nextDepartureSession = [...openSessions].sort(
+    (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+  )[0] ?? null;
 
   return (
     <div className="min-h-screen bg-background pb-32 font-sans text-foreground overflow-hidden relative">
@@ -236,83 +246,37 @@ export default function TripDetailsClient({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32">
         <Link href="/search" className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-all mb-5 sm:mb-8 group bg-card/50 backdrop-blur-sm px-4 sm:px-5 py-2.5 rounded-xl border border-border/50 hover:bg-card shadow-sm">
-            <ChevronLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-            Back to Catalog
+            <ChevronLeft className="h-4 w-4 group-hover:-translate-x-1 rtl:group-hover:translate-x-1 rtl:rotate-180 transition-transform" />
+            {t('tripDetails.backToCatalog')}
         </Link>
 
-        {/* Dynamic Photo Gallery */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 h-auto lg:h-[600px] mb-8 sm:mb-12">
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className={cn(
-                  "relative h-[280px] sm:h-[400px] lg:h-full rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden shadow-2xl shadow-black/5 dark:shadow-black/20 group border border-border/50 touch-pan-y",
-                  (trip.images?.length ?? 0) > 1 ? "lg:col-span-7" : "lg:col-span-12",
-                )}
-                onTouchStart={handleTouchStart}
-                onTouchEnd={handleTouchEnd}
-                onClickCapture={handleClickCapture}
-            >
-                <Image 
-                    src={trip.images?.[activeImage] || 'https://images.unsplash.com/photo-1489749798305-4fea3ae63d43'} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                    alt={trip.imageAlts?.[activeImage]?.trim() || trip.title}
-                    fill
-                    sizes="(min-width: 1024px) 60vw, 100vw"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
-                <div className="absolute bottom-6 left-6 flex gap-2">
-                    {trip.images?.map((_, idx: number) => (
-                        <button
-                            key={idx}
-                            type="button"
-                            onClick={() => setActiveImage(idx)}
-                            aria-label={`View image ${idx + 1}`}
-                            aria-current={activeImage === idx || undefined}
-                            className={cn(
-                                "h-1.5 rounded-full transition-all duration-300 backdrop-blur-md",
-                                activeImage === idx ? "bg-white w-8" : "bg-white/40 hover:bg-white/80 w-4"
-                            )}
-                        />
-                    ))}
-                </div>
-            </motion.div>
-            
-            {(trip.images?.length ?? 0) > 1 ? (
-              <div className="flex lg:hidden gap-3 overflow-x-auto pb-1" aria-label="Trip photos">
-                  {galleryTiles.map(({ src, index }) => (
-                      <button key={index} type="button" className="relative h-20 w-28 shrink-0 rounded-2xl overflow-hidden shadow-md border border-border/50" onClick={() => setActiveImage(index)} aria-label={`View image ${index + 1}`}>
-                          <Image src={src} className="w-full h-full object-cover" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - image ${index + 1}`} fill sizes="112px" />
-                      </button>
-                  ))}
-              </div>
-            ) : null}
-
-            {(trip.images?.length ?? 0) > 1 ? (
-              <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="hidden lg:grid lg:col-span-5 grid-cols-2 auto-rows-fr gap-4 md:gap-6"
-              >
-                  {desktopTiles.map(({ src, index }) => (
-                      <button key={index} type="button" className="relative min-h-36 rounded-[1.5rem] overflow-hidden shadow-lg border border-border/50 group" onClick={() => setActiveImage(index)} aria-label={`View image ${index + 1}`}>
-                          <Image src={src} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - image ${index + 1}`} fill sizes="20vw" />
-                          <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                      </button>
-                  ))}
-                  {hiddenTileCount > 0 ? (
-                    <button type="button" onClick={() => setActiveImage(firstHiddenTileIndex)} className="bg-muted/50 rounded-[1.5rem] flex items-center justify-center hover:bg-muted transition-colors border border-border" aria-label={`View ${hiddenTileCount} more images`}>
-                        <span className="flex flex-col items-center gap-2">
-                            <span className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground font-bold shadow-sm">
-                                +{hiddenTileCount}
-                            </span>
-                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">View Gallery</span>
-                        </span>
-                    </button>
-                  ) : null}
-              </motion.div>
-            ) : null}
-        </div>
+        {/* #490 — Option A "Snap Rail": the shared rail component.
+            Round 2 extracted it from this file (where it passed
+            witnessed verification) so the home/search cards render
+            the identical component and behaviour — see SnapRail.tsx.
+            Round 3: dragAdvanceOnRelease — this gallery's slides are
+            a full page width (~3x a card's), so the same drag that
+            advances a card fell short of this rail's halfway snap
+            point and settled back onto the starting photo; a moved
+            drag now settles one slide over. Cards keep the native
+            settle (they do not pass the flag). */}
+        <SnapRail
+          dragAdvanceOnRelease
+          testId="trip-gallery-snap-rail"
+          counterTestId="trip-gallery-counter"
+          images={trip.images && trip.images.length > 0 ? trip.images : ['']}
+          imageAlts={trip.imageAlts}
+          imageBlurDataURLs={trip.imageBlurDataURLs}
+          captionFallback={trip.title}
+          ariaLabel={t('tripDetails.photosLabel')}
+          rootClassName="mb-8 sm:mb-12 overflow-hidden rounded-2xl border border-border/50 shadow-2xl shadow-black/5 dark:shadow-black/20 sm:rounded-3xl"
+          viewportClassName="h-[280px] sm:h-[400px] lg:h-[520px]"
+          sizes="100vw"
+          arrowsClassName="hidden lg:flex"
+          slideStyle={(idx, isActive) =>
+            isActive ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined
+          }
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16 relative">
           {/* Left Side: Information */}
@@ -325,7 +289,7 @@ export default function TripDetailsClient({
                         </Badge>
                         <span className="text-border mx-1">|</span>
                         <div className="flex items-center text-sm font-semibold text-muted-foreground">
-                            <MapPin className="h-4 w-4 mr-1.5 text-sunset-orange" />
+                            <MapPin className="h-4 w-4 me-1.5 text-sunset-orange" />
                             {trip.startLocation}
                         </div>
                     </div>
@@ -333,13 +297,59 @@ export default function TripDetailsClient({
                         {trip.title}
                     </h1>
                     
-                    <div className="flex items-center gap-6">
+                    <div className="flex flex-wrap items-center gap-6">
                         <div className="flex items-center gap-1.5 bg-yellow-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span className="font-bold text-sm text-amber-700 dark:text-yellow-400">{reviewStats?.totalReviews ? (reviewStats.averageRating ?? 0).toFixed(1) : 'New'}</span>
-                            <span className="text-xs text-amber-700 dark:text-yellow-400/70 font-medium">({reviewStats?.totalReviews || 0} reviews)</span>
+                            <span className="font-bold text-sm text-amber-700 dark:text-yellow-400">{reviewStats?.totalReviews ? (reviewStats.averageRating ?? 0).toFixed(1) : t('tripDetails.newTrip')}</span>
+                            {/* #579: at zero reviews show the localised
+                                "No reviews yet", not a "(0 reviews)" count. */}
+                            <span className="text-xs text-amber-700 dark:text-yellow-400/70 font-medium">{reviewStats?.totalReviews ? t('tripDetails.reviewsCount', { count: reviewStats.totalReviews }) : t('reviews.noReviewsYet')}</span>
                         </div>
+                        {/* #468: share this trip (native sheet / intent menu).
+                            allowRuntimeOriginFallback: this app serves the trip
+                            pages, so its own origin is a safe share base if the
+                            configured one is ever loopback in a deployed build. */}
+                        <ShareTripButton tripId={trip.id} tripTitle={trip.title} travelerBaseUrl={TRAVELER_URL} allowRuntimeOriginFallback className="rounded-full" />
                     </div>
+
+                    {/* #571 rework: prominent trip-level spots indicator —
+                        solid fill, white bold 14px text; amber when the
+                        next departure has fewer than 5 seats, dark red
+                        when there is no open departure left. */}
+                    <button
+                      type="button"
+                      data-testid="trip-spots-indicator"
+                      data-state={!nextDepartureSession ? 'sold-out' : nextDepartureSession.availableSeats < 5 ? 'low' : 'available'}
+                      disabled={!nextDepartureSession}
+                      aria-pressed={nextDepartureSession ? selectedSession === nextDepartureSession.id : undefined}
+                      onClick={() => {
+                        if (nextDepartureSession) setSelectedSession(nextDepartureSession.id);
+                      }}
+                      className={cn(
+                        "mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-md",
+                        !nextDepartureSession
+                          ? "bg-rose-800"
+                          : nextDepartureSession.availableSeats < 5
+                            ? "bg-amber-600"
+                            : "bg-emerald-700"
+                      )}
+                    >
+                      <Zap className="h-4 w-4" />
+                      {nextDepartureSession
+                        ? t('tripDetails.spotsLeft', { count: nextDepartureSession.availableSeats })
+                        : t('tripDetails.spotsBannerSoldOut')}
+                    </button>
+
+                    {/* Session #3 P0-11 (#546): when the content resolved
+                        in a language other than the reader's UI language,
+                        say so — French-only content previously failed
+                        silently for Arabic/English readers. */}
+                    {trip.contentLanguage && trip.contentLanguage !== uiLocale ? (
+                      <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+                        <Languages className="h-4 w-4 text-sunset-orange shrink-0" />
+                        {t('tripDetails.contentLanguageNotice', { language: t(`languageNames.${trip.contentLanguage}`) })}
+                      </p>
+                    ) : null}
 
                     {/* #371: seller of record + verified travel licence */}
                     <SellerIdentity agency={trip.agency} className="mt-4" />
@@ -348,9 +358,9 @@ export default function TripDetailsClient({
                 {/* Quick Stats Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {[
-                        { label: 'Duration', value: `${trip.durationDays}D / ${trip.durationNights}N`, icon: Clock },
-                        { label: 'Available dates', value: openSessions.length > 0 ? `${openSessions.length} open` : 'On request', icon: Users },
-                        { label: 'Booking', value: 'Secure checkout', icon: ShieldCheck },
+                        { label: t('tripDetails.durationLabel'), value: t('tripDetails.durationValue', { days: trip.durationDays, nights: trip.durationNights }), icon: Clock },
+                        { label: t('tripDetails.availableDatesLabel'), value: openSessions.length > 0 ? t('tripDetails.openDates', { count: openSessions.length }) : t('tripDetails.onRequest'), icon: Users },
+                        { label: t('tripDetails.payment'), value: t('tripDetails.directToAgency'), icon: Banknote },
                     ].map((stat, i) => (
                         <div key={i} className="p-5 bg-card rounded-2xl border border-border shadow-sm flex flex-col gap-3">
                             <stat.icon className="h-5 w-5 text-sunset-orange" />
@@ -364,7 +374,7 @@ export default function TripDetailsClient({
              </div>
 
              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-foreground font-display">The Experience</h2>
+                <h2 className="text-2xl font-bold text-foreground font-display">{t('tripDetails.experienceTitle')}</h2>
                 <div className="text-muted-foreground leading-relaxed text-lg font-medium whitespace-pre-wrap">
                     {trip.description}
                 </div>
@@ -373,18 +383,18 @@ export default function TripDetailsClient({
              {trip.itinerary && trip.itinerary.length > 0 ? (
                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-foreground font-display">Daily Plan</h2>
+                    <h2 className="text-2xl font-bold text-foreground font-display">{t('tripDetails.dailyPlanTitle')}</h2>
                     <Badge variant="outline" className="text-[10px] font-bold px-3 py-1 bg-muted/30">
-                        {trip.itinerary.length} Days
+                        {t('tripCard.days', { count: trip.itinerary.length })}
                     </Badge>
                   </div>
                   <div className="space-y-1">
                     {trip.itinerary.map((day, idx: number) => (
-                      <div key={idx} className="relative pl-12 pb-10 last:pb-0 group">
+                      <div key={idx} className="relative ps-12 pb-10 last:pb-0 group">
                         {/* Timeline Connector */}
-                        <div className="absolute left-4 top-2 bottom-0 w-0.5 bg-border/60 group-last:hidden" />
+                        <div className="absolute start-4 top-2 bottom-0 w-0.5 bg-border/60 group-last:hidden" />
                         
-                        <div className="absolute left-0 top-0 w-8 h-8 rounded-full bg-card border-2 border-sunset-orange text-sunset-orange flex items-center justify-center font-bold text-xs z-10 shadow-sm transition-all group-hover:scale-110 group-hover:bg-sunset-orange group-hover:text-white">
+                        <div className="absolute start-0 top-0 w-8 h-8 rounded-full bg-card border-2 border-sunset-orange text-sunset-orange flex items-center justify-center font-bold text-xs z-10 shadow-sm transition-all group-hover:scale-110 group-hover:bg-sunset-orange group-hover:text-white">
                           {day.dayNumber}
                         </div>
                         
@@ -393,12 +403,12 @@ export default function TripDetailsClient({
                              {day.title ? (
                                <h3 className="text-xl font-bold text-foreground leading-tight font-display">{day.title}</h3>
                              ) : (
-                               <h3 className="text-xl font-bold text-foreground leading-tight font-display">Day {day.dayNumber}</h3>
+                               <h3 className="text-xl font-bold text-foreground leading-tight font-display">{t('tripDetails.dayLabel', { number: day.dayNumber })}</h3>
                              )}
                           </div>
                           
                           <p className="text-muted-foreground leading-relaxed font-medium whitespace-pre-wrap text-base">
-                            {day.description || 'The agency has not provided a description for this day.'}
+                            {day.description || t('tripDetails.dayNoDescription')}
                           </p>
                           
                           {day.activities && day.activities.length > 0 && (
@@ -416,21 +426,21 @@ export default function TripDetailsClient({
                   </div>
                </div>
               ) : (
-                 <div className="p-8 rounded-[2rem] bg-muted/30 border border-dashed border-border flex flex-col items-center justify-center gap-3 text-center">
+                 <div className="p-8 rounded-3xl bg-muted/30 border border-dashed border-border flex flex-col items-center justify-center gap-3 text-center">
                       <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                           <ClipboardList className="h-6 w-6 text-muted-foreground" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-foreground text-sm uppercase tracking-wider">Flexible trip structure</h3>
+                        <h3 className="font-bold text-foreground text-sm uppercase tracking-wider">{t('tripDetails.flexibleTitle')}</h3>
                          <p className="text-xs text-muted-foreground mt-1 max-w-[320px]">
-                           This experience is available for booking now. Use the description, inclusions, and session dates below to review the current trip scope.
+                           {t('tripDetails.flexibleBody')}
                          </p>
                       </div>
                   </div>
                )}
 
              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-foreground font-display">What&apos;s Included</h2>
+                <h2 className="text-2xl font-bold text-foreground font-display">{t('tripDetails.includedTitle')}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    {trip.inclusions?.map((item: string, idx: number) => (
                       <motion.div 
@@ -452,7 +462,7 @@ export default function TripDetailsClient({
 
              {trip.exclusions && trip.exclusions.length > 0 && (
                <div className="space-y-6 pt-6">
-                  <h2 className="text-2xl font-bold text-foreground font-display">What&apos;s Excluded</h2>
+                  <h2 className="text-2xl font-bold text-foreground font-display">{t('tripDetails.excludedTitle')}</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                      {trip.exclusions.map((item: string, idx: number) => (
                         <motion.div 
@@ -475,7 +485,7 @@ export default function TripDetailsClient({
 
              {trip.checklist && trip.checklist.length > 0 && (
                <div className="space-y-6 pt-6">
-                  <h2 className="text-2xl font-bold text-foreground font-display">Traveler Checklist</h2>
+                  <h2 className="text-2xl font-bold text-foreground font-display">{t('tripDetails.checklistTitle')}</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                      {trip.checklist.map((item: string, idx: number) => (
                         <motion.div 
@@ -496,12 +506,24 @@ export default function TripDetailsClient({
                </div>
              )}
 
+             {/* #417: the cancellation scale, shown before payment.
+                 #615: base + currency arrive already converted to the
+                 display currency, so the refund amounts match the
+                 cards; the card itself keeps formatting them. */}
+             <CancellationScaleCard
+               scale={trip.cancellationScale}
+               baseAmount={scaleBaseConverted ? scaleBaseConverted.amount : null}
+               currency={scaleBaseConverted?.currency ?? scaleBaseSession?.currency ?? trip.sessions?.[0]?.currency}
+               className="pt-6"
+             />
+
              {/* Reviews Section */}
              <div className="space-y-6 pt-6">
                <div className="flex items-center justify-between">
-                 <h2 className="text-2xl font-bold text-foreground font-display">Reviews & Ratings</h2>
+                 <h2 className="text-2xl font-bold text-foreground font-display">{t('tripDetails.reviewsTitle')}</h2>
                  <Badge variant="outline" className="text-[10px] font-bold px-3 py-1 bg-muted/30">
-                   {reviewStats?.totalReviews || 0} Reviews
+                   {/* #579: zero reviews reads "No reviews yet", not "0 Reviews". */}
+                   {reviewStats?.totalReviews ? t('tripDetails.reviewsBadge', { count: reviewStats.totalReviews }) : t('reviews.noReviewsYet')}
                  </Badge>
                </div>
                
@@ -510,7 +532,7 @@ export default function TripDetailsClient({
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                    {/* Average Rating Display */}
                    <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6 space-y-4">
-                     <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Average Rating</p>
+                     <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{t('tripDetails.averageRating')}</p>
                      <div className="flex items-center gap-4">
                        <div className="flex flex-col">
                          <span className="text-5xl font-black text-foreground font-display">{reviewStats.totalReviews ? (reviewStats.averageRating ?? 0).toFixed(1) : '—'}</span>
@@ -530,27 +552,11 @@ export default function TripDetailsClient({
                      </div>
                    </div>
 
-                   {/* Rating Distribution */}
+                   {/* Rating Distribution (#587: extracted so the row
+                       labels are pinned by RatingDistribution.test.tsx) */}
                    <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6 space-y-4">
-                     <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Distribution</p>
-                     <div className="space-y-2">
-                       {[5, 4, 3, 2, 1].map((rating) => {
-                         const count = reviewStats.distribution?.[rating] || 0;
-                         const percentage = reviewStats.totalReviews > 0 ? (count / reviewStats.totalReviews * 100) : 0;
-                         return (
-                           <div key={rating} className="flex items-center gap-2">
-                             <span className="text-xs font-bold text-muted-foreground w-6">{rating}?</span>
-                             <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                               <div
-                                 className="h-full bg-gradient-to-r from-sunset-orange to-orange-600"
-                                 style={{ width: `${percentage}%` }}
-                               />
-                             </div>
-                             <span className="text-xs font-medium text-muted-foreground w-8 text-right">{count}</span>
-                           </div>
-                         );
-                       })}
-                     </div>
+                     <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{t('tripDetails.distribution')}</p>
+                     <RatingDistribution distribution={reviewStats.distribution} totalReviews={reviewStats.totalReviews} />
                    </div>
                  </div>
                )}
@@ -567,7 +573,7 @@ export default function TripDetailsClient({
                 animate={{ opacity: 1, y: 0 }}
                 className="sticky top-32"
             >
-                <div className="bg-card/80 backdrop-blur-xl border border-border/50 shadow-xl rounded-[2.5rem] p-8 space-y-8 relative overflow-hidden">
+                <div className="bg-card/80 backdrop-blur-xl border border-border/50 shadow-xl rounded-4xl p-8 space-y-8 relative overflow-hidden">
                     
                     {/* Price Header */}
                     <div className="space-y-1 text-center pb-6 border-b border-border">
@@ -578,11 +584,11 @@ export default function TripDetailsClient({
                     </div>
 
                     <div className="space-y-4">
-                        <label id="session-select-label" className="text-xs font-bold text-foreground uppercase tracking-wider ml-1">Select Date</label>
+                        <label id="session-select-label" className="text-xs font-bold text-foreground uppercase tracking-wider ms-1">{t('tripDetails.selectDate')}</label>
                         <div
                             role="radiogroup"
                             aria-labelledby="session-select-label"
-                            className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar"
+                            className="space-y-3 max-h-[300px] overflow-y-auto pe-2 custom-scrollbar"
                         >
                            {openSessions.length > 0 ? (
                                 openSessions.map((session) => (
@@ -610,8 +616,8 @@ export default function TripDetailsClient({
                                           <span className="font-bold text-foreground text-sm">
                                               {new Date(session.startDate).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })} - {new Date(session.endDate).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })}
                                           </span>
-                                          <span className={cn("text-[10px] font-bold mt-1", session.availableSeats < 5 ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400")}>
-                                              {session.availableSeats} spots left
+                                          <span className={cn("text-xs font-bold mt-1", session.availableSeats < 5 ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400")}>
+                                              {t('tripDetails.spotsLeft', { count: session.availableSeats })}
                                           </span>
                                       </div>
                                       <div className="w-5 h-5 rounded-full border-2 border-border dark:border-slate-600 flex items-center justify-center group-hover:border-sunset-orange">
@@ -624,28 +630,28 @@ export default function TripDetailsClient({
                                         {isStagedSession(session) ? (
                                           <>
                                             <div className="flex justify-between text-[11px] font-bold">
-                                              <span className="text-sunset-orange uppercase tracking-tighter">Deposit due at checkout</span>
-                                              <span className="text-foreground">{formatCurrency(session.deposit, session.currency, i18n.language)}</span>
+                                              <span className="text-sunset-orange uppercase tracking-tighter">{t('tripDetails.depositDue')}</span>
+                                              <span className="text-foreground">{formatDisplayAmount(session.deposit)}</span>
                                             </div>
                                             <div className="flex justify-between text-[11px] font-bold">
-                                              <span className="text-muted-foreground uppercase tracking-tighter">Balance after confirmation</span>
-                                              <span className="text-foreground">{formatCurrency(Number(session.price) - Number(session.deposit), session.currency, i18n.language)}</span>
+                                              <span className="text-muted-foreground uppercase tracking-tighter">{t('tripDetails.balanceAfterConfirmation')}</span>
+                                              <span className="text-foreground">{formatDisplayAmount(Number(session.price) - Number(session.deposit))}</span>
                                             </div>
                                             <p className="text-[10px] text-muted-foreground">
-                                              This trip needs at least {session.minBookings} participants to run.
+                                              {t('tripDetails.minParticipants', { count: session.minBookings })}
                                               {session.confirmationDeadline
-                                                ? ` Confirmed by ${new Date(session.confirmationDeadline).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' })} — if the minimum is not reached, your deposit is refunded.`
-                                                : ' If the minimum is not reached, your deposit is refunded.'}
+                                                ? ` ${t('tripDetails.confirmedByRefund', { date: new Date(session.confirmationDeadline).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' }) })}`
+                                                : ` ${t('tripDetails.minNotReachedRefund')}`}
                                             </p>
                                           </>
                                         ) : (
                                           <>
                                             <div className="flex justify-between text-[11px] font-bold">
-                                              <span className="text-sunset-orange uppercase tracking-tighter">Total due at checkout</span>
-                                              <span className="text-foreground">{formatCurrency(session.price, session.currency, i18n.language)}</span>
+                                              <span className="text-sunset-orange uppercase tracking-tighter">{t('tripDetails.totalDue')}</span>
+                                              <span className="text-foreground">{formatDisplayAmount(session.price)}</span>
                                             </div>
                                             <p className="text-[10px] text-muted-foreground">
-                                              The full amount is required at checkout.
+                                              {t('tripDetails.fullAmountRequired')}
                                             </p>
                                           </>
                                         )}
@@ -655,7 +661,7 @@ export default function TripDetailsClient({
                                 ))
                             ) : (
                                 <div className="text-center py-8 text-muted-foreground text-sm font-medium">
-                                    No available dates currently.
+                                    {t('tripDetails.noDates')}
                                 </div>
                             )}
                         </div>
@@ -673,10 +679,10 @@ export default function TripDetailsClient({
                             }}
                             className="w-full h-14 rounded-xl text-lg font-bold bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-orange-600 text-white shadow-lg shadow-blue-900/20 dark:shadow-orange-900/20 transition-all active:scale-95 disabled:opacity-50"
                         >
-                            Book Now
+                            {t('tripDetails.bookNow')}
                         </Button>
-                        <p className="text-center text-xs text-muted-foreground mt-4 font-medium flex items-center justify-center gap-1">
-                            <ShieldCheck className="h-3 w-3" /> Secure payment through Ouiboo
+                        <p className="text-center text-xs text-muted-foreground mt-4 font-medium">
+                            {t('tripDetails.directPaymentNote')}
                         </p>
                     </div>
                 </div>
@@ -684,14 +690,14 @@ export default function TripDetailsClient({
           </div>
         </div>
       </div>
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-2xl backdrop-blur lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 pt-3 pb-safe-3 shadow-2xl backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">From</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{t('featured.from')}</p>
             <p className="truncate text-xl font-black text-foreground">{minPriceLabel}</p>
           </div>
           <Button asChild className="shrink-0 px-6">
-            <a href="#booking-options">{openSessions.length > 0 ? 'Choose a date' : 'View availability'}</a>
+            <a href="#booking-options">{openSessions.length > 0 ? t('tripDetails.chooseDate') : t('tripDetails.viewAvailability')}</a>
           </Button>
         </div>
       </div>

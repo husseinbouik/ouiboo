@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 import {
   Plus,
@@ -13,7 +12,7 @@ import {
   Filter,
   ArrowUpDown
 } from 'lucide-react';
-import { Button, Card, CardContent, Input } from '@ouiboo/ui';
+import { Button, Card, CardContent, EmptyState, Input, ShareTripButton, SafeImage } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -21,6 +20,8 @@ import { apiClient } from '@/lib/api-client';
 import { formatCurrency } from '@ouiboo/utils';
 
 import { DeleteConfirmation } from '@/components/DeleteConfirmation';
+import { AgencyTripCardSkeletonGrid } from '@/components/Skeletons';
+import { TRAVELER_URL } from '@/lib/site';
 
 type AgencyTripSessionSummary = {
   id: string;
@@ -198,12 +199,15 @@ export default function AgencyTripsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
-          <div className="col-span-full py-12 flex justify-center text-muted-foreground">{t('trips.loading')}</div>
+          <>
+            <span className="sr-only" role="status">{t('trips.loading')}</span>
+            <AgencyTripCardSkeletonGrid count={3} />
+          </>
         ) : filteredTrips.length > 0 ? (
           filteredTrips.map((trip) => (
             <Card key={trip.id} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 group overflow-hidden bg-card border border-border flex flex-col">
               <div className="relative h-48 overflow-hidden">
-                 <Image
+                 <SafeImage
                    src={trip.images?.[0] || `https://ui-avatars.com/api/?name=${encodeURIComponent(trip.title)}&background=0A192F&color=fff`}
                    alt={trip.imageAlts?.[0]?.trim() || trip.title}
                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
@@ -252,6 +256,19 @@ export default function AgencyTripsPage() {
                       <p className="text-lg font-bold text-primary">{formatCurrency(trip.sessions?.[0]?.price || 0, undefined, i18n.language)}</p>
                    </div>
                    <div className="flex gap-1">
+                      {/* #468: share the public traveller URL (active trips only) */}
+                      {trip.status === 'ACTIVE' && (
+                        <ShareTripButton
+                          tripId={trip.id}
+                          tripTitle={trip.title}
+                          travelerBaseUrl={TRAVELER_URL}
+                          source="agency-share"
+                          size="sm"
+                          iconOnly
+                          showDisabledWhenOff
+                          className="h-auto border-none bg-transparent p-2 text-muted-foreground shadow-none hover:bg-muted hover:text-primary rounded-lg"
+                        />
+                      )}
                       <Link href={`/dashboard/trips/${trip.id}`} aria-label={t('common.edit')} className="p-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-colors inline-flex">
                            <Edit className="h-5 w-5" />
                       </Link>
@@ -270,22 +287,22 @@ export default function AgencyTripsPage() {
           ))
         ) : (
           <div className="col-span-full">
-            <Card className="border-none shadow-sm bg-card border border-border">
-              <CardContent className="py-16 text-center">
-                <p className="text-lg font-bold text-foreground">{t('trips.emptyTitle')}</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {t('trips.emptyBody')}
-                </p>
-                <div className="mt-6 flex items-center justify-center gap-3">
+            {/* #574: shared EmptyState instead of a hand-rolled card. */}
+            <EmptyState
+              className="py-16"
+              title={t('trips.emptyTitle')}
+              description={t('trips.emptyBody')}
+              action={
+                <div className="flex items-center justify-center gap-3">
                   <Button variant="outline" onClick={() => { setSearchTerm(''); setStatusFilter('ALL'); setSortBy('recent'); }}>
                     {t('trips.clearFilters')}
                   </Button>
                   <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90 border-none">
-              <Link href="/dashboard/trips/create">{t('trips.createCta')}</Link>
-            </Button>
+                    <Link href="/dashboard/trips/create">{t('trips.createCta')}</Link>
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
+              }
+            />
           </div>
         )}
 

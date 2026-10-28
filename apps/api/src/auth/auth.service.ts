@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException, HttpException, HttpStatus, Logger, Optional, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { DatabaseService } from '../database/database.service';
 import { RegisterDto } from './dto/auth.dto';
@@ -8,6 +8,11 @@ import { createHash, randomInt, randomUUID, timingSafeEqual } from 'crypto';
 import { UserRole } from '@ouiboo/types';
 import { RedisService } from '../common/redis.service';
 import { CURRENT_SUBSCRIPTION_TERMS_VERSION } from '../common/subscription-terms';
+import {
+    MfaService,
+    BREAK_GLASS_DEFAULT_TTL_DAYS,
+    BREAK_GLASS_MAX_TTL_DAYS,
+} from './mfa.service';
 
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -39,6 +44,20 @@ const LOGIN_GATE_KEY_PREFIX = 'login:gate';
 const LOGIN_GATE_MAX_FAILURES = 10;
 const LOGIN_GATE_WINDOW_SECONDS = 15 * 60;
 
+// #418 (Council P0-13): MFA challenge hardening. Challenge tokens live 5
+// minutes and are single-use (their jti is burned in Redis on success).
+// MFA code attempts get their own stricter gate: 5 failures / 15 minutes
+// per admin, after which challenge verification returns 429 until the
+// window slides — the challenge token itself will have expired by then,
+// forcing a fresh password login.
+const MFA_CHALLENGE_TTL = '5m';
+const MFA_GATE_KEY_PREFIX = 'mfa:gate';
+const MFA_GATE_MAX_FAILURES = 5;
+const MFA_GATE_WINDOW_SECONDS = 15 * 60;
+const MFA_CHALLENGE_USED_PREFIX = 'mfa:challenge-used';
+const MFA_PENDING_SECRET_PREFIX = 'mfa:pending-secret';
+const MFA_PENDING_SECRET_TTL_SECONDS = 10 * 60;
+
 @Injectable()
 export class AuthService {
     private readonly logger = new Logger(AuthService.name);
@@ -48,7 +67,17 @@ export class AuthService {
         private jwtService: JwtService,
         private emailService: EmailService,
         private redisService: RedisService,
+        // Optional so pre-#418 unit specs that construct AuthService with
+        // four arguments keep compiling; Nest always provides it in prod.
+        @Optional() private mfaService?: MfaService,
     ) { }
+
+    private requireMfaService(): MfaService {
+        if (!this.mfaService) {
+            throw new HttpException('MFA_NOT_CONFIGURED', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        return this.mfaService;
+    }
 
     /**
      * Redis key for the pre-bcrypt login gate. The email is hashed so no PII
@@ -69,7 +98,7 @@ export class AuthService {
             const redis = this.redisService.getClient();
             if (!redis) return;
             const raw = await redis.get(this.loginGateKey(email));
-            const failures = raw ? parseInt(raw, 10) : 0;
+            const failures = raw ? Number.parseInt(raw, 10) : 0;
             if (Number.isFinite(failures) && failures >= LOGIN_GATE_MAX_FAILURES) {
                 throw new HttpException(
                     'Too many failed login attempts. Please try again later.',
@@ -123,6 +152,11 @@ export class AuthService {
             return result;
         }
         await this.recordLoginFailure(email);
+        // #418: admin login attempts are audit-logged (the Security seat
+        // verifies from the Audit tab). Best-effort: never break login.
+        if (user?.role === UserRole.Admin) {
+            await this.writeAdminAudit(user, 'ADMIN_LOGIN_FAILED', { stage: 'password' });
+        }
         return null;
     }
 
@@ -149,6 +183,595 @@ export class AuthService {
                 role: user.role,
             },
         };
+    }
+
+    // ==================================================================
+    // #418 (Council P0-13): admin MFA + break-glass recovery path
+    // ==================================================================
+
+    /**
+     * Login entry point used by POST /auth/login after validateUser.
+     * Non-admin users get tokens immediately, exactly as before. ADMIN
+     * users are routed through MFA:
+     *  - MFA enrolled  → `{ mfaRequired, challengeToken }`, NO tokens yet.
+     *  - Not enrolled but ADMIN_MFA_REQUIRED=true → enrolment challenge.
+     *  - Not enrolled and MFA not required → tokens (legacy behaviour,
+     *    enrolment stays voluntary until the flag is switched on).
+     */
+    async beginLogin(user: any) {
+        if (user.role !== UserRole.Admin) {
+            return this.login(user);
+        }
+        if (user.mfaEnabled && user.mfaTotpSecret) {
+            return {
+                mfaRequired: true,
+                challengeToken: this.issueMfaChallenge(user, 'mfa-challenge'),
+                user: { id: user.id, email: user.email, name: user.name, role: user.role },
+            };
+        }
+        if (process.env.ADMIN_MFA_REQUIRED === 'true') {
+            return {
+                mfaEnrollmentRequired: true,
+                challengeToken: this.issueMfaChallenge(user, 'mfa-enrollment'),
+                user: { id: user.id, email: user.email, name: user.name, role: user.role },
+            };
+        }
+        await this.writeAdminAudit(user, 'ADMIN_LOGIN_SUCCEEDED', { via: 'password' });
+        return this.login(user);
+    }
+
+    private issueMfaChallenge(
+        user: { id: string; email: string; role: string },
+        purpose: 'mfa-challenge' | 'mfa-enrollment',
+    ): string {
+        const accessSecret = process.env.JWT_SECRET;
+        if (!accessSecret) {
+            throw new HttpException('JWT_NOT_CONFIGURED', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        return this.jwtService.sign(
+            { sub: user.id, email: user.email, role: user.role, purpose, jti: randomUUID() },
+            { secret: accessSecret, expiresIn: MFA_CHALLENGE_TTL },
+        );
+    }
+
+    /**
+     * Verify a challenge token and load its admin. Any problem — bad
+     * signature, expiry, wrong purpose, non-admin, unverified, already
+     * burned — is the same generic 401 (no oracle about which check failed).
+     */
+    private async loadChallengeUser(
+        challengeToken: string,
+        expectedPurpose: 'mfa-challenge' | 'mfa-enrollment',
+    ) {
+        const accessSecret = process.env.JWT_SECRET;
+        if (!accessSecret) {
+            throw new HttpException('JWT_NOT_CONFIGURED', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        let payload: { sub?: string; purpose?: string; jti?: string };
+        try {
+            payload = this.jwtService.verify(challengeToken, { secret: accessSecret });
+        } catch {
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        if (!payload?.sub || payload.purpose !== expectedPurpose || !payload.jti) {
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        if (await this.isChallengeBurned(payload.jti)) {
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        const user = await this.db.user.findUnique({ where: { id: payload.sub } });
+        if (!user || user.role !== UserRole.Admin || !user.isEmailVerified) {
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        return { user, jti: payload.jti };
+    }
+
+    // ---- MFA attempt gate + challenge single-use (Redis, fail-open) ----
+
+    private mfaGateKey(userId: string): string {
+        // Internal Redis key only — user ids are not secrets, so the id
+        // is used verbatim (no digest needed).
+        return `${MFA_GATE_KEY_PREFIX}:${userId}`;
+    }
+
+    private async checkMfaGate(userId: string): Promise<void> {
+        try {
+            const redis = this.redisService.getClient();
+            if (!redis) return;
+            const raw = await redis.get(this.mfaGateKey(userId));
+            const failures = raw ? Number.parseInt(raw, 10) : 0;
+            if (Number.isFinite(failures) && failures >= MFA_GATE_MAX_FAILURES) {
+                throw new HttpException(
+                    'Too many failed MFA attempts. Please sign in again and try later.',
+                    HttpStatus.TOO_MANY_REQUESTS,
+                );
+            }
+        } catch (err) {
+            if (err instanceof HttpException) throw err;
+            this.logger.warn(`mfa gate check failed (fail-open): ${(err as Error).message}`);
+        }
+    }
+
+    private async recordMfaFailure(userId: string): Promise<void> {
+        try {
+            const redis = this.redisService.getClient();
+            if (!redis) return;
+            const key = this.mfaGateKey(userId);
+            const count = await redis.incr(key);
+            if (count === 1) {
+                await redis.expire(key, MFA_GATE_WINDOW_SECONDS);
+            }
+        } catch (err) {
+            this.logger.warn(`mfa gate record failed (fail-open): ${(err as Error).message}`);
+        }
+    }
+
+    private async clearMfaFailures(userId: string): Promise<void> {
+        try {
+            const redis = this.redisService.getClient();
+            if (!redis) return;
+            await redis.del(this.mfaGateKey(userId));
+        } catch (err) {
+            this.logger.warn(`mfa gate clear failed (fail-open): ${(err as Error).message}`);
+        }
+    }
+
+    private async isChallengeBurned(jti: string): Promise<boolean> {
+        try {
+            const redis = this.redisService.getClient();
+            if (!redis) return false;
+            return (await redis.get(`${MFA_CHALLENGE_USED_PREFIX}:${jti}`)) !== null;
+        } catch {
+            return false;
+        }
+    }
+
+    private async burnChallenge(jti: string): Promise<void> {
+        try {
+            const redis = this.redisService.getClient();
+            if (!redis) return;
+            await redis.set(`${MFA_CHALLENGE_USED_PREFIX}:${jti}`, '1', 'EX', 5 * 60);
+        } catch (err) {
+            this.logger.warn(`mfa challenge burn failed: ${(err as Error).message}`);
+        }
+    }
+
+    // ---- Audit + alert helpers ----
+
+    /**
+     * Write an admin-security audit row directly (same AuditLog table the
+     * admin Audit tab reads). Returns false instead of throwing so callers
+     * choose: login-path audits are best-effort, break-glass REQUIRES the
+     * audit and checks the result (fail closed).
+     */
+    private async writeAdminAudit(
+        actor: { id?: string | null; email?: string | null },
+        action: string,
+        metadata?: Record<string, any>,
+    ): Promise<boolean> {
+        try {
+            await this.db.auditLog.create({
+                data: {
+                    actorId: actor.id ?? undefined,
+                    actorEmail: actor.email ?? undefined,
+                    action,
+                    targetType: 'ADMIN_SECURITY',
+                    targetId: actor.id ?? undefined,
+                    metadata: metadata ?? undefined,
+                },
+            });
+            return true;
+        } catch (err) {
+            this.logger.error(`audit write failed for ${action}: ${(err as Error).message}`);
+            return false;
+        }
+    }
+
+    private escapeHtml(value: string): string {
+        return value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    /**
+     * Security alert email (recovery-code use, break-glass use). Sent to
+     * the affected admin, every OTHER admin, and ADMIN_ALERT_EMAIL when
+     * configured. Best-effort: an SMTP failure never blocks the auth flow,
+     * but it is logged loudly.
+     */
+    private async sendAdminSecurityAlert(
+        subject: string,
+        lines: string[],
+        excludeUserId?: string,
+    ): Promise<void> {
+        try {
+            const recipients = new Set<string>();
+            const alertEmail = process.env.ADMIN_ALERT_EMAIL?.trim();
+            if (alertEmail) recipients.add(alertEmail);
+            const admins = await this.db.user.findMany({
+                where: { role: UserRole.Admin },
+                select: { id: true, email: true },
+            });
+            for (const admin of admins) {
+                if (admin.id !== excludeUserId) recipients.add(admin.email);
+            }
+            if (recipients.size === 0) return;
+            const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;">
+                <h2 style="color:#071B33;">${this.escapeHtml(subject)}</h2>
+                ${lines.map((line) => `<p style="color:#334155;">${this.escapeHtml(line)}</p>`).join('')}
+                <p style="color:#64748B;font-size:12px;">Ouiboo admin security alert — sent automatically. If this was not expected, treat the admin account as compromised and follow the break-glass runbook.</p>
+            </div>`;
+            for (const to of recipients) {
+                try {
+                    await this.emailService.sendMail(to, subject, html);
+                } catch (err) {
+                    this.logger.error(`security alert email failed for recipient: ${(err as Error).message}`);
+                }
+            }
+        } catch (err) {
+            this.logger.error(`security alert fan-out failed: ${(err as Error).message}`);
+        }
+    }
+
+    // ---- MFA challenge completion ----
+
+    /** POST /auth/mfa/verify — exchange a challenge + TOTP code for tokens. */
+    async verifyMfa(challengeToken: string, code: string) {
+        const mfa = this.requireMfaService();
+        const { user, jti } = await this.loadChallengeUser(challengeToken, 'mfa-challenge');
+        if (!user.mfaEnabled || !user.mfaTotpSecret) {
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        await this.checkMfaGate(user.id);
+        const secret = mfa.decryptSecret(user.mfaTotpSecret);
+        if (!mfa.verifyTotp(secret, code)) {
+            await this.recordMfaFailure(user.id);
+            await this.writeAdminAudit(user, 'ADMIN_LOGIN_FAILED', { stage: 'mfa-totp' });
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        await this.burnChallenge(jti);
+        await this.clearMfaFailures(user.id);
+        await this.writeAdminAudit(user, 'ADMIN_LOGIN_SUCCEEDED', { via: 'totp' });
+        return this.login(user);
+    }
+
+    /** POST /auth/mfa/recovery — exchange a challenge + one-time recovery code for tokens. The code burns on use. */
+    async verifyMfaRecovery(challengeToken: string, recoveryCode: string) {
+        const mfa = this.requireMfaService();
+        const { user, jti } = await this.loadChallengeUser(challengeToken, 'mfa-challenge');
+        if (!user.mfaEnabled) {
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        await this.checkMfaGate(user.id);
+        const hashes = Array.isArray(user.mfaRecoveryCodeHashes)
+            ? (user.mfaRecoveryCodeHashes as string[])
+            : [];
+        const matchIndex = await mfa.findMatchingCodeIndex(recoveryCode, hashes);
+        if (matchIndex < 0) {
+            await this.recordMfaFailure(user.id);
+            await this.writeAdminAudit(user, 'ADMIN_LOGIN_FAILED', { stage: 'mfa-recovery' });
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        const remaining = hashes.filter((_, i) => i !== matchIndex);
+        await this.db.user.update({
+            where: { id: user.id },
+            data: { mfaRecoveryCodeHashes: remaining },
+        });
+        await this.burnChallenge(jti);
+        await this.clearMfaFailures(user.id);
+        await this.writeAdminAudit(user, 'ADMIN_MFA_RECOVERY_USED', {
+            recoveryCodesRemaining: remaining.length,
+        });
+        await this.writeAdminAudit(user, 'ADMIN_LOGIN_SUCCEEDED', { via: 'recovery-code' });
+        await this.sendAdminSecurityAlert(
+            'Ouiboo security alert: admin recovery code used',
+            [
+                `A one-time MFA recovery code was just used to sign in to the admin account ${user.email}.`,
+                `${remaining.length} recovery code(s) remain. If this was not you, revoke all break-glass credentials and re-enrol MFA immediately.`,
+            ],
+        );
+        return this.login(user);
+    }
+
+    // ---- MFA enrolment ----
+
+    /**
+     * POST /auth/mfa/enrollment/start. The pending secret is held encrypted
+     * in Redis for 10 minutes and only replaces the live secret on a
+     * successful confirm — abandoning enrolment never breaks an existing
+     * factor. Fails closed when Redis is unavailable.
+     */
+    async startMfaEnrollment(actorId: string, viaChallenge: boolean, password?: string) {
+        const mfa = this.requireMfaService();
+        const user = await this.db.user.findUnique({ where: { id: actorId } });
+        if (!user || user.role !== UserRole.Admin) {
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        if (!viaChallenge) {
+            // Password re-entry: enrolment changes the account's second
+            // factor, so a hijacked access token alone must not suffice.
+            if (!password || !(await bcrypt.compare(password, user.password))) {
+                throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+            }
+        }
+        const redis = this.redisService.getClient();
+        if (!redis) {
+            throw new HttpException(
+                'MFA enrolment is unavailable (session store offline).',
+                HttpStatus.SERVICE_UNAVAILABLE,
+            );
+        }
+        const secret = mfa.generateTotpSecret();
+        await redis.set(
+            `${MFA_PENDING_SECRET_PREFIX}:${user.id}`,
+            mfa.encryptSecret(secret),
+            'EX',
+            MFA_PENDING_SECRET_TTL_SECONDS,
+        );
+        return {
+            otpauthUrl: mfa.buildOtpAuthUrl(user.email, secret),
+            // Shown once for manual authenticator entry; the same secret is
+            // never retrievable again after confirm.
+            secret,
+            expiresInSeconds: MFA_PENDING_SECRET_TTL_SECONDS,
+        };
+    }
+
+    /**
+     * POST /auth/mfa/enrollment/confirm. On success: MFA is enabled, 10
+     * one-time recovery codes are generated and returned ONCE (only bcrypt
+     * hashes are stored). When enrolment happened via the login challenge,
+     * full login tokens are included so the sign-in completes.
+     */
+    async confirmMfaEnrollment(actorId: string, viaChallenge: boolean, code: string) {
+        const mfa = this.requireMfaService();
+        const user = await this.db.user.findUnique({ where: { id: actorId } });
+        if (!user || user.role !== UserRole.Admin) {
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        const redis = this.redisService.getClient();
+        if (!redis) {
+            throw new HttpException(
+                'MFA enrolment is unavailable (session store offline).',
+                HttpStatus.SERVICE_UNAVAILABLE,
+            );
+        }
+        const pendingKey = `${MFA_PENDING_SECRET_PREFIX}:${user.id}`;
+        const pendingEncrypted = await redis.get(pendingKey);
+        if (!pendingEncrypted) {
+            throw new BadRequestException('ENROLLMENT_NOT_STARTED_OR_EXPIRED');
+        }
+        await this.checkMfaGate(user.id);
+        const pendingSecret = mfa.decryptSecret(pendingEncrypted);
+        if (!mfa.verifyTotp(pendingSecret, code)) {
+            await this.recordMfaFailure(user.id);
+            throw new BadRequestException('INVALID_MFA_CODE');
+        }
+        const recoveryCodes = mfa.generateRecoveryCodes();
+        const recoveryCodeHashes = await mfa.hashCodes(recoveryCodes);
+        const updated = await this.db.user.update({
+            where: { id: user.id },
+            data: {
+                mfaEnabled: true,
+                mfaTotpSecret: pendingEncrypted,
+                mfaRecoveryCodeHashes: recoveryCodeHashes,
+                mfaEnrolledAt: new Date(),
+            },
+        });
+        await redis.del(pendingKey);
+        await this.clearMfaFailures(user.id);
+        await this.writeAdminAudit(user, 'ADMIN_MFA_ENROLLED', {
+            viaChallenge,
+            recoveryCodesIssued: recoveryCodes.length,
+        });
+        const result: Record<string, any> = {
+            mfaEnabled: true,
+            mfaEnrolledAt: updated.mfaEnrolledAt,
+            recoveryCodes,
+        };
+        if (viaChallenge) {
+            await this.writeAdminAudit(user, 'ADMIN_LOGIN_SUCCEEDED', { via: 'totp-enrollment' });
+            Object.assign(result, await this.login(updated));
+        }
+        return result;
+    }
+
+    /** GET /auth/mfa/status — what the Security tab renders. */
+    async getMfaStatus(actorId: string) {
+        const user = await this.db.user.findUnique({ where: { id: actorId } });
+        if (!user || user.role !== UserRole.Admin) {
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        const hashes = Array.isArray(user.mfaRecoveryCodeHashes)
+            ? (user.mfaRecoveryCodeHashes as string[])
+            : [];
+        return {
+            mfaEnabled: user.mfaEnabled,
+            mfaEnrolledAt: user.mfaEnrolledAt,
+            recoveryCodesRemaining: hashes.length,
+            adminMfaRequired: process.env.ADMIN_MFA_REQUIRED === 'true',
+        };
+    }
+
+    // ---- Break-glass credentials (the SEPARATE recovery path) ----
+
+    /**
+     * POST /auth/break-glass/credentials — create a one-time break-glass
+     * secret. Requires password re-entry. The plaintext is returned once
+     * and stored ONLY as a bcrypt hash; the founder keeps it offline
+     * (sealed envelope / password safe) per the runbook.
+     */
+    async createBreakGlassCredential(
+        actorId: string,
+        dto: { label: string; password: string; expiresInDays?: number },
+    ) {
+        const mfa = this.requireMfaService();
+        const user = await this.db.user.findUnique({ where: { id: actorId } });
+        if (!user || user.role !== UserRole.Admin) {
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        if (!(await bcrypt.compare(dto.password, user.password))) {
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        const ttlDays = Math.min(
+            dto.expiresInDays ?? BREAK_GLASS_DEFAULT_TTL_DAYS,
+            BREAK_GLASS_MAX_TTL_DAYS,
+        );
+        const secret = mfa.generateBreakGlassSecret();
+        const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
+        const credential = await this.db.breakGlassCredential.create({
+            data: {
+                label: dto.label.trim(),
+                secretHash: await mfa.hashCode(secret),
+                createdById: user.id,
+                expiresAt,
+            },
+        });
+        await this.writeAdminAudit(user, 'ADMIN_BREAK_GLASS_CREATED', {
+            credentialId: credential.id,
+            label: credential.label,
+            expiresAt: expiresAt.toISOString(),
+        });
+        return {
+            id: credential.id,
+            label: credential.label,
+            expiresAt,
+            // Returned exactly once — it cannot be read back later.
+            secret,
+        };
+    }
+
+    /** GET /auth/break-glass/credentials — metadata only, never secrets. */
+    async listBreakGlassCredentials(actorId: string) {
+        const user = await this.db.user.findUnique({ where: { id: actorId } });
+        if (!user || user.role !== UserRole.Admin) {
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        const rows = await this.db.breakGlassCredential.findMany({
+            orderBy: { createdAt: 'desc' },
+            take: 50,
+        });
+        const now = new Date();
+        return rows.map((row) => ({
+            id: row.id,
+            label: row.label,
+            createdById: row.createdById,
+            createdAt: row.createdAt,
+            expiresAt: row.expiresAt,
+            usedAt: row.usedAt,
+            usedByEmail: row.usedByEmail,
+            revokedAt: row.revokedAt,
+            status: row.revokedAt
+                ? 'REVOKED'
+                : row.usedAt
+                    ? 'USED'
+                    : row.expiresAt <= now
+                        ? 'EXPIRED'
+                        : 'ACTIVE',
+        }));
+    }
+
+    /** DELETE /auth/break-glass/credentials/:id */
+    async revokeBreakGlassCredential(actorId: string, credentialId: string) {
+        const user = await this.db.user.findUnique({ where: { id: actorId } });
+        if (!user || user.role !== UserRole.Admin) {
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        const credential = await this.db.breakGlassCredential.findUnique({
+            where: { id: credentialId },
+        });
+        if (!credential || credential.revokedAt || credential.usedAt) {
+            throw new BadRequestException('CREDENTIAL_NOT_REVOCABLE');
+        }
+        await this.db.breakGlassCredential.update({
+            where: { id: credentialId },
+            data: { revokedAt: new Date() },
+        });
+        await this.writeAdminAudit(user, 'ADMIN_BREAK_GLASS_REVOKED', {
+            credentialId,
+            label: credential.label,
+        });
+        return { id: credentialId, revoked: true };
+    }
+
+    /**
+     * POST /auth/break-glass — the separate recovery path. Email +
+     * password + a valid break-glass secret signs the admin in WITHOUT
+     * the TOTP factor (the lost-device scenario). Safe failure behaviour:
+     *  - every failure is the same generic 401 and feeds the login gate;
+     *  - the credential is claimed atomically (updateMany on unused) so
+     *    it can never be spent twice, even concurrently;
+     *  - tokens are issued only AFTER the ADMIN_BREAK_GLASS_USED audit
+     *    row is durably written — if the audit write fails, the sign-in
+     *    fails closed (the credential stays burned; create a new one).
+     */
+    async useBreakGlass(email: string, password: string, code: string) {
+        const mfa = this.requireMfaService();
+        await this.checkLoginGate(email);
+        const fail = async (user: any | null) => {
+            await this.recordLoginFailure(email);
+            await this.writeAdminAudit(
+                user ?? { email },
+                'ADMIN_BREAK_GLASS_FAILED',
+                { email },
+            );
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        };
+
+        const user = await this.db.user.findUnique({ where: { email } });
+        if (!user || user.role !== UserRole.Admin || !user.isEmailVerified) {
+            return fail(null);
+        }
+        if (!(await bcrypt.compare(password, user.password))) {
+            return fail(user);
+        }
+
+        const candidates = await this.db.breakGlassCredential.findMany({
+            where: { usedAt: null, revokedAt: null, expiresAt: { gt: new Date() } },
+            orderBy: { createdAt: 'desc' },
+            take: 20,
+        });
+        let matched: (typeof candidates)[number] | null = null;
+        for (const candidate of candidates) {
+            if ((await mfa.findMatchingCodeIndex(code, [candidate.secretHash])) === 0) {
+                matched = candidate;
+                break;
+            }
+        }
+        if (!matched) {
+            return fail(user);
+        }
+
+        const claimed = await this.db.breakGlassCredential.updateMany({
+            where: { id: matched.id, usedAt: null, revokedAt: null },
+            data: { usedAt: new Date(), usedByEmail: email },
+        });
+        if (claimed.count !== 1) {
+            return fail(user);
+        }
+
+        const audited = await this.writeAdminAudit(user, 'ADMIN_BREAK_GLASS_USED', {
+            credentialId: matched.id,
+            label: matched.label,
+        });
+        if (!audited) {
+            // Fail closed: no audit trail, no session. The credential is
+            // already burned — that is the safe direction.
+            throw new HttpException('BREAK_GLASS_AUDIT_FAILED', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        await this.clearLoginFailures(email);
+        await this.writeAdminAudit(user, 'ADMIN_LOGIN_SUCCEEDED', { via: 'break-glass' });
+        await this.sendAdminSecurityAlert(
+            'Ouiboo security alert: break-glass sign-in used',
+            [
+                `A break-glass credential ("${matched.label}") was just used to sign in to the admin account ${user.email} without the TOTP factor.`,
+                'The credential has been burned and cannot be reused. If this was not an authorised recovery, treat the admin account as compromised: revoke remaining break-glass credentials and re-enrol MFA.',
+            ],
+        );
+        const tokens = await this.login(user);
+        return { ...tokens, usedBreakGlass: true };
     }
 
     async register(dto: RegisterDto) {

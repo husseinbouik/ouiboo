@@ -8,6 +8,7 @@ import { apiClient } from '@/lib/api-client';
 import type { CreateTripInput } from '@ouiboo/schemas';
 import { useTripWizardForm } from '@/components/trips/useTripWizardForm';
 import { TripForm } from '@/components/trips/TripForm';
+import { FormSkeleton } from '@/components/Skeletons';
 import { tripToFormValues, type TripEditorData } from '@/components/trips/trip-form-values';
 
 export default function EditTripPage() {
@@ -71,8 +72,9 @@ export default function EditTripPage() {
   };
 
   if (isLoadingTrip) return (
-    <div className="flex items-center justify-center py-20">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+    <div className="py-10" role="status" aria-label={t('common.loading')}>
+      <FormSkeleton />
+      <span className="sr-only">{t('common.loading')}</span>
     </div>
   );
 

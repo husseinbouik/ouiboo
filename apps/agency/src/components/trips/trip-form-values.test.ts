@@ -20,6 +20,56 @@ const baseTrip: TripEditorData = {
   currency: 'MAD',
 };
 
+describe('tripToFormValues cancellation scale (#417)', () => {
+  it('maps the stored bands into the form so the editor shows them', () => {
+    const values = tripToFormValues({
+      ...baseTrip,
+      cancellationPolicy: {
+        bands: [
+          { minDaysBeforeStart: 14, refundPercent: 80 },
+          { minDaysBeforeStart: 0, refundPercent: 10 },
+        ],
+      },
+    });
+
+    expect(values.cancellationPolicy).toEqual({
+      bands: [
+        { minDaysBeforeStart: 14, refundPercent: 80 },
+        { minDaysBeforeStart: 0, refundPercent: 10 },
+      ],
+    });
+  });
+
+  it('leaves the policy undefined when the trip uses the platform defaults', () => {
+    // The API returns null for a default-scale trip even though the
+    // create-input type does not admit null; the mapper must cope.
+    const apiTrip = { ...baseTrip, cancellationPolicy: null } as unknown as TripEditorData;
+    expect(tripToFormValues(apiTrip).cancellationPolicy).toBeUndefined();
+    expect(tripToFormValues(baseTrip).cancellationPolicy).toBeUndefined();
+    expect(
+      tripToFormValues({ ...baseTrip, cancellationPolicy: { bands: [] } })
+        .cancellationPolicy,
+    ).toBeUndefined();
+  });
+});
+
+describe('tripToFormValues translations (#546)', () => {
+  it('carries the stored language map into the form values', () => {
+    const translations = {
+      fr: { title: baseTrip.title, description: baseTrip.description },
+      ar: { title: 'رحلة جمال عند الغروب', description: 'رحلة على ظهر الجمال عبر كثبان عرق الشبي.' },
+    };
+    const values = tripToFormValues({ ...baseTrip, translations });
+    expect(values.translations).toEqual(translations);
+  });
+
+  it('maps a null/absent map to undefined so reset() leaves no stale languages', () => {
+    const apiTrip = { ...baseTrip, translations: null } as unknown as TripEditorData;
+    expect(tripToFormValues(apiTrip).translations).toBeUndefined();
+    expect(tripToFormValues(baseTrip).translations).toBeUndefined();
+  });
+});
+
 describe('tripToFormValues (#375)', () => {
   it('round-trips stored image alt texts, index-aligned with the images', () => {
     const values = tripToFormValues({

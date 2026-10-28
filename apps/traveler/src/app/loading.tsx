@@ -7,7 +7,7 @@ export default function TravelerLoading() {
 
   return (
     <div
-      className="mx-auto min-h-[70vh] max-w-7xl animate-pulse space-y-8 px-4 py-10 sm:px-6 lg:px-8"
+      className="mx-auto min-h-[70vh] max-w-7xl motion-safe:animate-pulse space-y-8 px-4 py-10 sm:px-6 lg:px-8"
       role="status"
       aria-label={t('common.loading')}
     >

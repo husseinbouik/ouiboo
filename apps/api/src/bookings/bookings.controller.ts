@@ -1,7 +1,9 @@
-import { Controller, HttpCode, Post, Get, Body, UseGuards, Request, Param, Patch, UploadedFile, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Res, Query } from '@nestjs/common';
+import { Controller, HttpCode, Post, Get, Body, Headers, UseGuards, Request, Param, Patch, UploadedFile, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Res, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
-import { CreateBookingDto, VerifyManualPaymentDto } from './dto/create-booking.dto';
+import { RebookingService } from './rebooking.service';
+import { normalizeTripLocale } from '../trips/trip-translations.util';
+import { ConfirmBankPaymentDto, CreateBookingDto, MarkAttendanceDto, VerifyManualPaymentDto } from './dto/create-booking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
@@ -15,14 +17,24 @@ import { RateLimit, RateLimitGuard, RateLimitSensitive } from '../common/rate-li
 @ApiTags('Bookings')
 @Controller('bookings')
 export class BookingsController {
-    constructor(private readonly bookingsService: BookingsService) { }
+    constructor(
+        private readonly bookingsService: BookingsService,
+        private readonly rebookingService: RebookingService,
+    ) { }
 
     @Post()
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Create a new booking' })
-    create(@Request() req, @Body() dto: CreateBookingDto) {
-        return this.bookingsService.create(req.user.userId, dto);
+    create(
+        @Request() req,
+        @Body() dto: CreateBookingDto,
+        // #494 (B16): one client-generated UUID per booking attempt;
+        // a replay returns the original booking, a replay with a
+        // different payload is a 409. Absent header = legacy behaviour.
+        @Headers('idempotency-key') idempotencyKey?: string,
+    ) {
+        return this.bookingsService.create(req.user.userId, dto, idempotencyKey);
     }
 
     @Get('my-bookings')
@@ -37,12 +49,37 @@ export class BookingsController {
         );
     }
 
+    @Get('rebooking-suggestions')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Book-again suggestions from agencies the traveler has booked with (#444)' })
+    findRebookingSuggestions(
+        @Request() req,
+        @Query('locale') locale?: string,
+        @Headers('x-ouiboo-language') languageHeader?: string,
+    ) {
+        return this.rebookingService.getSuggestions(
+            req.user.userId,
+            normalizeTripLocale(locale) ?? normalizeTripLocale(languageHeader),
+        );
+    }
+
     @Get(':id')
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Get a booking by ID for the traveler, owning agency, or admin' })
-    findOne(@Request() req, @Param('id') id: string) {
-        return this.bookingsService.findOneForUser(id, req.user.userId, req.user?.role);
+    findOne(
+        @Request() req,
+        @Param('id') id: string,
+        @Query('locale') locale?: string,
+        @Headers('x-ouiboo-language') languageHeader?: string,
+    ) {
+        return this.bookingsService.findOneForUser(
+            id,
+            req.user.userId,
+            req.user?.role,
+            normalizeTripLocale(locale) ?? normalizeTripLocale(languageHeader),
+        );
     }
 
     @Post(':id/payment-proof')
@@ -80,8 +117,35 @@ export class BookingsController {
             }),
         )
         file: Express.Multer.File,
+        // #494 (B16): one UUID per proof attempt; replay semantics in
+        // the service (same file = stored proof, different = 409).
+        @Headers('idempotency-key') idempotencyKey?: string,
     ) {
-        return this.bookingsService.uploadPaymentProof(id, req.user.userId, file);
+        return this.bookingsService.uploadPaymentProof(id, req.user.userId, file, idempotencyKey);
+    }
+
+    @Post(':id/duplicate-credit')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
+    @Roles(UserRole.Agency)
+    @ApiOperation({ summary: 'Flag a duplicate bank credit observed for a booking (#494)' })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            required: ['amount'],
+            properties: {
+                amount: { type: 'number', example: 200 },
+                bankReference: { type: 'string', nullable: true },
+                note: { type: 'string', nullable: true },
+            },
+        },
+    })
+    flagDuplicateCredit(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() body: { amount: unknown; bankReference?: string | null; note?: string | null },
+    ) {
+        return this.bookingsService.createDuplicateCreditFlag(id, req.tenantId, req.user.userId, body ?? ({} as never));
     }
 
     @Patch(':id/verify-payment')
@@ -99,6 +163,21 @@ export class BookingsController {
         return this.bookingsService.verifyPayment(id, req.tenantId, dto.approved, dto.rejectionReason);
     }
 
+    @Patch(':id/confirm-bank-payment')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, RateLimitGuard)
+    @Roles(UserRole.Agency)
+    @RateLimit({ points: 30, windowMs: 60_000, keyPrefix: 'bookings:confirm-bank-payment' })
+    @RateLimitSensitive()
+    @ApiOperation({ summary: 'Confirm an accepted proof against the agency bank account (settles the payment, #422)' })
+    confirmBankPayment(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() dto: ConfirmBankPaymentDto,
+    ) {
+        return this.bookingsService.confirmBankPayment(id, req.tenantId, req.user.userId, dto);
+    }
+
     @Get(':id/payment-proof/download')
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
@@ -113,6 +192,21 @@ export class BookingsController {
         res.setHeader('Content-Type', result.contentType);
         res.setHeader('Content-Disposition', 'inline');
         return res.send(result.buffer);
+    }
+
+    @Patch(':id/attendance')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, RateLimitGuard)
+    @Roles(UserRole.Agency)
+    @RateLimit({ points: 30, windowMs: 60_000, keyPrefix: 'bookings:attendance' })
+    @RateLimitSensitive()
+    @ApiOperation({ summary: 'Record attendance for an agency-owned booking: attended completes it and makes it review-eligible; absent marks it NO_SHOW (#434)' })
+    markAttendance(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() dto: MarkAttendanceDto,
+    ) {
+        return this.bookingsService.markAttendance(id, req.tenantId, req.user.userId ?? req.user.id, dto.attended);
     }
 
     @Patch(':id/cancel')

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Input, Label, RadioGroup, RadioGroupItem, Badge } from '@ouiboo/ui';
 import { Smartphone } from 'lucide-react';
 import { cn } from '@ouiboo/ui/utils';
@@ -19,8 +20,6 @@ type CheckoutGuestFormProps = {
   onFullNameChange: (value: string) => void;
   phoneNumber: string;
   onPhoneNumberChange: (value: string) => void;
-  documentNumber: string;
-  onDocumentNumberChange: (value: string) => void;
   language: string;
 };
 
@@ -35,27 +34,28 @@ export function CheckoutGuestForm({
   onFullNameChange,
   phoneNumber,
   onPhoneNumberChange,
-  documentNumber,
-  onDocumentNumberChange,
   language,
 }: CheckoutGuestFormProps) {
+  const { t } = useTranslation();
+  const formatSessionDates = (session: CheckoutTripSession) =>
+    `${new Date(session.startDate).toLocaleDateString(language)} - ${new Date(session.endDate).toLocaleDateString(language)}`;
   return (
     <div className="space-y-6">
       {retryBooking && (
-        <div className="rounded-[2rem] border border-amber-200 bg-amber-50 p-5">
-          <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">Retry payment</p>
+        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5">
+          <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">{t('checkout.retryTitle')}</p>
           <p className="mt-2 text-sm font-semibold text-amber-900">
-            We restored your last booking details from reference {retryBooking.id.slice(0, 8)} so you can retry payment without re-entering everything.
+            {t('checkout.retryBody', { reference: retryBooking.id.slice(0, 8) })}
           </p>
         </div>
       )}
       <div className="flex items-center gap-4">
         <div className="h-10 w-10 rounded-xl bg-primary text-white flex items-center justify-center font-black">1</div>
-        <h2 className="text-2xl font-black font-display">Guest Details</h2>
+        <h2 className="text-2xl font-black font-display">{t('checkout.guestDetails')}</h2>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="md:col-span-2">
-          <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Select Session</Label>
+          <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">{t('checkout.selectSessionLabel')}</Label>
           <RadioGroup
             value={selectedSessionId || ''}
             onValueChange={onSelectSession}
@@ -71,26 +71,26 @@ export function CheckoutGuestForm({
                 )}
               >
                 <div>
-                  <p className="font-black">{new Date(session.startDate).toLocaleDateString()} - {new Date(session.endDate).toLocaleDateString()}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{session.availableSeats} seats left</p>
+                  <p className="font-black">{formatSessionDates(session)}</p>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{t('checkout.seatsLeft', { count: session.availableSeats })}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge variant="outline" className="text-[10px] font-black">{formatCurrency(session.price, session.currency, language)}</Badge>
                   <RadioGroupItem
                     value={session.id}
-                    aria-label={`${new Date(session.startDate).toLocaleDateString()} - ${new Date(session.endDate).toLocaleDateString()}, ${session.availableSeats} seats left`}
+                    aria-label={t('checkout.sessionAriaLabel', { dates: formatSessionDates(session), count: session.availableSeats })}
                   />
                 </div>
               </div>
             )) : (
               <div className="rounded-2xl border border-dashed border-border/60 p-4 text-sm text-muted-foreground">
-                No upcoming sessions are available yet.
+                {t('checkout.noSessions')}
               </div>
             )}
           </RadioGroup>
         </div>
         <div>
-          <Label htmlFor="guest-count" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Guest Count</Label>
+          <Label htmlFor="guest-count" className="text-xs font-black uppercase tracking-widest text-muted-foreground">{t('checkout.guestCount')}</Label>
           <Input
             id="guest-count"
             type="number"
@@ -103,45 +103,36 @@ export function CheckoutGuestForm({
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label htmlFor="full-name" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Full Name</Label>
+          <Label htmlFor="full-name" className="text-xs font-black uppercase tracking-widest text-muted-foreground">{t('checkout.fullName')}</Label>
           <Input
             id="full-name"
             name="name"
             autoComplete="name"
-            placeholder="Abderrahmane..."
+            placeholder={t('checkout.fullNamePlaceholder')}
             className="h-14 rounded-2xl bg-muted/30 border-none font-bold text-lg"
             value={fullName}
             onChange={(e) => onFullNameChange(e.target.value)}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="phone-number" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Phone Number</Label>
+          <Label htmlFor="phone-number" className="text-xs font-black uppercase tracking-widest text-muted-foreground">{t('checkout.phoneNumber')}</Label>
           <div className="relative">
-            <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Smartphone className="absolute start-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               id="phone-number"
               type="tel"
               name="tel"
               autoComplete="tel"
-              placeholder="Include country code"
-              className="h-14 pl-12 rounded-2xl bg-muted/30 border-none font-bold text-lg"
+              placeholder={t('checkout.phonePlaceholder')}
+              className="h-14 ps-12 rounded-2xl bg-muted/30 border-none font-bold text-lg"
               value={phoneNumber}
               onChange={(e) => onPhoneNumberChange(e.target.value)}
             />
           </div>
         </div>
-        <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="document-number" className="text-xs font-black uppercase tracking-widest text-muted-foreground">CIN or Passport Number</Label>
-          <Input
-            id="document-number"
-            name="document-number"
-            autoComplete="off"
-            placeholder="Enter document number for insurance"
-            className="h-14 rounded-2xl bg-muted/30 border-none font-bold text-lg"
-            value={documentNumber}
-            onChange={(e) => onDocumentNumberChange(e.target.value)}
-          />
-        </div>
+        <p className="text-xs font-semibold text-muted-foreground md:col-span-2">
+          {t('checkout.idNote')}
+        </p>
       </div>
     </div>
   );

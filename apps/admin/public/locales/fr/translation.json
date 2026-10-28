@@ -32,7 +32,33 @@
     "hidePassword": "Masquer le mot de passe",
     "notAdmin": "Ce compte n'a pas d'accès administrateur.",
     "networkError": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
-    "invalidCredentials": "Email ou mot de passe incorrect. Veuillez réessayer."
+    "invalidCredentials": "Email ou mot de passe incorrect. Veuillez réessayer.",
+    "mfa": {
+      "title": "Authentification à deux facteurs",
+      "subtitle": "Saisissez le code à 6 chiffres de votre application d’authentification.",
+      "recoverySubtitle": "Saisissez l’un des codes de récupération délivrés lors de l’inscription. Chaque code ne fonctionne qu’une fois.",
+      "codeLabel": "Code d’authentification",
+      "recoveryLabel": "Code de récupération",
+      "verify": "Vérifier",
+      "verifying": "Vérification...",
+      "invalid": "Ce code n’a pas été accepté. Vérifiez le code et réessayez.",
+      "useRecovery": "Utiliser un code de récupération",
+      "useAuthenticator": "Utiliser le code d’authentification",
+      "back": "Retour à la connexion",
+      "enrollTitle": "Configurer l’authentification à deux facteurs",
+      "enrollSubtitle": "Les comptes administrateurs doivent inscrire une application d’authentification avant de continuer. Scannez le code, puis saisissez le code à 6 chiffres affiché.",
+      "enrollConfirm": "Confirmer et continuer",
+      "enrollFailed": "Impossible de démarrer l’inscription MFA. Veuillez vous reconnecter.",
+      "qrAlt": "QR code d’inscription à l’authentification",
+      "recoveryTitle": "Enregistrez vos codes de récupération",
+      "recoveryWarning": "Chaque code vous connecte une fois si vous perdez votre authentificateur. Ils ne sont affichés que maintenant — conservez-les en lieu sûr, hors ligne.",
+      "continueButton": "Je les ai enregistrés — continuer",
+      "breakGlassLink": "Authentificateur perdu ? Utilisez un secret d’urgence",
+      "breakGlassTitle": "Connexion d’urgence",
+      "breakGlassSubtitle": "Uniquement en cas de perte de l’authentificateur. Connectez-vous avec votre e-mail, votre mot de passe et le secret d’urgence à usage unique. Son utilisation est consignée dans le journal d’audit et alerte tous les administrateurs.",
+      "breakGlassCodeLabel": "Secret d’urgence",
+      "breakGlassSubmit": "Se connecter avec le secret d’urgence"
+    }
   },
   "dashboard": {
     "brand": "OUIBOO ADMIN",
@@ -40,7 +66,9 @@
       "pendingAgencies": "Agences en attente",
       "tripsInReview": "Voyages en revue",
       "bookingsToday": "Réservations du jour",
-      "paymentProofs": "Justificatifs de paiement"
+      "paymentProofs": "Justificatifs de paiement",
+      "refundsOverdue": "Remboursements en retard",
+      "refundsDue48": "Remboursements dus ≤48 h"
     },
     "tabs": {
       "pending": "File de vérification",
@@ -49,7 +77,10 @@
       "paymentProofs": "Justificatifs de paiement",
       "audit": "Journal d'audit",
       "invoices": "Factures",
-      "refunds": "Remboursements"
+      "refunds": "Remboursements",
+      "groups": "Groupes en attente",
+      "security": "Sécurité",
+      "support": "File d'assistance"
     },
     "meta": {
       "pending": {
@@ -69,7 +100,7 @@
       },
       "paymentProofs": {
         "title": "Justificatifs de paiement",
-        "description": "Approuver ou rejeter les reçus de paiement téléchargés.",
+        "description": "Examinez les reçus de paiement téléchargés. Accepter une image de justificatif ne vaut pas règlement — seule la confirmation bancaire de l'agence règle un paiement.",
         "searchPlaceholder": "Rechercher des justificatifs par voyageur ou réservation..."
       },
       "audit": {
@@ -86,6 +117,21 @@
         "searchPlaceholder": "Rechercher des dossiers de remboursement...",
         "description": "Suivez les dossiers de remboursement des voyageurs pour toutes les agences. Les remboursements sont payés par les agences depuis leurs propres comptes marchands — les dossiers en retard restreignent les nouvelles réservations de l'agence.",
         "title": "Dossiers de remboursement"
+      },
+      "groups": {
+        "title": "Groupes en attente",
+        "description": "Sessions à paiement échelonné en attente de leur groupe minimum. Forcez la confirmation, prolongez le délai ou fermez un groupe — chaque intervention exige un motif et est inscrite au journal d'audit.",
+        "searchPlaceholder": "Rechercher des voyages..."
+      },
+      "security": {
+        "title": "Sécurité administrateur",
+        "description": "Authentification à deux facteurs et récupération d’urgence pour les comptes administrateurs.",
+        "searchPlaceholder": "Paramètres de sécurité"
+      },
+      "support": {
+        "title": "File d'assistance",
+        "description": "Tickets du centre d'aide des voyageurs, agences et invités. Le premier changement de statut depuis Ouvert compte comme première réponse.",
+        "searchPlaceholder": "Rechercher des tickets par demandeur ou objet..."
       }
     },
     "sections": {
@@ -106,7 +152,9 @@
       "when": "Quand",
       "actor": "Acteur",
       "target": "Cible",
-      "metadata": "Métadonnées"
+      "metadata": "Métadonnées",
+      "termsAccepted": "Conditions v{{version}} acceptées",
+      "termsUnrecorded": "Version des conditions non enregistrée"
     },
     "actions": {
       "review": "Examiner",
@@ -114,13 +162,21 @@
       "details": "Détails",
       "reject": "Rejeter",
       "approve": "Approuver",
+      "acceptProof": "Accepter la preuve",
       "activate": "Activer",
       "deactivate": "Désactiver",
       "approveAgency": "Approuver l'agence",
       "rejectAgency": "Rejeter l'agence",
       "refund": "Rembourser",
       "verifyLicence": "Vérifier la licence",
-      "rejectLicence": "Rejeter la licence"
+      "rejectLicence": "Rejeter la licence",
+      "viewDocument": "Voir le document",
+      "viewCertificate": "Voir le certificat",
+      "viewAttestation": "Voir l'attestation",
+      "verifyInsurance": "Vérifier l'assurance",
+      "rejectInsurance": "Rejeter l'assurance",
+      "verifyBankDetails": "Vérifier les coordonnées bancaires",
+      "rejectBankDetails": "Rejeter les coordonnées bancaires"
     },
     "labels": {
       "ice": "ICE",
@@ -132,6 +188,10 @@
       "amount": "Montant",
       "currency": "MAD",
       "bankDetails": "Coordonnées bancaires de l'agence",
+      "bankConfirmedAmount": "Montant confirmé",
+      "bankReference": "Référence bancaire",
+      "bankConfirmedAt": "Confirmé le",
+      "bankConfirmedBy": "Confirmé par",
       "selected": "Sélectionné",
       "contact": "Contact",
       "status": "Statut",
@@ -149,11 +209,44 @@
       "rc": "Registre de commerce (RC)",
       "taxId": "Identifiant fiscal (IF)",
       "licenceExpiry": "Expiration de la licence",
+      "licenceIssuedAt": "Licence délivrée le",
+      "licenceIssuingAuthority": "Autorité de délivrance",
       "licenceVerifiedAt": "Licence vérifiée le",
-      "licenceRejectionReason": "Motif du rejet"
+      "licenceRejectionReason": "Motif du rejet",
+      "licenceDocument": "Document de licence",
+      "ministryCheck": "J'ai vérifié cette licence sur la liste du ministère du Tourisme",
+      "ministryCheckedOn": "Contrôle ministère enregistré le",
+      "expiryMissing": "Manquante — requise pour la vérification",
+      "insurance": "Assurance RC",
+      "insuranceInsurer": "Assureur",
+      "insurancePolicyNumber": "Numéro de police",
+      "insuranceInsuredName": "Nom de l'assuré",
+      "insuranceValidFrom": "Début de couverture",
+      "insuranceExpiry": "Expiration de l'assurance",
+      "insuranceCoverageLimit": "Plafond de couverture",
+      "insuranceVerifiedAt": "Assurance vérifiée le",
+      "insuranceRejectionReason": "Motif du rejet de l'assurance",
+      "insuranceCertificate": "Certificat d'assurance",
+      "insuredNameMismatch": "Ne correspond pas à la raison sociale",
+      "rejectionReasonLabel": "Motif du rejet",
+      "rejectionReasonPlaceholder": "Requis pour rejeter ; communiqué à l'agence",
+      "bankDetailsReview": "Coordonnées bancaires (destination de paiement)",
+      "pendingBankDetails": "Coordonnées bancaires envoyées — en attente de vérification",
+      "currentBankDetails": "Coordonnées bancaires actuelles",
+      "bankHolderName": "Titulaire du compte",
+      "bankAttestation": "Attestation bancaire",
+      "bankDetailsVerifiedAt": "Vérifiées le",
+      "bankDetailsRejectionReason": "Motif du rejet des coordonnées bancaires",
+      "bankHolderMismatch": "Le titulaire n'est pas l'agence — compte tiers",
+      "overrideReason": "Motif de dérogation",
+      "overrideReasonPlaceholder": "Pourquoi ce titulaire est acceptable (ex. compte au nom commercial)",
+      "verificationPaused": "Vérification suspendue"
     },
     "messages": {
       "noBankDetails": "Aucune coordonnée bancaire enregistrée.",
+      "noLicenceDocument": "Aucun document de licence téléversé",
+      "sellerBlockIncomplete": "Bloc d’identité du vendeur incomplet — manquant : {{fields}}. L’agence doit fournir ces éléments pour que le bloc s’affiche en entier.",
+      "noInsuranceCertificate": "Aucun certificat d'assurance téléversé",
       "noPaymentProofs": "Aucun justificatif de paiement en attente.",
       "reviewVerification": "Vérifiez les détails et approuvez ou rejetez.",
       "notProvided": "Non renseigné",
@@ -171,7 +264,7 @@
       "agencyApproved": "Agence approuvée avec succès.",
       "agencyRejected": "Agence rejetée avec succès.",
       "agencyUpdateError": "Impossible de mettre à jour le statut de l'agence. Réessayez.",
-      "paymentProofApproved": "Justificatif de paiement approuvé avec succès.",
+      "paymentProofApproved": "Justificatif accepté — en attente de la confirmation bancaire de l'agence.",
       "paymentProofRejected": "Justificatif de paiement rejeté avec succès.",
       "paymentProofUpdateError": "Impossible de mettre à jour le justificatif de paiement. Réessayez.",
       "paymentProofLoadError": "Impossible de charger le justificatif de paiement.",
@@ -183,7 +276,14 @@
       "retentionDaysInvalid": "Le nombre de jours de rétention doit être un nombre positif.",
       "licenceVerified": "Licence de voyage vérifiée",
       "licenceRejected": "Licence de voyage rejetée",
-      "licenceUpdateError": "Impossible de mettre à jour la licence de voyage"
+      "licenceUpdateError": "Impossible de mettre à jour la licence de voyage",
+      "insuranceVerified": "Assurance RC vérifiée",
+      "insuranceRejected": "Assurance RC rejetée",
+      "insuranceUpdateError": "Impossible de mettre à jour l'assurance RC",
+      "bankDetailsVerified": "Coordonnées bancaires vérifiées",
+      "bankDetailsRejected": "Coordonnées bancaires rejetées",
+      "bankDetailsUpdateError": "Impossible de mettre à jour les coordonnées bancaires",
+      "documentLoadError": "Impossible de charger le document."
     },
     "aria": {
       "mainNavigation": "Navigation principale",
@@ -251,9 +351,12 @@
       "bookingRejected": "Rejetée",
       "bookingCancelled": "Annulée",
       "bookingCompleted": "Terminée",
+      "bookingNoShow": "Absent",
       "verificationPending": "En attente",
       "verificationVerified": "Vérifiée",
       "verificationRejected": "Rejetée",
+      "proofAwaitingBankConfirmation": "En attente de la confirmation bancaire de l'agence",
+      "proofBankConfirmed": "Confirmation bancaire enregistrée",
       "subscriptionTrial": "Essai",
       "subscriptionActive": "Active",
       "subscriptionCancelled": "Annulée",
@@ -262,19 +365,20 @@
       "paymentPaid": "Payé",
       "paymentRefunded": "Remboursé",
       "paymentFailed": "Échoué",
-      "payoutPaidLabel": "Payé",
-      "payoutPaidHelper": "Virement effectué",
-      "payoutRejectedLabel": "Rejeté",
-      "payoutRejectedHelper": "Fonds renvoyés à l'agence",
-      "payoutApprovedLabel": "Approuvé",
-      "payoutApprovedHelper": "Approuvé et en attente de traitement du paiement",
-      "payoutPendingLabel": "En attente",
-      "payoutPendingHelper": "En attente de révision par l'admin",
       "licenceNotSubmitted": "Licence non envoyée",
       "licencePendingReview": "Licence en examen",
       "licenceVerified": "Licence vérifiée",
       "licenceRejected": "Licence rejetée",
-      "licenceExpired": "Licence expirée"
+      "licenceExpired": "Licence expirée",
+      "insuranceNotSubmitted": "Assurance non envoyée",
+      "insurancePendingReview": "Assurance en examen",
+      "insuranceVerified": "Assurance vérifiée",
+      "insuranceRejected": "Assurance rejetée",
+      "insuranceExpired": "Assurance expirée",
+      "bankUnverified": "Coordonnées bancaires non vérifiées",
+      "bankPendingReview": "Coordonnées bancaires en examen",
+      "bankVerified": "Coordonnées bancaires vérifiées",
+      "bankRejected": "Coordonnées bancaires rejetées"
     },
     "modal": {
       "agencyReview": "Revue d'agence"
@@ -288,7 +392,8 @@
         "initiate": "Marquer comme envoyé",
         "fail": "Marquer comme échoué",
         "approve": "Approuver",
-        "reject": "Rejeter"
+        "reject": "Rejeter",
+        "adminReview": "Revue admin"
       },
       "status": {
         "REFUND_APPROVED": "Approuvé",
@@ -311,7 +416,186 @@
       "failureReason": "Échec",
       "empty": "Aucun dossier de remboursement",
       "dueBy": "Échéance",
-      "requestedAt": "Demandé le"
+      "requestedAt": "Demandé le",
+      "audit": {
+        "all": "Tous les dossiers",
+        "queue": "File d'audit",
+        "queueHint": "Remboursements terminés signalés pour examen par la règle d'audit basée sur le risque. L'audit enregistre l'examen — il ne bloque jamais la clôture.",
+        "queueEmpty": "Aucun remboursement en attente d'audit.",
+        "queueEmptyHint": "Les clôtures signalées apparaîtront ici jusqu'à ce qu'un administrateur les marque comme auditées.",
+        "required": "Audit requis",
+        "audited": "Audité le {{date}}",
+        "markAudited": "Marquer comme audité"
+      },
+      "adminReview": {
+        "title": "Enregistrer la revue admin",
+        "description": "Enregistre votre revue comme preuve de clôture (niveau 5), dans une étape distincte. Le dossier est ensuite clôturé sur cette preuve — toute clôture par revue admin est placée en file d'audit.",
+        "referenceLabel": "Référence externe",
+        "referenceHint": "Une référence bancaire ou prestataire que vous avez vérifiée vous-même.",
+        "documentLabel": "Document (clé de stockage privée)",
+        "documentHint": "Clé privée d’un document que vous avez téléversé, ex. private/<votre-id>/releve-bancaire.pdf.",
+        "evidenceRequired": "Joignez un document ou une référence externe — un motif seul n'est pas une preuve."
+      },
+      "tierLabel": "Terminé sur",
+      "evidenceSummary": "{{count}} élément(s) de preuve",
+      "noEvidence": "Aucune preuve enregistrée",
+      "tier": {
+        "PSP_CONFIRMATION": "Confirmation du prestataire de paiement",
+        "BANK_PROVIDER_CONFIRMATION": "Document de confirmation banque/prestataire",
+        "BANK_REFERENCE": "Référence bancaire + document conservé",
+        "TRAVELLER_CONFIRMATION": "Confirmation du voyageur",
+        "ADMIN_REVIEW": "Examen administrateur"
+      },
+      "urgency": {
+        "overdueFilter": "Remboursements en retard uniquement",
+        "due48Filter": "Remboursements dus sous 48 heures uniquement",
+        "clearFilter": "Effacer le filtre"
+      }
+    },
+    "groups": {
+      "empty": "Aucun groupe en attente",
+      "emptyHint": "Toutes les sessions échelonnées ont atteint leur minimum ou ont été tranchées.",
+      "paidOfMin": "{{paid}} participants sur {{min}} ont payé",
+      "depositPaidBookings": "{{count}} réservations avec acompte payé",
+      "deadline": "Date limite de confirmation",
+      "starts": "Début de la session",
+      "actions": {
+        "forceConfirm": "Forcer la confirmation",
+        "extendDeadline": "Prolonger le délai",
+        "closeGroup": "Fermer le groupe"
+      },
+      "forceConfirmTitle": "Forcer la confirmation de ce groupe ?",
+      "forceConfirmDescription": "Le minimum et le délai sont ignorés : les réservations avec acompte deviennent confirmées et leurs soldes deviennent exigibles. Les voyageurs se sont vu promettre le minimum — ne le faites qu'avec l'accord de l'agence.",
+      "closeTitle": "Fermer ce groupe ?",
+      "closeDescription": "Le groupe est marqué non confirmé. Les réservations avec acompte deviennent remboursables et les dossiers de remboursement sont créés immédiatement ; les réservations impayées sont annulées.",
+      "extendTitle": "Prolonger la date limite de confirmation",
+      "extendDescription": "Le délai de la session et l'instantané de chaque plan de réservation changent ensemble. La nouvelle date limite doit précéder la date de début de la session.",
+      "newDeadline": "Nouvelle date limite",
+      "newDeadlineRequired": "Veuillez choisir la nouvelle date limite.",
+      "success": "Intervention appliquée et inscrite au journal d'audit."
+    },
+    "interventions": {
+      "reasonLabel": "Motif (obligatoire)",
+      "reasonPlaceholder": "Pourquoi cette intervention est-elle nécessaire ? Elle sera inscrite au journal d'audit.",
+      "auditNote": "Cette action est inscrite au journal d'audit avec votre motif et l'état avant/après.",
+      "cancel": "Annuler",
+      "failed": "L'intervention a échoué. Veuillez réessayer.",
+      "repair": "Réparer",
+      "repairActionLabel": "Action de réparation",
+      "bookingRepair": {
+        "title": "Réparer la réservation",
+        "description": "Réparations nommées uniquement — aucune modification libre de statut. Le résultat est inscrit au journal d'audit.",
+        "resync-payment-state": "Resynchroniser l'état de paiement",
+        "resync-payment-stateHint": "Recalculer le statut de la réservation et du paiement à partir de son plan, des paiements vérifiés et des dossiers de remboursement.",
+        "requeue-proof-review": "Remettre la preuve en file de revue",
+        "requeue-proof-reviewHint": "Une preuve de paiement en attente dont la réservation a quitté la file de validation redevient vérifiable.",
+        "open-refund-case": "Ouvrir un dossier de remboursement",
+        "open-refund-caseHint": "Créer le dossier de remboursement manquant pour une réservation dont le plan est en remboursement dû."
+      },
+      "refundRepair": {
+        "title": "Réparer le dossier de remboursement",
+        "description": "Réparations réservées à l'administrateur pour les dossiers bloqués. L'historique d'origine reste dans le journal d'audit.",
+        "reopen": "Rouvrir le dossier",
+        "correct-amount": "Corriger le montant approuvé",
+        "relink-payment": "Relier le paiement d'origine",
+        "amountLabel": "Montant approuvé",
+        "paymentIdLabel": "ID du paiement d'origine",
+        "paymentIdHint": "Doit être un paiement de la même réservation. Laissez vide pour ne changer que la référence.",
+        "referenceLabel": "Référence du paiement externe"
+      }
+    },
+    "auditActions": {
+      "ADMIN_GROUP_FORCE_CONFIRMED": "Groupe confirmé de force par l'administrateur",
+      "ADMIN_GROUP_CLOSED": "Groupe fermé par l'administrateur",
+      "ADMIN_DEADLINE_EXTENDED": "Date limite de confirmation prolongée par l'administrateur",
+      "ADMIN_BOOKING_REPAIRED": "Réservation réparée par l'administrateur",
+      "ADMIN_REFUND_REPAIRED": "Dossier de remboursement réparé par l'administrateur",
+      "ADMIN_LOGIN_SUCCEEDED": "Administrateur connecté",
+      "ADMIN_LOGIN_FAILED": "Échec de connexion administrateur",
+      "ADMIN_MFA_ENROLLED": "Administrateur inscrit au MFA (TOTP)",
+      "ADMIN_MFA_RECOVERY_USED": "Code de récupération MFA administrateur utilisé",
+      "ADMIN_BREAK_GLASS_CREATED": "Identifiant d’urgence créé",
+      "ADMIN_BREAK_GLASS_USED": "Connexion d’urgence utilisée",
+      "ADMIN_BREAK_GLASS_REVOKED": "Identifiant d’urgence révoqué",
+      "ADMIN_BREAK_GLASS_FAILED": "Échec de connexion d’urgence"
+    },
+    "betaMetrics": {
+      "title": "Indicateurs bêta",
+      "subtitle": "Critères de sortie de la bêta, issus du service d’indicateurs #432 (30 derniers jours par défaut).",
+      "window": "Période : {{from}} – {{to}}",
+      "loading": "Chargement des indicateurs bêta…",
+      "error": "Les indicateurs bêta sont indisponibles pour le moment.",
+      "zeroResultRate": "Taux de recherches sans résultat",
+      "searchesDetail": "{{zero}} sur {{total}} recherches",
+      "bookingsCreated": "Réservations créées",
+      "bookingsCompleted": "{{count}} terminées",
+      "refundSla": "Remboursements initiés sous 7 jours",
+      "refundsOpened": "{{count}} dossiers de remboursement ouverts",
+      "disputesPer1000": "Litiges pour 1 000 réservations",
+      "disputesOpened": "{{count}} litiges ouverts",
+      "stuckTotal": "États bloqués >48 h",
+      "stuckHint": "Réservations en attente de validation + remboursements échus",
+      "termsRecorded": "Conditions enregistrées sur les réservations",
+      "duplicates": "{{count}} réservations en double",
+      "exitCriteria": "Critères de sortie",
+      "pass": "Réussi",
+      "fail": "Échoué",
+      "noData": "Données insuffisantes",
+      "supportNotDerivable": "Le taux de réponse du support n’est pas dérivable",
+      "supportResponseRate": "Première réponse du support sous 48 heures",
+      "supportTickets": "{{count}} tickets d'assistance ouverts",
+      "supportTicketsDetail": "{{responded}} avec une première réponse, dont {{within}} sous 48 heures",
+      "supportAwaiting": "{{count}} tickets ouverts sans première réponse depuis plus de 48 heures"
+    },
+    "diagnostics": {
+      "title": "Build et drapeaux",
+      "build": "Build",
+      "sharing": "Partage",
+      "betaBadge": "Badge bêta",
+      "serverFlags": "Drapeaux serveur",
+      "on": "activé",
+      "off": "désactivé",
+      "serverFlagsLoading": "Chargement des drapeaux serveur...",
+      "serverFlagsUnavailable": "Drapeaux serveur : indisponibles (le point de diagnostic n'a pas répondu)",
+      "serverEnv": "Env. serveur",
+      "madOnlyCatalog": "Catalogue MAD uniquement",
+      "adminMfaRequired": "MFA admin requise",
+      "noFeatureFlags": "Aucun drapeau FEATURE_* n'est défini sur l'API"
+    },
+    "sharePreview": {
+      "title": "Aperçu du lien (Open Graph)",
+      "toggle": "Aperçu",
+      "liveNote": "Le partage est activé : voici l’aperçu que les réseaux sociaux afficheront.",
+      "gatedNote": "Le partage est désactivé : l’aperçu public actuel est la carte générique Ouiboo. Voici l’aperçu que ce voyage affichera à l’ouverture du partage au lancement public.",
+      "shareTextLabel": "Texte de partage",
+      "shareText": "Découvrez ce voyage sur Ouiboo : {{title}}",
+      "panelTitle": "Partage et aperçu du lien",
+      "panelLive": "Le partage est activé pour ce build admin : les aperçus ci-dessous sont ceux que les réseaux sociaux afficheront.",
+      "panelGated": "Le partage est désactivé pour ce build admin : l'aperçu public actuel est la carte générique Ouiboo. Les aperçus ci-dessous montrent ce que chaque voyage affichera à l'ouverture du partage.",
+      "panelAdminNote": "Cet état est le drapeau propre à ce build admin. Sur staging, le partage a été activé pour les applications voyageur et agence uniquement (directive du fondateur), il est donc normal que ce build l'affiche désactivé.",
+      "panelEmpty": "Aucun voyage n'attend dans la file de vérification pour le moment. Quand un voyage arrivera pour examen, son aperçu de lien apparaîtra ici, voyage par voyage."
+    },
+    "support": {
+      "title": "Tickets d'assistance",
+      "count": "{{count}} tickets",
+      "filterStatus": "Statut",
+      "filterCategory": "Catégorie",
+      "allStatuses": "Tous les statuts",
+      "allCategories": "Toutes les catégories",
+      "details": "Détails",
+      "bookingRef": "Référence de réservation",
+      "firstResponse": "Première réponse",
+      "resolvedAt": "Résolu",
+      "ticketId": "Ticket",
+      "setStatus": "Définir le statut",
+      "updating": "Mise à jour...",
+      "loading": "Chargement des tickets...",
+      "loadError": "Impossible de charger les tickets d'assistance. Réessayez.",
+      "empty": "Aucun ticket d'assistance ne correspond à ces filtres.",
+      "feedback": {
+        "updated": "Ticket mis à jour.",
+        "updateError": "Impossible de mettre à jour ce ticket. Réessayez."
+      }
     }
   },
   "meta": {
@@ -343,5 +627,71 @@
   "loading": {
     "label": "Chargement de l'administration",
     "text": "Chargement…"
+  },
+  "security": {
+    "mfaTitle": "Authentification à deux facteurs (TOTP)",
+    "mfaDescription": "La connexion administrateur exige un mot de passe plus un code d’authentification à 6 chiffres. Inscrivez une application d’authentification ici ; une nouvelle inscription remplace le secret et les codes de récupération précédents.",
+    "loading": "Chargement...",
+    "statusLabel": "Statut",
+    "statusEnabled": "Activée",
+    "enrolledAt": "Inscrit le",
+    "recoveryRemaining": "Codes de récupération restants",
+    "noRecoveryCodesWarning": "Il ne vous reste aucun code de récupération. Réinscrivez-vous pour en générer un nouveau jeu et assurez-vous qu’au moins un identifiant d’urgence est actif.",
+    "reEnroll": "Réinscrire l’authentificateur",
+    "currentPassword": "Mot de passe actuel",
+    "startEnrollment": "Démarrer l’inscription",
+    "stepScan": "Scannez le QR code avec votre application d’authentification (ou saisissez le secret manuellement).",
+    "stepConfirm": "Saisissez le code à 6 chiffres affiché par l’application pour confirmer.",
+    "qrAlt": "QR code d’inscription à l’authentification",
+    "manualSecret": "Secret de saisie manuelle",
+    "confirmCode": "Code d’authentification",
+    "confirmEnrollment": "Confirmer l’inscription",
+    "enrollSuccess": "L’authentification à deux facteurs est activée. Votre ancien secret et vos anciens codes de récupération ne fonctionnent plus.",
+    "enrollStartFailed": "Impossible de démarrer l’inscription. Vérifiez votre mot de passe et réessayez.",
+    "enrollConfirmFailed": "Ce code n’a pas été accepté. Vérifiez le code et réessayez.",
+    "recoveryCodesTitle": "Vos codes de récupération — affichés une seule fois",
+    "recoveryCodesWarning": "Chaque code vous connecte une fois si vous perdez votre authentificateur. Conservez-les en lieu sûr, hors ligne ; ils ne pourront plus être affichés.",
+    "copyCodes": "Copier les codes",
+    "downloadCodes": "Télécharger les codes",
+    "codesSaved": "Je les ai enregistrés",
+    "breakGlassTitle": "Identifiants d’urgence",
+    "breakGlassDescription": "Un identifiant d’urgence est un secret distinct à usage unique pour le cas d’un authentificateur perdu : associé au mot de passe administrateur, il permet de se connecter sans le code TOTP. Créez-en un, conservez-le hors ligne (enveloppe scellée ou coffre de mots de passe) et ne le gardez jamais avec le mot de passe. Chaque utilisation est consignée dans le journal d’audit et alerte tous les administrateurs.",
+    "breakGlassSecretTitle": "Nouveau secret d’urgence — « {{label}} »",
+    "breakGlassSecretWarning": "Affiché uniquement maintenant. Conservez-le hors ligne immédiatement. Il expire le {{expiresAt}} et ne fonctionne qu’une seule fois.",
+    "copySecret": "Copier le secret",
+    "downloadSecret": "Télécharger le secret",
+    "breakGlassLabel": "Libellé",
+    "breakGlassLabelPlaceholder": "ex. Enveloppe scellée — coffre du bureau",
+    "breakGlassDays": "Validité (jours)",
+    "createBreakGlass": "Créer l’identifiant",
+    "breakGlassCreated": "Identifiant d’urgence créé. Conservez le secret hors ligne dès maintenant.",
+    "breakGlassCreateFailed": "Impossible de créer l’identifiant. Vérifiez votre mot de passe et réessayez.",
+    "breakGlassRevoked": "Identifiant d’urgence révoqué.",
+    "breakGlassRevokeFailed": "Impossible de révoquer l’identifiant.",
+    "colLabel": "Libellé",
+    "colStatus": "Statut",
+    "colCreated": "Créé le",
+    "colExpires": "Expire le",
+    "colActions": "Actions",
+    "noBreakGlass": "Aucun identifiant d’urgence pour le moment. Créez-en un avant d’en avoir besoin.",
+    "revoke": "Révoquer",
+    "confirmRevoke": "Confirmer la révocation",
+    "cancel": "Annuler",
+    "status": {
+      "active": "Actif",
+      "used": "Utilisé",
+      "revoked": "Révoqué",
+      "expired": "Expiré"
+    }
+  },
+  "commandPalette": {
+    "open": "Ouvrir la palette de commandes",
+    "trigger": "Rechercher ou accéder à…",
+    "placeholder": "Rechercher parmi les sections, agences, voyages, réservations…",
+    "empty": "Aucun résultat.",
+    "groupNavigation": "Accéder à",
+    "groupAgencies": "Agences",
+    "groupTrips": "Voyages",
+    "groupBookings": "Réservations"
   }
 }

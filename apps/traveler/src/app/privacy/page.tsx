@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
+import { SUPPORT_EMAIL, isSupportEmailConfigured } from '@/lib/support';
 
 export default function TravelerPrivacyPage() {
   const { t, i18n } = useTranslation();
@@ -45,7 +46,14 @@ export default function TravelerPrivacyPage() {
 
         <div className="mt-6 rounded-2xl border border-border bg-card p-6">
           <h2 className="text-xl font-semibold text-foreground">{t('privacy.contactTitle')}</h2>
-          <p className="mt-2 text-muted-foreground">{t('privacy.contactBody')}</p>
+          {/* Session #3 P0-7a (#555): the privacy contact follows the
+              same rule as every support surface — a configured monitored
+              address or no address, never the dead privacy@ouiboo.com. */}
+          <p className="mt-2 text-muted-foreground">
+            {isSupportEmailConfigured
+              ? t('privacy.contactBody', { email: SUPPORT_EMAIL ?? '' })
+              : t('privacy.contactBodyNoEmail')}
+          </p>
         </div>
       </div>
     </div>

@@ -18,6 +18,23 @@ import { tripTemplateFixture } from './e2e-fixtures';
 
 jest.setTimeout(60_000);
 
+// #417 (Council P0-11): the booking confirmation repeats the trip's
+// cancellation scale, so sendBookingNotification also receives the
+// scale snapshot taken at booking creation. These trips use the
+// platform default bands.
+const DEFAULT_CANCELLATION_SCALE = {
+    version: 'cancellation-v1',
+    floorRefundPercent: 100,
+    refundInitiationDays: 7,
+    bands: [
+        { minDaysBeforeStart: 30, refundPercent: 100 },
+        { minDaysBeforeStart: 15, refundPercent: 75 },
+        { minDaysBeforeStart: 7, refundPercent: 50 },
+        { minDaysBeforeStart: 3, refundPercent: 25 },
+        { minDaysBeforeStart: 0, refundPercent: 0 },
+    ],
+};
+
 describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
     let app: INestApplication;
     let db: DatabaseService;
@@ -91,9 +108,6 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         if (!db) return;
         await db.paymentStatusLedgerEntry.deleteMany();
         await db.externalPayment.deleteMany();
-        await db.walletTransaction.deleteMany();
-        await db.wallet.deleteMany();
-        await db.payoutRequest.deleteMany();
         await db.paymentProof.deleteMany();
         await db.booking.deleteMany();
         await db.tripSession.deleteMany();
@@ -123,6 +137,14 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 userId: agencyUser.id,
                 companyName: 'Test Agency Ltd', ice: 'ICE100001', patente: 'PAT100001', rib: 'RIB100001',
                 verificationStatus: 'VERIFIED',
+                // #415: compliant agency fixture — verified ODV licence +
+                // verified RC insurance, or the booking gate refuses.
+                travelLicenceType: 'ODV',
+                travelLicenceStatus: 'VERIFIED',
+                travelLicenceNumber: 'LIC-100001',
+                licenceExpiry: new Date('2030-01-01T00:00:00.000Z'),
+                insuranceStatus: 'VERIFIED',
+                insuranceExpiry: new Date('2030-01-01T00:00:00.000Z'),
                 trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             } as any,
         });
@@ -142,6 +164,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             data: {
                 id: 'session-123',
                 templateId: template.id,
+                agencyId: template.agencyId,
                 startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
                 endDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 days from now
                 price: 390,
@@ -174,11 +197,11 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: session.id,
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 paymentMethod: 'BANK_TRANSFER',
             })
             .expect(201);
@@ -194,7 +217,23 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             traveler.email,
             agencyUser.email,
             bookingId,
-            'Mountain Adventure'
+            'Mountain Adventure',
+            // #424 + B9: trailing arg is the booking's stored locale —
+            // creation now always records one (sent as 'en' above).
+            'en',
+            DEFAULT_CANCELLATION_SCALE,
+            // B4: the Law 31-08 seller block input — this fixture's
+            // licence is verified but predates the issue fields, so
+            // they arrive null (the email renders the pending line).
+            {
+                legalName: null,
+                companyName: 'Test Agency Ltd',
+                travelLicenceType: 'ODV',
+                travelLicenceNumber: 'LIC-100001',
+                licenceVerified: true,
+                licenceIssuedAt: null,
+                licenceIssuingAuthority: null,
+            }
         );
 
         // Verify database state
@@ -226,19 +265,48 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         expect(proof).toBeTruthy();
         expect(proof?.status).toBe('PENDING');
 
-        // Step 3: Agency verifies payment
+        // #422: upload also created the stage's ExternalPayment as a real
+        // PENDING_VERIFICATION record (expected amount) — not a settlement.
+        const pendingPayment = await db.externalPayment.findUniqueOrThrow({
+            where: { bookingId_stage: { bookingId, stage: 'FULL' } },
+        });
+        expect(pendingPayment.status).toBe('PENDING_VERIFICATION');
+        expect(pendingPayment.amount.toNumber()).toBe(780);
+
+        // Step 3 (#422): agency accepts the proof image. Accepting settles
+        // NOTHING: booking stays AWAITING_VALIDATION / UNPAID, the payment
+        // record stays PENDING_VERIFICATION, no confirmation email.
         const verifyRes = await request(app.getHttpServer())
             .patch(`/bookings/${bookingId}/verify-payment`)
             .set('Authorization', `Bearer agency-token`)
             .send({ approved: true })
             .expect(200);
 
-        expect(verifyRes.body.status).toBe('CONFIRMED');
+        expect(verifyRes.body.status).toBe('AWAITING_VALIDATION');
+        expect(mockEmailService.sendPaymentConfirmation).not.toHaveBeenCalled();
+
+        booking = await db.booking.findUnique({ where: { id: bookingId } });
+        expect(booking?.status).toBe('AWAITING_VALIDATION');
+        expect(booking?.paymentStatus).toBe('UNPAID');
+
+        const acceptedProof = await db.paymentProof.findUnique({ where: { bookingId } });
+        expect(acceptedProof?.status).toBe('ACCEPTED');
+
+        // Step 4 (#422): agency confirms the credit in its bank account —
+        // only now is the payment settled.
+        const confirmRes = await request(app.getHttpServer())
+            .patch(`/bookings/${bookingId}/confirm-bank-payment`)
+            .set('Authorization', `Bearer agency-token`)
+            .send({ confirmedAmount: 780, bankReference: 'BANK-REF-780' })
+            .expect(200);
+
+        expect(confirmRes.body.status).toBe('CONFIRMED');
 
         // Verify email confirmation sent
         expect(mockEmailService.sendPaymentConfirmation).toHaveBeenCalledWith(
             traveler.email,
-            'Mountain Adventure'
+            'Mountain Adventure',
+            'en' // #424 + B9: trailing arg = booking locale (always stored now)
         );
 
         // Verify database state
@@ -247,19 +315,27 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
 
         const updatedProof = await db.paymentProof.findUnique({ where: { bookingId } });
         expect(updatedProof?.status).toBe('VERIFIED');
+
+        const settledPayment = await db.externalPayment.findUniqueOrThrow({
+            where: { bookingId_stage: { bookingId, stage: 'FULL' } },
+        });
+        expect(settledPayment.status).toBe('VERIFIED');
+        expect(settledPayment.confirmedAmount?.toNumber()).toBe(780);
+        expect(settledPayment.bankReference).toBe('BANK-REF-780');
+        expect(settledPayment.bankConfirmedAt).toBeTruthy();
     });
 
-    it('Records the agency external payment exactly once under concurrent manual payment approval (#368)', async () => {
+    it('Records the agency external payment exactly once under concurrent bank confirmation (#368, #422)', async () => {
         const { session, traveler, agency } = await seedTestData();
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: traveler.id,
                 guestsCount: 2,
                 totalAmount: 780,
                 fullName: 'Concurrent Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID-CONCURRENT',
                 status: 'AWAITING_VALIDATION',
             },
         });
@@ -279,12 +355,31 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .patch(`/bookings/${booking.id}/verify-payment`)
             .set('Authorization', 'Bearer agency-token')
             .send({ approved: true });
-        const responses = await Promise.all([approve(), approve()]);
+        const acceptResponses = await Promise.all([approve(), approve()]);
 
-        expect(responses.map((response) => response.status).sort()).toEqual([200, 400]);
+        expect(acceptResponses.map((response) => response.status).sort()).toEqual([200, 400]);
 
-        // #368: approval records ONE verified external payment held by the
-        // agency — it must never credit a withdrawable OuiBoo wallet.
+        // #422: proof acceptance alone records NO verified payment and
+        // sends no confirmation email (this booking was seeded directly,
+        // so no pending record exists either).
+        const afterAccept = await db.externalPayment.findUnique({
+            where: { bookingId_stage: { bookingId: booking.id, stage: 'FULL' } },
+        });
+        expect(afterAccept).toBeNull();
+        expect(mockEmailService.sendPaymentConfirmation).not.toHaveBeenCalled();
+
+        // Bank confirmation is the settling step, and it is claim-guarded:
+        // two concurrent confirmations settle exactly once.
+        const confirm = () => request(app.getHttpServer())
+            .patch(`/bookings/${booking.id}/confirm-bank-payment`)
+            .set('Authorization', 'Bearer agency-token')
+            .send({ confirmedAmount: 780, bankReference: 'BANK-REF-CONCURRENT' });
+        const confirmResponses = await Promise.all([confirm(), confirm()]);
+
+        expect(confirmResponses.map((response) => response.status).sort()).toEqual([200, 400]);
+
+        // #368: confirmation records ONE verified external payment held by
+        // the agency — it must never credit a withdrawable OuiBoo wallet.
         const externalPayment = await db.externalPayment.findUniqueOrThrow({
             // #369: payments are unique per (booking, stage); this is the
             // single full payment.
@@ -293,6 +388,9 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         expect(externalPayment.status).toBe('VERIFIED');
         expect(externalPayment.custodian).toBe('AGENCY');
         expect(externalPayment.amount.toNumber()).toBe(780);
+        // #422: and it is bound to the confirmed bank credit.
+        expect(externalPayment.confirmedAmount?.toNumber()).toBe(780);
+        expect(externalPayment.bankReference).toBe('BANK-REF-CONCURRENT');
 
         const ledgerEntries = await db.paymentStatusLedgerEntry.findMany({
             where: { externalPaymentId: externalPayment.id },
@@ -303,10 +401,11 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             `booking:${booking.id}:payment-verified`,
         );
 
-        const wallet = await db.wallet.findUnique({
-            where: { agencyId: agency.id },
-        });
-        expect(wallet).toBeNull();
+        // The "no wallet is credited" invariant this test used to
+        // assert against the Wallet table is structural since #429:
+        // the custody tables are deleted, so a withdrawable OuiBoo
+        // balance cannot exist. The ledger assertions above are the
+        // live pin.
         expect(mockEmailService.sendPaymentConfirmation).toHaveBeenCalledTimes(1);
     });
 
@@ -318,12 +417,12 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 3,
                 totalAmount: 1170, // 390 * 3
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             } as any,
         });
@@ -365,12 +464,12 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'COMPLETED',
             } as any,
         });
@@ -406,33 +505,33 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 .post('/bookings')
                 .set('Authorization', `Bearer traveler-1`)
                 .send({
+                    termsAccepted: true, termsVersion: '1.0', locale: 'en',
                     sessionId: session.id,
                     guestsCount: 2,
                     fullName: 'Traveler 1',
                     phoneNumber: '+1111111111',
-                    documentNumber: 'ID1',
                     paymentMethod: 'BANK_TRANSFER',
                 }),
             request(app.getHttpServer())
                 .post('/bookings')
                 .set('Authorization', `Bearer traveler-2`)
                 .send({
+                    termsAccepted: true, termsVersion: '1.0', locale: 'en',
                     sessionId: session.id,
                     guestsCount: 2,
                     fullName: 'Traveler 2',
                     phoneNumber: '+2222222222',
-                    documentNumber: 'ID2',
                     paymentMethod: 'BANK_TRANSFER',
                 }),
             request(app.getHttpServer())
                 .post('/bookings')
                 .set('Authorization', `Bearer traveler-3`)
                 .send({
+                    termsAccepted: true, termsVersion: '1.0', locale: 'en',
                     sessionId: session.id,
                     guestsCount: 2,
                     fullName: 'Traveler 3',
                     phoneNumber: '+3333333333',
-                    documentNumber: 'ID3',
                     paymentMethod: 'BANK_TRANSFER',
                 }),
         ]);
@@ -459,11 +558,11 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: session.id,
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 paymentMethod: 'BANK_TRANSFER',
             })
             .expect(201);
@@ -473,11 +572,11 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: session.id,
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 paymentMethod: 'BANK_TRANSFER',
             })
             .expect(400);
@@ -493,11 +592,11 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: session.id,
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 paymentMethod: 'BANK_TRANSFER',
             })
             .expect(201);
@@ -511,12 +610,12 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
                 bookingDate: new Date(Date.now() - 25 * 60 * 60 * 1000), // 25 hours ago
             } as any,
@@ -546,12 +645,12 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
                 bookingDate: new Date(), // Just created
             } as any,
@@ -576,12 +675,12 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: traveler.id,
                 guestsCount: 2,
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             } as any,
         });
@@ -634,12 +733,12 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             } as any,
         });
@@ -659,11 +758,18 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .attach('file', fixturePath)
             .expect(201);
 
-        // Approve payment (CONFIRMED)
+        // Accept the proof image (settles nothing yet, #422)
         await request(app.getHttpServer())
             .patch(`/bookings/${booking.id}/verify-payment`)
             .set('Authorization', `Bearer agency-token`)
             .send({ approved: true })
+            .expect(200);
+
+        // Confirm the bank credit (booking becomes CONFIRMED)
+        await request(app.getHttpServer())
+            .patch(`/bookings/${booking.id}/confirm-bank-payment`)
+            .set('Authorization', `Bearer agency-token`)
+            .send({ confirmedAmount: 780, bankReference: 'BANK-REF-TRANSITIONS' })
             .expect(200);
 
         // Attempt to upload new proof when CONFIRMED (should fail)
@@ -680,12 +786,12 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'CONFIRMED', // Manually set to CONFIRMED (bypass logic)
             } as any,
         });
@@ -708,11 +814,11 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: session.id,
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 paymentMethod: 'BANK_TRANSFER',
             })
             .expect(201);
@@ -721,7 +827,19 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             traveler.email,
             agencyUser.email,
             createRes.body.id,
-            'Mountain Adventure'
+            'Mountain Adventure',
+            'en', // #424 + B9: the stored locale (creation requires one)
+            DEFAULT_CANCELLATION_SCALE,
+            // B4: seller block input (see the happy-path assertion).
+            {
+                legalName: null,
+                companyName: 'Test Agency Ltd',
+                travelLicenceType: 'ODV',
+                travelLicenceNumber: 'LIC-100001',
+                licenceVerified: true,
+                licenceIssuedAt: null,
+                licenceIssuingAuthority: null,
+            }
         );
 
         // Upload proof
@@ -732,16 +850,26 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .attach('file', fixturePath)
             .expect(201);
 
-        // Approve payment
+        // Accept the proof image: no payment email yet (#422).
         await request(app.getHttpServer())
             .patch(`/bookings/${createRes.body.id}/verify-payment`)
             .set('Authorization', `Bearer agency-token`)
             .send({ approved: true })
             .expect(200);
 
+        expect(mockEmailService.sendPaymentConfirmation).not.toHaveBeenCalled();
+
+        // The payment confirmation email is sent at bank confirmation.
+        await request(app.getHttpServer())
+            .patch(`/bookings/${createRes.body.id}/confirm-bank-payment`)
+            .set('Authorization', `Bearer agency-token`)
+            .send({ confirmedAmount: 780, bankReference: 'BANK-REF-EMAIL' })
+            .expect(200);
+
         expect(mockEmailService.sendPaymentConfirmation).toHaveBeenCalledWith(
             traveler.email,
-            'Mountain Adventure'
+            'Mountain Adventure',
+            'en' // #424 + B9: trailing arg = booking locale (always stored now)
         );
     });
 
@@ -758,11 +886,11 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: session.id,
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 paymentMethod: 'BANK_TRANSFER',
             })
             .expect(201);
@@ -792,12 +920,12 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking1 = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             } as any,
         });
@@ -805,12 +933,12 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-456',
                 guestsCount: 2,
                 totalAmount: 780,
                 fullName: 'Test Traveler 2',
                 phoneNumber: '+2234567890',
-                documentNumber: 'ID234567',
                 status: 'PENDING',
             } as any,
         });
@@ -864,6 +992,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             data: {
                 id: 'session-789',
                 templateId: template2.id,
+                agencyId: template2.agencyId,
                 startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
                 endDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
                 price: 200,
@@ -876,12 +1005,12 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             },
         });
@@ -889,12 +1018,12 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         await db.booking.create({
             data: {
                 sessionId: session2.id,
+                agencyId: session2.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 400,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             },
         });
@@ -937,12 +1066,12 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             },
         });
@@ -995,12 +1124,12 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: traveler.id,
                 guestsCount: 2,
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             },
         });
@@ -1057,10 +1186,10 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
             })
             .expect(400);
 
@@ -1069,11 +1198,11 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: session.id,
                 guestsCount: 0,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
             })
             .expect(400);
 
@@ -1082,11 +1211,11 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: session.id,
                 guestsCount: -1,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
             })
             .expect(400);
 
@@ -1095,11 +1224,38 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             .post('/bookings')
             .set('Authorization', `Bearer traveler-token`)
             .send({
+                termsAccepted: true, termsVersion: '1.0', locale: 'en',
                 sessionId: 'non-existent',
                 guestsCount: 2,
                 fullName: 'John Doe',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
+            })
+            .expect(400);
+
+        // B9: no explicit terms acceptance — no booking is created
+        await request(app.getHttpServer())
+            .post('/bookings')
+            .set('Authorization', `Bearer traveler-token`)
+            .send({
+                sessionId: session.id,
+                guestsCount: 2,
+                fullName: 'John Doe',
+                phoneNumber: '+1234567890',
+                paymentMethod: 'BANK_TRANSFER',
+            })
+            .expect(400);
+
+        // B9: terms version outside the server allowlist
+        await request(app.getHttpServer())
+            .post('/bookings')
+            .set('Authorization', `Bearer traveler-token`)
+            .send({
+                termsAccepted: true, termsVersion: '9.9', locale: 'en',
+                sessionId: session.id,
+                guestsCount: 2,
+                fullName: 'John Doe',
+                phoneNumber: '+1234567890',
+                paymentMethod: 'BANK_TRANSFER',
             })
             .expect(400);
     });
@@ -1110,12 +1266,12 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123456',
                 status: 'PENDING',
             },
         });

@@ -7,12 +7,14 @@ import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthContext';
 import { type BookingDetails } from '@ouiboo/types';
 import { Card, CardContent } from '@ouiboo/ui';
+import { CheckoutSkeleton } from '@/components/Skeletons';
 import { useTranslation } from 'react-i18next';
 import { getStagedAmounts, isStagedSession, type CheckoutTrip } from '@/components/checkout/checkout-types';
 import { CheckoutHeader } from '@/components/checkout/CheckoutHeader';
 import { CheckoutGuestForm } from '@/components/checkout/CheckoutGuestForm';
 import { CheckoutPayment } from '@/components/checkout/CheckoutPayment';
 import { CheckoutDisclaimer } from '@/components/checkout/CheckoutDisclaimer';
+import { CheckoutTermsAcceptance } from '@/components/checkout/CheckoutTermsAcceptance';
 import { CheckoutSummary } from '@/components/checkout/CheckoutSummary';
 import { useCheckoutBooking } from '@/components/checkout/useCheckoutBooking';
 
@@ -21,7 +23,7 @@ export default function CheckoutPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const sessionFromQuery = searchParams.get('session');
   const parsedGuestsCount = Number(searchParams.get('guests'));
   const guestsFromQuery = Number.isFinite(parsedGuestsCount) && parsedGuestsCount > 0
@@ -33,7 +35,8 @@ export default function CheckoutPage() {
   const [guestCountOverride, setGuestCount] = useState<number | null>(null);
   const [fullNameOverride, setFullName] = useState<string | null>(null);
   const [phoneNumberOverride, setPhoneNumber] = useState<string | null>(null);
-  const [documentNumberOverride, setDocumentNumber] = useState<string | null>(null);
+  // B9: explicit terms acceptance — unchecked by default, gates submit.
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const retryBookingId = searchParams.get('retryBooking');
 
   useEffect(() => {
@@ -45,9 +48,13 @@ export default function CheckoutPage() {
   }, [proofPreview]);
 
   const { data: trip, isLoading } = useQuery<CheckoutTrip>({
-    queryKey: ['trip', tripId],
+    // Content-language audit (#546): checkout fetched the trip with NO
+    // locale — the API default (French) rendered at checkout whatever
+    // the UI language. Same locale-scoped key as the detail page, so
+    // both surfaces share the correctly-languaged entry.
+    queryKey: ['trip', tripId, (i18n.language || 'en').split('-')[0]],
     queryFn: async () => {
-      const response = await apiClient.get(`/trips/${tripId}`);
+      const response = await apiClient.get(`/trips/${tripId}?locale=${i18n.language}`);
       return response.data;
     }
   });
@@ -77,7 +84,6 @@ export default function CheckoutPage() {
     ?? user?.name
     ?? '';
   const phoneNumber = phoneNumberOverride ?? retryBooking?.phoneNumber ?? '';
-  const documentNumber = documentNumberOverride ?? retryBooking?.documentNumber ?? '';
   const selectedSession = trip?.sessions?.find((session) => session.id === selectedSessionId);
   const sessionPrice = Number(selectedSession?.price ?? 0);
   const totalPrice = sessionPrice * guestCount;
@@ -89,8 +95,8 @@ export default function CheckoutPage() {
   const bankDetails = trip?.agency?.bankDetails?.trim() ?? '';
   const hasBankDetails = bankDetails.length > 0;
   const sessionDateLabel = selectedSession
-    ? `${new Date(selectedSession.startDate).toLocaleDateString()} - ${new Date(selectedSession.endDate).toLocaleDateString()}`
-    : 'Select a session';
+    ? `${new Date(selectedSession.startDate).toLocaleDateString(i18n.language)} - ${new Date(selectedSession.endDate).toLocaleDateString(i18n.language)}`
+    : t('checkout.selectSession');
 
   const { createBookingMutation, errorMessage } = useCheckoutBooking({
     tripId,
@@ -99,9 +105,9 @@ export default function CheckoutPage() {
     guestCount,
     fullName,
     phoneNumber,
-    documentNumber,
     hasBankDetails,
     proofFile,
+    termsAccepted,
   });
 
   const clearProof = () => {
@@ -123,15 +129,25 @@ export default function CheckoutPage() {
     setProofFile(file);
   };
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center font-black animate-pulse">Initializing Security...</div>;
-  if (!trip) return <div className="min-h-screen flex items-center justify-center font-black">Trip not found.</div>;
+  if (isLoading) return (
+    <div className="min-h-screen bg-muted/20 pb-40" role="status" aria-label={t('checkout.initializing')}>
+      <div className="max-w-7xl mx-auto px-6 pt-32">
+        <CheckoutSkeleton />
+      </div>
+      <span className="sr-only">{t('checkout.initializing')}</span>
+    </div>
+  );
+  if (!trip) return <div className="min-h-screen flex items-center justify-center font-black">{t('checkout.tripNotFound')}</div>;
 
+  // B9: a retry only re-uploads proof for an existing booking (its
+  // acceptance is already recorded), so the checkbox gates new
+  // bookings only.
   const canSubmit = Boolean(
     selectedSessionId &&
     hasBankDetails &&
     fullName.trim() &&
     phoneNumber.trim() &&
-    documentNumber.trim()
+    (retryBookingId || termsAccepted)
   );
 
   return (
@@ -142,7 +158,7 @@ export default function CheckoutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           {/* Left: Form */}
           <div className="lg:col-span-8 space-y-8">
-            <Card className="border-none shadow-xl shadow-black/5 rounded-[2.5rem] overflow-hidden">
+            <Card className="border-none shadow-xl shadow-black/5 rounded-4xl overflow-hidden">
               <CardContent className="p-10 space-y-10">
                 <CheckoutGuestForm
                   trip={trip}
@@ -155,8 +171,6 @@ export default function CheckoutPage() {
                   onFullNameChange={setFullName}
                   phoneNumber={phoneNumber}
                   onPhoneNumberChange={setPhoneNumber}
-                  documentNumber={documentNumber}
-                  onDocumentNumberChange={setDocumentNumber}
                   language={i18n.language}
                 />
                 <CheckoutPayment
@@ -169,7 +183,7 @@ export default function CheckoutPage() {
                   isUploading={createBookingMutation.isPending}
                   stagedInfo={stagedAmounts && stagedSession ? {
                     depositDue: stagedAmounts.depositDue,
-                    agencyName: trip.agency?.companyName || 'the agency',
+                    agencyName: trip.agency?.companyName || t('checkout.fallbackAgencyName'),
                     minimumParticipants: stagedSession.minBookings ?? 0,
                     confirmationDeadline: stagedSession.confirmationDeadline ?? null,
                     currency: selectedCurrency,
@@ -180,6 +194,8 @@ export default function CheckoutPage() {
             </Card>
 
             <CheckoutDisclaimer />
+
+            <CheckoutTermsAcceptance checked={termsAccepted} onChange={setTermsAccepted} />
           </div>
 
           {/* Right: Summary */}

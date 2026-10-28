@@ -1,4 +1,15 @@
 {
+  "share": {
+    "button": "Partager",
+    "text": "Découvrez ce voyage sur Ouiboo : {{title}}",
+    "copyLink": "Copier le lien",
+    "copied": "Lien copié !",
+    "whatsapp": "WhatsApp",
+    "facebook": "Facebook",
+    "x": "X",
+    "telegram": "Telegram",
+    "opensAtLaunch": "Le partage ouvrira au lancement public"
+  },
   "auth": {
     "errors": {
       "invalidCredentials": "Email ou mot de passe incorrect. Veuillez réessayer.",
@@ -14,6 +25,9 @@
     }
   },
   "common": {
+    "switchLanguage": "Changer de langue — actuelle : {{language}}",
+    "switchFrom": "Passer de {{language}}",
+    "toggleTheme": "Basculer le thème",
     "back": "Retour aux Voyages",
     "saveDraft": "Enregistrer le brouillon",
     "submit": "Soumettre",
@@ -55,7 +69,8 @@
     "signOut": "Se déconnecter",
     "expandSidebar": "Déplier la barre latérale",
     "collapseSidebar": "Replier la barre latérale",
-    "refunds": "Remboursements"
+    "refunds": "Remboursements",
+    "support": "Assistance"
   },
   "login": {
     "title": "Portail agence",
@@ -76,7 +91,7 @@
     "noAccount": "Nouvelle agence ?",
     "signUpLink": "Enregistrer votre entreprise",
     "heroTitle": "Développez votre activité de voyage.",
-    "heroSubtitle": "Accédez à des outils puissants, des analyses et un réseau mondial de voyageurs pour faire évoluer votre agence.",
+    "heroSubtitle": "Accédez à des outils pour gérer les voyages, les réservations et les paiements de votre agence.",
     "heroAlt": "Bureau moderne",
     "loggingIn": "Connexion...",
     "emailRequired": "L'e-mail est requis",
@@ -97,7 +112,7 @@
     "emailPlaceholder": "nom@agence.com",
     "password": "Mot de passe",
     "passwordPlaceholder": "Créez un mot de passe",
-    "passwordHint": "Utilisez au moins 6 caractères avec un mélange de lettres et de chiffres.",
+    "passwordHint": "Utilisez au moins 8 caractères avec un mélange de lettres et de chiffres.",
     "acceptTerms": "J'accepte les",
     "termsLink": "Conditions d'utilisation",
     "privacyLink": "Politique de confidentialité",
@@ -117,7 +132,7 @@
     "nameRequired": "Le nom de l'agence est requis",
     "emailRequired": "L'e-mail est requis",
     "passwordRequired": "Le mot de passe est requis",
-    "passwordMinLength": "Le mot de passe doit contenir au moins 6 caractères",
+    "passwordMinLength": "Le mot de passe doit contenir au moins 8 caractères",
     "termsRequired": "Veuillez accepter les conditions pour continuer.",
     "emailInUse": "Un compte avec cet e-mail existe déjà. Essayez de vous connecter à la place.",
     "serverNotConfigured": "Le serveur n'est pas entièrement configuré. Veuillez réessayer plus tard ou contacter le support.",
@@ -155,7 +170,7 @@
     "sectionThreeTitle": "Paiements et politiques",
     "sectionThreeBody": "Consultez les politiques de réservation, frais et annulations avant confirmation.",
     "sectionFourTitle": "Support partenaires",
-    "sectionFourBody": "Contactez notre équipe partenaire via chat ou e-mail."
+    "sectionFourBody": "Contactez notre équipe partenaire par e-mail."
   },
   "privacy": {
     "backToSignup": "Retour à l'inscription",
@@ -181,7 +196,8 @@
       "agency": "Détails de l'agence",
       "legal": "Documents juridiques",
       "payment": "Détails de paiement",
-      "licence": "Licence de voyage (loi 11-16)"
+      "licence": "Licence de voyage (loi 11-16)",
+      "insurance": "Assurance RC"
     },
     "submit": "Soumettre pour vérification",
     "documentsRequired": "Documents requis pour la conformité B2B au Maroc.",
@@ -201,6 +217,7 @@
     "success": "Documents de conformité soumis pour vérification !",
     "error": "Échec de la mise à jour. Veuillez vérifier vos données.",
     "licenceSectionSubtitle": "Votre licence d’agent de voyages doit être vérifiée avant de pouvoir publier des voyages ou activer les paiements.",
+    "insuranceSectionSubtitle": "Votre assurance responsabilité civile (RC) doit être vérifiée avant de pouvoir publier des voyages ou activer les paiements.",
     "legalNameLabel": "Raison sociale",
     "legalNamePlaceholder": "Dénomination légale enregistrée de la société",
     "rcLabel": "Registre de commerce (RC)",
@@ -219,7 +236,13 @@
       "numberLabel": "Numéro de licence",
       "numberPlaceholder": "Numéro de licence du ministère",
       "expiryLabel": "Date d’expiration de la licence",
+      "issuedAtLabel": "Date de délivrance de la licence",
+      "issuingAuthorityLabel": "Autorité de délivrance",
+      "issuingAuthorityPlaceholder": "ex. Ministère du Tourisme",
+      "issueDetailsRequired": "Un dossier de licence n’est complet qu’avec la date de délivrance et l’autorité de délivrance — elles apparaissent dans le bloc d’identité du vendeur présenté aux voyageurs.",
       "expiresOn": "valable jusqu’au {{date}}",
+      "documentLabel": "Document de licence",
+      "documentRequired": "Un dossier de licence n’est complet qu’avec le numéro de licence, la date d’expiration et le document de licence téléversé.",
       "note": "L’envoi ou la modification des informations de licence renvoie la licence en examen par l’administration. Les voyages ne peuvent pas être publiés et les paiements ne peuvent pas être activés tant que la licence n’est pas vérifiée.",
       "status": {
         "NOT_SUBMITTED": "Aucune licence de voyage envoyée pour le moment.",
@@ -228,6 +251,57 @@
         "REJECTED": "Votre licence de voyage a été rejetée.",
         "EXPIRED": "Votre licence de voyage a expiré. Renouvelez-la et renvoyez-la pour continuer à publier des voyages."
       }
+    },
+    "insurance": {
+      "insurerLabel": "Assureur",
+      "insurerPlaceholder": "Nom de la compagnie d’assurance",
+      "policyNumberLabel": "Numéro de police",
+      "policyNumberPlaceholder": "Numéro de la police RC",
+      "insuredNameLabel": "Nom de l’assuré",
+      "insuredNamePlaceholder": "Doit correspondre à votre raison sociale",
+      "validFromLabel": "Début de couverture",
+      "expiryLabel": "Date d’expiration de l’assurance",
+      "expiresOn": "valable jusqu’au {{date}}",
+      "coverageLimitLabel": "Plafond de couverture",
+      "coverageLimitPlaceholder": "ex. 500000",
+      "certificateLabel": "Certificat d’assurance",
+      "certificateRequired": "Un dossier d’assurance n’est complet qu’avec l’assureur, le numéro de police, le nom de l’assuré, la date d’expiration et le certificat téléversé.",
+      "note": "L’envoi ou la modification des informations d’assurance renvoie l’assurance en examen par l’administration. Les voyages ne peuvent pas être publiés et les paiements ne peuvent pas être activés tant que l’assurance n’est pas vérifiée.",
+      "status": {
+        "NOT_SUBMITTED": "Aucune assurance RC envoyée pour le moment.",
+        "PENDING_REVIEW": "Votre assurance RC est en cours d’examen.",
+        "VERIFIED": "Votre assurance RC est vérifiée.",
+        "REJECTED": "Votre assurance RC a été rejetée.",
+        "EXPIRED": "Votre assurance RC a expiré. Renouvelez-la et renvoyez le certificat pour continuer à publier des voyages."
+      }
+    },
+    "documents": {
+      "upload": "Téléverser un document",
+      "replace": "Remplacer le document",
+      "current": "Document actuel : {{name}}",
+      "uploading": "Téléversement…",
+      "uploadFailed": "Échec du téléversement : {{message}}",
+      "tooLarge": "Ce fichier est trop volumineux. Choisissez un fichier de 5 Mo ou moins.",
+      "hint": "PDF ou image, 5 Mo max. Stocké de manière privée et visible uniquement par notre équipe de vérification."
+    }
+  },
+  "verificationPaused": {
+    "title": "Publication suspendue — vérification expirée",
+    "licenceExpired": "Votre licence de voyage a expiré.",
+    "insuranceExpired": "Votre assurance RC a expiré.",
+    "body": "Vos voyages actifs ont été mis en pause et les nouvelles réservations sont bloquées jusqu’à l’envoi et la vérification du document renouvelé.",
+    "cta": "Renouveler la vérification"
+  },
+  "verification": {
+    "incomplete": "Vérification incomplète",
+    "incompleteDetail": "Vérification incomplète — {{artefact}} en attente de vérification",
+    "artefact": {
+      "identity": "l'identité de l'agence",
+      "licence": "la licence de voyage",
+      "insurance": "l'assurance RC"
+    },
+    "block": {
+      "identity": "La vérification de l'identité de votre agence n'est pas encore terminée."
     }
   },
   "trips": {
@@ -262,9 +336,11 @@
       "editTemplate": "Modifier le modèle",
       "deleting": "Suppression...",
       "delete": "Supprimer",
-      "duration": "{{days}} jours / {{nights}} nuits",
+      "durationDays_one": "{{count}} jour",
+      "durationDays_other": "{{count}} jours",
+      "durationNights_one": "{{count}} nuit",
+      "durationNights_other": "{{count}} nuits",
       "verificationRequired": "Vérification requise",
-      "verificationRequiredBody": "La vérification de votre agence est en attente. Vous pouvez créer des modèles et des sessions, mais ils ne seront visibles par les voyageurs qu'après vérification de votre profil.",
       "checkVerificationStatus": "Vérifier le statut de vérification",
       "sessionsTitle": "Sessions du voyage",
       "sessionsSubtitle": "Gérez les dates, prix et capacités de votre voyage.",
@@ -280,7 +356,8 @@
       "archive": "Archiver",
       "archiving": "Archivage...",
       "restore": "Restaurer",
-      "restoring": "Restauration..."
+      "restoring": "Restauration...",
+      "activationBlockedBody": "Vous pouvez continuer à travailler sur vos voyages, mais vous ne pourrez pas publier de nouveaux voyages ni activer les paiements tant que ce point n'est pas résolu. Les voyages déjà en ligne ne sont pas affectés."
     },
     "edit": {
       "backToDetail": "Retour au détail du voyage",
@@ -307,6 +384,11 @@
       "titlePlaceholder": "ex. 5 jours dans le désert du Sahara",
       "description": "Description",
       "descriptionPlaceholder": "Décrivez l'expérience unique...",
+      "languageFr": "Français",
+      "languageAr": "Arabe",
+      "languageEn": "Anglais",
+      "frenchRequiredNote": "Le français est obligatoire pour publier ce voyage. L'arabe et l'anglais sont facultatifs, mais recommandés : les voyageurs voient le voyage dans leur propre langue lorsqu'une traduction existe.",
+      "translationsMissingHint": "Traductions manquantes : {{languages}}. Les voyageurs utilisant ces langues verront le texte français à la place.",
       "category": "Catégorie",
       "categoryAdventure": "Aventure",
       "categoryCultural": "Culturel",
@@ -354,7 +436,22 @@
       "noDescription": "Aucune description fournie.",
       "tbd": "À déterminer",
       "basePackage": "Forfait de base",
-      "pricePreview": "--- {{currency}}"
+      "pricePreview": "--- {{currency}}",
+      "cancellationTitle": "Barème d'annulation",
+      "cancellationSubtitle": "Ce que les voyageurs récupèrent lorsqu'ils annulent, selon le nombre de jours restant avant le voyage.",
+      "cancellationFloorNote": "Plancher de la plateforme (non modifiable) : si vous annulez, ou si le voyage ne peut pas avoir lieu faute d'avoir atteint le groupe minimum, le voyageur est remboursé à 100 % de ce qu'il a payé, remboursement initié sous 7 jours.",
+      "cancellationDefaultNote": "Ce voyage utilise le barème par défaut de la plateforme :",
+      "cancellationCustomize": "Personnaliser le barème",
+      "cancellationReset": "Utiliser le barème par défaut",
+      "cancellationAddBand": "Ajouter une tranche",
+      "cancellationDaysLabel": "Jours avant le voyage (ou plus)",
+      "cancellationPercentLabel": "% remboursé",
+      "cancellationRemoveBand": "Retirer la tranche",
+      "cancellationBandAtLeast": "{{days}} jours ou plus avant : remboursement de {{percent}} %",
+      "cancellationBandLessThan": "Moins de {{days}} jours avant : remboursement de {{percent}} %",
+      "structureNote": "Les jours s'ajoutent et s'ordonnent en français, la structure canonique — cet onglet traduit uniquement le texte de chaque jour.",
+      "livePreviewEmptyTitle": "Rien à prévisualiser pour le moment",
+      "livePreviewEmptyBody": "Ajoutez un titre, une description, un lieu ou une photo et l’aperçu de votre voyage apparaîtra ici."
     }
   },
   "payments": {
@@ -447,9 +544,14 @@
     "recordedOn": "Enregistré le {{date}}",
     "proofNote": "Note du justificatif : {{reason}}",
     "inspectProof": "Inspecter le justificatif",
+    "markAttended": "Marquer présent",
+    "markNoShow": "Marquer absent",
+    "attendanceAttended": "Présence : présent",
+    "attendanceNoShow": "Présence : absent",
+    "attendanceFailed": "Impossible d'enregistrer la présence. Veuillez réessayer.",
     "noProof": "Aucun justificatif",
     "importantNotice": "Avis important",
-    "importantNoticeBody": "Les agences peuvent inspecter les justificatifs de virement bancaire téléversés et suivre l'avancement des réservations depuis cet écran. La confirmation du paiement est finalisée par le flux de révision financière de l'admin.",
+    "importantNoticeBody": "Examinez les justificatifs de virement bancaire téléversés depuis cet écran : accepter un justificatif ne vaut pas règlement — un paiement ne compte que lorsque vous confirmez l’argent sur votre compte bancaire avec sa référence bancaire.",
     "schedule": {
       "title": "Planning des départs",
       "subtitle": "Vue opérationnelle de vos prochains départs.",
@@ -471,7 +573,7 @@
     "greeting": "Bonjour, {{name}}",
     "subtitle": "Voici votre centre de pilotage pour les réservations, les paiements et la croissance.",
     "liveSnapshot": "Aperçu en direct",
-    "totalRevenue": "Revenu total",
+    "grossBookedValue": "Valeur brute des réservations",
     "bookCount_one": "{{count}} réservation",
     "bookCount_other": "{{count}} réservations",
     "proofCount_one": "{{count}} justificatif à examiner",
@@ -485,8 +587,6 @@
     "quickActions": {
       "verifiedTitle": "Agence vérifiée",
       "verifiedDescription": "Votre agence est vérifiée. Gardez votre profil complet pour rester prêt pour les paiements.",
-      "finishVerificationTitle": "Compléter la vérification",
-      "finishVerificationDescription": "Téléversez vos documents pour publier des voyages et recevoir les paiements des voyageurs directement.",
       "verifiedCta": "Revoir l'onboarding",
       "finishVerificationCta": "Terminer l'onboarding",
       "publishTitle": "Publiez votre prochain circuit",
@@ -528,11 +628,18 @@
       "pending": "En attente"
     },
     "growTitle": "Prêt à étendre votre portée ?",
-    "growBody": "Vous avez {{tripCount}} circuits actifs et {{travelerCount}} voyageurs dans votre audience. Ajoutez une nouvelle expérience pour maintenir l'élan.",
+    "growTrips_one": "Vous avez {{count}} circuit actif",
+    "growTrips_other": "Vous avez {{count}} circuits actifs",
+    "growTravelers_one": "et {{count}} voyageur dans votre audience.",
+    "growTravelers_other": "et {{count}} voyageurs dans votre audience.",
+    "growCta": "Ajoutez une nouvelle expérience pour maintenir l'élan.",
     "createNewTrip": "Créer un nouveau circuit",
     "yourAgency": "Votre agence",
     "paymentsReceived": "Paiements reçus",
+    "paymentsReceivedCaption": "Argent confirmé par la banque, reçu des voyageurs",
     "paymentsPending": "Paiements à vérifier",
+    "paymentsPendingCaption": "Justificatifs envoyés par les voyageurs, en attente de votre confirmation bancaire",
+    "grossBookedValueCaption": "Valeur totale des réservations confirmées et terminées — pas encore de l'argent reçu",
     "viewPayments": "Voir les paiements"
   },
   "status": {
@@ -542,6 +649,7 @@
     "bookingRejected": "Rejetée",
     "bookingCancelled": "Annulée",
     "bookingCompleted": "Terminée",
+    "bookingNoShow": "Absent",
     "paymentPaid": "Payé",
     "paymentFailed": "Paiement échoué",
     "paymentRefunded": "Remboursé",
@@ -550,10 +658,7 @@
     "proofVerified": "Vérifié",
     "proofRejected": "Rejeté",
     "proofAwaitingReview": "Examen en attente",
-    "payoutPaid": "Payé",
-    "payoutApproved": "Approuvé",
-    "payoutRejected": "Rejeté",
-    "payoutPending": "En attente",
+    "proofAccepted": "Accepté — confirmation bancaire en attente",
     "sessionAvailable": "Disponible",
     "sessionFull": "Complet",
     "sessionCancelled": "Annulée",
@@ -581,7 +686,19 @@
     "paymentSubtitle": "Instructions pour que les voyageurs vous paient manuellement.",
     "paymentInstructions": "Instructions de paiement manuel (RIB, nom de la banque, etc.)",
     "paymentInstructionsPlaceholder": "Exemple : Bank Populaire, RIB : 011 780 0000 1234 5678 9012 34",
-    "paymentDisclaimer": "Ceci sera affiché bien en évidence sur la page de paiement.",
+    "paymentDisclaimer": "Les voyageurs voient ces instructions uniquement après leur vérification par OuiBoo à partir de votre attestation bancaire.",
+    "bankStatusLabel": "Statut de la destination bancaire",
+    "bankStatusVerified": "Vérifié — ces instructions sont visibles par les voyageurs.",
+    "bankStatusPendingReview": "Examen en cours — vos coordonnées soumises sont en cours de vérification. Les voyageurs voient toujours les instructions précédemment vérifiées, le cas échéant.",
+    "bankStatusRejected": "Rejeté — vos coordonnées soumises n'ont pas été approuvées. Mettez-les à jour et enregistrez à nouveau pour les soumettre.",
+    "bankStatusUnverified": "Non vérifié — soumettez vos coordonnées bancaires avec le nom du titulaire du compte et un lien vers votre attestation bancaire pour qu’elles soient examinées.",
+    "bankRejectionReason": "Motif : {{reason}}",
+    "bankHolderName": "Nom du titulaire du compte",
+    "bankHolderNamePlaceholder": "Nom du titulaire du compte bancaire",
+    "bankHolderNameHint": "Doit correspondre au nom figurant sur le compte bancaire — il est comparé à la raison sociale de votre agence lors de l’examen.",
+    "bankAttestationUrl": "Lien vers l'attestation bancaire",
+    "bankAttestationUrlPlaceholder": "https://… (lien vers votre relevé bancaire / document RIB)",
+    "bankAttestationUrlHint": "Un lien vers votre attestation bancaire (relevé bancaire) indiquant ces coordonnées de compte.",
     "appearanceTitle": "Apparence et langue",
     "appearanceSubtitle": "Personnalisez votre expérience du tableau de bord.",
     "themeMode": "Thème",
@@ -672,7 +789,14 @@
       "mvpBody": "L'envoi de notifications est volontairement limité aux alertes e-mail essentielles dans cette version.",
       "mvpHint": "Les contrôles par canal restent masqués jusqu'à ce qu'ils soient gérés de bout en bout de manière fiable.",
       "reviewBookings": "Examiner les réservations"
-    }
+    },
+    "emergencyTitle": "Contact d'urgence du voyage",
+    "emergencySubtitle": "La personne que les voyageurs ayant une réservation joignent en premier pendant un voyage en cours. Affichée uniquement sur leur réservation, jamais publiquement.",
+    "emergencyName": "Nom du contact",
+    "emergencyNamePlaceholder": "Guide ou responsable de permanence",
+    "emergencyPhone": "Téléphone d'urgence",
+    "emergencyPhonePlaceholder": "+XXX XX XX XX XX",
+    "emergencyHint": "Indiquez un numéro réellement joignable pendant les voyages. Si vous le laissez vide, les voyageurs seront invités à vous écrire puis à faire remonter le problème à OuiBoo."
   },
   "analytics": {
     "dashboardTitle": "Tableau de bord analytique",
@@ -682,6 +806,39 @@
     "errorTopTrips": "Erreur lors du chargement des meilleurs voyages.",
     "errorPayment": "Erreur lors du chargement des modes de paiement.",
     "errorCustomers": "Erreur lors du chargement des données démographiques clients."
+  },
+  "support": {
+    "title": "Assistance OuiBoo",
+    "body": "Une question sur la vérification, un justificatif de paiement suspect ou un dossier de remboursement bloqué ? Écrivez-nous — nous répondons sous {{hours}} heures dans le cadre de l'assistance normale.",
+    "bodyNoEmail": "Une question sur la vérification, un justificatif de paiement suspect ou un dossier de remboursement bloqué ? Pendant la bêta fermée, contactez OuiBoo via la personne qui a accompagné l'inscription de votre agence — nous répondons sous {{hours}} heures dans le cadre de l'assistance normale.",
+    "escalationRole": "Pendant un voyage en cours, vous êtes le premier appel du voyageur — gardez votre contact d'urgence à jour dans les Paramètres. Si vous ne pouvez pas résoudre un problème pendant un voyage, faites-le remonter immédiatement à OuiBoo.",
+    "intro": "Comment joindre l'assistance OuiBoo — et quoi faire en premier pendant un voyage en cours. L'assistance normale répond sous {{hours}} heures.",
+    "contactLine": "Boîte surveillée : {{email}}",
+    "openPage": "Ouvrir la page d'assistance",
+    "form": {
+      "title": "Ouvrir un ticket d’assistance",
+      "intro": "Dites-nous ce qui bloque — une question de vérification, un justificatif de paiement suspect ou un dossier de remboursement bloqué. Nous répondons sous {{hours}} heures dans le cadre de l'assistance normale.",
+      "name": "Votre nom",
+      "email": "Votre e-mail",
+      "category": "Sujet",
+      "categoryBooking": "Réservation",
+      "categoryPayment": "Paiement",
+      "categoryRefund": "Remboursement",
+      "categoryAccount": "Compte",
+      "categoryTrip": "Voyage",
+      "categoryComplaint": "Réclamation",
+      "categoryTechnical": "Problème technique",
+      "categoryOther": "Autre",
+      "subject": "Objet",
+      "bookingRef": "Référence de réservation",
+      "bookingRefOptional": "facultatif",
+      "message": "Message",
+      "submit": "Envoyer le ticket",
+      "submitting": "Envoi...",
+      "receivedTitle": "Ticket reçu",
+      "receivedBody": "Merci — votre ticket est chez l'assistance. Nous répondons sous {{hours}} heures dans le cadre de l'assistance normale.",
+      "error": "Nous n'avons pas pu envoyer votre ticket. Vérifiez les champs et réessayez, ou écrivez-nous si une adresse est affichée ci-dessus."
+    }
   },
   "routeError": {
     "title": "Cet espace de travail n'a pas pu se charger",
@@ -728,9 +885,9 @@
     "rejectionReasonMinLength": "Le motif de rejet doit contenir au moins 10 caractères.",
     "reviewTitle": "Examiner le justificatif de paiement",
     "viewOnly": "Inspection en lecture seule du justificatif de paiement pour les opérateurs d'agence",
-    "reviewAndApprove": "Examinez puis approuvez ou rejetez ce justificatif de paiement",
-    "paymentVerified": "Paiement vérifié",
-    "verifiedBody": "Ce paiement a déjà été approuvé.",
+    "reviewAndApprove": "Examinez l'image du justificatif. Accepter un justificatif ne vaut pas règlement — le paiement ne compte que lorsque vous confirmez l'argent sur votre compte bancaire.",
+    "paymentVerified": "Réception bancaire confirmée",
+    "verifiedBody": "L’agence a confirmé ce montant sur son compte bancaire.",
     "paymentRejected": "Paiement rejeté",
     "reasonLabel": "Motif :",
     "amount": "Montant",
@@ -752,9 +909,22 @@
     "rejecting": "Rejet...",
     "enteringReason": "Saisie du motif...",
     "rejectPayment": "Rejeter le paiement",
-    "approving": "Approbation...",
-    "approvePayment": "Approuver le paiement",
-    "close": "Fermer"
+    "accepting": "Acceptation...",
+    "acceptProof": "Accepter le justificatif",
+    "close": "Fermer",
+    "proofAccepted": "Justificatif accepté — en attente de confirmation bancaire",
+    "acceptedBody": "L'image du justificatif a été acceptée, mais ce paiement n'est pas encore réglé. Il ne compte qu'une fois la réception bancaire confirmée ci-dessous.",
+    "acceptedSubtitle": "Justificatif accepté — confirmez la réception bancaire pour régler ce paiement",
+    "bankConfirmationTitle": "Confirmer la réception bancaire",
+    "bankConfirmationInstruction": "Vérifiez votre compte bancaire, pas l'image — une capture d'écran ne vaut pas règlement. Saisissez le montant réellement reçu et sa référence bancaire.",
+    "confirmedAmount": "Montant reçu",
+    "confirmedAmountHint": "Doit correspondre au montant attendu de {{amount}} — un crédit inférieur ne peut pas être confirmé ; rejetez le justificatif ou demandez un complément au voyageur.",
+    "bankReference": "Référence bancaire *",
+    "bankReferencePlaceholder": "Référence du virement bancaire",
+    "bankReferenceHint": "Obligatoire — la référence du virement sur votre compte bancaire.",
+    "confirmBankReceipt": "Confirmer la réception bancaire",
+    "confirmingBankReceipt": "Confirmation...",
+    "actionFailed": "Une erreur est survenue. Veuillez réessayer."
   },
   "bulkSession": {
     "helper": "Complétez les dates, le prix et le nombre de places de chaque session.",
@@ -850,13 +1020,13 @@
       "repeatRate": "Taux de récurrence"
     },
     "funnel": {
-      "stageViews": "Vues",
+      "stageSessions": "Sessions créées",
       "stageAttempts": "Tentatives de réservation",
       "stageConfirmed": "Confirmées",
       "stageCompleted": "Terminées",
       "noData": "Aucune donnée d'entonnoir",
       "title": "Entonnoir de conversion",
-      "subtitle": "Suivez la conversion des visiteurs en réservations terminées",
+      "subtitle": "Des sessions créées aux réservations terminées",
       "export": "Exporter"
     }
   },
@@ -958,7 +1128,8 @@
       "AGENCY_CANCELLATION": "Annulation par l'agence"
     },
     "listTitle": "Dossiers de remboursement",
-    "actionRequiredBanner": "{{count}} dossier(s) de remboursement requièrent votre action. Les remboursements en retard peuvent restreindre les nouvelles réservations jusqu'à leur résolution.",
+    "actionRequiredBanner_one": "{{count}} dossier de remboursement requiert votre action. Les remboursements en retard peuvent restreindre les nouvelles réservations jusqu'à leur résolution.",
+    "actionRequiredBanner_other": "{{count}} dossiers de remboursement requièrent votre action. Les remboursements en retard peuvent restreindre les nouvelles réservations jusqu'à leur résolution.",
     "honestNote": "Les remboursements sont payés depuis votre propre compte marchand — OuiBoo ne détient jamais les paiements des voyageurs.",
     "subtitle": "Dossiers de remboursement pour les paiements effectués directement par les voyageurs auprès de votre agence. C'est vous qui effectuez le remboursement — OuiBoo suit le dossier et son échéance.",
     "dueBy": "Remboursement dû avant le {{date}}",
@@ -966,6 +1137,56 @@
     "failReasonPlaceholder": "Pourquoi le remboursement a-t-il échoué ?",
     "bookingFallback": "Réservation",
     "failureReason": "Dernière tentative échouée",
-    "title": "Remboursements"
+    "title": "Remboursements",
+    "evidence": {
+      "title": "Ajouter une preuve d'exécution",
+      "instruction": "Après l'envoi du remboursement, joignez la preuve ici : la référence du virement bancaire (ou l'identifiant de transaction de votre prestataire de paiement) et le document de confirmation (relevé bancaire ou reçu du prestataire). Les deux sont obligatoires — le dossier ne peut être marqué terminé que sur cette preuve, jamais sur une simple déclaration. Si la référence correspond à la transaction du prestataire, l'envoi vaut confirmation du prestataire.",
+      "referenceLabel": "Référence banque / prestataire",
+      "referencePlaceholder": "ex. VIR-2026-1042 ou identifiant de transaction",
+      "referenceHint": "Exactement comme elle figure sur le relevé bancaire ou le reçu du prestataire.",
+      "amountLabel": "Montant envoyé (facultatif)",
+      "proofLabel": "Document de confirmation",
+      "noteLabel": "Note (facultatif)",
+      "notePlaceholder": "ex. nom de la banque, date de valeur",
+      "submit": "Joindre la preuve",
+      "submitted": "Preuve jointe. Vous pouvez maintenant marquer le dossier comme terminé.",
+      "submitFailed": "Impossible de joindre la preuve : {{message}}",
+      "listTitle": "Preuves d'exécution",
+      "completedOn": "Terminé sur : {{tier}}",
+      "tier": {
+        "PSP_CONFIRMATION": "Confirmation du prestataire de paiement",
+        "BANK_PROVIDER_CONFIRMATION": "Document de confirmation banque/prestataire",
+        "BANK_REFERENCE": "Référence bancaire + document conservé",
+        "TRAVELLER_CONFIRMATION": "Confirmation du voyageur",
+        "ADMIN_REVIEW": "Examen par l'administration OuiBoo"
+      }
+    }
+  },
+  "sharePreview": {
+    "title": "Aperçu du lien",
+    "liveNote": "Le partage est activé : voici l’aperçu que les réseaux sociaux afficheront pour ce voyage.",
+    "gatedNote": "Le partage est désactivé pendant la bêta : l’aperçu public actuel est la carte générique Ouiboo. Voici l’aperçu que ce voyage affichera à l’ouverture du partage au lancement public.",
+    "shareTextLabel": "Texte de partage",
+    "noPublicBase": "Aucune adresse voyageur publique n’est configurée pour ce build : aucun lien de partage ne peut être prévisualisé."
+  },
+  "betaNotAvailable": {
+    "title": "Pas dans la bêta",
+    "subtitle": "La bêta fermée est entièrement gratuite.",
+    "billingTitle": "La facturation et l’abonnement ne font pas partie de la bêta",
+    "walletTitle": "Les paiements ne sont pas actifs dans la bêta",
+    "body": "Pendant la bêta fermée, il n’y a ni frais de plateforme, ni abonnement, ni crédits — rien à payer à Ouiboo et rien à résilier. Cette surface ouvrira au lancement des formules payantes, après la bêta.",
+    "paymentsNote": "Les paiements des voyageurs sont distincts : les voyageurs paient votre agence directement (virement bancaire ou votre prestataire de paiement). Ouiboo ne détient jamais l’argent des voyageurs : il n’existe donc aucun solde Ouiboo à retirer.",
+    "viewPayments": "Voir les paiements reçus directement",
+    "viewBookings": "Voir les réservations",
+    "walletBannerTitle": "Bêta gratuite — ni frais, ni crédits",
+    "walletBannerBody": "Cette page enregistre les paiements des voyageurs versés directement à votre agence. Ouiboo ne détient pas l’argent et ne facture aucun frais pendant la bêta ; les totaux ci-dessous sont un relevé, pas un solde."
+  },
+  "commandPalette": {
+    "open": "Ouvrir la palette de commandes",
+    "trigger": "Rechercher ou accéder à…",
+    "placeholder": "Rechercher parmi les sections et vos voyages…",
+    "empty": "Aucun résultat.",
+    "groupNavigation": "Accéder à",
+    "groupTrips": "Vos voyages"
   }
 }

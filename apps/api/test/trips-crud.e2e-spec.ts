@@ -104,7 +104,6 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         await db.itineraryDay.deleteMany();
         await db.tripTemplate.deleteMany();
         await db.agencyProfile.deleteMany();
-        await db.wallet.deleteMany();
         await db.user.deleteMany();
     }
 
@@ -126,7 +125,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             data: {
                 id: 'agency-profile-123',
                 userId: agencyUser1.id,
-                companyName: 'Test Agency', ice: 'ICE100004', patente: 'PAT100004', rib: 'RIB100004', verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', travelLicenceNumber: 'LIC-100004', licenceExpiry: new Date('2030-01-01T00:00:00.000Z'),
+                companyName: 'Test Agency', ice: 'ICE100004', patente: 'PAT100004', rib: 'RIB100004', verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', travelLicenceNumber: 'LIC-100004', licenceExpiry: new Date('2030-01-01T00:00:00.000Z'), licenceIssuedAt: new Date('2024-01-15T00:00:00.000Z'), licenceIssuingAuthority: 'Ministère du Tourisme', travelLicenceType: 'ODV', insuranceStatus: 'VERIFIED', insuranceExpiry: new Date('2030-01-01T00:00:00.000Z'),
             } as any,
         });
 
@@ -147,7 +146,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             data: {
                 id: 'agency-profile-456',
                 userId: agencyUser2.id,
-                companyName: 'Other Agency', ice: 'ICE100005', patente: 'PAT100005', rib: 'RIB100005', verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', travelLicenceNumber: 'LIC-100005', licenceExpiry: new Date('2030-01-01T00:00:00.000Z'),
+                companyName: 'Other Agency', ice: 'ICE100005', patente: 'PAT100005', rib: 'RIB100005', verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', travelLicenceNumber: 'LIC-100005', licenceExpiry: new Date('2030-01-01T00:00:00.000Z'), licenceIssuedAt: new Date('2024-01-15T00:00:00.000Z'), licenceIssuingAuthority: 'Ministère du Tourisme', travelLicenceType: 'ODV', insuranceStatus: 'VERIFIED', insuranceExpiry: new Date('2030-01-01T00:00:00.000Z'),
             } as any,
         });
 
@@ -189,8 +188,11 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
     }
 
     async function createTripSession(templateId: string, overrides?: any) {
+        // #428: sessions carry the template's tenant.
+        const owner = await db.tripTemplate.findUnique({ where: { id: templateId }, select: { agencyId: true } });
         const defaultData = {
             templateId,
+            agencyId: owner?.agencyId,
             startDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             endDate: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000),
             price: 1200,
@@ -457,12 +459,12 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 2400,
                 fullName: 'Test Traveler',
                 phoneNumber: '+1234567890',
-                documentNumber: 'ID123',
                 status: 'CONFIRMED',
             } as any,
         });
@@ -930,17 +932,17 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: traveler.id,
                 guestsCount: 1,
                 totalAmount: session.price,
                 fullName: 'Test Traveler',
                 phoneNumber: '+12025550123',
-                documentNumber: 'DOC-1',
                 status: 'COMPLETED',
             } as any,
         });
         await db.review.create({
-            data: { bookingId: booking.id, tripTemplateId: template.id, travelerId: traveler.id, rating: 5, comment: 'Excellent' },
+            data: { bookingId: booking.id, agencyId: template.agencyId, tripTemplateId: template.id, travelerId: traveler.id, rating: 5, comment: 'Excellent' },
         });
 
         const res = await request(app.getHttpServer())
@@ -948,6 +950,127 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             .expect(200);
 
         expect(res.body._count?.reviews || 0).toBeGreaterThan(0);
+    });
+
+    // ===== Section 15: Multilingual content (#546) =====
+    it('persists the translations map on create with the fr entry mirrored from the canonical fields', async () => {
+        const { agency1 } = await seedTestData();
+
+        const res = await request(app.getHttpServer())
+            .post('/trips')
+            .set('Authorization', 'Bearer agency-123')
+            .send({
+                title: 'Aventure dans le désert',
+                description: 'Une aventure complète dans le désert marocain',
+                category: 'ADVENTURE',
+                startLocation: 'Marrakech',
+                durationDays: 3,
+                durationNights: 2,
+                inclusions: ['Transport'],
+                images: ['https://example.com/image1.jpg'],
+                status: 'DRAFT',
+                translations: {
+                    ar: { title: 'مغامرة في الصحراء', description: 'مغامرة كاملة في الصحراء المغربية' },
+                    en: { title: 'Desert Adventure', description: 'A complete adventure in the Moroccan desert' },
+                },
+            })
+            .expect(201);
+
+        expect(res.body.translations).toEqual({
+            // #584: the fr entry also mirrors the canonical sections
+            // (here: inclusions) alongside title + description.
+            fr: {
+                title: 'Aventure dans le désert',
+                description: 'Une aventure complète dans le désert marocain',
+                inclusions: ['Transport'],
+            },
+            ar: { title: 'مغامرة في الصحراء', description: 'مغامرة كاملة في الصحراء المغربية' },
+            en: { title: 'Desert Adventure', description: 'A complete adventure in the Moroccan desert' },
+        });
+
+        const stored = await db.tripTemplate.findUnique({ where: { id: res.body.id } });
+        expect((stored as any).translations).toEqual(res.body.translations);
+        expect(agency1.id).toBeTruthy();
+    });
+
+    it('resolves the public detail + list payloads into the requested locale with French fallback', async () => {
+        const { agency1 } = await seedTestData();
+        const template = await createTripTemplate(agency1.id, {
+            status: 'ACTIVE',
+            title: 'Titre français',
+            description: 'Description française complète',
+            translations: {
+                fr: { title: 'Titre français', description: 'Description française complète' },
+                ar: { title: 'العنوان بالعربية', description: 'الوصف بالعربية' },
+            },
+        });
+
+        const ar = await request(app.getHttpServer()).get(`/trips/${template.id}?locale=ar`).expect(200);
+        expect(ar.body.title).toBe('العنوان بالعربية');
+        expect(ar.body.description).toBe('الوصف بالعربية');
+
+        // English has no entry -> French (never empty).
+        const en = await request(app.getHttpServer()).get(`/trips/${template.id}?locale=en`).expect(200);
+        expect(en.body.title).toBe('Titre français');
+        expect(en.body.description).toBe('Description française complète');
+
+        // No locale at all -> the pre-#546 payload (French columns).
+        const plain = await request(app.getHttpServer()).get(`/trips/${template.id}`).expect(200);
+        expect(plain.body.title).toBe('Titre français');
+
+        const list = await request(app.getHttpServer()).get('/trips?locale=ar').expect(200);
+        const found = (list.body.data || []).find((row: any) => row.id === template.id);
+        expect(found?.title).toBe('العنوان بالعربية');
+    });
+
+    it('search matches the French columns and the localized texts', async () => {
+        const { agency1 } = await seedTestData();
+        await createTripTemplate(agency1.id, {
+            status: 'ACTIVE',
+            title: 'Randonnée Atlas',
+            description: 'Une randonnée dans le Haut Atlas',
+            translations: {
+                fr: { title: 'Randonnée Atlas', description: 'Une randonnée dans le Haut Atlas' },
+                ar: { title: 'رحلة الأطلس الكبير', description: 'وصف الرحلة' },
+            },
+        });
+
+        const byFrench = await request(app.getHttpServer()).get('/trips?q=Randonn%C3%A9e').expect(200);
+        expect((byFrench.body.data || []).length).toBeGreaterThan(0);
+
+        const byArabic = await request(app.getHttpServer()).get(`/trips?q=${encodeURIComponent('الأطلس')}`).expect(200);
+        expect((byArabic.body.data || []).length).toBeGreaterThan(0);
+    });
+
+    it('refuses to publish a trip whose French text is incomplete, publishes a French-only one', async () => {
+        const { agency1 } = await seedTestData();
+        // Direct-inserted drafts (the API DTO requires French at create;
+        // incomplete French can only exist via legacy/direct data).
+        const incomplete = await createTripTemplate(agency1.id, {
+            status: 'DRAFT',
+            title: 'Titre seul',
+            description: '',
+            translations: { ar: { title: 'عنوان', description: 'وصف كامل' } },
+        });
+        const frenchOnly = await createTripTemplate(agency1.id, {
+            status: 'DRAFT',
+            title: 'Voyage complet',
+            description: 'Description française complète',
+            translations: null,
+        });
+
+        await request(app.getHttpServer())
+            .patch(`/trips/${incomplete.id}`)
+            .set('Authorization', 'Bearer agency-123')
+            .send({ status: 'ACTIVE' })
+            .expect(400);
+
+        const published = await request(app.getHttpServer())
+            .patch(`/trips/${frenchOnly.id}`)
+            .set('Authorization', 'Bearer agency-123')
+            .send({ status: 'ACTIVE' })
+            .expect(200);
+        expect(published.body.status).toBe('ACTIVE');
     });
 
     // ===== Section 14: Wishlist Integration =====

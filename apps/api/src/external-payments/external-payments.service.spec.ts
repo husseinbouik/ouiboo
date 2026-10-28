@@ -95,6 +95,76 @@ describe('ExternalPaymentsService', () => {
         });
     });
 
+    describe('recordPaymentVerifiedInTransaction bank confirmation (#422)', () => {
+        it('stamps the bank-confirmation facts that bind VERIFIED to the bank credit', async () => {
+            const tx = makeTx();
+            const service = new ExternalPaymentsService({} as any);
+
+            await service.recordPaymentVerifiedInTransaction(tx, {
+                ...baseInput,
+                bankReference: 'TRX-2026-000123',
+                bankConfirmedBy: 'agency-user-1',
+            });
+
+            const upsertArgs = tx.externalPayment.upsert.mock.calls[0][0];
+            expect(upsertArgs.create.status).toBe(ExternalPaymentStatus.VERIFIED);
+            expect(upsertArgs.create.confirmedAmount.toString()).toBe('780');
+            expect(upsertArgs.create.bankReference).toBe('TRX-2026-000123');
+            expect(upsertArgs.create.bankConfirmedAt).toBeInstanceOf(Date);
+            expect(upsertArgs.create.bankConfirmedBy).toBe('agency-user-1');
+            expect(upsertArgs.update.bankReference).toBe('TRX-2026-000123');
+        });
+
+        it('records bankConfirmedBy as null when a bank reference arrives without a named confirmer', async () => {
+            const tx = makeTx();
+            const service = new ExternalPaymentsService({} as any);
+
+            await service.recordPaymentVerifiedInTransaction(tx, {
+                ...baseInput,
+                bankReference: 'TRX-2026-000777',
+            });
+
+            const upsertArgs = tx.externalPayment.upsert.mock.calls[0][0];
+            expect(upsertArgs.create.bankReference).toBe('TRX-2026-000777');
+            expect(upsertArgs.create.bankConfirmedBy).toBeNull();
+            expect(upsertArgs.update.bankReference).toBe('TRX-2026-000777');
+            expect(upsertArgs.update.bankConfirmedBy).toBeNull();
+        });
+
+        it('leaves bank-confirmation facts untouched for PSP/webhook records', async () => {
+            const tx = makeTx();
+            const service = new ExternalPaymentsService({} as any);
+
+            await service.recordPaymentVerifiedInTransaction(tx, baseInput);
+
+            const upsertArgs = tx.externalPayment.upsert.mock.calls[0][0];
+            expect(upsertArgs.create).not.toHaveProperty('bankReference');
+            expect(upsertArgs.update).not.toHaveProperty('confirmedAmount');
+        });
+    });
+
+    describe('recordPaymentPendingInTransaction (#422)', () => {
+        it('creates the stage payment as PENDING_VERIFICATION with no ledger entry and no bank facts', async () => {
+            const tx = makeTx();
+            const service = new ExternalPaymentsService({} as any);
+
+            const payment = await service.recordPaymentPendingInTransaction(tx, baseInput);
+
+            expect(payment.id).toBe('ext-payment-1');
+            const upsertArgs = tx.externalPayment.upsert.mock.calls[0][0];
+            expect(upsertArgs.create.status).toBe(ExternalPaymentStatus.PENDING_VERIFICATION);
+            expect(upsertArgs.create.verifiedAt).toBeNull();
+            // A fresh proof supersedes any earlier bank confirmation.
+            expect(upsertArgs.create.confirmedAmount).toBeNull();
+            expect(upsertArgs.create.bankReference).toBeNull();
+            expect(upsertArgs.create.bankConfirmedAt).toBeNull();
+            expect(upsertArgs.create.bankConfirmedBy).toBeNull();
+            expect(upsertArgs.update.status).toBe(ExternalPaymentStatus.PENDING_VERIFICATION);
+            // Pending is not settlement: the append-only ledger is untouched.
+            expect(tx.$executeRaw).not.toHaveBeenCalled();
+        });
+    });
+
     describe('recordPaymentRejectedInTransaction', () => {
         it('sets the ExternalPayment to REJECTED and clears verifiedAt', async () => {
             const tx = makeTx();
@@ -184,6 +254,53 @@ describe('ExternalPaymentsService', () => {
             expect(overview.totalRefunded).toBe('0.00');
             expect(overview.pendingVerificationCount).toBe(0);
             expect(overview.pendingVerificationAmount).toBe('0.00');
+        });
+    });
+
+    describe('getBookingLedgerTotals (#412)', () => {
+        it('sums captures and completed refunds for one booking from the ledger', async () => {
+            const tx = {
+                paymentStatusLedgerEntry: {
+                    aggregate: jest
+                        .fn()
+                        .mockResolvedValueOnce({ _sum: { amount: new Prisma.Decimal('1000.00') } })
+                        .mockResolvedValueOnce({ _sum: { amount: new Prisma.Decimal('200.00') } }),
+                },
+            };
+            const service = new ExternalPaymentsService({} as any);
+
+            const totals = await service.getBookingLedgerTotals(tx as any, 'booking-1');
+
+            expect(totals.verifiedTotal.toString()).toBe('1000');
+            expect(totals.refundedTotal.toString()).toBe('200');
+            const [verifiedQuery, refundedQuery] = tx.paymentStatusLedgerEntry.aggregate.mock.calls.map(
+                (c: any[]) => c[0],
+            );
+            expect(verifiedQuery.where.bookingId).toBe('booking-1');
+            expect(verifiedQuery.where.type.in).toEqual([
+                PaymentLedgerEntryType.PAYMENT_VERIFIED,
+                PaymentLedgerEntryType.PAYMENT_CAPTURED,
+                PaymentLedgerEntryType.DEPOSIT_CAPTURED,
+                PaymentLedgerEntryType.BALANCE_CAPTURED,
+            ]);
+            expect(refundedQuery.where).toEqual({
+                bookingId: 'booking-1',
+                type: PaymentLedgerEntryType.REFUND_COMPLETED,
+            });
+        });
+
+        it('returns zero totals when the booking has no ledger entries', async () => {
+            const tx = {
+                paymentStatusLedgerEntry: {
+                    aggregate: jest.fn(async () => ({ _sum: { amount: null } })),
+                },
+            };
+            const service = new ExternalPaymentsService({} as any);
+
+            const totals = await service.getBookingLedgerTotals(tx as any, 'booking-none');
+
+            expect(totals.verifiedTotal.toString()).toBe('0');
+            expect(totals.refundedTotal.toString()).toBe('0');
         });
     });
 

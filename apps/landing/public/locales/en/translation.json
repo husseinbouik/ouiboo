@@ -12,7 +12,7 @@
     "badge": "New marketplace launch",
     "title": "Your Next Adventure, Effortlessly Connected.",
     "subtitle": "For travelers, a world of curated journeys. For agencies, a powerful growth platform. Ouiboo is the meeting point of travel.",
-    "ctaPrimary": "Join the waitlist and get a free month",
+    "ctaPrimary": "Join the waitlist",
     "ctaSecondary": "Explore trips",
     "ctaTertiary": "Learn more"
   },
@@ -21,15 +21,15 @@
     "subtitle": "Clear foundations for every side of the journey.",
     "item1": "Curated trip details",
     "item2": "Agency review workflows",
-    "item3": "Traceable payments",
-    "item4": "Responsive support"
+    "item3": "Direct agency payments",
+    "item4": "Support by email"
   },
   "highlights": {
     "title": "Built for real-world travel businesses",
     "subtitle": "Everything you need to list, sell, and deliver standout trips without the chaos.",
     "curated": {
       "title": "Curated experiences",
-      "description": "Offer verified itineraries with clear inclusions, safety checks, and transparent reviews."
+      "description": "Offer itineraries with clear inclusions and transparent reviews."
     },
     "payments": {
       "title": "Frictionless bookings",
@@ -57,24 +57,24 @@
     },
     "step2": {
       "title": "Book Seamlessly",
-      "description": "A simple, secure booking process for travelers. Agencies manage everything from a single, intuitive dashboard."
+      "description": "A simple booking process for travelers. Agencies manage everything from a single, intuitive dashboard."
     },
     "step3": {
       "title": "Experience & Grow",
-      "description": "Travelers embark on their adventure. Agencies gain valuable insights and a global audience."
+      "description": "Travelers embark on their adventure. Agencies gain valuable insights from their bookings."
     }
   },
   "travelers": {
     "preTitle": "For Travelers",
     "title": "Your Story is Waiting",
-    "subtitle": "Trade endless scrolling for authentic adventures. We connect you with unique trips from trusted, independent agencies.",
+    "subtitle": "Trade endless scrolling for authentic adventures. We connect you with unique trips from independent agencies.",
     "feature1": {
       "title": "Discover Unique Trips",
       "description": "Find experiences you won't see anywhere else, from culinary tours to mountain treks."
     },
     "feature2": {
-      "title": "Book with Confidence",
-      "description": "Every agency is vetted. Every booking is secure. Travel with total peace of mind."
+      "title": "Know Who Sells Your Trip",
+      "description": "Licence number provided by the agency — not independently verified by Ouiboo."
     },
     "feature3": {
       "title": "Save Time & Effort",
@@ -88,7 +88,7 @@
   "agencies": {
     "preTitle": "For Agencies",
     "title": "Your Business, Amplified",
-    "subtitle": "Stop wrestling with outdated tools. Our platform gives you everything you need to manage your business and reach a global audience.",
+    "subtitle": "Stop wrestling with outdated tools. Our platform gives you everything you need to manage your business in one place.",
     "feature1": {
       "title": "Digitize Your Offerings",
       "description": "Easily create, publish, and manage beautiful trip pages that convert."
@@ -98,8 +98,8 @@
       "description": "Use our dashboard to understand your customers, track sales, and make data-driven decisions."
     },
     "feature3": {
-      "title": "Reach a Global Audience",
-      "description": "Tap into our marketplace of passionate travelers actively looking for trips just like yours."
+      "title": "Reach New Travelers",
+      "description": "Present your trips to travelers actively looking for experiences like yours."
     },
     "cta": {
       "registerAgency": "Register Agency",
@@ -124,14 +124,15 @@
   },
   "pricing": {
     "preTitle": "Pricing",
-    "title": "Simple, Transparent Pricing",
-    "subtitle": "Choose the plan that fits your agency. All plans include marketplace access — travellers pay your agency directly.",
+    "title": "Pricing during the closed beta",
+    "subtitle": "Ouiboo is in a closed beta. Travellers pay your agency directly.",
+    "betaStatement": "No platform fee during the closed beta.",
     "free": {
       "title": "Free",
       "description": "Perfect for getting started",
       "price": "0",
       "currency": "MAD/month",
-      "commission": "5% platform service fee",
+      "commission": "No platform fee during the closed beta.",
       "button": "Get Started",
       "feature1": "3 trips",
       "feature2": "Basic profile",
@@ -142,7 +143,7 @@
       "description": "For growing travel agencies",
       "price": "499",
       "currency": "MAD/month",
-      "commission": "3% platform service fee",
+      "commission": "No platform fee during the closed beta.",
       "button": "Coming Soon",
       "feature1": "Unlimited trips",
       "feature2": "Branding & customization",
@@ -154,38 +155,39 @@
       "description": "For established agencies",
       "price": "999",
       "currency": "MAD/month",
-      "commission": "2% platform service fee",
+      "commission": "No platform fee during the closed beta.",
       "button": "Coming Soon",
       "feature1": "Everything in Pro",
       "feature2": "Advanced analytics",
       "feature3": "Marketing boost",
-      "feature4": "Priority support"
+      "feature4": "Email support"
     },
     "enterprise": {
       "title": "Enterprise",
       "description": "For large-scale operations",
       "price": "Custom",
       "currency": "",
-      "commission": "Negotiable platform service fee",
+      "commission": "No platform fee during the closed beta.",
       "button": "Contact Sales",
       "feature1": "Everything in Premium",
       "feature2": "White-label solution",
       "feature3": "Custom integrations",
-      "feature4": "Dedicated support"
+      "feature4": "Email support"
     },
     "waitlist": {
-      "badge": "Limited Time",
+      "badge": "Early Access",
       "title": "Early Access Offer",
-      "description": "Join our waitlist and get 3 months free of Pro plan when we launch.",
-      "price": "3 Months Free",
+      "description": "Join our waitlist for early access when we launch.",
+      "price": "Early access",
       "button": "Join Waitlist",
       "feature1": "Early access to platform",
-      "feature2": "3 months of Pro plan free"
+      "feature2": "Early access to the platform"
     }
   },
   "waitlist": {
     "title": "Be the First to Experience Ouiboo",
-    "subtitle": "Join our waitlist for exclusive early access, a free month of our Pro plan for agencies, and updates on our launch.",
+    "subtitle": "Join our waitlist for early access and updates on our launch.",
+    "paused": "Waitlist signups are paused while we prepare the closed beta. Please check back soon — no information is collected in the meantime.",
     "form": {
       "name": "Enter your name",
       "email": "Enter your email",
@@ -243,7 +245,7 @@
     },
     "section3": {
       "title": "Optional analytics",
-      "body": "Website analytics are disabled unless you choose to allow them. You can change that choice at any time. Language and security-related storage may still be used because it is necessary to provide the site."
+      "body": "No analytics tracker runs by default on Ouiboo. Always-on analytics have been removed; optional analytics are never loaded unless you explicitly choose to allow them, and you can change that choice at any time. Language and security-related storage may still be used because it is necessary to provide the site."
     },
     "section4": {
       "title": "Sharing and retention",
@@ -262,5 +264,8 @@
     "privacyNotice": "privacy notice",
     "continueWithoutAnalytics": "Continue without analytics",
     "allowAnalytics": "Allow analytics"
+  },
+  "beta": {
+    "explainer": "Closed beta — invited travellers only; you always pay the agency directly."
   }
 }

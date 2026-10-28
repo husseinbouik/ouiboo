@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../database/database.module';
 import { ExternalPaymentsModule } from '../external-payments/external-payments.module';
+import { RefundsModule } from '../refunds/refunds.module';
 import { StagedPaymentsModule } from '../staged-payments/staged-payments.module';
 import { CommonModule } from '../common/common.module';
 import { ManualPspAdapter } from './adapters/manual-psp.adapter';
@@ -20,7 +21,10 @@ import { AdminPaymentReconciliationController } from './admin-payment-reconcilia
  * signed webhooks into the #368 ledger, and reconciliation alerts.
  */
 @Module({
-    imports: [DatabaseModule, ExternalPaymentsModule, StagedPaymentsModule, CommonModule],
+    // RefundsModule: provider-confirmed refunds are wired into the
+    // booking's RefundCase as tier-1 evidence (#416B). RefundsModule
+    // does not import this module, so there is no cycle.
+    imports: [DatabaseModule, ExternalPaymentsModule, StagedPaymentsModule, CommonModule, RefundsModule],
     providers: [
         ManualPspAdapter,
         SandboxPspAdapter,

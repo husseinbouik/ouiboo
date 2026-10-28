@@ -7,12 +7,16 @@ const mockTripTemplate = {
     id: 'trip-123',
     agencyId: 'agency-123',
     title: 'Test Trip',
+    // Real rows always carry a (French) description — NOT NULL column.
+    description: 'A test trip description',
     currency: 'MAD',
     status: 'DRAFT',
     _count: { sessions: 0 },
 };
 
 const mockDatabaseService = {
+    // #546: localized search resolves matching ids via one raw query.
+    $queryRaw: jest.fn().mockResolvedValue([]),
     $transaction: jest.fn((fn: any) => fn({
         itineraryDay: { deleteMany: jest.fn().mockResolvedValue({}) },
         review: { deleteMany: jest.fn().mockResolvedValue({}) },
@@ -26,6 +30,11 @@ const mockDatabaseService = {
         create: jest.fn(),
         update: jest.fn(),
         delete: jest.fn(),
+    },
+    // #584: the publish gate fetches canonical itinerary days when a
+    // transition does not carry them.
+    itineraryDay: {
+        findMany: jest.fn().mockResolvedValue([]),
     },
     tripSession: {
         create: jest.fn(),
@@ -145,6 +154,118 @@ describe('TripsService', () => {
         });
     });
 
+    describe('cancellation scale (#417)', () => {
+        beforeEach(() => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.tripTemplate.create.mockResolvedValue(mockTripTemplate);
+            db.tripTemplate.update.mockResolvedValue(mockTripTemplate);
+        });
+
+        it('validates and normalizes agency bands on create (sorted, versioned)', async () => {
+            await service.createTemplate('agency-123', {
+                title: 'T',
+                images: ['a.jpg'],
+                cancellationPolicy: {
+                    bands: [
+                        { minDaysBeforeStart: 0, refundPercent: 10 },
+                        { minDaysBeforeStart: 14, refundPercent: 80 },
+                    ],
+                },
+            } as any);
+            const arg = db.tripTemplate.create.mock.calls[0][0];
+            expect(arg.data.cancellationPolicy).toEqual({
+                version: 'cancellation-v1',
+                bands: [
+                    { minDaysBeforeStart: 14, refundPercent: 80 },
+                    { minDaysBeforeStart: 0, refundPercent: 10 },
+                ],
+            });
+        });
+
+        it('rejects bands without 0-day coverage on create', async () => {
+            await expect(
+                service.createTemplate('agency-123', {
+                    title: 'T',
+                    images: ['a.jpg'],
+                    cancellationPolicy: { bands: [{ minDaysBeforeStart: 7, refundPercent: 50 }] },
+                } as any),
+            ).rejects.toThrow('0 days');
+            expect(db.tripTemplate.create).not.toHaveBeenCalled();
+        });
+
+        it('rejects duplicate band thresholds on update', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, images: ['a.jpg'] });
+            await expect(
+                service.updateTemplate('trip-123', 'agency-123', {
+                    cancellationPolicy: {
+                        bands: [
+                            { minDaysBeforeStart: 0, refundPercent: 10 },
+                            { minDaysBeforeStart: 0, refundPercent: 20 },
+                        ],
+                    },
+                } as any),
+            ).rejects.toThrow('Duplicate');
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('leaves the stored policy untouched when update omits it', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, images: ['a.jpg'] });
+            await service.updateTemplate('trip-123', 'agency-123', { title: 'New' } as any);
+            const arg = db.tripTemplate.update.mock.calls[0][0];
+            expect(arg.data.cancellationPolicy).toBeUndefined();
+        });
+
+        it('resolves the platform default scale on the public detail when the trip has none', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                cancellationPolicy: null,
+                agency: {
+                    id: 'agency-123',
+                    companyName: 'Atlas Adventures SARL',
+                    logo: null,
+                    verificationStatus: 'VERIFIED',
+                    bankDetails: null,
+                    bankDetailsStatus: 'VERIFIED',
+                    bankDetailsVerifiedAt: new Date(),
+                },
+            });
+            const result = await service.findOneTemplate('trip-123');
+            expect((result as any).cancellationScale.floorRefundPercent).toBe(100);
+            expect((result as any).cancellationScale.refundInitiationDays).toBe(7);
+            expect((result as any).cancellationScale.bands[0]).toEqual({
+                minDaysBeforeStart: 30,
+                refundPercent: 100,
+            });
+        });
+
+        it('resolves the agency bands on the public detail when stored', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                cancellationPolicy: {
+                    version: 'cancellation-v1',
+                    bands: [
+                        { minDaysBeforeStart: 0, refundPercent: 10 },
+                        { minDaysBeforeStart: 14, refundPercent: 80 },
+                    ],
+                },
+                agency: {
+                    id: 'agency-123',
+                    companyName: 'Atlas Adventures SARL',
+                    logo: null,
+                    verificationStatus: 'VERIFIED',
+                    bankDetails: null,
+                    bankDetailsStatus: 'VERIFIED',
+                    bankDetailsVerifiedAt: new Date(),
+                },
+            });
+            const result = await service.findOneTemplate('trip-123');
+            expect((result as any).cancellationScale.bands).toEqual([
+                { minDaysBeforeStart: 14, refundPercent: 80 },
+                { minDaysBeforeStart: 0, refundPercent: 10 },
+            ]);
+        });
+    });
+
     describe('deleteTemplate', () => {
         it('should delete a draft template if owned by user', async () => {
             db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
@@ -174,6 +295,36 @@ describe('TripsService', () => {
         });
     });
 
+    describe('archiveTemplate (#412)', () => {
+        it('excludes fully refunded bookings from the active-booking block', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'ACTIVE' });
+            // The count query itself carries the exclusion, so a trip
+            // whose bookings all completed a full refund counts 0
+            // active bookings and archives.
+            db.booking.count.mockResolvedValue(0);
+            db.tripTemplate.update.mockResolvedValue({ ...mockTripTemplate, status: 'ARCHIVED' });
+
+            const result = await service.archiveTemplate('trip-123', 'agency-123');
+
+            expect(result.status).toBe('ARCHIVED');
+            const countWhere = db.booking.count.mock.calls[0][0].where;
+            expect(countWhere.session).toEqual({ templateId: 'trip-123' });
+            expect(countWhere.status.in).toEqual(['PENDING', 'AWAITING_VALIDATION', 'CONFIRMED']);
+            expect(countWhere.paymentStatus).toEqual({ not: 'REFUNDED' });
+        });
+
+        it('still blocks archiving while a non-refunded active booking exists', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'ACTIVE' });
+            db.booking.count.mockResolvedValue(1);
+
+            await expect(service.archiveTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(ConflictException);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+    });
+
     describe('findAllTemplates', () => {
         it('should pass q, category, and agencyId filters into the trip query', async () => {
             db.tripTemplate.findMany.mockResolvedValue([]);
@@ -195,6 +346,8 @@ describe('TripsService', () => {
                         { title: { contains: 'atlas', mode: 'insensitive' } },
                         { description: { contains: 'atlas', mode: 'insensitive' } },
                         { startLocation: { contains: 'atlas', mode: 'insensitive' } },
+                        // #440: destination (endLocation) is searchable.
+                        { endLocation: { contains: 'atlas', mode: 'insensitive' } },
                     ],
                 }),
             }));
@@ -204,6 +357,33 @@ describe('TripsService', () => {
                     agencyId: 'agency-123',
                 }),
             }));
+        });
+
+        it('adds translation-matched ids to the search OR when the raw lookup hits (#546)', async () => {
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(0);
+            (db as any).$queryRaw.mockResolvedValue([{ id: 'tpl-ar-1' }, { id: 'tpl-ar-2' }]);
+
+            await service.findAllTemplates({ q: 'الأطلس' });
+
+            expect(db.tripTemplate.findMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({
+                    OR: expect.arrayContaining([{ id: { in: ['tpl-ar-1', 'tpl-ar-2'] } }]),
+                }),
+            }));
+        });
+
+        it('selects the licence/insurance what+when fields for the card statement (#413)', async () => {
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(0);
+
+            await service.findAllTemplates({});
+
+            const args = db.tripTemplate.findMany.mock.calls[0][0];
+            expect(args.include.agency.select.travelLicenceStatus).toBe(true);
+            expect(args.include.agency.select.licenceVerifiedAt).toBe(true);
+            expect(args.include.agency.select.insuranceStatus).toBe(true);
+            expect(args.include.agency.select.insuranceVerifiedAt).toBe(true);
         });
     });
 
@@ -217,6 +397,9 @@ describe('TripsService', () => {
                     logo: null,
                     verificationStatus: 'VERIFIED',
                     bankDetails: 'CIH Bank — RIB 230 780 0000000000000001 67',
+                    // #421: only an admin-verified destination is exposed.
+                    bankDetailsStatus: 'VERIFIED',
+                    bankDetailsVerifiedAt: new Date('2026-10-20T00:00:00Z'),
                 },
             });
 
@@ -228,6 +411,46 @@ describe('TripsService', () => {
             // blocks every booking when it is missing; if it is dropped from
             // the select again, checkout is permanently blocked (#380).
             expect(args.select.agency.select.bankDetails).toBe(true);
+            expect((result as any).agency.bankDetails).toBe(
+                'CIH Bank — RIB 230 780 0000000000000001 67',
+            );
+        });
+
+        it('strips bankDetails when the destination is not admin-verified (#421)', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                agency: {
+                    id: 'agency-123',
+                    companyName: 'Atlas Adventures SARL',
+                    logo: null,
+                    verificationStatus: 'VERIFIED',
+                    bankDetails: 'CIH Bank — RIB 230 780 0000000000000001 67',
+                    bankDetailsStatus: 'PENDING_REVIEW',
+                    bankDetailsVerifiedAt: null,
+                },
+            });
+
+            const result = await service.findOneTemplate('trip-123');
+
+            expect((result as any).agency.bankDetails).toBeNull();
+        });
+
+        it('keeps the verified instructions live during a replacement review (#421)', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                agency: {
+                    id: 'agency-123',
+                    companyName: 'Atlas Adventures SARL',
+                    logo: null,
+                    verificationStatus: 'VERIFIED',
+                    bankDetails: 'CIH Bank — RIB 230 780 0000000000000001 67',
+                    bankDetailsStatus: 'PENDING_REVIEW',
+                    bankDetailsVerifiedAt: new Date('2026-10-20T00:00:00Z'),
+                },
+            });
+
+            const result = await service.findOneTemplate('trip-123');
+
             expect((result as any).agency.bankDetails).toBe(
                 'CIH Bank — RIB 230 780 0000000000000001 67',
             );
@@ -257,6 +480,72 @@ describe('TripsService', () => {
             expect(args.include.agency.select.verificationStatus).toBe(true);
         });
     });
+    describe('MAD-only beta catalogue gate (B24(f) / #498)', () => {
+        afterEach(() => {
+            delete process.env.MAD_ONLY_CATALOG;
+        });
+
+        it('forces the public listing filter to MAD while the gate is on (default)', async () => {
+            delete process.env.MAD_ONLY_CATALOG;
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(0);
+
+            await service.findAllTemplates({});
+
+            const args = db.tripTemplate.findMany.mock.calls[0][0];
+            expect(args.where.currency).toBe('MAD');
+        });
+
+        it('returns an empty page for an explicit non-MAD filter while the gate is on', async () => {
+            delete process.env.MAD_ONLY_CATALOG;
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(0);
+
+            const result = await service.findAllTemplates({ currency: 'EUR' });
+
+            expect(result.data).toEqual([]);
+            expect(result.pagination.total).toBe(0);
+            expect(db.tripTemplate.findMany).not.toHaveBeenCalled();
+        });
+
+        it('leaves the listing currency untouched when MAD_ONLY_CATALOG=false', async () => {
+            process.env.MAD_ONLY_CATALOG = 'false';
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(0);
+
+            await service.findAllTemplates({});
+
+            const args = db.tripTemplate.findMany.mock.calls[0][0];
+            expect(args.where.currency).toBeUndefined();
+        });
+
+        it('gates the public trip detail on MAD while the gate is on', async () => {
+            delete process.env.MAD_ONLY_CATALOG;
+            db.tripTemplate.findFirst.mockResolvedValue(null);
+
+            await expect(service.findOneTemplate('trip-123')).rejects.toThrow(NotFoundException);
+            const args = db.tripTemplate.findFirst.mock.calls[0][0];
+            expect(args.where.currency).toBe('MAD');
+        });
+
+        it('hides the sessions of a non-MAD trip while the gate is on', async () => {
+            delete process.env.MAD_ONLY_CATALOG;
+            db.tripTemplate.findFirst.mockResolvedValue({ id: 'trip-123', currency: 'EUR' });
+
+            await expect(service.findSessionsByTemplate('trip-123')).rejects.toThrow(NotFoundException);
+            expect(db.tripSession.findMany).not.toHaveBeenCalled();
+        });
+
+        it('serves the sessions of a MAD trip while the gate is on', async () => {
+            delete process.env.MAD_ONLY_CATALOG;
+            db.tripTemplate.findFirst.mockResolvedValue({ id: 'trip-123', currency: 'MAD' });
+            db.tripSession.findMany.mockResolvedValue([{ id: 'session-1' }]);
+
+            const result = await service.findSessionsByTemplate('trip-123');
+            expect(result).toEqual([{ id: 'session-1' }]);
+        });
+    });
+
     describe('session staged-payment configuration (#369)', () => {
         const future = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
@@ -332,6 +621,12 @@ describe('TripsService', () => {
             verificationStatus: 'VERIFIED',
             travelLicenceStatus: 'VERIFIED',
             licenceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            travelLicenceType: 'ODV',
+            insuranceStatus: 'VERIFIED',
+            insuranceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            // Session #3 P0-13: a complete licence record (issue facts).
+            licenceIssuedAt: new Date('2024-03-01'),
+            licenceIssuingAuthority: 'Ministère du Tourisme',
         };
 
         beforeEach(() => {
@@ -373,6 +668,67 @@ describe('TripsService', () => {
 
             await expect(service.activateTemplate('trip-123', 'agency-123'))
                 .rejects.toThrow(/licence has expired/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks re-activation when RC insurance was never submitted (#415)', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                insuranceStatus: 'NOT_SUBMITTED',
+                insuranceExpiry: null,
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/insurance must be submitted and verified/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks re-activation when RC insurance has expired (#415)', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                insuranceExpiry: new Date(Date.now() - 24 * 60 * 60 * 1000),
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/insurance has expired/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks re-activation for a DV agency even when fully verified (#415)', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                travelLicenceType: 'DV',
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/distributor \(DV\) licence does not permit organising/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks re-activation when the licence issue date is missing (Session #3 P0-13)', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                licenceIssuedAt: null,
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/licence record is incomplete/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks re-activation when the licence issuing authority is missing (Session #3 P0-13)', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                licenceIssuingAuthority: null,
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/licence record is incomplete/i);
             expect(db.tripTemplate.update).not.toHaveBeenCalled();
         });
 
@@ -446,6 +802,212 @@ describe('TripsService', () => {
             expect(args.select.agency.select.travelLicenceNumber).toBe(true);
             expect(args.select.agency.select.travelLicenceStatus).toBe(true);
             expect(args.select.agency.select.licenceExpiry).toBe(true);
+            // #413 (Council B10): what+when statement dates.
+            expect(args.select.agency.select.licenceVerifiedAt).toBe(true);
+            expect(args.select.agency.select.insuranceStatus).toBe(true);
+            expect(args.select.agency.select.insuranceVerifiedAt).toBe(true);
+        });
+    });
+
+    describe('DV organise block at template creation (#415)', () => {
+        beforeEach(() => {
+            db.tripTemplate.create.mockResolvedValue(mockTripTemplate);
+        });
+
+        it('blocks a DV agency from creating a trip template', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                id: 'agency-123',
+                travelLicenceType: 'DV',
+            });
+
+            await expect(service.createTemplate('agency-123', { title: 'T' } as any))
+                .rejects.toThrow(/distributor \(DV\) licence does not permit organising/i);
+            expect(db.tripTemplate.create).not.toHaveBeenCalled();
+        });
+
+        it('allows an ODV agency to create a trip template', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                id: 'agency-123',
+                travelLicenceType: 'ODV',
+            });
+
+            const result = await service.createTemplate('agency-123', { title: 'T' } as any);
+
+            expect(db.tripTemplate.create).toHaveBeenCalled();
+            expect(result.id).toBe('trip-123');
+        });
+
+        it('allows an agency with no licence type submitted yet to draft', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                id: 'agency-123',
+                travelLicenceType: null,
+            });
+
+            await service.createTemplate('agency-123', { title: 'T' } as any);
+
+            expect(db.tripTemplate.create).toHaveBeenCalled();
+        });
+    });
+
+    describe('multilingual content: language map + French publish gate (#546)', () => {
+        const verifiedAgency = {
+            id: 'agency-123',
+            verificationStatus: 'VERIFIED',
+            travelLicenceStatus: 'VERIFIED',
+            licenceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            travelLicenceType: 'ODV',
+            insuranceStatus: 'VERIFIED',
+            insuranceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            // Session #3 P0-13: complete licence record (issue facts).
+            licenceIssuedAt: new Date('2024-03-01'),
+            licenceIssuingAuthority: 'Ministère du Tourisme',
+        };
+
+        beforeEach(() => {
+            db.tripTemplate.update.mockResolvedValue({ ...mockTripTemplate, status: 'ACTIVE' });
+        });
+
+        it('create persists the map with the fr entry mirrored from the canonical fields', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123', travelLicenceType: 'ODV' });
+            db.tripTemplate.create.mockResolvedValue(mockTripTemplate);
+
+            await service.createTemplate('agency-123', {
+                title: 'Titre FR',
+                description: 'Description FR complète',
+                translations: { ar: { title: 'عنوان', description: 'وصف' } },
+            } as any);
+
+            const data = db.tripTemplate.create.mock.calls[0][0].data;
+            expect(data.translations).toEqual({
+                ar: { title: 'عنوان', description: 'وصف' },
+                fr: { title: 'Titre FR', description: 'Description FR complète' },
+            });
+        });
+
+        it('blocks re-activation when French is incomplete, even with a complete Arabic version', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue(verifiedAgency);
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                status: 'INACTIVE',
+                title: '',
+                description: '',
+                translations: { ar: { title: 'عنوان', description: 'وصف كامل' } },
+            });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/French title and description are required/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks a PATCH publish transition when the post-write French text is incomplete', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue(verifiedAgency);
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                status: 'DRAFT',
+                title: 'Titre',
+                description: '',
+                translations: null,
+            });
+
+            await expect(service.updateTemplate('trip-123', 'agency-123', { status: 'ACTIVE' } as any))
+                .rejects.toThrow(/French title and description are required/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('publishes a French-only trip (Arabic/English encouraged, never blocking)', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue(verifiedAgency);
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE', translations: null });
+
+            const result = await service.activateTemplate('trip-123', 'agency-123');
+
+            expect(db.tripTemplate.update).toHaveBeenCalledWith({
+                where: { id: 'trip-123' },
+                data: { status: 'ACTIVE' },
+            });
+            expect(result.status).toBe('ACTIVE');
+        });
+
+        it('update merges translations per language and re-mirrors the French entry', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                status: 'DRAFT',
+                translations: {
+                    fr: { title: 'Test Trip', description: 'A test trip description' },
+                    ar: { title: 'قديم', description: 'وصف قديم' },
+                },
+            });
+
+            await service.updateTemplate('trip-123', 'agency-123', {
+                translations: { en: { title: 'English title', description: 'English description' } },
+            } as any);
+
+            const data = db.tripTemplate.update.mock.calls[0][0].data;
+            expect(data.translations).toEqual({
+                fr: { title: 'Test Trip', description: 'A test trip description' },
+                ar: { title: 'قديم', description: 'وصف قديم' },
+                en: { title: 'English title', description: 'English description' },
+            });
+        });
+
+        it('findAll resolves title/description into the requested locale', async () => {
+            db.tripTemplate.findMany.mockResolvedValue([
+                {
+                    ...mockTripTemplate,
+                    title: 'Titre FR',
+                    description: 'Description FR',
+                    translations: {
+                        fr: { title: 'Titre FR', description: 'Description FR' },
+                        ar: { title: 'عنوان AR', description: 'وصف AR' },
+                    },
+                },
+            ]);
+            db.tripTemplate.count.mockResolvedValue(1);
+
+            const result = await service.findAllTemplates({ locale: 'ar' });
+
+            expect(result.data[0].title).toBe('عنوان AR');
+            expect(result.data[0].description).toBe('وصف AR');
+            // The full map still rides along for multi-language clients.
+            expect((result.data[0] as any).translations.ar.title).toBe('عنوان AR');
+        });
+
+        it('findAll without a locale returns the French columns unchanged (legacy shape)', async () => {
+            db.tripTemplate.findMany.mockResolvedValue([{ ...mockTripTemplate, translations: null }]);
+            db.tripTemplate.count.mockResolvedValue(1);
+
+            const result = await service.findAllTemplates({});
+
+            expect(result.data[0].title).toBe('Test Trip');
+            expect(result.data[0].description).toBe('A test trip description');
+        });
+
+        it('findOne resolves into the requested locale and selects the map', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                title: 'Titre FR',
+                description: 'Description FR',
+                translations: {
+                    fr: { title: 'Titre FR', description: 'Description FR' },
+                    en: { title: 'Title EN', description: 'Description EN' },
+                },
+                agency: {
+                    id: 'agency-123',
+                    companyName: 'Atlas Adventures SARL',
+                    logo: null,
+                    verificationStatus: 'VERIFIED',
+                    bankDetails: null,
+                    bankDetailsStatus: 'VERIFIED',
+                    bankDetailsVerifiedAt: null,
+                },
+            });
+
+            const result = await service.findOneTemplate('trip-123', 'en');
+
+            const args = db.tripTemplate.findFirst.mock.calls[0][0];
+            expect(args.select.translations).toBe(true);
+            expect(result.title).toBe('Title EN');
+            expect(result.description).toBe('Description EN');
         });
     });
 });

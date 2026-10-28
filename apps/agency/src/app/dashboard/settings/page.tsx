@@ -25,22 +25,28 @@ import {
   Lock
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
+import { BankDetailsStatus } from '@ouiboo/types';
+import { getBankDetailsStatusMeta } from '@/lib/bank-details-status';
 import { useTheme } from 'next-themes';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 
 type SettingsFormValues = {
+  bankAccountHolderName: string;
+  bankAttestationUrl: string;
   bankDetails: string;
   bio: string;
   companyName: string;
   email: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
   name: string;
 };
 
 type SaveFeedback = { type: 'success' | 'error'; text: string } | null;
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, refetch } = useAuth();
   const { theme, setTheme } = useTheme();
   const { t, i18n } = useTranslation();
 
@@ -50,12 +56,26 @@ export default function SettingsPage() {
       email: user?.email || '',
       companyName: user?.agencyProfile?.companyName || '',
       bio: user?.agencyProfile?.bio || '',
-      bankDetails: user?.agencyProfile?.bankDetails || '',
+      // #421: show the pending submission when one is under review — it is
+      // what the agency last submitted; bankDetails stays the live value.
+      bankDetails: user?.agencyProfile?.pendingBankDetails || user?.agencyProfile?.bankDetails || '',
+      bankAccountHolderName: user?.agencyProfile?.bankAccountHolderName || '',
+      bankAttestationUrl: user?.agencyProfile?.bankAttestationUrl || '',
+      // #419: trip emergency contact (departure pack on traveller bookings).
+      emergencyContactName: user?.agencyProfile?.emergencyContactName || '',
+      emergencyContactPhone: user?.agencyProfile?.emergencyContactPhone || '',
     }
   });
 
   const [isSaving, setIsSaving] = React.useState(false);
   const [feedback, setFeedback] = React.useState<SaveFeedback>(null);
+
+  // #421 (Council P0-19): bank details are a reviewed payment destination,
+  // not live-on-save free text. Surface the review state honestly: a fresh
+  // submission is PENDING_REVIEW until an admin verifies it against the
+  // bank attestation; travellers only ever see the VERIFIED instructions.
+  const bankDetailsStatus = user?.agencyProfile?.bankDetailsStatus || BankDetailsStatus.Unverified;
+  const bankStatusMeta = getBankDetailsStatusMeta(bankDetailsStatus);
 
   const onSubmit = async (data: SettingsFormValues) => {
     try {
@@ -66,11 +86,19 @@ export default function SettingsPage() {
         apiClient.patch('/agency/profile', {
           companyName: data.companyName,
           bio: data.bio,
-          bankDetails: data.bankDetails
+          bankDetails: data.bankDetails,
+          bankAccountHolderName: data.bankAccountHolderName,
+          bankAttestationUrl: data.bankAttestationUrl,
+          emergencyContactName: data.emergencyContactName,
+          emergencyContactPhone: data.emergencyContactPhone
         }),
       ]);
       setFeedback({ type: 'success', text: t('settings.updateSuccess') });
       reset(data);
+      // #421: the profile now carries the new bank-destination review
+      // status (PENDING_REVIEW after a submission) — refresh it so the
+      // status display below reflects the server state.
+      refetch();
     } catch (error) {
       console.error('Failed to update settings:', error);
       setFeedback({ type: 'error', text: t('settings.updateError') });
@@ -159,6 +187,18 @@ export default function SettingsPage() {
                 <CardDescription>{t('settings.paymentSubtitle')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div
+                  role="status"
+                  className={`rounded-lg border px-3 py-2 text-sm ${bankStatusMeta.className}`}
+                >
+                  <p className="font-semibold">{t('settings.bankStatusLabel')}</p>
+                  <p className="mt-0.5">{t(bankStatusMeta.textKey)}</p>
+                  {bankDetailsStatus === BankDetailsStatus.Rejected && user?.agencyProfile?.bankDetailsRejectionReason && (
+                    <p className="mt-1">
+                      {t('settings.bankRejectionReason', { reason: user.agencyProfile.bankDetailsRejectionReason })}
+                    </p>
+                  )}
+                </div>
                 <div className="space-y-2">
                     <Label htmlFor="settings-bank">{t('settings.paymentInstructions')}</Label>
                     <Textarea
@@ -169,6 +209,54 @@ export default function SettingsPage() {
                     />
                     <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{t('settings.paymentDisclaimer')}</p>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="settings-bank-holder">{t('settings.bankHolderName')}</Label>
+                  <Input
+                    id="settings-bank-holder"
+                    {...register('bankAccountHolderName')}
+                    placeholder={t('settings.bankHolderNamePlaceholder')}
+                  />
+                  <p className="text-xs text-muted-foreground">{t('settings.bankHolderNameHint')}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="settings-bank-attestation">{t('settings.bankAttestationUrl')}</Label>
+                  <Input
+                    id="settings-bank-attestation"
+                    type="url"
+                    {...register('bankAttestationUrl')}
+                    placeholder={t('settings.bankAttestationUrlPlaceholder')}
+                  />
+                  <p className="text-xs text-muted-foreground">{t('settings.bankAttestationUrlHint')}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-border bg-card shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-xl">{t('settings.emergencyTitle')}</CardTitle>
+                <CardDescription>{t('settings.emergencySubtitle')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="settings-emergency-name">{t('settings.emergencyName')}</Label>
+                    <Input
+                      id="settings-emergency-name"
+                      {...register('emergencyContactName')}
+                      placeholder={t('settings.emergencyNamePlaceholder')}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="settings-emergency-phone">{t('settings.emergencyPhone')}</Label>
+                    <Input
+                      id="settings-emergency-phone"
+                      type="tel"
+                      {...register('emergencyContactPhone')}
+                      placeholder={t('settings.emergencyPhonePlaceholder')}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">{t('settings.emergencyHint')}</p>
               </CardContent>
             </Card>
 

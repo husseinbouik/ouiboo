@@ -1,0 +1,16 @@
+-- #417 (Council P0-11): cancellation scale.
+-- Expand-contract: the only change is additive. Booking gains a nullable
+-- `cancellationScale` JSONB column holding the snapshot of the trip's
+-- resolved cancellation scale ({ version, bands, floorRefundPercent,
+-- refundInitiationDays }) taken at booking creation, so later agency
+-- edits to TripTemplate.cancellationPolicy can never rewrite the terms
+-- a traveller already booked under. Existing bookings keep NULL and are
+-- resolved from the template's current policy (or the platform default
+-- bands) at read time — no backfill is possible or needed.
+-- The agency per-trip bands themselves need no migration: they are
+-- stored in the pre-existing TripTemplate.cancellationPolicy JSON
+-- column, now written and read through a strict validated shape
+-- (apps/api/src/cancellation/cancellation.util.ts).
+-- Rollback impact: dropping the new column is safe only after the
+-- application is rolled back first; leaving it in place is harmless.
+ALTER TABLE "Booking" ADD COLUMN "cancellationScale" JSONB;

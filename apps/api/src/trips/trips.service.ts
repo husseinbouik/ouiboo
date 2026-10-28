@@ -1,10 +1,25 @@
 import { Injectable, ForbiddenException, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripSessionDto } from './dto/create-trip.dto';
-import { BookingStatus, SessionStatus, TripStatus } from '@ouiboo/database';
+import { BookingPaymentStatus, BookingStatus, Prisma, SessionStatus, TripStatus } from '@ouiboo/database';
 import { toMoneyDecimal } from '../common/money.util';
-import { getAgencyActivationBlock } from '../common/agency-licence.util';
+import { canOrganise, effectiveVerificationStatus, getAgencyActivationBlock, sellerBlockMissingFields } from '../common/agency-licence.util';
+import { visibleBankDetails } from '../common/bank-details.util';
+import { BETA_CATALOG_CURRENCY, isCatalogCurrencyAllowed, isMadOnlyCatalogEnabled } from '../common/catalog-currency.util';
 import { resolveStagedSessionConfig } from '../staged-payments/staged-payments.util';
+import {
+    buildCancellationScaleSnapshot,
+    normalizeCancellationPolicyInput,
+} from '../cancellation/cancellation.util';
+import {
+    buildTripTranslations,
+    frenchSectionsMissing,
+    hasCompleteFrenchText,
+    localizeTripPayload,
+    normalizeTripTranslations,
+    type TripCanonicalSections,
+} from './trip-translations.util';
+import { derivePublicMediaUrl, derivePublicMediaUrls } from '../upload/media-url.util';
 
 @Injectable()
 export class TripsService {
@@ -29,14 +44,76 @@ export class TripsService {
      * requires a verified agency identity AND a verified, unexpired
      * travel licence. Already-ACTIVE trips are never blocked by this —
      * it only runs on transitions into ACTIVE.
+     * #415: the activation block now also requires verified, unexpired
+     * RC insurance, and a DV (distributeur) agency may never publish —
+     * it does not organise trips.
      */
     private async assertAgencyCanPublish(agencyId: string) {
         const agency = await this.db.agencyProfile.findUnique({
             where: { id: agencyId },
-            select: { verificationStatus: true, travelLicenceStatus: true, licenceExpiry: true },
+            select: {
+                verificationStatus: true,
+                travelLicenceStatus: true,
+                licenceExpiry: true,
+                travelLicenceType: true,
+                insuranceStatus: true,
+                insuranceExpiry: true,
+                licenceIssuedAt: true,
+                licenceIssuingAuthority: true,
+            },
         });
         const block = agency ? getAgencyActivationBlock(agency) : 'Agency profile not found';
         if (block) throw new ForbiddenException(block);
+        if (agency && !canOrganise(agency)) {
+            throw new ForbiddenException(
+                'A distributor (DV) licence does not permit organising trips — only ODV agencies can publish trips',
+            );
+        }
+        // Session #3 P0-13 (#415): the Law 31-08 seller block cannot be
+        // rendered completely without the licence ISSUE DATE and ISSUING
+        // AUTHORITY. A verified legacy record missing either keeps its
+        // already-ACTIVE trips (the gate only runs on transitions in),
+        // but may not publish new ones until the record is complete —
+        // the same facts the traveller side must now state honestly
+        // (SellerIdentity's not-confirmed line) instead of omitting.
+        if (agency) {
+            const missingIssueFields = sellerBlockMissingFields(agency).filter(
+                (field) => field === 'licenceIssuedAt' || field === 'licenceIssuingAuthority',
+            );
+            if (missingIssueFields.length > 0) {
+                throw new ForbiddenException(
+                    'The agency licence record is incomplete — the licence issue date and issuing authority are required before trips can be published',
+                );
+            }
+        }
+    }
+
+    /**
+     * #546: French content gate. French is the canonical language of a
+     * trip (the `title`/`description` columns ARE the French text), and
+     * a trip may only enter the marketplace with a complete French
+     * title + description. Drafts may be incomplete in every language;
+     * Arabic/English are encouraged but never block publishing.
+     */
+    private assertFrenchPublishable(trip: {
+        title?: string | null;
+        description?: string | null;
+        translations?: unknown;
+    } & TripCanonicalSections) {
+        if (!hasCompleteFrenchText(trip)) {
+            throw new BadRequestException(
+                'A French title and description are required to publish a trip',
+            );
+        }
+        // #584 (phase 2): the same French-required rule covers the
+        // sections — a day or list that exists in any language must
+        // exist in French before the trip can publish.
+        const missingSections = frenchSectionsMissing(trip);
+        if (missingSections.length > 0) {
+            throw new BadRequestException(
+                `French section content is required to publish a trip (missing: ${missingSections.join(', ')})`,
+            );
+        }
     }
 
     async createTemplate(agencyId: string, dto: CreateTripTemplateDto) {
@@ -48,10 +125,40 @@ export class TripsService {
             throw new ForbiddenException('Agency profile not found');
         }
 
-        const { itinerary, imageAlts, ...tripData } = dto;
+        // #415 (Council P0-08): ODV/DV enforcement at creation. A DV
+        // (distributeur) distributes other organisers' trips and may not
+        // organise its own — not even as a draft. The check applies once
+        // a licence type is declared; an agency that has not submitted
+        // its licence yet can still draft (publishing stays fully gated
+        // by assertAgencyCanPublish).
+        if (agency.travelLicenceType && !canOrganise(agency)) {
+            throw new ForbiddenException(
+                'A distributor (DV) licence does not permit organising trips — only ODV agencies can create trips',
+            );
+        }
+
+        const { itinerary, imageAlts, cancellationPolicy, translations, ...tripData } = dto;
 
         const data = {
             ...tripData,
+            // #417 (Council P0-11): validate + normalize the agency's
+            // cancellation bands before they are stored as structured
+            // data (throws on coverage gaps / duplicates / bad ranges).
+            cancellationPolicy: cancellationPolicy
+                ? (normalizeCancellationPolicyInput(cancellationPolicy) as unknown as Prisma.InputJsonValue)
+                : undefined,
+            // #546: persist the language map; its `fr` entry mirrors
+            // the canonical title/description columns from this write.
+            translations: buildTripTranslations(translations, {
+                title: dto.title,
+                description: dto.description,
+                // #584: canonical sections mirror into the map's `fr`
+                // entry; other languages' days align by dayNumber.
+                itinerary,
+                inclusions: dto.inclusions,
+                exclusions: dto.exclusions,
+                checklist: dto.checklist,
+            }) as unknown as Prisma.InputJsonValue,
             imageAlts: this.normalizeImageAlts(imageAlts, dto.images),
             agencyId: agencyId,
             status: TripStatus.DRAFT,
@@ -90,6 +197,9 @@ export class TripsService {
         sortOrder?: 'asc' | 'desc';
         page?: number;
         limit?: number;
+        // #546: request locale for resolving title/description from
+        // the translations map (fallback: French, then any language).
+        locale?: string;
     }) {
         try {
             const {
@@ -110,6 +220,7 @@ export class TripsService {
                 sortOrder = 'desc',
                 page = 1,
                 limit = 20,
+                locale,
             } = filters || {};
             const safePage = Math.max(1, Number.isFinite(page) ? Math.floor(page) : 1);
             const safeLimit = Math.min(Math.max(1, Number.isFinite(limit) ? Math.floor(limit) : 20), 50);
@@ -128,6 +239,18 @@ export class TripsService {
             if (featured) where.featured = true;
             if (agencyId) where.agencyId = agencyId;
             if (currency) where.currency = currency;
+            // B24(f) / #498: while the MAD-only beta gate is on, the
+            // public catalogue never lists a non-MAD trip. An explicit
+            // non-MAD currency filter intersects to an empty page.
+            if (isMadOnlyCatalogEnabled()) {
+                if (where.currency && where.currency !== BETA_CATALOG_CURRENCY) {
+                    return {
+                        data: [],
+                        pagination: { total: 0, page: safePage, limit: safeLimit, totalPages: 0 },
+                    };
+                }
+                where.currency = BETA_CATALOG_CURRENCY;
+            }
             // Normalize category to uppercase enum value (#119: ?category=adventure -> ADVENTURE)
             if (category) {
                 const normalized = category.toUpperCase();
@@ -138,11 +261,37 @@ export class TripsService {
             }
             if (q?.trim()) {
                 const search = q.trim();
-                where.OR = [
+                const orConditions: any[] = [
                     { title: { contains: search, mode: 'insensitive' } },
                     { description: { contains: search, mode: 'insensitive' } },
                     { startLocation: { contains: search, mode: 'insensitive' } },
+                    // #440 (Council P1-15): the destination city must be
+                    // searchable too — a trip ENDING in the searched city
+                    // previously returned 0 results because endLocation was
+                    // missing from the OR set.
+                    { endLocation: { contains: search, mode: 'insensitive' } },
                 ];
+                // #546: also match the localized texts. The French columns
+                // above stay the primary match (no search regression for
+                // legacy trips). Prisma's Json filters cannot
+                // substring-match inside an object-valued Json column, so
+                // the matching template ids are resolved with one bounded
+                // raw query over the serialized translations map.
+                // Best-effort: if that query is unavailable (e.g. a
+                // pre-migration database), search degrades to French-only
+                // instead of failing.
+                try {
+                    const rows = await this.db.$queryRaw<Array<{ id: string }>>(
+                        Prisma.sql`SELECT "id" FROM "TripTemplate" WHERE "translations"::text ILIKE ${`%${search}%`} LIMIT 500`,
+                    );
+                    const translationMatchIds = (rows ?? []).map((row) => row.id).filter(Boolean);
+                    if (translationMatchIds.length > 0) {
+                        orConditions.push({ id: { in: translationMatchIds } });
+                    }
+                } catch {
+                    // translations search unavailable — French-only matching.
+                }
+                where.OR = orConditions;
             }
 
             // Duration filter
@@ -225,6 +374,19 @@ export class TripsService {
                                 // #317: the traveler card badges verified agencies from
                                 // this field; without it every card read "Agency Pending".
                                 verificationStatus: true,
+                                // #413 (Council B10): the card renders an explicit
+                                // what+when statement (what was checked + the date),
+                                // so the licence/insurance states and their
+                                // verification stamps ride along.
+                                travelLicenceStatus: true,
+                                licenceVerifiedAt: true,
+                                insuranceStatus: true,
+                                insuranceVerifiedAt: true,
+                                // #569: the expiries feed the umbrella
+                                // reconciliation below; they are stripped
+                                // from the payload, never exposed.
+                                licenceExpiry: true,
+                                insuranceExpiry: true,
                             },
                         },
                         _count: {
@@ -239,7 +401,33 @@ export class TripsService {
             ]);
 
             return {
-                data: templates,
+                // #546: resolve title/description into the request
+                // locale (fallback French -> any language). Without a
+                // locale this resolves to the French columns, i.e. the
+                // payload is byte-identical to the pre-#546 shape.
+                // #447: media URLs are re-derived from the stored file
+                // references against the CURRENT public base on every read
+                // (stored full URLs are provider-coupled — #411).
+                data: templates.map((template) => {
+                    const localized = localizeTripPayload(template, locale);
+                    const images = derivePublicMediaUrls((template as any).images);
+                    if (!localized.agency) return { ...localized, images };
+                    // #569: never publish an umbrella VERIFIED the
+                    // components do not support — reconcile on read and
+                    // strip the expiry inputs from the payload.
+                    const { licenceExpiry: _licenceExpiry, insuranceExpiry: _insuranceExpiry, ...agency } =
+                        localized.agency as typeof localized.agency & { licenceExpiry?: unknown; insuranceExpiry?: unknown };
+                    return {
+                        ...localized,
+                        images,
+                        agency: {
+                            ...agency,
+                            // #447: logo re-derived at read time like trip images.
+                            logo: derivePublicMediaUrl((template as any).agency.logo) ?? null,
+                            verificationStatus: effectiveVerificationStatus(localized.agency),
+                        },
+                    };
+                }),
                 pagination: {
                     total,
                     page: safePage,
@@ -253,17 +441,24 @@ export class TripsService {
         }
     }
 
-    async findOneTemplate(id: string) {
+    async findOneTemplate(id: string, locale?: string) {
         const result = await this.db.tripTemplate.findFirst({
             where: {
                 id,
                 status: TripStatus.ACTIVE,
                 agency: { verificationStatus: 'VERIFIED' },
+                // B24(f) / #498: a non-MAD trip is not publicly visible
+                // while the beta gate is on — same NotFound as absent.
+                ...(isMadOnlyCatalogEnabled() ? { currency: BETA_CATALOG_CURRENCY } : {}),
             },
             select: {
                 id: true,
                 title: true,
                 description: true,
+                // #546: the language map rides along so the payload can
+                // be resolved into the request locale below (and so
+                // clients can see which languages exist).
+                translations: true,
                 category: true,
                 startLocation: true,
                 endLocation: true,
@@ -296,17 +491,39 @@ export class TripsService {
                         companyName: true,
                         logo: true,
                         verificationStatus: true,
-                        // #380: checkout renders the agency's official bank
+                        // #380: checkout renders the agency's bank
                         // instructions from this field and blocks booking when
                         // it is empty; without it in the select, checkout read
                         // undefined and refused every booking.
                         bankDetails: true,
+                        // #421: the instructions are only exposed when the
+                        // destination is admin-verified (see the mapping
+                        // below); the status fields drive that gate.
+                        bankDetailsStatus: true,
+                        bankDetailsVerifiedAt: true,
                         // #371: seller-of-record display on the trip page and
                         // at checkout (legal name + verified licence number).
+                        // B4: the complete seller block also carries the
+                        // licence type, issue date, and issuing authority;
+                        // SellerIdentity withholds them client-side unless
+                        // the licence is verified (same derivation as the
+                        // public profile endpoint).
                         legalName: true,
+                        travelLicenceType: true,
                         travelLicenceNumber: true,
                         travelLicenceStatus: true,
                         licenceExpiry: true,
+                        licenceIssuedAt: true,
+                        licenceIssuingAuthority: true,
+                        // #413 (Council B10): what+when verification statement
+                        // next to the seller identity — the licence check date
+                        // and the RC insurance evidence date.
+                        licenceVerifiedAt: true,
+                        insuranceStatus: true,
+                        insuranceVerifiedAt: true,
+                        // #569: feeds the umbrella reconciliation below;
+                        // stripped from the payload, never exposed.
+                        insuranceExpiry: true,
                     },
                 },
                 itinerary: {
@@ -318,7 +535,36 @@ export class TripsService {
             },
         });
         if (!result) throw new NotFoundException('Trip template not found');
-        return result;
+        // #421 (Council P0-19): strip the bank instructions server-side
+        // unless the destination is admin-verified against a bank
+        // attestation. During a replacement review the previously
+        // verified instructions stay live (visibleBankDetails encodes
+        // that rule); the verification stamp itself is not exposed.
+        const { bankDetailsVerifiedAt: _verificationStamp, insuranceExpiry: _insuranceExpiry, ...publicAgency } = result.agency;
+        // #546: resolve title/description into the request locale
+        // (fallback French -> any language; no locale = French columns,
+        // identical to the pre-#546 payload).
+        const localized = localizeTripPayload(result, locale);
+        return {
+            ...localized,
+            // #447: re-derive media from stored references at read time.
+            images: derivePublicMediaUrls((result as any).images),
+            // #417 (Council P0-11): the resolved cancellation scale
+            // (agency bands, or the platform defaults when the trip has
+            // none) plus the platform floor terms — this is the scale
+            // displayed in MAD before payment and snapshotted onto the
+            // booking at creation. The raw stored policy stays in
+            // `cancellationPolicy` for the agency editor.
+            cancellationScale: buildCancellationScaleSnapshot(result.cancellationPolicy),
+            agency: {
+                ...publicAgency,
+                // #447: logo re-derived at read time like trip images.
+                logo: derivePublicMediaUrl((result.agency as any).logo) ?? null,
+                // #569: umbrella reconciled with licence + insurance.
+                verificationStatus: effectiveVerificationStatus(result.agency),
+                bankDetails: visibleBankDetails(result.agency),
+            },
+        };
     }
 
     async createSession(agencyId: string, templateId: string, dto: CreateTripSessionDto) {
@@ -369,6 +615,8 @@ export class TripsService {
         const session = await this.db.tripSession.create({
             data: {
                 templateId,
+                // #428: stamp the tenant on the row (composite-FK chain).
+                agencyId,
                 price,
                 deposit,
                 totalSeats: dto.totalSeats,
@@ -469,9 +717,14 @@ export class TripsService {
                 status: TripStatus.ACTIVE,
                 agency: { verificationStatus: 'VERIFIED' },
             },
-            select: { id: true },
+            select: { id: true, currency: true },
         });
         if (!template) throw new NotFoundException('Trip template not found');
+        // B24(f) / #498: sessions of a non-MAD trip stay hidden while
+        // the beta gate is on (indistinguishable from an absent trip).
+        if (!isCatalogCurrencyAllowed(template.currency)) {
+            throw new NotFoundException('Trip template not found');
+        }
 
         return this.db.tripSession.findMany({
             where: {
@@ -487,7 +740,7 @@ export class TripsService {
         const agency = await this.db.agencyProfile.findUnique({ where: { id: agencyId } });
         if (!agency) throw new NotFoundException('Agency profile not found');
 
-        const { itinerary, status: requestedStatus, imageAlts, ...tripData } = dto;
+        const { itinerary, status: requestedStatus, imageAlts, cancellationPolicy, translations, ...tripData } = dto;
 
         // Verify ownership
         const existing = await this.db.tripTemplate.findFirst({
@@ -502,16 +755,70 @@ export class TripsService {
 
         const status = requestedStatus ?? existing.status;
 
+        // #546: the language map after this write. A supplied map is
+        // merged over the stored one per language (the editor sends the
+        // full map, but a partial PATCH must not erase other
+        // languages); the French entry then mirrors the post-write
+        // canonical columns. Omitting the map leaves it untouched
+        // unless the French columns themselves change.
+        const nextTitle = dto.title ?? existing.title;
+        const nextDescription = dto.description ?? existing.description;
+        // #584: canonical sections for the map's French mirror — the
+        // post-write lists (dto wins, else the stored columns). The
+        // itinerary rows only mirror when this write carries them.
+        const frenchSections: TripCanonicalSections = {
+            itinerary,
+            inclusions: dto.inclusions ?? existing.inclusions,
+            exclusions: dto.exclusions ?? existing.exclusions,
+            checklist: dto.checklist ?? existing.checklist,
+        };
+        const mergedTranslations = translations
+            ? buildTripTranslations(
+                { ...normalizeTripTranslations(existing.translations), ...normalizeTripTranslations(translations) },
+                { title: nextTitle, description: nextDescription, ...frenchSections },
+            )
+            : undefined;
+        const effectiveTranslations = mergedTranslations
+            ?? (dto.title !== undefined || dto.description !== undefined
+                ? buildTripTranslations(existing.translations, { title: nextTitle, description: nextDescription, ...frenchSections })
+                : undefined);
+
         // #371: a status change INTO Active is a publish transition and
         // goes through the same identity + licence gate as activate.
         if (status === TripStatus.ACTIVE && existing.status !== TripStatus.ACTIVE) {
             await this.assertAgencyCanPublish(agencyId);
+            // #546: ... and the French content gate, evaluated on the
+            // post-write content (this PATCH may itself supply French).
+            // #584: sections gate on the post-write canonical sections
+            // (itinerary rows are fetched when the PATCH doesn't carry
+            // a replacement itinerary).
+            const gateItinerary = itinerary ?? await this.db.itineraryDay.findMany({
+                where: { templateId: id },
+                orderBy: { dayNumber: 'asc' },
+            });
+            this.assertFrenchPublishable({
+                title: nextTitle,
+                description: nextDescription,
+                translations: effectiveTranslations ?? existing.translations,
+                itinerary: gateItinerary,
+                inclusions: dto.inclusions ?? existing.inclusions,
+                exclusions: dto.exclusions ?? existing.exclusions,
+                checklist: dto.checklist ?? existing.checklist,
+            });
         }
 
         return this.db.tripTemplate.update({
             where: { id },
             data: {
                 ...tripData,
+                // #417: same validated normalization as create; omitting
+                // the field leaves the stored bands untouched.
+                cancellationPolicy: cancellationPolicy
+                    ? (normalizeCancellationPolicyInput(cancellationPolicy) as unknown as Prisma.InputJsonValue)
+                    : undefined,
+                translations: effectiveTranslations
+                    ? (effectiveTranslations as unknown as Prisma.InputJsonValue)
+                    : undefined,
                 imageAlts: this.normalizeImageAlts(imageAlts, dto.images ?? existing.images),
                 status,
                 itinerary: itinerary ? {
@@ -557,6 +864,14 @@ export class TripsService {
                         BookingStatus.CONFIRMED,
                     ],
                 },
+                // #412 (Council Session #2, B15): a fully refunded
+                // booking (paymentStatus REFUNDED, derived from ledger
+                // totals when its refund cases complete) is
+                // economically closed — the traveller's money went
+                // back in full — so it must not block archiving the
+                // trip. Partially refunded bookings keep paymentStatus
+                // PAID/PARTIALLY_PAID and still count as active.
+                paymentStatus: { not: BookingPaymentStatus.REFUNDED },
             },
         });
     }
@@ -578,6 +893,11 @@ export class TripsService {
             throw new ConflictException('Only deactivated trips can be re-activated');
         }
         await this.assertAgencyCanPublish(agencyId);
+        // #546: re-activation is a publish transition — French gate too.
+        // #584: the gate also covers sections; the stored record does
+        // not carry the itinerary relation, so fetch the days.
+        const days = await this.db.itineraryDay.findMany({ where: { templateId: id } });
+        this.assertFrenchPublishable({ ...existing, itinerary: days });
         return this.db.tripTemplate.update({
             where: { id },
             data: { status: TripStatus.ACTIVE },
@@ -612,6 +932,10 @@ export class TripsService {
             throw new ConflictException('Only archived trips can be restored');
         }
         await this.assertAgencyCanPublish(agencyId);
+        // #546: restore lands in ACTIVE — French gate too.
+        // #584: sections included, days fetched as in activateTemplate.
+        const days = await this.db.itineraryDay.findMany({ where: { templateId: id } });
+        this.assertFrenchPublishable({ ...existing, itinerary: days });
         return this.db.tripTemplate.update({
             where: { id },
             data: { status: TripStatus.ACTIVE },

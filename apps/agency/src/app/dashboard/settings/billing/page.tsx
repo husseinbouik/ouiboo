@@ -28,6 +28,8 @@ import { SubscriptionStatus, VerificationStatus } from '@ouiboo/types';
 import { formatCurrency, formatLocalDate } from '@ouiboo/utils';
 import { useAuth } from '@/components/AuthContext';
 import { apiClient } from '@/lib/api-client';
+import { isFreeBeta } from '@/lib/beta';
+import { BetaNotAvailable } from '@/components/BetaNotAvailable';
 
 type AgencyStatsResponse = {
   revenue?: number;
@@ -60,6 +62,9 @@ export default function BillingSettingsPage() {
       const response = await apiClient.get('/agency/stats');
       return response.data;
     },
+    // #566: in the free beta this page renders its honest not-in-beta
+    // state; don't fetch billing data it will never show.
+    enabled: !isFreeBeta(),
   });
 
   // #359: platform service fee invoices (billing history). The endpoint
@@ -71,6 +76,7 @@ export default function BillingSettingsPage() {
       const response = await apiClient.get('/agency/invoices', { params: { page: 1, limit: 24 } });
       return response.data;
     },
+    enabled: !isFreeBeta(),
   });
   const invoices = invoicesData?.data ?? [];
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<string | null>(null);
@@ -184,6 +190,17 @@ export default function BillingSettingsPage() {
   const relativeBoundary = upcomingBoundary
     ? new Intl.RelativeTimeFormat(i18n.language, { numeric: 'auto' }).format(daysUntilBoundary, 'day')
     : '';
+
+  // #566: the closed beta is completely free — no subscription, no
+  // platform fee, no credits. The billing surface renders its honest
+  // not-in-beta state instead of subscription/invoice controls.
+  if (isFreeBeta()) {
+    return (
+      <div className="max-w-5xl mx-auto">
+        <BetaNotAvailable variant="billing" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">

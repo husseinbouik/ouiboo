@@ -32,13 +32,15 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import Link from 'next/link';
 import { PaymentProofReviewModal } from '@/components/PaymentProofReviewModal';
-import { getAgencyBookingStatusMeta, getAgencyPaymentStatusMeta, getAgencyProofStatusLabel, formatCurrency, formatLocalDate } from '@ouiboo/utils';
+import { usePaymentProofReview } from '@/components/usePaymentProofReview';
+import { useAttendanceMarking } from '@/components/useAttendanceMarking';
+import { getAgencyBookingStatusMeta, getAgencyPaymentStatusMeta, getAgencyProofStatusLabel, formatCurrency, formatLocalDate, canMarkAttendance } from '@ouiboo/utils';
 import { Pagination } from '@ouiboo/ui';
+import { TableBodySkeleton } from '@/components/Skeletons';
 import { toPaginatedList } from '@ouiboo/utils';
 
 export default function BookingsManager() {
   const { t, i18n } = useTranslation();
-  const [reviewingBooking, setReviewingBooking] = useState<BookingDetails | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   const { data: result, isLoading } = useQuery({
@@ -48,6 +50,23 @@ export default function BookingsManager() {
       return toPaginatedList<BookingDetails>(response.data);
     },
   });
+
+  // #422: two-step payment proof review (accept image → confirm bank
+  // credit) — state and API wiring live in the hook.
+  const {
+    reviewingBooking,
+    actionError,
+    isReviewing,
+    isConfirming,
+    openReview,
+    closeReview,
+    approveProof,
+    rejectProof,
+    confirmBankPayment,
+  } = usePaymentProofReview();
+
+  // #434: attendance recording (attended / no-show) per booking.
+  const { markAttendance, isMarkingAttendance, attendanceError } = useAttendanceMarking();
 
   const bookings = result?.data ?? [];
   const bookingsPagination = result?.pagination ?? null;
@@ -66,6 +85,8 @@ export default function BookingsManager() {
         return t('status.bookingCancelled');
       case BookingStatus.Completed:
         return t('status.bookingCompleted');
+      case BookingStatus.NoShow:
+        return t('status.bookingNoShow');
       default:
         return status;
     }
@@ -90,6 +111,8 @@ export default function BookingsManager() {
         return t('status.proofVerified');
       case 'rejected':
         return t('status.proofRejected');
+      case 'accepted':
+        return t('status.proofAccepted');
       case 'pending':
         return t('status.proofAwaitingReview');
       default:
@@ -138,7 +161,7 @@ export default function BookingsManager() {
       <Card className="shadow-sm overflow-hidden bg-card border border-border">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-start">
+            <table className="w-full text-sm text-start" aria-busy={isLoading || undefined}>
               <thead className="bg-muted/50 border-b border-border text-muted-foreground uppercase text-[11px] font-bold tracking-wider">
                 <tr>
                   <th className="px-6 py-4">{t('bookings.colTraveler')}</th>
@@ -150,9 +173,7 @@ export default function BookingsManager() {
               </thead>
               <tbody className="divide-y divide-border">
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">{t('bookings.loading')}</td>
-                  </tr>
+                  <TableBodySkeleton rows={5} columns={5} />
                 ) : bookings.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">{t('bookings.empty')}</td>
@@ -203,7 +224,7 @@ export default function BookingsManager() {
                       </span>
                       <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ring-1 ring-inset ${proofStatus.className}`}>
                         {proofStatus.icon === 'verified' && <CheckCircle2 className="h-3 w-3" />}
-                        {proofStatus.icon === 'pending' && <Clock className="h-3 w-3" />}
+                        {(proofStatus.icon === 'pending' || proofStatus.icon === 'accepted') && <Clock className="h-3 w-3" />}
                         {(proofStatus.icon === 'missing' || proofStatus.icon === 'rejected') && <AlertCircle className="h-3 w-3" />}
                         {proofStatusLabel(proofStatus.icon)}
                       </div>
@@ -214,16 +235,51 @@ export default function BookingsManager() {
                       )}
                     </td>
                     <td className="px-6 py-5 text-end">
+                      {canMarkAttendance(booking) && (
+                        <div className="mb-2 flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isMarkingAttendance}
+                            onClick={() => markAttendance(booking.id, true)}
+                          >
+                            {t('bookings.markAttended')}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isMarkingAttendance}
+                            onClick={() => markAttendance(booking.id, false)}
+                          >
+                            {t('bookings.markNoShow')}
+                          </Button>
+                        </div>
+                      )}
+                      {booking.attendance && (
+                        <p className="mb-2 text-[11px] font-medium text-muted-foreground">
+                          {t(
+                            booking.attendance === 'ATTENDED'
+                              ? 'bookings.attendanceAttended'
+                              : 'bookings.attendanceNoShow',
+                          )}
+                        </p>
+                      )}
                       {booking.paymentProof?.imageUrl ? (
                         <Button
-                          variant={booking.paymentProof?.status === VerificationStatus.Pending ? 'default' : 'outline'}
+                          variant={
+                            booking.paymentProof?.status === VerificationStatus.Pending ||
+                            booking.paymentProof?.status === VerificationStatus.Accepted
+                              ? 'default'
+                              : 'outline'
+                          }
                           size="sm"
-                          className={`opacity-0 group-hover:opacity-100 transition-opacity gap-2 ${
-                            booking.paymentProof?.status === VerificationStatus.Pending
+                          className={`opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity gap-2 ${
+                            booking.paymentProof?.status === VerificationStatus.Pending ||
+                            booking.paymentProof?.status === VerificationStatus.Accepted
                               ? 'bg-primary hover:bg-primary/90'
                               : ''
                           }`}
-                          onClick={() => setReviewingBooking(booking)}
+                          onClick={() => openReview(booking)}
                         >
                           <Eye className="h-4 w-4" /> {t('bookings.inspectProof')}
                         </Button>
@@ -231,7 +287,7 @@ export default function BookingsManager() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity cursor-not-allowed"
+                          className="opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity cursor-not-allowed"
                           disabled
                         >
                           {t('bookings.noProof')}
@@ -247,6 +303,12 @@ export default function BookingsManager() {
         </CardContent>
       </Card>
 
+      {attendanceError && (
+        <p className="mt-4 text-sm font-medium text-danger" role="alert">
+          {attendanceError}
+        </p>
+      )}
+
       <Pagination pagination={bookingsPagination} onPageChange={setCurrentPage} className="mt-4" />
 
       {/* Info Box */}
@@ -259,12 +321,19 @@ export default function BookingsManager() {
           </p>
         </div>
       </div>
-      {/* Payment Proof Review Modal */}
+      {/* Payment Proof Review Modal — #422 two-step flow wired to the API:
+          step 1 accept/reject the proof image, step 2 confirm the bank
+          credit (only step 2 settles the payment). */}
       <PaymentProofReviewModal
         isOpen={!!reviewingBooking}
-        onClose={() => setReviewingBooking(null)}
+        onClose={closeReview}
         booking={reviewingBooking}
-        readOnly
+        onApprove={approveProof}
+        onReject={rejectProof}
+        onConfirmBankPayment={confirmBankPayment}
+        isLoading={isReviewing}
+        isConfirming={isConfirming}
+        actionError={actionError}
       />
     </div>
   );

@@ -10,6 +10,7 @@ import {
   ChevronRight,
   CreditCard,
   LayoutDashboard,
+  LifeBuoy,
   LogOut,
   Map,
   PlusCircle,
@@ -22,6 +23,7 @@ import {
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
+import { BetaBadge, Logo } from '@ouiboo/ui';
 import { useAuth } from '../AuthContext';
 
 export function AgencySidebar() {
@@ -51,6 +53,10 @@ export function AgencySidebar() {
     { name: t('sidebar.billing'), href: '/dashboard/settings/billing', icon: Receipt },
     { name: t('sidebar.compliance'), href: '/dashboard/onboarding', icon: ShieldCheck },
     { name: t('sidebar.settings'), href: '/dashboard/settings', icon: Settings },
+    // #556 rework: the support page — reachable from the sidebar like
+    // every other workspace section (dashboard/refunds/onboarding also
+    // render the SupportBlock, which links here).
+    { name: t('sidebar.support'), href: '/dashboard/support', icon: LifeBuoy },
   ];
 
   const toggleCollapse = () => {
@@ -73,23 +79,26 @@ export function AgencySidebar() {
       <button
         onClick={toggleCollapse}
         aria-label={isCollapsed ? t('sidebar.expandSidebar') : t('sidebar.collapseSidebar')}
-        className="absolute -end-3 top-20 bg-background border border-border rounded-full p-1.5 shadow-sm text-muted-foreground hover:text-primary z-50 opacity-0 group-hover:opacity-100 transition-opacity"
+        // #573: the collapse toggle was hover-only — unreachable on
+        // touch and invisible to keyboard users until hovered. It is
+        // now always visible on coarse pointers, fully visible on
+        // focus, and `hit-slop` keeps its 44px target (#490).
+        className="hit-slop absolute -end-3 top-20 bg-background border border-border rounded-full p-1.5 shadow-sm text-muted-foreground hover:text-primary z-50 opacity-100 [@media(hover:hover)]:opacity-40 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
       >
         {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </button>
 
       <div className="flex h-16 items-center px-6 overflow-hidden shrink-0">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold shrink-0 shadow-lg shadow-primary/20">
-            O
-          </div>
+          <Logo size={32} className="shadow-lg shadow-primary/20 rounded-lg" />
           {!isCollapsed && (
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-xl font-bold text-foreground"
+              className="flex items-center gap-2 text-xl font-bold text-foreground"
             >
               Ouiboo
+              <BetaBadge />
             </motion.span>
           )}
         </Link>

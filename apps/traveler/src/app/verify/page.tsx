@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ShieldCheck, RefreshCw } from 'lucide-react';
-import { Button, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
+import { Button, OtpCodeInput, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
+import { AuthBrandLockup } from '../../components/AuthBrandLockup';
 import { apiClient } from '@/lib/api-client';
 import { useMutation } from '@tanstack/react-query';
 import { setBrowserAccessToken } from '@ouiboo/api-client';
@@ -115,28 +116,6 @@ export default function VerifyEmailPage() {
     },
   });
 
-  const handleChange = (index: number, value: string) => {
-    if (value.length > 1) value = value[value.length - 1];
-    if (!/^\d*$/.test(value)) return;
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Auto-focus next input
-    if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      nextInput?.focus();
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      const prevInput = document.getElementById(`otp-${index - 1}`);
-      prevInput?.focus();
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const otpString = otp.join('');
@@ -163,7 +142,7 @@ export default function VerifyEmailPage() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-card/90 backdrop-blur-xl p-12 rounded-[2.5rem] shadow-xl border border-border text-center max-w-md w-full space-y-8 relative z-10"
+          className="bg-card/90 backdrop-blur-xl p-12 rounded-4xl shadow-xl border border-border text-center max-w-md w-full space-y-8 relative z-10"
         >
           <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto shadow-sm">
             <ShieldCheck className="h-10 w-10 text-success" />
@@ -196,12 +175,11 @@ export default function VerifyEmailPage() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-card/90 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-xl border border-border max-w-md w-full space-y-8 relative z-10"
+        className="bg-card/90 backdrop-blur-xl p-10 rounded-4xl shadow-xl border border-border max-w-md w-full space-y-8 relative z-10"
       >
         <div className="text-center space-y-4">
              <div className="inline-flex items-center justify-center gap-2 mb-4 group">
-                <div className="w-10 h-10 rounded-xl bg-deep-blue dark:bg-sunset-orange text-white flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">O</div>
-                <span className="text-2xl font-bold text-deep-blue dark:text-foreground">Ouiboo</span>
+                <AuthBrandLockup />
             </div>
           <h2 className="text-3xl font-bold text-foreground tracking-tight">{t('verify.title', 'Check your email')}</h2>
           <p className="text-muted-foreground font-medium text-sm">{t('verify.subtitle', 'We have sent a 6-digit verification code to')} <br/> <span className="font-semibold text-foreground">{email}</span></p>
@@ -217,20 +195,11 @@ export default function VerifyEmailPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="flex justify-between gap-2">
-            {otp.map((digit, idx) => (
-              <input
-                key={idx}
-                id={`otp-${idx}`}
-                type="text"
-                value={digit}
-                onChange={(e) => handleChange(idx, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(idx, e)}
-                className="w-full h-14 text-center text-2xl font-bold bg-muted border border-border rounded-xl focus:border-sunset-orange focus:ring-2 focus:ring-sunset-orange/10 focus:bg-background outline-none transition-all text-foreground"
-                maxLength={1}
-              />
-            ))}
-          </div>
+          <OtpCodeInput
+            value={otp}
+            onChange={setOtp}
+            inputClassName="w-full h-14 text-center text-2xl font-bold bg-muted border border-border rounded-xl focus:border-sunset-orange focus:ring-2 focus:ring-sunset-orange/10 focus:bg-background outline-none transition-all text-foreground"
+          />
 
           {error && (
             <div className="p-3 text-sm font-semibold text-danger bg-danger/10 border border-danger/20 rounded-xl flex items-center justify-center gap-2">

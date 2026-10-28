@@ -1,6 +1,12 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+
+// #491: viewport-fit=cover makes env(safe-area-inset-*) real on notched
+// devices; the pb-safe / pt-safe utilities in @ouiboo/tokens consume them.
+export const viewport: Viewport = {
+  viewportFit: "cover",
+};
 import Script from "next/script";
-import { Manrope } from "next/font/google";
+import { Manrope, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import "@/lib/i18n";
@@ -10,11 +16,19 @@ import { TrialBanner } from "@/components/TrialBanner";
 import en from '../../public/locales/en/translation.json';
 import fr from '../../public/locales/fr/translation.json';
 import ar from '../../public/locales/ar/translation.json';
-import { Analytics } from '@vercel/analytics/react';
 
 const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-manrope",
+  display: "swap",
+});
+
+// #572: Space Grotesk is the shared display font (@ouiboo/tokens
+// --font-display); load it like every other app so agency headings
+// resolve the canonical stack instead of falling back to Manrope.
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
   display: "swap",
 });
 
@@ -81,7 +95,7 @@ export default async function RootLayout({
 
   return (
     <html lang={initialLanguage} dir={initialLanguage === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning>
-      <body className={`${manrope.variable} bg-muted/20`} suppressHydrationWarning>
+      <body className={`${manrope.variable} ${spaceGrotesk.variable} bg-muted/20`} suppressHydrationWarning>
         <Script
           id="language-init"
           strategy="beforeInteractive"
@@ -96,7 +110,6 @@ export default async function RootLayout({
           </AgencyShell>
           <TrialBanner />
         </Providers>
-              <Analytics />
       </body>
     </html>
   );

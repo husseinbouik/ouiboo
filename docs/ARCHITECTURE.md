@@ -1,95 +1,115 @@
 # Architecture Overview
 
+> Corrected 2026-10-27 (#442). The previous version of this document
+> described a system Ouiboo does not run — Kubernetes orchestration, a
+> wallet/payout ledger, Stripe/PayPal gateways, SendGrid/AWS SES, AWS S3
+> or Azure Blob, an ELK/CloudWatch logging stack, and a `develop`-branch
+> Git Flow. None of that is the live architecture. This version describes
+> the stack as deployed; where a capability does not exist yet, it says
+> so instead of presenting it as built.
+
 ## System Architecture
 
-The Ouiboo platform follows a modular, multi-tier architecture designed for scalability, maintainability, and independent deployment.
+Ouiboo is a monorepo (npm workspaces + Turborepo) with five deployable
+apps and shared packages. Everything is deployed to **Vercel** as
+serverless projects — there are no containers, no Kubernetes, and no
+separately deployed worker service in the live stack.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Client Layer                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐         │
-│  │  Traveler   │  │   Agency    │  │    Admin     │         │
-│  │   (Next.js) │  │  (Next.js)  │  │   (Next.js)  │         │
-│  └─────────────┘  └─────────────┘  └──────────────┘         │
-└────────────────┬──────────────────────────────────────────────┘
-                 │  HTTP/REST + WebSocket
-┌────────────────┼──────────────────────────────────────────────┐
-│  API Layer (NestJS)                                           │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │  Controllers │ Guards │ Interceptors │ Filters        │  │
-│  └────────────────────────────────────────────────────────┘  │
-└────────────────┬──────────────────────────────────────────────┘
-                 │
-┌────────────────┼──────────────────────────────────────────────┐
-│  Business Logic Layer (Services)                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
-│  │  Auth        │  │  Bookings    │  │  Payments    │       │
-│  ├──────────────┤  ├──────────────┤  ├──────────────┤       │
-│  │  Trips       │  │  Reviews     │  │  Analytics   │       │
-│  ├──────────────┤  ├──────────────┤  ├──────────────┤       │
-│  │  Messages    │  │  Wishlist    │  │  Notifications       │
-│  └──────────────┘  └──────────────┘  └──────────────┘       │
-└────────────────┬──────────────────────────────────────────────┘
-                 │
-┌────────────────┼──────────────────────────────────────────────┐
-│  Data Layer                                                   │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │     Prisma ORM (Database Abstraction)                  │  │
-│  └────────────────────────────────────────────────────────┘  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
-│  │  PostgreSQL  │  │    Redis     │  │  External    │       │
-│  │  (Primary DB)│  │   (Cache)    │  │    APIs      │       │
-│  └──────────────┘  └──────────────┘  └──────────────┘       │
-└─────────────────────────────────────────────────────────────────┘
+│  Client layer — Vercel (Next.js)                             │
+│  ┌────────────┐ ┌────────────┐ ┌───────────┐ ┌────────────┐ │
+│  │  Traveler  │ │   Agency   │ │   Admin   │ │  Landing   │ │
+│  └────────────┘ └────────────┘ └───────────┘ └────────────┘ │
+└───────────────────────┬─────────────────────────────────────┘
+                        │  HTTPS / REST (/api/v1)
+┌───────────────────────┼─────────────────────────────────────┐
+│  API — NestJS on Vercel (serverless)                         │
+│  Controllers │ Guards │ Interceptors │ Filters │ WebSocket   │
+│  gateway (Socket.io) for real-time notifications             │
+└───────────────────────┬─────────────────────────────────────┘
+                        │  Prisma ORM
+┌───────────────────────┼─────────────────────────────────────┐
+│  Data & services                                             │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐ │
+│  │ Neon         │ │ Upstash      │ │ Backblaze (S3-       │ │
+│  │ Postgres     │ │ Redis        │ │ compatible) storage  │ │
+│  └──────────────┘ └──────────────┘ └──────────────────────┘ │
+│  SMTP email (environment-configured nodemailer transport)    │
+└──────────────────────────────────────────────────────────────┘
 ```
+
+Each app exists twice: a production project deploying from `master`
+and a staging twin deploying from `staging`. Promotion is the gated
+manual path in `docs/launch-ops/RELEASE_RUNBOOK.md` — no workflow
+promotes code, and migrations are applied by hand (see Deployment).
 
 ## Module Structure
 
+The API (`apps/api/src/`) is organised by domain module:
+
 ```
 apps/api/src/
-├── auth/                    # Authentication & Authorization
-├── users/                   # User Management
-├── trips/                   # Trip Templates & Sessions
-├── bookings/                # Booking Management
-├── payments/                # Payment Gateway Integration
-├── reviews/                 # Reviews & Ratings
-├── wishlist/                # Wishlist Management
-├── analytics/               # Analytics & Reporting
-├── notifications/           # Notifications & Reminders
-├── messages/                # Direct Messaging
-├── currency/                # Currency Conversion
-├── websocket/               # Real-time Communication
-├── email/                   # Email Service
-├── admin/                   # Admin Panel
-├── agency/                  # Agency Management
-├── wallet/                  # Wallet & Payouts
-├── upload/                  # File Upload
-├── common/                  # Common Utilities
-└── app.module.ts            # Main Application Module
+├── auth/                    # Authentication & authorization (incl. MFA, break-glass)
+├── users/                   # User management
+├── trips/                   # Trip templates & sessions
+├── bookings/                # Booking management
+├── payments/                # Payment handling
+├── staged-payments/         # Staged (deposit / balance) payment flow
+├── external-payments/       # Payments made directly to the agency
+├── payment-providers/       # Provider integration seam
+├── refunds/                 # RefundCase lifecycle (agency pays the traveller)
+├── cancellation/            # Cancellation policy handling
+├── reviews/                 # Reviews & ratings
+├── wishlist/                # Wishlist management
+├── analytics/               # Analytics & reporting (incl. beta metrics)
+├── notifications/           # Notifications & reminders
+├── messages/                # Direct messaging
+├── currency/                # Currency conversion
+├── websocket/               # Real-time communication (Socket.io)
+├── email/                   # Email service (trilingual templates)
+├── admin/                   # Admin operations
+├── agency/                  # Agency management
+├── invoices/                # Agency invoicing
+├── upload/                  # File upload (hostile-upload checks)
+├── cron/                    # Scheduled backstops (e.g. refund-overdue sweep)
+├── health/                  # Health endpoints
+├── monitoring/              # Monitoring support
+├── copyright/               # Copyright / takedown handling
+├── database/                # Database module
+├── common/                  # Common utilities
+└── app.module.ts            # Main application module
 ```
+
+There is **no wallet module and no payout flow**. The money model is
+deliberate: the traveller pays the agency directly (bank transfer +
+uploaded payment proof at launch), the agency pays refunds directly,
+and Ouiboo never holds traveller money. `RefundCase` tracks money the
+agency owes a traveller; it is a case record, not a balance Ouiboo
+controls.
 
 ## Database Schema
 
-The data model is built with Prisma ORM and uses PostgreSQL. Key entities:
+The data model is built with Prisma ORM on Neon Postgres. Key entities:
 
 ### Core Entities
 - **User**: Platform users (TRAVELER, AGENCY, ADMIN)
 - **AgencyProfile**: Agency details and verification
 - **TripTemplate**: Trip offerings
 - **TripSession**: Specific trip departures
-- **Booking**: Trip bookings by travelers
+- **Booking**: Trip bookings by travellers
 
 ### Business Entities
 - **Review**: Trip reviews and ratings
-- **Wishlist**: Saved trips by travelers
-- **Message**: Direct messages between travelers and agencies
+- **Wishlist**: Saved trips by travellers
+- **Message**: Direct messages between travellers and agencies
 - **Conversation**: Conversation threads
 
 ### Financial Entities
-- **Booking**: Payment information
-- **Wallet**: Agency balance tracking
-- **WalletTransaction**: Transaction history
-- **PaymentTransaction**: Payment gateway transactions
+- **Booking**: Payment information and payment snapshot
+- **RefundCase**: A refund the agency owes a traveller, with its due
+  date (`refundDueAt`, 7-day SLA) and evidence requirements
+- **PaymentTransaction**: Payment records
 
 ### Support Entities
 - **NotificationPreference**: User notification settings
@@ -100,148 +120,164 @@ The data model is built with Prisma ORM and uses PostgreSQL. Key entities:
 ## Authentication & Authorization
 
 ### JWT-based Authentication
-- **Access Token**: Short-lived (15 minutes), used for API requests
-- **Refresh Token**: Long-lived (7 days), used to obtain new access tokens
-- **Token Rotation**: Automatic rotation of refresh tokens on each use
+- **Access Token**: Short-lived (15 minutes), used for API requests;
+  held in memory by the clients, never in web storage
+- **Refresh Token**: Long-lived (7 days), held in an `HttpOnly` cookie,
+  used to obtain new access tokens
+- **Token Rotation**: Refresh tokens rotate on use
+- Admin accounts additionally use TOTP MFA, with a separate break-glass
+  recovery path (`docs/launch-ops/BREAK_GLASS_RUNBOOK.md`)
 
 ### Role-Based Access Control (RBAC)
 - **TRAVELER**: Can book trips, leave reviews, manage wishlist
 - **AGENCY**: Can create/manage trips, view bookings, access analytics
 - **ADMIN**: Full platform access, approval workflows
 
+Server authorization is authoritative: every endpoint enforces role
+and ownership checks.
+
 ## API Versioning
 
 Current version: **v1**
 
-All endpoints are prefixed with `/api/v1`. Future versions can coexist.
+All endpoints are prefixed with `/api/v1`. Clients must configure the
+API base URL including that prefix (`NEXT_PUBLIC_API_URL`).
 
 ## External Integrations
 
-### Payment Providers
-- **CMI (Crédit Mutuel Irland)**: Primary payment gateway for Morocco
-- **Stripe**: International payments (USD, EUR, GBP)
-- **PayPal**: Alternative payment method (future)
+### Payments
+- **Bank transfer + manual payment proof** is the launch payment
+  method: the traveller transfers to the agency and uploads a proof;
+  the agency reviews the proof, and only the agency's bank confirmation
+  settles the booking (an accepted proof is not settlement).
+- No card gateway (Stripe, CMI, PayPal or other) is part of the live
+  launch flow. Provider code exists behind the payment-providers seam
+  only; do not document a gateway as live until it is enabled,
+  verified on a deployed environment, and recorded in the release
+  attestation.
 
 ### Email Service
-- **SendGrid** or **AWS SES**: Transactional emails
+- **SMTP** via the API's nodemailer transport, configured purely by
+  environment (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`).
+  Transactional templates are trilingual (EN/FR/AR).
 
 ### File Storage
-- **AWS S3** or **Azure Blob Storage**: Trip images, payment proofs, documents
+- **Backblaze** (S3-compatible) for trip images, payment proofs, and
+  documents, accessed through the API's S3 storage provider.
 
 ### Real-time Communication
-- **Socket.io**: WebSocket server for real-time notifications
+- **Socket.io** WebSocket gateway in the API for real-time
+  notifications.
 
 ### Currency Exchange
-- **ExchangeRate API**: Daily exchange rate updates
+- Exchange rates are cached in the database (`ExchangeRate`) and
+  served by the currency module.
 
 ## Deployment Architecture
 
-### Containerization
-- Docker containers for each service
-- Multi-stage builds for optimized images
-- Docker Compose for local development
-
-### Orchestration (Kubernetes)
-- Deployment manifests for each service
-- Auto-scaling based on CPU/memory
-- Service mesh for inter-service communication (future)
+### Hosting
+- **Vercel serverless** for all five apps, per environment (production
+  from `master`, staging twins from `staging`).
+- No Docker/Kubernetes deployment exists. Docker, where present in the
+  repo, is a local-development convenience only.
 
 ### CI/CD Pipeline
-- GitHub Actions for automated testing
-- Automated builds on push
-- Staging deployment with approval gates
-- Production deployment with blue-green strategy
+- GitHub Actions run CI, Security scanning, and Browser-E2E on pull
+  requests; `production-smoke.yml` is advisory only and never gates a
+  release; `uptime-monitor.yml` checks production + staging health.
+- **Promotion is manual and gated**: one attested staging SHA, one
+  batched `staging` → `master` PR, human blocking smoke, per-surface
+  verification on the deployed apps. Full procedure:
+  `docs/launch-ops/RELEASE_RUNBOOK.md`.
+- **Migrations never auto-apply** — not on Vercel deploy, not from CI.
+  The release's named migration owner applies each migration once, by
+  hand, in the Neon Console, and records it in `_prisma_migrations`.
+
+### Rollback
+App rollback restores the last known-good Vercel deployment; the
+decision rules and post-deploy checks are in
+`docs/launch-ops/ROLLBACK_AND_POST_DEPLOY_CHECKLIST.md`.
 
 ## Security Architecture
 
 ### Network Security
 - HTTPS/TLS for all communications
 - CORS configuration for web clients
-- Rate limiting on sensitive endpoints
-- DDoS protection
+- Rate limiting on sensitive endpoints (Upstash Redis)
 
 ### Application Security
-- JWT token-based authentication
+- JWT token-based authentication (access token in memory, refresh
+  token in an `HttpOnly` cookie — never web storage)
 - Password hashing with bcrypt
-- Input validation and sanitization
-- SQL injection prevention via ORM
-- XSS protection
-- CSRF tokens for state-changing operations
+- Input validation and sanitization at the DTO boundary
+- SQL injection prevention via Prisma ORM
+- Uploads treated as hostile: authenticated, size-limited,
+  magic-byte/MIME-checked, safely named, privately accessed
 
 ### Data Protection
-- Field-level encryption for sensitive data
-- Data at rest encryption (database)
-- Data in transit encryption (TLS)
+- Data in transit encryption (TLS); Neon-managed encryption at rest
 - Secure password reset tokens
-- PII data retention policies
+- PII data retention policies (`docs/PRIVACY_RIGHTS.md`,
+  `docs/PRIVACY_ACCOUNT_DELETION_RETENTION.md`)
 
 ## Performance Optimization
 
 ### Caching Strategy
-- **Redis Cache**: Session data, exchange rates, popular searches
-- **Database Query Caching**: Expensive queries cached
-- **CDN**: Static assets (images, CSS, JS)
+- **Upstash Redis**: rate limiting and cached data such as exchange
+  rates
+- **CDN**: Vercel serves static assets and optimized images
 
 ### Query Optimization
 - Database indexes on frequently queried fields
-- Query result pagination
+- Query result pagination with metadata
 - N+1 query prevention
-- Denormalization for read-heavy operations
 
 ### Frontend Optimization
 - Code splitting and lazy loading
-- Image optimization (WebP, responsive images)
-- Font optimization and preloading
-- Service worker for offline support
+- Image optimization (responsive images via the framework optimizer)
 
 ## Monitoring & Observability
 
-### Logging
-- Centralized logging (ELK stack or CloudWatch)
-- Structured JSON logging
-- Log aggregation and analysis
+The full, current description is `docs/OPERATIONS_MONITORING.md`:
 
-### Monitoring
-- Application Performance Monitoring (APM)
-- Error tracking (Sentry)
-- Real-time alerting
-- Custom metrics
-
-### Tracing
-- Distributed tracing for request tracking
-- Correlation IDs for multi-service requests
-- Performance profiling
+- **Alerting**: the GitHub Actions uptime monitor checks production +
+  staging API health and frontend URLs; a failed run notifies the
+  workflow owner via GitHub. There is no paging service.
+- **Logs**: the API emits one structured JSON `http_error` line per
+  error response, read in the Vercel dashboard → API project → Logs.
+  External log drains are a Vercel Pro feature and are not configured.
+- There is no ELK/CloudWatch/APM stack in the live setup.
 
 ## Disaster Recovery
 
-### Backup Strategy
-- Daily database backups
-- Backup retention: 30 days
-- Point-in-time recovery capability
-
-### High Availability
-- Database replication
-- Load balancing across API instances
-- Auto-failover for critical services
-- Multi-region deployment (future)
+- **Database**: Neon automated backups with point-in-time recovery;
+  a production backup is taken and confirmed restorable before every
+  promotion (Release Runbook, Gate B).
+- **Rollback**: restore the last known-good Vercel deployment per the
+  rollback checklist; schema-incompatible changes escalate before any
+  rollback.
+- There is no multi-region deployment; the apps and database run in
+  their single configured regions.
 
 ## Development Workflow
 
-### Git Flow
-- `master`: Production-ready code
-- `develop`: Development branch
-- `feature/*`: Feature branches
-- `hotfix/*`: Production hotfixes
+### Branches
+- `staging`: integration branch; staging apps deploy from it
+- `master`: production; production apps deploy from it, only via the
+  gated promotion path
+- Topic branches merge into `staging` by pull request; issue lifecycle
+  is `todo → in progress → in staging → verified in staging → in prod`,
+  closing only after verification on the deployed environment
 
 ### Code Standards
 - TypeScript for type safety
 - ESLint for code style
-- Prettier for formatting
 - Unit tests with Jest
-- E2E tests with Cypress/Playwright
+- E2E tests with Playwright (API and browser suites in CI)
 
 ### Testing Strategy
-- Unit tests for services (>80% coverage)
+- Unit tests for services
 - Integration tests for API endpoints
-- E2E tests for critical user flows
-- Load testing with k6
+- Browser E2E for critical user flows
+- A release is verified on the deployed staging/production apps, per
+  surface — unit tests alone never establish launch readiness

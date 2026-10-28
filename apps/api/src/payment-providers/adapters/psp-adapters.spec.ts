@@ -63,7 +63,14 @@ describe('SandboxPspAdapter signature validation (#373, plan §49)', () => {
 
 describe('ManualPspAdapter (#373, plan §57)', () => {
     const adapter = new ManualPspAdapter({
-        agencyProfile: { findUnique: async () => ({ bankDetails: 'RIB 123 — Attijariwafa' }) },
+        agencyProfile: {
+            findUnique: async () => ({
+                bankDetails: 'RIB 123 — Attijariwafa',
+                // #421: instructions are served only for a verified destination.
+                bankDetailsStatus: 'VERIFIED',
+                bankDetailsVerifiedAt: new Date('2026-10-20T00:00:00Z'),
+            }),
+        },
     } as any);
 
     it('never validates a webhook signature: the manual flow has no webhooks', () => {
@@ -79,6 +86,23 @@ describe('ManualPspAdapter (#373, plan §57)', () => {
         expect(result.providerPaymentId).toBeNull();
         expect(result.hostedUrl).toBeNull();
         expect(result.instructions).toContain('RIB 123');
+    });
+
+    it('returns no instructions while the destination is unverified (#421)', async () => {
+        const unverified = new ManualPspAdapter({
+            agencyProfile: {
+                findUnique: async () => ({
+                    bankDetails: 'RIB 999 — Unverified',
+                    bankDetailsStatus: 'PENDING_REVIEW',
+                    bankDetailsVerifiedAt: null,
+                }),
+            },
+        } as any);
+        const result = await unverified.createPaymentRequest(
+            { agencyId: 'agency-2', externalMerchantId: 'agency-2', currency: 'MAD' },
+            { bookingId: 'b2', stage: 'FULL' as any, amount: 100, currency: 'MAD', idempotencyKey: 'k2' },
+        );
+        expect(result.instructions).toBeNull();
     });
 
     it('refunds are executed by the agency through its own channel', async () => {

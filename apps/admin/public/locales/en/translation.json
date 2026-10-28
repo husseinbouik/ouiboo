@@ -32,7 +32,33 @@
     "hidePassword": "Hide password",
     "notAdmin": "This account does not have admin access.",
     "networkError": "Cannot reach the server. Please check your connection and try again.",
-    "invalidCredentials": "Incorrect email or password. Please try again."
+    "invalidCredentials": "Incorrect email or password. Please try again.",
+    "mfa": {
+      "title": "Two-factor authentication",
+      "subtitle": "Enter the 6-digit code from your authenticator app.",
+      "recoverySubtitle": "Enter one of the recovery codes issued when you enrolled. Each code works once.",
+      "codeLabel": "Authenticator code",
+      "recoveryLabel": "Recovery code",
+      "verify": "Verify",
+      "verifying": "Verifying...",
+      "invalid": "That code was not accepted. Check the code and try again.",
+      "useRecovery": "Use a recovery code",
+      "useAuthenticator": "Use authenticator code",
+      "back": "Back to sign in",
+      "enrollTitle": "Set up two-factor authentication",
+      "enrollSubtitle": "Admin accounts must enrol an authenticator app before continuing. Scan the code, then enter the 6-digit code it shows.",
+      "enrollConfirm": "Confirm and continue",
+      "enrollFailed": "Could not start MFA enrolment. Please sign in again.",
+      "qrAlt": "Authenticator enrolment QR code",
+      "recoveryTitle": "Save your recovery codes",
+      "recoveryWarning": "Each code signs you in once if you lose your authenticator. They are shown only now — store them somewhere safe and offline.",
+      "continueButton": "I saved them — continue",
+      "breakGlassLink": "Lost your authenticator? Use a break-glass secret",
+      "breakGlassTitle": "Break-glass sign-in",
+      "breakGlassSubtitle": "For a lost authenticator only. Sign in with your email, password, and the one-time break-glass secret. Its use is audit-logged and alerts every admin.",
+      "breakGlassCodeLabel": "Break-glass secret",
+      "breakGlassSubmit": "Sign in with break-glass secret"
+    }
   },
   "dashboard": {
     "brand": "OUIBOO ADMIN",
@@ -40,7 +66,9 @@
       "pendingAgencies": "Pending agencies",
       "tripsInReview": "Trips in review",
       "bookingsToday": "Bookings today",
-      "paymentProofs": "Payment proofs"
+      "paymentProofs": "Payment proofs",
+      "refundsOverdue": "Refunds overdue",
+      "refundsDue48": "Refunds due ≤48h"
     },
     "tabs": {
       "pending": "Verification Queue",
@@ -49,7 +77,10 @@
       "paymentProofs": "Payment Proofs",
       "audit": "Audit Log",
       "invoices": "Invoices",
-      "refunds": "Refunds"
+      "refunds": "Refunds",
+      "groups": "Pending Groups",
+      "security": "Security",
+      "support": "Support Queue"
     },
     "meta": {
       "pending": {
@@ -69,7 +100,7 @@
       },
       "paymentProofs": {
         "title": "Payment Proofs",
-        "description": "Approve or reject uploaded payment receipts.",
+        "description": "Review uploaded payment receipts. Accepting a proof image is not settlement — only the agency's bank confirmation settles a payment.",
         "searchPlaceholder": "Search payment proofs by traveler or booking..."
       },
       "audit": {
@@ -86,6 +117,21 @@
         "searchPlaceholder": "Search refund cases...",
         "description": "Track traveller refund cases across agencies. Refunds are paid by agencies from their own merchant accounts — overdue cases restrict new bookings for that agency.",
         "title": "Refund Cases"
+      },
+      "groups": {
+        "title": "Pending Groups",
+        "description": "Staged sessions still waiting for their minimum group. Force-confirm, extend the deadline, or close a group — every intervention needs a reason and is written to the audit log.",
+        "searchPlaceholder": "Search trips..."
+      },
+      "security": {
+        "title": "Admin Security",
+        "description": "Two-factor authentication and break-glass recovery for admin accounts.",
+        "searchPlaceholder": "Security settings"
+      },
+      "support": {
+        "title": "Support Queue",
+        "description": "Help-centre tickets from travellers, agencies and guests. The first status change out of Open counts as the first response.",
+        "searchPlaceholder": "Search tickets by requester or subject..."
       }
     },
     "sections": {
@@ -106,7 +152,9 @@
       "when": "When",
       "actor": "Actor",
       "target": "Target",
-      "metadata": "Metadata"
+      "metadata": "Metadata",
+      "termsAccepted": "Terms v{{version}} accepted",
+      "termsUnrecorded": "Terms version unrecorded"
     },
     "actions": {
       "review": "Review",
@@ -114,13 +162,21 @@
       "details": "Details",
       "reject": "Reject",
       "approve": "Approve",
+      "acceptProof": "Accept proof",
       "activate": "Activate",
       "deactivate": "Deactivate",
       "approveAgency": "Approve agency",
       "rejectAgency": "Reject agency",
       "refund": "Refund",
       "verifyLicence": "Verify licence",
-      "rejectLicence": "Reject licence"
+      "rejectLicence": "Reject licence",
+      "viewDocument": "View document",
+      "viewCertificate": "View certificate",
+      "viewAttestation": "View attestation",
+      "verifyInsurance": "Verify insurance",
+      "rejectInsurance": "Reject insurance",
+      "verifyBankDetails": "Verify bank details",
+      "rejectBankDetails": "Reject bank details"
     },
     "labels": {
       "ice": "ICE",
@@ -132,6 +188,10 @@
       "amount": "Amount",
       "currency": "MAD",
       "bankDetails": "Agency Bank Details",
+      "bankConfirmedAmount": "Confirmed amount",
+      "bankReference": "Bank reference",
+      "bankConfirmedAt": "Confirmed at",
+      "bankConfirmedBy": "Confirmed by",
       "selected": "Selected",
       "contact": "Contact",
       "status": "Status",
@@ -149,11 +209,44 @@
       "rc": "Trade register (RC)",
       "taxId": "Tax ID (IF)",
       "licenceExpiry": "Licence expiry",
+      "licenceIssuedAt": "Licence issued on",
+      "licenceIssuingAuthority": "Issuing authority",
       "licenceVerifiedAt": "Licence verified on",
-      "licenceRejectionReason": "Rejection reason"
+      "licenceRejectionReason": "Rejection reason",
+      "licenceDocument": "Licence document",
+      "ministryCheck": "I checked this licence against the Ministry of Tourism list",
+      "ministryCheckedOn": "Ministry check recorded on",
+      "expiryMissing": "Missing — required for verification",
+      "insurance": "RC insurance",
+      "insuranceInsurer": "Insurer",
+      "insurancePolicyNumber": "Policy number",
+      "insuranceInsuredName": "Insured name",
+      "insuranceValidFrom": "Cover starts",
+      "insuranceExpiry": "Insurance expiry",
+      "insuranceCoverageLimit": "Coverage limit",
+      "insuranceVerifiedAt": "Insurance verified on",
+      "insuranceRejectionReason": "Insurance rejection reason",
+      "insuranceCertificate": "Insurance certificate",
+      "insuredNameMismatch": "Does not match the legal name",
+      "rejectionReasonLabel": "Rejection reason",
+      "rejectionReasonPlaceholder": "Required to reject; shared with the agency",
+      "bankDetailsReview": "Bank details (payment destination)",
+      "pendingBankDetails": "Submitted bank details — awaiting review",
+      "currentBankDetails": "Current bank details",
+      "bankHolderName": "Account holder",
+      "bankAttestation": "Bank attestation",
+      "bankDetailsVerifiedAt": "Verified on",
+      "bankDetailsRejectionReason": "Bank details rejection reason",
+      "bankHolderMismatch": "Holder is not the agency — third-party account",
+      "overrideReason": "Override reason",
+      "overrideReasonPlaceholder": "Why this holder is acceptable (e.g. trade-name account)",
+      "verificationPaused": "Verification paused"
     },
     "messages": {
       "noBankDetails": "No bank details on file.",
+      "noLicenceDocument": "No licence document uploaded",
+      "sellerBlockIncomplete": "Seller identity block incomplete — missing: {{fields}}. The agency must supply these before the block can render in full.",
+      "noInsuranceCertificate": "No insurance certificate uploaded",
       "noPaymentProofs": "No payment proofs are waiting for review.",
       "reviewVerification": "Review verification details and approve or reject.",
       "notProvided": "Not provided",
@@ -171,7 +264,7 @@
       "agencyApproved": "Agency approved successfully.",
       "agencyRejected": "Agency rejected successfully.",
       "agencyUpdateError": "Unable to update agency status. Please try again.",
-      "paymentProofApproved": "Payment proof approved successfully.",
+      "paymentProofApproved": "Payment proof accepted — still pending agency bank confirmation.",
       "paymentProofRejected": "Payment proof rejected successfully.",
       "paymentProofUpdateError": "Unable to update payment proof. Please try again.",
       "paymentProofLoadError": "Unable to load payment proof.",
@@ -183,7 +276,14 @@
       "retentionDaysInvalid": "Retention days must be a positive number.",
       "licenceVerified": "Travel licence verified",
       "licenceRejected": "Travel licence rejected",
-      "licenceUpdateError": "Could not update the travel licence"
+      "licenceUpdateError": "Could not update the travel licence",
+      "insuranceVerified": "RC insurance verified",
+      "insuranceRejected": "RC insurance rejected",
+      "insuranceUpdateError": "Could not update the RC insurance",
+      "bankDetailsVerified": "Bank details verified",
+      "bankDetailsRejected": "Bank details rejected",
+      "bankDetailsUpdateError": "Could not update the bank details",
+      "documentLoadError": "Unable to load the document."
     },
     "aria": {
       "mainNavigation": "Main navigation",
@@ -251,9 +351,12 @@
       "bookingRejected": "Rejected",
       "bookingCancelled": "Cancelled",
       "bookingCompleted": "Completed",
+      "bookingNoShow": "No-Show",
       "verificationPending": "Pending",
       "verificationVerified": "Verified",
       "verificationRejected": "Rejected",
+      "proofAwaitingBankConfirmation": "Awaiting agency bank confirmation",
+      "proofBankConfirmed": "Bank confirmation recorded",
       "subscriptionTrial": "Trial",
       "subscriptionActive": "Active",
       "subscriptionCancelled": "Cancelled",
@@ -262,19 +365,20 @@
       "paymentPaid": "Paid",
       "paymentRefunded": "Refunded",
       "paymentFailed": "Failed",
-      "payoutPaidLabel": "Paid",
-      "payoutPaidHelper": "Transfer completed",
-      "payoutRejectedLabel": "Rejected",
-      "payoutRejectedHelper": "Funds returned to the agency",
-      "payoutApprovedLabel": "Approved",
-      "payoutApprovedHelper": "Approved and waiting for processing",
-      "payoutPendingLabel": "Pending",
-      "payoutPendingHelper": "Pending admin review",
       "licenceNotSubmitted": "Licence not submitted",
       "licencePendingReview": "Licence under review",
       "licenceVerified": "Licence verified",
       "licenceRejected": "Licence rejected",
-      "licenceExpired": "Licence expired"
+      "licenceExpired": "Licence expired",
+      "insuranceNotSubmitted": "Insurance not submitted",
+      "insurancePendingReview": "Insurance under review",
+      "insuranceVerified": "Insurance verified",
+      "insuranceRejected": "Insurance rejected",
+      "insuranceExpired": "Insurance expired",
+      "bankUnverified": "Bank details unverified",
+      "bankPendingReview": "Bank details under review",
+      "bankVerified": "Bank details verified",
+      "bankRejected": "Bank details rejected"
     },
     "modal": {
       "agencyReview": "Agency Review"
@@ -288,7 +392,8 @@
         "initiate": "Mark sent",
         "fail": "Mark failed",
         "approve": "Approve",
-        "reject": "Reject"
+        "reject": "Reject",
+        "adminReview": "Admin review"
       },
       "status": {
         "REFUND_APPROVED": "Approved",
@@ -311,7 +416,186 @@
       "failureReason": "Failure",
       "empty": "No refund cases",
       "dueBy": "Due by",
-      "requestedAt": "Requested"
+      "requestedAt": "Requested",
+      "audit": {
+        "all": "All cases",
+        "queue": "Audit queue",
+        "queueHint": "Completed refunds flagged for review by the risk-based audit rule. Auditing records the review — it never blocks completion.",
+        "queueEmpty": "No refunds are waiting for audit.",
+        "queueEmptyHint": "Flagged completions will appear here until an admin marks them audited.",
+        "required": "Audit required",
+        "audited": "Audited {{date}}",
+        "markAudited": "Mark audited"
+      },
+      "adminReview": {
+        "title": "Record admin review",
+        "description": "Records your review as completion evidence (tier 5), in its own step. The case is completed afterwards, on this evidence — every admin-review completion is queued for audit.",
+        "referenceLabel": "External reference",
+        "referenceHint": "A bank or provider reference you verified yourself.",
+        "documentLabel": "Document (private storage key)",
+        "documentHint": "Private key of a document you uploaded, e.g. private/<your-id>/bank-statement.pdf.",
+        "evidenceRequired": "Attach a document or an external reference — a reason alone is not evidence."
+      },
+      "tierLabel": "Completed on",
+      "evidenceSummary": "{{count}} evidence item(s)",
+      "noEvidence": "No evidence recorded",
+      "tier": {
+        "PSP_CONFIRMATION": "Payment provider confirmation",
+        "BANK_PROVIDER_CONFIRMATION": "Bank/provider confirmation document",
+        "BANK_REFERENCE": "Bank reference + retained document",
+        "TRAVELLER_CONFIRMATION": "Traveller confirmation",
+        "ADMIN_REVIEW": "Admin review"
+      },
+      "urgency": {
+        "overdueFilter": "Showing overdue refunds only",
+        "due48Filter": "Showing refunds due within 48 hours only",
+        "clearFilter": "Clear filter"
+      }
+    },
+    "groups": {
+      "empty": "No groups are waiting",
+      "emptyHint": "Every staged session has either reached its minimum or been decided.",
+      "paidOfMin": "{{paid}} of {{min}} participants paid",
+      "depositPaidBookings": "{{count}} deposit-paid bookings",
+      "deadline": "Confirmation deadline",
+      "starts": "Session starts",
+      "actions": {
+        "forceConfirm": "Force confirm",
+        "extendDeadline": "Extend deadline",
+        "closeGroup": "Close group"
+      },
+      "forceConfirmTitle": "Force-confirm this group?",
+      "forceConfirmDescription": "The minimum and the deadline are ignored: deposit-paid bookings become confirmed and their balances fall due. Travellers were promised the minimum — only do this with the agency's agreement.",
+      "closeTitle": "Close this group?",
+      "closeDescription": "The group is marked not confirmed. Deposit-paid bookings become refund-due and refund cases are created immediately; unpaid bookings are cancelled.",
+      "extendTitle": "Extend the confirmation deadline",
+      "extendDescription": "The session deadline and every booking plan snapshot move together. The new deadline must be before the session start date.",
+      "newDeadline": "New deadline",
+      "newDeadlineRequired": "Please pick the new deadline.",
+      "success": "Intervention applied and recorded in the audit log."
+    },
+    "interventions": {
+      "reasonLabel": "Reason (required)",
+      "reasonPlaceholder": "Why is this intervention needed? This is recorded in the audit log.",
+      "auditNote": "This action is recorded in the audit log together with your reason and the before/after state.",
+      "cancel": "Cancel",
+      "failed": "The intervention failed. Please try again.",
+      "repair": "Repair",
+      "repairActionLabel": "Repair action",
+      "bookingRepair": {
+        "title": "Repair booking",
+        "description": "Named repairs only — there is no free-form status change. The result is recorded in the audit log.",
+        "resync-payment-state": "Resync payment state",
+        "resync-payment-stateHint": "Recompute the booking status and payment status from its payment plan, verified payments, and refund cases.",
+        "requeue-proof-review": "Requeue proof review",
+        "requeue-proof-reviewHint": "A pending payment proof whose booking left the validation queue becomes verifiable again.",
+        "open-refund-case": "Open refund case",
+        "open-refund-caseHint": "Create the missing refund case for a booking whose plan is refund-due."
+      },
+      "refundRepair": {
+        "title": "Repair refund case",
+        "description": "Admin-only repairs for stuck refund cases. The original history stays in the audit log.",
+        "reopen": "Reopen case",
+        "correct-amount": "Correct approved amount",
+        "relink-payment": "Relink original payment",
+        "amountLabel": "Approved amount",
+        "paymentIdLabel": "Original payment ID",
+        "paymentIdHint": "Must be a payment of the same booking. Leave empty to only change the reference.",
+        "referenceLabel": "External payment reference"
+      }
+    },
+    "auditActions": {
+      "ADMIN_GROUP_FORCE_CONFIRMED": "Group force-confirmed by admin",
+      "ADMIN_GROUP_CLOSED": "Group closed by admin",
+      "ADMIN_DEADLINE_EXTENDED": "Confirmation deadline extended by admin",
+      "ADMIN_BOOKING_REPAIRED": "Booking repaired by admin",
+      "ADMIN_REFUND_REPAIRED": "Refund case repaired by admin",
+      "ADMIN_LOGIN_SUCCEEDED": "Admin signed in",
+      "ADMIN_LOGIN_FAILED": "Admin sign-in failed",
+      "ADMIN_MFA_ENROLLED": "Admin enrolled in MFA (TOTP)",
+      "ADMIN_MFA_RECOVERY_USED": "Admin MFA recovery code used",
+      "ADMIN_BREAK_GLASS_CREATED": "Break-glass credential created",
+      "ADMIN_BREAK_GLASS_USED": "Break-glass sign-in used",
+      "ADMIN_BREAK_GLASS_REVOKED": "Break-glass credential revoked",
+      "ADMIN_BREAK_GLASS_FAILED": "Break-glass sign-in failed"
+    },
+    "betaMetrics": {
+      "title": "Beta metrics",
+      "subtitle": "Beta exit criteria from the #432 metrics service (last 30 days by default).",
+      "window": "Window: {{from}} – {{to}}",
+      "loading": "Loading beta metrics…",
+      "error": "Beta metrics are unavailable right now.",
+      "zeroResultRate": "Zero-result search rate",
+      "searchesDetail": "{{zero}} of {{total}} searches",
+      "bookingsCreated": "Bookings created",
+      "bookingsCompleted": "{{count}} completed",
+      "refundSla": "Refunds initiated within 7 days",
+      "refundsOpened": "{{count}} refund cases opened",
+      "disputesPer1000": "Disputes per 1,000 bookings",
+      "disputesOpened": "{{count}} disputes opened",
+      "stuckTotal": "Stuck states >48h",
+      "stuckHint": "Bookings awaiting validation + refund cases past due",
+      "termsRecorded": "Terms recorded on bookings",
+      "duplicates": "{{count}} duplicate bookings",
+      "exitCriteria": "Exit criteria",
+      "pass": "Pass",
+      "fail": "Fail",
+      "noData": "Not enough data",
+      "supportNotDerivable": "Support response rate is not derivable",
+      "supportResponseRate": "Support first response within 48 hours",
+      "supportTickets": "{{count}} support tickets opened",
+      "supportTicketsDetail": "{{responded}} with a first response, {{within}} within 48 hours",
+      "supportAwaiting": "{{count}} open tickets awaiting a first response for over 48 hours"
+    },
+    "diagnostics": {
+      "title": "Build & flags",
+      "build": "Build",
+      "sharing": "Sharing",
+      "betaBadge": "Beta badge",
+      "serverFlags": "Server flags",
+      "on": "on",
+      "off": "off",
+      "serverFlagsLoading": "Loading server flags...",
+      "serverFlagsUnavailable": "Server flags: unavailable (the diagnostics endpoint did not answer)",
+      "serverEnv": "Server env",
+      "madOnlyCatalog": "MAD-only catalogue",
+      "adminMfaRequired": "Admin MFA required",
+      "noFeatureFlags": "No FEATURE_* flags are set on the API"
+    },
+    "sharePreview": {
+      "title": "Link preview (Open Graph)",
+      "toggle": "Preview",
+      "liveNote": "Sharing is on: this is the preview social apps will render.",
+      "gatedNote": "Sharing is off: the live public preview is the generic Ouiboo card. This is the preview this trip will carry when sharing opens at public launch.",
+      "shareTextLabel": "Share text",
+      "shareText": "Check out this trip on Ouiboo: {{title}}",
+      "panelTitle": "Sharing & link preview",
+      "panelLive": "Sharing is on for this admin build: previews below are what social apps will render.",
+      "panelGated": "Sharing is off for this admin build: the live public preview is the generic Ouiboo card. Previews below show what each trip will carry when sharing opens.",
+      "panelAdminNote": "This state is this admin build's own flag. On staging, sharing was enabled for the traveller and agency apps only (founder directive), so this build reading off is expected.",
+      "panelEmpty": "No trips are waiting in the verification queue right now. When a trip arrives for review, its link preview appears here per trip."
+    },
+    "support": {
+      "title": "Support tickets",
+      "count": "{{count}} tickets",
+      "filterStatus": "Status",
+      "filterCategory": "Category",
+      "allStatuses": "All statuses",
+      "allCategories": "All categories",
+      "details": "Details",
+      "bookingRef": "Booking reference",
+      "firstResponse": "First response",
+      "resolvedAt": "Resolved",
+      "ticketId": "Ticket",
+      "setStatus": "Set status",
+      "updating": "Updating...",
+      "loading": "Loading tickets...",
+      "loadError": "Could not load support tickets. Try again.",
+      "empty": "No support tickets match these filters.",
+      "feedback": {
+        "updated": "Ticket updated.",
+        "updateError": "Could not update this ticket. Try again."
+      }
     }
   },
   "meta": {
@@ -343,5 +627,71 @@
   "loading": {
     "label": "Loading administration",
     "text": "Loading…"
+  },
+  "security": {
+    "mfaTitle": "Two-factor authentication (TOTP)",
+    "mfaDescription": "Admin sign-in requires a password plus a 6-digit authenticator code. Enrol an authenticator app here; re-enrolling replaces the previous secret and recovery codes.",
+    "loading": "Loading...",
+    "statusLabel": "Status",
+    "statusEnabled": "Enabled",
+    "enrolledAt": "Enrolled",
+    "recoveryRemaining": "Recovery codes remaining",
+    "noRecoveryCodesWarning": "You have no recovery codes left. Re-enrol to issue a fresh set, and make sure at least one break-glass credential is active.",
+    "reEnroll": "Re-enrol authenticator",
+    "currentPassword": "Current password",
+    "startEnrollment": "Start enrolment",
+    "stepScan": "Scan the QR code with your authenticator app (or type the secret manually).",
+    "stepConfirm": "Enter the 6-digit code the app shows to confirm.",
+    "qrAlt": "Authenticator enrolment QR code",
+    "manualSecret": "Manual entry secret",
+    "confirmCode": "Authenticator code",
+    "confirmEnrollment": "Confirm enrolment",
+    "enrollSuccess": "Two-factor authentication is now enabled. Your previous secret and recovery codes no longer work.",
+    "enrollStartFailed": "Could not start enrolment. Check your password and try again.",
+    "enrollConfirmFailed": "That code was not accepted. Check the code and try again.",
+    "recoveryCodesTitle": "Your recovery codes — shown once",
+    "recoveryCodesWarning": "Each code signs you in once if you lose your authenticator. Store them somewhere safe and offline; they cannot be shown again.",
+    "copyCodes": "Copy codes",
+    "downloadCodes": "Download codes",
+    "codesSaved": "I saved them",
+    "breakGlassTitle": "Break-glass credentials",
+    "breakGlassDescription": "A break-glass credential is a separate one-time secret for the lost-authenticator emergency: with the admin password it signs in without the TOTP code. Create one, store it offline (sealed envelope or password safe), and never keep it next to the password. Every use is audit-logged and alerts all admins.",
+    "breakGlassSecretTitle": "New break-glass secret — \"{{label}}\"",
+    "breakGlassSecretWarning": "Shown only now. Store it offline immediately. It expires on {{expiresAt}} and works exactly once.",
+    "copySecret": "Copy secret",
+    "downloadSecret": "Download secret",
+    "breakGlassLabel": "Label",
+    "breakGlassLabelPlaceholder": "e.g. Sealed envelope — office safe",
+    "breakGlassDays": "Valid (days)",
+    "createBreakGlass": "Create credential",
+    "breakGlassCreated": "Break-glass credential created. Store the secret offline now.",
+    "breakGlassCreateFailed": "Could not create the credential. Check your password and try again.",
+    "breakGlassRevoked": "Break-glass credential revoked.",
+    "breakGlassRevokeFailed": "Could not revoke the credential.",
+    "colLabel": "Label",
+    "colStatus": "Status",
+    "colCreated": "Created",
+    "colExpires": "Expires",
+    "colActions": "Actions",
+    "noBreakGlass": "No break-glass credentials yet. Create one before you need it.",
+    "revoke": "Revoke",
+    "confirmRevoke": "Confirm revoke",
+    "cancel": "Cancel",
+    "status": {
+      "active": "Active",
+      "used": "Used",
+      "revoked": "Revoked",
+      "expired": "Expired"
+    }
+  },
+  "commandPalette": {
+    "open": "Open command palette",
+    "trigger": "Search or jump to…",
+    "placeholder": "Search sections, agencies, trips, bookings…",
+    "empty": "No matches found.",
+    "groupNavigation": "Go to",
+    "groupAgencies": "Agencies",
+    "groupTrips": "Trips",
+    "groupBookings": "Bookings"
   }
 }

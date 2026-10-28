@@ -72,12 +72,19 @@ function makeHarness(attempt: any, inboxEntry: any = null) {
     };
     const externalPayments = new ExternalPaymentsService({} as any);
     const staged = { evaluateSessionGroupInTransaction: jest.fn(async () => 'still-pending') };
+    const refunds = {
+        recordPspRefundConfirmationInTransaction: jest.fn(
+            async (_tx: any, _args: any): Promise<{ matched: boolean; completed: boolean; agencyId: string | null }> =>
+                ({ matched: false, completed: false, agencyId: null }),
+        ),
+        refreshAgencyRestriction: jest.fn(async (_agencyId: string) => undefined),
+    };
     const registry = new PspAdapterRegistry(
         new ManualPspAdapter(db),
         new SandboxPspAdapter(db),
     );
-    const service = new PaymentWebhooksService(db, registry, externalPayments, staged as any);
-    return { service, db, tx, staged };
+    const service = new PaymentWebhooksService(db, registry, externalPayments, staged as any, refunds as any);
+    return { service, db, tx, staged, refunds };
 }
 
 function eventBody(overrides: { data?: any; type?: string; id?: string } = {}) {
@@ -253,6 +260,46 @@ describe('PaymentWebhooksService (#373, plan §§23/49/51/63)', () => {
         expect(bookingUpdate.data.status).toBe('PENDING_MINIMUM');
         expect(bookingUpdate.data.paymentStatus).toBe('PARTIALLY_PAID');
         expect(staged.evaluateSessionGroupInTransaction).toHaveBeenCalledWith(tx, 'session-1');
+    });
+
+    it('a refunded event records the ledger refund once and wires tier-1 evidence into the refund case (#416B)', async () => {
+        const attempt = makeAttempt({ status: 'CAPTURED', externalPaymentId: 'ext-1' });
+        const { service, tx, refunds } = makeHarness(attempt);
+        const body = eventBody({ type: 'payment.refunded', id: 'evt-refund-1' });
+
+        const result = await service.handleWebhook('sandbox', body, sign(body));
+
+        expect(result).toMatchObject({ received: true, status: 'PROCESSED' });
+        // Exactly one ledger append for the refund (the refunds side
+        // never writes a second one).
+        expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
+        const attemptUpdate = tx.paymentAttempt.update.mock.calls[0][0];
+        expect(attemptUpdate.data.status).toBe('REFUNDED');
+        // Tier-1 wiring inside the same transaction, bound to the attempt.
+        expect(refunds.recordPspRefundConfirmationInTransaction).toHaveBeenCalledTimes(1);
+        const call = refunds.recordPspRefundConfirmationInTransaction.mock.calls[0];
+        expect(call[0]).toBe(tx);
+        expect(call[1]).toMatchObject({
+            bookingId: 'booking-1',
+            externalPaymentId: 'ext-1',
+            providerRefundId: 'txn-1',
+        });
+        // No case completed -> no restriction recompute.
+        expect(refunds.refreshAgencyRestriction).not.toHaveBeenCalled();
+    });
+
+    it('a refunded event that completes a refund case refreshes the agency restriction after commit (#416B)', async () => {
+        const attempt = makeAttempt({ status: 'CAPTURED', externalPaymentId: 'ext-1' });
+        const { service, refunds } = makeHarness(attempt);
+        refunds.recordPspRefundConfirmationInTransaction.mockResolvedValue({
+            matched: true, completed: true, agencyId: 'agency-1',
+        });
+        const body = eventBody({ type: 'payment.refunded', id: 'evt-refund-2' });
+
+        const result = await service.handleWebhook('sandbox', body, sign(body));
+
+        expect(result).toMatchObject({ received: true, status: 'PROCESSED' });
+        expect(refunds.refreshAgencyRestriction).toHaveBeenCalledWith('agency-1');
     });
 
     it('a failure event after capture records a conflict alert and keeps the capture', async () => {

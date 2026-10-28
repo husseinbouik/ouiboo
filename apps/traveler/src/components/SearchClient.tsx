@@ -37,6 +37,47 @@ type SortOrder = "asc" | "desc";
 
 export type SearchInitialFilters = SearchFilters;
 
+/**
+ * #440: parse the complete filter set from the current URL params.
+ * `date` is accepted as the legacy alias of `dateFrom` (the server page
+ * does the same); everything else uses the canonical param names that
+ * buildSearchParams writes.
+ */
+export function parseFiltersFromSearchParams(searchParams: URLSearchParams): SearchFilters {
+  const rawCategory = searchParams.get("category") ?? "";
+  // Normalize to uppercase to match TripCategory enum (#133)
+  const normalizedCategory = rawCategory.toUpperCase();
+  const category = Object.values(TripCategory).includes(normalizedCategory as TripCategory)
+    ? normalizedCategory
+    : rawCategory;
+  const ratingRaw = Number(searchParams.get("ratingMin"));
+  return {
+    category,
+    duration: "",
+    priceMax: searchParams.get("priceMax") ?? "",
+    searchQuery: searchParams.get("q") ?? "",
+    dateFrom: searchParams.get("date") || searchParams.get("dateFrom") || "",
+    dateTo: searchParams.get("dateTo") ?? "",
+    priceMin: searchParams.get("priceMin") ?? "",
+    availabilityOnly: searchParams.get("available") === "true",
+    ratingMin: Number.isFinite(ratingRaw) && ratingRaw > 0 ? ratingRaw : 0,
+  };
+}
+
+/** #440: serialize ALL filters — dropping one here re-creates the bug. */
+export function buildSearchParams(filters: SearchFilters): URLSearchParams {
+  const params = new URLSearchParams();
+  if (filters.searchQuery) params.set("q", filters.searchQuery);
+  if (filters.category) params.set("category", filters.category);
+  if (filters.priceMin) params.set("priceMin", filters.priceMin);
+  if (filters.priceMax) params.set("priceMax", filters.priceMax);
+  if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
+  if (filters.dateTo) params.set("dateTo", filters.dateTo);
+  if (filters.availabilityOnly) params.set("available", "true");
+  if (filters.ratingMin > 0) params.set("ratingMin", String(filters.ratingMin));
+  return params;
+}
+
 export default function SearchClient({
   initialFilters,
   initialResponse,
@@ -44,7 +85,7 @@ export default function SearchClient({
   initialFilters: SearchInitialFilters;
   initialResponse: unknown;
 }) {
-  const { t, ready } = useTranslation();
+  const { t, ready, i18n } = useTranslation();
   const TRIP_CATEGORIES = [
     { label: t('categories.adventure'), value: TripCategory.Adventure },
     { label: t('categories.cultural'), value: TripCategory.Cultural },
@@ -60,30 +101,27 @@ export default function SearchClient({
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
-  const [filters, setFilters] = useState<SearchFilters>(initialFilters);
+  // #440 (Council P1-15) rework: the URL is the single source of truth
+  // for filters. They are re-parsed from useSearchParams() on EVERY
+  // render, so in-page changes, shared deep links and back/forward
+  // navigation all render exactly what the URL says — the previous
+  // useState copy (seeded once, then partially re-hydrated by a
+  // post-mount effect) drifted from the URL: its updater dropped
+  // dates/availability/rating from the query string, and the query
+  // kept serving the stale filter set until a full reload.
+  const filters = useMemo<SearchFilters>(() => parseFiltersFromSearchParams(searchParams), [searchParams]);
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
   const hasAdvancedFilters = Boolean(filters.dateFrom || filters.dateTo || filters.priceMin || filters.priceMax || filters.availabilityOnly);
   const advancedVisible = advancedFiltersOpen || hasAdvancedFilters;
 
-  // Initialize search query from URL ?q= parameter (e.g. from homepage hero search)
+  // The text input keeps a local echo for responsive typing; the URL
+  // (and therefore the filters) is updated through the 300ms debounce
+  // below. External URL changes (back/forward, a fresh deep link while
+  // mounted) re-sync the echo — during typing the URL value is stable,
+  // so this never clobbers an in-progress edit.
   useEffect(() => {
-    const q = searchParams.get("q");
-    if (q) {
-      setSearchQueryInput(q);
-      setFilters((prev) => ({ ...prev, searchQuery: q }));
-    }
-    const category = searchParams.get("category");
-    if (category) {
-      // Normalize to uppercase to match TripCategory enum (#133)
-      const normalized = category.toUpperCase();
-      const valid = Object.values(TripCategory).includes(normalized as TripCategory);
-      setFilters((prev) => ({ ...prev, category: valid ? normalized : category }));
-    }
-    const date = searchParams.get("date");
-    if (date) {
-      setFilters((prev) => ({ ...prev, dateFrom: date }));
-    }
-  }, [searchParams]);
+    setSearchQueryInput(filters.searchQuery);
+  }, [filters.searchQuery]);
 
   const activeFiltersCount = useMemo(
     () =>
@@ -96,28 +134,31 @@ export default function SearchClient({
     [filters],
   );
 
-  const updateFilter = useCallback((key: FilterKey, value: SearchFilters[FilterKey]) => {
-    setFilters((currentFilters) => {
-      const nextFilters = { ...currentFilters, [key]: value };
-      const params = new URLSearchParams();
-      if (nextFilters.searchQuery) params.append("q", nextFilters.searchQuery);
-      if (nextFilters.category) params.append("category", nextFilters.category);
-      if (nextFilters.priceMin) params.append("priceMin", nextFilters.priceMin);
-      if (nextFilters.priceMax) params.append("priceMax", nextFilters.priceMax);
-      router.push(`/search?${params.toString()}`);
-      return nextFilters;
-    });
+  // Every control writes ALL filter params via router.replace — a
+  // replace (not push) per keystroke/slider move keeps history clean,
+  // and serializing the complete next filter set means no param can be
+  // silently dropped by a partial updater (the original #440 defect).
+  const updateFilters = useCallback((patch: Partial<SearchFilters>) => {
+    const nextFilters = { ...filters, ...patch };
+    const params = buildSearchParams(nextFilters);
+    const query = params.toString();
+    router.replace(query ? `/search?${query}` : "/search");
     setCurrentPage(1);
-  }, [router, setCurrentPage]);
+  }, [filters, router, setCurrentPage]);
 
-  // Debounce local input -> sync to filters.searchQuery
+  const updateFilter = useCallback((key: FilterKey, value: SearchFilters[FilterKey]) => {
+    updateFilters({ [key]: value } as Partial<SearchFilters>);
+  }, [updateFilters]);
+
+  // Debounce local input -> write `q` to the URL (which re-derives the
+  // filters). Skips the write when the echo already matches the URL.
   useEffect(() => {
-    const t = setTimeout(() => {
+    if (searchQueryInput === filters.searchQuery) return;
+    const id = setTimeout(() => {
       updateFilter("searchQuery", searchQueryInput);
-      setCurrentPage(1);
     }, 300);
-    return () => clearTimeout(t);
-  }, [searchQueryInput, updateFilter]);
+    return () => clearTimeout(id);
+  }, [searchQueryInput, filters.searchQuery, updateFilter]);
 
   const queryParams = useMemo<TripsQueryParams>(() => {
     const params: TripsQueryParams = {
@@ -126,6 +167,8 @@ export default function SearchClient({
       sortOrder,
       page: currentPage,
       limit: 20,
+      // #546: resolve trip titles/descriptions into the UI language.
+      locale: i18n.language,
     };
     if (filters.searchQuery) params.q = filters.searchQuery;
     if (filters.category) params.category = filters.category;
@@ -136,35 +179,42 @@ export default function SearchClient({
     if (filters.availabilityOnly) params.available = true;
     if (filters.ratingMin > 0) params.ratingMin = filters.ratingMin;
     return params;
-  }, [filters, sortBy, sortOrder, currentPage]);
+  }, [filters, sortBy, sortOrder, currentPage, i18n.language]);
+
+  // #440 (Council P1-15): the SSR response may only seed the query it was
+  // fetched for (page 1, default sort, the initial filters). Seeding every
+  // query key with it made in-page searches render the initial result set
+  // as if it were the response for the new filters — stale results until a
+  // full reload. Any deviation from the initial query must fetch fresh.
+  const isInitialQuery =
+    currentPage === 1 &&
+    sortBy === "createdAt" &&
+    sortOrder === "desc" &&
+    filters.searchQuery === initialFilters.searchQuery &&
+    filters.category === initialFilters.category &&
+    filters.priceMin === initialFilters.priceMin &&
+    filters.priceMax === initialFilters.priceMax &&
+    filters.dateFrom === initialFilters.dateFrom &&
+    filters.dateTo === initialFilters.dateTo &&
+    filters.availabilityOnly === initialFilters.availabilityOnly &&
+    filters.ratingMin === initialFilters.ratingMin;
 
   const { data: response, isLoading, error, isError } = useTripsQuery(queryParams, {
     placeholderData: keepPreviousData,
     // Seed from server-side fetch so first paint shows results without a loading flash.
     // React Query refetches when queryParams change (filters/pagination/sort).
-    initialData: initialResponse as never,
+    initialData: isInitialQuery ? (initialResponse as never) : undefined,
   });
 
   const trips = response?.data || [];
   const pagination = response?.pagination || { total: 0, page: 1, limit: 20, totalPages: 0 };
 
   const clearAllFilters = () => {
-    setFilters({
-      category: "",
-      duration: "",
-      priceMax: "",
-      searchQuery: "",
-      dateFrom: "",
-      dateTo: "",
-      priceMin: "",
-      availabilityOnly: false,
-      ratingMin: 0,
-    });
     setSearchQueryInput("");
     setCurrentPage(1);
     setSortBy("createdAt");
     setSortOrder("desc");
-    router.push("/search");
+    router.replace("/search");
   };
 
   const activeFilterChips = useMemo(() => {
@@ -172,17 +222,17 @@ export default function SearchClient({
     if (filters.priceMin || filters.priceMax) {
       const min = filters.priceMin || "0";
       const max = filters.priceMax || "8";
-      chips.push({ label: `Price: ${min}-${max} MAD`, onRemove: () => { updateFilter("priceMin", ""); updateFilter("priceMax", ""); } });
+      chips.push({ label: `Price: ${min}-${max} MAD`, onRemove: () => updateFilters({ priceMin: "", priceMax: "" }) });
     }
     if (filters.dateFrom || filters.dateTo) {
       const from = filters.dateFrom ? new Date(filters.dateFrom).toLocaleDateString() : "any";
       const to = filters.dateTo ? new Date(filters.dateTo).toLocaleDateString() : "any";
-      chips.push({ label: `Dates: ${from} - ${to}`, onRemove: () => { updateFilter("dateFrom", ""); updateFilter("dateTo", ""); } });
+      chips.push({ label: `Dates: ${from} - ${to}`, onRemove: () => updateFilters({ dateFrom: "", dateTo: "" }) });
     }
     if (filters.availabilityOnly) chips.push({ label: "Available Only", onRemove: () => updateFilter("availabilityOnly", false) });
     if (filters.ratingMin > 0) chips.push({ label: `Rating: ${filters.ratingMin}+`, onRemove: () => updateFilter("ratingMin", 0) });
     return chips;
-  }, [filters, updateFilter]);
+  }, [filters, updateFilter, updateFilters]);
 
   const renderCategoryGroup = () => (
       <div className="space-y-3">
@@ -376,7 +426,7 @@ export default function SearchClient({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {isLoading ? (
-                <TripCardSkeletonGrid count={4} className="md:col-span-2" />
+                <TripCardSkeletonGrid count={4} className="md:col-span-2 sm:grid-cols-2 lg:grid-cols-2 gap-8" />
               ) : trips.length > 0 ? (
                 <AnimatePresence>
                   {trips.map((trip, idx) => (

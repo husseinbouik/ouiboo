@@ -13,6 +13,11 @@ interface PaymentProofFooterProps {
   onApprove: () => void;
 }
 
+/**
+ * #422 (Council P0-20): step 1 of the review only ACCEPTS the proof image
+ * — the button no longer claims to approve/settle the payment. Settlement
+ * happens in the bank-confirmation step (PaymentProofBankConfirmation).
+ */
 export function PaymentProofFooter({
   isReadOnly,
   isLoading,
@@ -51,7 +56,7 @@ export function PaymentProofFooter({
         disabled={isLoading || showRejectInput}
         className="bg-success text-success-foreground hover:bg-success/90"
       >
-        {isLoading ? t('paymentProof.approving') : t('paymentProof.approvePayment')}
+        {isLoading ? t('paymentProof.accepting') : t('paymentProof.acceptProof')}
       </Button>
     </div>
   );

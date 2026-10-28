@@ -18,7 +18,8 @@ Never skip directly from local to production.
 
 These deployment assets already exist:
 
-- staging workflow: `.github/workflows/staging-release.yml`
+- promotion path: the gated manual checklist in [RELEASE_RUNBOOK.md](./RELEASE_RUNBOOK.md)
+  (`.github/workflows/staging-release.yml` was retired on 2026-10-27 — see #502)
 - production workflow: `.github/workflows/production-release.yml`
 - smoke validation script: `scripts/smoke-deploy.mjs`
 - health endpoints:
@@ -39,7 +40,7 @@ Goal:
 
 - create a real staging environment
 - load staging secrets and URLs
-- run the staging workflow successfully
+- deploy staging through Vercel and attest the build under the release runbook
 - complete a full dress rehearsal
 
 Do not start production setup until staging is working end to end.

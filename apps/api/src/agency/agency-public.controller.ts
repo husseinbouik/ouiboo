@@ -1,7 +1,8 @@
 import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { DatabaseService } from '../database/database.service';
-import { effectiveLicenceStatus } from '../common/agency-licence.util';
+import { effectiveInsuranceStatus, effectiveLicenceStatus, effectiveVerificationStatus } from '../common/agency-licence.util';
+import { derivePublicMediaUrl } from '../upload/media-url.util';
 
 @ApiTags('Agency Public')
 @Controller('agencies')
@@ -23,9 +24,21 @@ export class AgencyPublicController {
                 // is only exposed while the licence is verified (Law 11-16
                 // requires verified agents to display it publicly).
                 legalName: true,
+                travelLicenceType: true,
                 travelLicenceNumber: true,
                 travelLicenceStatus: true,
                 licenceExpiry: true,
+                // B4: seller-block issue data — same withholding rule as
+                // the licence number (exposed only while VERIFIED).
+                licenceIssuedAt: true,
+                licenceIssuingAuthority: true,
+                // #413 (Council B10): what+when verification statement on the
+                // public profile — the licence check date and the RC
+                // insurance evidence date.
+                licenceVerifiedAt: true,
+                insuranceStatus: true,
+                insuranceExpiry: true,
+                insuranceVerifiedAt: true,
             }
         });
 
@@ -34,16 +47,30 @@ export class AgencyPublicController {
         }
 
         const licenceVerified = effectiveLicenceStatus(agency) === 'VERIFIED';
+        const effectiveInsurance = effectiveInsuranceStatus(agency);
+        const insuranceVerified = effectiveInsurance === 'VERIFIED';
 
         return {
             id: agency.id,
             companyName: agency.companyName,
             bio: agency.bio,
-            logo: agency.logo,
-            verificationStatus: agency.verificationStatus,
+            // #447: the stored logo is a file reference, not an address —
+            // re-derive it against the current public media base at read
+            // time (same adoption as the trip payloads in PR #601).
+            logo: derivePublicMediaUrl(agency.logo) ?? null,
+            // #569: the umbrella is reconciled with its components on
+            // read — VERIFIED only when identity + licence + insurance
+            // are all effectively verified (see agency-licence.util).
+            verificationStatus: effectiveVerificationStatus(agency),
             legalName: agency.legalName,
             licenceVerified,
+            travelLicenceType: licenceVerified ? agency.travelLicenceType : null,
             travelLicenceNumber: licenceVerified ? agency.travelLicenceNumber : null,
+            licenceIssuedAt: licenceVerified ? agency.licenceIssuedAt : null,
+            licenceIssuingAuthority: licenceVerified ? agency.licenceIssuingAuthority : null,
+            licenceVerifiedAt: licenceVerified ? agency.licenceVerifiedAt : null,
+            insuranceStatus: effectiveInsurance,
+            insuranceVerifiedAt: insuranceVerified ? agency.insuranceVerifiedAt : null,
         };
     }
 }

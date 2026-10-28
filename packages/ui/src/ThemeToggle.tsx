@@ -3,9 +3,15 @@
 import { useTheme } from 'next-themes';
 import { Moon, Sun } from 'lucide-react';
 import { useSyncExternalStore } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../utils';
 
-export function ThemeToggle({ isTransparent, label = 'Toggle theme' }: { isTransparent?: boolean; label?: string }) {
+export function ThemeToggle({ isTransparent, label }: { isTransparent?: boolean; label?: string }) {
+  const { t } = useTranslation();
+  // Session #3 P0-12 (#557): the aria label was a hardcoded English
+  // default; it now comes from the host app's common namespace (an
+  // explicit label prop still wins; apps without the key keep English).
+  const effectiveLabel = label ?? t('common.toggleTheme', { defaultValue: 'Toggle theme' });
   const { resolvedTheme, setTheme } = useTheme();
   const mounted = useSyncExternalStore(
     () => () => undefined,
@@ -24,13 +30,13 @@ export function ThemeToggle({ isTransparent, label = 'Toggle theme' }: { isTrans
       type="button"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
       className={cn(
-        'w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 relative overflow-hidden group hover:bg-foreground/5',
+        'w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 relative group hover:bg-foreground/5 hit-slop',
         isTransparent
           ? 'text-white/80 hover:text-white'
           : 'text-muted-foreground hover:text-foreground',
       )}
-      title={label}
-      aria-label={label}
+      title={effectiveLabel}
+      aria-label={effectiveLabel}
     >
       <div className="relative w-5 h-5">
         <Sun

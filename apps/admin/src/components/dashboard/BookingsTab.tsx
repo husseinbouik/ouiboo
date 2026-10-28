@@ -1,12 +1,17 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
 import { LayoutDashboard } from 'lucide-react';
 import { Button, Card, Badge, Pagination } from '@ouiboo/ui';
 import { BookingPaymentStatus, PaymentMethod } from '@ouiboo/types';
 import type { PaginationMeta } from '@ouiboo/utils';
-import type { AdminBooking, FeedbackState } from './types';
-import { getAdminBookingBadgeLabel, getAdminBookingPaymentBadgeLabel } from '../../app/status-mappers';
+import { apiClient } from '@/lib/api-client';
+import type { AdminBooking, ApiErrorResponse, FeedbackState } from './types';
+import { getErrorMessage } from './dashboard-utils';
+import AdminActionModal from './AdminActionModal';
+import { getAdminBookingBadgeLabel, getAdminBookingPaymentBadgeLabel, getAdminProofBankConfirmationMeta } from '../../app/status-mappers';
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -28,6 +33,14 @@ type BookingsTabProps = {
   onRequestRefund: (booking: AdminBooking) => void;
 };
 
+type BookingRepairAction = 'resync-payment-state' | 'requeue-proof-review' | 'open-refund-case';
+
+const BOOKING_REPAIR_ACTIONS: BookingRepairAction[] = [
+  'resync-payment-state',
+  'requeue-proof-review',
+  'open-refund-case',
+];
+
 export default function BookingsTab({
   t,
   bookings,
@@ -38,6 +51,27 @@ export default function BookingsTab({
   isRefunding,
   onRequestRefund,
 }: BookingsTabProps) {
+  const queryClient = useQueryClient();
+  const [repairTarget, setRepairTarget] = useState<AdminBooking | null>(null);
+  const [repairAction, setRepairAction] = useState<BookingRepairAction>('resync-payment-state');
+  const [repairError, setRepairError] = useState<string | null>(null);
+  const [repairFeedback, setRepairFeedback] = useState<string | null>(null);
+
+  const repairMutation = useMutation({
+    mutationFn: async ({ id, action, reason }: { id: string; action: BookingRepairAction; reason: string }) => {
+      await apiClient.post(`/admin/bookings/${id}/repair`, { action, reason });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['all-bookings'] });
+      setRepairTarget(null);
+      setRepairError(null);
+      setRepairFeedback(t('dashboard.groups.success'));
+    },
+    onError: (error: AxiosError<ApiErrorResponse>) => {
+      setRepairError(getErrorMessage(error, t('dashboard.interventions.failed')));
+    },
+  });
+
   return (
 <div className="space-y-6 animate-in fade-in duration-500">
   <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
@@ -48,6 +82,9 @@ export default function BookingsTab({
     <div className={`text-sm font-medium ${bookingFeedback.type === 'success' ? 'text-success' : 'text-danger'}`}>
       {bookingFeedback.message}
     </div>
+  )}
+  {repairFeedback && (
+    <div className="text-sm font-medium text-success">{repairFeedback}</div>
   )}
   <div className="bg-card rounded-3xl overflow-hidden shadow-sm border border-border">
      <div className="overflow-x-auto">
@@ -72,6 +109,25 @@ export default function BookingsTab({
                  <td className="px-6 py-4">
                     <p className="font-bold text-sm line-clamp-1">{booking.session.template.title}</p>
                     <p className="text-[10px] text-muted-foreground font-mono italic">#{booking.id.substring(0, 8)}</p>
+                    {/* #481 + B9: read-only terms-acceptance evidence —
+                        the version the traveller accepted for this
+                        booking, when the server recorded it, and the
+                        checkout locale. Bookings with no recorded
+                        version are pre-B9 rows: label them honestly as
+                        unrecorded, never with a fabricated version. */}
+                    {booking.termsVersion ? (
+                      <p className="text-[10px] text-muted-foreground">
+                        {t('dashboard.table.termsAccepted', { version: booking.termsVersion })}
+                        {booking.termsAcceptedAt
+                          ? ` · ${new Date(booking.termsAcceptedAt).toLocaleDateString()}`
+                          : ''}
+                        {booking.locale ? ` · ${booking.locale}` : ''}
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground">
+                        {t('dashboard.table.termsUnrecorded')}
+                      </p>
+                    )}
                  </td>
                  <td className="px-6 py-4 text-sm font-medium">{booking.traveler.name}</td>
                  <td className="px-6 py-4">
@@ -80,19 +136,42 @@ export default function BookingsTab({
                     <Badge variant="outline" className="text-[8px] font-black uppercase">
                       {getAdminBookingPaymentBadgeLabel(booking.paymentStatus, t)}
                     </Badge>
+                    {/* #422: read-only bank-confirmation state of the booking's
+                        proof — an ACCEPTED proof is explicitly not settled. */}
+                    {(() => {
+                      const bankMeta = getAdminProofBankConfirmationMeta(booking.paymentProof?.status, t);
+                      return bankMeta ? (
+                        <Badge className={`text-[8px] font-black uppercase ${bankMeta.className}`}>{bankMeta.label}</Badge>
+                      ) : null;
+                    })()}
                   </div>
                  </td>
                  <td className="px-6 py-4 text-end font-black">{booking.totalAmount} {booking.session.currency}</td>
                  <td className="px-6 py-4 text-end">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-border"
-                    disabled={!canRefund || isRefunding}
-                    onClick={() => onRequestRefund(booking)}
-                  >
-                    {t('dashboard.actions.refund')}
-                  </Button>
+                  <div className="flex flex-col items-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-border"
+                      disabled={!canRefund || isRefunding}
+                      onClick={() => onRequestRefund(booking)}
+                    >
+                      {t('dashboard.actions.refund')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={repairMutation.isPending}
+                      onClick={() => {
+                        setRepairError(null);
+                        setRepairFeedback(null);
+                        setRepairAction('resync-payment-state');
+                        setRepairTarget(booking);
+                      }}
+                    >
+                      {t('dashboard.interventions.repair')}
+                    </Button>
+                  </div>
                  </td>
 </tr>
             )})}
@@ -101,6 +180,42 @@ export default function BookingsTab({
       </div>
    </div>
    <Pagination pagination={pagination} onPageChange={onPageChange} labels={paginationLabels} className="mt-2" />
+   {repairTarget && (
+     <AdminActionModal
+       t={t}
+       title={t('dashboard.interventions.bookingRepair.title')}
+       description={t('dashboard.interventions.bookingRepair.description')}
+       confirmLabel={t('dashboard.interventions.repair')}
+       pending={repairMutation.isPending}
+       error={repairError}
+       onClose={() => setRepairTarget(null)}
+       onSubmit={(reason) => repairMutation.mutate({ id: repairTarget.id, action: repairAction, reason })}
+     >
+       <div className="space-y-2">
+         <label
+           htmlFor="booking-repair-action"
+           className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+         >
+           {t('dashboard.interventions.repairActionLabel')}
+         </label>
+         <select
+           id="booking-repair-action"
+           value={repairAction}
+           onChange={(event) => setRepairAction(event.target.value as BookingRepairAction)}
+           className="w-full rounded-xl border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sunset-orange/20"
+         >
+           {BOOKING_REPAIR_ACTIONS.map((action) => (
+             <option key={action} value={action}>
+               {t(`dashboard.interventions.bookingRepair.${action}`)}
+             </option>
+           ))}
+         </select>
+         <p className="text-xs text-muted-foreground">
+           {t(`dashboard.interventions.bookingRepair.${repairAction}Hint`)}
+         </p>
+       </div>
+     </AdminActionModal>
+   )}
 </div>
   );
 }

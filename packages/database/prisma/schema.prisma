@@ -17,6 +17,10 @@ enum UserRole {
 
 enum VerificationStatus {
   PENDING
+  // #422 (Council P0-20): the proof image was accepted by the reviewer, but
+  // the payment is NOT settled until the agency confirms the credit in its
+  // bank account (proof status then moves to VERIFIED).
+  ACCEPTED
   VERIFIED
   REJECTED
 }
@@ -36,6 +40,17 @@ enum LicenceStatus {
   VERIFIED
   REJECTED
   EXPIRED
+}
+
+// #421 (Council P0-19): lifecycle of an agency's bank payment
+// destination. Free-text bank details are a submission, never live on
+// save: only an admin verification against a bank attestation promotes
+// them to the traveller-visible bankDetails.
+enum BankDetailsStatus {
+  UNVERIFIED
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
 }
 
 enum AgencyPaymentOnboardingStatus {
@@ -102,13 +117,19 @@ enum BookingStatus {
   // #369: staged payments — the confirmation deadline passed without the
   // minimum group size; the deposit is refund-due (see BookingPaymentPlan).
   NOT_CONFIRMED
+  // #434 (Council P1-08): the agency recorded that the traveller did not
+  // attend the trip. Terminal for review purposes: a NO_SHOW booking is
+  // never review-eligible (see Booking.attendance).
+  NO_SHOW
 }
 
-enum PayoutStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  PAID
+// #434 (Council P1-08): attendance recorded by the agency for a booking.
+// Null on the booking = not recorded yet. ATTENDED is the ONLY value
+// that makes a booking review-eligible; NO_SHOW mirrors the booking
+// status of the same name.
+enum BookingAttendance {
+  ATTENDED
+  NO_SHOW
 }
 
 enum SubscriptionStatus {
@@ -116,14 +137,6 @@ enum SubscriptionStatus {
   ACTIVE
   CANCELLED
   EXPIRED
-}
-
-enum TransactionType {
-  CREDIT
-  DEBIT
-  REFUND
-  PAYMENT_GATEWAY
-  BOOKING
 }
 
 enum PaymentMethod {
@@ -208,6 +221,11 @@ enum PaymentLedgerSource {
   ADMIN_PROOF_REVIEW
   GATEWAY_WEBHOOK
   GATEWAY_REFUND
+  // #416 (Council P0-09): a refund completion proven by bank evidence
+  // (tiers 2–3: bank/provider confirmation, or bank reference + retained
+  // proof). Replaces the old behaviour where a merely typed provider
+  // string was recorded as GATEWAY_REFUND.
+  BANK_CONFIRMATION
 }
 
 // #369: staged payments. A session is "staged" when it requires a minimum
@@ -248,6 +266,27 @@ enum RefundCaseStatus {
   REFUND_OVERDUE
 }
 
+// #416 (Council P0-09): refund completion evidence tiers, strongest first.
+// A RefundCase may only complete on a qualifying evidence set: tier 1, 2,
+// 3 or 5 alone, or tier 4 corroborated by tier 5. Traveller confirmation
+// (tier 4) alone NEVER completes a case — the completing party can no
+// longer certify its own refund.
+enum RefundEvidenceTier {
+  PSP_CONFIRMATION
+  BANK_PROVIDER_CONFIRMATION
+  BANK_REFERENCE
+  TRAVELLER_CONFIRMATION
+  ADMIN_REVIEW
+}
+
+// #416: who recorded a RefundEvidence row.
+enum RefundEvidenceSource {
+  SYSTEM_WEBHOOK
+  AGENCY
+  TRAVELLER
+  ADMIN
+}
+
 // #369: which stage of a booking's payments an ExternalPayment records.
 // FULL preserves the pre-#369 single-payment behaviour (one record per
 // booking); staged bookings get one DEPOSIT and one BALANCE record.
@@ -271,7 +310,15 @@ model User {
   passwordResetTokenHash  String?                 @unique
   passwordResetExpiresAt  DateTime?
   passwordResetSentAt     DateTime?
+  // #418 (Council P0-13): admin MFA. The TOTP secret is stored AES-256-GCM
+  // encrypted (MFA_ENCRYPTION_KEY), never plaintext; recovery codes are
+  // stored only as bcrypt hashes and burn on use.
+  mfaEnabled              Boolean                 @default(false)
+  mfaTotpSecret           String?
+  mfaRecoveryCodeHashes   Json?
+  mfaEnrolledAt           DateTime?
   refreshTokens           RefreshToken[]
+  breakGlassCredentials   BreakGlassCredential[]  @relation("BreakGlassCreatedBy")
   agencyProfile           AgencyProfile?
   bookings                Booking[]
   refundCases             RefundCase[]
@@ -303,6 +350,30 @@ model RefreshToken {
   @@index([userId])
 }
 
+// #418 (Council P0-13): break-glass recovery credentials. A break-glass
+// credential is a SEPARATE, one-time recovery secret — it is not a recovery
+// code on the admin account itself. It is created by an authenticated admin,
+// shown exactly once, stored only as a bcrypt hash, expires, and can be
+// revoked. Using it (with the admin email + password) bypasses a lost TOTP
+// factor exactly once; every use is written to AuditLog as
+// ADMIN_BREAK_GLASS_USED and alerted by email. The plaintext is held offline
+// by the founder (see docs/launch-ops/BREAK_GLASS_RUNBOOK.md).
+model BreakGlassCredential {
+  id          String    @id @default(cuid())
+  label       String
+  secretHash  String
+  createdById String
+  createdBy   User      @relation("BreakGlassCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  usedAt      DateTime?
+  usedByEmail String?
+  revokedAt   DateTime?
+
+  @@index([createdById])
+  @@index([expiresAt])
+}
+
 model AgencyProfile {
   id                 String             @id @default(cuid())
   userId             String             @unique
@@ -315,13 +386,29 @@ model AgencyProfile {
   bio                String?
   logo               String?
   templates          TripTemplate[]
-  wallet             Wallet?
-  payoutRequests     PayoutRequest[]
+  tripSessions       TripSession[]
+  bookings           Booking[]
+  paymentTransactions PaymentTransaction[]
+  reviews            Review[]
+  invoiceLineItems   InvoiceLineItem[]
   conversations      Conversation[]     @relation("AgencyConversations")
   subscriptionStatus SubscriptionStatus @default(TRIAL)
   trialEndsAt        DateTime?
   subscriptionEndsAt DateTime?
   bankDetails        String?            @db.Text
+  // #421 (Council P0-19): bank-destination verification. bankDetails
+  // stays the LIVE, traveller-visible instructions and is written only
+  // by the admin verify endpoint when it promotes a reviewed
+  // submission; agency edits land in pendingBankDetails (with holder
+  // name + attestation) so a replacement review never takes the
+  // currently verified destination offline.
+  pendingBankDetails          String?           @db.Text
+  bankAccountHolderName       String?
+  bankAttestationUrl          String?
+  bankDetailsStatus           BankDetailsStatus @default(UNVERIFIED)
+  bankDetailsVerifiedAt       DateTime?
+  bankDetailsVerifiedBy       String?
+  bankDetailsRejectionReason String?
   // #324: subscription terms acceptance + pre-renewal reminder marker
   subscriptionTermsVersion    String?
   subscriptionTermsAcceptedAt DateTime?
@@ -348,13 +435,56 @@ model AgencyProfile {
   travelLicenceStatus    LicenceStatus      @default(NOT_SUBMITTED)
   licenceVerifiedAt      DateTime?
   licenceExpiry          DateTime?
+  // B4 (Council Session #2): Law 31-08 Art. 29/32 seller identity block —
+  // the licence's date of issue and issuing authority, rendered live in
+  // checkout, on the trip page, and in the booking confirmation.
+  // Captured at submission; a complete submission (and any admin
+  // VERIFIED decision) now requires both. Legacy verified rows predate
+  // the fields: null means "not yet supplied", never a fabricated value.
+  licenceIssuedAt          DateTime?
+  licenceIssuingAuthority  String?
   licenceRejectionReason String?
+  // #415 (Council P0-08): the licence is proven by an uploaded document
+  // (private identity-document upload, key only — never a public URL)
+  // plus a manual Ministry-list check attested by an admin. Verification
+  // stamps who checked and when; the stamp is cleared whenever the
+  // licence details change.
+  licenceDocumentKey        String?
+  licenceDocumentName       String?
+  licenceMinistryCheckedAt  DateTime?
+  licenceMinistryCheckedBy  String?
+  // #415: RC (responsabilité civile) insurance artefact. Same lifecycle
+  // as the licence (LicenceStatus), expiry derived on read. The
+  // certificate is a private identity-document upload (key only).
+  insuranceStatus           LicenceStatus @default(NOT_SUBMITTED)
+  insuranceInsurer          String?
+  insurancePolicyNumber     String?
+  insuranceInsuredName      String?
+  insuranceValidFrom        DateTime?
+  insuranceExpiry           DateTime?
+  insuranceCoverageLimit    Decimal?      @db.Decimal(18, 2)
+  insuranceCertificateKey   String?
+  insuranceVerifiedAt       DateTime?
+  insuranceRejectionReason  String?
+  // #415: set by the expiry sweep (later PR) when a licence/insurance
+  // lapse pauses the agency; explains to admin/agency surfaces why.
+  verificationPausedAt      DateTime?
+  verificationPauseReason   String?
   refundCases                 RefundCase[]
+  duplicateCreditFlags        DuplicateCreditFlag[]
+  paymentStatusLedgerEntries  PaymentStatusLedgerEntry[]
   // #370: refund enforcement ladder (plan §16, level 2). Set while the
   // agency has an overdue refund case: NEW bookings are refused, existing
   // bookings are never touched. Null = not restricted.
   newBookingsRestrictedAt     DateTime?
   newBookingsRestrictionReason String?
+  // #419 (Council P0-16): trip emergency contact — the person travellers
+  // with a booking reach FIRST during an active trip (departure pack on
+  // the booking). Distinct from the account holder: it is whoever answers
+  // on the day (guide, driver coordinator, on-call manager). Shown only
+  // to travellers holding a booking with this agency, never publicly.
+  emergencyContactName        String?
+  emergencyContactPhone       String?
 
 }
 
@@ -388,12 +518,28 @@ model TripTemplate {
   reviewCount        Int            @default(0)
   lastReviewDate     DateTime?
   startingPrice      Decimal?       @db.Decimal(18, 2)
+  // #417 (Council P0-11): agency per-trip cancellation bands for
+  // traveller-initiated cancellations, stored as structured data:
+  // { version, bands: [{ minDaysBeforeStart, refundPercent }] },
+  // validated on write by the API (never below the platform floor —
+  // agency-fault and minimum-unmet cancellations always refund 100%
+  // and never consult these bands). Null = platform default bands.
   cancellationPolicy Json?
+  // #546: multilingual trip content — title + description keyed by ISO
+  // language code: { "fr": { title, description }, "ar": { ... } }.
+  // French is canonical: the `title`/`description` columns above hold
+  // the French text and mirror `translations.fr` on every write, so all
+  // existing consumers keep rendering French exactly as before. Other
+  // languages live only in this map (added by data, never by schema
+  // change) and are resolved server-side for public payloads.
+  translations       Json?
   minBookings        Int            @default(1)
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
   @@unique([id, currency])
+  @@unique([id, agencyId])
+  @@unique([id, agencyId, currency])
   @@index([agencyId, status, createdAt])
   @@index([status, featured])
   @@index([category, status])
@@ -416,7 +562,12 @@ model ItineraryDay {
 model TripSession {
   id                 String        @id @default(cuid())
   templateId         String
-  template           TripTemplate  @relation(fields: [templateId, currency], references: [id, currency], onDelete: Cascade, onUpdate: Restrict)
+  // #428 (Council P1-01): structural tenant isolation — the tenant is
+  // stamped on the row and bound by composite FKs, so a row of one
+  // agency can never be paired with another agency's rows in the DB.
+  agencyId           String
+  agency             AgencyProfile @relation(fields: [agencyId], references: [id])
+  template           TripTemplate  @relation(fields: [templateId, agencyId, currency], references: [id, agencyId, currency], onDelete: Cascade, onUpdate: Restrict)
   startDate          DateTime
   endDate            DateTime
   price              Decimal       @db.Decimal(18, 2)
@@ -437,6 +588,8 @@ model TripSession {
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
+  @@unique([id, agencyId])
+  @@index([agencyId])
   @@index([startDate])
   @@index([endDate])
   @@index([templateId, status, startDate])
@@ -447,7 +600,12 @@ model TripSession {
 model Booking {
   id                          String               @id @default(cuid())
   sessionId                   String
-  session                     TripSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  // #428 (Council P1-01): structural tenant isolation — the tenant is
+  // stamped on the row and bound by composite FKs, so a row of one
+  // agency can never be paired with another agency's rows in the DB.
+  agencyId                    String
+  agency                      AgencyProfile        @relation(fields: [agencyId], references: [id])
+  session                     TripSession          @relation(fields: [sessionId, agencyId], references: [id, agencyId], onDelete: Cascade)
   travelerId                  String
   traveler                    User                 @relation(fields: [travelerId], references: [id])
   bookingDate                 DateTime             @default(now())
@@ -457,7 +615,27 @@ model Booking {
   guestsCount                 Int
   fullName                    String?
   phoneNumber                 String?
-  documentNumber              String?
+  // #424: the traveller's checkout UI locale (en/fr/ar) captured at
+  // booking creation so every booking-journey email renders in the
+  // language the traveller booked in. Null = not recorded (pre-#424
+  // bookings and non-checkout paths) → emails use the default locale.
+  locale                      String?
+  // #481 + B9 (Council Session #2): the version of the traveller
+  // booking terms the checkout displayed and the traveller accepted,
+  // plus the server timestamp of that acceptance — the evidence of
+  // which terms this booking was made under. Required for every new
+  // booking since B9 (explicit termsAccepted flag + server version
+  // allowlist + locale); Null only on pre-B9 bookings, which admin
+  // surfaces label "terms version unrecorded". The columns stay
+  // nullable so the legacy rows remain representable.
+  termsVersion                String?
+  termsAcceptedAt             DateTime?
+  // #494 (B16): traveller-supplied booking-creation idempotency key.
+  // A replay returns the original booking; the payload hash makes the
+  // same key with a DIFFERENT payload a 409. Per-traveller unique
+  // index below; null when the client sent no key (legacy).
+  idempotencyKey              String?
+  idempotencyPayloadHash      String?
   paymentProofUrl             String?
   paymentProofId              String?              @unique
   paymentProof                PaymentProof?
@@ -471,6 +649,21 @@ model Booking {
   cancelledBy                 String?
   cancellationReason          String?
   confirmedAt                 DateTime?
+  // #434 (Council P1-08): attendance recorded by the owning agency once
+  // the trip has started. attendanceRecordedBy is the agency user id
+  // that recorded it; both stamps stay null until recording. Review
+  // eligibility requires attendance = ATTENDED (ReviewsService) — the
+  // date-based completion job no longer confers it on its own.
+  attendance                  BookingAttendance?
+  attendanceRecordedAt        DateTime?
+  attendanceRecordedBy        String?
+  // #417 (Council P0-11): snapshot of the trip's resolved cancellation
+  // scale ({ version, bands, floorRefundPercent, refundInitiationDays })
+  // taken at booking creation. Later template edits can never rewrite
+  // the terms a traveller already booked under; traveller-cancellation
+  // refunds are computed from this snapshot. Null for bookings created
+  // before the scale existed (resolved from the template at read time).
+  cancellationScale           Json?
   refundAmount                Decimal?             @db.Decimal(18, 2)
   refundStatus                RefundStatus?
   refundProcessedAt           DateTime?
@@ -479,11 +672,16 @@ model Booking {
   updatedAt                   DateTime             @updatedAt
   paymentTransactions         PaymentTransaction[]
   invoiceLineItems            InvoiceLineItem[]
+  paymentStatusLedgerEntries  PaymentStatusLedgerEntry[]
   externalPayments            ExternalPayment[]
   paymentAttempts             PaymentAttempt[]
   paymentPlan                 BookingPaymentPlan?
   refundCases                 RefundCase[]
+  duplicateCreditFlags        DuplicateCreditFlag[]
 
+  @@unique([travelerId, idempotencyKey])
+  @@unique([id, agencyId])
+  @@index([agencyId])
   @@index([travelerId])
   @@index([sessionId])
   @@index([sessionId, status])
@@ -503,6 +701,11 @@ model PaymentProof {
   uploadedAt      DateTime           @default(now())
   rejectionReason String?
   status          VerificationStatus @default(PENDING)
+  // #494 (B16): proof-submission idempotency, same pattern as Booking
+  // — same key + same file hash returns the stored proof; different
+  // file is a 409. Null when no key was sent.
+  idempotencyKey        String?
+  idempotencyPayloadHash String?
 }
 
 // #368: A factual record of a traveller payment held OUTSIDE OuiBoo — by the
@@ -512,7 +715,7 @@ model PaymentProof {
 model ExternalPayment {
   id                String                @id @default(cuid())
   bookingId         String
-  booking           Booking               @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking           Booking               @relation(fields: [bookingId, agencyId], references: [id, agencyId], onDelete: Cascade)
   agencyId          String
   agency            AgencyProfile         @relation(fields: [agencyId], references: [id])
   travelerId        String
@@ -524,6 +727,15 @@ model ExternalPayment {
   custodian         PaymentCustodian
   status            ExternalPaymentStatus @default(PENDING_VERIFICATION)
   verifiedAt        DateTime?
+  // #422 (Council P0-20): bank-confirmation facts for manual payments. A
+  // manual payment may only become VERIFIED when the agency confirms the
+  // credit actually observed in its bank account: the confirmed amount and
+  // the bank transfer reference are the audit anchor that binds the record
+  // to a real bank credit (never to the uploaded screenshot).
+  confirmedAmount   Decimal?              @db.Decimal(18, 2)
+  bankReference     String?
+  bankConfirmedAt   DateTime?
+  bankConfirmedBy   String?
   // #369: FULL = the booking's single payment (pre-staged behaviour);
   // staged bookings hold one DEPOSIT and one BALANCE record instead.
   stage             ExternalPaymentStage  @default(FULL)
@@ -534,6 +746,7 @@ model ExternalPayment {
   paymentAttempts   PaymentAttempt[]
 
   @@unique([bookingId, stage])
+  @@unique([id, agencyId])
   @@index([agencyId, status, createdAt])
   @@index([travelerId])
 }
@@ -545,9 +758,9 @@ model ExternalPayment {
 model BookingPaymentPlan {
   id                    String                   @id @default(cuid())
   bookingId             String                   @unique
-  booking               Booking                  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking               Booking                  @relation(fields: [bookingId, agencyId], references: [id, agencyId], onDelete: Cascade)
   sessionId             String
-  session               TripSession              @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session               TripSession              @relation(fields: [sessionId, agencyId], references: [id, agencyId], onDelete: Cascade)
   agencyId              String
   totalAmount           Decimal                  @db.Decimal(18, 2)
   depositAmount         Decimal                  @db.Decimal(18, 2)
@@ -563,6 +776,7 @@ model BookingPaymentPlan {
   createdAt             DateTime                 @default(now())
   updatedAt             DateTime                 @updatedAt
 
+  @@unique([bookingId, agencyId])
   @@index([sessionId, status])
   @@index([agencyId, status])
   @@index([status, confirmationDeadline])
@@ -577,7 +791,7 @@ model BookingPaymentPlan {
 model RefundCase {
   id                       String           @id @default(cuid())
   bookingId                String
-  booking                  Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking                  Booking          @relation(fields: [bookingId, agencyId], references: [id, agencyId], onDelete: Cascade)
   travelerId               String
   traveler                 User             @relation(fields: [travelerId], references: [id])
   agencyId                 String
@@ -601,6 +815,11 @@ model RefundCase {
   requestedAt              DateTime         @default(now())
   approvedAt               DateTime?
   agencyNotifiedAt         DateTime?
+  // #419 (Council P0-16): stamp of the traveller notification sent when
+  // an automatic (minimum-group) refund case opens — the person owed
+  // money must hear it too, not only the agency. Null = not yet told;
+  // the stamp makes the best-effort notification idempotent.
+  travelerNotifiedAt       DateTime?
   refundDueAt              DateTime?
   initiatedAt              DateTime?
   completedAt              DateTime?
@@ -608,6 +827,18 @@ model RefundCase {
   providerStatus           String?
   failureReason            String?
   disputeReason            String?
+  // #416 (Council P0-09): completion integrity. completionTier records
+  // the strongest qualifying evidence tier at completion (null until the
+  // case completes on evidence). travellerConfirmedAt / disputedAt are
+  // stamped by the traveller confirm/dispute endpoints; auditRequired
+  // flags the case for the risk-based admin audit queue.
+  completionTier           RefundEvidenceTier?
+  travellerConfirmedAt     DateTime?
+  disputedAt               DateTime?
+  auditRequired            Boolean          @default(false)
+  auditedAt                DateTime?
+  auditedBy                String?
+  evidence                 RefundEvidence[]
   // Idempotency guard for system-created cases (e.g. "refund-due:<bookingId>").
   dedupeKey                String?          @unique
   createdBy                String?
@@ -621,15 +852,75 @@ model RefundCase {
   @@index([status, refundDueAt])
 }
 
+enum DuplicateCreditFlagStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+// #494 (Council Session #2, B16): a duplicate bank credit reported by
+// an agency — a traveller who transfers twice creates two real credits
+// but only one recorded payment; the second is invisible to the
+// ledger. The agency flags the amount/reference it observed and admin
+// reconciles manually. Ops record only; never moves money.
+model DuplicateCreditFlag {
+  id                String                    @id @default(cuid())
+  bookingId         String
+  booking           Booking                   @relation(fields: [bookingId, agencyId], references: [id, agencyId], onDelete: Cascade)
+  // The recorded payment the duplicate relates to, when one exists.
+  externalPaymentId String?
+  agencyId          String
+  agency            AgencyProfile             @relation(fields: [agencyId], references: [id])
+  reportedBy        String
+  amount            Decimal                   @db.Decimal(18, 2)
+  currency          String                    @default("MAD")
+  bankReference     String?
+  note              String?
+  status            DuplicateCreditFlagStatus @default(OPEN)
+  resolvedBy        String?
+  resolvedAt        DateTime?
+  resolutionNote    String?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  @@index([agencyId, status])
+  @@index([bookingId])
+  @@index([status, createdAt])
+}
+
+// #416 (Council P0-09): append-only completion evidence for a RefundCase.
+// Rows are never updated or deleted by application code: each submission
+// is a new row, and RefundCase.completionTier snapshots the strongest
+// qualifying tier when the case completes. proofUrl is a private storage
+// key (private/{userId}/…, identity-document upload intent) — never a
+// public URL, never served by the public media route.
+model RefundEvidence {
+  id           String               @id @default(cuid())
+  refundCaseId String
+  refundCase   RefundCase           @relation(fields: [refundCaseId], references: [id], onDelete: Cascade)
+  tier         RefundEvidenceTier
+  source       RefundEvidenceSource
+  reference    String?
+  proofUrl     String?
+  amount       Decimal?             @db.Decimal(18, 2)
+  note         String?
+  recordedBy   String
+  createdAt    DateTime             @default(now())
+
+  @@index([refundCaseId, tier])
+}
+
 // #368: Append-only log of external payment events. Amounts describe money
 // held by the custodian (the agency or its payment provider), never money
 // held by OuiBoo.
 model PaymentStatusLedgerEntry {
   id                    String                 @id @default(cuid())
   externalPaymentId     String
-  externalPayment       ExternalPayment        @relation(fields: [externalPaymentId], references: [id], onDelete: Cascade)
+  externalPayment       ExternalPayment        @relation(fields: [externalPaymentId, agencyId], references: [id, agencyId], onDelete: Cascade)
   bookingId             String
+  booking               Booking                @relation(fields: [bookingId, agencyId], references: [id, agencyId], onDelete: Cascade)
   agencyId              String
+  agency                AgencyProfile          @relation(fields: [agencyId], references: [id])
   travelerId            String
   type                  PaymentLedgerEntryType
   amount                Decimal                @db.Decimal(18, 2)
@@ -649,44 +940,14 @@ model PaymentStatusLedgerEntry {
   @@index([externalPaymentId, createdAt])
 }
 
-model Wallet {
-  id               String              @id @default(cuid())
-  agencyId         String              @unique
-  agency           AgencyProfile       @relation(fields: [agencyId], references: [id])
-  availableBalance Decimal             @default(0) @db.Decimal(18, 2)
-  pendingBalance   Decimal             @default(0) @db.Decimal(18, 2)
-  currency         String              @default("MAD")
-  transactions     WalletTransaction[]
-}
-
-model WalletTransaction {
-  id             String          @id @default(cuid())
-  walletId       String
-  wallet         Wallet          @relation(fields: [walletId], references: [id])
-  amount         Decimal         @db.Decimal(18, 2)
-  type           TransactionType
-  reason         String
-  referenceId    String?
-  idempotencyKey String?         @unique
-  createdAt      DateTime        @default(now())
-
-  @@index([walletId, createdAt])
-}
-
-model PayoutRequest {
-  id          String        @id @default(cuid())
-  agencyId    String
-  agency      AgencyProfile @relation(fields: [agencyId], references: [id])
-  amount      Decimal       @db.Decimal(18, 2)
-  currency    String        @default("MAD")
-  status      PayoutStatus  @default(PENDING)
-  requestedAt DateTime      @default(now())
-  processedAt DateTime?
-  bankDetails String
-
-  @@index([agencyId, status, requestedAt])
-  @@index([status, requestedAt])
-}
+// #429: the dormant custody models (Wallet, WalletTransaction,
+// PayoutRequest) and their enums (PayoutStatus, TransactionType) were
+// removed — traveller money has moved directly between travellers and
+// agencies since #368, no code wrote to these tables, and the only
+// reader was the caller's own data export. The retained financial
+// ledger is Booking / PaymentTransaction / ExternalPayment /
+// PaymentStatusLedgerEntry. Dropped by migration
+// 20261028130000_drop_dormant_wallet_tables.
 
 model AuditLog {
   id         String   @id @default(cuid())
@@ -704,8 +965,27 @@ model AuditLog {
   @@index([action, createdAt])
 }
 
+// #432 / B21 (Council Session #2): server-side, cookie-free record of
+// public catalog searches (GET /trips) — the beta's zero-result-rate
+// measurement. Deliberately identifier-free: NO traveller id, NO IP, NO
+// user agent, NO session/cookie linkage. `query` is the traveller-typed
+// search text (trimmed, length-capped by the recorder); `filters` is a
+// strict allowlist snapshot (see search-events.ts) so no arbitrary
+// client-supplied keys can ever land here. Rows are append-only.
+model SearchEvent {
+  id          String   @id @default(cuid())
+  query       String?
+  filters     Json
+  resultCount Int
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([resultCount, createdAt])
+}
+
 // Reviews & Ratings
 enum ReviewStatus {
+  PENDING
   VISIBLE
   HIDDEN
   REMOVED
@@ -714,16 +994,23 @@ enum ReviewStatus {
 model Review {
   id                String       @id @default(cuid())
   bookingId         String       @unique
-  booking           Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  // #428 (Council P1-01): structural tenant isolation — the tenant is
+  // stamped on the row and bound by composite FKs, so a row of one
+  // agency can never be paired with another agency's rows in the DB.
+  agencyId          String
+  agency            AgencyProfile @relation(fields: [agencyId], references: [id])
+  booking           Booking      @relation(fields: [bookingId, agencyId], references: [id, agencyId], onDelete: Cascade)
   travelerId        String
   traveler          User         @relation(fields: [travelerId], references: [id])
   tripTemplateId    String
-  tripTemplate      TripTemplate @relation(fields: [tripTemplateId], references: [id], onDelete: Cascade)
+  tripTemplate      TripTemplate @relation(fields: [tripTemplateId, agencyId], references: [id, agencyId], onDelete: Cascade)
   rating            Int // 1-5
   comment           String?      @db.Text
   response          String?      @db.Text
   isVerifiedBooking Boolean      @default(true)
   status            ReviewStatus @default(VISIBLE)
+  // #439: author edit budget (service-enforced: max edits + edit window).
+  editCount         Int          @default(0)
   moderatedById     String?
   moderatedBy       User?        @relation("ReviewModerator", fields: [moderatedById], references: [id], onDelete: SetNull)
   moderatedAt       DateTime?
@@ -731,6 +1018,8 @@ model Review {
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
+  @@unique([bookingId, agencyId])
+  @@index([agencyId])
   @@index([tripTemplateId])
   @@index([travelerId])
   @@index([tripTemplateId, rating])
@@ -789,7 +1078,12 @@ model NotificationLog {
 model PaymentTransaction {
   id            String        @id @default(cuid())
   bookingId     String
-  booking       Booking       @relation(fields: [bookingId], references: [id])
+  // #428 (Council P1-01): structural tenant isolation — the tenant is
+  // stamped on the row and bound by composite FKs, so a row of one
+  // agency can never be paired with another agency's rows in the DB.
+  agencyId      String
+  agency        AgencyProfile @relation(fields: [agencyId], references: [id])
+  booking       Booking       @relation(fields: [bookingId, agencyId], references: [id, agencyId])
   amount        Decimal       @db.Decimal(18, 2)
   method        PaymentMethod
   transactionId String?
@@ -800,6 +1094,7 @@ model PaymentTransaction {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
+  @@index([agencyId])
   @@index([bookingId])
   @@index([transactionId])
   @@index([provider, status, createdAt])
@@ -883,6 +1178,62 @@ model CopyrightReport {
   resolvedBy    String?
 }
 
+enum SupportTicketCategory {
+  BOOKING
+  PAYMENT
+  REFUND
+  ACCOUNT
+  TRIP
+  COMPLAINT
+  TECHNICAL
+  OTHER
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum SupportRequesterRole {
+  TRAVELER
+  AGENCY
+  GUEST
+}
+
+// #446 (Council P2-07): help-centre support tickets. Email remains a
+// published lane (#419); a ticket is what a traveller or agency opens
+// from the help centre instead of — or alongside — that email, so the
+// support operation gains stored timestamps. firstResponseAt is set
+// exactly once, when support first responds (admin update from OPEN),
+// which is what makes the 48-hour first-response rate in
+// BetaMetricsService derivable instead of honestly not-derivable.
+// No traveller/agency foreign key: a guest with no account can still
+// ask for help before signing in, mirroring the public copyright
+// report. bookingRef is a free-text reference the requester supplies,
+// never a trusted booking lookup.
+model SupportTicket {
+  id             String                @id @default(cuid())
+  requesterName  String
+  requesterEmail String
+  requesterRole  SupportRequesterRole  @default(GUEST)
+  category       SupportTicketCategory @default(OTHER)
+  subject        String
+  message        String                @db.Text
+  bookingRef     String?
+  status         SupportTicketStatus   @default(OPEN)
+  firstResponseAt DateTime?
+  resolvedAt     DateTime?
+  resolvedBy     String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([category, createdAt])
+}
+
 enum InvoiceStatus {
   ISSUED
 }
@@ -916,6 +1267,7 @@ model Invoice {
   issuedAt       DateTime      @default(now())
   createdAt      DateTime      @default(now())
 
+  @@unique([id, agencyId])
   @@unique([agencyId, periodStart, periodEnd])
   @@index([agencyId, issuedAt])
   @@index([issuedAt])
@@ -924,15 +1276,21 @@ model Invoice {
 model InvoiceLineItem {
   id               String  @id @default(cuid())
   invoiceId        String
-  invoice          Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  // #428 (Council P1-01): structural tenant isolation — the tenant is
+  // stamped on the row and bound by composite FKs, so a row of one
+  // agency can never be paired with another agency's rows in the DB.
+  agencyId         String
+  agency           AgencyProfile @relation(fields: [agencyId], references: [id])
+  invoice          Invoice @relation(fields: [invoiceId, agencyId], references: [id, agencyId], onDelete: Cascade)
   bookingId        String
-  booking          Booking @relation(fields: [bookingId], references: [id])
+  booking          Booking @relation(fields: [bookingId, agencyId], references: [id, agencyId])
   description      String
   bookingDate      DateTime
   grossAmount      Decimal @db.Decimal(18, 2)
   commissionRate   Decimal @db.Decimal(5, 2)
   commissionAmount Decimal @db.Decimal(18, 2)
 
+  @@index([agencyId])
   @@index([invoiceId])
   @@index([bookingId])
 }
@@ -962,17 +1320,18 @@ model AgencyPaymentProfile {
   updatedAt           DateTime                      @updatedAt
   paymentAttempts     PaymentAttempt[]
 
+  @@unique([id, agencyId])
   @@index([provider, onboardingStatus])
 }
 
 model PaymentAttempt {
   id                    String             @id @default(cuid())
   bookingId             String
-  booking               Booking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking               Booking            @relation(fields: [bookingId, agencyId], references: [id, agencyId], onDelete: Cascade)
   agencyId              String
   agency                AgencyProfile      @relation(fields: [agencyId], references: [id], onDelete: Cascade)
   paymentProfileId      String
-  paymentProfile        AgencyPaymentProfile @relation(fields: [paymentProfileId], references: [id], onDelete: Cascade)
+  paymentProfile        AgencyPaymentProfile @relation(fields: [paymentProfileId, agencyId], references: [id, agencyId], onDelete: Cascade)
   stage                 ExternalPaymentStage
   amount                Decimal            @db.Decimal(18, 2)
   currency              String             @default("MAD")

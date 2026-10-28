@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AgencyProfileSchema } from '@ouiboo/schemas';
 import {
@@ -22,6 +22,15 @@ import { apiClient } from '@/lib/api-client';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
 import { VerificationStatus, type TravelLicenceType } from '@ouiboo/types';
+import { PrivateDocumentUpload } from '@/components/PrivateDocumentUpload';
+import { VerificationPausedBanner } from '@/components/VerificationPausedBanner';
+import { SupportBlock } from '@/components/SupportBlock';
+import {
+  activationBlockArtefactKey,
+  effectiveInsuranceStatus,
+  effectiveLicenceStatus,
+  getAgencyActivationState,
+} from '@/lib/agency-verification';
 
 type AgencyOnboardingValues = {
   bio?: string;
@@ -38,7 +47,53 @@ type AgencyOnboardingValues = {
   travelLicenceType?: TravelLicenceType;
   travelLicenceNumber?: string;
   licenceExpiry?: string;
+  // B4: licence issue date + issuing authority (Law 31-08 seller block).
+  licenceIssuedAt?: string;
+  licenceIssuingAuthority?: string;
 };
+
+/** Form values plus the #415 document/insurance payload built from local state. */
+type AgencyProfileSubmitPayload = AgencyOnboardingValues & {
+  licenceDocumentKey?: string;
+  licenceDocumentName?: string;
+  insuranceInsurer?: string;
+  insurancePolicyNumber?: string;
+  insuranceInsuredName?: string;
+  insuranceValidFrom?: string;
+  insuranceExpiry?: string;
+  insuranceCoverageLimit?: number;
+  insuranceCertificateKey?: string;
+};
+
+type InsuranceFormState = {
+  insurer: string;
+  policyNumber: string;
+  insuredName: string;
+  validFrom: string;
+  expiry: string;
+  coverageLimit: string;
+};
+
+const emptyInsurance: InsuranceFormState = {
+  insurer: '',
+  policyNumber: '',
+  insuredName: '',
+  validFrom: '',
+  expiry: '',
+  coverageLimit: '',
+};
+
+const insuranceToFormState = (profile: AgencyProfileLike): InsuranceFormState => ({
+  insurer: profile?.insuranceInsurer || '',
+  policyNumber: profile?.insurancePolicyNumber || '',
+  insuredName: profile?.insuranceInsuredName || '',
+  validFrom: profile?.insuranceValidFrom ? profile.insuranceValidFrom.slice(0, 10) : '',
+  expiry: profile?.insuranceExpiry ? profile.insuranceExpiry.slice(0, 10) : '',
+  coverageLimit:
+    profile?.insuranceCoverageLimit != null ? String(profile.insuranceCoverageLimit) : '',
+});
+
+const documentNameFromKey = (key: string) => key.split('/').pop() || key;
 
 type AgencyProfileLike = {
   companyName?: string;
@@ -54,6 +109,21 @@ type AgencyProfileLike = {
   travelLicenceType?: string | null;
   travelLicenceNumber?: string | null;
   licenceExpiry?: string | null;
+  licenceIssuedAt?: string | null;
+  licenceIssuingAuthority?: string | null;
+  // #415: licence document, RC insurance artefact, expiry-sweep pause marker
+  licenceDocumentKey?: string | null;
+  licenceDocumentName?: string | null;
+  insuranceStatus?: string | null;
+  insuranceInsurer?: string | null;
+  insurancePolicyNumber?: string | null;
+  insuranceInsuredName?: string | null;
+  insuranceValidFrom?: string | null;
+  insuranceExpiry?: string | null;
+  insuranceCoverageLimit?: string | number | null;
+  insuranceCertificateKey?: string | null;
+  insuranceRejectionReason?: string | null;
+  verificationPausedAt?: string | null;
 } | undefined;
 
 const profileToFormValues = (profile: AgencyProfileLike): AgencyOnboardingValues => ({
@@ -70,16 +140,9 @@ const profileToFormValues = (profile: AgencyProfileLike): AgencyOnboardingValues
   travelLicenceType: (profile?.travelLicenceType as TravelLicenceType | null) || undefined,
   travelLicenceNumber: profile?.travelLicenceNumber || '',
   licenceExpiry: profile?.licenceExpiry ? profile.licenceExpiry.slice(0, 10) : '',
+  licenceIssuedAt: profile?.licenceIssuedAt ? profile.licenceIssuedAt.slice(0, 10) : '',
+  licenceIssuingAuthority: profile?.licenceIssuingAuthority || '',
 });
-
-/** #371: a VERIFIED licence whose expiry date has passed reads as EXPIRED. */
-const effectiveLicenceStatus = (profile: { travelLicenceStatus?: string; licenceExpiry?: string } | undefined): string => {
-  const status = profile?.travelLicenceStatus || 'NOT_SUBMITTED';
-  if (status === 'VERIFIED' && profile?.licenceExpiry && new Date(profile.licenceExpiry).getTime() <= Date.now()) {
-    return 'EXPIRED';
-  }
-  return status;
-};
 
 export default function OnboardingPage() {
   const { user, refetch } = useAuth();
@@ -90,11 +153,19 @@ export default function OnboardingPage() {
     () => false,
   );
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  // #415: documents and insurance live outside the zod-validated form —
+  // AgencyProfileSchema does not carry them, so they are kept in local
+  // state and merged into the submit payload (the API validates the
+  // document keys and derives the review statuses server-side).
+  const [licenceDocument, setLicenceDocument] = useState<{ key: string; name: string } | null>(null);
+  const [insuranceCertificate, setInsuranceCertificate] = useState<{ key: string; name: string } | null>(null);
+  const [insurance, setInsurance] = useState<InsuranceFormState>(emptyInsurance);
 
   const {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(AgencyProfileSchema.omit({ id: true, userId: true, verificationStatus: true, logo: true })),
@@ -112,17 +183,37 @@ export default function OnboardingPage() {
       travelLicenceType: undefined,
       travelLicenceNumber: '',
       licenceExpiry: '',
+      licenceIssuedAt: '',
+      licenceIssuingAuthority: '',
     }
   });
 
   useEffect(() => {
     if (user?.agencyProfile) {
-      reset(profileToFormValues(user.agencyProfile));
+      const profile = user.agencyProfile;
+      reset(profileToFormValues(profile));
+      setLicenceDocument(
+        profile.licenceDocumentKey
+          ? {
+              key: profile.licenceDocumentKey,
+              name: profile.licenceDocumentName || documentNameFromKey(profile.licenceDocumentKey),
+            }
+          : null,
+      );
+      setInsuranceCertificate(
+        profile.insuranceCertificateKey
+          ? {
+              key: profile.insuranceCertificateKey,
+              name: documentNameFromKey(profile.insuranceCertificateKey),
+            }
+          : null,
+      );
+      setInsurance(insuranceToFormState(profile));
     }
   }, [user, reset]);
 
   const profileMutation = useMutation({
-    mutationFn: async (data: AgencyOnboardingValues) => {
+    mutationFn: async (data: AgencyProfileSubmitPayload) => {
       const response = await apiClient.post('/users/agency-profile', data);
       return response.data;
     },
@@ -150,18 +241,89 @@ export default function OnboardingPage() {
       travelLicenceType: data.travelLicenceType || undefined,
       travelLicenceNumber: data.travelLicenceNumber?.trim() || undefined,
       licenceExpiry: data.licenceExpiry ? new Date(data.licenceExpiry).toISOString() : undefined,
+      // B4: the issue date + issuing authority complete the seller
+      // block — the API only moves the submission to PENDING_REVIEW
+      // when they are present too.
+      licenceIssuedAt: data.licenceIssuedAt ? new Date(data.licenceIssuedAt).toISOString() : undefined,
+      licenceIssuingAuthority: data.licenceIssuingAuthority?.trim() || undefined,
+      // #415: the licence document makes the submission reviewable; the
+      // API only moves it to PENDING_REVIEW when number + type + expiry
+      // + document are all present.
+      ...(licenceDocument
+        ? { licenceDocumentKey: licenceDocument.key, licenceDocumentName: licenceDocument.name }
+        : {}),
+      // #415: RC insurance artefact — same completeness rule server-side
+      // (insurer + policy number + insured name + expiry + certificate).
+      insuranceInsurer: insurance.insurer.trim() || undefined,
+      insurancePolicyNumber: insurance.policyNumber.trim() || undefined,
+      insuranceInsuredName: insurance.insuredName.trim() || undefined,
+      insuranceValidFrom: insurance.validFrom
+        ? new Date(insurance.validFrom).toISOString()
+        : undefined,
+      insuranceExpiry: insurance.expiry ? new Date(insurance.expiry).toISOString() : undefined,
+      insuranceCoverageLimit: insurance.coverageLimit.trim()
+        ? Number(insurance.coverageLimit)
+        : undefined,
+      ...(insuranceCertificate ? { insuranceCertificateKey: insuranceCertificate.key } : {}),
     });
   };
+
+  const licenceNumberValue = useWatch({ control, name: 'travelLicenceNumber' });
+  const licenceExpiryValue = useWatch({ control, name: 'licenceExpiry' });
+  const licenceIssuedAtValue = useWatch({ control, name: 'licenceIssuedAt' });
+  const licenceIssuingAuthorityValue = useWatch({ control, name: 'licenceIssuingAuthority' });
 
   if (!mounted) return null;
 
   const isVerified = user?.agencyProfile?.verificationStatus === VerificationStatus.Verified;
+  // #415: the header badge reflects the full activation gate (identity +
+  // licence + RC insurance) via the shared derivation — `isVerified`
+  // above stays identity-only because it locks the identity form fields.
+  const activation = getAgencyActivationState(user?.agencyProfile);
+  const activationBlock = activation.block;
+  let activationBadgeLabel = t('onboarding.status.pending');
+  if (activation.fullyVerified) {
+    activationBadgeLabel = t('onboarding.status.verified');
+  } else if (activationBlock) {
+    activationBadgeLabel = t('verification.incompleteDetail', {
+      artefact: t(activationBlockArtefactKey(activationBlock)),
+    });
+  }
   const licenceStatus = effectiveLicenceStatus(user?.agencyProfile);
   const licenceLocked = licenceStatus === 'VERIFIED';
-  const canSubmit = !isVerified || !licenceLocked;
+  const insuranceStatus = effectiveInsuranceStatus(user?.agencyProfile);
+  const insuranceLocked = insuranceStatus === 'VERIFIED';
+  // B4: a legacy VERIFIED licence predates the issue-date / issuing-
+  // authority fields. Until the agency supplies them, exactly those
+  // two fields stay editable (everything else remains locked) and the
+  // form can be submitted — the server then returns the licence to
+  // PENDING_REVIEW for a fresh admin check, and admin's completeness
+  // list tracks the agencies that still owe the data.
+  const licenceIssueDetailsMissingOnRecord = Boolean(
+    licenceLocked
+      && (!user?.agencyProfile?.licenceIssuedAt || !user?.agencyProfile?.licenceIssuingAuthority),
+  );
+  const canSubmit = !isVerified || !licenceLocked || !insuranceLocked || licenceIssueDetailsMissingOnRecord;
+  // #415: soft completeness hints — the server keeps an incomplete
+  // submission NOT_SUBMITTED, so warn here instead of failing silently.
+  const licenceIncomplete = Boolean(
+    (licenceNumberValue || licenceExpiryValue) && !licenceDocument,
+  );
+  // B4: a started licence submission also stays NOT_SUBMITTED until the
+  // issue date and issuing authority are filled in.
+  const licenceIssueDetailsMissing = Boolean(
+    (licenceNumberValue || licenceDocument) && (!licenceIssuedAtValue || !licenceIssuingAuthorityValue),
+  );
+  const insuranceIncomplete = Boolean(
+    (insurance.insurer || insurance.policyNumber || insurance.insuredName || insurance.expiry) &&
+      !insuranceCertificate,
+  );
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
+      <VerificationPausedBanner showCta={false} />
+      {/* Session #3 P0-9 (#556): blocked on verification? Here's the way to OuiBoo. */}
+      <SupportBlock />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground italic">
@@ -186,13 +348,13 @@ export default function OnboardingPage() {
         </div>
         <div className={cn(
           "flex items-center gap-2 px-4 py-2 rounded-xl border transition-colors",
-          isVerified
+          activation.fullyVerified
             ? "bg-success/10 text-success border-success/30"
             : "bg-warning/10 text-warning border-warning/30"
         )}>
-          {isVerified ? <CheckCircle2 className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
+          {activation.fullyVerified ? <CheckCircle2 className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
           <span className="text-sm font-bold uppercase tracking-wide">
-            {isVerified ? t('onboarding.status.verified') : t('onboarding.status.pending')}
+            {activationBadgeLabel}
           </span>
         </div>
       </div>
@@ -391,8 +553,172 @@ export default function OnboardingPage() {
                   disabled={licenceLocked}
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="licenceIssuedAt" className="font-semibold">{t('onboarding.licence.issuedAtLabel')}</Label>
+                <Input
+                  id="licenceIssuedAt"
+                  type="date"
+                  {...register('licenceIssuedAt')}
+                  className="h-12"
+                  disabled={licenceLocked && !licenceIssueDetailsMissingOnRecord}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="licenceIssuingAuthority" className="font-semibold">{t('onboarding.licence.issuingAuthorityLabel')}</Label>
+                <Input
+                  id="licenceIssuingAuthority"
+                  placeholder={t('onboarding.licence.issuingAuthorityPlaceholder')}
+                  {...register('licenceIssuingAuthority')}
+                  className="h-12"
+                  disabled={licenceLocked && !licenceIssueDetailsMissingOnRecord}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-semibold">{t('onboarding.licence.documentLabel')}</Label>
+              <PrivateDocumentUpload
+                documentName={licenceDocument?.name}
+                hasDocument={Boolean(licenceDocument)}
+                disabled={licenceLocked}
+                onUploaded={(key, name) => setLicenceDocument({ key, name })}
+              />
+              {licenceIncomplete && (
+                <p className="text-xs text-warning font-medium">{t('onboarding.licence.documentRequired')}</p>
+              )}
+              {licenceIssueDetailsMissing && (
+                <p className="text-xs text-warning font-medium">{t('onboarding.licence.issueDetailsRequired')}</p>
+              )}
             </div>
             <p className="text-[10px] text-muted-foreground italic font-medium">{t('onboarding.licence.note')}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border bg-card shadow-sm">
+          <CardHeader>
+            <div className="flex items-center gap-2 text-primary mb-2 font-bold">
+              <ShieldCheck className="h-5 w-5" />
+              <CardTitle>{t('onboarding.sections.insurance')}</CardTitle>
+            </div>
+            <CardDescription>{t('onboarding.insuranceSectionSubtitle')}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div
+              role="status"
+              className={cn(
+                'rounded-xl border px-4 py-3 text-sm font-medium flex items-start gap-2',
+                insuranceStatus === 'VERIFIED' && 'border-success/30 bg-success/10 text-success',
+                insuranceStatus === 'PENDING_REVIEW' && 'border-warning/30 bg-warning/10 text-warning',
+                (insuranceStatus === 'REJECTED' || insuranceStatus === 'EXPIRED') && 'border-danger/30 bg-danger/10 text-danger',
+                insuranceStatus === 'NOT_SUBMITTED' && 'border-border bg-muted/40 text-muted-foreground',
+              )}
+            >
+              {insuranceStatus === 'VERIFIED' || insuranceStatus === 'PENDING_REVIEW'
+                ? <ShieldCheck className="h-5 w-5 shrink-0" />
+                : <AlertTriangle className="h-5 w-5 shrink-0" />}
+              <span>
+                {t(`onboarding.insurance.status.${insuranceStatus}`)}
+                {insuranceStatus === 'VERIFIED' && user?.agencyProfile?.insuranceExpiry && (
+                  <> — {t('onboarding.insurance.expiresOn', { date: new Date(user.agencyProfile.insuranceExpiry).toLocaleDateString() })}</>
+                )}
+                {insuranceStatus === 'REJECTED' && user?.agencyProfile?.insuranceRejectionReason && (
+                  <> — {user.agencyProfile.insuranceRejectionReason}</>
+                )}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="insuranceInsurer" className="font-semibold">{t('onboarding.insurance.insurerLabel')}</Label>
+                <Input
+                  id="insuranceInsurer"
+                  placeholder={t('onboarding.insurance.insurerPlaceholder')}
+                  value={insurance.insurer}
+                  onChange={(e) => setInsurance({ ...insurance, insurer: e.target.value })}
+                  className="h-12"
+                  disabled={insuranceLocked}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="insurancePolicyNumber" className="font-semibold">{t('onboarding.insurance.policyNumberLabel')}</Label>
+                <Input
+                  id="insurancePolicyNumber"
+                  placeholder={t('onboarding.insurance.policyNumberPlaceholder')}
+                  value={insurance.policyNumber}
+                  onChange={(e) => setInsurance({ ...insurance, policyNumber: e.target.value })}
+                  className="h-12"
+                  disabled={insuranceLocked}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="insuranceInsuredName" className="font-semibold">{t('onboarding.insurance.insuredNameLabel')}</Label>
+                <Input
+                  id="insuranceInsuredName"
+                  placeholder={t('onboarding.insurance.insuredNamePlaceholder')}
+                  value={insurance.insuredName}
+                  onChange={(e) => setInsurance({ ...insurance, insuredName: e.target.value })}
+                  className="h-12"
+                  disabled={insuranceLocked}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="insuranceCoverageLimit" className="font-semibold">{t('onboarding.insurance.coverageLimitLabel')}</Label>
+                <Input
+                  id="insuranceCoverageLimit"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder={t('onboarding.insurance.coverageLimitPlaceholder')}
+                  value={insurance.coverageLimit}
+                  onChange={(e) => setInsurance({ ...insurance, coverageLimit: e.target.value })}
+                  className="h-12"
+                  disabled={insuranceLocked}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="insuranceValidFrom" className="font-semibold">{t('onboarding.insurance.validFromLabel')}</Label>
+                <Input
+                  id="insuranceValidFrom"
+                  type="date"
+                  value={insurance.validFrom}
+                  onChange={(e) => setInsurance({ ...insurance, validFrom: e.target.value })}
+                  className="h-12"
+                  disabled={insuranceLocked}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="insuranceExpiry" className="font-semibold">{t('onboarding.insurance.expiryLabel')}</Label>
+                <Input
+                  id="insuranceExpiry"
+                  type="date"
+                  value={insurance.expiry}
+                  onChange={(e) => setInsurance({ ...insurance, expiry: e.target.value })}
+                  className="h-12"
+                  disabled={insuranceLocked}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-semibold">{t('onboarding.insurance.certificateLabel')}</Label>
+              <PrivateDocumentUpload
+                documentName={insuranceCertificate?.name}
+                hasDocument={Boolean(insuranceCertificate)}
+                disabled={insuranceLocked}
+                onUploaded={(key, name) => setInsuranceCertificate({ key, name })}
+              />
+              {insuranceIncomplete && (
+                <p className="text-xs text-warning font-medium">{t('onboarding.insurance.certificateRequired')}</p>
+              )}
+            </div>
+            <p className="text-[10px] text-muted-foreground italic font-medium">{t('onboarding.insurance.note')}</p>
           </CardContent>
         </Card>
 
@@ -427,7 +753,27 @@ export default function OnboardingPage() {
               type="button"
               className="h-12 px-8"
               onClick={() => {
-                reset(profileToFormValues(user?.agencyProfile));
+                const profile = user?.agencyProfile;
+                reset(profileToFormValues(profile));
+                setLicenceDocument(
+                  profile?.licenceDocumentKey
+                    ? {
+                        key: profile.licenceDocumentKey,
+                        name:
+                          profile.licenceDocumentName ||
+                          documentNameFromKey(profile.licenceDocumentKey),
+                      }
+                    : null,
+                );
+                setInsuranceCertificate(
+                  profile?.insuranceCertificateKey
+                    ? {
+                        key: profile.insuranceCertificateKey,
+                        name: documentNameFromKey(profile.insuranceCertificateKey),
+                      }
+                    : null,
+                );
+                setInsurance(insuranceToFormState(profile));
                 setFeedback(null);
               }}
             >

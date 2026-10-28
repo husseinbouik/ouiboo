@@ -32,7 +32,33 @@
     "hidePassword": "إخفاء كلمة المرور",
     "notAdmin": "هذا الحساب ليس لديه صلاحية المسؤول.",
     "networkError": "تعذر الوصول إلى الخادم. تحقق من اتصالك وحاول مرة أخرى.",
-    "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى."
+    "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.",
+    "mfa": {
+      "title": "المصادقة الثنائية",
+      "subtitle": "أدخل الرمز المكوّن من 6 أرقام من تطبيق المصادقة الخاص بك.",
+      "recoverySubtitle": "أدخل أحد رموز الاسترداد الصادرة عند التسجيل. كل رمز يعمل مرة واحدة فقط.",
+      "codeLabel": "رمز المصادقة",
+      "recoveryLabel": "رمز الاسترداد",
+      "verify": "تحقق",
+      "verifying": "جارٍ التحقق...",
+      "invalid": "لم يُقبل هذا الرمز. تحقق من الرمز وحاول مرة أخرى.",
+      "useRecovery": "استخدام رمز استرداد",
+      "useAuthenticator": "استخدام رمز المصادقة",
+      "back": "عودة إلى تسجيل الدخول",
+      "enrollTitle": "إعداد المصادقة الثنائية",
+      "enrollSubtitle": "يجب على حسابات المشرفين تسجيل تطبيق مصادقة قبل المتابعة. امسح الرمز، ثم أدخل الرمز المكوّن من 6 أرقام الذي يعرضه.",
+      "enrollConfirm": "تأكيد ومتابعة",
+      "enrollFailed": "تعذّر بدء تسجيل المصادقة الثنائية. يرجى تسجيل الدخول مرة أخرى.",
+      "qrAlt": "رمز QR لتسجيل المصادقة",
+      "recoveryTitle": "احفظ رموز الاسترداد الخاصة بك",
+      "recoveryWarning": "كل رمز يتيح لك تسجيل الدخول مرة واحدة إذا فقدت تطبيق المصادقة. تظهر هذه الرموز الآن فقط — احفظها في مكان آمن وغير متصل.",
+      "continueButton": "لقد حفظتها — متابعة",
+      "breakGlassLink": "فقدت تطبيق المصادقة؟ استخدم سر الطوارئ",
+      "breakGlassTitle": "تسجيل دخول الطوارئ",
+      "breakGlassSubtitle": "لحالة فقدان تطبيق المصادقة فقط. سجّل الدخول ببريدك الإلكتروني وكلمة المرور وسر الطوارئ لمرة واحدة. يُسجَّل استخدامه في سجل التدقيق ويُنبَّه جميع المشرفين.",
+      "breakGlassCodeLabel": "سر الطوارئ",
+      "breakGlassSubmit": "تسجيل الدخول بسر الطوارئ"
+    }
   },
   "dashboard": {
     "brand": "إدارة OUIBOO",
@@ -40,7 +66,9 @@
       "pendingAgencies": "وكالات بانتظار المراجعة",
       "tripsInReview": "رحلات قيد المراجعة",
       "bookingsToday": "حجوزات اليوم",
-      "paymentProofs": "إثباتات الدفع"
+      "paymentProofs": "إثباتات الدفع",
+      "refundsOverdue": "مبالغ مستردة متأخرة",
+      "refundsDue48": "مبالغ مستردة مستحقة ≤48 ساعة"
     },
     "tabs": {
       "pending": "قائمة التحقق",
@@ -49,7 +77,10 @@
       "paymentProofs": "إثباتات الدفع",
       "audit": "سجل التدقيق",
       "invoices": "الفواتير",
-      "refunds": "المبالغ المستردة"
+      "refunds": "المبالغ المستردة",
+      "groups": "المجموعات المعلقة",
+      "security": "الأمان",
+      "support": "قائمة الدعم"
     },
     "meta": {
       "pending": {
@@ -69,7 +100,7 @@
       },
       "paymentProofs": {
         "title": "إثباتات الدفع",
-        "description": "وافق أو ارفض إيصالات الدفع المرفوعة.",
+        "description": "راجع إيصالات الدفع المرفوعة. قبول صورة الإثبات لا يعني التسوية — فقط تأكيد الوكالة البنكي يُسوّي الدفع.",
         "searchPlaceholder": "ابحث في إثباتات الدفع بالمسافر أو الحجز..."
       },
       "audit": {
@@ -86,6 +117,21 @@
         "searchPlaceholder": "ابحث في حالات الاسترداد...",
         "description": "تتبع حالات استرداد المسافرين عبر الوكالات. تُدفع المبالغ المستردة من قبل الوكالات من حسابات التاجر الخاصة بها — الحالات المتأخرة تقيد الحجوزات الجديدة لتلك الوكالة.",
         "title": "حالات الاسترداد"
+      },
+      "groups": {
+        "title": "المجموعات المعلقة",
+        "description": "جلسات الدفع المرحلي التي لا تزال تنتظر الحد الأدنى للمجموعة. أكّد بالقوة أو مدّد المهلة أو أغلق مجموعة — كل تدخل يتطلب سببًا ويُسجَّل في سجل التدقيق.",
+        "searchPlaceholder": "ابحث في الرحلات..."
+      },
+      "security": {
+        "title": "أمان المشرف",
+        "description": "المصادقة الثنائية واسترداد الطوارئ لحسابات المشرفين.",
+        "searchPlaceholder": "إعدادات الأمان"
+      },
+      "support": {
+        "title": "قائمة الدعم",
+        "description": "تذاكر مركز المساعدة من المسافرين والوكالات والضيوف. أول تغيير للحالة من مفتوح يُحتسب كأول رد.",
+        "searchPlaceholder": "ابحث في التذاكر بالطالب أو الموضوع..."
       }
     },
     "sections": {
@@ -106,7 +152,9 @@
       "when": "الوقت",
       "actor": "المنفذ",
       "target": "الهدف",
-      "metadata": "البيانات الوصفية"
+      "metadata": "البيانات الوصفية",
+      "termsAccepted": "تم قبول الشروط الإصدار {{version}}",
+      "termsUnrecorded": "إصدار الشروط غير مسجل"
     },
     "actions": {
       "review": "مراجعة",
@@ -114,13 +162,21 @@
       "details": "التفاصيل",
       "reject": "رفض",
       "approve": "موافقة",
+      "acceptProof": "قبول الإثبات",
       "activate": "تفعيل",
       "deactivate": "إيقاف",
       "approveAgency": "الموافقة على الوكالة",
       "rejectAgency": "رفض الوكالة",
       "refund": "استرداد",
       "verifyLicence": "التحقق من الرخصة",
-      "rejectLicence": "رفض الرخصة"
+      "rejectLicence": "رفض الرخصة",
+      "viewDocument": "عرض الوثيقة",
+      "viewCertificate": "عرض الشهادة",
+      "viewAttestation": "عرض الإثبات البنكي",
+      "verifyInsurance": "التحقق من التأمين",
+      "rejectInsurance": "رفض التأمين",
+      "verifyBankDetails": "التحقق من المعلومات البنكية",
+      "rejectBankDetails": "رفض المعلومات البنكية"
     },
     "labels": {
       "ice": "ICE",
@@ -132,6 +188,10 @@
       "amount": "المبلغ",
       "currency": "MAD",
       "bankDetails": "بيانات بنك الوكالة",
+      "bankConfirmedAmount": "المبلغ المؤكد",
+      "bankReference": "مرجع البنك",
+      "bankConfirmedAt": "تم التأكيد في",
+      "bankConfirmedBy": "تم التأكيد من طرف",
       "selected": "المحدد",
       "contact": "التواصل",
       "status": "الحالة",
@@ -149,11 +209,44 @@
       "rc": "السجل التجاري (RC)",
       "taxId": "التعريف الضريبي (IF)",
       "licenceExpiry": "انتهاء الرخصة",
+      "licenceIssuedAt": "صدرت الرخصة في",
+      "licenceIssuingAuthority": "سلطة الإصدار",
       "licenceVerifiedAt": "تم التحقق من الرخصة في",
-      "licenceRejectionReason": "سبب الرفض"
+      "licenceRejectionReason": "سبب الرفض",
+      "licenceDocument": "وثيقة الرخصة",
+      "ministryCheck": "تحققت من هذه الرخصة في قائمة وزارة السياحة",
+      "ministryCheckedOn": "سُجّل تحقق الوزارة في",
+      "expiryMissing": "مفقودة — مطلوبة للتحقق",
+      "insurance": "تأمين المسؤولية المدنية",
+      "insuranceInsurer": "شركة التأمين",
+      "insurancePolicyNumber": "رقم الوثيقة",
+      "insuranceInsuredName": "اسم المؤمَّن له",
+      "insuranceValidFrom": "بداية التغطية",
+      "insuranceExpiry": "انتهاء التأمين",
+      "insuranceCoverageLimit": "حد التغطية",
+      "insuranceVerifiedAt": "تم التحقق من التأمين في",
+      "insuranceRejectionReason": "سبب رفض التأمين",
+      "insuranceCertificate": "شهادة التأمين",
+      "insuredNameMismatch": "لا يطابق الاسم القانوني",
+      "rejectionReasonLabel": "سبب الرفض",
+      "rejectionReasonPlaceholder": "مطلوب للرفض؛ يُبلَّغ إلى الوكالة",
+      "bankDetailsReview": "المعلومات البنكية (وجهة الدفع)",
+      "pendingBankDetails": "المعلومات البنكية المُرسلة — بانتظار المراجعة",
+      "currentBankDetails": "المعلومات البنكية الحالية",
+      "bankHolderName": "صاحب الحساب",
+      "bankAttestation": "الشهادة البنكية",
+      "bankDetailsVerifiedAt": "تم التحقق في",
+      "bankDetailsRejectionReason": "سبب رفض المعلومات البنكية",
+      "bankHolderMismatch": "صاحب الحساب ليس الوكالة — حساب طرف ثالث",
+      "overrideReason": "سبب التجاوز",
+      "overrideReasonPlaceholder": "لماذا هذا صاحب الحساب مقبول (مثال: حساب باسم تجاري)",
+      "verificationPaused": "التحقق موقوف"
     },
     "messages": {
       "noBankDetails": "لا توجد بيانات بنكية محفوظة.",
+      "noLicenceDocument": "لم تُرفع أي وثيقة رخصة",
+      "sellerBlockIncomplete": "كتلة هوية البائع غير مكتملة — ينقصها: {{fields}}. يجب على الوكالة تقديم هذه العناصر حتى تظهر الكتلة كاملة.",
+      "noInsuranceCertificate": "لم تُرفع أي شهادة تأمين",
       "noPaymentProofs": "لا توجد إثباتات دفع بانتظار المراجعة.",
       "reviewVerification": "راجع تفاصيل التحقق ثم وافق أو ارفض.",
       "notProvided": "غير مقدم",
@@ -171,7 +264,7 @@
       "agencyApproved": "تمت الموافقة على الوكالة بنجاح.",
       "agencyRejected": "تم رفض الوكالة بنجاح.",
       "agencyUpdateError": "تعذر تحديث حالة الوكالة. حاول مرة أخرى.",
-      "paymentProofApproved": "تمت الموافقة على إثبات الدفع بنجاح.",
+      "paymentProofApproved": "تم قبول الإثبات — ما زال بانتظار التأكيد البنكي من الوكالة.",
       "paymentProofRejected": "تم رفض إثبات الدفع بنجاح.",
       "paymentProofUpdateError": "تعذر تحديث إثبات الدفع. حاول مرة أخرى.",
       "paymentProofLoadError": "تعذر تحميل إثبات الدفع.",
@@ -183,7 +276,14 @@
       "retentionDaysInvalid": "يجب أن يكون عدد أيام الاحتفاظ رقمًا موجبًا.",
       "licenceVerified": "تم التحقق من رخصة الأسفار",
       "licenceRejected": "تم رفض رخصة الأسفار",
-      "licenceUpdateError": "تعذّر تحديث رخصة الأسفار"
+      "licenceUpdateError": "تعذّر تحديث رخصة الأسفار",
+      "insuranceVerified": "تم التحقق من تأمين المسؤولية المدنية",
+      "insuranceRejected": "تم رفض تأمين المسؤولية المدنية",
+      "insuranceUpdateError": "تعذّر تحديث تأمين المسؤولية المدنية",
+      "bankDetailsVerified": "تم التحقق من المعلومات البنكية",
+      "bankDetailsRejected": "تم رفض المعلومات البنكية",
+      "bankDetailsUpdateError": "تعذّر تحديث المعلومات البنكية",
+      "documentLoadError": "تعذّر تحميل الوثيقة."
     },
     "aria": {
       "mainNavigation": "التنقل الرئيسي",
@@ -251,9 +351,12 @@
       "bookingRejected": "مرفوض",
       "bookingCancelled": "ملغي",
       "bookingCompleted": "مكتمل",
+      "bookingNoShow": "لم يحضر",
       "verificationPending": "قيد الانتظار",
       "verificationVerified": "تم التحقق",
       "verificationRejected": "مرفوض",
+      "proofAwaitingBankConfirmation": "بانتظار التأكيد البنكي من الوكالة",
+      "proofBankConfirmed": "تم تسجيل التأكيد البنكي",
       "subscriptionTrial": "تجريبي",
       "subscriptionActive": "نشط",
       "subscriptionCancelled": "ملغي",
@@ -262,19 +365,20 @@
       "paymentPaid": "مدفوع",
       "paymentRefunded": "مسترد",
       "paymentFailed": "فشل",
-      "payoutPaidLabel": "مدفوع",
-      "payoutPaidHelper": "تم التحويل",
-      "payoutRejectedLabel": "مرفوض",
-      "payoutRejectedHelper": "أُعيدت الأموال إلى الوكالة",
-      "payoutApprovedLabel": "موافق عليه",
-      "payoutApprovedHelper": "تمت الموافقة وبانتظار المعالجة",
-      "payoutPendingLabel": "قيد الانتظار",
-      "payoutPendingHelper": "بانتظار مراجعة المسؤول",
       "licenceNotSubmitted": "الرخصة غير مُرسلة",
       "licencePendingReview": "الرخصة قيد المراجعة",
       "licenceVerified": "الرخصة موثّقة",
       "licenceRejected": "الرخصة مرفوضة",
-      "licenceExpired": "الرخصة منتهية"
+      "licenceExpired": "الرخصة منتهية",
+      "insuranceNotSubmitted": "التأمين غير مُرسل",
+      "insurancePendingReview": "التأمين قيد المراجعة",
+      "insuranceVerified": "التأمين موثّق",
+      "insuranceRejected": "التأمين مرفوض",
+      "insuranceExpired": "التأمين منتهٍ",
+      "bankUnverified": "المعلومات البنكية غير موثّقة",
+      "bankPendingReview": "المعلومات البنكية قيد المراجعة",
+      "bankVerified": "المعلومات البنكية موثّقة",
+      "bankRejected": "المعلومات البنكية مرفوضة"
     },
     "modal": {
       "agencyReview": "مراجعة الوكالة"
@@ -288,7 +392,8 @@
         "initiate": "تحديد كمُرسل",
         "fail": "تحديد كفاشل",
         "approve": "موافقة",
-        "reject": "رفض"
+        "reject": "رفض",
+        "adminReview": "مراجعة المسؤول"
       },
       "status": {
         "REFUND_APPROVED": "تمت الموافقة",
@@ -311,12 +416,191 @@
       "failureReason": "الفشل",
       "empty": "لا توجد حالات استرداد",
       "dueBy": "يستحق قبل",
-      "requestedAt": "تم الطلب"
+      "requestedAt": "تم الطلب",
+      "audit": {
+        "all": "جميع الحالات",
+        "queue": "قائمة التدقيق",
+        "queueHint": "المبالغ المستردة المكتملة التي حددتها قاعدة التدقيق القائمة على المخاطر للمراجعة. التدقيق يسجل المراجعة — ولا يمنع الاكتمال أبدًا.",
+        "queueEmpty": "لا توجد مبالغ مستردة في انتظار التدقيق.",
+        "queueEmptyHint": "ستظهر عمليات الاكتمال المحددة هنا حتى يحددها مسؤول كمدققة.",
+        "required": "التدقيق مطلوب",
+        "audited": "تم التدقيق في {{date}}",
+        "markAudited": "تحديد كمدققة"
+      },
+      "adminReview": {
+        "title": "تسجيل مراجعة المسؤول",
+        "description": "يسجل مراجعتك كدليل إكمال (المستوى 5)، في خطوة منفصلة. تُستكمل الحالة بعد ذلك بناءً على هذا الدليل — كل إكمال بمراجعة المسؤول يُوضع في قائمة التدقيق.",
+        "referenceLabel": "مرجع خارجي",
+        "referenceHint": "مرجع بنكي أو مرجع مزود تحققت منه بنفسك.",
+        "documentLabel": "وثيقة (مفتاح التخزين الخاص)",
+        "documentHint": "المفتاح الخاص لوثيقة قمت برفعها، مثال: private/<معرفك>/bank-statement.pdf.",
+        "evidenceRequired": "أرفق وثيقة أو مرجعًا خارجيًا — السبب وحده ليس دليلًا."
+      },
+      "tierLabel": "اكتمل بناءً على",
+      "evidenceSummary": "{{count}} عنصر إثبات",
+      "noEvidence": "لا يوجد إثبات مسجل",
+      "tier": {
+        "PSP_CONFIRMATION": "تأكيد مزود الدفع",
+        "BANK_PROVIDER_CONFIRMATION": "وثيقة تأكيد البنك/المزود",
+        "BANK_REFERENCE": "مرجع بنكي + وثيقة محفوظة",
+        "TRAVELLER_CONFIRMATION": "تأكيد المسافر",
+        "ADMIN_REVIEW": "مراجعة المسؤول"
+      },
+      "urgency": {
+        "overdueFilter": "عرض المبالغ المستردة المتأخرة فقط",
+        "due48Filter": "عرض المبالغ المستردة المستحقة خلال 48 ساعة فقط",
+        "clearFilter": "مسح المرشح"
+      }
+    },
+    "groups": {
+      "empty": "لا توجد مجموعات في الانتظار",
+      "emptyHint": "كل جلسات الدفع المرحلي إما بلغت حدها الأدنى أو تم البت فيها.",
+      "paidOfMin": "دفع {{paid}} من {{min}} مشاركين",
+      "depositPaidBookings": "{{count}} حجوزات بدفعة أولى مدفوعة",
+      "deadline": "مهلة التأكيد",
+      "starts": "بداية الجلسة",
+      "actions": {
+        "forceConfirm": "تأكيد بالقوة",
+        "extendDeadline": "تمديد المهلة",
+        "closeGroup": "إغلاق المجموعة"
+      },
+      "forceConfirmTitle": "تأكيد هذه المجموعة بالقوة؟",
+      "forceConfirmDescription": "يتم تجاهل الحد الأدنى والمهلة: تصبح الحجوزات ذات الدفعة الأولى مؤكدة وتستحق أرصدتها. وُعد المسافرون بالحد الأدنى — لا تفعل ذلك إلا بموافقة الوكالة.",
+      "closeTitle": "إغلاق هذه المجموعة؟",
+      "closeDescription": "تُعلَّم المجموعة كغير مؤكدة. تصبح الحجوزات ذات الدفعة الأولى مستحقة للاسترداد وتُنشأ حالات الاسترداد فورًا؛ وتُلغى الحجوزات غير المدفوعة.",
+      "extendTitle": "تمديد مهلة التأكيد",
+      "extendDescription": "تتحرك مهلة الجلسة ولقطة كل خطة حجز معًا. يجب أن تكون المهلة الجديدة قبل تاريخ بداية الجلسة.",
+      "newDeadline": "المهلة الجديدة",
+      "newDeadlineRequired": "يرجى اختيار المهلة الجديدة.",
+      "success": "تم تطبيق التدخل وتسجيله في سجل التدقيق."
+    },
+    "interventions": {
+      "reasonLabel": "السبب (مطلوب)",
+      "reasonPlaceholder": "لماذا هذا التدخل ضروري؟ سيُسجَّل في سجل التدقيق.",
+      "auditNote": "يُسجَّل هذا الإجراء في سجل التدقيق مع السبب والحالة قبل وبعد.",
+      "cancel": "إلغاء",
+      "failed": "فشل التدخل. حاول مرة أخرى.",
+      "repair": "إصلاح",
+      "repairActionLabel": "إجراء الإصلاح",
+      "bookingRepair": {
+        "title": "إصلاح الحجز",
+        "description": "إصلاحات مُسمّاة فقط — لا يوجد تغيير حر للحالة. تُسجَّل النتيجة في سجل التدقيق.",
+        "resync-payment-state": "مزامنة حالة الدفع",
+        "resync-payment-stateHint": "أعد حساب حالة الحجز وحالة الدفع من خطة الدفع والمدفوعات الموثقة وحالات الاسترداد.",
+        "requeue-proof-review": "إعادة إثبات الدفع إلى قائمة المراجعة",
+        "requeue-proof-reviewHint": "يصبح إثبات الدفع المعلق الذي غادر حجزُه قائمة التحقق قابلًا للتحقق من جديد.",
+        "open-refund-case": "فتح حالة استرداد",
+        "open-refund-caseHint": "أنشئ حالة الاسترداد المفقودة لحجز خطته مستحقة للاسترداد."
+      },
+      "refundRepair": {
+        "title": "إصلاح حالة الاسترداد",
+        "description": "إصلاحات مخصصة للمشرف للحالات العالقة. يبقى السجل الأصلي في سجل التدقيق.",
+        "reopen": "إعادة فتح الحالة",
+        "correct-amount": "تصحيح المبلغ الموافق عليه",
+        "relink-payment": "ربط الدفعة الأصلية",
+        "amountLabel": "المبلغ الموافق عليه",
+        "paymentIdLabel": "معرّف الدفعة الأصلية",
+        "paymentIdHint": "يجب أن تكون دفعة لنفس الحجز. اتركه فارغًا لتغيير المرجع فقط.",
+        "referenceLabel": "مرجع الدفعة الخارجية"
+      }
+    },
+    "auditActions": {
+      "ADMIN_GROUP_FORCE_CONFIRMED": "أكّد المشرف المجموعة بالقوة",
+      "ADMIN_GROUP_CLOSED": "أغلق المشرف المجموعة",
+      "ADMIN_DEADLINE_EXTENDED": "مدّد المشرف مهلة التأكيد",
+      "ADMIN_BOOKING_REPAIRED": "أصلح المشرف الحجز",
+      "ADMIN_REFUND_REPAIRED": "أصلح المشرف حالة الاسترداد",
+      "ADMIN_LOGIN_SUCCEEDED": "سجّل المشرف الدخول",
+      "ADMIN_LOGIN_FAILED": "فشل تسجيل دخول المشرف",
+      "ADMIN_MFA_ENROLLED": "سجّل المشرف في المصادقة الثنائية (TOTP)",
+      "ADMIN_MFA_RECOVERY_USED": "استُخدم رمز استرداد المصادقة الثنائية للمشرف",
+      "ADMIN_BREAK_GLASS_CREATED": "أُنشئت بيانات طوارئ",
+      "ADMIN_BREAK_GLASS_USED": "استُخدم تسجيل دخول الطوارئ",
+      "ADMIN_BREAK_GLASS_REVOKED": "أُلغيت بيانات الطوارئ",
+      "ADMIN_BREAK_GLASS_FAILED": "فشل تسجيل دخول الطوارئ"
+    },
+    "betaMetrics": {
+      "title": "مقاييس النسخة التجريبية",
+      "subtitle": "معايير الخروج من النسخة التجريبية من خدمة المقاييس #432 (آخر 30 يومًا افتراضيًا).",
+      "window": "الفترة: {{from}} – {{to}}",
+      "loading": "جارٍ تحميل مقاييس النسخة التجريبية…",
+      "error": "مقاييس النسخة التجريبية غير متاحة الآن.",
+      "zeroResultRate": "معدل البحث بدون نتائج",
+      "searchesDetail": "{{zero}} من {{total}} عملية بحث",
+      "bookingsCreated": "الحجوزات المنشأة",
+      "bookingsCompleted": "{{count}} مكتملة",
+      "refundSla": "مبالغ مستردة بدأت خلال 7 أيام",
+      "refundsOpened": "{{count}} حالة استرداد مفتوحة",
+      "disputesPer1000": "النزاعات لكل 1000 حجز",
+      "disputesOpened": "{{count}} نزاع مفتوح",
+      "stuckTotal": "حالات عالقة >48 ساعة",
+      "stuckHint": "حجوزات بانتظار التحقق + حالات استرداد فات موعدها",
+      "termsRecorded": "الشروط المسجلة على الحجوزات",
+      "duplicates": "{{count}} حجز مكرر",
+      "exitCriteria": "معايير الخروج",
+      "pass": "ناجح",
+      "fail": "فاشل",
+      "noData": "بيانات غير كافية",
+      "supportNotDerivable": "معدل استجابة الدعم غير قابل للاشتقاق",
+      "supportResponseRate": "الرد الأول من الدعم خلال 48 ساعة",
+      "supportTickets": "{{count}} تذكرة دعم مفتوحة",
+      "supportTicketsDetail": "{{responded}} تلقت ردًا أول، منها {{within}} خلال 48 ساعة",
+      "supportAwaiting": "{{count}} تذكرة مفتوحة تنتظر الرد الأول منذ أكثر من 48 ساعة"
+    },
+    "diagnostics": {
+      "title": "البناء والعلامات",
+      "build": "البناء",
+      "sharing": "المشاركة",
+      "betaBadge": "شارة النسخة التجريبية",
+      "serverFlags": "علامات الخادم",
+      "on": "مفعّلة",
+      "off": "معطّلة",
+      "serverFlagsLoading": "جارٍ تحميل علامات الخادم...",
+      "serverFlagsUnavailable": "علامات الخادم: غير متاحة (لم يردّ نقطة التشخيص)",
+      "serverEnv": "بيئة الخادم",
+      "madOnlyCatalog": "كتالوج بالدرهم فقط",
+      "adminMfaRequired": "مصادقة المشرف الثنائية مطلوبة",
+      "noFeatureFlags": "لا توجد علامات FEATURE_* مضبوطة على واجهة البرمجة"
+    },
+    "sharePreview": {
+      "title": "معاينة الرابط (Open Graph)",
+      "toggle": "معاينة",
+      "liveNote": "المشاركة مفعّلة: هذه هي المعاينة التي ستعرضها تطبيقات التواصل.",
+      "gatedNote": "المشاركة معطّلة: المعاينة العامة الحالية هي بطاقة Ouiboo العامة. هذه هي المعاينة التي ستحملها هذه الرحلة عند فتح المشاركة عند الإطلاق العام.",
+      "shareTextLabel": "نص المشاركة",
+      "shareText": "اكتشف هذه الرحلة على Ouiboo: ⁨{{title}}⁩",
+      "panelTitle": "المشاركة ومعاينة الرابط",
+      "panelLive": "المشاركة مفعّلة لهذا البناء الإداري: المعاينات أدناه هي ما ستعرضه تطبيقات التواصل.",
+      "panelGated": "المشاركة معطّلة لهذا البناء الإداري: المعاينة العامة الحالية هي بطاقة Ouiboo العامة. المعاينات أدناه تُظهر ما ستحمله كل رحلة عند فتح المشاركة.",
+      "panelAdminNote": "هذه الحالة هي علامة هذا البناء الإداري نفسه. في بيئة الاختبار، فُعّلت المشاركة لتطبيقي المسافر والوكالة فقط (بتوجيه المؤسس)، لذا من المتوقع أن يظهر هذا البناء معطّلاً.",
+      "panelEmpty": "لا توجد رحلات تنتظر في قائمة التحقق الآن. عندما تصل رحلة للمراجعة، ستظهر معاينة رابطها هنا لكل رحلة."
+    },
+    "support": {
+      "title": "تذاكر الدعم",
+      "count": "{{count}} تذاكر",
+      "filterStatus": "الحالة",
+      "filterCategory": "الفئة",
+      "allStatuses": "كل الحالات",
+      "allCategories": "كل الفئات",
+      "details": "التفاصيل",
+      "bookingRef": "مرجع الحجز",
+      "firstResponse": "أول رد",
+      "resolvedAt": "تم الحل",
+      "ticketId": "التذكرة",
+      "setStatus": "تعيين الحالة",
+      "updating": "جارٍ التحديث...",
+      "loading": "جارٍ تحميل التذاكر...",
+      "loadError": "تعذر تحميل تذاكر الدعم. حاول مرة أخرى.",
+      "empty": "لا توجد تذاكر دعم مطابقة لهذه المرشحات.",
+      "feedback": {
+        "updated": "تم تحديث التذكرة.",
+        "updateError": "تعذر تحديث هذه التذكرة. حاول مرة أخرى."
+      }
     }
   },
   "meta": {
     "titleDefault": "إدارة المنصة",
-    "titleTemplate": "%s | إدارة Ouiboo",
+    "titleTemplate": "%s | Ouiboo إدارة",
     "description": "مساحة إدارة خاصة لمنصة Ouiboo."
   },
   "common": {
@@ -343,5 +627,71 @@
   "loading": {
     "label": "جار تحميل الإدارة",
     "text": "جار التحميل…"
+  },
+  "security": {
+    "mfaTitle": "المصادقة الثنائية (TOTP)",
+    "mfaDescription": "يتطلب تسجيل دخول المشرف كلمة مرور بالإضافة إلى رمز مصادقة مكوّن من 6 أرقام. سجّل تطبيق مصادقة هنا؛ إعادة التسجيل تستبدل السر ورموز الاسترداد السابقة.",
+    "loading": "جارٍ التحميل...",
+    "statusLabel": "الحالة",
+    "statusEnabled": "مفعّلة",
+    "enrolledAt": "تاريخ التسجيل",
+    "recoveryRemaining": "رموز الاسترداد المتبقية",
+    "noRecoveryCodesWarning": "لم تعد لديك أي رموز استرداد. أعد التسجيل لإصدار مجموعة جديدة، وتأكد من بقاء بيانات طوارئ واحدة على الأقل نشطة.",
+    "reEnroll": "إعادة تسجيل المصادقة",
+    "currentPassword": "كلمة المرور الحالية",
+    "startEnrollment": "بدء التسجيل",
+    "stepScan": "امسح رمز QR بتطبيق المصادقة (أو أدخل السر يدويًا).",
+    "stepConfirm": "أدخل الرمز المكوّن من 6 أرقام الذي يعرضه التطبيق للتأكيد.",
+    "qrAlt": "رمز QR لتسجيل المصادقة",
+    "manualSecret": "سر الإدخال اليدوي",
+    "confirmCode": "رمز المصادقة",
+    "confirmEnrollment": "تأكيد التسجيل",
+    "enrollSuccess": "تم تفعيل المصادقة الثنائية. لم يعد سرّك القديم ورموز الاسترداد السابقة صالحة.",
+    "enrollStartFailed": "تعذّر بدء التسجيل. تحقق من كلمة المرور وحاول مرة أخرى.",
+    "enrollConfirmFailed": "لم يُقبل هذا الرمز. تحقق من الرمز وحاول مرة أخرى.",
+    "recoveryCodesTitle": "رموز الاسترداد الخاصة بك — تظهر مرة واحدة",
+    "recoveryCodesWarning": "كل رمز يتيح لك تسجيل الدخول مرة واحدة إذا فقدت تطبيق المصادقة. احفظها في مكان آمن وغير متصل؛ لن يمكن عرضها مرة أخرى.",
+    "copyCodes": "نسخ الرموز",
+    "downloadCodes": "تنزيل الرموز",
+    "codesSaved": "لقد حفظتها",
+    "breakGlassTitle": "بيانات الطوارئ",
+    "breakGlassDescription": "بيانات الطوارئ هي سر منفصل لمرة واحدة لحالة فقدان تطبيق المصادقة: مع كلمة مرور المشرف تتيح تسجيل الدخول دون رمز TOTP. أنشئ واحدة واحفظها غير متصلة (ظرف مختوم أو خزنة كلمات مرور) ولا تحفظها أبدًا بجانب كلمة المرور. يُسجَّل كل استخدام في سجل التدقيق ويُنبَّه جميع المشرفين.",
+    "breakGlassSecretTitle": "سر طوارئ جديد — \"{{label}}\"",
+    "breakGlassSecretWarning": "يظهر الآن فقط. احفظه غير متصل فورًا. تنتهي صلاحيته في {{expiresAt}} ويعمل مرة واحدة بالضبط.",
+    "copySecret": "نسخ السر",
+    "downloadSecret": "تنزيل السر",
+    "breakGlassLabel": "التسمية",
+    "breakGlassLabelPlaceholder": "مثال: ظرف مختوم — خزنة المكتب",
+    "breakGlassDays": "الصلاحية (أيام)",
+    "createBreakGlass": "إنشاء بيانات الاعتماد",
+    "breakGlassCreated": "أُنشئت بيانات الطوارئ. احفظ السر غير متصل الآن.",
+    "breakGlassCreateFailed": "تعذّر إنشاء بيانات الاعتماد. تحقق من كلمة المرور وحاول مرة أخرى.",
+    "breakGlassRevoked": "أُلغيت بيانات الطوارئ.",
+    "breakGlassRevokeFailed": "تعذّرت إزالة بيانات الاعتماد.",
+    "colLabel": "التسمية",
+    "colStatus": "الحالة",
+    "colCreated": "أُنشئت في",
+    "colExpires": "تنتهي في",
+    "colActions": "الإجراءات",
+    "noBreakGlass": "لا توجد بيانات طوارئ بعد. أنشئ واحدة قبل أن تحتاج إليها.",
+    "revoke": "إلغاء",
+    "confirmRevoke": "تأكيد الإلغاء",
+    "cancel": "إلغاء الأمر",
+    "status": {
+      "active": "نشطة",
+      "used": "مستخدَمة",
+      "revoked": "ملغاة",
+      "expired": "منتهية"
+    }
+  },
+  "commandPalette": {
+    "open": "فتح لوحة الأوامر",
+    "trigger": "ابحث أو انتقل إلى…",
+    "placeholder": "ابحث في الأقسام والوكالات والرحلات والحجوزات…",
+    "empty": "لا توجد نتائج مطابقة.",
+    "groupNavigation": "انتقل إلى",
+    "groupAgencies": "الوكالات",
+    "groupTrips": "الرحلات",
+    "groupBookings": "الحجوزات"
   }
 }

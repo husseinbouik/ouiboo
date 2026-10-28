@@ -7,7 +7,7 @@ export default function AgencyLoading() {
 
   return (
     <div
-      className="animate-pulse space-y-8 p-6 lg:p-8"
+      className="motion-safe:animate-pulse space-y-8 p-6 lg:p-8"
       role="status"
       aria-label={t('common.loading')}
     >

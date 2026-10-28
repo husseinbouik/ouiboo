@@ -8,6 +8,8 @@ import { DeleteConfirmation } from '@/components/DeleteConfirmation';
 import { useTripActions, useSessionActions, useTripDetail } from '@/components/trips/useTripActions';
 import { TripDetailHeader } from '@/components/trips/TripDetailHeader';
 import { TripOverview } from '@/components/trips/TripOverview';
+import { SharePreviewCard } from '@/components/trips/SharePreviewCard';
+import { TripStatus } from '@/components/trips/trip-detail-types';
 import { TripSessions } from '@/components/trips/TripSessions';
 import type { SessionItem, TripDetail } from '@/components/trips/trip-detail-types';
 
@@ -81,6 +83,7 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
     <div className="space-y-8 animate-in fade-in duration-500">
       <TripDetailHeader
         tripId={params.id}
+        tripTitle={typedTrip.title}
         tripStatus={typedTrip.status}
         isDeleting={deleteTripMutation.isPending}
         isArchiving={archiveTripMutation.isPending}
@@ -92,6 +95,10 @@ export default function TripDetailPage({ params: paramsPromise }: { params: Prom
         onActivate={() => activateTripMutation.mutate()}
         onRestore={() => restoreTripMutation.mutate()}
       />
+
+      {/* #561: OG/share preview — active trips only, they are the ones
+          with a public page to preview. */}
+      {typedTrip.status === TripStatus.Active && <SharePreviewCard trip={typedTrip} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <TripOverview trip={typedTrip} />

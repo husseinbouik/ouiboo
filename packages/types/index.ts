@@ -23,6 +23,9 @@ export interface User {
 
 export enum VerificationStatus {
     Pending = "PENDING",
+    // #422 (Council P0-20): proof image accepted, bank confirmation pending —
+    // the payment is not settled in this state.
+    Accepted = "ACCEPTED",
     Verified = "VERIFIED",
     Rejected = "REJECTED",
 }
@@ -52,6 +55,18 @@ export enum LicenceStatus {
 }
 
 export type LicenceStatusType = LicenceStatus;
+
+// #421 (Council P0-19): lifecycle of an agency's bank payment destination.
+// Submitted details sit in pending fields until an admin verifies them
+// against the bank attestation; only VERIFIED details are traveller-live.
+export enum BankDetailsStatus {
+    Unverified = "UNVERIFIED",
+    PendingReview = "PENDING_REVIEW",
+    Verified = "VERIFIED",
+    Rejected = "REJECTED",
+}
+
+export type BankDetailsStatusType = BankDetailsStatus;
 
 export enum SubscriptionStatus {
     Trial = "TRIAL",
@@ -157,12 +172,18 @@ export interface AgencyProfile {
     ice: string; // Identifiant Commun de l'Entreprise
     patente: string;
     rib: string; // Bank Account details
+    // #421: traveller-live manual payment instructions (verified value)
+    bankDetails?: string;
     verificationStatus: VerificationStatus;
     bio?: string;
     logo?: string;
     subscriptionStatus: SubscriptionStatus;
     trialEndsAt?: string;
     subscriptionEndsAt?: string;
+    // #419: trip emergency contact shown to booked travellers
+    // (departure pack) — first call during an active trip.
+    emergencyContactName?: string;
+    emergencyContactPhone?: string;
     subscriptionTermsVersion?: string;
     subscriptionTermsAcceptedAt?: string;
     // #371: legal identity + Law 11-16 travel licence
@@ -176,7 +197,38 @@ export interface AgencyProfile {
     travelLicenceStatus?: LicenceStatus;
     licenceVerifiedAt?: string;
     licenceExpiry?: string;
+    // B4 (Council Session #2): Law 31-08 seller-block licence issue data.
+    licenceIssuedAt?: string;
+    licenceIssuingAuthority?: string;
     licenceRejectionReason?: string;
+    // #415: licence document (private upload key) + Ministry-check stamp
+    licenceDocumentKey?: string;
+    licenceDocumentName?: string;
+    licenceMinistryCheckedAt?: string;
+    licenceMinistryCheckedBy?: string;
+    // #415: RC insurance artefact (same LicenceStatus lifecycle)
+    insuranceStatus?: LicenceStatus;
+    insuranceInsurer?: string;
+    insurancePolicyNumber?: string;
+    insuranceInsuredName?: string;
+    insuranceValidFrom?: string;
+    insuranceExpiry?: string;
+    insuranceCoverageLimit?: DecimalString;
+    insuranceCertificateKey?: string;
+    insuranceVerifiedAt?: string;
+    insuranceRejectionReason?: string;
+    // #415: expiry-sweep auto-pause marker
+    verificationPausedAt?: string;
+    verificationPauseReason?: string;
+    // #421: bank-destination verification (submitted details pend in
+    // pendingBankDetails until an admin verifies them; bankDetails above
+    // stays the traveller-live value)
+    pendingBankDetails?: string;
+    bankAccountHolderName?: string;
+    bankAttestationUrl?: string;
+    bankDetailsStatus?: BankDetailsStatus;
+    bankDetailsVerifiedAt?: string;
+    bankDetailsRejectionReason?: string;
 }
 
 export enum TripStatus {
@@ -214,6 +266,53 @@ export interface ItineraryDay {
 }
 
 /**
+ * #417 (Council P0-11): one band of a trip's cancellation scale for
+ * traveller-initiated cancellations. Bands are stored as structured data
+ * on TripTemplate.cancellationPolicy and resolved by the API; the
+ * platform floor (agency fault / minimum group not reached = 100%
+ * refund, initiated within 7 days) always applies on top of the bands.
+ */
+export interface CancellationBand {
+    minDaysBeforeStart: number;
+    refundPercent: number;
+}
+
+export interface CancellationScale {
+    version: string;
+    bands: CancellationBand[];
+}
+
+/** #546: one language's trip title + description in the translations map. */
+/** #584: one itinerary day inside a language entry — text keyed to the canonical day by dayNumber. */
+export interface TripTranslationDay {
+    dayNumber?: number;
+    title?: string;
+    description?: string;
+    /** Free-text activity tags — part of the day's language-keyed content (not enum codes). */
+    activities?: string[];
+}
+
+export interface TripTranslationEntry {
+    title?: string;
+    description?: string;
+    /** #584 (phase 2): itinerary days in this language, aligned to the canonical days by dayNumber. */
+    itinerary?: TripTranslationDay[];
+    /** #584 (phase 2): whole-list translations — a non-empty list replaces the canonical one wholesale. */
+    inclusions?: string[];
+    exclusions?: string[];
+    checklist?: string[];
+}
+
+/** #546: trip title + description keyed by ISO language code (fr canonical). */
+export type TripTranslations = Record<string, TripTranslationEntry>;
+
+/** The resolved scale: bands + the platform floor terms. */
+export interface CancellationScaleSnapshot extends CancellationScale {
+    floorRefundPercent: number;
+    refundInitiationDays: number;
+}
+
+/**
  * TripTemplate represents the "Master" trip definition.
  */
 export interface TripTemplate {
@@ -232,6 +331,17 @@ export interface TripTemplate {
     images: string[];
     /** #332: optional alt text per image, aligned by index with `images`. */
     imageAlts?: string[];
+    /** #417: agency-set cancellation bands as stored (null = defaults). */
+    cancellationPolicy?: CancellationScale | null;
+    /** #417: the resolved scale (bands + floor) returned by GET /trips/:id. */
+    cancellationScale?: CancellationScaleSnapshot;
+    /**
+     * #546: multilingual title + description, keyed by ISO language
+     * code. `title`/`description` above are the FRENCH text (canonical);
+     * public payloads resolve them into the request locale server-side,
+     * while this map carries every language the agency provided.
+     */
+    translations?: TripTranslations | null;
     status: TripStatus;
     currency: string;
     startingPrice?: DecimalString | null;
@@ -272,9 +382,37 @@ export enum BookingStatus {
     PendingMinimum = "PENDING_MINIMUM",
     /** #369: staged payments — group minimum not reached by the deadline. */
     NotConfirmed = "NOT_CONFIRMED",
+    /** #434 (Council P1-08): agency recorded that the traveller did not attend. */
+    NoShow = "NO_SHOW",
 }
 
+/**
+ * #434 (Council P1-08): attendance recorded by the agency for a booking.
+ * Absent/null = not recorded yet. Only ATTENDED makes a completed
+ * booking review-eligible.
+ */
+export enum BookingAttendance {
+    Attended = "ATTENDED",
+    NoShow = "NO_SHOW",
+}
+
+export type BookingAttendanceType = BookingAttendance;
+
 export type BookingStatusType = BookingStatus;
+
+/**
+ * #481: the current version of the traveller booking terms (the binding
+ * checkout / terms-page wording in en/fr/ar). The checkout sends this
+ * with every booking creation and the API persists it on the booking
+ * with a server acceptance timestamp, so each booking proves which
+ * terms it was made under.
+ *
+ * HYGIENE: bump this constant in the same change whenever binding
+ * terms text changes (the checkout i18n namespace, the terms page, or
+ * the booking-journey email dictionary) — and note the bump in that
+ * PR's description. Never reuse a version for different wording.
+ */
+export const CURRENT_BOOKING_TERMS_VERSION = '1.0';
 
 export interface Booking {
     id: string;
@@ -297,7 +435,10 @@ export interface Booking {
     paymentGatewayMetadata?: Record<string, unknown>;
     fullName?: string;
     phoneNumber?: string;
-    documentNumber?: string;
+    /** #434: attendance recorded by the agency; null/absent = not recorded yet. */
+    attendance?: BookingAttendance | null;
+    attendanceRecordedAt?: string | null;
+    attendanceRecordedBy?: string | null;
 }
 
 export interface BookingTravelerSummary {
@@ -308,6 +449,31 @@ export interface BookingTravelerSummary {
 export interface BookingAgencySummary {
     companyName: string;
     id: string;
+    /**
+     * #419: the agency's trip emergency contact, populated on booking
+     * responses only (the traveller holding the booking is the audience —
+     * the departure pack). Absent when the agency has not provided one.
+     */
+    emergencyContactName?: string;
+    emergencyContactPhone?: string;
+    /**
+     * B4 (Council Session #2): seller-of-record fields for the
+     * Law 31-08 identity block on the durable booking confirmation
+     * (booking detail + post-checkout confirmation). Booking responses
+     * carry the agency profile; SellerIdentity withholds the licence
+     * facts unless the licence is verified, and shows the honest gap
+     * for legacy records missing the issue data.
+     */
+    legalName?: string | null;
+    travelLicenceType?: string | null;
+    travelLicenceNumber?: string | null;
+    travelLicenceStatus?: string | null;
+    licenceExpiry?: string | null;
+    licenceIssuedAt?: string | null;
+    licenceIssuingAuthority?: string | null;
+    licenceVerifiedAt?: string | null;
+    insuranceStatus?: string | null;
+    insuranceVerifiedAt?: string | null;
 }
 
 export interface BookingTemplateSummary {
@@ -329,6 +495,23 @@ export interface BookingDetails extends Booking {
     paymentProof?: PaymentProof;
     /** #369: staged payment plan; absent/null on single-payment bookings. */
     paymentPlan?: BookingPaymentPlan | null;
+    /** #417: cancellation scale snapshotted at booking creation (resolved from the template for legacy bookings). */
+    cancellationScale?: CancellationScaleSnapshot;
+    /**
+     * #481 + B9 (Council Session #2): the booking-terms version the
+     * traveller accepted at checkout (see CURRENT_BOOKING_TERMS_VERSION)
+     * and the server timestamp of that acceptance. Required on every new
+     * booking since B9; null only on pre-B9 bookings, which admin
+     * surfaces label "terms version unrecorded".
+     */
+    termsVersion?: string | null;
+    termsAcceptedAt?: string | null;
+    /**
+     * #424 + B9: the checkout UI locale the booking was made in —
+     * part of the terms-acceptance record (version + locale + server
+     * timestamp). Null only on bookings that predate its capture.
+     */
+    locale?: string | null;
     review?: {
         id: string;
     };
@@ -343,41 +526,16 @@ export interface PaymentProof {
     uploadedAt: string;
     status: VerificationStatus;
     rejectionReason?: string;
-}
-
-export interface Wallet {
-    agencyId: string;
-    availableBalance: DecimalString; // Cleared money
-    pendingBalance: DecimalString;   // Money in Escrow
-}
-
-export enum PayoutStatus {
-    Pending = "PENDING",
-    Approved = "APPROVED",
-    Rejected = "REJECTED",
-    Paid = "PAID",
-}
-
-export type PayoutStatusType = PayoutStatus;
-
-export interface PayoutRequest {
-    id: string;
-    agencyId: string;
-    amount: DecimalString;
-    status: PayoutStatus;
-    requestedAt: string;
-    processedAt?: string;
-    bankDetails: string; // Copy of RIB at time of request
-}
-
-export interface PayoutAgencySummary {
-    companyName: string;
-    id: string;
-    user?: {
-        email?: string | null;
+    /**
+     * #422 (Council P0-20): read-only bank-confirmation facts of the
+     * stage's ExternalPayment, stamped only when the agency confirms the
+     * credit in its own bank account. Null/absent until then — an
+     * accepted proof image alone never carries one.
+     */
+    bankConfirmation?: {
+        confirmedAmount: string | null;
+        bankReference: string | null;
+        bankConfirmedAt: string | null;
+        bankConfirmedBy: string | null;
     } | null;
-}
-
-export interface PayoutDetails extends PayoutRequest {
-    agency: PayoutAgencySummary;
 }

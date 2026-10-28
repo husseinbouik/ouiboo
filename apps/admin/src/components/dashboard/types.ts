@@ -4,7 +4,82 @@ import type {
   VerificationStatusType,
 } from '@ouiboo/types';
 
-export type AdminTab = 'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'PAYMENT_PROOFS' | 'AUDIT' | 'INVOICES' | 'REFUNDS';
+export type AdminTab = 'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'GROUPS' | 'PAYMENT_PROOFS' | 'AUDIT' | 'INVOICES' | 'REFUNDS' | 'SECURITY' | 'SUPPORT';
+
+/** #581 rework: one help-centre ticket from GET /admin/support/tickets. */
+export type AdminSupportTicket = {
+  id: string;
+  requesterName: string;
+  requesterEmail: string;
+  requesterRole: string;
+  category: string;
+  subject: string;
+  message: string;
+  bookingRef?: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt?: string;
+  firstResponseAt?: string | null;
+  resolvedAt?: string | null;
+  resolvedBy?: string | null;
+};
+
+export type SupportTicketStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+
+/** #580 rework: GET /admin/diagnostics/flags — the API's effective flags. */
+export type AdminServerFlags = {
+  generatedAt: string;
+  environment: string;
+  featureFlags: Array<{ name: string; enabled: boolean }>;
+  flags: {
+    madOnlyCatalog: boolean;
+    adminMfaRequired: boolean;
+  };
+};
+
+/** #418: admin MFA status from GET /auth/mfa/status. */
+export type AdminMfaStatus = {
+  mfaEnabled: boolean;
+  mfaEnrolledAt: string | null;
+  recoveryCodesRemaining: number;
+  adminMfaRequired: boolean;
+};
+
+/** #418: break-glass credential metadata (secrets are never returned). */
+export type AdminBreakGlassCredential = {
+  id: string;
+  label: string;
+  createdById: string;
+  createdAt: string;
+  expiresAt: string;
+  usedAt: string | null;
+  usedByEmail: string | null;
+  revokedAt: string | null;
+  status: 'ACTIVE' | 'USED' | 'REVOKED' | 'EXPIRED';
+};
+
+/** #423: a staged session still waiting for its minimum group. */
+export type AdminPendingGroup = {
+  sessionId: string;
+  tripTitle: string;
+  agencyName: string | null;
+  startDate: string;
+  confirmationDeadline: string | null;
+  minBookings: number;
+  paidParticipants: number;
+  depositPaidBookings: number;
+  currency: string;
+};
+
+/** #416C: one row of a refund case's completion-evidence trail. */
+export type AdminRefundEvidence = {
+  id: string;
+  tier: string;
+  source: string;
+  reference: string | null;
+  amount: string | null;
+  createdAt: string;
+};
 
 export type AdminRefundCase = {
   id: string;
@@ -21,6 +96,15 @@ export type AdminRefundCase = {
   initiatedAt: string | null;
   completedAt: string | null;
   failureReason: string | null;
+  /** #416: strongest qualifying evidence tier at completion. */
+  completionTier?: string | null;
+  /** #416B/#416C: risk-based audit queue fields. */
+  auditRequired?: boolean;
+  auditedAt?: string | null;
+  auditedBy?: string | null;
+  evidence?: AdminRefundEvidence[];
+  originalPaymentId?: string | null;
+  externalPaymentReference?: string | null;
   agency?: { id: string; companyName: string } | null;
   traveler?: { id: string; name: string | null; email: string } | null;
   booking?: {
@@ -93,12 +177,53 @@ export type AdminAgency = {
   effectiveLicenceStatus?: string | null;
   licenceVerifiedAt?: string | null;
   licenceExpiry?: string | null;
+  // B4: licence issue date + issuing authority (Law 31-08 seller block)
+  licenceIssuedAt?: string | null;
+  licenceIssuingAuthority?: string | null;
+  /**
+   * B4: seller-block fields still missing on an effectively VERIFIED
+   * licence (server-derived data-completeness list). Absent/empty for
+   * complete records and for licences that are not verified.
+   */
+  sellerBlockMissingFields?: string[];
   licenceRejectionReason?: string | null;
+  // #415: licence document (private upload) + Ministry-check stamp
+  licenceDocumentKey?: string | null;
+  licenceDocumentName?: string | null;
+  licenceMinistryCheckedAt?: string | null;
+  licenceMinistryCheckedBy?: string | null;
+  // #415: RC insurance artefact (same lifecycle as the licence)
+  insuranceStatus?: string | null;
+  /** Server-derived insurance status (mirrors effectiveLicenceStatus). */
+  effectiveInsuranceStatus?: string | null;
+  insuranceInsurer?: string | null;
+  insurancePolicyNumber?: string | null;
+  insuranceInsuredName?: string | null;
+  insuranceValidFrom?: string | null;
+  insuranceExpiry?: string | null;
+  insuranceCoverageLimit?: string | number | null;
+  insuranceCertificateKey?: string | null;
+  insuranceVerifiedAt?: string | null;
+  insuranceRejectionReason?: string | null;
+  // #415: expiry-sweep auto-pause marker
+  verificationPausedAt?: string | null;
+  verificationPauseReason?: string | null;
+  // #421: payment-destination verification — the live (traveller-visible)
+  // details, the pending replacement awaiting review, and the review state.
+  bankDetails?: string | null;
+  pendingBankDetails?: string | null;
+  bankAccountHolderName?: string | null;
+  bankAttestationUrl?: string | null;
+  bankDetailsStatus?: string | null;
+  bankDetailsVerifiedAt?: string | null;
+  bankDetailsVerifiedBy?: string | null;
+  bankDetailsRejectionReason?: string | null;
 };
 
 export type AdminTrip = {
   id: string;
   title: string;
+  description?: string | null;
   status?: TripStatusType;
   images?: string[];
   agency: {
@@ -115,6 +240,17 @@ export type AdminPaymentProof = {
   downloadUrl?: string;
   uploadedAt?: string | null;
   booking?: AdminBooking | null;
+  /**
+   * #422 (Council P0-20): read-only bank-confirmation state of the stage's
+   * ExternalPayment, when the API provides it. Display only — bank
+   * confirmation is agency-only; admins never confirm bank receipt.
+   */
+  bankConfirmation?: {
+    confirmedAmount?: string | number | null;
+    bankReference?: string | null;
+    bankConfirmedAt?: string | null;
+    bankConfirmedBy?: string | null;
+  } | null;
 };
 
 export type BankDetailsMap = Record<string, unknown>;
@@ -138,6 +274,44 @@ export type AdminOverviewCounts = {
   bookingsToday: number;
   pendingPaymentProofs: number;
   auditLogs: number;
+  /** #559: refund urgency counters, when a future API version provides them. */
+  refundsOverdue?: number;
+  refundsDueWithin48h?: number;
+};
+
+/** #559: shape of GET /admin/analytics/beta-metrics (#432 service output). */
+export type AdminBetaMetrics = {
+  window: { from: string; to: string };
+  generatedAt: string;
+  searches: { total: number; zeroResult: number; zeroResultRate: number | null };
+  bookings: { created: number; byStatus: Record<string, number>; completed: number };
+  refunds: {
+    opened: number;
+    byStatus: Record<string, number>;
+    completed: number;
+    sla: { initiated: number; initiatedWithin7d: number; percentWithin7d: number | null };
+    overdueNow: number;
+    proofToBankConfirmationLagHours: { samples: number; median: number | null; average: number | null };
+  };
+  disputes: { opened: number; per1000Bookings: number | null };
+  stuck: { bookingsAwaitingValidationOver48h: number; refundCasesPastDueOver48h: number; total: number };
+  duplicates: { duplicateBookings: number; rate: number | null };
+  terms: { nullTermsInWindow: number; recordedRate: number | null; nullTermsAllTime: number };
+  sweepPauses: { agenciesCurrentlyPaused: number; note: string };
+  interventions: { count: number; per100Bookings: number | null };
+  support: {
+    responseWithin48hPercent: number | null;
+    derivable: boolean;
+    reason: string;
+    /** #446: help-centre ticket counts, when the API provides them. */
+    ticketsOpened?: number;
+    ticketsByStatus?: Record<string, number>;
+    ticketsByCategory?: Record<string, number>;
+    ticketsWithFirstResponse?: number;
+    firstResponsesWithin48h?: number;
+    awaitingFirstResponseOver48h?: number;
+  };
+  exitCriteria: Array<{ key: string; target: string; value: number | null; pass: boolean | null }>;
 };
 
 export type FeedbackState = {

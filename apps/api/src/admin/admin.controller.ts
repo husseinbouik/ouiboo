@@ -19,10 +19,16 @@ import { EmailService } from '../email/email.service';
 import { PaymentCustodian, PaymentLedgerSource, PaymentMethod, Prisma } from '@ouiboo/database';
 import { AuditLogService } from './audit-log.service';
 import { Response } from 'express';
-import { mapBookingDetails } from '../bookings/booking-response.util';
+import {
+    BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT,
+    mapBookingDetails,
+    resolveBankConfirmation,
+} from '../bookings/booking-response.util';
 import { PaymentsService } from '../payments/payments.service';
+import { serializeDuplicateCreditFlag } from '../bookings/bookings.service';
 import { type MoneyInput } from '../common/money.util';
-import { effectiveLicenceStatus, getAgencyActivationBlock } from '../common/agency-licence.util';
+import { effectiveInsuranceStatus, effectiveLicenceStatus, getAgencyActivationBlock, sellerBlockMissingFields } from '../common/agency-licence.util';
+import { derivePublicMediaUrl } from '../upload/media-url.util';
 
 const parseEnumQuery = <T extends string>(value: string | undefined, allowedValues: readonly T[]) => {
     if (!value) {
@@ -135,7 +141,7 @@ export class AdminController {
     ) { }
 
     @Get('pending-payments')
-    @ApiOperation({ summary: 'Get payment proofs pending verification' })
+    @ApiOperation({ summary: 'Get payment proofs awaiting review or agency bank confirmation' })
     async getPendingPayments(
         @Query('q') q?: string,
         @Query('page') page?: string,
@@ -143,8 +149,12 @@ export class AdminController {
     ) {
         const search = q?.trim();
         const { page: safePage, limit: safeLimit } = parsePaginationQuery(page, limit);
+        // #422 (Council P0-20): ACCEPTED proofs stay listed alongside
+        // PENDING ones — acceptance is not settlement, and the Payment
+        // Proofs tab must show the proof as awaiting the agency's bank
+        // confirmation until that confirmation flips it to VERIFIED.
         const where: Prisma.PaymentProofWhereInput = {
-            status: 'PENDING',
+            status: { in: ['PENDING', 'ACCEPTED'] },
             ...(search ? {
                 OR: [
                     { booking: { id: { contains: search, mode: 'insensitive' } } },
@@ -162,6 +172,9 @@ export class AdminController {
                         include: {
                             traveler: { select: { email: true, name: true } },
                             session: { include: { template: true } },
+                            paymentProof: true,
+                            paymentPlan: true,
+                            externalPayments: { select: BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT },
                         },
                     },
                 },
@@ -176,13 +189,17 @@ export class AdminController {
         const data = proofs.map((proof) => ({
             ...proof,
             booking: mapBookingDetails(proof.booking),
+            // #422: the stage ExternalPayment's bank confirmation, in the
+            // AdminPaymentProof.bankConfirmation shape the tab renders
+            // read-only (null until the agency confirms the bank credit).
+            bankConfirmation: resolveBankConfirmation(proof.booking),
             downloadUrl: `${apiUrl}/bookings/${proof.bookingId}/payment-proof/download`,
         }));
         return { data, pagination: buildPaginationMeta(total, safePage, safeLimit) };
     }
 
     @Post('payments/:id/verify')
-    @ApiOperation({ summary: 'Approve or reject payment proof' })
+    @ApiOperation({ summary: 'Accept or reject a payment proof image (acceptance is not settlement, #422)' })
     async verifyPayment(
         @Request() req,
         @Param('id') id: string,
@@ -214,23 +231,39 @@ export class AdminController {
                 throw new BadRequestException('Booking is not awaiting payment validation');
             }
 
+            // #422 (Council P0-20): admin proof review is no longer
+            // settlement either. A VERIFIED decision ACCEPTS the proof
+            // image only — the booking, the plan and the ExternalPayment
+            // stay pending until the AGENCY confirms the credit in its own
+            // bank account (only the agency can see that account, so there
+            // is deliberately no admin bank-confirmation override; founder
+            // decision D3). Rejection stays one-step.
+            const approved = status === 'VERIFIED';
             const updatedProof = await tx.paymentProof.update({
                 where: { id },
                 data: {
-                    status,
-                    rejectionReason: status === 'REJECTED' ? rejectionReason : null,
+                    status: approved ? 'ACCEPTED' : 'REJECTED',
+                    rejectionReason: approved ? null : rejectionReason,
                 }
             });
 
-            // #369: staged bookings follow the plan state machine (deposit
-            // stage, then balance after confirmation); only the stage
-            // amount is recorded and the booking is fully paid at the
-            // balance stage.
+            if (approved) {
+                return {
+                    updatedProof,
+                    bookingId: proof.bookingId,
+                    travelerEmail: proof.booking.traveler?.email,
+                    tripTitle: proof.booking.session.template.title,
+                    fullyPaid: false,
+                };
+            }
+
+            // #369: staged bookings follow the plan state machine on
+            // rejection (deposit stage fails the booking; balance stage
+            // keeps the confirmed booking with the deposit paid).
             if (proof.booking.paymentPlan) {
-                const decision = await this.stagedPaymentsService.applyProofDecisionInTransaction(tx, {
+                await this.stagedPaymentsService.applyProofRejectionInTransaction(tx, {
                     booking: proof.booking,
                     plan: proof.booking.paymentPlan,
-                    approved: status === 'VERIFIED',
                     source: PaymentLedgerSource.ADMIN_PROOF_REVIEW,
                     externalReference: proof.id,
                 });
@@ -239,24 +272,23 @@ export class AdminController {
                     bookingId: proof.bookingId,
                     travelerEmail: proof.booking.traveler?.email,
                     tripTitle: proof.booking.session.template.title,
-                    fullyPaid: decision.fullyPaid,
+                    fullyPaid: false,
                 };
             }
 
             const updatedBooking = await tx.booking.update({
                 where: { id: proof.bookingId },
                 data: {
-                    status: status === 'VERIFIED' ? 'CONFIRMED' : 'REJECTED',
-                    paymentStatus: status === 'VERIFIED' ? 'PAID' : 'FAILED',
-                    confirmedAt: status === 'VERIFIED' ? new Date() : null,
+                    status: 'REJECTED',
+                    paymentStatus: 'FAILED',
+                    confirmedAt: null,
                 },
                 include: { session: { include: { template: true } } }
             });
 
-            // #368: verifying a payment proof records the verified fact that
-            // the traveller paid the AGENCY directly. It must never credit a
-            // withdrawable OuiBoo balance.
-            const paymentRecord = {
+            // #368: rejecting a payment proof records the fact only. It
+            // must never credit a withdrawable OuiBoo balance.
+            await this.externalPaymentsService.recordPaymentRejectedInTransaction(tx, {
                 bookingId: updatedBooking.id,
                 agencyId: updatedBooking.session.template.agencyId,
                 travelerId: proof.booking.travelerId,
@@ -266,33 +298,36 @@ export class AdminController {
                 externalReference: proof.id,
                 custodian: PaymentCustodian.AGENCY,
                 source: PaymentLedgerSource.ADMIN_PROOF_REVIEW,
-            };
-            if (status === 'VERIFIED') {
-                await this.externalPaymentsService.recordPaymentVerifiedInTransaction(tx, paymentRecord);
-            } else {
-                await this.externalPaymentsService.recordPaymentRejectedInTransaction(tx, paymentRecord);
-            }
+            });
 
             return {
                 updatedProof,
                 bookingId: proof.bookingId,
                 travelerEmail: proof.booking.traveler?.email,
                 tripTitle: updatedBooking.session.template.title,
-                fullyPaid: status === 'VERIFIED',
+                locale: updatedBooking.locale,
+                fullyPaid: false,
             };
         });
 
         if (result.fullyPaid && result.travelerEmail) {
-            this.emailService.sendPaymentConfirmation(
+            // #436 (Council P1-10): awaited — an un-awaited send races the
+            // serverless freeze after the response returns (#409). The
+            // failure is logged, never thrown: the review already settled.
+            await this.emailService.sendPaymentConfirmation(
                 result.travelerEmail,
                 result.tripTitle,
+                result.locale,
             ).catch((err) => console.error('Failed to send payment confirmation email', err));
         }
 
         this.auditLogService.log({
             actorId: req?.user?.userId,
             actorEmail: req?.user?.email,
-            action: 'PAYMENT_PROOF_VERIFIED',
+            // #422: the audit action names the step that actually happened
+            // (proof accepted / proof rejected) — never "verified", which
+            // is reserved for bank confirmation.
+            action: status === 'VERIFIED' ? 'PAYMENT_PROOF_ACCEPTED' : 'PAYMENT_PROOF_REJECTED',
             targetType: 'PaymentProof',
             targetId: result.updatedProof.id,
             metadata: {
@@ -371,10 +406,19 @@ export class AdminController {
         ]);
         // #371: surface the derived licence status so an expired licence is
         // flagged in admin even when the stored value still says VERIFIED.
+        // #415: same for the RC insurance artefact.
         return {
             data: agencies.map((agency) => ({
                 ...agency,
+                // #447: the agency logo and the owner avatar are stored
+                // file references — re-derive them against the current
+                // public media base at read time.
+                logo: derivePublicMediaUrl(agency.logo) ?? null,
+                user: agency.user
+                    ? { ...agency.user, avatar: derivePublicMediaUrl(agency.user.avatar) }
+                    : agency.user,
                 effectiveLicenceStatus: effectiveLicenceStatus(agency),
+                effectiveInsuranceStatus: effectiveInsuranceStatus(agency),
             })),
             pagination: buildPaginationMeta(total, safePage, safeLimit),
         };
@@ -402,11 +446,11 @@ export class AdminController {
     }
 
     @Post('agencies/:id/licence/verify')
-    @ApiOperation({ summary: 'Verify or reject an agency travel licence (#371)' })
+    @ApiOperation({ summary: 'Verify or reject an agency travel licence (#371, hardened by #415)' })
     async verifyAgencyLicence(
         @Request() req,
         @Param('id') id: string,
-        @Body() body: { status?: 'VERIFIED' | 'REJECTED'; reason?: string },
+        @Body() body: { status?: 'VERIFIED' | 'REJECTED'; reason?: string; ministryChecked?: boolean },
     ) {
         const status = body?.status;
         if (!status || !['VERIFIED', 'REJECTED'].includes(status)) {
@@ -414,25 +458,63 @@ export class AdminController {
         }
         const agency = await this.db.agencyProfile.findUnique({
             where: { id },
-            select: { id: true, travelLicenceNumber: true, travelLicenceStatus: true, licenceExpiry: true },
+            select: {
+                id: true,
+                travelLicenceType: true,
+                travelLicenceNumber: true,
+                travelLicenceStatus: true,
+                licenceExpiry: true,
+                licenceIssuedAt: true,
+                licenceIssuingAuthority: true,
+                licenceDocumentKey: true,
+            },
         });
         if (!agency) {
             throw new BadRequestException('Agency not found');
         }
         if (status === 'VERIFIED') {
+            // #415: verification is evidence-based, not a self-typed
+            // string — the licence document must be on file, an expiry
+            // must be recorded and in the future, and the admin must
+            // attest that the licence was checked against the Ministry
+            // list (manual attestation; the stamp records who/when).
             if (!agency.travelLicenceNumber) {
                 throw new BadRequestException('Agency has not submitted a travel licence number');
             }
-            if (agency.licenceExpiry && agency.licenceExpiry.getTime() <= Date.now()) {
+            if (!agency.travelLicenceType) {
+                throw new BadRequestException('Agency has not submitted a travel licence type (ODV/DV)');
+            }
+            if (!agency.licenceDocumentKey) {
+                throw new BadRequestException('Agency has not uploaded a travel licence document');
+            }
+            if (!agency.licenceExpiry) {
+                throw new BadRequestException('Travel licence expiry is required before verification');
+            }
+            if (agency.licenceExpiry.getTime() <= Date.now()) {
                 throw new BadRequestException('Travel licence has already expired; ask the agency to renew it before verification');
             }
+            // B4: the Law 31-08 seller block renders the licence issue
+            // date and issuing authority — a licence cannot be marked
+            // VERIFIED until both are on the record.
+            if (!agency.licenceIssuedAt) {
+                throw new BadRequestException('Licence issue date is required before verification');
+            }
+            if (!agency.licenceIssuingAuthority?.trim()) {
+                throw new BadRequestException('Licence issuing authority is required before verification');
+            }
+            if (body.ministryChecked !== true) {
+                throw new BadRequestException('Ministry-list check attestation (ministryChecked) is required to verify a licence');
+            }
         }
+        const verifiedAt = new Date();
         const updated = await this.db.agencyProfile.update({
             where: { id },
             data: {
                 travelLicenceStatus: status,
-                licenceVerifiedAt: status === 'VERIFIED' ? new Date() : null,
+                licenceVerifiedAt: status === 'VERIFIED' ? verifiedAt : null,
                 licenceRejectionReason: status === 'REJECTED' ? (body.reason?.trim() || null) : null,
+                licenceMinistryCheckedAt: status === 'VERIFIED' ? verifiedAt : null,
+                licenceMinistryCheckedBy: status === 'VERIFIED' ? (req?.user?.userId ?? null) : null,
             },
         });
         this.auditLogService.log({
@@ -441,7 +523,240 @@ export class AdminController {
             action: status === 'VERIFIED' ? 'AGENCY_LICENCE_VERIFIED' : 'AGENCY_LICENCE_REJECTED',
             targetType: 'AgencyProfile',
             targetId: id,
-            metadata: { status, licenceNumber: agency.travelLicenceNumber },
+            metadata: {
+                status,
+                licenceNumber: agency.travelLicenceNumber,
+                licenceDocumentKey: agency.licenceDocumentKey,
+                licenceIssuedAt: agency.licenceIssuedAt,
+                licenceIssuingAuthority: agency.licenceIssuingAuthority,
+                ministryChecked: status === 'VERIFIED' ? true : undefined,
+            },
+        }).catch((err) => console.error('Audit log failed', err));
+        return updated;
+    }
+
+    @Post('agencies/:id/insurance/verify')
+    @ApiOperation({ summary: 'Verify or reject an agency RC insurance artefact (#415)' })
+    async verifyAgencyInsurance(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() body: { status?: 'VERIFIED' | 'REJECTED'; reason?: string },
+    ) {
+        const status = body?.status;
+        if (!status || !['VERIFIED', 'REJECTED'].includes(status)) {
+            throw new BadRequestException('Invalid insurance verification status');
+        }
+        const agency = await this.db.agencyProfile.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                insuranceInsurer: true,
+                insurancePolicyNumber: true,
+                insuranceInsuredName: true,
+                insuranceExpiry: true,
+                insuranceCertificateKey: true,
+            },
+        });
+        if (!agency) {
+            throw new BadRequestException('Agency not found');
+        }
+        if (status === 'VERIFIED') {
+            // #415: mirrors the hardened licence rules — the artefact
+            // must be complete, the certificate on file, and the cover
+            // must have a recorded, future expiry.
+            if (!agency.insurancePolicyNumber) {
+                throw new BadRequestException('Agency has not submitted an insurance policy number');
+            }
+            if (!agency.insuranceInsurer) {
+                throw new BadRequestException('Agency has not submitted an insurer');
+            }
+            if (!agency.insuranceInsuredName) {
+                throw new BadRequestException('Agency has not submitted the insured legal name');
+            }
+            if (!agency.insuranceCertificateKey) {
+                throw new BadRequestException('Agency has not uploaded an RC insurance certificate');
+            }
+            if (!agency.insuranceExpiry) {
+                throw new BadRequestException('Insurance expiry is required before verification');
+            }
+            if (agency.insuranceExpiry.getTime() <= Date.now()) {
+                throw new BadRequestException('RC insurance has already expired; ask the agency to renew it before verification');
+            }
+        }
+        const updated = await this.db.agencyProfile.update({
+            where: { id },
+            data: {
+                insuranceStatus: status,
+                insuranceVerifiedAt: status === 'VERIFIED' ? new Date() : null,
+                insuranceRejectionReason: status === 'REJECTED' ? (body.reason?.trim() || null) : null,
+            },
+        });
+        this.auditLogService.log({
+            actorId: req?.user?.userId,
+            actorEmail: req?.user?.email,
+            action: status === 'VERIFIED' ? 'AGENCY_INSURANCE_VERIFIED' : 'AGENCY_INSURANCE_REJECTED',
+            targetType: 'AgencyProfile',
+            targetId: id,
+            metadata: {
+                status,
+                insurancePolicyNumber: agency.insurancePolicyNumber,
+                insuranceCertificateKey: agency.insuranceCertificateKey,
+            },
+        }).catch((err) => console.error('Audit log failed', err));
+        return updated;
+    }
+
+    // #494 (B16): duplicate-credit reconciliation queue — agencies
+    // flag second bank credits (invisible to the ledger); admin
+    // reconciles manually and closes flags here. Ops record only.
+    @Get('duplicate-credit-flags')
+    @ApiOperation({ summary: 'List duplicate-credit flags for reconciliation (#494)' })
+    async listDuplicateCreditFlags() {
+        const flags = await this.db.duplicateCreditFlag.findMany({
+            orderBy: { createdAt: 'desc' },
+            take: 200,
+        });
+        // OPEN first (stable sort keeps the newest-first order inside
+        // each status group) so the queue reads as a work list.
+        const sorted = [...flags].sort((a, b) => Number(b.status === 'OPEN') - Number(a.status === 'OPEN'));
+        return sorted.map(serializeDuplicateCreditFlag);
+    }
+
+    @Post('duplicate-credit-flags/:id/resolve')
+    @ApiOperation({ summary: 'Resolve or dismiss a duplicate-credit flag (#494)' })
+    async resolveDuplicateCreditFlag(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() body: { status?: 'RESOLVED' | 'DISMISSED'; resolutionNote?: string },
+    ) {
+        const status = body?.status ?? 'RESOLVED';
+        if (!['RESOLVED', 'DISMISSED'].includes(status)) {
+            throw new BadRequestException('Invalid duplicate-credit flag resolution status');
+        }
+        const flag = await this.db.duplicateCreditFlag.findUnique({ where: { id } });
+        if (!flag) {
+            throw new BadRequestException('Duplicate credit flag not found');
+        }
+        if (flag.status !== 'OPEN') {
+            throw new BadRequestException('Duplicate credit flag is already closed');
+        }
+        const updated = await this.db.duplicateCreditFlag.update({
+            where: { id },
+            data: {
+                status,
+                resolvedBy: req.user.userId,
+                resolvedAt: new Date(),
+                resolutionNote: body?.resolutionNote?.trim() || null,
+            },
+        });
+        this.auditLogService.log({
+            actorId: req.user.userId,
+            actorEmail: req.user.email,
+            action: 'DUPLICATE_CREDIT_FLAG_CLOSED',
+            targetType: 'DuplicateCreditFlag',
+            targetId: id,
+            metadata: { status, bookingId: flag.bookingId, agencyId: flag.agencyId },
+        }).catch((err) => console.error('Audit log failed', err));
+        return serializeDuplicateCreditFlag(updated);
+    }
+
+    @Post('agencies/:id/bank-details/verify')
+    @ApiOperation({ summary: 'Verify or reject an agency bank payment destination (#421)' })
+    async verifyAgencyBankDetails(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() body: { status?: 'VERIFIED' | 'REJECTED'; reason?: string; overrideReason?: string },
+    ) {
+        const status = body?.status;
+        if (!status || !['VERIFIED', 'REJECTED'].includes(status)) {
+            throw new BadRequestException('Invalid bank details verification status');
+        }
+        const agency = await this.db.agencyProfile.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                bankDetails: true,
+                pendingBankDetails: true,
+                bankAccountHolderName: true,
+                bankAttestationUrl: true,
+                legalName: true,
+                companyName: true,
+                bankDetailsVerifiedAt: true,
+            },
+        });
+        if (!agency) {
+            throw new BadRequestException('Agency not found');
+        }
+        if (!agency.pendingBankDetails) {
+            throw new BadRequestException('Agency has no bank details pending review');
+        }
+
+        if (status === 'VERIFIED') {
+            // #421: the submitted account holder must be the agency
+            // itself. A holder-name mismatch against the legal/trade
+            // name blocks verification (a third-party RIB must fail)
+            // unless the admin records an override reason — trade-name
+            // accounts exist, silent passes do not.
+            const holder = (agency.bankAccountHolderName || '').trim();
+            if (!holder) {
+                throw new BadRequestException('Agency has not submitted a bank account holder name');
+            }
+            const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim();
+            const holderMatches = [agency.legalName, agency.companyName]
+                .filter((name): name is string => !!name && name.trim().length > 0)
+                .some((name) => normalize(name) === normalize(holder));
+            const overrideReason = body.overrideReason?.trim() || null;
+            if (!holderMatches && !overrideReason) {
+                throw new BadRequestException(
+                    'Bank account holder name does not match the agency legal name; record an override reason to verify anyway',
+                );
+            }
+            const updated = await this.db.agencyProfile.update({
+                where: { id },
+                data: {
+                    // Promote the reviewed submission to the live,
+                    // traveller-visible destination.
+                    bankDetails: agency.pendingBankDetails,
+                    pendingBankDetails: null,
+                    bankDetailsStatus: 'VERIFIED',
+                    bankDetailsVerifiedAt: new Date(),
+                    bankDetailsVerifiedBy: req?.user?.userId ?? null,
+                    bankDetailsRejectionReason: null,
+                },
+            });
+            this.auditLogService.log({
+                actorId: req?.user?.userId,
+                actorEmail: req?.user?.email,
+                action: 'AGENCY_BANK_DETAILS_VERIFIED',
+                targetType: 'AgencyProfile',
+                targetId: id,
+                metadata: { status, holderName: holder, holderMatches, overrideReason },
+            }).catch((err) => console.error('Audit log failed', err));
+            return updated;
+        }
+
+        const reason = body.reason?.trim();
+        if (!reason) {
+            throw new BadRequestException('A reason is required to reject bank details');
+        }
+        // A rejected REPLACEMENT does not take a verified destination
+        // offline: the live details and their verified standing remain.
+        const keepsVerifiedDestination = !!agency.bankDetails && !!agency.bankDetailsVerifiedAt;
+        const updated = await this.db.agencyProfile.update({
+            where: { id },
+            data: {
+                pendingBankDetails: null,
+                bankDetailsStatus: keepsVerifiedDestination ? 'VERIFIED' : 'REJECTED',
+                bankDetailsRejectionReason: reason,
+            },
+        });
+        this.auditLogService.log({
+            actorId: req?.user?.userId,
+            actorEmail: req?.user?.email,
+            action: 'AGENCY_BANK_DETAILS_REJECTED',
+            targetType: 'AgencyProfile',
+            targetId: id,
+            metadata: { status, reason, keepsVerifiedDestination },
         }).catch((err) => console.error('Audit log failed', err));
         return updated;
     }
@@ -499,7 +814,9 @@ export class AdminController {
                 throw new BadRequestException('Agency must be verified with an active subscription or trial');
             }
             // #371: publishing also requires a verified, unexpired travel
-            // licence (Law 11-16) — identity verification alone is not enough.
+            // licence (Law 11-16) — identity verification alone is not
+            // enough. #415: the shared activation block also requires
+            // verified, unexpired RC insurance.
             const licenceBlock = getAgencyActivationBlock(trip.agency);
             if (licenceBlock) {
                 throw new BadRequestException(licenceBlock);
@@ -556,10 +873,27 @@ export class AdminController {
             this.db.agencyProfile.count({ where }),
         ]);
         // #371: derived licence status (expired licences flagged on read).
+        // #415: derived insurance status alongside it.
+        // B4: seller-block data completeness — for an effectively
+        // VERIFIED licence, the Law 31-08 block fields still missing on
+        // the record (legacy rows predate licenceIssuedAt /
+        // licenceIssuingAuthority). Admin works this list until every
+        // verified agency has supplied them; other rows report [].
         return {
             data: agencies.map((agency) => ({
                 ...agency,
+                // #447: the agency logo and the owner avatar are stored
+                // file references — re-derive them against the current
+                // public media base at read time.
+                logo: derivePublicMediaUrl(agency.logo) ?? null,
+                user: agency.user
+                    ? { ...agency.user, avatar: derivePublicMediaUrl(agency.user.avatar) }
+                    : agency.user,
                 effectiveLicenceStatus: effectiveLicenceStatus(agency),
+                effectiveInsuranceStatus: effectiveInsuranceStatus(agency),
+                sellerBlockMissingFields: effectiveLicenceStatus(agency) === 'VERIFIED'
+                    ? sellerBlockMissingFields(agency)
+                    : [],
             })),
             pagination: buildPaginationMeta(total, safePage, safeLimit),
         };
@@ -643,7 +977,12 @@ export class AdminController {
                             },
                         },
                     },
-                    paymentProof: true
+                    paymentProof: true,
+                    // #422: mapBookingDetails reads the plan status and
+                    // the stage ExternalPayments to embed the proof's
+                    // bank-confirmation state in the Bookings tab rows.
+                    paymentPlan: true,
+                    externalPayments: { select: BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT },
                 },
                 orderBy: { bookingDate: 'desc' },
                 skip: (safePage - 1) * safeLimit,
@@ -653,7 +992,7 @@ export class AdminController {
         ]);
 
         return {
-            data: bookings.map(mapBookingDetails),
+            data: bookings.map((booking) => mapBookingDetails(booking)),
             pagination: buildPaginationMeta(total, safePage, safeLimit),
         };
     }

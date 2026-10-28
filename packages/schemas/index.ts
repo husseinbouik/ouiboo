@@ -2,7 +2,6 @@ import { z } from "zod";
 import {
     BookingPaymentStatus,
     BookingStatus,
-    PayoutStatus,
     PaymentMethod,
     PaymentProvider,
     RefundStatus,
@@ -35,7 +34,16 @@ export const AgencyProfileSchema = z.object({
     companyName: z.string().min(2, "Company name is required"),
     ice: z.string().regex(/^[0-9]{15}$/, "ICE must be 15 digits"),
     patente: z.string().min(5, "Patente is required"),
-    rib: z.string().regex(/^[0-9]{24}$/, "RIB must be 24 digits"),
+    rib: z.preprocess(
+        (value) =>
+            typeof value === 'string' ? value.replace(/\s+/g, '').toUpperCase() : value,
+        z
+            .string()
+            .regex(
+                /^[A-Z]{2}[0-9]{22}$/,
+                'RIB must be 24 characters: 2 letters followed by 22 digits',
+            ),
+    ),
     verificationStatus: z.nativeEnum(VerificationStatus),
     bio: z.string().optional(),
     logo: z.string().optional(),
@@ -54,6 +62,14 @@ export const AgencyProfileSchema = z.object({
     travelLicenceNumber: z.string().optional(),
     // Date (YYYY-MM-DD from the onboarding form) or full ISO datetime.
     licenceExpiry: z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Invalid licence expiry date").optional(),
+    // B4 (Council Session #2): licence issue date + issuing authority —
+    // part of a complete licence submission (Law 31-08 seller block).
+    // The empty string is the form's "not supplied" value (converted to
+    // undefined on submit, like licenceExpiry's empty state) — it must
+    // not fail validation, or agencies could not submit anything else
+    // before filling it in. Completeness is enforced server-side.
+    licenceIssuedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Invalid licence issue date").optional().or(z.literal('')),
+    licenceIssuingAuthority: z.string().optional(),
 });
 
 export const ItineraryDaySchema = z.object({
@@ -70,11 +86,89 @@ export const CreateItineraryDaySchema = ItineraryDaySchema.omit({
     templateId: true,
 });
 
+/**
+ * #417 (Council P0-11): agency per-trip cancellation bands for
+ * traveller-initiated cancellations. The semantic rules mirror the API
+ * (cancellation.util): coverage must reach 0 days and thresholds must be
+ * unique, so every cancellation timing resolves to exactly one band.
+ * The platform floor (agency fault / minimum group not reached = 100%
+ * refund) is not configurable and always overrides the bands.
+ */
+export const CancellationBandSchema = z.object({
+    minDaysBeforeStart: z.number().int().min(0).max(365),
+    refundPercent: z.number().int().min(0).max(100),
+});
+
+export const CancellationPolicySchema = z.object({
+    bands: z.array(CancellationBandSchema).min(1).max(10).superRefine((bands, ctx) => {
+        const thresholds = new Set<number>();
+        for (const band of bands) {
+            if (thresholds.has(band.minDaysBeforeStart)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: `Duplicate cancellation band for ${band.minDaysBeforeStart} days before the trip`,
+                });
+            }
+            thresholds.add(band.minDaysBeforeStart);
+        }
+        if (!thresholds.has(0)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Add a band starting at 0 days so every cancellation timing is covered',
+            });
+        }
+    }),
+});
+
+/**
+ * #417: platform default bands, applied when a trip stores none.
+ * Mirrors PLATFORM_DEFAULT_CANCELLATION_BANDS in the API
+ * (apps/api/src/cancellation/cancellation.util.ts) — keep them in sync.
+ */
+export const PLATFORM_DEFAULT_CANCELLATION_BANDS: Array<z.infer<typeof CancellationBandSchema>> = [
+    { minDaysBeforeStart: 30, refundPercent: 100 },
+    { minDaysBeforeStart: 15, refundPercent: 75 },
+    { minDaysBeforeStart: 7, refundPercent: 50 },
+    { minDaysBeforeStart: 3, refundPercent: 25 },
+    { minDaysBeforeStart: 0, refundPercent: 0 },
+];
+
+/**
+ * #546: one language's trip title + description inside the translations
+ * map. Entries may be partial (drafts, encouraged languages); the French
+ * entry is kept complete by the canonical title/description fields and
+ * the API's publish gate — not by this schema, so drafts stay saveable.
+ */
+/** #584 (phase 2): one itinerary day's text inside a language entry. */
+export const TripTranslationDaySchema = z.object({
+    dayNumber: z.number().int().positive().optional(),
+    title: z.string().max(300).optional(),
+    description: z.string().max(10000).optional(),
+    activities: z.array(z.string().max(200)).max(30).optional(),
+});
+
+export const TripTranslationEntrySchema = z.object({
+    title: z.string().max(300).optional(),
+    description: z.string().max(10000).optional(),
+    // #584 (phase 2): section content in this language.
+    itinerary: z.array(TripTranslationDaySchema).max(60).optional(),
+    inclusions: z.array(z.string().max(500)).max(100).optional(),
+    exclusions: z.array(z.string().max(500)).max(100).optional(),
+    checklist: z.array(z.string().max(500)).max(100).optional(),
+});
+
+/** #546: language map keyed by ISO language code (fr/ar/en today, any future code by data). */
+export const TripTranslationsSchema = z.record(z.string(), TripTranslationEntrySchema);
+
 export const TripTemplateSchema = z.object({
     id: z.string(),
     agencyId: z.string(),
     title: z.string().min(3, "Title must be at least 3 characters"),
     description: z.string().min(10, "Description must be at least 10 characters"),
+    // #546: multilingual title + description. `title`/`description` above
+    // are the FRENCH text (required, canonical); translations carries the
+    // other languages (Arabic/English encouraged, never blocking).
+    translations: TripTranslationsSchema.optional(),
     category: z.nativeEnum(TripCategory),
     startLocation: z.string(),
     endLocation: z.string().optional(),
@@ -86,6 +180,8 @@ export const TripTemplateSchema = z.object({
     images: z.array(z.string()).min(1, "At least one image is required"),
     // #332: optional alt text per image, aligned by index with `images`.
     imageAlts: z.array(z.string().max(300)).optional(),
+    // #417: optional agency cancellation bands (absent = platform defaults).
+    cancellationPolicy: CancellationPolicySchema.optional(),
     itinerary: z.array(ItineraryDaySchema).optional(),
     status: z.nativeEnum(TripStatus),
     currency: z.string().regex(/^[A-Z]{3}$/, "Currency must be an ISO 4217 code"),
@@ -135,7 +231,6 @@ export const BookingSchema = z.object({
     paymentProofUrl: z.string().optional(),
     fullName: z.string().optional(),
     phoneNumber: z.string().optional(),
-    documentNumber: z.string().optional(),
     paymentGatewayTransactionId: z.string().optional(),
     paymentGatewayMetadata: z.record(z.string(), z.unknown()).optional(),
     cancelledAt: z.string().datetime().optional(),
@@ -151,26 +246,6 @@ export const PaymentProofSchema = z.object({
     uploadedAt: z.string().datetime(),
     status: z.nativeEnum(VerificationStatus),
     rejectionReason: z.string().optional(),
-});
-
-export const PayoutRequestSchema = z.object({
-    id: z.string(),
-    agencyId: z.string(),
-    amount: DecimalStringSchema,
-    status: z.nativeEnum(PayoutStatus),
-    requestedAt: z.string().datetime(),
-    processedAt: z.string().datetime().optional(),
-    bankDetails: z.string(),
-});
-
-export const PayoutDetailsSchema = PayoutRequestSchema.extend({
-    agency: z.object({
-        companyName: z.string(),
-        id: z.string(),
-        user: z.object({
-            email: z.string().email().nullable().optional(),
-        }).nullable().optional(),
-    }),
 });
 
 export const BookingDetailsSchema = BookingSchema.extend({

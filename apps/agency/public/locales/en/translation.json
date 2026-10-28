@@ -1,4 +1,15 @@
 {
+  "share": {
+    "button": "Share",
+    "text": "Check out this trip on Ouiboo: {{title}}",
+    "copyLink": "Copy link",
+    "copied": "Link copied!",
+    "whatsapp": "WhatsApp",
+    "facebook": "Facebook",
+    "x": "X",
+    "telegram": "Telegram",
+    "opensAtLaunch": "Sharing opens at public launch"
+  },
   "auth": {
     "errors": {
       "invalidCredentials": "Incorrect email or password. Please try again.",
@@ -14,6 +25,9 @@
     }
   },
   "common": {
+    "switchLanguage": "Switch language current is {{language}}",
+    "switchFrom": "Switch from {{language}}",
+    "toggleTheme": "Toggle theme",
     "back": "Back to Trips",
     "saveDraft": "Save Draft",
     "submit": "Submit",
@@ -55,7 +69,8 @@
     "signOut": "Sign Out",
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar",
-    "refunds": "Refunds"
+    "refunds": "Refunds",
+    "support": "Support"
   },
   "login": {
     "title": "Agency Portal",
@@ -76,7 +91,7 @@
     "noAccount": "New agency?",
     "signUpLink": "Register your business",
     "heroTitle": "Empower your travel business.",
-    "heroSubtitle": "Access powerful tools, analytics, and a global network of travelers to scale your agency.",
+    "heroSubtitle": "Access tools to manage trips, bookings, and payments for your agency.",
     "heroAlt": "Modern Office",
     "loggingIn": "Logging in...",
     "emailRequired": "Email is required",
@@ -97,7 +112,7 @@
     "emailPlaceholder": "name@agency.com",
     "password": "Password",
     "passwordPlaceholder": "Create a password",
-    "passwordHint": "Use at least 6 characters with a mix of letters and numbers.",
+    "passwordHint": "Use at least 8 characters with a mix of letters and numbers.",
     "acceptTerms": "I agree to the",
     "termsLink": "Terms of Service",
     "privacyLink": "Privacy Policy",
@@ -117,7 +132,7 @@
     "nameRequired": "Agency name is required",
     "emailRequired": "Email is required",
     "passwordRequired": "Password is required",
-    "passwordMinLength": "Password must be at least 6 characters",
+    "passwordMinLength": "Password must be at least 8 characters",
     "termsRequired": "Please accept the terms to continue.",
     "emailInUse": "An account with this email already exists. Try logging in instead.",
     "serverNotConfigured": "The server is not fully configured. Please try again later or contact support.",
@@ -155,7 +170,7 @@
     "sectionThreeTitle": "Payments and policies",
     "sectionThreeBody": "Review booking policies, fees, and cancellations before confirming trips.",
     "sectionFourTitle": "Partner support",
-    "sectionFourBody": "Reach our partner success team via chat or email anytime."
+    "sectionFourBody": "Reach our partner support team via email."
   },
   "privacy": {
     "backToSignup": "Back to sign up",
@@ -181,7 +196,8 @@
       "agency": "Agency Details",
       "legal": "Legal Documents",
       "payment": "Payment Details",
-      "licence": "Travel Licence (Law 11-16)"
+      "licence": "Travel Licence (Law 11-16)",
+      "insurance": "RC Insurance"
     },
     "submit": "Submit for Verification",
     "documentsRequired": "Required documents for B2B compliance in Morocco.",
@@ -201,6 +217,7 @@
     "success": "Compliance documents submitted for verification!",
     "error": "Update failed. Please check your data.",
     "licenceSectionSubtitle": "Your travel-agent licence must be verified before you can publish trips or activate payments.",
+    "insuranceSectionSubtitle": "Your civil-liability (RC) insurance must be verified before you can publish trips or activate payments.",
     "legalNameLabel": "Legal name (raison sociale)",
     "legalNamePlaceholder": "Registered legal name of the company",
     "rcLabel": "Trade register (RC)",
@@ -219,7 +236,13 @@
       "numberLabel": "Licence number",
       "numberPlaceholder": "Ministry licence number",
       "expiryLabel": "Licence expiry date",
+      "issuedAtLabel": "Licence issue date",
+      "issuingAuthorityLabel": "Issuing authority",
+      "issuingAuthorityPlaceholder": "e.g. Ministère du Tourisme",
+      "issueDetailsRequired": "A licence submission is only complete with the licence issue date and the issuing authority — they appear in the seller identity block shown to travellers.",
       "expiresOn": "valid until {{date}}",
+      "documentLabel": "Licence document",
+      "documentRequired": "A licence submission is only complete with the licence number, the expiry date and the uploaded licence document.",
       "note": "Submitting or changing licence details sends the licence back for admin review. Trips cannot be published and payments cannot be activated until the licence is verified.",
       "status": {
         "NOT_SUBMITTED": "No travel licence submitted yet.",
@@ -228,6 +251,57 @@
         "REJECTED": "Your travel licence was rejected.",
         "EXPIRED": "Your travel licence has expired. Renew it and resubmit to keep publishing trips."
       }
+    },
+    "insurance": {
+      "insurerLabel": "Insurer",
+      "insurerPlaceholder": "Insurance company name",
+      "policyNumberLabel": "Policy number",
+      "policyNumberPlaceholder": "RC policy number",
+      "insuredNameLabel": "Insured name",
+      "insuredNamePlaceholder": "Must match your legal name",
+      "validFromLabel": "Coverage start date",
+      "expiryLabel": "Insurance expiry date",
+      "expiresOn": "valid until {{date}}",
+      "coverageLimitLabel": "Coverage limit",
+      "coverageLimitPlaceholder": "e.g. 500000",
+      "certificateLabel": "Insurance certificate",
+      "certificateRequired": "An insurance submission is only complete with the insurer, the policy number, the insured name, the expiry date and the uploaded certificate.",
+      "note": "Submitting or changing insurance details sends the insurance back for admin review. Trips cannot be published and payments cannot be activated until the insurance is verified.",
+      "status": {
+        "NOT_SUBMITTED": "No RC insurance submitted yet.",
+        "PENDING_REVIEW": "Your RC insurance is under review.",
+        "VERIFIED": "Your RC insurance is verified.",
+        "REJECTED": "Your RC insurance was rejected.",
+        "EXPIRED": "Your RC insurance has expired. Renew it and resubmit the certificate to keep publishing trips."
+      }
+    },
+    "documents": {
+      "upload": "Upload document",
+      "replace": "Replace document",
+      "current": "Current document: {{name}}",
+      "uploading": "Uploading…",
+      "uploadFailed": "Upload failed: {{message}}",
+      "tooLarge": "This file is too large. Choose a file of 5 MB or less.",
+      "hint": "PDF or image, max 5 MB. Stored privately and only visible to our verification team."
+    }
+  },
+  "verificationPaused": {
+    "title": "Publishing paused — verification expired",
+    "licenceExpired": "Your travel licence has expired.",
+    "insuranceExpired": "Your RC insurance has expired.",
+    "body": "Your active trips were paused and new bookings are blocked until the renewed document is submitted and verified.",
+    "cta": "Renew verification"
+  },
+  "verification": {
+    "incomplete": "Verification incomplete",
+    "incompleteDetail": "Verification incomplete — {{artefact}} not verified",
+    "artefact": {
+      "identity": "agency identity",
+      "licence": "travel licence",
+      "insurance": "RC insurance"
+    },
+    "block": {
+      "identity": "Your agency identity verification is not complete yet."
     }
   },
   "trips": {
@@ -267,9 +341,11 @@
       "editTemplate": "Edit Template",
       "deleting": "Deleting...",
       "delete": "Delete",
-      "duration": "{{days}} Days / {{nights}} Nights",
+      "durationDays_one": "{{count}} Day",
+      "durationDays_other": "{{count}} Days",
+      "durationNights_one": "{{count}} Night",
+      "durationNights_other": "{{count}} Nights",
       "verificationRequired": "Verification Required",
-      "verificationRequiredBody": "Your agency verification is pending. You can create templates and sessions, but they will not be visible to travelers until your profile is verified.",
       "checkVerificationStatus": "Check Verification Status",
       "sessionsTitle": "Trip Sessions",
       "sessionsSubtitle": "Manage dates, prices, and capacity for your trip.",
@@ -280,7 +356,8 @@
       "deleteTripBody": "Archiving hides this trip from travelers. Your bookings, sessions, and revenue records are preserved and the trip can be restored anytime.",
       "altTrip": "Trip",
       "listView": "List view",
-      "calendarView": "Calendar view"
+      "calendarView": "Calendar view",
+      "activationBlockedBody": "You can keep working on your trips, but you can't publish new trips or activate payments until this is resolved. Trips that are already live are not affected."
     },
     "edit": {
       "backToDetail": "Back to Trip Detail",
@@ -307,6 +384,11 @@
       "titlePlaceholder": "e.g. 5 Days in the Sahara Desert",
       "description": "Description",
       "descriptionPlaceholder": "Describe the unique experience...",
+      "languageFr": "French",
+      "languageAr": "Arabic",
+      "languageEn": "English",
+      "frenchRequiredNote": "French is required to publish this trip. Arabic and English are optional, but recommended: travellers see the trip in their own language when a translation exists.",
+      "translationsMissingHint": "Missing translations: {{languages}}. Travellers using those languages will see the French text instead.",
       "category": "Category",
       "categoryAdventure": "Adventure",
       "categoryCultural": "Cultural",
@@ -354,7 +436,22 @@
       "noDescription": "No description provided yet.",
       "tbd": "TBD",
       "basePackage": "Base Pkg",
-      "pricePreview": "--- {{currency}}"
+      "pricePreview": "--- {{currency}}",
+      "cancellationTitle": "Cancellation scale",
+      "cancellationSubtitle": "What travellers get back when they cancel, based on how many days before the trip they cancel.",
+      "cancellationFloorNote": "Platform floor (cannot be changed): if you cancel, or the trip cannot run because the minimum group was not reached, the traveller is refunded 100% of what they paid, initiated within 7 days.",
+      "cancellationDefaultNote": "This trip uses the platform default scale:",
+      "cancellationCustomize": "Customize scale",
+      "cancellationReset": "Use platform default",
+      "cancellationAddBand": "Add band",
+      "cancellationDaysLabel": "Days before the trip (or more)",
+      "cancellationPercentLabel": "Refund %",
+      "cancellationRemoveBand": "Remove band",
+      "cancellationBandAtLeast": "{{days}} or more days before: {{percent}}% refund",
+      "cancellationBandLessThan": "Less than {{days}} days before: {{percent}}% refund",
+      "structureNote": "Days are added and ordered in French, the canonical structure — this tab only translates each day's text.",
+      "livePreviewEmptyTitle": "Nothing to preview yet",
+      "livePreviewEmptyBody": "Add a title, description, location or photo and the preview of your trip will appear here."
     }
   },
   "payments": {
@@ -447,9 +544,14 @@
     "recordedOn": "Recorded on {{date}}",
     "proofNote": "Proof note: {{reason}}",
     "inspectProof": "Inspect Proof",
+    "markAttended": "Mark Attended",
+    "markNoShow": "Mark No-Show",
+    "attendanceAttended": "Attendance: Attended",
+    "attendanceNoShow": "Attendance: No-Show",
+    "attendanceFailed": "Could not record attendance. Please try again.",
     "noProof": "No Proof",
     "importantNotice": "Important Notice",
-    "importantNoticeBody": "Agencies can inspect uploaded bank-transfer proofs and follow booking progress from this screen. Payment confirmation is finalized by the Admin finance review flow.",
+    "importantNoticeBody": "Review uploaded bank-transfer proofs from this screen: accepting a proof is not settlement — a payment counts only when you confirm the money in your bank account with its bank reference.",
     "schedule": {
       "title": "Trip Schedule",
       "subtitle": "Operational view of your upcoming departures.",
@@ -471,7 +573,7 @@
     "greeting": "Hello, {{name}}",
     "subtitle": "Here is your agency command center for bookings, payments, and growth.",
     "liveSnapshot": "Live Snapshot",
-    "totalRevenue": "Total Revenue",
+    "grossBookedValue": "Gross booked value",
     "bookCount_one": "{{count}} booking",
     "bookCount_other": "{{count}} bookings",
     "proofCount_one": "{{count}} proof to review",
@@ -485,8 +587,6 @@
     "quickActions": {
       "verifiedTitle": "Agency verified",
       "verifiedDescription": "Your agency is verified. Keep your profile complete to stay payment-ready.",
-      "finishVerificationTitle": "Complete verification",
-      "finishVerificationDescription": "Upload your documents to publish trips and receive traveller payments directly.",
       "verifiedCta": "Review onboarding",
       "finishVerificationCta": "Finish onboarding",
       "publishTitle": "Publish your next trip",
@@ -528,11 +628,18 @@
       "pending": "Pending"
     },
     "growTitle": "Ready to expand your reach?",
-    "growBody": "You have {{tripCount}} active trips and {{travelerCount}} travelers in your audience. Add a fresh experience to keep momentum up.",
+    "growTrips_one": "You have {{count}} active trip",
+    "growTrips_other": "You have {{count}} active trips",
+    "growTravelers_one": "and {{count}} traveler in your audience.",
+    "growTravelers_other": "and {{count}} travelers in your audience.",
+    "growCta": "Add a fresh experience to keep momentum up.",
     "createNewTrip": "Create New Trip",
     "yourAgency": "Your Agency",
     "paymentsReceived": "Payments received",
+    "paymentsReceivedCaption": "Bank-confirmed money received from travellers",
     "paymentsPending": "Payments to verify",
+    "paymentsPendingCaption": "Traveller proofs uploaded, waiting for your bank confirmation",
+    "grossBookedValueCaption": "Total value of confirmed and completed bookings — not money received yet",
     "viewPayments": "View payments"
   },
   "status": {
@@ -542,6 +649,7 @@
     "bookingRejected": "Rejected",
     "bookingCancelled": "Cancelled",
     "bookingCompleted": "Completed",
+    "bookingNoShow": "No-Show",
     "paymentPaid": "Paid",
     "paymentFailed": "Payment Failed",
     "paymentRefunded": "Refunded",
@@ -550,10 +658,7 @@
     "proofVerified": "Verified",
     "proofRejected": "Rejected",
     "proofAwaitingReview": "Awaiting Review",
-    "payoutPaid": "Paid",
-    "payoutApproved": "Approved",
-    "payoutRejected": "Rejected",
-    "payoutPending": "Pending",
+    "proofAccepted": "Accepted — Pending Bank Confirmation",
     "sessionAvailable": "Available",
     "sessionFull": "Full",
     "sessionCancelled": "Cancelled",
@@ -581,7 +686,19 @@
     "paymentSubtitle": "Instructions for travelers to pay you manually.",
     "paymentInstructions": "Manual Payment Instructions (RIB, Bank Name, etc.)",
     "paymentInstructionsPlaceholder": "Example: Bank Populaire, RIB: 011 780 0000 1234 5678 9012 34",
-    "paymentDisclaimer": "This will be displayed prominently on the checkout page.",
+    "paymentDisclaimer": "Travelers see these instructions only after OuiBoo verifies them against your bank attestation.",
+    "bankStatusLabel": "Bank destination status",
+    "bankStatusVerified": "Verified — these instructions are live for travelers.",
+    "bankStatusPendingReview": "Pending review — your submitted details are being checked. Travelers still see the previously verified instructions, if any.",
+    "bankStatusRejected": "Rejected — your submitted details were not approved. Update them and save again to resubmit.",
+    "bankStatusUnverified": "Not verified — submit your bank details with the account holder name and a bank attestation link so they can be reviewed.",
+    "bankRejectionReason": "Reason: {{reason}}",
+    "bankHolderName": "Account holder name",
+    "bankHolderNamePlaceholder": "Name of the bank account holder",
+    "bankHolderNameHint": "Must match the name on the bank account — it is checked against your agency's legal name during review.",
+    "bankAttestationUrl": "Bank attestation link",
+    "bankAttestationUrlPlaceholder": "https://… (link to your bank statement / RIB document)",
+    "bankAttestationUrlHint": "A link to your bank attestation (bank statement) showing these account details.",
     "appearanceTitle": "Appearance & Language",
     "appearanceSubtitle": "Customize your dashboard experience.",
     "themeMode": "Theme Mode",
@@ -672,7 +789,14 @@
       "mvpBody": "Notification delivery is intentionally limited to essential email alerts in this release.",
       "mvpHint": "Channel-level controls stay hidden until they can be managed reliably end to end.",
       "reviewBookings": "Review bookings"
-    }
+    },
+    "emergencyTitle": "Trip emergency contact",
+    "emergencySubtitle": "The person travellers with a booking reach first during an active trip. Shown only on their booking (departure pack), never publicly.",
+    "emergencyName": "Contact name",
+    "emergencyNamePlaceholder": "Guide or on-call manager",
+    "emergencyPhone": "Emergency phone",
+    "emergencyPhonePlaceholder": "+XXX XX XX XX XX",
+    "emergencyHint": "Use a number that is actually answered during trips. If you leave this empty, travellers are told to message you and escalate to OuiBoo."
   },
   "analytics": {
     "dashboardTitle": "Analytics Dashboard",
@@ -682,6 +806,39 @@
     "errorTopTrips": "Error loading top trips.",
     "errorPayment": "Error loading payment methods.",
     "errorCustomers": "Error loading customer demographics."
+  },
+  "support": {
+    "title": "OuiBoo support",
+    "body": "Questions about verification, a payment proof that looks wrong, or a refund case that's stuck? Email us — we reply within {{hours}} hours on the normal support lane.",
+    "bodyNoEmail": "Questions about verification, a payment proof that looks wrong, or a refund case that's stuck? During the closed beta, reach OuiBoo through the contact who onboarded your agency — we reply within {{hours}} hours on the normal support lane.",
+    "escalationRole": "During an active trip, you are the traveller's first call — keep your emergency contact up to date in Settings. If you cannot resolve a problem during a trip, escalate it to OuiBoo right away.",
+    "intro": "How to reach OuiBoo support — and what to do first while a trip is running. Normal support replies within {{hours}} hours.",
+    "contactLine": "Monitored inbox: {{email}}",
+    "openPage": "Open the support page",
+    "form": {
+      "title": "Open a support ticket",
+      "intro": "Tell us what is blocked — a verification question, a payment proof that looks wrong, or a refund case that's stuck. We reply within {{hours}} hours on the normal lane.",
+      "name": "Your name",
+      "email": "Your email",
+      "category": "Topic",
+      "categoryBooking": "Booking",
+      "categoryPayment": "Payment",
+      "categoryRefund": "Refund",
+      "categoryAccount": "Account",
+      "categoryTrip": "Trip",
+      "categoryComplaint": "Complaint",
+      "categoryTechnical": "Technical problem",
+      "categoryOther": "Other",
+      "subject": "Subject",
+      "bookingRef": "Booking reference",
+      "bookingRefOptional": "optional",
+      "message": "Message",
+      "submit": "Send ticket",
+      "submitting": "Sending...",
+      "receivedTitle": "Ticket received",
+      "receivedBody": "Thanks — your ticket is with support. We reply within {{hours}} hours on the normal lane.",
+      "error": "We could not send your ticket. Check the fields and try again, or email us if an address is shown above."
+    }
   },
   "routeError": {
     "title": "This workspace could not load",
@@ -728,9 +885,9 @@
     "rejectionReasonMinLength": "The rejection reason must be at least 10 characters.",
     "reviewTitle": "Review Payment Proof",
     "viewOnly": "View-only payment proof inspection for agency operators",
-    "reviewAndApprove": "Review and approve or reject this payment proof",
-    "paymentVerified": "Payment Verified",
-    "verifiedBody": "This payment has already been approved.",
+    "reviewAndApprove": "Review the proof image. Accepting a proof is not settlement — payment counts only when you confirm the money in your bank account.",
+    "paymentVerified": "Bank Receipt Confirmed",
+    "verifiedBody": "The agency confirmed this amount in its bank account.",
     "paymentRejected": "Payment Rejected",
     "reasonLabel": "Reason:",
     "amount": "Amount",
@@ -752,9 +909,22 @@
     "rejecting": "Rejecting...",
     "enteringReason": "Entering Reason...",
     "rejectPayment": "Reject Payment",
-    "approving": "Approving...",
-    "approvePayment": "Approve Payment",
-    "close": "Close"
+    "accepting": "Accepting...",
+    "acceptProof": "Accept proof",
+    "close": "Close",
+    "proofAccepted": "Proof Accepted — Awaiting Bank Confirmation",
+    "acceptedBody": "The proof image was accepted, but this payment is not settled yet. It counts only once the bank receipt is confirmed below.",
+    "acceptedSubtitle": "Proof accepted — confirm the bank receipt to settle this payment",
+    "bankConfirmationTitle": "Confirm Bank Receipt",
+    "bankConfirmationInstruction": "Check your bank account, not the image — a screenshot is not settlement. Enter the amount that actually arrived and its bank reference.",
+    "confirmedAmount": "Amount received",
+    "confirmedAmountHint": "Must match the expected amount of {{amount}} — a short credit cannot be confirmed; reject the proof or ask the traveler for a top-up instead.",
+    "bankReference": "Bank reference *",
+    "bankReferencePlaceholder": "Bank transfer reference",
+    "bankReferenceHint": "Required — the reference of the transfer in your bank account.",
+    "confirmBankReceipt": "Confirm Bank Receipt",
+    "confirmingBankReceipt": "Confirming...",
+    "actionFailed": "Something went wrong. Please try again."
   },
   "bulkSession": {
     "helper": "Complete the dates, price, and seat count for every session.",
@@ -850,13 +1020,13 @@
       "repeatRate": "Repeat Rate"
     },
     "funnel": {
-      "stageViews": "Views",
+      "stageSessions": "Sessions Created",
       "stageAttempts": "Booking Attempts",
       "stageConfirmed": "Confirmed",
       "stageCompleted": "Completed",
       "noData": "No funnel data",
       "title": "Conversion Funnel",
-      "subtitle": "Track how visitors convert to completed bookings",
+      "subtitle": "Sessions created through to completed bookings",
       "export": "Export"
     }
   },
@@ -958,7 +1128,8 @@
       "AGENCY_CANCELLATION": "Agency cancellation"
     },
     "listTitle": "Refund cases",
-    "actionRequiredBanner": "{{count}} refund case(s) need your action. Overdue refunds can restrict new bookings until they are resolved.",
+    "actionRequiredBanner_one": "{{count}} refund case needs your action. Overdue refunds can restrict new bookings until they are resolved.",
+    "actionRequiredBanner_other": "{{count}} refund cases need your action. Overdue refunds can restrict new bookings until they are resolved.",
     "honestNote": "Refunds are paid from your own merchant account — OuiBoo never holds traveller payments.",
     "subtitle": "Refund cases for payments travellers made directly to your agency. You process the refund — OuiBoo tracks the case and its deadline.",
     "dueBy": "Refund due by {{date}}",
@@ -966,6 +1137,56 @@
     "failReasonPlaceholder": "Why did the refund fail?",
     "bookingFallback": "Booking",
     "failureReason": "Last attempt failed",
-    "title": "Refunds"
+    "title": "Refunds",
+    "evidence": {
+      "title": "Add completion evidence",
+      "instruction": "After you send the refund, attach the proof here: the bank transfer reference (or your payment provider's transaction id) and the confirmation document (bank statement or provider receipt). Both are required — the case can only be marked completed on this evidence, never on a declaration alone. If the reference matches the provider transaction, the submission counts as a provider confirmation.",
+      "referenceLabel": "Bank / provider reference",
+      "referencePlaceholder": "e.g. VIR-2026-1042 or provider transaction id",
+      "referenceHint": "Exactly as it appears on the bank statement or provider receipt.",
+      "amountLabel": "Amount sent (optional)",
+      "proofLabel": "Confirmation document",
+      "noteLabel": "Note (optional)",
+      "notePlaceholder": "e.g. bank name, value date",
+      "submit": "Attach evidence",
+      "submitted": "Evidence attached. You can now mark the case completed.",
+      "submitFailed": "Could not attach the evidence: {{message}}",
+      "listTitle": "Completion evidence",
+      "completedOn": "Completed on: {{tier}}",
+      "tier": {
+        "PSP_CONFIRMATION": "Payment provider confirmation",
+        "BANK_PROVIDER_CONFIRMATION": "Bank/provider confirmation document",
+        "BANK_REFERENCE": "Bank reference + retained document",
+        "TRAVELLER_CONFIRMATION": "Traveller confirmation",
+        "ADMIN_REVIEW": "OuiBoo admin review"
+      }
+    }
+  },
+  "sharePreview": {
+    "title": "Link preview",
+    "liveNote": "Sharing is on: this is the preview social apps will render for this trip.",
+    "gatedNote": "Sharing is off for the beta: the live public preview is the generic Ouiboo card. This is the preview this trip will carry when sharing opens at public launch.",
+    "shareTextLabel": "Share text",
+    "noPublicBase": "No public traveller address is configured for this build, so no share link can be previewed."
+  },
+  "betaNotAvailable": {
+    "title": "Not in the beta",
+    "subtitle": "The closed beta is completely free.",
+    "billingTitle": "Billing & subscription are not part of the beta",
+    "walletTitle": "Payments are not active in the beta",
+    "body": "During the closed beta there is no platform fee, no subscription and no credits — nothing to pay Ouiboo and nothing to cancel. This surface opens when paid plans launch after the beta.",
+    "paymentsNote": "Traveller payments are separate: travellers pay your agency directly (bank transfer or your payment provider). Ouiboo never holds traveller money, so there is no Ouiboo balance to withdraw.",
+    "viewPayments": "View payments received directly",
+    "viewBookings": "View bookings",
+    "walletBannerTitle": "Free beta — no fees or credits",
+    "walletBannerBody": "This page records traveller payments made directly to your agency. Ouiboo does not hold the money and charges no fee during the beta; the totals below are a record, not a balance."
+  },
+  "commandPalette": {
+    "open": "Open command palette",
+    "trigger": "Search or jump to…",
+    "placeholder": "Search sections and your trips…",
+    "empty": "No matches found.",
+    "groupNavigation": "Go to",
+    "groupTrips": "Your trips"
   }
 }

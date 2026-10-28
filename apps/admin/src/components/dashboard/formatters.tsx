@@ -57,7 +57,57 @@ export const canRejectAgency = (status?: VerificationStatusType) => status !== V
 // #371: only a licence awaiting review can be verified or rejected.
 export const canVerifyLicence = (status?: LicenceStatusType) => status === LicenceStatus.PendingReview;
 export const canRejectLicence = (status?: LicenceStatusType) => status === LicenceStatus.PendingReview;
+// #415: the RC insurance artefact follows the same review lifecycle.
+export const canVerifyInsurance = (status?: LicenceStatusType) => status === LicenceStatus.PendingReview;
+export const canRejectInsurance = (status?: LicenceStatusType) => status === LicenceStatus.PendingReview;
+// #421: bank details can only be decided while a submission awaits review.
+export const canVerifyBankDetails = (status?: string | null, pendingBankDetails?: string | boolean | null) =>
+  status === 'PENDING_REVIEW' && Boolean(pendingBankDetails);
+export const canRejectBankDetails = (status?: string | null, pendingBankDetails?: string | boolean | null) =>
+  status === 'PENDING_REVIEW' && Boolean(pendingBankDetails);
+
+const normalizeName = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim();
+
+/**
+ * #421: mirrors the API holder check — the submitted bank account holder
+ * must be the agency itself (legal name or trade name). Returns null when
+ * there is nothing to compare (no holder submitted yet).
+ */
+export const bankHolderNameMatches = (agency: {
+  bankAccountHolderName?: string | null;
+  legalName?: string | null;
+  companyName?: string | null;
+}): boolean | null => {
+  const holder = (agency.bankAccountHolderName || '').trim();
+  if (!holder) {
+    return null;
+  }
+  return [agency.legalName, agency.companyName]
+    .filter((name): name is string => !!name && name.trim().length > 0)
+    .some((name) => normalizeName(name) === normalizeName(holder));
+};
+
+/**
+ * #415: visual flag only — the insured name on the RC certificate should
+ * be the agency's legal name. Returns null when not comparable.
+ */
+export const insuranceInsuredNameMatches = (agency: {
+  insuranceInsuredName?: string | null;
+  legalName?: string | null;
+  companyName?: string | null;
+}): boolean | null => {
+  const insured = (agency.insuranceInsuredName || '').trim();
+  if (!insured) {
+    return null;
+  }
+  return [agency.legalName, agency.companyName]
+    .filter((name): name is string => !!name && name.trim().length > 0)
+    .some((name) => normalizeName(name) === normalizeName(insured));
+};
 export const canApproveTrip = (status?: TripStatusType) => status !== TripStatus.Active;
 export const canRejectTrip = (status?: TripStatusType) => status !== TripStatus.Archived;
-export const canApprovePaymentProof = (status?: VerificationStatusType) => status !== VerificationStatus.Verified;
-export const canRejectPaymentProof = (status?: VerificationStatusType) => status !== VerificationStatus.Rejected;
+// #422: a proof is reviewable only from PENDING. Accepting moves it to
+// ACCEPTED (not settlement); an ACCEPTED/VERIFIED/REJECTED proof cannot
+// be reviewed again from the admin UI.
+export const canApprovePaymentProof = (status?: VerificationStatusType) => status === VerificationStatus.Pending;
+export const canRejectPaymentProof = (status?: VerificationStatusType) => status === VerificationStatus.Pending;

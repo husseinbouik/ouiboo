@@ -4,8 +4,33 @@
  * All apps import this file in their global CSS:
  *   @import "@ouiboo/tokens/tokens.css";
  *
- * Color VALUES live here only. Apps keep app-specific concerns
- * (fonts, radius scale, component styles) in their own globals.
+ * Color VALUES live here only, and so do the shared font stacks and
+ * the radius scale (#572). Apps keep only component styles in their
+ * own globals; a per-app font or radius override in an app's globals
+ * is drift, not a feature.
+ *
+ * Palette emphasis convention (founder decision, 2026-10-27):
+ * One shared brand palette for every app - deep blue #0A192F,
+ * sunset orange #FF6B35, sand #F7E1C3, ocean #2EC4B6. Apps
+ * differentiate by EMPHASIS, never by separate brand colours:
+ *   - Traveller: sunset orange leads (actions, gradients,
+ *     highlights); deep blue supports.
+ *   - Agency: deep blue leads (primary surfaces, navigation);
+ *     sunset orange only for actions and accents.
+ *   - Admin and Landing follow the agency (operator) emphasis,
+ *     unless a screen is traveller-facing marketing.
+ * The logo is unified across all apps and is never recoloured
+ * per app.
+ *
+ * Implementation (#562): the emphasis is a token layer below, keyed
+ * off a `data-emphasis` attribute on each app's <html> element
+ * (`traveler` | `agency` | `admin` | `landing`). The default (no
+ * attribute) IS the agency/operator emphasis, so agency, admin and
+ * landing need no opt-in to stay navy-led; the traveller app opts in
+ * with data-emphasis="traveler" to make sunset orange lead. In dark
+ * mode the default layer no longer flips --primary to orange for
+ * every app (the old .dark rule) — orange leads dark mode only under
+ * the traveller layer, and stays the accent elsewhere.
  */
 @theme inline {
   --color-background: var(--background);
@@ -49,6 +74,34 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  /* Emphasis layer (#562): --lead is the colour that leads an app's
+     surfaces, --support is the other brand colour's role. */
+  --color-lead: var(--lead);
+  --color-lead-foreground: var(--lead-foreground);
+  --color-support: var(--support);
+
+  /* Shared typography (#572): the stacks in typography.ts, declared
+     here so every app resolves the same font-sans/font-display/
+     font-mono utilities. Display = Space Grotesk first in every app
+     (agency previously overrode headings to Manrope). Font FILES are
+     still loaded per app layout via next/font (--font-manrope,
+     --font-space-grotesk, --font-geist-mono variables). */
+  --font-sans: var(--font-manrope), var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
+  /* Shared radius scale (#572): one scale for every app, derived from
+     the single --radius base. The extended steps cover the sizes the
+     apps previously wrote as arbitrary rounded-[1.5rem] / [2rem] /
+     [2.5rem] / [3rem] values — use rounded-2xl/3xl/4xl instead. */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
+  --radius-4xl: 2.5rem;
+
   /* Brand palette */
   --color-deep-blue: var(--deep-blue);
   --color-sunset-orange: var(--sunset-orange);
@@ -91,6 +144,9 @@
 }
 
 :root {
+  /* Shared radius base (#572) — previously only landing defined it. */
+  --radius: 0.625rem;
+
   /* Brand */
   --deep-blue: #0a192f;
   --sunset-orange: #ff6b35;
@@ -150,6 +206,13 @@
   --sidebar-accent-foreground: #0a192f;
   --sidebar-border: rgba(10, 25, 47, 0.08);
   --sidebar-ring: rgba(10, 25, 47, 0.18);
+
+  /* Emphasis defaults (#562) = agency/operator emphasis: deep blue
+     leads, sunset orange is the support (actions/accents via
+     --accent / --sunset-orange). */
+  --lead: var(--deep-blue);
+  --lead-foreground: #ffffff;
+  --support: var(--sunset-orange);
 }
 
 .dark {
@@ -159,7 +222,11 @@
   --card-foreground: #f8fafc;
   --popover: #13243d;
   --popover-foreground: #f8fafc;
-  --primary: #ff6b35;
+  /* #562: dark mode no longer flips --primary to orange for every
+     app. The default (agency/operator) emphasis leads with a lifted
+     navy on dark surfaces; orange leads only in the traveller layer
+     below and otherwise stays the accent. */
+  --primary: #3d5a80;
   --primary-foreground: #ffffff;
   --secondary: #13243d;
   --secondary-foreground: #f8fafc;
@@ -189,12 +256,62 @@
   --chart-5: #a78bfa;
   --sidebar: #0d1c34;
   --sidebar-foreground: #f8fafc;
-  --sidebar-primary: #ff6b35;
+  --sidebar-primary: #3d5a80;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #13243d;
   --sidebar-accent-foreground: #f8fafc;
   --sidebar-border: rgba(226, 232, 240, 0.14);
   --sidebar-ring: rgba(248, 250, 252, 0.18);
+
+  /* Emphasis defaults, dark (#562): lifted navy leads, orange supports. */
+  --lead: #3d5a80;
+  --lead-foreground: #ffffff;
+  --support: var(--sunset-orange);
+}
+
+/*
+ * Traveller emphasis layer (#562): sunset orange leads — primary
+ * actions, sidebar primary and the lead token resolve to the brand
+ * orange; deep blue supports. Light mode uses the AA-safe orange
+ * shade for the interactive --primary surface (the vivid
+ * --sunset-orange stays the display/lead colour), exactly the pattern
+ * --accent already used. One-line opt-in per app:
+ * <html data-emphasis="traveler">.
+ */
+:root[data-emphasis="traveler"] {
+  --primary: var(--sunset-orange-dark);
+  --primary-foreground: #ffffff;
+  --ring: rgba(255, 107, 53, 0.4);
+  --sidebar-primary: var(--sunset-orange-dark);
+  --lead: var(--sunset-orange);
+  --lead-foreground: #0a192f;
+  --support: var(--deep-blue);
+}
+
+.dark[data-emphasis="traveler"] {
+  --primary: var(--sunset-orange);
+  --primary-foreground: #ffffff;
+  --sidebar-primary: var(--sunset-orange);
+  --lead: var(--sunset-orange);
+  --lead-foreground: #ffffff;
+  --support: var(--deep-blue);
+}
+
+/* Explicit operator emphasis (#562): agency/admin/landing equal the
+   defaults above; the selectors exist so an app can state its
+   emphasis in markup and so the rule is greppable, not tribal. */
+:root[data-emphasis="agency"],
+:root[data-emphasis="admin"],
+:root[data-emphasis="landing"] {
+  --lead: var(--deep-blue);
+  --support: var(--sunset-orange);
+}
+
+.dark[data-emphasis="agency"],
+.dark[data-emphasis="admin"],
+.dark[data-emphasis="landing"] {
+  --lead: #3d5a80;
+  --support: var(--sunset-orange);
 }
 
 /*
@@ -211,5 +328,108 @@
     transition-duration: 0.001ms !important;
     transition-delay: 0ms !important;
     scroll-behavior: auto !important;
+  }
+}
+/*
+ * #491: safe-area utilities (shared by every app via tokens.css).
+ * `viewport-fit=cover` is set in the app layouts, so on notched devices
+ * env(safe-area-inset-*) carries the real inset; elsewhere it is 0 and
+ * these utilities reduce to their plain spacing value.
+ *   pb-safe / pt-safe  — exactly the inset, no base spacing
+ *   pb-safe-3/4/5      — 0.75rem / 1rem / 1.25rem of base spacing + inset
+ * Use them on sticky/fixed bottom bars, sheet and drawer footers, and
+ * bottom-anchored CTAs so nothing sits under the home indicator.
+ */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+@utility pb-safe-3 {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+}
+
+@utility pb-safe-4 {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+@utility pb-safe-5 {
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+}
+
+/*
+ * #490: minimum touch target. Icon-only controls smaller than 44px keep
+ * their visual size; the pseudo-element grows the tappable box to at
+ * least 44x44, centered on the control. Apply `hit-slop` to icon-only
+ * buttons under 44px (see packages/ui README, "Touch targets").
+ * Written as plain layered classes rather than @utility: the utility
+ * needs a pseudo-element, and this form keeps the stylesheet free of
+ * nested rules.
+ *
+ * Council Session #3 P0-1 (#490 regression): `position: relative` must
+ * NOT be set unconditionally here. This block sits after Tailwind's
+ * `.absolute` in the same utilities layer at equal specificity, so an
+ * unconditional `position` silently overrode `absolute` on every element
+ * carrying both classes (TripCard carousel buttons, the Dialog close
+ * button, the checkout proof close button) and collapsed them in-flow.
+ * The relative anchor for the ::after is therefore applied only when the
+ * element is not already positioned by a utility class.
+ */
+@layer utilities {
+  .hit-slop:not(.absolute, .fixed, .sticky, .relative) {
+    position: relative;
+  }
+
+  .hit-slop::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 2.75rem);
+    height: max(100%, 2.75rem);
+    transform: translate(-50%, -50%);
+  }
+}
+
+/*
+ * #493: typography micro-polish, shared by every app via tokens.css.
+ * `.oui-numeric` renders figures with tabular (fixed-width) digits so
+ * prices, totals, countdowns and stats do not shift width as values
+ * change. `.oui-balance` balances headline wraps (never body text).
+ */
+@layer utilities {
+  .oui-numeric {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .oui-balance {
+    text-wrap: balance;
+  }
+}
+
+/*
+ * #487: keyboard-shortcut hint chip, shown inside the command-palette
+ * trigger and next to shortcut-bearing actions. Plain layered class
+ * (no positioning side-effects — see the .hit-slop lesson above).
+ */
+@layer utilities {
+  .oui-kbd {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.125rem;
+    min-height: 1.25rem;
+    padding: 0.0625rem 0.375rem;
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 0.375rem;
+    background: var(--muted);
+    color: var(--muted-foreground);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
   }
 }

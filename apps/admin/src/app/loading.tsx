@@ -7,7 +7,7 @@ export default function AdminLoading() {
 
   return (
     <div
-      className="mx-auto max-w-[1600px] animate-pulse space-y-7 p-6 lg:p-8"
+      className="mx-auto max-w-[1600px] motion-safe:animate-pulse space-y-7 p-6 lg:p-8"
       role="status"
       aria-label={t('loading.label')}
     >

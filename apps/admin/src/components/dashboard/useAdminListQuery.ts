@@ -16,15 +16,17 @@ export const useAdminListQuery = <T,>(
   activeTab: AdminTab,
   debouncedQuery: string,
   currentPage: number,
+  extraParams?: Record<string, string>,
 ) => {
-  const { data: raw } = useQuery<unknown>({
-    queryKey: [queryKeyKey, activeTab, debouncedQuery, currentPage],
+  const { data: raw, isLoading } = useQuery<unknown>({
+    queryKey: [queryKeyKey, activeTab, debouncedQuery, currentPage, extraParams],
     queryFn: async () => {
       const resp = await apiClient.get(path, {
         params: {
           page: currentPage,
           limit: ADMIN_PAGE_LIMIT,
           ...(debouncedQuery ? { q: debouncedQuery } : {}),
+          ...(extraParams ?? {}),
         },
       });
       return resp.data as AdminListResponse;
@@ -32,5 +34,7 @@ export const useAdminListQuery = <T,>(
     enabled,
     placeholderData: (prev: unknown) => prev,
   });
-  return toPaginatedList<T>(raw);
+  // isLoading is true only on a cold load (no cached/placeholder data), so
+  // surfaces can show a skeleton instead of flashing their empty state (#469).
+  return { ...toPaginatedList<T>(raw), isLoading };
 };

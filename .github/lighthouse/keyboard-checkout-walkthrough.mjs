@@ -175,11 +175,24 @@ try {
   // One continuous Tab walk through the whole form; we fill each field
   // as it receives focus and stop at the submit button. Tab order on
   // this page is DOM order: session radio → guests → name → phone →
-  // document → proof upload → … → Complete booking.
-  const filled = { name: false, phone: false, document: false };
+  // proof upload → … → terms checkbox → Complete booking. (The
+  // document/CIN field was removed in #466; the form now shows an
+  // "agency may check ID at departure" note instead — asserted after
+  // the walk below.)
+  //
+  // B9 (#481, PR #515): the terms-acceptance checkbox gates the submit
+  // — the Complete booking button is disabled (and therefore not
+  // Tab-focusable) until the box is ticked. A keyboard user accepts
+  // with Space while the checkbox is focused, so the walk does exactly
+  // that; before ticking it also asserts the gate is really holding
+  // (button disabled), so a regression that ungates the submit fails
+  // here instead of passing silently.
+  const filled = { name: false, phone: false };
   let sawSessionRadio = false;
   let sawGuests = false;
   let sawProofUpload = false;
+  let sawTermsCheckbox = false;
+  let termsTicked = false;
   let submitInfo = null;
   let lastKey = null;
   let stuck = 0;
@@ -218,10 +231,37 @@ try {
       await page.keyboard.type('+212600000000');
       filled.phone = true;
       record('checkout', info, 'typed phone number');
-    } else if (info.tag === 'input' && (info.name === 'document-number' || /document number/i.test(info.placeholder)) && !filled.document) {
-      await page.keyboard.type('AB123456');
-      filled.document = true;
-      record('checkout', info, 'typed document number');
+    } else if (
+      info.tag === 'input' &&
+      info.type === 'checkbox' &&
+      info.id === 'checkout-terms-accept' &&
+      !termsTicked
+    ) {
+      // B9 terms gate: assert the submit is still disabled BEFORE
+      // acceptance (gate holding), then accept by keyboard (Space).
+      sawTermsCheckbox = true;
+      const submitDisabledBefore = await page.evaluate(() => {
+        const btn = [...document.querySelectorAll('button')].find((b) =>
+          /complete booking/i.test(b.textContent || ''),
+        );
+        return btn ? btn.disabled : null;
+      });
+      if (submitDisabledBefore === false) {
+        fail('[checkout] Complete booking button is enabled before terms acceptance — the B9 gate is not holding');
+      } else if (submitDisabledBefore === true) {
+        console.log('   ✓ B9 gate holding: submit disabled before terms acceptance');
+      }
+      await page.keyboard.press('Space');
+      await page.waitForTimeout(250);
+      const nowChecked = await page.evaluate(
+        () => document.getElementById('checkout-terms-accept')?.checked === true,
+      );
+      if (!nowChecked) {
+        fail('[checkout] terms checkbox did not toggle with Space (keyboard acceptance failed)');
+      } else {
+        termsTicked = true;
+        record('checkout', info, 'press Space to accept the booking terms (B9)');
+      }
     } else if (info.tag === 'button' && /complete booking/i.test(info.text || info.ariaLabel || '')) {
       submitInfo = info;
     }
@@ -230,8 +270,22 @@ try {
   if (!sawSessionRadio) fail('[checkout] session radio was not in the Tab order');
   if (!sawGuests) fail('[checkout] guest-count input was not in the Tab order');
   if (!sawProofUpload) fail('[checkout] payment-proof file input was not keyboard-focusable');
-  if (!filled.name || !filled.phone || !filled.document) {
+  if (!sawTermsCheckbox) fail('[checkout] terms-acceptance checkbox (B9) was not in the Tab order');
+  if (!filled.name || !filled.phone) {
     fail(`[checkout] could not fill all guest fields by keyboard: ${JSON.stringify(filled)}`);
+  }
+  // #466: no ID number is collected online anymore — the guest form
+  // must show the "agency may check ID at departure" note in place of
+  // the removed document field.
+  const idNoteVisible = await page
+    .getByText(/agency may check your ID at departure/i)
+    .first()
+    .isVisible()
+    .catch(() => false);
+  if (!idNoteVisible) {
+    fail('[checkout] "agency may check your ID at departure" note not shown (the #466 replacement for the removed document field)');
+  } else {
+    console.log('   ✓ ID-at-departure note shown (no document field collected)');
   }
   if (!submitInfo) throw new Error('Complete booking button not reachable by keyboard');
 

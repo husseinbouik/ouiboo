@@ -13,7 +13,7 @@ export default function TopTripsTable({ data = [], limit = 5, onLimitChange }: {
   const { t, i18n } = useTranslation();
 
   return (
-    <Card className="rounded-[2.5rem] shadow-xl shadow-black/5 p-6 overflow-x-auto">
+    <Card className="rounded-4xl shadow-xl shadow-black/5 p-6 overflow-x-auto">
 <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-display font-black text-lg text-foreground">{t('charts.topTrips.title')}</h3>

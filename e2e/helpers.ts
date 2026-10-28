@@ -47,6 +47,13 @@ export const signTestSession = (role: 'AGENCY' | 'ADMIN' | 'TRAVELER', sub = 'e2
 
 /** Establishes an authenticated session for the given role before navigating to protected pages. */
 export const authenticateAs = async (page: Page, role: 'AGENCY' | 'ADMIN' | 'TRAVELER') => {
+  // #245: a real login also writes the api-client's session hint to
+  // localStorage (setBrowserAccessToken), and AuthProvider probes
+  // /users/me only when a session may exist. Seed the hint alongside the
+  // cookies so this context models a logged-in browser faithfully —
+  // without it the app correctly treats the context as anonymous and
+  // never loads the user these cookies stand for.
+  await seedLocalStorage(page, { 'ouiboo.session.hint': '1' });
   await page.context().addCookies([
     {
       name: 'ouiboo_session',
@@ -137,7 +144,7 @@ export const mockTravelerApi = async (page: Page) => {
       const agencyId = searchParams.get('agencyId');
       const q = (searchParams.get('q') || '').toLowerCase();
       const category = searchParams.get('category');
-      const matchesSearch = !q || 'atlas weekend escape'.includes(q) || 'marrakech'.includes(q);
+      const matchesSearch = !q || 'atlas weekend escape'.includes(q) || 'marrakech'.includes(q) || 'imlil'.includes(q);
       const matchesCategory = !category || category.toLowerCase() === 'adventure';
       const matchesAgency = !agencyId || agencyId === 'agency-1';
       const tripData = matchesSearch && matchesCategory && matchesAgency
@@ -147,12 +154,34 @@ export const mockTravelerApi = async (page: Page) => {
             title: 'Atlas Weekend Escape',
             category: 'Adventure',
             startLocation: 'Marrakech',
-            durationDays: 3,
-            images: ['https://example.com/trip.jpg'],
+            // #560: beta fields — currency, endLocation, translations,
+            // licence/insurance verification (the mock fixtures predated
+            // them, so beta-shaped UI states were untestable).
+            endLocation: 'Imlil',
+            currency: 'MAD',
+            translations: {
+              fr: { title: 'Escapade week-end dans l\'Atlas', description: 'Une escapade guidée en montagne pour les tests de lancement.' },
+              ar: { title: 'عطلة نهاية أسبوع في الأطلس', description: 'رحلة جبلية مصحوبة بمرشد لاختبارات الإطلاق.' },
+              en: { title: 'Atlas Weekend Escape', description: 'A guided mountain escape for launch testing.' },
+            },
             agency: {
               id: 'agency-1',
               verificationStatus: 'VERIFIED',
+              travelLicenceStatus: 'VERIFIED',
+              travelLicenceType: 'ODV',
+              travelLicenceNumber: 'LIC-E2E-1',
+              licenceVerifiedAt: '2026-10-01T00:00:00.000Z',
+              insuranceStatus: 'VERIFIED',
+              insuranceVerifiedAt: '2026-10-01T00:00:00.000Z',
             },
+            // #336: same data-URI images as the detail fixture and the
+            // mock API server — the list shape must mirror the server's
+            // (see the header note in mock-api-server.mjs), and SSR vs
+            // client refetch must not swap in differently-hosted images.
+            images: [
+              'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgR05oigAAAAASUVORK5CYII=',
+              'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgR05oigAAAAASUVORK5CYII=',
+            ],
             sessions: [
               {
                 id: 'session-1',
@@ -183,12 +212,22 @@ export const mockTravelerApi = async (page: Page) => {
         title: 'Atlas Weekend Escape',
         category: 'Adventure',
         startLocation: 'Marrakech',
+        endLocation: 'Imlil',
+        currency: 'MAD',
+        translations: {
+          fr: { title: 'Escapade week-end dans l\'Atlas', description: 'Une escapade guidée en montagne pour les tests de lancement.' },
+          ar: { title: 'عطلة نهاية أسبوع في الأطلس', description: 'رحلة جبلية مصحوبة بمرشد لاختبارات الإطلاق.' },
+          en: { title: 'Atlas Weekend Escape', description: 'A guided mountain escape for launch testing.' },
+        },
         durationDays: 3,
         durationNights: 2,
         description: 'A guided mountain escape for launch testing.',
+        // #336: data-URI PNGs (mirrors e2e/mock-api-server.mjs) — the
+        // example.com URLs are outside the production next/image
+        // remotePatterns, so the optimizer 400'd them in the browser.
         images: [
-          'https://example.com/trip-1.jpg',
-          'https://example.com/trip-2.jpg',
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgR05oigAAAAASUVORK5CYII=',
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgR05oigAAAAASUVORK5CYII=',
         ],
         inclusions: ['Guide', 'Transport'],
         exclusions: ['Flights'],
@@ -196,6 +235,13 @@ export const mockTravelerApi = async (page: Page) => {
         agency: {
           companyName: 'Atlas Co',
           bankDetails: 'RIB 1234567890',
+          verificationStatus: 'VERIFIED',
+          travelLicenceStatus: 'VERIFIED',
+          travelLicenceType: 'ODV',
+          travelLicenceNumber: 'LIC-E2E-1',
+          licenceVerifiedAt: '2026-10-01T00:00:00.000Z',
+          insuranceStatus: 'VERIFIED',
+          insuranceVerifiedAt: '2026-10-01T00:00:00.000Z',
         },
         sessions: [
           {
@@ -244,7 +290,6 @@ export const mockTravelerApi = async (page: Page) => {
         guestsCount: 2,
         fullName: 'Launch Traveler',
         phoneNumber: '+212600000000',
-        documentNumber: 'AB123456',
         traveler: {
           id: 'traveler-1',
           name: 'Launch Traveler',

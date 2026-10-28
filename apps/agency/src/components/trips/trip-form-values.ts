@@ -1,10 +1,12 @@
 import type { CreateTripInput } from '@ouiboo/schemas';
-import type { TripStatusType } from '@ouiboo/types';
+import type { TripStatusType, TripTranslations } from '@ouiboo/types';
 
 /** Shape of the trip payload returned by GET /agency/trips/:id. */
 export type TripEditorData = CreateTripInput & {
   title: string;
   description: string;
+  /** #546: the stored language map (null on legacy payloads). */
+  translations?: TripTranslations | null;
   category: CreateTripInput['category'];
   startLocation: string;
   durationDays: number;
@@ -26,6 +28,9 @@ export function tripToFormValues(trip: TripEditorData): CreateTripInput {
   return {
     title: trip.title,
     description: trip.description,
+    // #546: the language tabs edit this map; omitting it from reset()
+    // would wipe the stored Arabic/English texts on save.
+    translations: trip.translations ?? undefined,
     category: trip.category,
     startLocation: trip.startLocation,
     endLocation: trip.endLocation,
@@ -36,6 +41,17 @@ export function tripToFormValues(trip: TripEditorData): CreateTripInput {
     checklist: trip.checklist || [],
     images,
     imageAlts: images.map((_, i) => trip.imageAlts?.[i] ?? ''),
+    // #417: the agency's stored cancellation bands; undefined when the
+    // trip uses the platform default scale (the editor then shows the
+    // default state instead of freezing the defaults as custom bands).
+    cancellationPolicy: trip.cancellationPolicy?.bands?.length
+      ? {
+          bands: trip.cancellationPolicy.bands.map((band) => ({
+            minDaysBeforeStart: band.minDaysBeforeStart,
+            refundPercent: band.refundPercent,
+          })),
+        }
+      : undefined,
     itinerary: trip.itinerary || [],
     status: trip.status,
     currency: trip.currency || 'MAD',

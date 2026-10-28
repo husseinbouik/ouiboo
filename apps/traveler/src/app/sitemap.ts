@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next'
+import { isBetaBadgeEnabled } from '@ouiboo/utils'
 import { API_URL, absoluteTravelerUrl } from '@/lib/site'
 
 type SitemapTrip = {
@@ -45,7 +46,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteTravelerUrl('/terms'), lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
   ]
 
-  const trips = await getPublishedTrips()
+  // Council Session #2 B11 / Session #3 P0-5 (#553): while the closed
+  // beta runs (same gate as the BETA badge), trip URLs stay out of the
+  // sitemap — the slice is invited-only and trip pages serve noindex.
+  const trips = isBetaBadgeEnabled() ? [] : await getPublishedTrips()
   return [
     ...staticEntries,
     ...trips.map((trip) => ({

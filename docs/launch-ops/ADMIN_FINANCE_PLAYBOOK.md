@@ -77,6 +77,32 @@ Escalation packet must include:
 6. verify booking/payment state updated correctly
 7. log completion date in finance tracker
 
+### Staged bookings: the two-case procedure (#412)
+
+A staged (minimum-group) booking is paid in two parts — deposit, then
+balance — and each part is refunded by its OWN refund case:
+
+1. Open/complete the DEPOSIT case first (it targets the deposit
+   payment).
+2. Then open/complete the BALANCE case (it targets the balance
+   payment).
+
+Rules that follow from this, all enforced by the API since #412:
+
+- `Booking.refundAmount` is the accumulated total across both cases,
+  derived from the payment ledger — after the deposit case alone it
+  shows the deposit amount, never the balance case's amount
+  overwriting it later.
+- The booking's `paymentStatus` becomes REFUNDED only when the
+  refunded total covers everything that was verified (both cases
+  complete, or the deposit case alone when no balance was ever paid).
+  Until then the traveller card reads "Partially refunded".
+- A fully refunded booking no longer blocks trip archiving and is no
+  longer billable; a partially refunded one still does/is.
+- Never merge the two stages into one case with a combined amount:
+  each case must stay bound to its stage payment so the evidence and
+  the ledger entry stay attributable.
+
 ## 4. Payout SOP
 
 ### Payout readiness rule

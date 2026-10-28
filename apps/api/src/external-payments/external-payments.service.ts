@@ -54,6 +54,28 @@ export interface RecordExternalPaymentInput {
     source: PaymentLedgerSource;
     correlationId?: string | null;
     /**
+     * #422 (Council P0-20): bank-confirmation facts for MANUAL payments.
+     * When a bank reference is supplied, recordPaymentVerifiedInTransaction
+     * stamps confirmedAmount (= the recorded amount, i.e. the bank credit
+     * the agency observed), bankReference, bankConfirmedAt and
+     * bankConfirmedBy on the payment — VERIFIED is bound to the bank
+     * credit, never to the uploaded proof image. PSP/webhook callers do
+     * not supply these fields and leave them untouched.
+     */
+    bankReference?: string | null;
+    bankConfirmedBy?: string | null;
+    /**
+     * #412 (Council Session #2, B15): the refund case this refund
+     * belongs to, when one exists. It discriminates the REFUND_COMPLETED
+     * ledger idempotency key: a staged booking is refunded by one case
+     * per stage payment (deposit case, then balance case), and each
+     * case must append its own ledger entry — keyed only on the payment
+     * reference, the second case's entry could be deduplicated away and
+     * the booking's refunded total would undercount. PSP/webhook
+     * callers pass no case id and keep the historical key format.
+     */
+    refundCaseId?: string | null;
+    /**
      * #369: which payment stage this record belongs to. FULL (default)
      * preserves the single-payment behaviour; staged bookings record one
      * DEPOSIT and one BALANCE payment per booking.
@@ -97,6 +119,16 @@ export class ExternalPaymentsService {
         const payment = await this.upsertExternalPayment(tx, input, {
             status: ExternalPaymentStatus.VERIFIED,
             verifiedAt: new Date(),
+            ...(input.bankReference != null
+                ? {
+                    bankConfirmation: {
+                        confirmedAmount: amount,
+                        bankReference: input.bankReference,
+                        bankConfirmedAt: new Date(),
+                        bankConfirmedBy: input.bankConfirmedBy ?? null,
+                    },
+                }
+                : {}),
         });
         await this.appendLedgerEntry(tx, payment.id, input, {
             type: entryType,
@@ -109,6 +141,28 @@ export class ExternalPaymentsService {
             ),
         });
         return payment;
+    }
+
+    /**
+     * #422 (Council P0-20): record that a traveller uploaded a payment
+     * proof for a stage. The stage's ExternalPayment exists from upload in
+     * PENDING_VERIFICATION with the EXPECTED stage amount, so every surface
+     * can render "proof received — pending bank confirmation" from a real
+     * record. This is not settlement: no ledger entry is appended and the
+     * amount is only ever bound to a bank credit at bank confirmation.
+     * Any earlier bank-confirmation facts for the stage are cleared because
+     * a fresh proof supersedes them.
+     */
+    async recordPaymentPendingInTransaction(
+        tx: Prisma.TransactionClient,
+        input: RecordExternalPaymentInput,
+    ) {
+        assertPhase1Custodian(input.custodian);
+        return this.upsertExternalPayment(tx, input, {
+            status: ExternalPaymentStatus.PENDING_VERIFICATION,
+            verifiedAt: null,
+            clearBankConfirmation: true,
+        });
     }
 
     /**
@@ -226,9 +280,50 @@ export class ExternalPaymentsService {
             type: PaymentLedgerEntryType.REFUND_COMPLETED,
             amount,
             status: ExternalPaymentStatus.REFUNDED,
-            idempotencyKey: `booking:${input.bookingId}:refund-completed:${input.externalTransactionId ?? input.externalReference ?? 'manual'}`,
+            idempotencyKey: `booking:${input.bookingId}:refund-completed:${input.refundCaseId ?? input.externalTransactionId ?? input.externalReference ?? 'manual'}`,
         });
         return payment;
+    }
+
+    /**
+     * #412 (Council Session #2, B15): a booking's money position derived
+     * from the append-only ledger — never from per-stage ExternalPayment
+     * row counts. verifiedTotal is everything captured for the booking
+     * (single FULL payment, or staged DEPOSIT + BALANCE captures);
+     * refundedTotal is everything recorded back to the traveller across
+     * ALL refund cases. Refund completion effects read these totals, so
+     * a second case accumulates instead of overwriting the first, and a
+     * booking reads fully refunded exactly when the refunded total
+     * covers everything that was verified.
+     */
+    async getBookingLedgerTotals(
+        tx: Prisma.TransactionClient,
+        bookingId: string,
+    ): Promise<{ verifiedTotal: Prisma.Decimal; refundedTotal: Prisma.Decimal }> {
+        const [verified, refunded] = await Promise.all([
+            tx.paymentStatusLedgerEntry.aggregate({
+                where: {
+                    bookingId,
+                    type: {
+                        in: [
+                            PaymentLedgerEntryType.PAYMENT_VERIFIED,
+                            PaymentLedgerEntryType.PAYMENT_CAPTURED,
+                            PaymentLedgerEntryType.DEPOSIT_CAPTURED,
+                            PaymentLedgerEntryType.BALANCE_CAPTURED,
+                        ],
+                    },
+                },
+                _sum: { amount: true },
+            }),
+            tx.paymentStatusLedgerEntry.aggregate({
+                where: { bookingId, type: PaymentLedgerEntryType.REFUND_COMPLETED },
+                _sum: { amount: true },
+            }),
+        ]);
+        return {
+            verifiedTotal: toMoneyDecimal(verified._sum.amount ?? 0),
+            refundedTotal: toMoneyDecimal(refunded._sum.amount ?? 0),
+        };
     }
 
     async recordRefund(input: RecordExternalPaymentInput) {
@@ -333,10 +428,33 @@ export class ExternalPaymentsService {
     private async upsertExternalPayment(
         tx: Prisma.TransactionClient,
         input: RecordExternalPaymentInput,
-        outcome: { status: ExternalPaymentStatus; verifiedAt?: Date | null },
+        outcome: {
+            status: ExternalPaymentStatus;
+            verifiedAt?: Date | null;
+            bankConfirmation?: {
+                confirmedAmount: Prisma.Decimal;
+                bankReference: string;
+                bankConfirmedAt: Date;
+                bankConfirmedBy: string | null;
+            };
+            clearBankConfirmation?: boolean;
+        },
     ) {
         const amount = toMoneyDecimal(input.amount);
         const stage = input.stage ?? ExternalPaymentStage.FULL;
+        // #422: bank-confirmation facts are written only by an explicit bank
+        // confirmation (or cleared by a fresh proof upload); other outcome
+        // transitions leave them untouched.
+        const bankFields = outcome.bankConfirmation
+            ? { ...outcome.bankConfirmation }
+            : outcome.clearBankConfirmation
+                ? {
+                    confirmedAmount: null,
+                    bankReference: null,
+                    bankConfirmedAt: null,
+                    bankConfirmedBy: null,
+                }
+                : {};
         return tx.externalPayment.upsert({
             where: { bookingId_stage: { bookingId: input.bookingId, stage } },
             create: {
@@ -352,6 +470,7 @@ export class ExternalPaymentsService {
                 status: outcome.status,
                 verifiedAt: outcome.verifiedAt ?? null,
                 stage,
+                ...bankFields,
             },
             update: {
                 amount,
@@ -363,6 +482,7 @@ export class ExternalPaymentsService {
                 status: outcome.status,
                 stage,
                 ...(outcome.verifiedAt !== undefined ? { verifiedAt: outcome.verifiedAt } : {}),
+                ...bankFields,
             },
         });
     }

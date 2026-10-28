@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { Button, Input, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
+import { AuthBrandLockup } from '../../components/AuthBrandLockup';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/components/AuthContext';
 import { setBrowserAccessToken, getAuthErrorMessage } from '@ouiboo/api-client';
@@ -103,12 +104,11 @@ export default function TravelerLoginPage() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative w-full max-w-md bg-card backdrop-blur-xl border border-border shadow-2xl rounded-[2.5rem] p-8 md:p-12"
+        className="relative w-full max-w-md bg-card backdrop-blur-xl border border-border shadow-2xl rounded-4xl p-8 md:p-12"
       >
         <div className="text-center mb-10">
             <Link href="/" className="inline-flex items-center justify-center gap-2 mb-8 group">
-                <div className="w-10 h-10 rounded-xl bg-deep-blue dark:bg-sunset-orange text-white flex items-center justify-center font-bold text-xl shadow-lg group-hover:scale-105 transition-transform">O</div>
-                <span className="text-2xl font-bold text-deep-blue dark:text-foreground">Ouiboo</span>
+                <AuthBrandLockup />
             </Link>
             <h2 className="text-3xl font-bold text-foreground mb-2">{t('login.title', 'Welcome Back')}</h2>
             <p className="text-muted-foreground font-medium text-sm">{t('login.subtitle', 'Enter your details to sign in')}</p>

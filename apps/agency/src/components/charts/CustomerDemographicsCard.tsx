@@ -11,7 +11,7 @@ export default function CustomerDemographicsCard({ data = { totalCustomers: 0, r
   const rateClass = rate > 30 ? 'bg-success text-success-foreground' : rate >= 15 ? 'bg-warning text-warning-foreground' : 'bg-muted text-muted-foreground';
 
   return (
-    <Card className="rounded-[2.5rem] shadow-xl shadow-black/5 p-6">
+    <Card className="rounded-4xl shadow-xl shadow-black/5 p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-display font-black text-lg text-foreground">{t('charts.customers.title')}</h3>

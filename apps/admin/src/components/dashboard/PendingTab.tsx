@@ -9,6 +9,8 @@ import type { PaginationMeta } from '@ouiboo/utils';
 import type { AdminAgency, AdminTrip, FeedbackState } from './types';
 import { getAdminVerificationBadgeClass, getAdminVerificationBadgeLabel, getAdminSubscriptionBadgeLabel } from '../../app/status-mappers';
 import { canApproveAgency, canRejectAgency, canApproveTrip, canRejectTrip } from './formatters';
+import SharePreviewCard from './SharePreviewCard';
+import ShareSignalPanel from './ShareSignalPanel';
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -52,8 +54,12 @@ export default function PendingTab({
   onVerifyTrip,
   isVerifyingTrip,
 }: PendingTabProps) {
+  // #561: per-trip OG/share preview toggle (admin/staging preview surface).
+  const [previewTripId, setPreviewTripId] = React.useState<string | null>(null);
   return (
 <div className="space-y-12">
+   {/* #561 rework: always-rendered share-signal surface (see ShareSignalPanel). */}
+   <ShareSignalPanel t={t} trips={pendingTrips} />
    <section className="space-y-6">
 <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
           <ShieldCheck className="h-5 w-5 text-sunset-orange" />
@@ -127,12 +133,21 @@ export default function PendingTab({
                  <div className="h-32 relative">
                     <Image src={trip.images?.[0] || 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop'} className="w-full h-full object-cover" alt={trip.title} fill sizes="(min-width: 1024px) 25vw, 100vw" />
                  </div>
-                 <CardContent className="p-4 flex items-center justify-between gap-3">
+                 <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
                     <div>
                        <h3 className="font-bold text-foreground line-clamp-1">{trip.title}</h3>
                        <p className="text-xs text-muted-foreground">{trip.agency.companyName}</p>
                     </div>
                     <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setPreviewTripId(previewTripId === trip.id ? null : trip.id)}
+                        aria-expanded={previewTripId === trip.id}
+                      >
+                        {t('dashboard.sharePreview.toggle')}
+                      </Button>
                       <Button
                         size="sm"
                         className="bg-danger/10 text-danger hover:bg-danger/15 border-none"
@@ -150,6 +165,8 @@ export default function PendingTab({
                         {t('dashboard.actions.approve')}
                       </Button>
                     </div>
+                    </div>
+                    {previewTripId === trip.id && <SharePreviewCard t={t} trip={trip} />}
                  </CardContent>
               </Card>
            );

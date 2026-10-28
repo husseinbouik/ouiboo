@@ -4,19 +4,22 @@ import type { TripCardTrip } from '@/components/TripCard';
 import { Badge, Button } from '@ouiboo/ui';
 import Link from 'next/link';
 import { Compass, Sparkles } from 'lucide-react';
+import { getInitialLanguage } from '@ouiboo/i18n/server';
 
 const TripCard = dynamic(() => import('@/components/TripCard').then((m) => m.TripCard));
 
 async function getFeaturedTrips(): Promise<TripCardTrip[]> {
   try {
-    let response = await apiClient.get('/trips?featured=true&status=ACTIVE');
+    // #546: trip text in the visitor's language.
+    const locale = await getInitialLanguage();
+    let response = await apiClient.get(`/trips?featured=true&status=ACTIVE&locale=${locale}`);
     const directFeatured = Array.isArray(response.data) ? response.data : response.data?.data;
 
     if (directFeatured?.length) {
       return directFeatured;
     }
 
-    response = await apiClient.get('/trips?status=ACTIVE&sortBy=popularity&sortOrder=desc&limit=12');
+    response = await apiClient.get(`/trips?status=ACTIVE&sortBy=popularity&sortOrder=desc&limit=12&locale=${locale}`);
     return response.data?.data || response.data || [];
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -54,7 +57,7 @@ export default async function FeaturedTripsPage() {
             ))}
           </div>
         ) : (
-          <div className="rounded-[2rem] border border-dashed border-border bg-card/50 p-12 text-center">
+          <div className="rounded-3xl border border-dashed border-border bg-card/50 p-12 text-center">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted">
               <Sparkles className="h-7 w-7 text-sunset-orange" />
             </div>

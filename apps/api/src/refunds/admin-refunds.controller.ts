@@ -6,12 +6,14 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RefundsService } from './refunds.service';
 import {
+    AdminReviewRefundDto,
     ApproveRefundDto,
     CompleteRefundDto,
     CreateRefundCaseDto,
     FailRefundDto,
     InitiateRefundDto,
     RejectRefundDto,
+    RepairRefundCaseDto,
 } from './dto/refund-actions.dto';
 
 @ApiTags('AdminRefunds')
@@ -27,14 +29,19 @@ export class AdminRefundsController {
     }
 
     @Get()
-    @ApiOperation({ summary: 'List refund cases across agencies (#370)' })
+    @ApiOperation({
+        summary: 'List refund cases across agencies (#370)',
+        description:
+            'Pass auditQueue=true for the #416 audit queue: completed cases flagged for risk-based audit (auditRequired) that no admin has reviewed yet (auditedAt is null).',
+    })
     list(
         @Query('page') page?: string,
         @Query('limit') limit?: string,
         @Query('status') status?: string,
         @Query('agencyId') agencyId?: string,
+        @Query('auditQueue') auditQueue?: string,
     ) {
-        return this.refundsService.listAdminCases({ page, limit, status, agencyId });
+        return this.refundsService.listAdminCases({ page, limit, status, agencyId, auditQueue });
     }
 
     @Get(':id')
@@ -73,8 +80,14 @@ export class AdminRefundsController {
         return this.refundsService.initiate(this.actor(req), 'ADMIN', null, id, dto);
     }
 
+    @Post(':id/admin-review')
+    @ApiOperation({ summary: 'Record an admin review as tier-5 evidence (#416, B8)', description: 'Separate step from completion: records a tier-5 ADMIN_REVIEW evidence row with a mandatory written reason and an attached document and/or external reference. A later complete() call consumes the row as pre-existing evidence.' })
+    adminReview(@Request() req, @Param('id') id: string, @Body() dto: AdminReviewRefundDto) {
+        return this.refundsService.adminReview(this.actor(req), 'ADMIN', id, dto);
+    }
+
     @Post(':id/complete')
-    @ApiOperation({ summary: 'Mark a refund as completed (#370)' })
+    @ApiOperation({ summary: 'Complete a refund case (#370, #416)', description: 'Completes only on the case\'s pre-existing qualifying evidence. With none, completion fails (400) and nothing is written — record an admin review first (POST :id/admin-review) when the completion rests on an admin review.' })
     complete(@Request() req, @Param('id') id: string, @Body() dto: CompleteRefundDto) {
         return this.refundsService.complete(this.actor(req), 'ADMIN', null, id, dto);
     }
@@ -83,5 +96,17 @@ export class AdminRefundsController {
     @ApiOperation({ summary: 'Report a refund attempt as failed (#370)' })
     fail(@Request() req, @Param('id') id: string, @Body() dto: FailRefundDto) {
         return this.refundsService.fail(this.actor(req), 'ADMIN', null, id, dto);
+    }
+
+    @Post(':id/repair')
+    @ApiOperation({ summary: 'Admin-only repair of a stuck refund case: reopen a terminal case, correct its amount, or relink its payment (#423)' })
+    repair(@Request() req, @Param('id') id: string, @Body() dto: RepairRefundCaseDto) {
+        return this.refundsService.repairCaseAsAdmin(this.actor(req), id, dto);
+    }
+
+    @Post(':id/audit')
+    @ApiOperation({ summary: 'Mark a refund case as audited (#416)', description: 'Stamps auditedAt/auditedBy for a case in the risk-based audit queue (auditRequired). Auditing is a review obligation, not a completion blocker.' })
+    audit(@Request() req, @Param('id') id: string) {
+        return this.refundsService.markAudited(this.actor(req), id);
     }
 }

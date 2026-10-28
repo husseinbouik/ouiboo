@@ -15,6 +15,30 @@ import {
   renderMarketingEmail,
   sanitizeEmailSubject,
 } from './email-template'
+import {
+  emailStrings,
+  fillEmailCopy,
+  normalizeEmailLocale,
+  type EmailLocale,
+  type EmailStrings,
+} from './email-i18n'
+import type { CancellationScaleSnapshot } from '@ouiboo/types'
+
+/**
+ * B4 (Council Session #2): seller-of-record facts for the Law 31-08
+ * Art. 29/32 block in the booking confirmation email. `licenceVerified`
+ * must be the caller's effective-status derivation (verified +
+ * unexpired) — the email never re-derives or invents licence data.
+ */
+export interface BookingSellerInfo {
+  legalName?: string | null
+  companyName?: string | null
+  travelLicenceType?: string | null
+  travelLicenceNumber?: string | null
+  licenceVerified: boolean
+  licenceIssuedAt?: Date | string | null
+  licenceIssuingAuthority?: string | null
+}
 
 @Injectable()
 export class EmailService {
@@ -178,150 +202,380 @@ export class EmailService {
     return { skipped: false as const, result }
   }
 
-  getSubscriptionRenewalReminderTemplate(companyName: string, renewalDateLabel: string, billingUrl: string) {
+  getSubscriptionRenewalReminderTemplate(companyName: string, renewalDateLabel: string, billingUrl: string, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    const t = emailStrings(resolved).subscriptionRenewal
     const content = `
-      ${emailHeading('Your subscription renews soon')}
-      ${emailParagraph(`Hello ${companyName}, your Ouiboo agency subscription renews on ${renewalDateLabel}. It renews automatically at your current plan price unless you cancel before that date.`)}
-      ${emailParagraph('Cancellation takes effect at the end of the paid period, and your listings stay live until then. You can review your plan, renewal date, and the subscription terms on your billing page.')}
-      ${emailButton('Review your subscription', billingUrl)}
-      ${emailPanel('You are receiving this email because you have an active Ouiboo agency subscription.')}
+      ${emailHeading(t.heading)}
+      ${emailParagraph(fillEmailCopy(t.body, { companyName, renewalDate: renewalDateLabel }))}
+      ${emailParagraph(t.bodyCancellation)}
+      ${emailButton(t.button, billingUrl)}
+      ${emailPanel(t.panel, 'neutral', resolved)}
     `
     return renderEmail({
-      title: 'Your Ouiboo subscription renews soon',
-      preheader: `Your subscription renews on ${renewalDateLabel}`,
+      title: t.title,
+      preheader: fillEmailCopy(t.preheader, { renewalDate: renewalDateLabel }),
       content,
+      locale: resolved,
     })
   }
 
-  async sendSubscriptionRenewalReminder(email: string, companyName: string, renewalDateLabel: string, billingUrl: string) {
-    const html = this.getSubscriptionRenewalReminderTemplate(companyName, renewalDateLabel, billingUrl)
-    return this.sendEmail(email, 'Your Ouiboo subscription renews soon', html)
+  async sendSubscriptionRenewalReminder(email: string, companyName: string, renewalDateLabel: string, billingUrl: string, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    const html = this.getSubscriptionRenewalReminderTemplate(companyName, renewalDateLabel, billingUrl, resolved)
+    return this.sendEmail(email, emailStrings(resolved).subscriptionRenewal.subject, html)
   }
 
-  getOTPTemplate(otp: string) {
+  getOTPTemplate(otp: string, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    const t = emailStrings(resolved).otp
     const content = `
-      ${emailHeading('Verify your email address')}
-      ${emailParagraph('Use the verification code below to complete your signup and secure your account.')}
+      ${emailHeading(t.heading)}
+      ${emailParagraph(t.intro)}
       <div style="margin:26px 0;text-align:center;">
         <div style="display:inline-block;padding:15px 24px;border-radius:14px;background:#071B33;color:#FFFFFF;font-size:24px;font-weight:800;letter-spacing:0.36em;">${escapeHtml(otp)}</div>
       </div>
-      ${emailPanel('This code expires in <strong>10 minutes</strong>. If it expires, request a new code from the app.')}
-      ${emailParagraph('If you did not create an Ouiboo account, you can safely ignore this email.')}`
-    return renderEmail({ title: 'Verify your email address', preheader: 'Your Ouiboo verification code expires in 10 minutes.', content })
+      ${emailPanel(t.expiry, 'neutral', resolved)}
+      ${emailParagraph(t.ignore)}`
+    return renderEmail({ title: t.title, preheader: t.preheader, content, locale: resolved })
   }
 
-  getWelcomeTemplate(name?: string | null) {
-    const greeting = name?.trim() ? `Welcome to Ouiboo, ${name.trim()}!` : 'Welcome to Ouiboo!'
+  getWelcomeTemplate(name?: string | null, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    const t = emailStrings(resolved).welcome
+    const greeting = name?.trim() ? fillEmailCopy(t.greetingWithName, { name: name.trim() }) : t.greeting
     const content = `
       ${emailHeading(greeting)}
-      ${emailParagraph('Your email is verified and your account is ready.')}
-      ${emailParagraph('You can now explore trips, save favorites, and manage your bookings from one place.')}`
-    return renderEmail({ title: 'Welcome to Ouiboo', preheader: 'Your Ouiboo account is ready.', content })
+      ${emailParagraph(t.bodyVerified)}
+      ${emailParagraph(t.bodyExplore)}`
+    return renderEmail({ title: t.title, preheader: t.preheader, content, locale: resolved })
   }
 
-  async sendOTP(to: string, otp: string) {
-    await this.sendEmail(to, this.generateOTPSubject(), this.getOTPTemplate(otp))
+  async sendOTP(to: string, otp: string, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    await this.sendEmail(to, this.generateOTPSubject(resolved), this.getOTPTemplate(otp, resolved))
   }
 
-  generateOTPSubject() {
-    return 'Ouiboo: Verify your email address'
+  generateOTPSubject(locale?: EmailLocale | string | null) {
+    return emailStrings(locale).otp.subject
   }
 
-  async sendWelcomeEmail(to: string, name?: string | null) {
-    await this.sendEmail(to, 'Welcome to Ouiboo', this.getWelcomeTemplate(name))
+  async sendWelcomeEmail(to: string, name?: string | null, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    await this.sendEmail(to, emailStrings(resolved).welcome.subject, this.getWelcomeTemplate(name, resolved))
   }
 
-  getPasswordResetTemplate(resetUrl: string) {
+  getPasswordResetTemplate(resetUrl: string, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    const t = emailStrings(resolved).passwordReset
     const content = `
-      ${emailHeading('Reset your password')}
-      ${emailParagraph('We received a request to reset your Ouiboo password.')}
-      ${emailButton('Set a new password', resetUrl)}
-      ${emailPanel('This secure link expires in 60 minutes. If you did not request a password reset, ignore this email.')}`
-    return renderEmail({ title: 'Reset your password', preheader: 'Use this secure link to reset your Ouiboo password.', content })
+      ${emailHeading(t.heading)}
+      ${emailParagraph(t.intro)}
+      ${emailButton(t.button, resetUrl)}
+      ${emailPanel(t.panel, 'neutral', resolved)}`
+    return renderEmail({ title: t.title, preheader: t.preheader, content, locale: resolved })
   }
 
-  async sendPasswordResetEmail(to: string, resetUrl: string) {
-    await this.sendEmail(to, 'Ouiboo: Reset your password', this.getPasswordResetTemplate(resetUrl))
+  async sendPasswordResetEmail(to: string, resetUrl: string, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    await this.sendEmail(to, emailStrings(resolved).passwordReset.subject, this.getPasswordResetTemplate(resetUrl, resolved))
   }
 
-  async sendBookingNotification(travelerEmail: string, agencyEmail: string, bookingId: string, tripTitle: string) {
+  /**
+   * B4: render the Law 31-08 Art. 29/32 seller identity block for the
+   * traveller's booking confirmation. The licence line renders only
+   * when the caller derived the licence as effectively VERIFIED; the
+   * issue date/authority render only when they are on the record —
+   * a legacy record missing them gets the honest pending line, never
+   * a fabricated value.
+   */
+  private bookingSellerBlock(seller: BookingSellerInfo | null | undefined, locale: EmailLocale): string {
+    if (!seller) {
+      return ''
+    }
+    const name = seller.legalName?.trim() || seller.companyName?.trim()
+    if (!name) {
+      return ''
+    }
+    const t = emailStrings(locale).bookingSeller
+    const lines = [fillEmailCopy(t.soldBy, { name })]
+    if (seller.licenceVerified && seller.travelLicenceNumber?.trim()) {
+      lines.push(fillEmailCopy(t.licence, {
+        type: seller.travelLicenceType?.trim() ?? '',
+        number: seller.travelLicenceNumber.trim(),
+      }))
+      const issuedAt = seller.licenceIssuedAt ? new Date(seller.licenceIssuedAt) : null
+      const authority = seller.licenceIssuingAuthority?.trim()
+      if (issuedAt && !Number.isNaN(issuedAt.getTime()) && authority) {
+        const date = new Intl.DateTimeFormat(
+          locale === 'fr' ? 'fr-FR' : locale === 'ar' ? 'ar-MA' : 'en-GB',
+          { dateStyle: 'medium' },
+        ).format(issuedAt)
+        lines.push(fillEmailCopy(t.issued, { date, authority }))
+      } else {
+        lines.push(t.detailsPending)
+      }
+    }
+    return `
+      ${emailHeading(t.heading)}
+      ${emailPanel(lines.map((line) => escapeHtml(line)).join('<br>'), 'neutral', locale)}`
+  }
+
+  /**
+   * #424: the traveller's copy renders in `locale` (their checkout
+   * language, persisted on the booking). The agency copy keeps the
+   * default locale — no agency language preference is recorded yet.
+   * The traveller copy carries the prevailing-language clause next to
+   * the booking terms it confirms.
+   *
+   * #417 (Council P0-11): the traveller copy also repeats the
+   * cancellation scale the booking was made under — the snapshot taken
+   * at booking creation — in the same locale: the platform floor first,
+   * then one line per band. Refunds under these terms are paid by the
+   * agency, never by Ouiboo.
+   *
+   * B4 (Council Session #2): the traveller copy also carries the
+   * Law 31-08 seller identity block (see bookingSellerBlock).
+   */
+  async sendBookingNotification(travelerEmail: string, agencyEmail: string, bookingId: string, tripTitle: string, locale?: EmailLocale | string | null, cancellationScale?: CancellationScaleSnapshot | null, seller?: BookingSellerInfo | null) {
+    const resolved = normalizeEmailLocale(locale)
+    const t = emailStrings(resolved).bookingReceived
+    const cancellationStrings = emailStrings(resolved).bookingCancellation
+    const cancellationBlock = cancellationScale
+      ? `
+      ${emailHeading(cancellationStrings.heading)}
+      ${emailParagraph(cancellationStrings.paidByAgency)}
+      ${emailPanel(cancellationEmailLines(cancellationScale, cancellationStrings).map((line) => escapeHtml(line)).join('<br>'), 'neutral', resolved)}`
+      : ''
     const travelerContent = `
-      ${emailHeading('We received your booking')}
-      ${emailParagraph(`Your booking for ${tripTitle} has been received.`)}
-      ${emailPanel(`Booking reference: ${emailStrong(bookingId)}<br>Next step: upload your payment proof from the booking dashboard so the agency can review it.`)}`
+      ${emailHeading(t.heading)}
+      ${emailParagraph(fillEmailCopy(t.body, { tripTitle }))}
+      ${emailPanel(`${escapeHtml(t.panelReference)} ${emailStrong(bookingId)}<br>${escapeHtml(t.panelNextStep)}`, 'neutral', resolved)}${this.bookingSellerBlock(seller, resolved)}${cancellationBlock}
+      ${emailParagraph(emailStrings(resolved).prevailingLanguage)}`
+    const agencyStrings = emailStrings().bookingNewAgency
     const agencyContent = `
-      ${emailHeading('A new booking needs your attention')}
-      ${emailParagraph(`A traveler submitted a booking for ${tripTitle}.`)}
-      ${emailPanel(`Booking reference: ${emailStrong(bookingId)}<br>Traveler: ${emailStrong(travelerEmail)}<br>Review the booking and payment proof in your agency workspace.`)}`
+      ${emailHeading(agencyStrings.heading)}
+      ${emailParagraph(fillEmailCopy(agencyStrings.body, { tripTitle }))}
+      ${emailPanel(`${escapeHtml(agencyStrings.panelReference)} ${emailStrong(bookingId)}<br>${escapeHtml(agencyStrings.panelTraveler)} ${emailStrong(travelerEmail)}<br>${escapeHtml(agencyStrings.panelReview)}`)}`
 
     await Promise.all([
-      this.sendEmail(travelerEmail, `Ouiboo: Booking received — ${tripTitle}`, renderEmail({ title: 'Booking received', preheader: `We received your booking for ${tripTitle}.`, content: travelerContent })),
-      this.sendEmail(agencyEmail, 'Ouiboo: New booking received', renderEmail({ title: 'New booking received', preheader: `A new booking was submitted for ${tripTitle}.`, content: agencyContent })),
+      this.sendEmail(travelerEmail, fillEmailCopy(t.subject, { tripTitle }), renderEmail({ title: t.title, preheader: fillEmailCopy(t.preheader, { tripTitle }), content: travelerContent, locale: resolved })),
+      this.sendEmail(agencyEmail, agencyStrings.subject, renderEmail({ title: agencyStrings.title, preheader: fillEmailCopy(agencyStrings.preheader, { tripTitle }), content: agencyContent })),
     ])
   }
 
-  async sendPaymentConfirmation(travelerEmail: string, tripTitle: string) {
+  async sendPaymentConfirmation(travelerEmail: string, tripTitle: string, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    const t = emailStrings(resolved).paymentConfirmation
     const content = `
-      ${emailHeading('Your booking is confirmed')}
-      ${emailParagraph(`The agency verified your payment for ${tripTitle}. Your reserved seats are now confirmed.`)}
-      ${emailPanel('Keep your booking details available and review the itinerary before departure.')}`
-    await this.sendEmail(travelerEmail, `Ouiboo: Booking confirmed — ${tripTitle}`, renderEmail({ title: 'Booking confirmed', preheader: `Your booking for ${tripTitle} is confirmed.`, content }))
+      ${emailHeading(t.heading)}
+      ${emailParagraph(fillEmailCopy(t.body, { tripTitle }))}
+      ${emailPanel(escapeHtml(t.panel), 'neutral', resolved)}`
+    await this.sendEmail(travelerEmail, fillEmailCopy(t.subject, { tripTitle }), renderEmail({ title: t.title, preheader: fillEmailCopy(t.preheader, { tripTitle }), content, locale: resolved }))
   }
 
-  getPaymentReminderTemplate(tripTitle: string, hoursUntilPaymentDue: number, bookingDashboardUrl: string) {
+  getPaymentReminderTemplate(tripTitle: string, hoursUntilPaymentDue: number, bookingDashboardUrl: string, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    const t = emailStrings(resolved).paymentReminder
     const hours = Math.max(0, Math.floor(hoursUntilPaymentDue))
     const content = `
-      ${emailHeading('Your payment deadline is approaching')}
-      ${emailParagraph(`Payment for ${tripTitle} is due in ${hours} hour${hours === 1 ? '' : 's'}. Complete the payment step to keep your booking moving.`)}
-      ${emailPanel('Uploading payment proof lets the agency review the transfer and confirm your seats.')}
-      ${emailButton('Open booking dashboard', bookingDashboardUrl)}
-      ${emailParagraph('Already uploaded your proof? No action is needed while the agency reviews it.')}`
-    return renderEmail({ title: 'Payment reminder', preheader: `Payment for ${tripTitle} is due soon.`, content })
+      ${emailHeading(t.heading)}
+      ${emailParagraph(fillEmailCopy(hours === 1 ? t.bodyOne : t.bodyOther, { tripTitle, hours }))}
+      ${emailPanel(escapeHtml(t.panel), 'neutral', resolved)}
+      ${emailButton(t.button, bookingDashboardUrl)}
+      ${emailParagraph(t.alreadyUploaded)}`
+    return renderEmail({ title: t.title, preheader: fillEmailCopy(t.preheader, { tripTitle }), content, locale: resolved })
   }
 
-  async sendPaymentReminder(travelerEmail: string, tripTitle: string, hoursUntilPaymentDue: number, bookingDashboardUrl: string) {
-    await this.sendEmail(travelerEmail, `Ouiboo: Payment reminder — ${tripTitle}`, this.getPaymentReminderTemplate(tripTitle, hoursUntilPaymentDue, bookingDashboardUrl))
+  async sendPaymentReminder(travelerEmail: string, tripTitle: string, hoursUntilPaymentDue: number, bookingDashboardUrl: string, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    await this.sendEmail(travelerEmail, fillEmailCopy(emailStrings(resolved).paymentReminder.subject, { tripTitle }), this.getPaymentReminderTemplate(tripTitle, hoursUntilPaymentDue, bookingDashboardUrl, resolved))
   }
 
-  getTripReminderTemplate(tripTitle: string, daysUntilTrip: number, agencyName: string, tripDetailsUrl: string) {
-    const timing = daysUntilTrip === 7 ? 'one week' : daysUntilTrip === 1 ? 'tomorrow' : `in ${Math.max(0, Math.floor(daysUntilTrip))} days`
+  getTripReminderTemplate(tripTitle: string, daysUntilTrip: number, agencyName: string, tripDetailsUrl: string, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    const t = emailStrings(resolved).tripReminder
+    const timing = daysUntilTrip === 7
+      ? t.timingOneWeek
+      : daysUntilTrip === 1
+        ? t.timingTomorrow
+        : fillEmailCopy(t.timingInDays, { days: Math.max(0, Math.floor(daysUntilTrip)) })
     const content = `
-      ${emailHeading(`Your trip starts ${timing}`)}
-      ${emailParagraph(`${tripTitle}, organized by ${agencyName}, is almost here.`)}
-      ${emailPanel('<strong>Before you go</strong><br>• Check your travel documents<br>• Review the weather and packing list<br>• Confirm the itinerary and meeting point<br>• Save the agency contact details')}
-      ${emailButton('View trip details', tripDetailsUrl)}
-      ${emailParagraph('If you have questions, contact the agency through your Ouiboo booking dashboard.')}`
-    return renderEmail({ title: 'Upcoming trip reminder', preheader: `${tripTitle} starts ${timing}.`, content })
+      ${emailHeading(fillEmailCopy(t.heading, { timing }))}
+      ${emailParagraph(fillEmailCopy(t.body, { tripTitle, agencyName }))}
+      ${emailPanel(`<strong>${escapeHtml(t.panelTitle)}</strong><br>• ${escapeHtml(t.panelDocuments)}<br>• ${escapeHtml(t.panelWeather)}<br>• ${escapeHtml(t.panelItinerary)}<br>• ${escapeHtml(t.panelContact)}`, 'neutral', resolved)}
+      ${emailButton(t.button, tripDetailsUrl)}
+      ${emailParagraph(t.questions)}`
+    return renderEmail({ title: t.title, preheader: fillEmailCopy(t.preheader, { tripTitle, timing }), content, locale: resolved })
   }
 
-  async sendTripReminder(travelerEmail: string, tripTitle: string, daysUntilTrip: number, agencyName: string, tripDetailsUrl: string) {
-    await this.sendEmail(travelerEmail, `Ouiboo: Your trip starts soon — ${tripTitle}`, this.getTripReminderTemplate(tripTitle, daysUntilTrip, agencyName, tripDetailsUrl))
+  async sendTripReminder(travelerEmail: string, tripTitle: string, daysUntilTrip: number, agencyName: string, tripDetailsUrl: string, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    await this.sendEmail(travelerEmail, fillEmailCopy(emailStrings(resolved).tripReminder.subject, { tripTitle }), this.getTripReminderTemplate(tripTitle, daysUntilTrip, agencyName, tripDetailsUrl, resolved))
   }
 
-  getReviewRequestTemplate(tripTitle: string, agencyName: string, reviewUrl: string) {
+  getReviewRequestTemplate(tripTitle: string, agencyName: string, reviewUrl: string, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    const t = emailStrings(resolved).reviewRequest
     const content = `
-      ${emailHeading(`How was your trip with ${agencyName}?`)}
-      ${emailParagraph(`We hope you enjoyed ${tripTitle}. Your feedback helps travelers make informed choices and helps agencies improve.`)}
-      ${emailPanel('<strong>What to include</strong><br>Share useful details about the guides, activities, organization, and overall experience.', 'warning')}
-      ${emailButton('Write a review', reviewUrl)}
-      ${emailParagraph('Your review will appear on the trip page after any required moderation.')}`
-    return renderEmail({ title: 'Share your trip feedback', preheader: `Tell other travelers about ${tripTitle}.`, content })
+      ${emailHeading(fillEmailCopy(t.heading, { agencyName }))}
+      ${emailParagraph(fillEmailCopy(t.body, { tripTitle }))}
+      ${emailPanel(`<strong>${escapeHtml(t.panelTitle)}</strong><br>${escapeHtml(t.panelBody)}`, 'warning', resolved)}
+      ${emailButton(t.button, reviewUrl)}
+      ${emailParagraph(t.note)}`
+    return renderEmail({ title: t.title, preheader: fillEmailCopy(t.preheader, { tripTitle }), content, locale: resolved })
   }
 
-  async sendReviewRequest(travelerEmail: string, tripTitle: string, agencyName: string, reviewUrl: string) {
-    await this.sendEmail(travelerEmail, `Ouiboo: Share your review — ${tripTitle}`, this.getReviewRequestTemplate(tripTitle, agencyName, reviewUrl))
+  async sendReviewRequest(travelerEmail: string, tripTitle: string, agencyName: string, reviewUrl: string, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    await this.sendEmail(travelerEmail, fillEmailCopy(emailStrings(resolved).reviewRequest.subject, { tripTitle }), this.getReviewRequestTemplate(tripTitle, agencyName, reviewUrl, resolved))
   }
 
-  getAutoUnpaidCancellationTemplate(tripTitle: string, bookingId: string) {
+  getAutoUnpaidCancellationTemplate(tripTitle: string, bookingId: string, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    const t = emailStrings(resolved).autoUnpaidCancellation
     const content = `
-      ${emailHeading('Your booking was cancelled')}
-      ${emailParagraph(`The booking for ${tripTitle} was automatically cancelled because payment was not completed within the required timeframe.`)}
-      ${emailPanel(`Booking reference: ${emailStrong(bookingId)}<br>No payment proof was received before the deadline.`, 'danger')}
-      ${emailParagraph('If seats remain available, you can create a new booking. Contact support if you believe this cancellation is incorrect.')}`
-    return renderEmail({ title: 'Booking cancelled', preheader: `Your booking for ${tripTitle} was cancelled.`, content })
+      ${emailHeading(t.heading)}
+      ${emailParagraph(fillEmailCopy(t.body, { tripTitle }))}
+      ${emailPanel(`${escapeHtml(t.panelReference)} ${emailStrong(bookingId)}<br>${escapeHtml(t.panelNoProof)}`, 'danger', resolved)}
+      ${emailParagraph(t.closing)}`
+    return renderEmail({ title: t.title, preheader: fillEmailCopy(t.preheader, { tripTitle }), content, locale: resolved })
   }
 
-  async sendAutoUnpaidCancellationNotice(travelerEmail: string, tripTitle: string, bookingId: string) {
-    await this.sendEmail(travelerEmail, `Ouiboo: Booking cancelled — ${tripTitle}`, this.getAutoUnpaidCancellationTemplate(tripTitle, bookingId))
+  async sendAutoUnpaidCancellationNotice(travelerEmail: string, tripTitle: string, bookingId: string, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    await this.sendEmail(travelerEmail, fillEmailCopy(emailStrings(resolved).autoUnpaidCancellation.subject, { tripTitle }), this.getAutoUnpaidCancellationTemplate(tripTitle, bookingId, resolved))
   }
+
+  /** #424: agency verification-paused notice (moved from
+   * AgencyComplianceService so its copy lives in the locale table). */
+  getAgencyVerificationPausedTemplate(reason: string, tripsPaused: number, onboardingUrl: string, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    const t = emailStrings(resolved).agencyVerificationPaused
+    const tripsLine = tripsPaused > 0 ? fillEmailCopy(t.tripsLine, { count: tripsPaused }) : ''
+    const content =
+      emailHeading(t.heading) +
+      emailParagraph(fillEmailCopy(t.body, { reason, tripsLine })) +
+      emailParagraph(fillEmailCopy(t.renew, { url: onboardingUrl }))
+    return renderEmail({ title: t.title, preheader: t.preheader, content, locale: resolved })
+  }
+
+  getAgencyVerificationPausedSubject(locale?: EmailLocale | string | null) {
+    return emailStrings(locale).agencyVerificationPaused.subject
+  }
+
+  /** #424: agency refund-action notice (moved from RefundsService so its
+   * copy lives in the locale table). */
+  getRefundActionRequiredTemplate(bookingId: string, refundsUrl: string, locale?: EmailLocale | string | null) {
+    const resolved = normalizeEmailLocale(locale)
+    const t = emailStrings(resolved).refundActionRequired
+    const content =
+      emailHeading(t.heading) +
+      emailParagraph(fillEmailCopy(t.body, { bookingId })) +
+      emailParagraph(fillEmailCopy(t.dashboard, { url: refundsUrl }))
+    return renderEmail({ title: t.title, preheader: t.preheader, content, locale: resolved })
+  }
+
+  getRefundActionRequiredSubject(locale?: EmailLocale | string | null) {
+    return emailStrings(locale).refundActionRequired.subject
+  }
+
+  /** #419: traveller notice that an automatic refund case has opened.
+   * Copy moved onto the locale table as the #424 follow-up (it was
+   * inline English in RefundsService); renders in the booking's
+   * recorded locale. */
+  getRefundCaseOpenedTemplate(
+    input: {
+      tripTitle?: string | null
+      amount: string
+      currency: string
+      agencyName?: string | null
+      dueDateLabel?: string | null
+      bookingsUrl: string
+      supportEmail: string
+    },
+    locale?: EmailLocale | string | null,
+  ) {
+    const resolved = normalizeEmailLocale(locale)
+    const t = emailStrings(resolved).refundCaseOpened
+    const tripTitle = input.tripTitle?.trim() ? input.tripTitle : null
+    const agencyName = input.agencyName?.trim() ? input.agencyName : t.agencyFallback
+    const content =
+      emailHeading(t.heading) +
+      emailParagraph(
+        tripTitle ? fillEmailCopy(t.bodyWithTrip, { tripTitle }) : t.body,
+      ) +
+      emailParagraph(
+        fillEmailCopy(t.amount, {
+          amount: input.amount,
+          currency: input.currency,
+          agencyName,
+        }),
+      ) +
+      emailParagraph(
+        input.dueDateLabel
+          ? fillEmailCopy(t.dueStatus, {
+              dueDate: input.dueDateLabel,
+              url: input.bookingsUrl,
+            })
+          : fillEmailCopy(t.status, { url: input.bookingsUrl }),
+      ) +
+      emailParagraph(fillEmailCopy(t.support, { supportEmail: input.supportEmail }))
+    return renderEmail({ title: t.title, preheader: t.preheader, content, locale: resolved })
+  }
+
+  getRefundCaseOpenedSubject(
+    locale?: EmailLocale | string | null,
+    dueDateLabel?: string | null,
+  ) {
+    // Session #3 P0-14 (#424): with a known deadline the subject names
+    // it; without one it still says the event that actually happened —
+    // a case opened — never "on its way".
+    const t = emailStrings(locale).refundCaseOpened
+    return dueDateLabel
+      ? fillEmailCopy(t.subjectWithDue, { dueDate: dueDateLabel })
+      : t.subject
+  }
+}
+
+/**
+ * #417: render a cancellation scale snapshot as confirmation-email
+ * lines in one locale: the platform floor first, then one line per
+ * band (highest threshold first; the lowest band reads "less than"
+ * the previous threshold so every timing is covered exactly once).
+ */
+function cancellationEmailLines(
+  scale: CancellationScaleSnapshot,
+  t: EmailStrings['bookingCancellation'],
+): string[] {
+  const bands = [...scale.bands].sort(
+    (a, b) => b.minDaysBeforeStart - a.minDaysBeforeStart,
+  )
+  const lines: string[] = [
+    fillEmailCopy(t.floor, {
+      percent: scale.floorRefundPercent,
+      days: scale.refundInitiationDays,
+    }),
+  ]
+  bands.forEach((band, index) => {
+    if (index === bands.length - 1) {
+      const previous = bands[index - 1]
+      lines.push(
+        previous
+          ? fillEmailCopy(t.bandLessThan, {
+              days: previous.minDaysBeforeStart,
+              percent: band.refundPercent,
+            })
+          : fillEmailCopy(t.bandOnly, { percent: band.refundPercent }),
+      )
+    } else {
+      lines.push(
+        fillEmailCopy(t.bandAtLeast, {
+          days: band.minDaysBeforeStart,
+          percent: band.refundPercent,
+        }),
+      )
+    }
+  })
+  return lines
 }

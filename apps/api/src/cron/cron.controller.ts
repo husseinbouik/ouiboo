@@ -12,6 +12,7 @@ import { CurrencyService } from '../currency/currency.service';
 import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
 import { RefundsService } from '../refunds/refunds.service';
 import { PaymentReconciliationService } from '../payment-providers/reconciliation.service';
+import { AgencyComplianceService } from '../agency/agency-compliance.service';
 
 /**
  * Serverless-compatible cron endpoint (#216).
@@ -35,6 +36,7 @@ export class CronController {
     private readonly stagedPaymentsService: StagedPaymentsService,
     private readonly refundsService: RefundsService,
     private readonly paymentReconciliationService: PaymentReconciliationService,
+    private readonly agencyComplianceService: AgencyComplianceService,
   ) {}
 
   private validateCronSecret(authorization?: string): void {
@@ -98,6 +100,76 @@ export class CronController {
     await run('subscriptionRenewalReminders', () =>
       this.notificationJobs.sendSubscriptionRenewalReminders(),
     );
+    // #369/#370 deadline jobs — shared with the hourly endpoint below.
+    Object.assign(results, await this.runDeadlineJobs());
+    // #373: compare provider-reported payment statuses against OuiBoo's
+    // records; disagreements become reconciliation alert records.
+    await run('paymentReconciliation', () =>
+      this.paymentReconciliationService.runReconciliation(),
+    );
+    // #415: persist licence/RC-insurance lapses as EXPIRED, auto-pause
+    // the agency's ACTIVE trips (existing bookings untouched), notify.
+    await run('licenceInsuranceExpirySweep', () =>
+      this.agencyComplianceService.sweepExpiredLicencesAndInsurance(),
+    );
+
+    return { ranAt: new Date().toISOString(), results };
+  }
+
+  /**
+   * #433 (Council P1-07): deadline cadence. Group-expiry and refund-due
+   * evaluation used to wait for the daily 02:00 maintenance run, so a
+   * group could sit expired — and a refund sit unactioned — for up to
+   * ~24h. Vercel Cron now invokes this endpoint HOURLY (see
+   * apps/api/vercel.json); the daily maintenance run still executes the
+   * same jobs as a backstop. Only the deadline-critical jobs run here.
+   */
+  @Post('deadlines')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Run deadline jobs hourly (Vercel Cron, #433)',
+    description:
+      'Evaluates staged-payment group confirmation deadlines and the ' +
+      'refund-due / refund-overdue sweeps. Intended to be called by ' +
+      'Vercel Cron hourly, not by users.',
+  })
+  @ApiResponse({ status: 200, description: 'Deadline jobs completed' })
+  @ApiResponse({ status: 401, description: 'Invalid or missing cron secret' })
+  async runDeadlines(@Headers('authorization') authorization?: string) {
+    this.validateCronSecret(authorization);
+    const results = await this.runDeadlineJobs();
+    const failures = Object.entries(results)
+      .filter(([, value]) => value === 'failed')
+      .map(([name]) => name);
+    if (failures.length > 0) {
+      await this.emitCronAlert(
+        `Deadline job failure: ${failures.join(', ')}`,
+        { results },
+      );
+    }
+    return { ranAt: new Date().toISOString(), results };
+  }
+
+  /**
+   * The deadline-critical subset of maintenance (#369 group confirmation
+   * deadlines, #370 refund-due case sync + overdue sweep). Failures are
+   * isolated per job. A sweep that newly marks refunds overdue emits an
+   * alert: an overdue refund needs a human, not just a log line.
+   */
+  private async runDeadlineJobs(): Promise<Record<string, string>> {
+    const results: Record<string, string> = {};
+    const run = async (name: string, fn: () => Promise<unknown>) => {
+      try {
+        const value = await fn();
+        results[name] = 'ok';
+        return value;
+      } catch (error) {
+        this.logger.error(`Deadline job ${name} failed`, error);
+        results[name] = 'failed';
+        return undefined;
+      }
+    };
+
     // #369: fail/confirm staged sessions whose confirmation deadline passed.
     await run('groupConfirmationDeadlines', () =>
       this.stagedPaymentsService.evaluateConfirmationDeadlines(),
@@ -109,15 +181,43 @@ export class CronController {
     );
     // #370: flip actionable refund cases past their SLA deadline to
     // REFUND_OVERDUE and apply the new-bookings restriction ladder.
-    await run('refundOverdueSweep', () =>
+    const overdue = (await run('refundOverdueSweep', () =>
       this.refundsService.markOverdueCases(),
-    );
-    // #373: compare provider-reported payment statuses against OuiBoo's
-    // records; disagreements become reconciliation alert records.
-    await run('paymentReconciliation', () =>
-      this.paymentReconciliationService.runReconciliation(),
-    );
+    )) as { marked?: number } | undefined;
+    if (overdue && typeof overdue.marked === 'number' && overdue.marked > 0) {
+      await this.emitCronAlert(
+        `${overdue.marked} refund case(s) newly marked REFUND_OVERDUE`,
+        { marked: overdue.marked },
+      );
+    }
+    return results;
+  }
 
-    return { ranAt: new Date().toISOString(), results };
+  /**
+   * #433 alert call site (delivery itself is #399's monitoring work):
+   * always writes a structured [CRON ALERT] error log — the sink #399's
+   * log drain consumes — and, when ALERT_WEBHOOK_URL is configured, posts
+   * the alert to it. Webhook delivery is best-effort: it must never fail
+   * the cron run.
+   */
+  private async emitCronAlert(message: string, context: Record<string, unknown>): Promise<void> {
+    this.logger.error(`[CRON ALERT] ${message}`, JSON.stringify(context));
+    const webhook = process.env.ALERT_WEBHOOK_URL?.trim();
+    if (!webhook) return;
+    try {
+      await fetch(webhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'ouiboo-cron',
+          alert: message,
+          context,
+          at: new Date().toISOString(),
+        }),
+        signal: AbortSignal.timeout(5_000),
+      });
+    } catch (error) {
+      this.logger.error('[CRON ALERT] webhook delivery failed', error);
+    }
   }
 }

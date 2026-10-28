@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
     BookingPaymentPlanStatus,
     BookingPaymentStatus,
@@ -151,25 +151,8 @@ export class StagedPaymentsService {
         });
     }
 
-    /**
-     * Apply an agency/admin proof decision to a STAGED booking. The caller
-     * has already claimed the PaymentProof (PENDING → VERIFIED/REJECTED)
-     * inside the same transaction; this method records the stage payment
-     * and moves booking + plan state. The stage is derived from the plan
-     * status, so a balance can never be recorded before confirmation.
-     */
-    async applyProofDecisionInTransaction(
-        tx: Tx,
-        args: {
-            booking: BookingForDecision;
-            plan: PlanForDecision;
-            approved: boolean;
-            source: PaymentLedgerSource;
-            externalReference: string;
-        },
-    ): Promise<ProofDecisionResult> {
-        const { booking, plan, approved, source, externalReference } = args;
-
+    /** The stage a plan is currently awaiting payment for, if any. */
+    private stageForPlan(plan: PlanForDecision): ExternalPaymentStage {
         const stage = plan.status === BookingPaymentPlanStatus.DEPOSIT_DUE
             ? ExternalPaymentStage.DEPOSIT
             : plan.status === BookingPaymentPlanStatus.BALANCE_DUE
@@ -178,15 +161,23 @@ export class StagedPaymentsService {
         if (!stage) {
             throw new BadRequestException('Booking is not awaiting a staged payment');
         }
+        return stage;
+    }
 
-        const amount = stage === ExternalPaymentStage.DEPOSIT
-            ? plan.depositAmount
-            : plan.balanceAmount;
-        const recordInput = {
+    private stageRecordInput(
+        booking: BookingForDecision,
+        plan: PlanForDecision,
+        stage: ExternalPaymentStage,
+        source: PaymentLedgerSource,
+        externalReference: string,
+    ) {
+        return {
             bookingId: booking.id,
             agencyId: plan.agencyId,
             travelerId: booking.travelerId,
-            amount,
+            amount: stage === ExternalPaymentStage.DEPOSIT
+                ? plan.depositAmount
+                : plan.balanceAmount,
             currency: plan.currency,
             method: booking.paymentMethod ?? PaymentMethod.MANUAL,
             externalReference,
@@ -194,34 +185,89 @@ export class StagedPaymentsService {
             source,
             stage,
         };
+    }
 
-        if (!approved) {
-            await this.externalPaymentsService.recordPaymentRejectedInTransaction(tx, recordInput);
-            if (stage === ExternalPaymentStage.DEPOSIT) {
-                await this.claimBookingUpdate(tx, booking.id, {
-                    status: BookingStatus.REJECTED,
-                    paymentStatus: BookingPaymentStatus.FAILED,
-                });
-                return {
-                    stage,
-                    fullyPaid: false,
-                    bookingStatus: BookingStatus.REJECTED,
-                    planStatus: plan.status,
-                };
-            }
-            // Balance proof rejected: the booking stays confirmed with the
-            // deposit paid; the traveller may upload a new balance proof.
+    /**
+     * Apply an agency/admin proof REJECTION to a STAGED booking. The caller
+     * has already claimed the PaymentProof (PENDING → REJECTED) inside the
+     * same transaction. Rejection is one-step and safe: no money is treated
+     * as received. (#422 split this from bank confirmation: accepting a
+     * proof image settles nothing, so approval no longer lives here.)
+     */
+    async applyProofRejectionInTransaction(
+        tx: Tx,
+        args: {
+            booking: BookingForDecision;
+            plan: PlanForDecision;
+            source: PaymentLedgerSource;
+            externalReference: string;
+        },
+    ): Promise<ProofDecisionResult> {
+        const { booking, plan, source, externalReference } = args;
+        const stage = this.stageForPlan(plan);
+        const recordInput = this.stageRecordInput(booking, plan, stage, source, externalReference);
+
+        await this.externalPaymentsService.recordPaymentRejectedInTransaction(tx, recordInput);
+        if (stage === ExternalPaymentStage.DEPOSIT) {
             await this.claimBookingUpdate(tx, booking.id, {
-                status: BookingStatus.CONFIRMED,
-                paymentStatus: BookingPaymentStatus.PARTIALLY_PAID,
+                status: BookingStatus.REJECTED,
+                paymentStatus: BookingPaymentStatus.FAILED,
             });
             return {
                 stage,
                 fullyPaid: false,
-                bookingStatus: BookingStatus.CONFIRMED,
+                bookingStatus: BookingStatus.REJECTED,
                 planStatus: plan.status,
             };
         }
+        // Balance proof rejected: the booking stays confirmed with the
+        // deposit paid; the traveller may upload a new balance proof.
+        await this.claimBookingUpdate(tx, booking.id, {
+            status: BookingStatus.CONFIRMED,
+            paymentStatus: BookingPaymentStatus.PARTIALLY_PAID,
+        });
+        return {
+            stage,
+            fullyPaid: false,
+            bookingStatus: BookingStatus.CONFIRMED,
+            planStatus: plan.status,
+        };
+    }
+
+    /**
+     * #422 (Council P0-20): apply an agency BANK CONFIRMATION to a STAGED
+     * booking. The caller has already claimed the PaymentProof
+     * (ACCEPTED → VERIFIED) inside the same transaction and validated that
+     * confirmedAmount equals the stage amount. This performs exactly the
+     * effects proof approval used to perform — stage payment VERIFIED with
+     * a capture ledger entry, plan/booking transitions, group evaluation —
+     * except the recorded amount is the bank credit the agency observed
+     * (confirmedAmount), stamped with its bank reference.
+     * The stage is derived from the plan status, so a balance can never be
+     * recorded before confirmation.
+     */
+    async applyBankConfirmationInTransaction(
+        tx: Tx,
+        args: {
+            booking: BookingForDecision;
+            plan: PlanForDecision;
+            source: PaymentLedgerSource;
+            externalReference: string;
+            confirmedAmount: Prisma.Decimal;
+            bankReference: string;
+            bankConfirmedBy: string;
+        },
+    ): Promise<ProofDecisionResult> {
+        const { booking, plan, source, externalReference } = args;
+
+        const stage = this.stageForPlan(plan);
+
+        const recordInput = {
+            ...this.stageRecordInput(booking, plan, stage, source, externalReference),
+            amount: args.confirmedAmount,
+            bankReference: args.bankReference,
+            bankConfirmedBy: args.bankConfirmedBy,
+        };
 
         const entryType = stage === ExternalPaymentStage.DEPOSIT
             ? PaymentLedgerEntryType.DEPOSIT_CAPTURED
@@ -250,7 +296,7 @@ export class StagedPaymentsService {
             };
         }
 
-        // Deposit approved.
+        // Deposit bank-confirmed.
         await tx.bookingPaymentPlan.update({
             where: { id: plan.id },
             data: { status: BookingPaymentPlanStatus.DEPOSIT_PAID },
@@ -362,7 +408,17 @@ export class StagedPaymentsService {
                     this.evaluateSessionGroupInTransaction(tx, session.id, now),
                 );
                 if (outcome === 'confirmed') confirmed += 1;
-                if (outcome === 'not-confirmed') notConfirmed += 1;
+                if (outcome === 'not-confirmed') {
+                    notConfirmed += 1;
+                    // #419 (Council P0-16): the cascade opened refund
+                    // cases — the travellers owed money must hear it
+                    // (previously only the agency was ever notified).
+                    // Post-commit and best-effort: a notification
+                    // failure never fails the deadline evaluation.
+                    await this.refundsService
+                        .notifyTravelersRefundDueForSession(session.id)
+                        .catch(() => undefined);
+                }
             } catch (error) {
                 this.logger.error(
                     `Group confirmation evaluation failed for session ${session.id}`,
@@ -375,6 +431,129 @@ export class StagedPaymentsService {
             `Group confirmation deadlines evaluated: ${sessions.length} sessions (${confirmed} confirmed, ${notConfirmed} not confirmed)`,
         );
         return { evaluated: sessions.length, confirmed, notConfirmed };
+    }
+
+    // ------------------------------------------------------------------
+    // #423: admin stuck-state interventions. These are thin, guarded
+    // wrappers over the private group state machine below — the admin
+    // layer (AdminInterventionsService) owns the transaction, the
+    // mandatory reason, and the AuditLog row; these methods only move
+    // state, exactly like the proof-decision and deadline paths do.
+    // ------------------------------------------------------------------
+
+    /**
+     * Force-confirm a session still waiting for its minimum group,
+     * deliberately ignoring both the deadline and the minimum count —
+     * that override is the intervention. Effects are the standard
+     * confirmation effects (see confirmGroupInTransaction).
+     */
+    async forceConfirmGroupInTransaction(
+        tx: Tx,
+        sessionId: string,
+        now: Date = new Date(),
+    ): Promise<{ participants: number; minBookings: number }> {
+        const session = await this.loadPendingGroupSession(tx, sessionId);
+        const participants = await this.countGroupParticipants(tx, sessionId);
+        await this.confirmGroupInTransaction(tx, session, now);
+        return { participants, minBookings: session.minBookings };
+    }
+
+    /**
+     * Close a pending-minimum group as NOT_CONFIRMED. Deposit-paid
+     * bookings become refund-due and their RefundCase is created in the
+     * same transaction (via failGroupInTransaction), never left to the
+     * cron backstop; unpaid bookings are cancelled.
+     */
+    async closeGroupInTransaction(
+        tx: Tx,
+        sessionId: string,
+    ): Promise<{ depositPaidBookings: number; unpaidBookings: number }> {
+        const session = await this.loadPendingGroupSession(tx, sessionId);
+        const plans = await tx.bookingPaymentPlan.findMany({
+            where: {
+                sessionId,
+                status: {
+                    in: [
+                        BookingPaymentPlanStatus.DEPOSIT_PAID,
+                        BookingPaymentPlanStatus.DEPOSIT_DUE,
+                    ],
+                },
+            },
+            include: { booking: { select: { status: true } } },
+        });
+        const depositPaidBookings = plans.filter(
+            (plan) => plan.status === BookingPaymentPlanStatus.DEPOSIT_PAID,
+        ).length;
+        const unpaidBookings = plans.filter(
+            (plan) => plan.status === BookingPaymentPlanStatus.DEPOSIT_DUE
+                && plan.booking.status === BookingStatus.PENDING,
+        ).length;
+        await this.failGroupInTransaction(tx, session);
+        return { depositPaidBookings, unpaidBookings };
+    }
+
+    /**
+     * Move a pending group's confirmation deadline. The session row and
+     * every non-terminal plan snapshot move together — the plan snapshot
+     * is what refund/eligibility logic reads, so the two must never
+     * diverge. The new deadline must be in the future and strictly
+     * before the session start date.
+     */
+    async extendConfirmationDeadlineInTransaction(
+        tx: Tx,
+        sessionId: string,
+        newDeadline: Date,
+        now: Date = new Date(),
+    ): Promise<{ previousDeadline: Date | null; newDeadline: Date; plansUpdated: number }> {
+        const session = await this.loadPendingGroupSession(tx, sessionId);
+        if (newDeadline.getTime() <= now.getTime()) {
+            throw new BadRequestException('The new confirmation deadline must be in the future');
+        }
+        if (newDeadline.getTime() >= session.startDate.getTime()) {
+            throw new BadRequestException(
+                'The confirmation deadline cannot be on or after the session start date',
+            );
+        }
+        const previousDeadline = session.confirmationDeadline;
+        await tx.tripSession.update({
+            where: { id: sessionId },
+            data: { confirmationDeadline: newDeadline },
+        });
+        const plans = await tx.bookingPaymentPlan.updateMany({
+            where: {
+                sessionId,
+                status: {
+                    in: [
+                        BookingPaymentPlanStatus.DEPOSIT_DUE,
+                        BookingPaymentPlanStatus.DEPOSIT_PAID,
+                        BookingPaymentPlanStatus.BALANCE_DUE,
+                        BookingPaymentPlanStatus.FULLY_PAID,
+                        BookingPaymentPlanStatus.REFUND_DUE,
+                    ],
+                },
+            },
+            data: { confirmationDeadline: newDeadline },
+        });
+        return { previousDeadline, newDeadline, plansUpdated: plans.count };
+    }
+
+    private async loadPendingGroupSession(tx: Tx, sessionId: string) {
+        const session = await tx.tripSession.findUnique({ where: { id: sessionId } });
+        if (!session) {
+            throw new NotFoundException('Trip session not found');
+        }
+        if (session.groupStatus !== SessionGroupStatus.PENDING_MINIMUM) {
+            throw new BadRequestException('Session group is not pending its minimum');
+        }
+        return session;
+    }
+
+    private async countGroupParticipants(tx: Tx, sessionId: string): Promise<number> {
+        const countedPlans = await tx.bookingPaymentPlan.findMany({
+            where: { sessionId, status: { in: COUNTED_PLAN_STATUSES } },
+            include: { booking: { select: { guestsCount: true } } },
+        });
+        return countedPlans.reduce((sum, plan) => sum + plan.booking.guestsCount, 0);
     }
 
     private async confirmGroupInTransaction(
@@ -478,7 +657,7 @@ export class StagedPaymentsService {
             }
             // Bookings whose proof is still under review (AWAITING_VALIDATION)
             // or was rejected keep their state: a later approval lands in the
-            // NOT_CONFIRMED branch of applyProofDecisionInTransaction.
+            // NOT_CONFIRMED branch of applyBankConfirmationInTransaction.
         }
 
         if (seatsToRestore > 0) {

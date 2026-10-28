@@ -12,7 +12,7 @@
     "badge": "Nouveau lancement marketplace",
     "title": "Votre Prochaine Aventure, Connectée en Toute Simplicité.",
     "subtitle": "Pour les voyageurs, un monde de séjours organisés. Pour les agences, une plateforme puissante pour se développer. Ouiboo est le point de rencontre du voyage.",
-    "ctaPrimary": "Rejoignez la liste d'attente et obtenez un mois gratuit",
+    "ctaPrimary": "Rejoignez la liste d'attente",
     "ctaSecondary": "Explorer les voyages",
     "ctaTertiary": "En savoir plus"
   },
@@ -20,16 +20,16 @@
     "title": "Une marketplace conçue pour la confiance",
     "subtitle": "Des fondations claires pour chaque étape du voyage.",
     "item1": "Détails de voyage structurés",
-    "item2": "Vérification des agences",
-    "item3": "Paiements traçables",
-    "item4": "Support réactif"
+    "item2": "Processus d'examen des agences",
+    "item3": "Paiements directs à l'agence",
+    "item4": "Assistance par e-mail"
   },
   "highlights": {
     "title": "Pensé pour les agences de voyage",
     "subtitle": "Tout ce qu'il faut pour publier, vendre et gérer vos voyages sans complexité.",
     "curated": {
       "title": "Expériences sélectionnées",
-      "description": "Proposez des itinéraires vérifiés avec inclusions claires, sécurité et avis transparents."
+      "description": "Proposez des itinéraires avec des inclusions claires et des avis transparents."
     },
     "payments": {
       "title": "Réservations fluides",
@@ -57,24 +57,24 @@
     },
     "step2": {
       "title": "Réservez Simplement",
-      "description": "Un processus de réservation simple et sécurisé pour les voyageurs. Les agences gèrent tout depuis un tableau de bord intuitif."
+      "description": "Un processus de réservation simple pour les voyageurs. Les agences gèrent tout depuis un tableau de bord intuitif."
     },
     "step3": {
       "title": "Vivez & Grandissez",
-      "description": "Les voyageurs se lancent dans leur aventure. Les agences obtiennent des informations précieuses et une audience mondiale."
+      "description": "Les voyageurs se lancent dans leur aventure. Les agences obtiennent des informations précieuses grâce à leurs réservations."
     }
   },
   "travelers": {
     "preTitle": "Pour les Voyageurs",
     "title": "Votre Histoire vous Attend",
-    "subtitle": "Échangez le défilement infini contre des aventures authentiques. Nous vous connectons à des voyages uniques d'agences indépendantes de confiance.",
+    "subtitle": "Échangez le défilement infini contre des aventures authentiques. Nous vous connectons à des voyages uniques d'agences indépendantes.",
     "feature1": {
       "title": "Découvrez des Voyages Uniques",
       "description": "Trouvez des expériences que vous ne verrez nulle part ailleurs, des circuits culinaires aux treks en montagne."
     },
     "feature2": {
-      "title": "Réservez en Confiance",
-      "description": "Chaque agence est vérifiée. Chaque réservation est sécurisée. Voyagez en toute tranquillité d'esprit."
+      "title": "Sachez qui vend votre voyage",
+      "description": "Numéro de licence fourni par l'agence — non vérifié de manière indépendante par Ouiboo."
     },
     "feature3": {
       "title": "Économisez Temps & Efforts",
@@ -88,7 +88,7 @@
   "agencies": {
     "preTitle": "Pour les Agences",
     "title": "Votre Entreprise, Amplifiée",
-    "subtitle": "Arrêtez de vous battre avec des outils obsolètes. Notre plateforme vous donne tout ce dont vous avez besoin pour gérer votre entreprise et atteindre un public mondial.",
+    "subtitle": "Arrêtez de vous battre avec des outils obsolètes. Notre plateforme vous donne tout ce dont vous avez besoin pour gérer votre entreprise en un seul endroit.",
     "feature1": {
       "title": "Numérisez Vos Offres",
       "description": "Créez, publiez et gérez facilement de belles pages de voyage qui convertissent."
@@ -98,8 +98,8 @@
       "description": "Utilisez notre tableau de bord pour comprendre vos clients, suivre les ventes et prendre des décisions basées sur les données."
     },
     "feature3": {
-      "title": "Atteignez une Audience Mondiale",
-      "description": "Accédez à notre marché de voyageurs passionnés qui recherchent activement des voyages comme les vôtres."
+      "title": "Touchez de nouveaux voyageurs",
+      "description": "Présentez vos voyages à des voyageurs qui recherchent des expériences comme les vôtres."
     },
     "cta": {
       "registerAgency": "Inscrire l'Agence",
@@ -124,14 +124,15 @@
   },
   "pricing": {
     "preTitle": "Tarifs",
-    "title": "Tarification Simple et Transparente",
-    "subtitle": "Choisissez le plan qui convient à votre agence. Tous les plans incluent l'accès à la place de marché — les voyageurs paient votre agence directement.",
+    "title": "Tarifs pendant la bêta fermée",
+    "subtitle": "Ouiboo est en bêta fermée. Les voyageurs paient votre agence directement.",
+    "betaStatement": "Aucun frais de plateforme pendant la bêta fermée.",
     "free": {
       "title": "Gratuit",
       "description": "Parfait pour commencer",
       "price": "0",
       "currency": "MAD/mois",
-      "commission": "Frais de service plateforme de 5%",
+      "commission": "Aucun frais de plateforme pendant la bêta fermée.",
       "button": "Commencer",
       "feature1": "3 voyages",
       "feature2": "Profil de base",
@@ -142,7 +143,7 @@
       "description": "Pour les agences en croissance",
       "price": "499",
       "currency": "MAD/mois",
-      "commission": "Frais de service plateforme de 3%",
+      "commission": "Aucun frais de plateforme pendant la bêta fermée.",
       "button": "Bientôt disponible",
       "feature1": "Voyages illimités",
       "feature2": "Marque et personnalisation",
@@ -154,38 +155,39 @@
       "description": "Pour les agences établies",
       "price": "999",
       "currency": "MAD/mois",
-      "commission": "Frais de service plateforme de 2%",
+      "commission": "Aucun frais de plateforme pendant la bêta fermée.",
       "button": "Bientôt disponible",
       "feature1": "Tout du plan Pro",
       "feature2": "Analyses avancées",
       "feature3": "Marketing boosté",
-      "feature4": "Support prioritaire"
+      "feature4": "Assistance par e-mail"
     },
     "enterprise": {
       "title": "Enterprise",
       "description": "Pour les opérations à grande échelle",
       "price": "Sur mesure",
       "currency": "",
-      "commission": "Frais de service plateforme négociables",
+      "commission": "Aucun frais de plateforme pendant la bêta fermée.",
       "button": "Contacter les ventes",
       "feature1": "Tout du plan Premium",
       "feature2": "Solution en marque blanche",
       "feature3": "Intégrations personnalisées",
-      "feature4": "Support dédié"
+      "feature4": "Assistance par e-mail"
     },
     "waitlist": {
-      "badge": "Temps Limité",
+      "badge": "Accès anticipé",
       "title": "Offre d'Accès Anticipé",
-      "description": "Rejoignez notre liste d'attente et obtenez 3 mois gratuits du plan Pro lors du lancement.",
-      "price": "3 Mois Gratuits",
+      "description": "Rejoignez notre liste d'attente pour un accès anticipé lors du lancement.",
+      "price": "Accès anticipé",
       "button": "Rejoindre la liste d'attente",
       "feature1": "Accès anticipé à la plateforme",
-      "feature2": "3 mois du plan Pro gratuits"
+      "feature2": "Accès anticipé à la plateforme"
     }
   },
   "waitlist": {
     "title": "Soyez le Premier à Découvrir Ouiboo",
-    "subtitle": "Rejoignez notre liste d'attente pour un accès anticipé exclusif, un mois gratuit de notre plan Pro pour les agences, et des mises à jour sur notre lancement.",
+    "subtitle": "Rejoignez notre liste d'attente pour un accès anticipé et des nouvelles du lancement.",
+    "paused": "Les inscriptions à la liste d'attente sont en pause pendant la préparation de la bêta fermée. Revenez bientôt — aucune information n'est collectée en attendant.",
     "form": {
       "name": "Entrez votre nom",
       "email": "Entrez votre email",
@@ -243,7 +245,7 @@
     },
     "section3": {
       "title": "Analytics facultatifs",
-      "body": "Les analytics du site sont désactivés sauf si vous choisissez de les autoriser. Vous pouvez modifier ce choix à tout moment. Le stockage lié à la langue et à la sécurité peut rester utilisé car il est nécessaire au fonctionnement du site."
+      "body": "Aucun traceur d'analyse ne fonctionne par défaut sur Ouiboo. Les analytics toujours actifs ont été retirés ; les analytics optionnels ne sont jamais chargés sauf si vous choisissez explicitement de les autoriser, et vous pouvez modifier ce choix à tout moment. Le stockage lié à la langue et à la sécurité peut rester utilisé car il est nécessaire au fonctionnement du site."
     },
     "section4": {
       "title": "Partage et conservation",
@@ -262,5 +264,8 @@
     "privacyNotice": "avis de confidentialité",
     "continueWithoutAnalytics": "Continuer sans analytics",
     "allowAnalytics": "Autoriser les analytics"
+  },
+  "beta": {
+    "explainer": "Bêta fermée — voyageurs invités uniquement ; vous payez toujours l'agence directement."
   }
 }

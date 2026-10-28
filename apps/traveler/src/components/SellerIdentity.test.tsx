@@ -1,12 +1,18 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import SellerIdentity, { getSellerDisplay, isLicenceVerifiedForDisplay } from './SellerIdentity';
+import SellerIdentity, { getSellerDisplay, getVerificationChecks, isLicenceVerifiedForDisplay } from './SellerIdentity';
 
 jest.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string, options?: any) => {
             if (key === 'seller.organisedAndSoldBy') return `Organised and sold by ${options?.name}`;
             if (key === 'seller.licence') return `Travel-agent licence: ${options?.number}`;
+            if (key === 'seller.licenceTyped') return `Travel-agent licence: ${options?.type} ${options?.number}`;
+            if (key === 'seller.licenceIssued') return `Issued on ${options?.date} by ${options?.authority}`;
+            if (key === 'seller.licenceDetailsPending') return 'Licence issue details are being confirmed with the agency.';
+            if (key === 'seller.licenceNotConfirmed') return 'Licence details not yet confirmed — ask the agency before paying.';
+            if (key === 'seller.licenceChecked') return `Licence document checked on ${options?.date}`;
+            if (key === 'seller.insuranceEvidenced') return `RC insurance evidenced on ${options?.date}`;
             if (key === 'seller.poweredBy') return 'Powered by OuiBoo';
             return key;
         },
@@ -61,6 +67,61 @@ describe('getSellerDisplay (#371)', () => {
     });
 });
 
+describe('seller block issue data (B4)', () => {
+    const verifiedAgency = {
+        companyName: 'Atlas Adventures',
+        legalName: 'Atlas Adventures SARL',
+        travelLicenceStatus: 'VERIFIED',
+        travelLicenceType: 'ODV',
+        travelLicenceNumber: 'AV-2024-0187',
+        licenceIssuedAt: '2024-03-15T00:00:00.000Z',
+        licenceIssuingAuthority: 'Ministère du Tourisme',
+    };
+
+    it('exposes the complete block — type, issue date, authority — when verified', () => {
+        const display = getSellerDisplay(verifiedAgency);
+        expect(display.licenceType).toBe('ODV');
+        expect(display.licenceIssuedAt?.toISOString()).toBe('2024-03-15T00:00:00.000Z');
+        expect(display.licenceIssuingAuthority).toBe('Ministère du Tourisme');
+        expect(display.licenceDetailsPending).toBe(false);
+    });
+
+    it('withholds type, issue date, and authority while the licence is not verified', () => {
+        const display = getSellerDisplay({ ...verifiedAgency, travelLicenceStatus: 'PENDING_REVIEW' });
+        expect(display.licenceType).toBeNull();
+        expect(display.licenceIssuedAt).toBeNull();
+        expect(display.licenceIssuingAuthority).toBeNull();
+        expect(display.licenceDetailsPending).toBe(false);
+    });
+
+    it('flags the legacy gap: verified but the issue data was never captured', () => {
+        const display = getSellerDisplay({
+            ...verifiedAgency,
+            licenceIssuedAt: null,
+            licenceIssuingAuthority: null,
+        });
+        expect(display.licenceDetailsPending).toBe(true);
+    });
+
+    it('renders type + number and the issued line for a complete verified record', () => {
+        render(<SellerIdentity agency={verifiedAgency} />);
+        expect(screen.getByText(/Travel-agent licence: ODV AV-2024-0187/)).not.toBeNull();
+        expect(screen.getByText(/Issued on .* by Ministère du Tourisme/)).not.toBeNull();
+        expect(screen.queryByText(/being confirmed with the agency/)).toBeNull();
+    });
+
+    it('renders the honest pending line for a legacy verified record', () => {
+        render(
+            <SellerIdentity
+                agency={{ ...verifiedAgency, licenceIssuedAt: null, licenceIssuingAuthority: null }}
+            />,
+        );
+        expect(screen.getByText(/Travel-agent licence: ODV AV-2024-0187/)).not.toBeNull();
+        expect(screen.getByText(/Licence issue details are being confirmed with the agency/)).not.toBeNull();
+        expect(screen.queryByText(/Issued on/)).toBeNull();
+    });
+});
+
 describe('SellerIdentity (#371)', () => {
     it('renders the seller block with the licence number for a verified agency', () => {
         render(
@@ -92,11 +153,103 @@ describe('SellerIdentity (#371)', () => {
         );
 
         expect(screen.getByText(/Organised and sold by Atlas Adventures/)).not.toBeNull();
-        expect(screen.queryByText(/Travel-agent licence/)).toBeNull();
+        expect(screen.queryByText(/Travel-agent licence:/)).toBeNull();
+    });
+
+    it('states the negative explicitly when the licence is unverified (Session #3 P0-13)', () => {
+        render(
+            <SellerIdentity
+                agency={{
+                    companyName: 'Atlas Adventures',
+                    travelLicenceStatus: 'PENDING_REVIEW',
+                    travelLicenceNumber: 'AV-2024-0187',
+                }}
+            />,
+        );
+
+        // No silence, no implied verification: the not-confirmed line
+        // renders and the licence number stays hidden.
+        expect(screen.getByText(/Licence details not yet confirmed/)).not.toBeNull();
+        expect(screen.queryByText(/AV-2024-0187/)).toBeNull();
+    });
+
+    it('does not render the not-confirmed line for a verified agency (Session #3 P0-13)', () => {
+        render(
+            <SellerIdentity
+                agency={{
+                    companyName: 'Atlas Adventures',
+                    travelLicenceStatus: 'VERIFIED',
+                    travelLicenceNumber: 'AV-2024-0187',
+                }}
+            />,
+        );
+
+        expect(screen.queryByText(/Licence details not yet confirmed/)).toBeNull();
     });
 
     it('renders nothing without an agency', () => {
         const { container } = render(<SellerIdentity agency={null} />);
         expect(container.firstChild).toBeNull();
+    });
+
+    it('renders the what+when checks line with the actual verification dates (#413)', () => {
+        const licenceDate = new Date('2026-10-24T00:00:00.000Z');
+        const insuranceDate = new Date('2026-10-25T00:00:00.000Z');
+        const fmt = (d: Date) => new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(d);
+        render(
+            <SellerIdentity
+                agency={{
+                    companyName: 'Atlas Adventures',
+                    legalName: 'Atlas Adventures SARL',
+                    travelLicenceStatus: 'VERIFIED',
+                    travelLicenceNumber: 'AV-2024-0187',
+                    licenceVerifiedAt: licenceDate.toISOString(),
+                    insuranceStatus: 'VERIFIED',
+                    insuranceVerifiedAt: insuranceDate.toISOString(),
+                }}
+            />,
+        );
+
+        expect(
+            screen.getByText(
+                `Licence document checked on ${fmt(licenceDate)} · RC insurance evidenced on ${fmt(insuranceDate)}`,
+            ),
+        ).not.toBeNull();
+    });
+
+    it('omits the checks line when the stamps are missing (#413)', () => {
+        render(
+            <SellerIdentity
+                agency={{
+                    companyName: 'Atlas Adventures',
+                    travelLicenceStatus: 'VERIFIED',
+                    travelLicenceNumber: 'AV-2024-0187',
+                }}
+            />,
+        );
+
+        expect(screen.queryByText(/Licence document checked on/)).toBeNull();
+        expect(screen.queryByText(/RC insurance evidenced on/)).toBeNull();
+    });
+});
+
+describe('getVerificationChecks (#413)', () => {
+    it('returns dates only for checks that passed', () => {
+        const checks = getVerificationChecks({
+            travelLicenceStatus: 'VERIFIED',
+            licenceVerifiedAt: '2026-10-24T00:00:00.000Z',
+            insuranceStatus: 'PENDING_REVIEW',
+            insuranceVerifiedAt: '2026-10-25T00:00:00.000Z',
+        });
+        expect(checks.licenceCheckedDate?.toISOString()).toBe('2026-10-24T00:00:00.000Z');
+        expect(checks.insuranceEvidencedDate).toBeNull();
+    });
+
+    it('returns no licence date when the licence is not verified', () => {
+        const checks = getVerificationChecks({
+            travelLicenceStatus: 'PENDING_REVIEW',
+            licenceVerifiedAt: '2026-10-24T00:00:00.000Z',
+        });
+        expect(checks.licenceCheckedDate).toBeNull();
     });
 });

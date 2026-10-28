@@ -6,7 +6,9 @@ import { MotionConfig } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider } from './AuthContext';
+import { DisplayCurrencyProvider } from '@/lib/display-currency';
 import { AuthModal } from './AuthModal';
+import { ToastProvider } from '@ouiboo/ui';
 import { ThemeProvider } from 'next-themes';
 import '@/lib/i18n';
 import { restorePublicQueryCache, subscribePublicQueryCache } from '@/lib/query-persistence';
@@ -30,6 +32,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
     useEffect(() => subscribePublicQueryCache(queryClient), [queryClient]);
     const { i18n, ready } = useTranslation();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         const dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
@@ -37,8 +43,15 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         document.documentElement.lang = i18n.language;
     }, [i18n.language]);
 
-    // Don't render until translations are loaded to avoid flash of raw keys (#122)
-    if (!ready) {
+    // Don't render until translations are loaded to avoid flash of raw keys (#122).
+    // The mount gate (#245) makes that deterministic across hydration: SSR
+    // always renders null here (translations load over HTTP), and the first
+    // client render must render null too — if the translation load wins
+    // the race against hydration, `ready` is already true at first render
+    // and the full tree mismatches the server HTML (React error #418,
+    // caught by the production smoke suite on the SkipLink, which sits
+    // outside this gate; same race applies here).
+    if (!mounted || !ready) {
         return null;
     }
 
@@ -47,8 +60,19 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
                 <MotionConfig reducedMotion="user">
                     <AuthProvider>
-                        {children}
-                        <AuthModal />
+                        {/* #498 rework: display-currency context (profile
+                            value for signed-in travellers, local guest
+                            preference otherwise). Inside AuthProvider —
+                            it reads the profile — and inside the query
+                            client, which caches the FX rates. */}
+                        <DisplayCurrencyProvider>
+                        {/* #485: shared toast host (Undo actions, error
+                            surfacing for optimistic mutations). */}
+                        <ToastProvider>
+                            {children}
+                            <AuthModal />
+                        </ToastProvider>
+                        </DisplayCurrencyProvider>
                     </AuthProvider>
                 </MotionConfig>
             </ThemeProvider>

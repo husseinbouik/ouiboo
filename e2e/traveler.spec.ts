@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { mockTravelerApi } from './helpers';
+import { mockTravelerApi, seedLocalStorage } from './helpers';
 
 test.describe('traveler launch flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -32,6 +32,10 @@ test.describe('traveler launch flow', () => {
   });
 
   test('traveler can go from trip detail to checkout confirmation', async ({ page }) => {
+    // Checkout needs the signed-in traveler the mock API returns for
+    // /users/me. Since #245 that probe only fires when a session may
+    // exist, so seed the login hint a real login would have written.
+    await seedLocalStorage(page, { 'ouiboo.session.hint': '1' });
     await page.goto('/search', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: 'Atlas Weekend Escape' })).toBeVisible();
     // "View details" is rendered as a link (Next.js Link), not a button.
@@ -45,8 +49,12 @@ test.describe('traveler launch flow', () => {
     await expect(page.getByRole('heading', { name: /checkout/i })).toBeVisible();
     await page.getByPlaceholder(/abderrahmane/i).fill('Launch Traveler');
     await page.getByPlaceholder(/include country code/i).fill('+212600000000');
-    await page.getByPlaceholder(/enter document number/i).fill('AB123456');
-    await page.getByRole('button', { name: /complete booking/i }).click();
+    // B9: the booking terms checkbox (unchecked by default) gates submit.
+    const completeButton = page.getByRole('button', { name: /complete booking/i });
+    await expect(completeButton).toBeDisabled();
+    await page.getByRole('checkbox', { name: /accept the booking terms/i }).check();
+    await expect(completeButton).toBeEnabled();
+    await completeButton.click();
 
     await page.waitForURL(/\/checkout\/confirmation\?bookingId=booking-1/);
     await expect(page.getByText(/booking submitted/i)).toBeVisible();
@@ -59,7 +67,22 @@ test.describe('traveler launch flow', () => {
 
     await page.getByPlaceholder(/destination, activity or keyword/i).fill('atlas');
     await page.getByRole('button', { name: /^search$/i }).click();
+    // #599/#560: on small viewports the category controls live inside the
+    // MobileFilterDrawer — they are not in the DOM at all until it opens
+    // (the desktop sidebar is display:none there), so the mobile project
+    // must open the drawer first, exactly as a phone user does. Desktop
+    // keeps the direct sidebar click. The category assertion itself is
+    // unchanged: Adventure is still clicked and must still surface the trip.
+    const viewport = page.viewportSize();
+    const isMobileViewport = viewport !== null && viewport.width < 1024;
+    if (isMobileViewport) {
+      await page.getByRole('button', { name: /^filters/i }).click();
+    }
     await page.getByRole('button', { name: 'Adventure' }).click();
+    if (isMobileViewport) {
+      // Close the drawer via its footer CTA so the result is uncovered.
+      await page.getByRole('button', { name: /view .* trips/i }).click();
+    }
     await expect(page.getByRole('heading', { name: 'Atlas Weekend Escape' })).toBeVisible();
   });
 });

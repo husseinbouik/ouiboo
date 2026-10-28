@@ -14,26 +14,39 @@ import {
     PaymentLedgerSource,
     Prisma,
     RefundCaseStatus,
+    RefundEvidenceSource,
+    RefundEvidenceTier,
     RefundStatus,
 } from '@ouiboo/database';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
-import { escapeHtml, emailHeading, emailParagraph, renderEmail } from '../email/email-template';
+import { normalizeEmailLocale } from '../email/email-i18n';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { toMoneyDecimal, toMoneyString } from '../common/money.util';
+import { PRIVATE_FILE_PREFIX } from '../upload/upload.constants';
 import { GROUP_MINIMUM_NOT_REACHED_REASON } from '../staged-payments/staged-payments.util';
+import {
+    CANCELLATION_RULE_AGENCY_FAULT,
+    computeCancellationRefund,
+    resolveCancellationScale,
+} from '../cancellation/cancellation.util';
 import {
     REFUND_ACTIVE_STATUSES,
     REFUND_AGENCY_ACTION_STATUSES,
+    REFUND_AUDIT_AMOUNT_THRESHOLD_MAD,
+    REFUND_DISPUTE_WINDOW_DAYS,
     REFUND_OVERDUE_ELIGIBLE_STATUSES,
     REFUND_POLICY_VERSION,
     REFUND_REASON_ADMIN_INITIATED,
     REFUND_REASON_AGENCY_CANCELLATION,
+    REFUND_REASON_TRAVELLER_CANCELLATION,
     REFUND_REASON_TRAVELLER_REQUEST,
     REFUND_RESTRICTION_REASON,
     REFUND_RULE_MINIMUM_NOT_REACHED,
     REFUND_SYSTEM_ACTOR,
     canTransitionRefund,
+    qualifyingRefundCompletion,
+    refundAuditRequired,
     refundDueDate,
 } from './refunds.util';
 
@@ -46,6 +59,12 @@ import {
  * every transition, and restricts an agency's NEW bookings when a refund
  * goes overdue. It never moves money, never credits a balance, and never
  * cancels or blocks an existing booking because of a refund.
+ *
+ * #416 (Council P0-09): completion is evidence-gated. A case completes
+ * only on a qualifying RefundEvidence set (see qualifyingRefundCompletion
+ * in refunds.util) — the agency can no longer certify its own refund, so
+ * the overdue restriction can now only lift on an evidence-backed
+ * completion.
  */
 
 type Tx = Prisma.TransactionClient;
@@ -80,6 +99,10 @@ const CASE_INCLUDE = {
     },
     agency: { select: { id: true, companyName: true } },
     traveler: { select: { id: true, name: true, email: true } },
+    // #416C: the evidence trail travels with the case so every surface
+    // (agency form, admin audit queue, traveller view) can show WHAT a
+    // completion rests on. Append-only rows, oldest first.
+    evidence: { orderBy: { createdAt: 'asc' } },
 } satisfies Prisma.RefundCaseInclude;
 
 export function serializeRefundCase<T extends Record<string, any>>(refundCase: T) {
@@ -90,6 +113,17 @@ export function serializeRefundCase<T extends Record<string, any>>(refundCase: T
             refundCase.approvedAmount === null || refundCase.approvedAmount === undefined
                 ? null
                 : toMoneyString(refundCase.approvedAmount),
+        ...(Array.isArray(refundCase.evidence)
+            ? {
+                evidence: refundCase.evidence.map((row: Record<string, any>) => ({
+                    ...row,
+                    amount:
+                        row.amount === null || row.amount === undefined
+                            ? null
+                            : toMoneyString(row.amount),
+                })),
+            }
+            : {}),
     };
 }
 
@@ -194,7 +228,7 @@ export class RefundsService {
             },
         });
         let created = 0;
-        const createdCases: Array<{ agencyId: string; bookingId: string }> = [];
+        const createdCases: Array<{ agencyId: string; bookingId: string; caseId: string }> = [];
         for (const plan of plans) {
             const deposit = await this.db.externalPayment.findFirst({
                 where: {
@@ -225,11 +259,21 @@ export class RefundsService {
             });
             if (result.wasCreated) {
                 created += 1;
-                createdCases.push({ agencyId: plan.agencyId, bookingId: plan.bookingId });
+                createdCases.push({
+                    agencyId: plan.agencyId,
+                    bookingId: plan.bookingId,
+                    caseId: result.refundCase.id,
+                });
             }
         }
         for (const entry of createdCases) {
             await this.notifyAgencyRefundAction(entry.agencyId, entry.bookingId).catch(
+                () => undefined,
+            );
+            // #419: the traveller hears it too (see
+            // notifyTravelerRefundCaseOpened) — previously only the
+            // agency was ever told a refund case had opened.
+            await this.notifyTravelerRefundCaseOpened(entry.caseId).catch(
                 () => undefined,
             );
         }
@@ -237,13 +281,153 @@ export class RefundsService {
     }
 
     /**
+     * #419 (Council P0-16): when an automatic refund case opens (the
+     * minimum-group cascade), the TRAVELLER — the person owed money —
+     * must hear it, not only the agency. Previously the cascade emailed
+     * the agency and the traveller heard nothing.
+     *
+     * Best-effort and idempotent: the case's travelerNotifiedAt stamp is
+     * claimed atomically before sending, so the cascade path, the admin
+     * close-group path and the maintenance backstop can all call this
+     * without double-emailing. Never throws (the caller also guards).
+     * Only automatic refund-due cases (dedupeKey `refund-due:*`) use this
+     * copy: it explains the minimum-group reason, the amount, that the
+     * agency itself refunds (OuiBoo never holds traveller money), the
+     * 7-day deadline the agency works to, and the support split if the
+     * deadline passes.
+     */
+    async notifyTravelerRefundCaseOpened(caseId: string): Promise<boolean> {
+        const refundCase = await this.db.refundCase.findUnique({
+            where: { id: caseId },
+            include: {
+                traveler: { select: { email: true, name: true } },
+                agency: { select: { companyName: true } },
+                booking: {
+                    select: {
+                        locale: true,
+                        session: {
+                            select: {
+                                template: { select: { title: true } },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        if (!refundCase || refundCase.travelerNotifiedAt) {
+            return false;
+        }
+        const email = refundCase.traveler?.email;
+        if (!email) {
+            return false;
+        }
+        // Claim the stamp first: under concurrent callers only one send
+        // wins; a failed send keeps the stamp (the in-app refund view is
+        // the system of record, exactly like agencyNotifiedAt).
+        const claimed = await this.db.refundCase.updateMany({
+            where: { id: refundCase.id, travelerNotifiedAt: null },
+            data: { travelerNotifiedAt: new Date() },
+        });
+        if (claimed.count !== 1) {
+            return false;
+        }
+        const amount = toMoneyString(
+            refundCase.approvedAmount ?? refundCase.requestedAmount,
+        );
+        const tripTitle = refundCase.booking?.session?.template?.title;
+        // #424 follow-up: the copy lives in the email locale table and
+        // renders in the booking's recorded locale (English when none
+        // was recorded); the deadline label follows the same locale.
+        const emailLocale = normalizeEmailLocale(refundCase.booking?.locale);
+        const dueLabel = refundCase.refundDueAt
+            ? new Intl.DateTimeFormat(
+                { en: 'en-GB', fr: 'fr-FR', ar: 'ar-MA' }[emailLocale],
+                {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                },
+            ).format(refundCase.refundDueAt)
+            : null;
+        const supportEmail = process.env.SUPPORT_EMAIL || 'support@ouiboo.com';
+        const travelerUrl = process.env.TRAVELER_APP_URL || 'https://ouiboo-traveler.vercel.app';
+        const html = this.emailService.getRefundCaseOpenedTemplate(
+            {
+                tripTitle,
+                amount: amount ?? '',
+                currency: refundCase.currency,
+                agencyName: refundCase.agency?.companyName || null,
+                dueDateLabel: dueLabel,
+                bookingsUrl: `${travelerUrl}/bookings`,
+                supportEmail,
+            },
+            emailLocale,
+        );
+        await this.emailService.sendEmail(
+            email,
+            this.emailService.getRefundCaseOpenedSubject(emailLocale, dueLabel),
+            html,
+        );
+        return true;
+    }
+
+    /**
+     * #419: notify the travellers of every unstamped automatic refund
+     * case created for a session's bookings (the minimum-group cascade
+     * outcome). Called post-commit by the deadline job and the admin
+     * close-group intervention; per-case failures are isolated so one
+     * bad address never blocks the others. Returns how many travellers
+     * were notified.
+     */
+    async notifyTravelersRefundDueForSession(sessionId: string): Promise<number> {
+        const plans = await this.db.bookingPaymentPlan.findMany({
+            where: { sessionId, status: BookingPaymentPlanStatus.REFUND_DUE },
+            select: { bookingId: true },
+        });
+        if (!plans.length) {
+            return 0;
+        }
+        const cases = await this.db.refundCase.findMany({
+            where: {
+                bookingId: { in: plans.map((plan) => plan.bookingId) },
+                dedupeKey: { not: null },
+                travelerNotifiedAt: null,
+            },
+            select: { id: true, dedupeKey: true },
+        });
+        let notified = 0;
+        for (const refundCase of cases) {
+            if (!refundCase.dedupeKey?.startsWith('refund-due:')) {
+                continue;
+            }
+            const sent = await this.notifyTravelerRefundCaseOpened(refundCase.id).catch(
+                () => false,
+            );
+            if (sent) {
+                notified += 1;
+            }
+        }
+        return notified;
+    }
+
+    /**
      * Traveller-initiated refund request. Only bookings with money actually
      * verified as paid (to the agency) can open a case, and only one active
      * case may exist per booking.
+     *
+     * #417 (Council P0-11): when the request is a CANCELLATION
+     * (input.cancellation), the requested amount is not the traveller's
+     * ask — it is computed from the booking's cancellation scale (the
+     * snapshot taken at booking creation; legacy bookings resolve from
+     * the template's current policy, then the platform defaults) and the
+     * days remaining before the session starts. A timing inside the
+     * scale's zero band opens no case: nothing is refundable under the
+     * scale, and a claim that the agency is at fault follows the floor
+     * instead (agency/admin case, 100%).
      */
     async requestRefund(
         travelerId: string,
-        input: { bookingId: string; reason?: string },
+        input: { bookingId: string; reason?: string; cancellation?: boolean },
     ) {
         const booking = await this.loadBookingForCase(input.bookingId);
         if (booking.travelerId !== travelerId) {
@@ -255,9 +439,39 @@ export class RefundsService {
                 'No verified payment to refund for this booking',
             );
         }
+        let requestedAmount = verified.total;
+        let eligibilityRule: string | undefined;
+        let cancellationAudit: Record<string, unknown> | undefined;
+        if (input.cancellation) {
+            const scale = resolveCancellationScale(
+                booking.cancellationScale ?? booking.session.template.cancellationPolicy,
+            );
+            const computation = computeCancellationRefund({
+                paidAmount: verified.total,
+                sessionStart: booking.session.startDate,
+                cancelledAt: new Date(),
+                scale,
+                trigger: 'TRAVELLER',
+            });
+            if (computation.amount.lessThanOrEqualTo(0)) {
+                throw new BadRequestException(
+                    'This trip’s cancellation scale no longer provides a refund at this time. If the agency is at fault, the platform floor applies instead — contact support.',
+                );
+            }
+            requestedAmount = computation.amount;
+            eligibilityRule = computation.rule;
+            cancellationAudit = {
+                percent: computation.percent,
+                daysBeforeStart: computation.daysBeforeStart,
+                bandMinDaysBeforeStart: computation.band?.minDaysBeforeStart,
+                scaleVersion: scale.version,
+            };
+        }
         const reason = input.reason?.trim()
             ? input.reason.trim().slice(0, 500)
-            : REFUND_REASON_TRAVELLER_REQUEST;
+            : input.cancellation
+                ? REFUND_REASON_TRAVELLER_CANCELLATION
+                : REFUND_REASON_TRAVELLER_REQUEST;
         const created = await this.db.$transaction(async (tx) => {
             await this.assertNoActiveCase(tx, booking.id);
             const refundCase = await tx.refundCase.create({
@@ -267,9 +481,10 @@ export class RefundsService {
                     agencyId: booking.agencyId,
                     originalPaymentId: verified.primary.id,
                     externalPaymentReference: verified.primary.externalReference,
-                    requestedAmount: verified.total,
+                    requestedAmount,
                     currency: booking.currency,
                     reason,
+                    eligibilityRule,
                     policyVersion: REFUND_POLICY_VERSION,
                     status: RefundCaseStatus.REFUND_REQUESTED,
                     createdBy: travelerId,
@@ -277,10 +492,11 @@ export class RefundsService {
                 },
             });
             await this.audit(tx, { id: travelerId }, 'REFUND_CASE_CREATED', refundCase.id, {
-                trigger: 'TRAVELLER_REQUEST',
+                trigger: input.cancellation ? 'TRAVELLER_CANCELLATION' : 'TRAVELLER_REQUEST',
                 bookingId: booking.id,
-                amount: toMoneyString(verified.total),
+                amount: toMoneyString(requestedAmount),
                 currency: booking.currency,
+                ...(cancellationAudit ? { cancellation: cancellationAudit } : {}),
             });
             return refundCase;
         });
@@ -332,6 +548,12 @@ export class RefundsService {
                         (isAgency
                             ? REFUND_REASON_AGENCY_CANCELLATION
                             : REFUND_REASON_ADMIN_INITIATED),
+                    // #417 (Council P0-11): an agency-initiated case is an
+                    // agency-fault cancellation — the platform floor
+                    // applies (100% of verified payments, already the
+                    // requested/approved amount here) and the bands are
+                    // never consulted.
+                    eligibilityRule: isAgency ? CANCELLATION_RULE_AGENCY_FAULT : undefined,
                     policyVersion: REFUND_POLICY_VERSION,
                     status: isAgency
                         ? RefundCaseStatus.AGENCY_ACTION_REQUIRED
@@ -360,6 +582,15 @@ export class RefundsService {
 
     async beginReview(actor: RefundActor, role: RefundActorRole, tenantAgencyId: string | null, caseId: string) {
         const refundCase = await this.loadCaseForActor(caseId, role, tenantAgencyId);
+        // #416B: REFUND_COMPLETED → ELIGIBILITY_REVIEW exists in the
+        // transition map for the traveller dispute path ONLY. Review by
+        // an agency/admin must never reopen a completed case — that is
+        // the traveller's dispute (or the #423 admin repair).
+        if (refundCase.status === RefundCaseStatus.REFUND_COMPLETED) {
+            throw new BadRequestException(
+                'A completed refund case cannot return to review: it reopens only through the traveller dispute path or an admin repair',
+            );
+        }
         const updated = await this.db.$transaction((tx) =>
             this.transitionInTransaction(tx, refundCase, RefundCaseStatus.ELIGIBILITY_REVIEW, actor, {}),
         );
@@ -456,6 +687,174 @@ export class RefundsService {
         return serializeRefundCase(updated);
     }
 
+    /**
+     * #416 (Council P0-09): attach completion evidence to an open case —
+     * the agency's tier 2/3 submission (one shape, decision D9). The bank
+     * reference and the retained confirmation document are BOTH
+     * mandatory: a reference without retained proof is an assertion, not
+     * evidence. The proof must be a private upload owned by the agency
+     * (private/{userId}/…, the #415 identity-document pattern) — another
+     * user's key is rejected. The row records tier BANK_REFERENCE,
+     * upgraded to BANK_PROVIDER_CONFIRMATION when the reference matches
+     * a provider transaction id the system already holds for the booking
+     * (a PaymentAttempt.providerPaymentId from the PSP flow) — the
+     * reference is verified against system records, not merely asserted.
+     * Evidence is append-only: rows are never updated or deleted here.
+     */
+    async addEvidence(
+        actor: RefundActor,
+        role: RefundActorRole,
+        tenantAgencyId: string | null,
+        caseId: string,
+        input: { reference?: string; proofUrl?: string; amount?: string | number; note?: string },
+    ) {
+        if (role !== 'AGENCY') {
+            throw new ForbiddenException('Only the agency can submit refund evidence');
+        }
+        const refundCase = await this.loadCaseForActor(caseId, role, tenantAgencyId);
+        if (!REFUND_ACTIVE_STATUSES.includes(refundCase.status)) {
+            throw new BadRequestException(
+                'Evidence can only be attached to an open refund case',
+            );
+        }
+        const reference = input.reference?.trim();
+        if (!reference) {
+            throw new BadRequestException(
+                'A bank reference is required to submit refund evidence',
+            );
+        }
+        const proofUrl = input.proofUrl?.trim();
+        if (!proofUrl) {
+            throw new BadRequestException(
+                'A retained confirmation document is required to submit refund evidence',
+            );
+        }
+        const ownPrefix = `${PRIVATE_FILE_PREFIX}/${actor.id}/`;
+        if (!proofUrl.startsWith(ownPrefix)) {
+            throw new BadRequestException(
+                'proofUrl must reference a private document uploaded by this agency',
+            );
+        }
+        const providerAttempt = await this.db.paymentAttempt.findFirst({
+            where: { bookingId: refundCase.bookingId, providerPaymentId: reference },
+            select: { id: true },
+        });
+        const tier = providerAttempt
+            ? RefundEvidenceTier.BANK_PROVIDER_CONFIRMATION
+            : RefundEvidenceTier.BANK_REFERENCE;
+        const evidence = await this.db.$transaction(async (tx) => {
+            const created = await tx.refundEvidence.create({
+                data: {
+                    refundCaseId: refundCase.id,
+                    tier,
+                    source: RefundEvidenceSource.AGENCY,
+                    reference,
+                    proofUrl,
+                    amount:
+                        input.amount !== undefined
+                            ? toMoneyDecimal(input.amount, 'amount')
+                            : undefined,
+                    note: input.note?.trim() ? input.note.trim().slice(0, 1000) : undefined,
+                    recordedBy: actor.id,
+                },
+            });
+            await this.audit(tx, actor, 'REFUND_EVIDENCE_RECORDED', refundCase.id, {
+                evidenceId: created.id,
+                tier,
+                source: RefundEvidenceSource.AGENCY,
+            });
+            return created;
+        });
+        return {
+            ...evidence,
+            amount:
+                evidence.amount === null || evidence.amount === undefined
+                    ? null
+                    : toMoneyString(evidence.amount),
+        };
+    }
+
+    /**
+     * B8 (Council Session #2, #416): record an admin review as tier-5
+     * completion evidence — a SEPARATE step from complete(), in its
+     * own request and transaction. The review is a real review, not a
+     * completion-time assertion: a written reason is mandatory (stored
+     * as the evidence row's note and in the audit entry), AND the admin
+     * must attach a document (a private storage key from their own
+     * uploads) and/or an external reference they verified. A reason
+     * alone is not evidence; a "note at completion" never satisfies
+     * this. complete() later consumes the row like any other evidence,
+     * and every tier-5 completion is forced into the audit queue.
+     * Evidence is append-only: rows are never updated or deleted here.
+     */
+    async adminReview(
+        actor: RefundActor,
+        role: RefundActorRole,
+        caseId: string,
+        input: { reason?: string; reference?: string; proofUrl?: string },
+    ) {
+        if (role !== 'ADMIN') {
+            throw new ForbiddenException('Only an admin can record an admin review');
+        }
+        const refundCase = await this.loadCaseForActor(caseId, role, null);
+        if (!REFUND_ACTIVE_STATUSES.includes(refundCase.status)) {
+            throw new BadRequestException(
+                'An admin review can only be recorded on an open refund case',
+            );
+        }
+        const reason = input.reason?.trim();
+        if (!reason) {
+            throw new BadRequestException(
+                'A written reason is required to record an admin review',
+            );
+        }
+        const reference = input.reference?.trim() || undefined;
+        const proofUrl = input.proofUrl?.trim() || undefined;
+        if (!reference && !proofUrl) {
+            throw new BadRequestException(
+                'An admin review must attach a document or an external reference — a reason alone is not evidence',
+            );
+        }
+        if (proofUrl) {
+            const ownPrefix = `${PRIVATE_FILE_PREFIX}/${actor.id}/`;
+            if (!proofUrl.startsWith(ownPrefix)) {
+                throw new BadRequestException(
+                    'proofUrl must reference a private document uploaded by this admin',
+                );
+            }
+        }
+        const evidence = await this.db.$transaction(async (tx) => {
+            const created = await tx.refundEvidence.create({
+                data: {
+                    refundCaseId: refundCase.id,
+                    tier: RefundEvidenceTier.ADMIN_REVIEW,
+                    source: RefundEvidenceSource.ADMIN,
+                    reference,
+                    proofUrl,
+                    note: reason.slice(0, 1000),
+                    recordedBy: actor.id,
+                },
+            });
+            await this.audit(tx, actor, 'REFUND_EVIDENCE_RECORDED', refundCase.id, {
+                evidenceId: created.id,
+                tier: RefundEvidenceTier.ADMIN_REVIEW,
+                source: RefundEvidenceSource.ADMIN,
+                via: 'ADMIN_REVIEW',
+                reason: reason.slice(0, 1000),
+                hasReference: !!reference,
+                hasDocument: !!proofUrl,
+            });
+            return created;
+        });
+        return {
+            ...evidence,
+            amount:
+                evidence.amount === null || evidence.amount === undefined
+                    ? null
+                    : toMoneyString(evidence.amount),
+        };
+    }
+
     async complete(
         actor: RefundActor,
         role: RefundActorRole,
@@ -466,6 +865,38 @@ export class RefundsService {
         const refundCase = await this.loadCaseForActor(caseId, role, tenantAgencyId);
         const amount = toMoneyDecimal(refundCase.approvedAmount ?? refundCase.requestedAmount);
         const completed = await this.db.$transaction(async (tx) => {
+            // #416 (Council P0-09) + B8 (Council Session #2): the
+            // completion gate. Checked inside the transaction against
+            // the case's evidence rows, before any state moves. NO
+            // actor can complete a case without pre-existing qualifying
+            // evidence: an agency can never certify its own refund, and
+            // an admin completion no longer manufactures its own tier-5
+            // review in this transaction (the auto-create branch is
+            // deleted). An admin review must be recorded beforehand via
+            // adminReview() — a separate request and transaction — and
+            // complete() consumes that row like any other evidence.
+            if (!canTransitionRefund(refundCase.status, RefundCaseStatus.REFUND_COMPLETED)) {
+                throw new BadRequestException(
+                    `Refund case cannot move from ${refundCase.status} to ${RefundCaseStatus.REFUND_COMPLETED}`,
+                );
+            }
+            const evidenceRows = await tx.refundEvidence.findMany({
+                where: { refundCaseId: refundCase.id },
+            });
+            const qualifying = qualifyingRefundCompletion(evidenceRows);
+            if (!qualifying) {
+                throw new BadRequestException(
+                    'A refund case can only be completed with evidence: a PSP or bank/provider confirmation, a bank reference with a retained proof document, or an admin review recorded beforehand (the traveller\u2019s confirmation alone is not sufficient). Attach evidence — or record an admin review — before completing.',
+                );
+            }
+            // #416B: stamp the risk-based audit flag at completion time
+            // (plan §2.5) — hard signals or the deterministic sample.
+            const auditRequired = await this.computeAuditRequiredInTransaction(
+                tx,
+                refundCase,
+                qualifying.tier,
+                evidenceRows,
+            );
             const updated = await this.transitionInTransaction(
                 tx,
                 refundCase,
@@ -474,15 +905,25 @@ export class RefundsService {
                 {
                     initiatedAt: refundCase.initiatedAt ?? new Date(),
                     completedAt: new Date(),
+                    completionTier: qualifying.tier,
+                    auditRequired,
                     providerRefundId:
                         input.providerRefundId?.trim() || refundCase.providerRefundId,
-                    providerStatus: input.providerStatus?.trim() || 'COMPLETED',
+                    // #416: provider status is recorded as reported only —
+                    // the old `?? 'COMPLETED'` default manufactured a
+                    // provider fact out of an empty request.
+                    ...(input.providerStatus?.trim()
+                        ? { providerStatus: input.providerStatus.trim() }
+                        : {}),
                 },
             );
 
             // Record the refund as an external payment fact: the agency /
             // its provider returned the money to the traveller. OuiBoo
-            // only records it (ledger REFUND_COMPLETED).
+            // only records it (ledger REFUND_COMPLETED). #416: the
+            // ledger source derives from the qualifying evidence tier —
+            // a typed providerRefundId no longer manufactures
+            // GATEWAY_REFUND provenance.
             const payment = refundCase.originalPaymentId
                 ? await tx.externalPayment.findUnique({
                     where: { id: refundCase.originalPaymentId },
@@ -496,50 +937,437 @@ export class RefundsService {
                     bookingId: refundCase.bookingId,
                     agencyId: refundCase.agencyId,
                     travelerId: refundCase.travelerId,
+                    // #412 (B15): the ledger entry is keyed per case so
+                    // the second case of a staged booking (balance)
+                    // appends its own entry instead of deduplicating
+                    // against the deposit case's.
+                    refundCaseId: refundCase.id,
                     amount,
                     currency: refundCase.currency,
                     method: payment.method,
                     provider: payment.provider,
                     externalReference: payment.externalReference,
                     externalTransactionId:
-                        input.providerRefundId?.trim() || refundCase.providerRefundId || null,
+                        qualifying.reference
+                        || input.providerRefundId?.trim()
+                        || refundCase.providerRefundId
+                        || null,
                     custodian: payment.custodian,
-                    source: input.providerRefundId || refundCase.providerRefundId
-                        ? PaymentLedgerSource.GATEWAY_REFUND
-                        : PaymentLedgerSource.MANUAL_PROOF_REVIEW,
+                    source: qualifying.source,
                     stage: payment.stage,
                 });
             }
 
-            // Legacy booking refund fields stay consistent for existing UI.
-            const remainingVerified = await tx.externalPayment.count({
-                where: {
-                    bookingId: refundCase.bookingId,
-                    status: ExternalPaymentStatus.VERIFIED,
-                },
-            });
-            await tx.booking.update({
-                where: { id: refundCase.bookingId },
-                data: {
-                    refundAmount: amount,
-                    refundStatus: RefundStatus.PROCESSED,
-                    refundProcessedAt: new Date(),
-                    ...(remainingVerified === 0
-                        ? { paymentStatus: BookingPaymentStatus.REFUNDED }
-                        : {}),
-                },
-            });
-            await tx.bookingPaymentPlan.updateMany({
-                where: {
-                    bookingId: refundCase.bookingId,
-                    status: BookingPaymentPlanStatus.REFUND_DUE,
-                },
-                data: { status: BookingPaymentPlanStatus.REFUNDED },
-            });
+            await this.applyCompletionBookingEffectsInTransaction(tx, refundCase);
             return updated;
         });
         await this.refreshAgencyRestriction(completed.agencyId);
         return serializeRefundCase(completed);
+    }
+
+    /**
+     * The booking/plan side effects of a completion, shared by the
+     * gated complete() path and the PSP-confirmation path (#416B):
+     * legacy booking refund fields stay consistent for existing UI, and
+     * the staged plan's refund obligation closes (REFUND_DUE →
+     * REFUNDED). The ledger write itself is NOT here: complete()
+     * records it from the qualifying evidence, the PSP paths record it
+     * from the provider event — each completion writes it exactly once.
+     *
+     * #412 (Council Session #2, B15): the booking's money fields derive
+     * from the append-only LEDGER TOTALS (verified minus refunded),
+     * never from per-stage ExternalPayment row counts:
+     * - refundAmount is the accumulated refunded total across ALL of
+     *   the booking's cases. Staged bookings are refunded by the
+     *   TWO-CASE PROCEDURE — one case per stage payment (deposit case
+     *   first, balance case second; see docs/launch-ops/
+     *   ADMIN_FINANCE_PLAYBOOK.md §3) — and the second completion used
+     *   to overwrite the first case's amount with its own.
+     * - paymentStatus becomes REFUNDED exactly when the refunded total
+     *   covers everything that was verified (a fully refunded booking
+     *   previously stayed PAID, claimed "Paid in full" on the traveller
+     *   card, stayed billable and blocked trip archiving). A partial
+     *   refund leaves paymentStatus untouched: the traveller surfaces
+     *   derive the "Partially refunded" badge from paymentStatus +
+     *   refundStatus together.
+     * - On a full refund the plan also closes: a FULLY_PAID plan moves
+     *   to REFUNDED so plan-driven copy ("Paid in full — deposit and
+     *   balance confirmed") stops rendering for money that went back.
+     */
+    private async applyCompletionBookingEffectsInTransaction(
+        tx: Tx,
+        refundCase: { bookingId: string },
+    ) {
+        const totals = await this.externalPaymentsService.getBookingLedgerTotals(
+            tx,
+            refundCase.bookingId,
+        );
+        const fullyRefunded = totals.verifiedTotal.greaterThan(0)
+            && totals.refundedTotal.greaterThanOrEqualTo(totals.verifiedTotal);
+        await tx.booking.update({
+            where: { id: refundCase.bookingId },
+            data: {
+                refundAmount: totals.refundedTotal,
+                refundStatus: RefundStatus.PROCESSED,
+                refundProcessedAt: new Date(),
+                ...(fullyRefunded
+                    ? { paymentStatus: BookingPaymentStatus.REFUNDED }
+                    : {}),
+            },
+        });
+        await tx.bookingPaymentPlan.updateMany({
+            where: {
+                bookingId: refundCase.bookingId,
+                status: BookingPaymentPlanStatus.REFUND_DUE,
+            },
+            data: { status: BookingPaymentPlanStatus.REFUNDED },
+        });
+        if (fullyRefunded) {
+            await tx.bookingPaymentPlan.updateMany({
+                where: {
+                    bookingId: refundCase.bookingId,
+                    status: BookingPaymentPlanStatus.FULLY_PAID,
+                },
+                data: { status: BookingPaymentPlanStatus.REFUNDED },
+            });
+        }
+    }
+
+    /**
+     * #416B (Council P0-09, plan §2.5): evaluate the risk-based audit
+     * signals for a completion in flight. "Ever overdue" is read from
+     * the case's own transition audit trail (every transition is
+     * audited); the rest comes from the case row and its evidence.
+     */
+    private async computeAuditRequiredInTransaction(
+        tx: Tx,
+        refundCase: {
+            id: string;
+            status: RefundCaseStatus;
+            disputedAt?: Date | null;
+            approvedAmount?: Prisma.Decimal | null;
+            requestedAmount: Prisma.Decimal;
+        },
+        completionTier: RefundEvidenceTier,
+        evidenceRows: Array<{
+            tier: RefundEvidenceTier;
+            source?: RefundEvidenceSource | string | null;
+            reference?: string | null;
+            proofUrl?: string | null;
+        }>,
+    ): Promise<boolean> {
+        const amount = toMoneyDecimal(
+            refundCase.approvedAmount ?? refundCase.requestedAmount,
+        );
+        let wasEverOverdue = refundCase.status === RefundCaseStatus.REFUND_OVERDUE;
+        if (!wasEverOverdue) {
+            const transitions = await tx.auditLog.findMany({
+                where: {
+                    targetType: 'REFUND_CASE',
+                    targetId: refundCase.id,
+                    action: 'REFUND_CASE_TRANSITION',
+                },
+                select: { metadata: true },
+            });
+            wasEverOverdue = transitions.some(
+                (row) =>
+                    (row.metadata as { to?: string } | null)?.to
+                    === RefundCaseStatus.REFUND_OVERDUE,
+            );
+        }
+        return refundAuditRequired({
+            wasEverOverdue,
+            wasDisputed: !!refundCase.disputedAt,
+            amountAtOrAboveThreshold: amount.greaterThanOrEqualTo(
+                REFUND_AUDIT_AMOUNT_THRESHOLD_MAD,
+            ),
+            completionTier,
+            travellerConfirmationPresent: evidenceRows.some(
+                (e) => e.tier === RefundEvidenceTier.TRAVELLER_CONFIRMATION,
+            ),
+            caseId: refundCase.id,
+        });
+    }
+
+    /**
+     * #416B (Council P0-09, plan §2.3): wire a provider-confirmed refund
+     * (PSP webhook `refunded` event, or an executed
+     * PaymentRequestsService.requestRefundForAttempt) into the booking's
+     * RefundCase as tier-1 evidence. Called INSIDE the caller's
+     * transaction, AFTER the caller has recorded the refund in the
+     * ledger — this method never writes a ledger entry, so the refund
+     * is recorded exactly once (by the PSP path, source GATEWAY_REFUND).
+     *
+     * Behaviour:
+     * - No active case for the booking → nothing happens; the PSP
+     *   refund stands on its own, exactly as before #416.
+     * - Otherwise a PSP_CONFIRMATION evidence row is appended (source
+     *   SYSTEM_WEBHOOK; a repeat delivery with the same reference does
+     *   not duplicate the row).
+     * - A case in REFUND_INITIATED or AGENCY_ACTION_REQUIRED completes
+     *   as the system actor with completionTier PSP_CONFIRMATION
+     *   (an AGENCY_ACTION_REQUIRED case passes through REFUND_INITIATED
+     *   first — the state machine has no direct edge, and the audit
+     *   trail stays truthful). Any other state (e.g. ELIGIBILITY_REVIEW,
+     *   REFUND_OVERDUE) keeps the evidence for the normal flow: the
+     *   tier-1 row qualifies a later complete() call.
+     */
+    async recordPspRefundConfirmationInTransaction(
+        tx: Tx,
+        args: {
+            bookingId: string;
+            externalPaymentId?: string | null;
+            providerRefundId?: string | null;
+            providerStatus?: string | null;
+        },
+    ): Promise<{ matched: boolean; completed: boolean; agencyId: string | null }> {
+        const candidates = await tx.refundCase.findMany({
+            where: {
+                bookingId: args.bookingId,
+                status: { in: REFUND_ACTIVE_STATUSES },
+            },
+            orderBy: { createdAt: 'asc' },
+        });
+        if (candidates.length === 0) {
+            return { matched: false, completed: false, agencyId: null };
+        }
+        // One active case per booking is the invariant (assertNoActiveCase),
+        // but prefer the case opened against this attempt's payment when
+        // several exist (e.g. a closed-then-reopened history).
+        const refundCase =
+            (args.externalPaymentId
+                ? candidates.find((c) => c.originalPaymentId === args.externalPaymentId)
+                : undefined) ?? candidates[0];
+
+        const reference = args.providerRefundId?.trim() || null;
+        const existingEvidence = await tx.refundEvidence.findMany({
+            where: { refundCaseId: refundCase.id },
+        });
+        let evidenceRows = existingEvidence;
+        const alreadyRecorded = existingEvidence.some(
+            (e) =>
+                e.tier === RefundEvidenceTier.PSP_CONFIRMATION
+                && (e.reference ?? null) === reference,
+        );
+        if (!alreadyRecorded) {
+            const created = await tx.refundEvidence.create({
+                data: {
+                    refundCaseId: refundCase.id,
+                    tier: RefundEvidenceTier.PSP_CONFIRMATION,
+                    source: RefundEvidenceSource.SYSTEM_WEBHOOK,
+                    reference,
+                    recordedBy: REFUND_SYSTEM_ACTOR,
+                },
+            });
+            evidenceRows = [...existingEvidence, created];
+            await this.audit(
+                tx,
+                { id: REFUND_SYSTEM_ACTOR },
+                'REFUND_EVIDENCE_RECORDED',
+                refundCase.id,
+                {
+                    evidenceId: created.id,
+                    tier: RefundEvidenceTier.PSP_CONFIRMATION,
+                    source: RefundEvidenceSource.SYSTEM_WEBHOOK,
+                    via: 'PSP_REFUND_CONFIRMATION',
+                },
+            );
+        }
+
+        const completable =
+            refundCase.status === RefundCaseStatus.REFUND_INITIATED
+            || refundCase.status === RefundCaseStatus.AGENCY_ACTION_REQUIRED;
+        if (!completable) {
+            return { matched: true, completed: false, agencyId: refundCase.agencyId };
+        }
+
+        const systemActor = { id: REFUND_SYSTEM_ACTOR };
+        const now = new Date();
+        const providerPatch = {
+            providerRefundId: reference || refundCase.providerRefundId,
+            ...(args.providerStatus?.trim()
+                ? { providerStatus: args.providerStatus.trim() }
+                : {}),
+        };
+        let current: typeof refundCase = refundCase;
+        if (current.status === RefundCaseStatus.AGENCY_ACTION_REQUIRED) {
+            current = await this.transitionInTransaction(
+                tx,
+                current,
+                RefundCaseStatus.REFUND_INITIATED,
+                systemActor,
+                { initiatedAt: current.initiatedAt ?? now, ...providerPatch },
+            );
+        }
+        const auditRequired = await this.computeAuditRequiredInTransaction(
+            tx,
+            current,
+            RefundEvidenceTier.PSP_CONFIRMATION,
+            evidenceRows,
+        );
+        const updated = await this.transitionInTransaction(
+            tx,
+            current,
+            RefundCaseStatus.REFUND_COMPLETED,
+            systemActor,
+            {
+                initiatedAt: current.initiatedAt ?? now,
+                completedAt: now,
+                completionTier: RefundEvidenceTier.PSP_CONFIRMATION,
+                auditRequired,
+                ...providerPatch,
+            },
+        );
+        await this.applyCompletionBookingEffectsInTransaction(tx, updated);
+        return { matched: true, completed: true, agencyId: updated.agencyId };
+    }
+
+    /**
+     * #416B (Council P0-09, plan §2.4): the traveller confirms the
+     * refund money actually arrived. Records tier-4 evidence and stamps
+     * travellerConfirmedAt. Tier 4 NEVER completes a case on its own
+     * (the council rule): it corroborates a later evidence-backed
+     * completion (tiers 1–3, or an admin's tier-5 review). Only the
+     * case's own traveller, only while the refund is REFUND_INITIATED
+     * (sent by the agency, arrival pending), only once.
+     */
+    async confirmReceipt(travelerId: string, caseId: string) {
+        const refundCase = await this.loadCaseForActor(caseId, 'TRAVELER', travelerId);
+        if (refundCase.status !== RefundCaseStatus.REFUND_INITIATED) {
+            throw new BadRequestException(
+                'Receipt can only be confirmed while the refund has been initiated (sent) by the agency',
+            );
+        }
+        if (refundCase.travellerConfirmedAt) {
+            throw new BadRequestException(
+                'You have already confirmed receipt of this refund',
+            );
+        }
+        const updated = await this.db.$transaction(async (tx) => {
+            const claimed = await tx.refundCase.updateMany({
+                where: {
+                    id: refundCase.id,
+                    status: RefundCaseStatus.REFUND_INITIATED,
+                    travellerConfirmedAt: null,
+                },
+                data: { travellerConfirmedAt: new Date(), updatedBy: travelerId },
+            });
+            if (claimed.count !== 1) {
+                throw new ConflictException('Refund case was modified concurrently');
+            }
+            const evidence = await tx.refundEvidence.create({
+                data: {
+                    refundCaseId: refundCase.id,
+                    tier: RefundEvidenceTier.TRAVELLER_CONFIRMATION,
+                    source: RefundEvidenceSource.TRAVELLER,
+                    recordedBy: travelerId,
+                },
+            });
+            await this.audit(tx, { id: travelerId }, 'REFUND_EVIDENCE_RECORDED', refundCase.id, {
+                evidenceId: evidence.id,
+                tier: RefundEvidenceTier.TRAVELLER_CONFIRMATION,
+                source: RefundEvidenceSource.TRAVELLER,
+                via: 'TRAVELLER_CONFIRM_RECEIPT',
+            });
+            return tx.refundCase.findUniqueOrThrow({
+                where: { id: refundCase.id },
+                include: CASE_INCLUDE,
+            });
+        });
+        return serializeRefundCase(updated);
+    }
+
+    /**
+     * #416B (Council P0-09, plan §§2.4–2.5, decisions D7/D8): the
+     * traveller says the money never arrived — the completed case
+     * reopens. Only the case's own traveller, only from
+     * REFUND_COMPLETED, only within REFUND_DISPUTE_WINDOW_DAYS of the
+     * completion. The reopening clears completionTier (the recorded
+     * completion no longer stands) and stamps the dispute; the ledger
+     * is append-only and is NOT rewritten — the original
+     * REFUND_COMPLETED entry stays as a payment fact, while the
+     * booking/plan money fields revert so dashboards show the
+     * obligation as live again (booking refundStatus → PENDING, plan
+     * REFUNDED → REFUND_DUE). The agency's new-bookings restriction
+     * does NOT re-apply here: it returns only through the normal
+     * overdue path if the reopened case misses its (review-reset)
+     * deadline.
+     */
+    async disputeReceipt(travelerId: string, caseId: string, input: { reason: string }) {
+        const reason = input.reason?.trim();
+        if (!reason) {
+            throw new BadRequestException('A reason is required to dispute a refund');
+        }
+        const refundCase = await this.loadCaseForActor(caseId, 'TRAVELER', travelerId);
+        if (refundCase.status !== RefundCaseStatus.REFUND_COMPLETED) {
+            throw new BadRequestException('Only a completed refund can be disputed');
+        }
+        const completedAt = refundCase.completedAt;
+        const windowMs = REFUND_DISPUTE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+        if (!completedAt || Date.now() - completedAt.getTime() > windowMs) {
+            throw new BadRequestException(
+                `A completed refund can only be disputed within ${REFUND_DISPUTE_WINDOW_DAYS} days of completion`,
+            );
+        }
+        const updated = await this.db.$transaction(async (tx) => {
+            const reopened = await this.transitionInTransaction(
+                tx,
+                refundCase,
+                RefundCaseStatus.ELIGIBILITY_REVIEW,
+                { id: travelerId },
+                {
+                    disputeReason: reason.slice(0, 1000),
+                    disputedAt: new Date(),
+                    completionTier: null,
+                },
+            );
+            await this.audit(tx, { id: travelerId }, 'TRAVELLER_DISPUTE', refundCase.id, {
+                reason: reason.slice(0, 1000),
+                from: RefundCaseStatus.REFUND_COMPLETED,
+                completedAt: completedAt.toISOString(),
+            });
+            await tx.booking.update({
+                where: { id: refundCase.bookingId },
+                data: { refundStatus: RefundStatus.PENDING },
+            });
+            await tx.bookingPaymentPlan.updateMany({
+                where: {
+                    bookingId: refundCase.bookingId,
+                    status: BookingPaymentPlanStatus.REFUNDED,
+                },
+                data: { status: BookingPaymentPlanStatus.REFUND_DUE },
+            });
+            return reopened;
+        });
+        return serializeRefundCase(updated);
+    }
+
+    /**
+     * #416B (Council P0-09, plan §2.5): record that an admin has
+     * reviewed a completed case flagged for the risk-based audit queue
+     * (auditRequired). The audited toggle only stamps auditedAt /
+     * auditedBy — auditing is a review obligation, never a completion
+     * blocker. The audit-queue UI lands in 416C.
+     */
+    async markAudited(actor: RefundActor, caseId: string) {
+        const refundCase = await this.loadCaseForActor(caseId, 'ADMIN', null);
+        const updated = await this.db.$transaction(async (tx) => {
+            const claimed = await tx.refundCase.updateMany({
+                where: { id: refundCase.id, status: refundCase.status },
+                data: { auditedAt: new Date(), auditedBy: actor.id, updatedBy: actor.id },
+            });
+            if (claimed.count !== 1) {
+                throw new ConflictException('Refund case was modified concurrently');
+            }
+            await this.audit(tx, actor, 'REFUND_CASE_AUDITED', refundCase.id, {
+                auditRequired: refundCase.auditRequired,
+            });
+            return tx.refundCase.findUniqueOrThrow({
+                where: { id: refundCase.id },
+                include: CASE_INCLUDE,
+            });
+        });
+        return serializeRefundCase(updated);
     }
 
     async fail(
@@ -571,6 +1399,155 @@ export class RefundsService {
         // A failed case is not overdue yet, but if its deadline has already
         // passed the sweep will resurface it as REFUND_OVERDUE.
         await this.refreshAgencyRestriction(updated.agencyId);
+        return serializeRefundCase(updated);
+    }
+
+    // ------------------------------------------------------------------
+    // #423: admin-only repairs of stuck refund cases. These deliberately
+    // bypass REFUND_TRANSITIONS (terminal states have no exits there):
+    // they exist so a wrongly-completed case, a wrong approved amount,
+    // or a wrong payment link never again needs a direct DB edit. Each
+    // repair is claimed atomically and audited in the same transaction.
+    // ------------------------------------------------------------------
+
+    async repairCaseAsAdmin(
+        actor: RefundActor,
+        caseId: string,
+        input: {
+            action: 'reopen' | 'correct-amount' | 'relink-payment';
+            reason: string;
+            approvedAmount?: string | number;
+            originalPaymentId?: string | null;
+            externalPaymentReference?: string;
+        },
+    ) {
+        const reason = input.reason?.trim();
+        if (!reason) {
+            throw new BadRequestException('A reason is required for admin refund repairs');
+        }
+        const refundCase = await this.loadCaseForActor(caseId, 'ADMIN', null);
+        const updated = await this.db.$transaction(async (tx) => {
+            const before = {
+                status: refundCase.status,
+                approvedAmount:
+                    refundCase.approvedAmount === null || refundCase.approvedAmount === undefined
+                        ? null
+                        : toMoneyString(refundCase.approvedAmount),
+                originalPaymentId: refundCase.originalPaymentId ?? null,
+                externalPaymentReference: refundCase.externalPaymentReference ?? null,
+                completedAt: refundCase.completedAt ?? null,
+            };
+            // Unchecked input: the relink repair writes the
+            // originalPaymentId foreign-key scalar, which the checked
+            // update-many input does not expose.
+            const patch: Prisma.RefundCaseUncheckedUpdateManyInput = {};
+            let reopened = false;
+
+            if (input.action === 'reopen') {
+                if (
+                    refundCase.status !== RefundCaseStatus.REFUND_COMPLETED
+                    && refundCase.status !== RefundCaseStatus.REFUND_REJECTED
+                ) {
+                    throw new BadRequestException(
+                        'Only a completed or rejected refund case can be reopened',
+                    );
+                }
+                patch.status = RefundCaseStatus.ELIGIBILITY_REVIEW;
+                patch.completedAt = null;
+                reopened = true;
+            } else if (input.action === 'correct-amount') {
+                if (refundCase.status === RefundCaseStatus.REFUND_REJECTED) {
+                    throw new BadRequestException(
+                        'Reopen the rejected case before correcting its amount',
+                    );
+                }
+                if (input.approvedAmount === undefined) {
+                    throw new BadRequestException(
+                        'approvedAmount is required to correct a refund amount',
+                    );
+                }
+                const approvedAmount = toMoneyDecimal(input.approvedAmount, 'approvedAmount');
+                const requested = toMoneyDecimal(refundCase.requestedAmount);
+                if (approvedAmount.lessThanOrEqualTo(0) || approvedAmount.greaterThan(requested)) {
+                    throw new BadRequestException(
+                        'approvedAmount must be greater than 0 and no more than the requested amount',
+                    );
+                }
+                patch.approvedAmount = approvedAmount;
+                if (refundCase.status === RefundCaseStatus.REFUND_COMPLETED) {
+                    // Correcting a completed case reopens it in the same
+                    // intervention: the recorded completion no longer
+                    // matches the corrected obligation, so the case goes
+                    // back through review instead of silently rewriting
+                    // history. The original completion stays in the audit
+                    // trail (and its ledger entry is a payment fact, not
+                    // rewritten either).
+                    patch.status = RefundCaseStatus.ELIGIBILITY_REVIEW;
+                    patch.completedAt = null;
+                    reopened = true;
+                }
+            } else if (input.action === 'relink-payment') {
+                if (input.originalPaymentId !== undefined) {
+                    if (input.originalPaymentId === null || input.originalPaymentId.trim() === '') {
+                        patch.originalPaymentId = null;
+                        patch.externalPaymentReference =
+                            input.externalPaymentReference?.trim() || null;
+                    } else {
+                        const payment = await tx.externalPayment.findUnique({
+                            where: { id: input.originalPaymentId.trim() },
+                        });
+                        if (!payment) {
+                            throw new BadRequestException('Original payment not found');
+                        }
+                        if (payment.bookingId !== refundCase.bookingId) {
+                            throw new BadRequestException(
+                                'Original payment belongs to a different booking',
+                            );
+                        }
+                        patch.originalPaymentId = payment.id;
+                        patch.externalPaymentReference =
+                            input.externalPaymentReference?.trim() || payment.externalReference;
+                    }
+                } else if (input.externalPaymentReference !== undefined) {
+                    patch.externalPaymentReference = input.externalPaymentReference.trim() || null;
+                } else {
+                    throw new BadRequestException(
+                        'Nothing to relink: provide originalPaymentId or externalPaymentReference',
+                    );
+                }
+            } else {
+                throw new BadRequestException(`Unknown refund repair action: ${input.action}`);
+            }
+
+            const claimed = await tx.refundCase.updateMany({
+                where: { id: refundCase.id, status: refundCase.status },
+                data: { ...patch, updatedBy: actor.id },
+            });
+            if (claimed.count !== 1) {
+                throw new ConflictException('Refund case was modified concurrently');
+            }
+            const after = await tx.refundCase.findUniqueOrThrow({
+                where: { id: refundCase.id },
+                include: CASE_INCLUDE,
+            });
+            await this.audit(tx, actor, 'ADMIN_REFUND_REPAIRED', refundCase.id, {
+                repairAction: input.action,
+                reason: reason.slice(0, 1000),
+                reopened,
+                before,
+                after: {
+                    status: after.status,
+                    approvedAmount:
+                        after.approvedAmount === null || after.approvedAmount === undefined
+                            ? null
+                            : toMoneyString(after.approvedAmount),
+                    originalPaymentId: after.originalPaymentId ?? null,
+                    externalPaymentReference: after.externalPaymentReference ?? null,
+                    completedAt: after.completedAt ?? null,
+                },
+            });
+            return after;
+        });
         return serializeRefundCase(updated);
     }
 
@@ -767,12 +1744,25 @@ export class RefundsService {
         limit?: string;
         status?: string;
         agencyId?: string;
+        auditQueue?: string | boolean;
     }) {
         const { page, limit } = parseRefundPagination(query.page, query.limit);
         const status = this.parseStatusFilter(query.status);
+        // #416C: the audit queue is completed cases flagged by the
+        // risk-based audit rule (auditRequired stamped at completion in
+        // 416B) that no admin has reviewed yet. It pins the status to
+        // REFUND_COMPLETED — the audit flag only exists on completions.
+        const auditQueue = query.auditQueue === true || query.auditQueue === 'true';
         const where: Prisma.RefundCaseWhereInput = {
             ...(status ? { status } : {}),
             ...(query.agencyId ? { agencyId: query.agencyId } : {}),
+            ...(auditQueue
+                ? {
+                    status: RefundCaseStatus.REFUND_COMPLETED,
+                    auditRequired: true,
+                    auditedAt: null,
+                }
+                : {}),
         };
         const [cases, total] = await Promise.all([
             this.db.refundCase.findMany({
@@ -820,7 +1810,15 @@ export class RefundsService {
             include: {
                 session: {
                     include: {
-                        template: { select: { agencyId: true, title: true } },
+                        template: {
+                            select: {
+                                agencyId: true,
+                                title: true,
+                                // #417: legacy bookings (no scale snapshot)
+                                // resolve their scale from the template.
+                                cancellationPolicy: true,
+                            },
+                        },
                     },
                 },
             },
@@ -955,19 +1953,16 @@ export class RefundsService {
             return;
         }
         const appUrl = process.env.AGENCY_APP_URL || 'https://ouiboo-agency.vercel.app';
-        const html = renderEmail({
-            title: 'Refund action required',
-            preheader: 'A refund case needs your action in OuiBoo.',
-            content:
-                emailHeading('Refund action required') +
-                emailParagraph(
-                    `A refund case for booking ${escapeHtml(bookingId)} needs your action. ` +
-                    'Traveller payments are made directly to your agency, so the refund is ' +
-                    'processed by your agency — please review the case and initiate the refund ' +
-                    'before its deadline to avoid restrictions on new bookings.',
-                ) +
-                emailParagraph(`Open your refunds dashboard: ${escapeHtml(`${appUrl}/dashboard/refunds`)}`),
-        });
-        await this.emailService.sendEmail(email, 'Refund action required', html);
+        // #424: copy lives in the email locale table (en/fr/ar); the
+        // agency's locale is not recorded yet, so the default applies.
+        const html = this.emailService.getRefundActionRequiredTemplate(
+            bookingId,
+            `${appUrl}/dashboard/refunds`,
+        );
+        await this.emailService.sendEmail(
+            email,
+            this.emailService.getRefundActionRequiredSubject(),
+            html,
+        );
     }
 }
