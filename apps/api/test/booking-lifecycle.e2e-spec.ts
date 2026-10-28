@@ -167,6 +167,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             data: {
                 id: 'session-123',
                 templateId: template.id,
+                agencyId: template.agencyId,
                 startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
                 endDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000), // 10 days from now
                 price: 390,
@@ -332,6 +333,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: traveler.id,
                 guestsCount: 2,
                 totalAmount: 780,
@@ -417,6 +419,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 3,
                 totalAmount: 1170, // 390 * 3
@@ -463,6 +466,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,
@@ -608,6 +612,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,
@@ -642,6 +647,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,
@@ -671,6 +677,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: traveler.id,
                 guestsCount: 2,
                 totalAmount: 780,
@@ -728,6 +735,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,
@@ -780,6 +788,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,
@@ -913,6 +922,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking1 = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,
@@ -925,6 +935,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-456',
                 guestsCount: 2,
                 totalAmount: 780,
@@ -983,6 +994,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
             data: {
                 id: 'session-789',
                 templateId: template2.id,
+                agencyId: template2.agencyId,
                 startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
                 endDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000),
                 price: 200,
@@ -995,6 +1007,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,
@@ -1007,6 +1020,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         await db.booking.create({
             data: {
                 sessionId: session2.id,
+                agencyId: session2.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 400,
@@ -1054,6 +1068,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,
@@ -1111,6 +1126,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: traveler.id,
                 guestsCount: 2,
                 totalAmount: 780,
@@ -1252,6 +1268,7 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
         const booking = await db.booking.create({
             data: {
                 sessionId: session.id,
+                agencyId: session.agencyId,
                 travelerId: 'traveler-user-123',
                 guestsCount: 2,
                 totalAmount: 780,

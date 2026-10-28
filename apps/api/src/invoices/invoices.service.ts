@@ -192,6 +192,10 @@ export class InvoicesService {
             return {
                 bookingId: booking.id,
                 description: booking.session.template.title,
+                // #428: line items carry the invoice's tenant so the
+                // composite FKs bind them to that agency's invoice AND
+                // that agency's booking.
+                agencyId,
                 bookingDate: booking.confirmedAt ?? booking.bookingDate,
                 grossAmount,
                 commissionRate: rate,

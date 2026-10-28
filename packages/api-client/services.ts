@@ -3,7 +3,6 @@ import type {
   AdminAgencyRecord,
   AdminListParams,
   AdminPaymentRecord,
-  AdminProcessPayoutInput,
   AdminRefundBookingInput,
   AdminVerifyInput,
   AgencyBookingsParams,
@@ -18,7 +17,6 @@ import type {
   PageParams,
   PaginatedData,
   RefundPaymentInput,
-  RequestPayoutInput,
   TripDetails,
   TripListItem,
   TripsQueryParams,
@@ -28,7 +26,6 @@ import type {
   VerifyBookingPaymentInput,
   AgencyProfile,
   BookingDetails,
-  PayoutDetails,
   TripSession,
   User,
 } from './contracts'
@@ -140,14 +137,6 @@ export class AgencyApi extends ApiService {
     return this.get<BookingDetails[]>('/agency/bookings', { params })
   }
 
-  getPayouts(params: PageParams = {}) {
-    return this.get<PaginatedData<PayoutDetails>>('/agency/payouts', { params })
-  }
-
-  requestPayout(input: RequestPayoutInput) {
-    return this.post<PayoutDetails>('/agency/payouts', input)
-  }
-
   updateProfile(input: UpdateAgencyProfileInput) {
     return this.patch<AgencyProfile>('/agency/profile', input)
   }
@@ -191,14 +180,6 @@ export class AdminApi extends ApiService {
       `/admin/payments/${id}/verify`,
       input
     )
-  }
-
-  getPayoutRequests(params: AdminListParams = {}) {
-    return this.get<PaginatedData<PayoutDetails>>('/admin/payout-requests', { params })
-  }
-
-  processPayout({ id, status }: AdminProcessPayoutInput) {
-    return this.post<PayoutDetails>(`/admin/payouts/${id}/process`, { status })
   }
 
   getAuditLogs(params: AdminListParams = {}) {

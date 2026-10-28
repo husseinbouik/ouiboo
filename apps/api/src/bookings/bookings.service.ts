@@ -330,6 +330,10 @@ export class BookingsService {
             const booking = await tx.booking.create({
                 data: {
                     sessionId: dto.sessionId,
+                    // #428: stamp the tenant from the session's template —
+                    // the composite FK to TripSession(id, agencyId) makes a
+                    // mismatched pairing unrepresentable.
+                    agencyId: sessionWithInfo.template.agencyId,
                     travelerId,
                     guestsCount: dto.guestsCount,
                     totalAmount,

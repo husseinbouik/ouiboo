@@ -42,6 +42,13 @@ jest.setTimeout(120_000);
  * Mutations are always double-checked in the database afterwards:
  * a denied request must also have changed nothing.
  *
+ * #428 (Council P1-01) adds the structural layer beneath the service
+ * discipline: tenant-owned rows carry agencyId and are bound by
+ * composite foreign keys, so a cross-tenant pairing cannot be written
+ * to the database at all — the 'structural tenant isolation' block at
+ * the bottom proves the DB itself rejects mismatched rows even when
+ * application code (or a future bug) attempts them.
+ *
  * Intentional exceptions, asserted as such below:
  * - The public trip catalogue (GET /trips/:id) serves ACTIVE trips of
  *   VERIFIED agencies to anyone — that is the marketplace storefront.
@@ -188,6 +195,7 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
         await db.refundEvidence.deleteMany();
         await db.refundCase.deleteMany();
         await db.paymentStatusLedgerEntry.deleteMany();
+        await db.paymentTransaction.deleteMany();
         await db.paymentAttempt.deleteMany();
         await db.externalPayment.deleteMany();
         await db.agencyPaymentProfile.deleteMany();
@@ -284,9 +292,11 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
             data: tripTemplateFixture({ id: TEMPLATE_B, agencyId: AGENCY_B, title: 'Coastal Ride — Agency B', status: 'ACTIVE' } as any),
         });
 
-        const sessionData = (id: string, templateId: string, availableSeats: number) => ({
+        const sessionData = (id: string, templateId: string, agencyId: string, availableSeats: number) => ({
             id,
             templateId,
+            // #428: sessions are stamped with their template's tenant.
+            agencyId,
             startDate: new Date('2027-06-01T09:00:00.000Z'),
             endDate: new Date('2027-06-03T18:00:00.000Z'),
             price: 1200,
@@ -295,9 +305,9 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
             availableSeats,
             status: 'OPEN',
         });
-        await db.tripSession.create({ data: sessionData(SESSION_A, TEMPLATE_A, 17) as any });
-        await db.tripSession.create({ data: sessionData(SESSION_A_EMPTY, TEMPLATE_A, 20) as any });
-        await db.tripSession.create({ data: sessionData(SESSION_B, TEMPLATE_B, 20) as any });
+        await db.tripSession.create({ data: sessionData(SESSION_A, TEMPLATE_A, AGENCY_A, 17) as any });
+        await db.tripSession.create({ data: sessionData(SESSION_A_EMPTY, TEMPLATE_A, AGENCY_A, 20) as any });
+        await db.tripSession.create({ data: sessionData(SESSION_B, TEMPLATE_B, AGENCY_B, 20) as any });
 
         // Booking whose traveller uploaded a manual payment proof that is
         // still awaiting the owning agency's review.
@@ -305,6 +315,7 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
             data: {
                 id: BOOKING_PROOF,
                 sessionId: SESSION_A,
+                agencyId: AGENCY_A,
                 travelerId: TRAVELER_1,
                 status: 'AWAITING_VALIDATION',
                 paymentStatus: 'UNPAID',
@@ -328,6 +339,7 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
             data: {
                 id: BOOKING_UPLOAD,
                 sessionId: SESSION_A,
+                agencyId: AGENCY_A,
                 travelerId: TRAVELER_1,
                 status: 'AWAITING_VALIDATION',
                 paymentStatus: 'UNPAID',
@@ -344,6 +356,7 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
             data: {
                 id: BOOKING_PAID,
                 sessionId: SESSION_A,
+                agencyId: AGENCY_A,
                 travelerId: TRAVELER_1,
                 status: 'CONFIRMED',
                 paymentStatus: 'PAID',
@@ -960,6 +973,150 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
     // export. If a wallet route or a cross-tenant export leak is ever
     // reintroduced, these tests fail.
     // ------------------------------------------------------------------
+    // ------------------------------------------------------------------
+    // Structural tenant isolation (#428, Council P1-01)
+    //
+    // The blocks above prove the SERVICES honour the caller's tenant.
+    // This block proves the DATABASE refuses cross-tenant pairings:
+    // every write below is attempted directly through Prisma, bypassing
+    // all service discipline, and must be rejected by a composite
+    // foreign key. Positive controls confirm correctly-stamped rows
+    // still insert.
+    // ------------------------------------------------------------------
+    describe('structural tenant isolation (#428)', () => {
+        const futureSession = {
+            startDate: new Date('2027-07-01T09:00:00.000Z'),
+            endDate: new Date('2027-07-03T18:00:00.000Z'),
+            price: 1200,
+            totalSeats: 10,
+            availableSeats: 10,
+            status: 'OPEN',
+        };
+
+        it('rejects a session stamped with a foreign tenant for agency A’s template', async () => {
+            await expect(db.tripSession.create({
+                data: { id: 'ct-session-forged', templateId: TEMPLATE_A, agencyId: AGENCY_B, ...futureSession } as any,
+            })).rejects.toThrow();
+            expect(await db.tripSession.findUnique({ where: { id: 'ct-session-forged' } })).toBeNull();
+        });
+
+        it('rejects a booking stamped with a foreign tenant for agency A’s session', async () => {
+            await expect(db.booking.create({
+                data: {
+                    id: 'ct-booking-forged', sessionId: SESSION_A, agencyId: AGENCY_B,
+                    travelerId: TRAVELER_1, totalAmount: 1200, guestsCount: 1, status: 'PENDING',
+                } as any,
+            })).rejects.toThrow();
+            expect(await db.booking.findUnique({ where: { id: 'ct-booking-forged' } })).toBeNull();
+        });
+
+        it('rejects an external payment pairing agency B with agency A’s booking', async () => {
+            await expect(db.externalPayment.create({
+                data: {
+                    id: 'ct-payment-forged', bookingId: BOOKING_PROOF, agencyId: AGENCY_B,
+                    travelerId: TRAVELER_1, amount: 1200, method: 'MANUAL', custodian: 'AGENCY', stage: 'FULL',
+                } as any,
+            })).rejects.toThrow();
+            expect(await db.externalPayment.findUnique({ where: { id: 'ct-payment-forged' } })).toBeNull();
+        });
+
+        it('rejects a payment plan pairing agency B with agency A’s booking/session', async () => {
+            await expect(db.bookingPaymentPlan.create({
+                data: {
+                    id: 'ct-plan-forged', bookingId: BOOKING_UPLOAD, sessionId: SESSION_A, agencyId: AGENCY_B,
+                    totalAmount: 1200, depositAmount: 300, balanceAmount: 900,
+                    minimumParticipants: 1, confirmationDeadline: new Date('2027-05-01T00:00:00.000Z'),
+                    paymentPolicyVersion: 'ct-v1', refundPolicyVersion: 'ct-v1',
+                } as any,
+            })).rejects.toThrow();
+            expect(await db.bookingPaymentPlan.findUnique({ where: { id: 'ct-plan-forged' } })).toBeNull();
+        });
+
+        it('rejects a gateway payment transaction stamped with a foreign tenant', async () => {
+            await expect(db.paymentTransaction.create({
+                data: {
+                    id: 'ct-paytx-forged', bookingId: BOOKING_PAID, agencyId: AGENCY_B,
+                    amount: 1200, method: 'GATEWAY', status: 'SUCCESS', provider: 'CMI',
+                } as any,
+            })).rejects.toThrow();
+            expect(await db.paymentTransaction.findUnique({ where: { id: 'ct-paytx-forged' } })).toBeNull();
+        });
+
+        it('rejects a refund case pairing agency B with agency A’s booking', async () => {
+            await expect(db.refundCase.create({
+                data: {
+                    id: 'ct-refund-forged', bookingId: BOOKING_PAID, travelerId: TRAVELER_1, agencyId: AGENCY_B,
+                    requestedAmount: 1200, reason: 'Forged cross-tenant case', policyVersion: 'ct-v1',
+                } as any,
+            })).rejects.toThrow();
+            expect(await db.refundCase.findUnique({ where: { id: 'ct-refund-forged' } })).toBeNull();
+        });
+
+        it('rejects a ledger entry whose tenant disagrees with its payment and booking', async () => {
+            await expect(db.paymentStatusLedgerEntry.create({
+                data: {
+                    id: 'ct-ledger-forged', externalPaymentId: PAYMENT_A, bookingId: BOOKING_PAID, agencyId: AGENCY_B,
+                    travelerId: TRAVELER_1, type: 'PAYMENT_VERIFIED', amount: 1200,
+                    custodian: 'AGENCY', status: 'VERIFIED', source: 'MANUAL_PROOF_REVIEW',
+                } as any,
+            })).rejects.toThrow();
+            expect(await db.paymentStatusLedgerEntry.findUnique({ where: { id: 'ct-ledger-forged' } })).toBeNull();
+        });
+
+        it('rejects a review pairing agency A’s booking with agency B’s trip', async () => {
+            await expect(db.review.create({
+                data: {
+                    id: 'ct-review-forged', bookingId: BOOKING_UPLOAD, agencyId: AGENCY_A,
+                    travelerId: TRAVELER_1, tripTemplateId: TEMPLATE_B, rating: 5,
+                } as any,
+            })).rejects.toThrow();
+            expect(await db.review.findUnique({ where: { id: 'ct-review-forged' } })).toBeNull();
+        });
+
+        it('rejects an invoice line item stamped with a foreign tenant', async () => {
+            await expect(db.invoiceLineItem.create({
+                data: {
+                    id: 'ct-line-forged', invoiceId: INVOICE_A, agencyId: AGENCY_B, bookingId: BOOKING_PAID,
+                    description: 'Forged line', bookingDate: new Date(), grossAmount: 1000,
+                    commissionRate: 10, commissionAmount: 100,
+                } as any,
+            })).rejects.toThrow();
+            expect(await db.invoiceLineItem.findUnique({ where: { id: 'ct-line-forged' } })).toBeNull();
+        });
+
+        it('positive control: correctly-stamped rows insert across the whole chain', async () => {
+            const session = await db.tripSession.create({
+                data: { id: 'ct-session-b2', templateId: TEMPLATE_B, agencyId: AGENCY_B, ...futureSession } as any,
+            });
+            expect(session.agencyId).toBe(AGENCY_B);
+
+            const booking = await db.booking.create({
+                data: {
+                    id: 'ct-booking-b', sessionId: 'ct-session-b2', agencyId: AGENCY_B,
+                    travelerId: TRAVELER_2, totalAmount: 1200, guestsCount: 1, status: 'CONFIRMED',
+                } as any,
+            });
+            expect(booking.agencyId).toBe(AGENCY_B);
+
+            const payTx = await db.paymentTransaction.create({
+                data: {
+                    id: 'ct-paytx-a', bookingId: BOOKING_PAID, agencyId: AGENCY_A,
+                    amount: 1200, method: 'GATEWAY', status: 'SUCCESS', provider: 'CMI',
+                } as any,
+            });
+            expect(payTx.agencyId).toBe(AGENCY_A);
+
+            const line = await db.invoiceLineItem.create({
+                data: {
+                    id: 'ct-line-a', invoiceId: INVOICE_A, agencyId: AGENCY_A, bookingId: BOOKING_PAID,
+                    description: 'Legitimate line', bookingDate: new Date(), grossAmount: 1000,
+                    commissionRate: 10, commissionAmount: 100,
+                } as any,
+            });
+            expect(line.agencyId).toBe(AGENCY_A);
+        });
+    });
+
     describe('wallet and payout surfaces (B22(e))', () => {
         it('exposes no wallet/payout HTTP routes to any actor', async () => {
             for (const token of [tokenA, tokenB, tokenT1, tokenAdmin]) {

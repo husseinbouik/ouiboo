@@ -180,6 +180,7 @@ describe('E2E: payment records replace the traveller-money wallet', () => {
             data: {
                 id: 'session-payments-1',
                 templateId: 'template-payments-1',
+                agencyId: AGENCY_PROFILE_ID,
                 startDate: new Date(Date.now() + 7 * 86_400_000),
                 endDate: new Date(Date.now() + 9 * 86_400_000),
                 price: 390,
@@ -192,6 +193,7 @@ describe('E2E: payment records replace the traveller-money wallet', () => {
             data: {
                 id: BOOKING_ID,
                 sessionId: 'session-payments-1',
+                agencyId: AGENCY_PROFILE_ID,
                 travelerId: 'traveler-payments-user',
                 guestsCount: 2,
                 totalAmount: 780,

@@ -2,7 +2,6 @@ import { z } from "zod";
 import {
     BookingPaymentStatus,
     BookingStatus,
-    PayoutStatus,
     PaymentMethod,
     PaymentProvider,
     RefundStatus,
@@ -247,26 +246,6 @@ export const PaymentProofSchema = z.object({
     uploadedAt: z.string().datetime(),
     status: z.nativeEnum(VerificationStatus),
     rejectionReason: z.string().optional(),
-});
-
-export const PayoutRequestSchema = z.object({
-    id: z.string(),
-    agencyId: z.string(),
-    amount: DecimalStringSchema,
-    status: z.nativeEnum(PayoutStatus),
-    requestedAt: z.string().datetime(),
-    processedAt: z.string().datetime().optional(),
-    bankDetails: z.string(),
-});
-
-export const PayoutDetailsSchema = PayoutRequestSchema.extend({
-    agency: z.object({
-        companyName: z.string(),
-        id: z.string(),
-        user: z.object({
-            email: z.string().email().nullable().optional(),
-        }).nullable().optional(),
-    }),
 });
 
 export const BookingDetailsSchema = BookingSchema.extend({

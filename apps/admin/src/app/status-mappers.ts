@@ -2,13 +2,11 @@ import {
   BookingPaymentStatus,
   BookingStatus,
   LicenceStatus,
-  PayoutStatus,
   SubscriptionStatus,
   VerificationStatus,
   type BookingPaymentStatusType,
   type BookingStatusType,
   type LicenceStatusType,
-  type PayoutStatusType,
   type VerificationStatusType,
 } from '@ouiboo/types';
 
@@ -232,40 +230,6 @@ export const getAdminBookingPaymentBadgeLabel = (status: BookingPaymentStatusTyp
   }
   return status;
 };
-
-export const getAdminPayoutBadgeMeta = (status: PayoutStatusType, t?: Translate) => {
-  if (status === PayoutStatus.Paid) {
-    return {
-      className: 'bg-success/15 text-success',
-      helperText: t ? t('dashboard.status.payoutPaidHelper') : 'Transfer completed',
-      label: t ? t('dashboard.status.payoutPaidLabel') : 'Paid',
-    };
-  }
-
-  if (status === PayoutStatus.Rejected) {
-    return {
-      className: 'bg-danger/15 text-danger',
-      helperText: t ? t('dashboard.status.payoutRejectedHelper') : 'Funds returned to the agency',
-      label: t ? t('dashboard.status.payoutRejectedLabel') : 'Rejected',
-    };
-  }
-
-  if (status === PayoutStatus.Approved) {
-    return {
-      className: 'bg-secondary text-secondary-foreground',
-      helperText: t ? t('dashboard.status.payoutApprovedHelper') : 'Approved and waiting for processing',
-      label: t ? t('dashboard.status.payoutApprovedLabel') : 'Approved',
-    };
-  }
-
-  return {
-    className: 'bg-warning/15 text-warning',
-    helperText: t ? t('dashboard.status.payoutPendingHelper') : 'Pending admin review',
-    label: t ? t('dashboard.status.payoutPendingLabel') : 'Pending',
-  };
-};
-
-export const isRejectedPayout = (status: PayoutStatusType) => status === PayoutStatus.Rejected;
 
 // #423: human-readable labels for the admin intervention audit actions,
 // so the audit trail reads as operations, not constants. Unknown actions
