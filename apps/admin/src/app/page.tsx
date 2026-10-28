@@ -18,6 +18,7 @@ import {
   Receipt,
   RotateCcw,
   KeyRound,
+  LifeBuoy,
 } from 'lucide-react';
 import { ConfirmDialog, CardListSkeleton } from '@ouiboo/ui';
 import { useAuth } from '@/components/AuthContext';
@@ -62,6 +63,7 @@ import RefundsTab from '@/components/dashboard/RefundsTab';
 import BetaMetricsPanel from '@/components/dashboard/BetaMetricsPanel';
 import { countRefundUrgency, filterRefundCasesByUrgency, type RefundUrgency } from '@/components/dashboard/refund-urgency';
 import SecurityTab from '@/components/dashboard/SecurityTab';
+import SupportTab from '@/components/dashboard/SupportTab';
 import AgencyReviewModal from '@/components/dashboard/AgencyReviewModal';
 
 /**
@@ -629,6 +631,11 @@ export default function AdminDashboard() {
       title: t('dashboard.meta.security.title'),
       description: t('dashboard.meta.security.description'),
       searchPlaceholder: t('dashboard.meta.security.searchPlaceholder')
+    },
+    SUPPORT: {
+      title: t('dashboard.meta.support.title'),
+      description: t('dashboard.meta.support.description'),
+      searchPlaceholder: t('dashboard.meta.support.searchPlaceholder')
     }
   } as const;
 
@@ -687,6 +694,13 @@ export default function AdminDashboard() {
       key: 'SECURITY',
       label: t('dashboard.tabs.security'),
       icon: KeyRound,
+    },
+    {
+      // #581 rework: support queue tab. DashboardShell turns this one
+      // nav item into BOTH the sidebar entry and the ⌘K palette entry.
+      key: 'SUPPORT',
+      label: t('dashboard.tabs.support'),
+      icon: LifeBuoy,
     },
   ] as const;
 
@@ -887,6 +901,10 @@ export default function AdminDashboard() {
 
         {activeTab === 'SECURITY' && (
           <SecurityTab t={t} />
+        )}
+
+        {activeTab === 'SUPPORT' && (
+          <SupportTab t={t} />
         )}
 
         {activeTab === 'REFUNDS' && showRefundsSkeleton && (

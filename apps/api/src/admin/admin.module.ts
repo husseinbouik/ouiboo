@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AdminController } from './admin.controller';
+import { AdminDiagnosticsController } from './admin-diagnostics.controller';
 import { AdminInterventionsController } from './admin-interventions.controller';
 import { AdminInterventionsService } from './admin-interventions.service';
 import { AdminSeedService } from './admin-seed.service';
@@ -12,7 +13,7 @@ import { PaymentsModule } from '../payments/payments.module';
 
 @Module({
     imports: [DatabaseModule, ExternalPaymentsModule, StagedPaymentsModule, RefundsModule, PaymentsModule],
-    controllers: [AdminController, AdminInterventionsController],
+    controllers: [AdminController, AdminInterventionsController, AdminDiagnosticsController],
     providers: [AdminSeedService, AuditLogService, AdminInterventionsService],
 })
 export class AdminModule { }

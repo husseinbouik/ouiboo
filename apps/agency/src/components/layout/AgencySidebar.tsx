@@ -10,6 +10,7 @@ import {
   ChevronRight,
   CreditCard,
   LayoutDashboard,
+  LifeBuoy,
   LogOut,
   Map,
   PlusCircle,
@@ -52,6 +53,10 @@ export function AgencySidebar() {
     { name: t('sidebar.billing'), href: '/dashboard/settings/billing', icon: Receipt },
     { name: t('sidebar.compliance'), href: '/dashboard/onboarding', icon: ShieldCheck },
     { name: t('sidebar.settings'), href: '/dashboard/settings', icon: Settings },
+    // #556 rework: the support page — reachable from the sidebar like
+    // every other workspace section (dashboard/refunds/onboarding also
+    // render the SupportBlock, which links here).
+    { name: t('sidebar.support'), href: '/dashboard/support', icon: LifeBuoy },
   ];
 
   const toggleCollapse = () => {

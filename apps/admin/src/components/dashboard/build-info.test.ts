@@ -30,4 +30,25 @@ describe('getAdminBuildInfo (#580)', () => {
   it('never claims server flags are derivable from the client build', () => {
     expect(getAdminBuildInfo({}).serverFlagsDerivable).toBe(false);
   });
+
+  it('falls back to the Vercel system-env stamp when the config stamp is absent (#580 rework)', () => {
+    const info = getAdminBuildInfo({
+      NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA: 'b56adc4deadbeefdeadbeefdeadbeefdeadbeef',
+      NEXT_PUBLIC_VERCEL_ENV: 'preview',
+    });
+    expect(info.buildSha).toBe('b56adc4');
+    expect(info.fullBuildSha).toBe('b56adc4deadbeefdeadbeefdeadbeefdeadbeef');
+    expect(info.environment).toBe('preview');
+  });
+
+  it('prefers the config stamp over the Vercel system-env stamp', () => {
+    const info = getAdminBuildInfo({
+      NEXT_PUBLIC_BUILD_SHA: 'aaaaaaaabbbbbbbb',
+      NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA: 'ccccccccdddddddd',
+      NEXT_PUBLIC_BUILD_ENV: 'production',
+      NEXT_PUBLIC_VERCEL_ENV: 'preview',
+    });
+    expect(info.buildSha).toBe('aaaaaaa');
+    expect(info.environment).toBe('production');
+  });
 });

@@ -46,6 +46,7 @@ export function AgencyCommandPalette() {
       { label: t('sidebar.billing'), href: '/dashboard/settings/billing' },
       { label: t('sidebar.compliance'), href: '/dashboard/onboarding' },
       { label: t('sidebar.settings'), href: '/dashboard/settings' },
+      { label: t('sidebar.support'), href: '/dashboard/support' },
       { label: t('sidebar.createNew'), href: '/dashboard/trips/create' },
     ];
     return [

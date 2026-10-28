@@ -4,7 +4,38 @@ import type {
   VerificationStatusType,
 } from '@ouiboo/types';
 
-export type AdminTab = 'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'GROUPS' | 'PAYMENT_PROOFS' | 'AUDIT' | 'INVOICES' | 'REFUNDS' | 'SECURITY';
+export type AdminTab = 'PENDING' | 'AGENCIES' | 'BOOKINGS' | 'GROUPS' | 'PAYMENT_PROOFS' | 'AUDIT' | 'INVOICES' | 'REFUNDS' | 'SECURITY' | 'SUPPORT';
+
+/** #581 rework: one help-centre ticket from GET /admin/support/tickets. */
+export type AdminSupportTicket = {
+  id: string;
+  requesterName: string;
+  requesterEmail: string;
+  requesterRole: string;
+  category: string;
+  subject: string;
+  message: string;
+  bookingRef?: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt?: string;
+  firstResponseAt?: string | null;
+  resolvedAt?: string | null;
+  resolvedBy?: string | null;
+};
+
+export type SupportTicketStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+
+/** #580 rework: GET /admin/diagnostics/flags — the API's effective flags. */
+export type AdminServerFlags = {
+  generatedAt: string;
+  environment: string;
+  featureFlags: Array<{ name: string; enabled: boolean }>;
+  flags: {
+    madOnlyCatalog: boolean;
+    adminMfaRequired: boolean;
+  };
+};
 
 /** #418: admin MFA status from GET /auth/mfa/status. */
 export type AdminMfaStatus = {
@@ -192,6 +223,7 @@ export type AdminAgency = {
 export type AdminTrip = {
   id: string;
   title: string;
+  description?: string | null;
   status?: TripStatusType;
   images?: string[];
   agency: {

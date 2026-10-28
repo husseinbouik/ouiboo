@@ -50,14 +50,24 @@ const apiConnectSrc = (() => {
 })();
 
 const nextConfig: NextConfig = {
-  // #580: build stamp for the admin shell's flag diagnostics. Vercel
-  // provides the git SHA / environment at build time; they are baked in
-  // here as public values (a commit SHA is not a secret) so the deployed
-  // admin can report exactly which build it is. Locally both stay unset
-  // and the readout honestly reports "unknown".
+  // #580 + rework: build stamp for the admin shell's flag diagnostics.
+  // Vercel provides the git SHA / environment at build time under the
+  // VERCEL_* system names, and — when "Automatically expose System
+  // Environment Variables" is on — also as NEXT_PUBLIC_VERCEL_*. PR #598
+  // stamped from VERCEL_GIT_COMMIT_SHA alone, and the client then read
+  // the result through a dynamic process.env lookup Next.js cannot
+  // inline, so the deployed readout was always "unknown·unknown"
+  // regardless of the stamp. Accept every spelling here as a fallback
+  // chain; build-info.ts reads the baked values literally.
+  // Locally all stay unset and the readout honestly reports "unknown".
   env: {
-    NEXT_PUBLIC_BUILD_SHA: process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_SHA || '',
-    NEXT_PUBLIC_BUILD_ENV: process.env.VERCEL_ENV || '',
+    NEXT_PUBLIC_BUILD_SHA:
+      process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ||
+      process.env.VERCEL_GIT_COMMIT_SHA ||
+      process.env.GIT_SHA ||
+      '',
+    NEXT_PUBLIC_BUILD_ENV:
+      process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.VERCEL_ENV || '',
   },
   output: "standalone",
   experimental: {

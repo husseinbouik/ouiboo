@@ -1,7 +1,7 @@
 import type { AxiosError } from 'axios';
 import type { AdminTab, ApiErrorResponse } from './types';
 
-export const ADMIN_TABS: AdminTab[] = ['PENDING', 'AGENCIES', 'BOOKINGS', 'GROUPS', 'PAYMENT_PROOFS', 'AUDIT', 'INVOICES', 'REFUNDS', 'SECURITY'];
+export const ADMIN_TABS: AdminTab[] = ['PENDING', 'AGENCIES', 'BOOKINGS', 'GROUPS', 'PAYMENT_PROOFS', 'AUDIT', 'INVOICES', 'REFUNDS', 'SECURITY', 'SUPPORT'];
 export const ADMIN_PAGE_LIMIT = 25;
 
 export const isAdminTab = (value: string | null): value is AdminTab => {

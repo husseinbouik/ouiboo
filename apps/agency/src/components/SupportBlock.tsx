@@ -1,6 +1,7 @@
 'use client';
 
-import { LifeBuoy, Mail } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, LifeBuoy, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@ouiboo/ui';
 import { NORMAL_SUPPORT_RESPONSE_HOURS } from '@ouiboo/utils';
@@ -40,6 +41,14 @@ export function SupportBlock() {
         <p className="text-sm text-muted-foreground leading-relaxed">
           {t('support.escalationRole')}
         </p>
+        {/* #556 rework: the block now links to the support PAGE (which
+            carries the ticket form); before the rework this route 404'd. */}
+        <Link
+          href="/dashboard/support"
+          className="inline-flex items-center gap-2 text-sm font-black text-primary hover:underline"
+        >
+          {t('support.openPage')} <ArrowRight className="h-4 w-4" />
+        </Link>
       </CardContent>
     </Card>
   );
