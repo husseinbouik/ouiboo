@@ -387,9 +387,13 @@ describe('PaymentsService - Security Tests', () => {
         }),
         PaymentLedgerEntryType.PAYMENT_CAPTURED,
       );
-      expect(prismaService.wallet.upsert).not.toHaveBeenCalled();
-      expect(prismaService.wallet.update).not.toHaveBeenCalled();
-      expect(prismaService.walletTransaction.create).not.toHaveBeenCalled();
+      // #429: the wallet delegates were deleted with the custody
+      // tables, so they are reached through a cast here — the mock
+      // stubs stay, and these assertions keep pinning that the
+      // gateway flow performs no custody writes.
+      expect((prismaService as any).wallet.upsert).not.toHaveBeenCalled();
+      expect((prismaService as any).wallet.update).not.toHaveBeenCalled();
+      expect((prismaService as any).walletTransaction.create).not.toHaveBeenCalled();
     });
 
     it('rejects gateway verification for a booking owned by another traveler', async () => {
@@ -559,8 +563,8 @@ describe('PaymentsService - Security Tests', () => {
           externalReference: 'refund-1',
         }),
       );
-      expect(prismaService.wallet.update).not.toHaveBeenCalled();
-      expect(prismaService.walletTransaction.create).not.toHaveBeenCalled();
+      expect((prismaService as any).wallet.update).not.toHaveBeenCalled();
+      expect((prismaService as any).walletTransaction.create).not.toHaveBeenCalled();
     });
 
     it('derives the provider transaction when refunding by booking id', async () => {

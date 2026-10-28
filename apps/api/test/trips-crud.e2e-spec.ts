@@ -104,7 +104,6 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         await db.itineraryDay.deleteMany();
         await db.tripTemplate.deleteMany();
         await db.agencyProfile.deleteMany();
-        await db.wallet.deleteMany();
         await db.user.deleteMany();
     }
 

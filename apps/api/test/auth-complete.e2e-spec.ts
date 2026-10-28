@@ -48,9 +48,6 @@ describe('Auth - Complete E2E (auth-complete.e2e-spec)', () => {
     async function clearDatabase() {
         if (!db) return;
         // delete children first to avoid FK errors
-        await db.walletTransaction.deleteMany();
-        await db.wallet.deleteMany();
-        await db.payoutRequest.deleteMany();
         await db.tripSession.deleteMany();
         await db.tripTemplate.deleteMany();
         await db.agencyProfile.deleteMany();

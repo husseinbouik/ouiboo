@@ -255,7 +255,12 @@ export class UsersService {
             select: {
                 id: true, name: true, email: true, role: true, avatar: true,
                 isEmailVerified: true, displayCurrency: true, createdAt: true, updatedAt: true,
-                agencyProfile: { include: { wallet: { include: { transactions: true } }, payoutRequests: true, templates: { include: { itinerary: true, sessions: true } } } },
+                // #429: the export's agency financial records used to
+                // come from the Wallet/WalletTransaction/PayoutRequest
+                // custody tables (deleted in this change); they now
+                // come from the retained ledger — the agency's booking
+                // payment transactions.
+                agencyProfile: { include: { paymentTransactions: true, templates: { include: { itinerary: true, sessions: true } } } },
                 bookings: { include: { paymentProof: true, paymentTransactions: true, review: true } },
                 reviews: true, wishlist: true, notificationPreferences: true,
                 travelerConversations: { include: { messages: true } },
@@ -284,9 +289,10 @@ export class UsersService {
      *     UploadService.resolveStorageKey and deduplicated first.
      *  2. The database tombstone scrubs every personal-data category.
      *     Rows that double as financial/ledger evidence (bookings,
-     *     payments, refund cases and evidence rows, invoices, wallet
-     *     ledger) are retained with their personal fields nulled — the
-     *     retention table in the doc states what is kept and why.
+     *     payments, refund cases and evidence rows, invoices, payment
+     *     status ledger entries) are retained with their personal
+     *     fields nulled — the retention table in the doc states what
+     *     is kept and why.
      *
      * Storage deletion is best-effort per object and runs BEFORE the
      * database scrub: a storage outage must not block erasure of the
