@@ -3,10 +3,9 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
 import Link from 'next/link';
 import Image from 'next/image';
-import { BookingPaymentStatus, BookingStatus, VerificationStatus, type BookingDetails } from '@ouiboo/types';
+import { BookingPaymentStatus, BookingStatus, RefundStatus, VerificationStatus, type BookingDetails } from '@ouiboo/types';
 import { Badge, Button, Card } from '@ouiboo/ui';
 import { BookingDetailSkeleton } from '@/components/Skeletons';
 import { cn } from '@ouiboo/ui/utils';
@@ -29,11 +28,14 @@ import {
   getTravelerPaymentStatusMeta,
   getTravelerProofStatus,
   shouldShowUploadAction,
+  formatCurrency,
 } from '@ouiboo/utils';
 import { ReviewForm } from '@/components/ReviewForm';
+import { useTranslation } from 'react-i18next';
 import { TripContactsCard } from '@/components/TripContactsCard';
 
 export default function BookingDetailsPage() {
+  const { t, i18n } = useTranslation();
   const { id } = useParams();
   const bookingId = Array.isArray(id) ? id[0] : id;
   const queryClient = useQueryClient();
@@ -44,13 +46,16 @@ export default function BookingDetailsPage() {
 
   const { data: booking, isLoading } = useQuery<BookingDetails | null>({
     enabled: Boolean(bookingId),
-    queryKey: ['booking-details-page', bookingId],
+    // #567: locale-scoped key + ?locale= so the API resolves the trip
+    // title in the reader's language (it previously always served the
+    // canonical French title on this surface).
+    queryKey: ['booking-details-page', bookingId, (i18n.language || 'en').split('-')[0]],
     queryFn: async () => {
       if (!bookingId) {
         return null;
       }
 
-      const response = await apiClient.get(`/bookings/${bookingId}`);
+      const response = await apiClient.get(`/bookings/${bookingId}?locale=${i18n.language}`);
       return response.data;
     },
   });
@@ -118,7 +123,7 @@ export default function BookingDetailsPage() {
     onError: (error: unknown) => {
       setCancelRefundState('error');
       const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setCancelRefundError(typeof message === 'string' ? message : 'The refund request could not be sent. Please try again.');
+      setCancelRefundError(typeof message === 'string' ? message : t('bookingDetail.refundRequestError'));
     },
   });
 
@@ -130,11 +135,11 @@ export default function BookingDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background px-6 pt-28 pb-20" role="status" aria-label="Loading your booking...">
+      <div className="min-h-screen bg-background px-6 pt-28 pb-20" role="status" aria-label={t('bookingDetail.loading')}>
         <div className="max-w-5xl mx-auto">
           <BookingDetailSkeleton />
         </div>
-        <span className="sr-only">Loading your booking...</span>
+        <span className="sr-only">{t('bookingDetail.loading')}</span>
       </div>
     );
   }
@@ -143,10 +148,10 @@ export default function BookingDetailsPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-6">
         <Card className="max-w-xl w-full rounded-3xl p-8 text-center">
-          <h1 className="text-2xl font-black text-foreground">Booking not found</h1>
-          <p className="mt-3 text-muted-foreground">This booking may have been removed or you may not have access to it.</p>
+          <h1 className="text-2xl font-black text-foreground">{t('bookingDetail.notFoundTitle')}</h1>
+          <p className="mt-3 text-muted-foreground">{t('bookingDetail.notFoundBody')}</p>
           <Button asChild className="rounded-xl">
-              <Link href="/bookings">Back to my bookings</Link>
+              <Link href="/bookings">{t('bookingDetail.backToBookings')}</Link>
             </Button>
         </Card>
       </div>
@@ -156,6 +161,35 @@ export default function BookingDetailsPage() {
   const tripImage = booking.session.template.images[0] || 'https://images.unsplash.com/photo-1489749798305-4fea3ae63d43';
   const proofStatus = getTravelerProofStatus(booking.paymentProof?.status);
   const paymentStatus = getTravelerPaymentStatusMeta(booking.paymentStatus, booking.refundStatus);
+  // #567: the @ouiboo/utils status helpers return English labels; this
+  // page renders the locale equivalents (same state logic, localised
+  // wording) and keeps only the helpers' classNames.
+  const proofLabel = !booking.paymentProof?.status
+    ? t('bookingDetail.proofStatus.notUploaded')
+    : booking.paymentProof.status === VerificationStatus.Verified
+      ? t('bookingDetail.proofStatus.paymentConfirmed')
+      : booking.paymentProof.status === VerificationStatus.Rejected
+        ? t('bookingDetail.proofStatus.rejected')
+        : booking.paymentProof.status === VerificationStatus.Accepted
+          ? t('bookingDetail.proofStatus.acceptedPending')
+          : t('bookingDetail.proofStatus.receivedAwaiting');
+  const paymentLabel =
+    booking.refundStatus === RefundStatus.Processed &&
+    (booking.paymentStatus === BookingPaymentStatus.Paid || booking.paymentStatus === BookingPaymentStatus.PartiallyPaid)
+      ? t('bookingDetail.paymentStatus.partiallyRefunded')
+      : booking.paymentStatus === BookingPaymentStatus.PartiallyPaid
+        ? t('bookingDetail.paymentStatus.depositPaid')
+        : booking.paymentStatus === BookingPaymentStatus.Paid
+          ? t('bookingDetail.paymentStatus.paid')
+          : booking.paymentStatus === BookingPaymentStatus.Refunded
+            ? booking.refundStatus === RefundStatus.Processed
+              ? t('bookingDetail.paymentStatus.refunded')
+              : t('bookingDetail.paymentStatus.refundInProgress')
+            : booking.paymentStatus === BookingPaymentStatus.Failed
+              ? t('bookingDetail.paymentStatus.failed')
+              : t('bookingDetail.paymentStatus.unpaid');
+  const formatDate = (value: string) =>
+    new Intl.DateTimeFormat(i18n.language || 'en', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value));
   const showUploadAction = shouldShowUploadAction(booking.status, Boolean(booking.paymentProof));
   const showRetryPayment = canRetryTravelerPayment(booking);
   const canReviewBooking = booking.status === BookingStatus.Completed && !booking.review;
@@ -166,12 +200,12 @@ export default function BookingDetailsPage() {
       <div className="max-w-5xl mx-auto space-y-8">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Booking Reference</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('bookingDetail.reference')}</p>
             <h1 className="text-4xl font-black font-display tracking-tight text-foreground">{booking.id}</h1>
-            <p className="text-muted-foreground mt-2">Review your reservation details, payment state, and next actions.</p>
+            <p className="text-muted-foreground mt-2">{t('bookingDetail.subtitle')}</p>
           </div>
           <Button asChild variant="outline" className="rounded-xl font-bold">
-              <Link href="/bookings">Back to my bookings</Link>
+              <Link href="/bookings">{t('bookingDetail.backToBookings')}</Link>
             </Button>
         </div>
 
@@ -191,10 +225,10 @@ export default function BookingDetailsPage() {
                   'px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl backdrop-blur-md border-none',
                   getTravelerBookingStatusTone(booking.status),
                 )}>
-                  {booking.status.replace('_', ' ')}
+                  {t(`bookingDetail.status.${booking.status}`, { defaultValue: booking.status.replace('_', ' ') })}
                 </Badge>
                 <Badge className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${paymentStatus.className}`}>
-                  {paymentStatus.label}
+                  {paymentLabel}
                 </Badge>
               </div>
             </div>
@@ -205,23 +239,23 @@ export default function BookingDetailsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
                     <div className="flex items-center gap-2 text-muted-foreground text-xs font-black uppercase tracking-widest">
-                      <Calendar className="h-4 w-4 text-sunset-orange" /> Date
+                      <Calendar className="h-4 w-4 text-sunset-orange" /> {t('bookingDetail.date')}
                     </div>
                     <p className="mt-3 text-sm font-semibold text-foreground">
-                      {format(new Date(booking.session.startDate), 'MMM dd, yyyy')} to {format(new Date(booking.session.endDate), 'MMM dd, yyyy')}
+                      {formatDate(booking.session.startDate)} – {formatDate(booking.session.endDate)}
                     </p>
                   </div>
                   <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
                     <div className="flex items-center gap-2 text-muted-foreground text-xs font-black uppercase tracking-widest">
-                      <MapPin className="h-4 w-4 text-blue-500" /> Location
+                      <MapPin className="h-4 w-4 text-blue-500" /> {t('bookingDetail.location')}
                     </div>
                     <p className="mt-3 text-sm font-semibold text-foreground">{booking.session.template.startLocation}</p>
                   </div>
                   <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
                     <div className="flex items-center gap-2 text-muted-foreground text-xs font-black uppercase tracking-widest">
-                      <Users className="h-4 w-4 text-sunset-orange" /> Guests
+                      <Users className="h-4 w-4 text-sunset-orange" /> {t('bookingDetail.guestsLabel')}
                     </div>
-                    <p className="mt-3 text-sm font-semibold text-foreground">{booking.guestsCount} traveler{booking.guestsCount === 1 ? '' : 's'}</p>
+                    <p className="mt-3 text-sm font-semibold text-foreground">{t('bookingDetail.guests', { count: booking.guestsCount })}</p>
                   </div>
                 </div>
               </div>
@@ -235,26 +269,26 @@ export default function BookingDetailsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="rounded-2xl border border-border/60 bg-muted/20 p-5">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Traveler Details</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('bookingDetail.travelerDetails')}</p>
                   <div className="mt-4 space-y-2 text-sm">
-                    <p><span className="font-black text-foreground">Name:</span> {booking.fullName || booking.traveler.name || 'Not provided'}</p>
-                    <p><span className="font-black text-foreground">Email:</span> {booking.traveler.email}</p>
-                    <p><span className="font-black text-foreground">Phone:</span> {booking.phoneNumber || 'Not provided'}</p>
-                    <p className="text-muted-foreground">The agency may check your ID at departure, so please bring it with you.</p>
+                    <p><span className="font-black text-foreground">{t('bookingDetail.name')}:</span> {booking.fullName || booking.traveler.name || t('bookingDetail.notProvided')}</p>
+                    <p><span className="font-black text-foreground">{t('bookingDetail.email')}:</span> {booking.traveler.email}</p>
+                    <p><span className="font-black text-foreground">{t('bookingDetail.phone')}:</span> {booking.phoneNumber || t('bookingDetail.notProvided')}</p>
+                    <p className="text-muted-foreground">{t('bookingDetail.idNote')}</p>
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-border/60 bg-muted/20 p-5">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Payment Snapshot</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('bookingDetail.paymentSnapshot')}</p>
                   <div className="mt-4 space-y-2 text-sm">
-                    <p><span className="font-black text-foreground">Total:</span> {booking.totalAmount} MAD</p>
-                    <p><span className="font-black text-foreground">Method:</span> {booking.paymentMethod}</p>
-                    <p><span className="font-black text-foreground">Proof:</span> {proofStatus.label}</p>
+                    <p><span className="font-black text-foreground">{t('bookingDetail.total')}:</span> {formatCurrency(booking.totalAmount, booking.currency, i18n.language)}</p>
+                    <p><span className="font-black text-foreground">{t('bookingDetail.method')}:</span> {booking.paymentMethod}</p>
+                    <p><span className="font-black text-foreground">{t('bookingDetail.proof')}:</span> {proofLabel}</p>
                     {booking.refundStatus && (
-                      <p><span className="font-black text-foreground">Refund:</span> {booking.refundStatus.replace('_', ' ')}</p>
+                      <p><span className="font-black text-foreground">{t('bookingDetail.refund')}:</span> {booking.refundStatus.replace('_', ' ')}</p>
                     )}
                     {booking.confirmedAt && (
-                      <p><span className="font-black text-foreground">Confirmed:</span> {format(new Date(booking.confirmedAt), 'MMM dd, yyyy')}</p>
+                      <p><span className="font-black text-foreground">{t('bookingDetail.confirmed')}:</span> {formatDate(booking.confirmedAt)}</p>
                     )}
                   </div>
                 </div>
@@ -265,11 +299,11 @@ export default function BookingDetailsPage() {
                   evidence for the traveller. */}
               {booking.termsVersion && (
                 <p className="text-xs text-muted-foreground">
-                  Terms accepted: version {booking.termsVersion}
+                  {t('bookingDetail.termsAccepted', { version: booking.termsVersion })}
                   {booking.termsAcceptedAt
-                    ? ` · ${format(new Date(booking.termsAcceptedAt), 'MMM dd, yyyy, HH:mm')}`
+                    ? ` · ${new Intl.DateTimeFormat(i18n.language || 'en', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(booking.termsAcceptedAt))}`
                     : ''}
-                  {booking.locale ? ` · locale: ${booking.locale}` : ''}
+                  {booking.locale ? ` · ${booking.locale}` : ''}
                 </p>
               )}
 
@@ -278,8 +312,8 @@ export default function BookingDetailsPage() {
               {booking.paymentProof && booking.paymentProof.status !== VerificationStatus.Verified && booking.paymentProof.status !== VerificationStatus.Rejected && (
                 <div className="rounded-2xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 p-5 text-sm font-semibold text-foreground">
                   {booking.paymentProof.status === VerificationStatus.Accepted
-                    ? <>Proof accepted by {booking.session.template.agency?.companyName || 'the agency'} — they still have to confirm the transfer in their bank account. Your payment is not settled until then.</>
-                    : <>Proof received. {booking.session.template.agency?.companyName || 'The agency'} still has to confirm the transfer in its bank account — your payment is not settled until then.</>}
+                    ? <>{t('bookingDetail.proofAccepted', { agency: booking.session.template.agency?.companyName || t('bookingDetail.defaultAgency') })}</>
+                    : <>{t('bookingDetail.proofReceived', { agency: booking.session.template.agency?.companyName || t('bookingDetail.defaultAgency') })}</>}
                 </div>
               )}
 
@@ -287,12 +321,12 @@ export default function BookingDetailsPage() {
                 <div className="rounded-2xl border border-border/60 bg-muted/20 p-5 text-sm text-muted-foreground">
                   {booking.paymentProof?.rejectionReason && (
                     <p>
-                      <span className="font-black text-foreground">Payment proof note:</span> {booking.paymentProof.rejectionReason}
+                      <span className="font-black text-foreground">{t('bookingDetail.paymentProofNote')}:</span> {booking.paymentProof.rejectionReason}
                     </p>
                   )}
                   {booking.refundStatus && (
                     <p className={booking.paymentProof?.rejectionReason ? 'mt-2' : ''}>
-                      <span className="font-black text-foreground">Refund status:</span> {booking.refundStatus.replace('_', ' ')}
+                      <span className="font-black text-foreground">{t('bookingDetail.refundStatus')}:</span> {booking.refundStatus.replace('_', ' ')}
                     </p>
                   )}
                 </div>
@@ -303,14 +337,14 @@ export default function BookingDetailsPage() {
                   <label className="cursor-pointer">
                     <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
                     <Button disabled={uploading} className="h-12 px-6 rounded-xl bg-sunset-orange hover:bg-orange-600 border-none text-xs font-black uppercase tracking-widest">
-                      {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4 mr-2" /> Upload Receipt</>}
+                      {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4 mr-2" /> {t('bookingDetail.uploadReceipt')}</>}
                     </Button>
                   </label>
                 )}
                 {showRetryPayment && (
                   <Button asChild variant="outline" className="h-12 px-6 rounded-xl text-xs font-black uppercase tracking-widest">
                     <Link href={retryHref}>
-                      Retry Payment
+                      {t('bookingDetail.retryPayment')}
                     </Link>
                   </Button>
                 )}
@@ -319,12 +353,12 @@ export default function BookingDetailsPage() {
                   className="h-12 w-12 rounded-xl hover:bg-muted text-muted-foreground border border-border/50"
                   onClick={handleCancel}
                   disabled={!canCancelTravelerBooking(booking.status) || cancelling}
-                  aria-label="Cancel booking"
+                  aria-label={t('bookingDetail.cancelBooking')}
                 >
                   {cancelling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                 </Button>
                 <div className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border ${proofStatus.className}`}>
-                  <Check className="h-4 w-4" /> {proofStatus.label}
+                  <Check className="h-4 w-4" /> {proofLabel}
                 </div>
               </div>
             </div>
@@ -351,14 +385,13 @@ export default function BookingDetailsPage() {
           && !booking.refundStatus && (
           <Card className="rounded-3xl border border-border shadow-sm bg-card">
             <div className="p-8 space-y-4">
-              <h2 className="text-2xl font-black font-display tracking-tight text-foreground">Cancel this booking</h2>
+              <h2 className="text-2xl font-black font-display tracking-tight text-foreground">{t('bookingDetail.cancelTitle')}</h2>
               <p className="text-sm text-muted-foreground">
-                Your refund is calculated from the cancellation scale above, based on how many days remain
-                before the trip starts, and is paid by the agency — Ouiboo never holds your money.
+                {t('bookingDetail.cancelBody')}
               </p>
               {cancelRefundState === 'sent' ? (
                 <div className="rounded-2xl border border-success/20 bg-success/10 px-4 py-3 text-sm font-semibold text-success">
-                  Cancellation requested. The agency has been notified and must act on your refund within the deadline shown in your refunds.
+                  {t('bookingDetail.cancelSent')}
                 </div>
               ) : (
                 <>
@@ -370,7 +403,7 @@ export default function BookingDetailsPage() {
                   >
                     {cancelRefundState === 'sending'
                       ? <Loader2 className="h-4 w-4 animate-spin" />
-                      : 'Cancel booking & request refund'}
+                      : t('bookingDetail.cancelButton')}
                   </Button>
                   {cancelRefundState === 'error' && (
                     <p className="text-sm font-semibold text-danger">{cancelRefundError}</p>
@@ -385,20 +418,20 @@ export default function BookingDetailsPage() {
           <Card className="rounded-3xl border border-border shadow-sm bg-card">
             <div className="p-8 space-y-6">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Trip Review</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('bookingDetail.reviewTitle')}</p>
                 <h2 className="mt-2 text-2xl font-black font-display tracking-tight text-foreground">
-                  {booking.review ? 'Thanks for reviewing this trip' : 'Share your experience'}
+                  {booking.review ? t('bookingDetail.reviewThanks') : t('bookingDetail.reviewShare')}
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
                   {booking.review
-                    ? 'Your review is already attached to this completed booking.'
-                    : 'Completed trips can be reviewed once so other travelers can book with confidence.'}
+                    ? t('bookingDetail.reviewAttached')
+                    : t('bookingDetail.reviewPrompt')}
                 </p>
               </div>
 
               {booking.review ? (
                 <div className="rounded-2xl border border-success/20 bg-success/10 px-4 py-3 text-sm font-semibold text-success">
-                  Review submitted successfully.
+                  {t('bookingDetail.reviewSubmitted')}
                 </div>
               ) : (
                 <ReviewForm bookingId={booking.id} onSuccess={() => {

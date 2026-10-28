@@ -10,10 +10,12 @@ import {
   Users,
   Check,
   ChevronLeft,
+  ChevronRight,
   Banknote,
   Languages,
   Star,
   X,
+  Zap,
   ClipboardList
 } from 'lucide-react';
 import { Button, Badge, TripDetailSkeleton, ShareTripButton, SafeImage } from '@ouiboo/ui';
@@ -117,8 +119,7 @@ export default function TripDetailsClient({
   const { user, setShowLoginModal } = useAuth();
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [activeImage, setActiveImage] = useState(0);
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-  const swipeHandledRef = useRef(false);
+  const railRef = useRef<HTMLDivElement | null>(null);
 
   // Content-language audit (2026-10-27, #546): the server fetch sends
   // no locale, so the ISR payload is canonical French. It previously
@@ -211,66 +212,37 @@ export default function TripDetailsClient({
   const selectedSessionData = openSessions.find((session) => session.id === selectedSession) ?? null;
   const scaleBaseSession = selectedSessionData ?? lowestPricedSession;
 
-  // Gallery tiles/thumbnails never include the photo currently shown in the
-  // main viewer, so the same photo is never on screen twice. Indices are the
-  // original positions in trip.images so clicks/dots keep their meaning.
-  const galleryTiles = (trip.images ?? [])
-    .map((src, index) => ({ src, index }))
-    .filter(({ index }) => index !== activeImage);
-  const desktopTiles = galleryTiles.slice(0, 3);
-  const hiddenTileCount = galleryTiles.length - desktopTiles.length;
-  const firstHiddenTileIndex = hiddenTileCount > 0 ? galleryTiles[desktopTiles.length].index : -1;
-  // Session #3 P0-3 (#551): the desktop rail is a fixed 2-column grid.
-  // With an odd number of cells the last cell must span both columns —
-  // otherwise a lone tile (the common 2-image trip) renders as a narrow
-  // full-height strip beside an empty pale column.
-  const railCellCount = desktopTiles.length + (hiddenTileCount > 0 ? 1 : 0);
-  const spanLastRailCell = railCellCount % 2 === 1;
-
-  // Touch swipe support for the main gallery image (mobile): a horizontal
-  // swipe changes the photo, while vertical gestures still scroll the page.
-  // The container uses `touch-pan-y`, so the browser natively handles
-  // vertical panning and only horizontal-dominant gestures reach these
-  // handlers. Mirrors the TripCard carousel pattern (PR #306).
-  const SWIPE_THRESHOLD_PX = 40;
+  // #490 rework — Option A "Snap Rail" (founder decision, FINAL):
+  // ONE component, one behaviour on mobile AND desktop, replacing the
+  // old main-image + desktop side-tile grid + mobile thumbnail strip.
+  // Native scroll-snap does the gliding (no JS swipe math), the counter
+  // + caption are always visible, and desktop gets 44px prev/next
+  // arrows that DISABLE at the ends — no loop.
   const imageCount = trip.images?.length ?? 0;
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    swipeHandledRef.current = false;
-    if (imageCount <= 1) return;
-    const touch = e.touches[0];
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  const handleRailScroll = () => {
+    const el = railRef.current;
+    if (!el || el.clientWidth === 0) return;
+    const idx = Math.round(Math.abs(el.scrollLeft) / el.clientWidth);
+    setActiveImage(Math.max(0, Math.min(imageCount - 1, idx)));
   };
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (imageCount <= 1 || !touchStartRef.current) return;
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - touchStartRef.current.x;
-    const dy = touch.clientY - touchStartRef.current.y;
-    touchStartRef.current = null;
-    if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) <= Math.abs(dy)) return;
-    swipeHandledRef.current = true;
-    window.setTimeout(() => {
-      swipeHandledRef.current = false;
-    }, 400);
-    // In RTL the gallery is mirrored, so the swipe direction that advances
-    // to the next image flips with it (same convention as TripCard).
-    const advancesNext = i18n.dir() === 'rtl' ? dx > 0 : dx < 0;
-    setActiveImage((prev) => advancesNext
-      ? (prev + 1) % imageCount
-      : (prev - 1 + imageCount) % imageCount);
+  const scrollToImage = (idx: number) => {
+    const el = railRef.current;
+    if (!el) return;
+    const clamped = Math.max(0, Math.min(imageCount - 1, idx));
+    el.scrollTo({
+      left: (i18n.dir() === 'rtl' ? -1 : 1) * clamped * el.clientWidth,
+      behavior: 'smooth',
+    });
+    setActiveImage(clamped);
   };
 
-  // A real swipe is followed by a synthetic click on the touched element;
-  // swallow it so a swipe ending on a dot never also jumps via that dot.
-  // Plain taps are unaffected because the flag is only set after a swipe.
-  const handleClickCapture = (e: React.MouseEvent) => {
-    if (swipeHandledRef.current) {
-      e.preventDefault();
-      e.stopPropagation();
-      swipeHandledRef.current = false;
-    }
-  };
+  // #571 rework: prominent trip-level spots indicator (previously the
+  // count existed only as 10px text inside session-picker rows).
+  const nextDepartureSession = [...openSessions].sort(
+    (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+  )[0] ?? null;
 
   return (
     <div className="min-h-screen bg-background pb-32 font-sans text-foreground overflow-hidden relative">
@@ -288,80 +260,65 @@ export default function TripDetailsClient({
             {t('tripDetails.backToCatalog')}
         </Link>
 
-        {/* Dynamic Photo Gallery */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 h-auto lg:h-[600px] mb-8 sm:mb-12">
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className={cn(
-                  "relative h-[280px] sm:h-[400px] lg:h-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl shadow-black/5 dark:shadow-black/20 group border border-border/50 touch-pan-y",
-                  (trip.images?.length ?? 0) > 1 ? "lg:col-span-7" : "lg:col-span-12",
-                )}
-                onTouchStart={handleTouchStart}
-                onTouchEnd={handleTouchEnd}
-                onClickCapture={handleClickCapture}
+        {/* #490 rework — Option A "Snap Rail": one native scroll-snap
+            rail for mobile AND desktop (see the state comment above). */}
+        <div className="mb-8 sm:mb-12" data-testid="trip-gallery-snap-rail">
+          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl shadow-black/5 dark:shadow-black/20 border border-border/50">
+            <div
+              ref={railRef}
+              onScroll={handleRailScroll}
+              role="group"
+              aria-label={t('tripDetails.photosLabel')}
+              className="flex h-[280px] sm:h-[400px] lg:h-[520px] overflow-x-auto snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
-                <SafeImage
-                    src={trip.images?.[activeImage] || ''}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    alt={trip.imageAlts?.[activeImage]?.trim() || trip.title}
+              {(trip.images && trip.images.length > 0 ? trip.images : ['']).map((src, idx) => (
+                <div key={idx} className="relative h-full w-full shrink-0 snap-center snap-always">
+                  <SafeImage
+                    src={src}
+                    className="w-full h-full object-cover"
+                    alt={trip.imageAlts?.[idx]?.trim() || trip.title}
                     fill
-                    sizes="(min-width: 1024px) 60vw, 100vw"
-                    blurDataURL={trip.imageBlurDataURLs?.[activeImage] ?? undefined}
-                    style={{ viewTransitionName: tripCoverViewTransitionName(trip.id) }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
-                <div className="absolute bottom-6 start-6 flex gap-2">
-                    {trip.images?.map((_, idx: number) => (
-                        <button
-                            key={idx}
-                            type="button"
-                            onClick={() => setActiveImage(idx)}
-                            aria-label={t('tripCard.viewImage', { count: idx + 1 })}
-                            aria-current={activeImage === idx || undefined}
-                            className={cn(
-                                "h-1.5 rounded-full transition-all duration-300 backdrop-blur-md",
-                                activeImage === idx ? "bg-white w-8" : "bg-white/40 hover:bg-white/80 w-4"
-                            )}
-                        />
-                    ))}
+                    sizes="100vw"
+                    blurDataURL={trip.imageBlurDataURLs?.[idx] ?? undefined}
+                    style={idx === activeImage ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined}
+                  />
                 </div>
-            </motion.div>
-            
-            {(trip.images?.length ?? 0) > 1 ? (
-              <div className="flex lg:hidden gap-3 overflow-x-auto pb-1" aria-label={t('tripDetails.photosLabel')}>
-                  {galleryTiles.map(({ src, index }) => (
-                      <button key={index} type="button" className="relative h-20 w-28 shrink-0 rounded-2xl overflow-hidden shadow-md border border-border/50" onClick={() => setActiveImage(index)} aria-label={t('tripCard.viewImage', { count: index + 1 })}>
-                          <SafeImage src={src} className="w-full h-full object-cover" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - ${index + 1}`} fill sizes="112px" blurDataURL={trip.imageBlurDataURLs?.[index] ?? undefined} />
-                      </button>
-                  ))}
-              </div>
+              ))}
+            </div>
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent" />
+            {imageCount > 1 ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => scrollToImage(activeImage - 1)}
+                  disabled={activeImage === 0}
+                  aria-label={t('tripCard.previousImage')}
+                  className="absolute start-4 top-1/2 hidden h-11 w-11 min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-full bg-card/95 text-foreground shadow-md backdrop-blur-sm transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100 lg:flex"
+                >
+                  <ChevronLeft className="h-5 w-5 rtl:rotate-180" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollToImage(activeImage + 1)}
+                  disabled={activeImage >= imageCount - 1}
+                  aria-label={t('tripCard.nextImage')}
+                  className="absolute end-4 top-1/2 hidden h-11 w-11 min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-full bg-card/95 text-foreground shadow-md backdrop-blur-sm transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100 lg:flex"
+                >
+                  <ChevronRight className="h-5 w-5 rtl:rotate-180" />
+                </button>
+              </>
             ) : null}
-
-            {(trip.images?.length ?? 0) > 1 ? (
-              <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="hidden lg:grid lg:col-span-5 grid-cols-2 auto-rows-fr gap-4 md:gap-6"
-              >
-                  {desktopTiles.map(({ src, index }, tilePos) => (
-                      <button key={index} type="button" className={cn("relative min-h-36 rounded-2xl overflow-hidden shadow-lg border border-border/50 group", spanLastRailCell && hiddenTileCount === 0 && tilePos === desktopTiles.length - 1 && "lg:col-span-2")} onClick={() => setActiveImage(index)} aria-label={`View image ${index + 1}`}>
-                          <SafeImage src={src} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={trip.imageAlts?.[index]?.trim() || `${trip.title} - image ${index + 1}`} fill sizes="20vw" blurDataURL={trip.imageBlurDataURLs?.[index] ?? undefined} />
-                          <span className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                      </button>
-                  ))}
-                  {hiddenTileCount > 0 ? (
-                    <button type="button" onClick={() => setActiveImage(firstHiddenTileIndex)} className={cn("bg-muted/50 rounded-2xl flex items-center justify-center hover:bg-muted transition-colors border border-border", spanLastRailCell && "lg:col-span-2")} aria-label={t('tripDetails.viewMoreImages', { count: hiddenTileCount })}>
-                        <span className="flex flex-col items-center gap-2">
-                            <span className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground font-bold shadow-sm">
-                                +{hiddenTileCount}
-                            </span>
-                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">{t('tripDetails.morePhotos')}</span>
-                        </span>
-                    </button>
-                  ) : null}
-              </motion.div>
-            ) : null}
+            <div className="pointer-events-none absolute inset-x-4 bottom-4 flex items-end justify-between gap-3">
+              <span className="min-w-0 truncate rounded-full bg-black/55 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md">
+                {trip.imageAlts?.[activeImage]?.trim() || trip.title}
+              </span>
+              {imageCount > 1 ? (
+                <span data-testid="trip-gallery-counter" className="shrink-0 rounded-full bg-black/55 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md">
+                  {t('tripDetails.imageCounter', { current: activeImage + 1, total: imageCount })}
+                </span>
+              ) : null}
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16 relative">
@@ -397,6 +354,34 @@ export default function TripDetailsClient({
                             configured one is ever loopback in a deployed build. */}
                         <ShareTripButton tripId={trip.id} tripTitle={trip.title} travelerBaseUrl={TRAVELER_URL} allowRuntimeOriginFallback className="rounded-full" />
                     </div>
+
+                    {/* #571 rework: prominent trip-level spots indicator —
+                        solid fill, white bold 14px text; amber when the
+                        next departure has fewer than 5 seats, dark red
+                        when there is no open departure left. */}
+                    <button
+                      type="button"
+                      data-testid="trip-spots-indicator"
+                      data-state={!nextDepartureSession ? 'sold-out' : nextDepartureSession.availableSeats < 5 ? 'low' : 'available'}
+                      disabled={!nextDepartureSession}
+                      aria-pressed={nextDepartureSession ? selectedSession === nextDepartureSession.id : undefined}
+                      onClick={() => {
+                        if (nextDepartureSession) setSelectedSession(nextDepartureSession.id);
+                      }}
+                      className={cn(
+                        "mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-md",
+                        !nextDepartureSession
+                          ? "bg-rose-800"
+                          : nextDepartureSession.availableSeats < 5
+                            ? "bg-amber-600"
+                            : "bg-emerald-700"
+                      )}
+                    >
+                      <Zap className="h-4 w-4" />
+                      {nextDepartureSession
+                        ? t('tripDetails.spotsLeft', { count: nextDepartureSession.availableSeats })
+                        : t('tripDetails.spotsBannerSoldOut')}
+                    </button>
 
                     {/* Session #3 P0-11 (#546): when the content resolved
                         in a language other than the reader's UI language,
@@ -671,7 +656,7 @@ export default function TripDetailsClient({
                                           <span className="font-bold text-foreground text-sm">
                                               {new Date(session.startDate).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })} - {new Date(session.endDate).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })}
                                           </span>
-                                          <span className={cn("text-[10px] font-bold mt-1", session.availableSeats < 5 ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400")}>
+                                          <span className={cn("text-xs font-bold mt-1", session.availableSeats < 5 ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400")}>
                                               {t('tripDetails.spotsLeft', { count: session.availableSeats })}
                                           </span>
                                       </div>

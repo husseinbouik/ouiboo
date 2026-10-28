@@ -186,6 +186,33 @@ export function TripCard({ trip }: TripCardProps) {
     }
   };
 
+  // #490 rework: pointer drag support (mouse) alongside touch swipe —
+  // the card previously advanced only via touch swipe or the arrows, so
+  // a desktop drag did nothing. Mouse pointer events drive the same
+  // threshold logic; touch keeps its dedicated handlers above.
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'mouse' || images.length <= 1) return;
+    pointerStartRef.current = { x: e.clientX, y: e.clientY };
+  };
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'mouse' || !pointerStartRef.current) return;
+    const dx = e.clientX - pointerStartRef.current.x;
+    const dy = e.clientY - pointerStartRef.current.y;
+    pointerStartRef.current = null;
+    if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) <= Math.abs(dy)) return;
+    swipeHandledRef.current = true;
+    window.setTimeout(() => {
+      swipeHandledRef.current = false;
+    }, 400);
+    const advancesNext = i18n.dir() === 'rtl' ? dx > 0 : dx < 0;
+    if (advancesNext) {
+      goToNextImage();
+    } else {
+      goToPrevImage();
+    }
+  };
+
   // A real swipe is followed by a synthetic click on the touched element;
   // swallow it so a swipe never toggles the wishlist or follows a link.
   // Plain taps are unaffected because the flag is only set after a swipe.
@@ -203,6 +230,8 @@ export function TripCard({ trip }: TripCardProps) {
         className="relative h-64 overflow-hidden touch-pan-y"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
         onClickCapture={handleClickCapture}
       >
         <AnimatePresence mode="wait">
@@ -241,16 +270,16 @@ export function TripCard({ trip }: TripCardProps) {
             <button
               onClick={prevImage}
               aria-label={t('tripCard.previousImage')}
-              className="absolute start-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-70 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100 transition-all hover:scale-110 hit-slop"
+              className="absolute start-3 top-1/2 -translate-y-1/2 w-11 h-11 min-w-11 min-h-11 rounded-full bg-card/95 backdrop-blur-sm shadow-md flex items-center justify-center text-foreground opacity-100 transition-all hover:scale-105"
             >
-              <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
+              <ChevronLeft className="h-5 w-5 rtl:rotate-180" />
             </button>
             <button
               onClick={nextImage}
               aria-label={t('tripCard.nextImage')}
-              className="absolute end-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-sm flex items-center justify-center text-foreground opacity-70 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100 transition-all hover:scale-110 hit-slop"
+              className="absolute end-3 top-1/2 -translate-y-1/2 w-11 h-11 min-w-11 min-h-11 rounded-full bg-card/95 backdrop-blur-sm shadow-md flex items-center justify-center text-foreground opacity-100 transition-all hover:scale-105"
             >
-              <ChevronRight className="h-4 w-4 rtl:rotate-180" />
+              <ChevronRight className="h-5 w-5 rtl:rotate-180" />
             </button>
           </>
         )}
@@ -286,12 +315,24 @@ export function TripCard({ trip }: TripCardProps) {
           </Badge>
         </div>
 
-        <div className="absolute top-3 end-14 flex flex-col items-end gap-2">
-          <Badge className={cn(
-            "text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none flex items-center gap-1",
-            nextSession ? "bg-success/15 text-success-dark" : "bg-warning/15 text-warning-dark"
-          )}>
-            <Zap className="h-3 w-3" />
+        <div className="absolute top-3 end-16 flex flex-col items-end gap-2">
+          {/* #571 rework: solid, legible spots badge — white bold text at
+              12px on a solid deep-green fill; solid amber when fewer
+              than 5 seats remain; solid dark red when sold out. The old
+              10px dark-green text on a 15%-tint pill was unreadable on
+              photographic backgrounds. */}
+          <Badge
+            data-testid="trip-card-spots-badge"
+            data-state={nextSession ? (nextSession.availableSeats < 5 ? 'low' : 'available') : 'sold-out'}
+            className={cn(
+              "text-xs font-bold rounded-lg uppercase px-3 py-1.5 shadow-md tracking-wide border-none flex items-center gap-1 text-white",
+              nextSession
+                ? nextSession.availableSeats < 5
+                  ? "bg-amber-600"
+                  : "bg-emerald-700"
+                : "bg-rose-800"
+            )}>
+            <Zap className="h-3.5 w-3.5" />
             {nextSession ? t('tripCard.spots', { count: nextSession.availableSeats }) : t('tripCard.soldOut')}
           </Badge>
         </div>

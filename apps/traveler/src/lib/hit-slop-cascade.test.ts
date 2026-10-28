@@ -36,11 +36,12 @@ describe('hit-slop cascade (Session #3 P0-1)', () => {
   });
 
   it('carousel arrows stay visible on coarse pointers and on focus', () => {
-    // Hover-reveal may only apply on hover-capable devices; keyboard
-    // focus must always reveal the controls.
-    expect(tripCard).toContain('[@media(hover:hover)]:opacity-0');
-    expect(tripCard).toContain('[@media(hover:hover)]:group-hover:opacity-100');
-    expect(tripCard).toContain('focus-visible:opacity-100');
+    // #490 rework (founder spec): the arrows are now genuine 44px
+    // (w-11 h-11) and ALWAYS visible — the earlier hover-reveal pattern
+    // (opacity-0 until group-hover on hover-capable devices) is gone,
+    // superseded by the Snap Rail batch spec.
+    expect(tripCard).toContain('w-11 h-11');
+    expect(tripCard).not.toContain('[@media(hover:hover)]:opacity-0');
     expect(tripCard).not.toMatch(/opacity-0 group-hover:opacity-100/);
   });
 

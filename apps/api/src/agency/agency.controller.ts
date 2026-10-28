@@ -247,7 +247,7 @@ export class AgencyController {
         ]);
 
         return {
-            data: bookings.map(mapBookingDetails),
+            data: bookings.map((booking) => mapBookingDetails(booking)),
             pagination: {
                 total,
                 page: currentPage,
