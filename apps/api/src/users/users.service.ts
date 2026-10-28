@@ -4,6 +4,7 @@ import { Prisma } from '@ouiboo/database';
 import { DatabaseService } from '../database/database.service';
 import { PRIVATE_FILE_PREFIX } from '../upload/upload.constants';
 import { UploadService } from '../upload/upload.service';
+import { derivePublicMediaUrl } from '../upload/media-url.util';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 
 @Injectable()
@@ -19,6 +20,19 @@ export class UsersService {
         }
 
         const safeUser = { ...user };
+        // #447: avatar and agency logo are stored file references, not
+        // addresses — re-derive them against the current public media
+        // base at read time so a base change never strands them on the
+        // host that was configured at upload time.
+        if (safeUser.avatar) {
+            safeUser.avatar = derivePublicMediaUrl(safeUser.avatar);
+        }
+        if (safeUser.agencyProfile?.logo) {
+            safeUser.agencyProfile = {
+                ...safeUser.agencyProfile,
+                logo: derivePublicMediaUrl(safeUser.agencyProfile.logo),
+            };
+        }
         delete safeUser.password;
         delete safeUser.passwordResetTokenHash;
         delete safeUser.passwordResetExpiresAt;

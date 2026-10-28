@@ -586,3 +586,51 @@ describe('UsersService', () => {
         });
     });
 });
+
+describe('UsersService public media derivation (#447)', () => {
+    const ORIGINAL_S3_PUBLIC_URL = process.env.S3_PUBLIC_URL;
+
+    beforeEach(() => {
+        process.env.S3_PUBLIC_URL = 'https://cdn.ouiboo.test';
+    });
+
+    afterEach(() => {
+        if (ORIGINAL_S3_PUBLIC_URL === undefined) {
+            delete process.env.S3_PUBLIC_URL;
+        } else {
+            process.env.S3_PUBLIC_URL = ORIGINAL_S3_PUBLIC_URL;
+        }
+    });
+
+    it('findOne re-derives the avatar and the agency logo against the current media base', async () => {
+        const record = {
+            id: 'user-1',
+            name: 'Agency Owner',
+            email: 'owner@example.com',
+            role: 'AGENCY',
+            avatar: 'https://old-bucket.s3.eu-west-1.amazonaws.com/trips/user-1/avatar.png',
+            password: 'hashed',
+            agencyProfile: {
+                id: 'agency-1',
+                logo: 'trips/agency-1/logo.png',
+            },
+        };
+        const db = {
+            user: {
+                findUnique: jest.fn().mockResolvedValue(record),
+                update: jest.fn().mockResolvedValue(record),
+            },
+        };
+        const service = new UsersService(db as any, {} as any);
+
+        const result: any = await service.findOne('user-1');
+
+        expect(result.avatar).toBe('https://cdn.ouiboo.test/trips/user-1/avatar.png');
+        expect(result.agencyProfile.logo).toBe('https://cdn.ouiboo.test/trips/agency-1/logo.png');
+        // The stored record itself is not mutated by the read-time derivation.
+        expect(record.avatar).toBe(
+            'https://old-bucket.s3.eu-west-1.amazonaws.com/trips/user-1/avatar.png',
+        );
+        expect(result.password).toBeUndefined();
+    });
+});

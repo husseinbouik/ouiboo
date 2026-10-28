@@ -6,6 +6,19 @@ export const SITE_NAME = 'Ouiboo'
 const LOCAL_DEV_LANDING_URL = 'http://localhost:3004'
 
 /**
+ * Canonical production origin, used only when a production build has
+ * neither a configured NEXT_PUBLIC_LANDING_URL nor a Vercel host to
+ * derive one from (e.g. the CI e2e build, which sets neither). It is
+ * this app's production project domain. A production build must NEVER
+ * fall through to the loopback default: Next resolves the page's
+ * relative canonical/OG URLs against metadataBase, so a localhost
+ * LANDING_URL bakes http://localhost:3004 into the canonical link,
+ * og:url, og:image and twitter:image of every page (#603 — the same
+ * fallthrough PR #601 fixed in the traveller resolver).
+ */
+const PRODUCTION_LANDING_URL = 'https://ouiboo-landing.vercel.app'
+
+/**
  * The landing app's public origin: the metadata base for canonical/OG
  * URLs and the sitemap URLs (#564).
  *
@@ -13,9 +26,10 @@ const LOCAL_DEV_LANDING_URL = 'http://localhost:3004'
  * #468): NEXT_PUBLIC_LANDING_URL is the configured source and is set on
  * every deployed project. The loopback default exists for local
  * development only — in a production build whose configured value is
- * missing or loopback, fall back to this deployment's own Vercel host
- * rather than baking localhost into canonical URLs, OG URLs or the
- * sitemap (the served sitemap advertised `http://localhost:3004/`).
+ * missing or loopback, fall back to this deployment's own Vercel host,
+ * and then to the canonical production origin, rather than baking
+ * localhost into canonical URLs, OG URLs or the sitemap (the served
+ * sitemap advertised `http://localhost:3004/`).
  */
 function resolveLandingUrl(): string {
   const configured = process.env.NEXT_PUBLIC_LANDING_URL?.trim()
@@ -24,6 +38,7 @@ function resolveLandingUrl(): string {
     const vercelHost =
       process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL
     if (vercelHost) return `https://${vercelHost}`
+    return PRODUCTION_LANDING_URL
   }
   return configured || LOCAL_DEV_LANDING_URL
 }

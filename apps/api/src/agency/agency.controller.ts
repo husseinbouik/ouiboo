@@ -14,6 +14,7 @@ import { UpdateAgencyProfileDto } from './dto/update-profile.dto';
 import { getAgencyActivationBlock } from '../common/agency-licence.util';
 import { isBankDestinationVerified } from '../common/bank-details.util';
 import { Prisma } from '@ouiboo/database';
+import { derivePublicMediaUrl } from '../upload/media-url.util';
 
 const clampListLimit = (value?: string, fallback = 50, max = 200) => {
     const parsed = Number(value);
@@ -327,7 +328,11 @@ export class AgencyController {
             response: r.response,
             isVerifiedBooking: r.isVerifiedBooking,
             createdAt: r.createdAt,
-            traveler: r.traveler,
+            // #447: the traveller avatar is a stored file reference —
+            // re-derive it against the current public media base.
+            traveler: r.traveler
+                ? { ...r.traveler, avatar: derivePublicMediaUrl(r.traveler.avatar) }
+                : r.traveler,
             trip: {
                 id: r.booking.session.template.id,
                 title: r.booking.session.template.title

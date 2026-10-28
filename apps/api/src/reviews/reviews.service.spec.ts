@@ -373,3 +373,40 @@ describe('Review hardening (#439): pre-publication moderation, edit limits, self
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
+
+describe('Public list traveller avatar derivation (#447)', () => {
+  const ORIGINAL_S3_PUBLIC_URL = process.env.S3_PUBLIC_URL;
+
+  beforeEach(() => {
+    process.env.S3_PUBLIC_URL = 'https://cdn.ouiboo.test';
+  });
+
+  afterEach(() => {
+    if (ORIGINAL_S3_PUBLIC_URL === undefined) {
+      delete process.env.S3_PUBLIC_URL;
+    } else {
+      process.env.S3_PUBLIC_URL = ORIGINAL_S3_PUBLIC_URL;
+    }
+  });
+
+  it('re-derives traveller avatars against the current public media base', async () => {
+    const svc = new ReviewsService(
+      makeFakeDb([
+        review({
+          id: 'rev-avatar',
+          traveler: {
+            id: 'traveler-1',
+            name: 'Sara',
+            avatar:
+              'https://old-bucket.s3.eu-west-1.amazonaws.com/trips/traveler-1/avatar.png',
+          },
+        }),
+      ]),
+    );
+    const result = await svc.getReviewsByTrip('trip-1');
+    expect(result.total).toBe(1);
+    expect((result.reviews[0] as any).traveler.avatar).toBe(
+      'https://cdn.ouiboo.test/trips/traveler-1/avatar.png',
+    );
+  });
+});
