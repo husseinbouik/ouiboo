@@ -225,9 +225,15 @@ const [isOpen, setIsOpen] = useState(false);
             : "bg-transparent"
         )}
       >
-        {/* Logo Section */}
+        {/* Logo Section — #552 round 3: at 32px the shared pin
+            mark's taper is ~5px and the mark collapsed to a dot in
+            this bar (witnessed on the deployed build, while the
+            agency/admin/landing lockups passed). 40px is the size
+            at which the same mark already reads as a pin on the
+            traveller auth pages and the admin login, so the navbar
+            lockup renders at 40. Shared asset unchanged. */}
         <Link href="/" className="flex items-center gap-2 group shrink-0">
-            <Logo size={32} />
+            <Logo size={40} />
             <span className="text-xl font-bold tracking-tight text-deep-blue dark:text-foreground">
                 Ouiboo
             </span>
@@ -422,7 +428,8 @@ const [isOpen, setIsOpen] = useState(false);
             >
                <div className="flex justify-between items-center text-foreground">
                   <div className="flex items-center gap-2">
-                     <Logo size={32} />
+                     {/* #552 round 3: same lockup size as the desktop bar (40). */}
+                     <Logo size={40} />
                      <span className="text-xl font-black">Ouiboo</span>
                      <BetaBadge />
                   </div>

@@ -28,6 +28,17 @@ import { cn } from '@ouiboo/ui/utils';
  * (where it passed witnessed verification) so the card renders this
  * exact component instead of its old crossfade carousel, whose
  * arrows looped and whose drag/swipe advanced nothing.
+ *
+ * Round 3 (2026-10-28): the wiring is identical on both surfaces —
+ * the witnessed difference was GEOMETRIC. This gallery's slides are
+ * a full page width (~1200px) while a card's are ~390px, and native
+ * snap-mandatory settles a released drag on the NEAREST snap point:
+ * the same few-hundred-px drag that carries a card past its halfway
+ * point never crosses the gallery's, so the gallery rail tracked
+ * the pointer and then settled straight back onto the photo it
+ * started on. Hosts with wide slides opt into `dragAdvanceOnRelease`
+ * (below) so a moved drag settles one slide over, exactly the
+ * outcome the same drag produces on a card.
  */
 export interface SnapRailProps {
   images: string[];
@@ -51,6 +62,13 @@ export interface SnapRailProps {
   /** Card keeps its dot indicators (real buttons, Session #3 P0-1);
    * the trip-page gallery does not render them. */
   showIndicators?: boolean;
+  /** #490 round 3: when a mouse drag moved at least
+   * DRAG_ADVANCE_MIN_PX but native snap would settle it back onto
+   * the slide it started from, settle one slide over in the drag
+   * direction on release. For wide-slide hosts (the trip-page
+   * gallery); the card rail leaves this off and keeps the pure
+   * native snap settle it was verified with. */
+  dragAdvanceOnRelease?: boolean;
   onActiveChange?: (index: number) => void;
   /** Per-slide style hook (e.g. the shared-element view-transition
    * name belongs on the active slide only). */
@@ -58,6 +76,11 @@ export interface SnapRailProps {
 }
 
 const DRAG_CLICK_SUPPRESS_PX = 6;
+/** #490 round 3: a drag shorter than this is a press, not a swipe —
+ * it settles back onto the current slide even with
+ * dragAdvanceOnRelease on. Well above click jitter, well below the
+ * few-hundred-px drag that advances a card. */
+const DRAG_ADVANCE_MIN_PX = 64;
 
 export function SnapRail({
   images,
@@ -72,6 +95,7 @@ export function SnapRail({
   counterTestId,
   arrowsClassName,
   showIndicators = false,
+  dragAdvanceOnRelease = false,
   onActiveChange,
   slideStyle,
 }: SnapRailProps) {
@@ -112,7 +136,7 @@ export function SnapRail({
   // retargets the follow-up click to the rail, and the click-capture
   // handler below swallows it when the drag actually moved, so a
   // drag never follows a link or toggles an overlay control.
-  const dragRef = useRef<{ pointerId: number; startX: number; startScrollLeft: number; moved: boolean } | null>(null);
+  const dragRef = useRef<{ pointerId: number; startX: number; startScrollLeft: number; startIndex: number; moved: boolean } | null>(null);
   const suppressClickRef = useRef(false);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -123,6 +147,7 @@ export function SnapRail({
       pointerId: event.pointerId,
       startX: event.clientX,
       startScrollLeft: el.scrollLeft,
+      startIndex: currentRef.current,
       moved: false,
     };
     // The viewport carries scroll-smooth for arrow navigation; a drag
@@ -160,6 +185,28 @@ export function SnapRail({
       window.setTimeout(() => {
         suppressClickRef.current = false;
       }, 350);
+      // #490 round 3: wide-slide hosts (dragAdvanceOnRelease) — if
+      // the drag moved a real swipe distance but native snap would
+      // settle it back onto the slide it started from (the drag
+      // never crossed that slide's halfway point), settle one slide
+      // over in the drag direction instead. The direction uses the
+      // same |scrollLeft| model as handleRailScroll, so it holds in
+      // LTR and RTL alike. A drag that already crossed into a
+      // neighbouring slide's range keeps the native settle.
+      if (dragAdvanceOnRelease && el && el.clientWidth > 0) {
+        const width = el.clientWidth;
+        const settleIndex = Math.max(
+          0,
+          Math.min(imageCount - 1, Math.round(Math.abs(el.scrollLeft) / width)),
+        );
+        if (
+          settleIndex === drag.startIndex &&
+          Math.abs(el.scrollLeft - drag.startScrollLeft) >= DRAG_ADVANCE_MIN_PX
+        ) {
+          const towardNext = Math.abs(el.scrollLeft) > drag.startIndex * width;
+          scrollToImage(drag.startIndex + (towardNext ? 1 : -1));
+        }
+      }
     }
   };
 

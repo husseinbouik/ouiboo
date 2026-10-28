@@ -154,4 +154,67 @@ describe('SnapRail (#490 round 2)', () => {
         expect(counter().textContent).toBe('3 / 3');
         expect(dot.getAttribute('aria-current')).toBe('true');
     });
+
+    describe('dragAdvanceOnRelease (#490 round 3 — wide-slide gallery)', () => {
+        function renderWideRail(withFlag: boolean) {
+            const utils = render(
+                <SnapRail
+                    images={IMAGES}
+                    imageAlts={['First alt', 'Second alt', 'Third alt']}
+                    captionFallback="Fallback title"
+                    ariaLabel="Trip photos"
+                    counterTestId="rail-counter"
+                    dragAdvanceOnRelease={withFlag}
+                />,
+            );
+            const vp = utils.container.querySelector('[role="group"]') as HTMLDivElement;
+            // Gallery geometry: a slide is a full page width, ~3x a card.
+            Object.defineProperty(vp, 'clientWidth', { value: 1200, configurable: true });
+            vp.scrollTo = jest.fn();
+            vp.setPointerCapture = jest.fn();
+            return { ...utils, vp };
+        }
+
+        const drag = (vp: HTMLDivElement, id: number, from: number, to: number) => {
+            act(() => { vp.dispatchEvent(pointer('pointerdown', { pointerType: 'mouse', pointerId: id, clientX: from })); });
+            act(() => { vp.dispatchEvent(pointer('pointermove', { pointerType: 'mouse', pointerId: id, clientX: to })); });
+            act(() => { vp.dispatchEvent(pointer('pointerup', { pointerType: 'mouse', pointerId: id, clientX: to })); });
+        };
+
+        it('a card-sized drag (200px) advances the wide rail one slide', () => {
+            const { vp } = renderWideRail(true);
+            drag(vp, 3, 900, 700);
+            // The drag scrolled only 200 of 1200px — native snap would
+            // settle back to slide 1 — but the release settles forward.
+            expect(counter().textContent).toBe('2 / 3');
+            expect(vp.scrollTo).toHaveBeenLastCalledWith({ left: 1200, behavior: 'smooth' });
+        });
+
+        it('a drag back settles on the previous slide', () => {
+            const { vp } = renderWideRail(true);
+            drag(vp, 3, 900, 700);
+            expect(counter().textContent).toBe('2 / 3');
+            // jsdom's scrollTo spy does not move scrollLeft; stand in
+            // for the completed smooth scroll to slide 2.
+            vp.scrollLeft = 1200;
+            drag(vp, 4, 200, 400);
+            expect(counter().textContent).toBe('1 / 3');
+            expect(vp.scrollTo).toHaveBeenLastCalledWith({ left: 0, behavior: 'smooth' });
+        });
+
+        it('a short drag (< 64px) still settles back', () => {
+            const { vp } = renderWideRail(true);
+            drag(vp, 5, 900, 870);
+            expect(counter().textContent).toBe('1 / 3');
+            expect(vp.scrollTo).not.toHaveBeenCalled();
+        });
+
+        it('without the flag the same drag keeps the native settle (cards unchanged)', () => {
+            const { vp } = renderWideRail(false);
+            drag(vp, 6, 900, 700);
+            expect(vp.scrollLeft).toBe(200);
+            expect(counter().textContent).toBe('1 / 3');
+            expect(vp.scrollTo).not.toHaveBeenCalled();
+        });
+    });
 });

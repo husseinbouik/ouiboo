@@ -253,8 +253,15 @@ export default function TripDetailsClient({
         {/* #490 — Option A "Snap Rail": the shared rail component.
             Round 2 extracted it from this file (where it passed
             witnessed verification) so the home/search cards render
-            the identical component and behaviour — see SnapRail.tsx. */}
+            the identical component and behaviour — see SnapRail.tsx.
+            Round 3: dragAdvanceOnRelease — this gallery's slides are
+            a full page width (~3x a card's), so the same drag that
+            advances a card fell short of this rail's halfway snap
+            point and settled back onto the starting photo; a moved
+            drag now settles one slide over. Cards keep the native
+            settle (they do not pass the flag). */}
         <SnapRail
+          dragAdvanceOnRelease
           testId="trip-gallery-snap-rail"
           counterTestId="trip-gallery-counter"
           images={trip.images && trip.images.length > 0 ? trip.images : ['']}
