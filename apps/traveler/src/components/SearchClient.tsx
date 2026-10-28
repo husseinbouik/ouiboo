@@ -140,11 +140,29 @@ export default function SearchClient({
     return params;
   }, [filters, sortBy, sortOrder, currentPage, i18n.language]);
 
+  // #440 (Council P1-15): the SSR response may only seed the query it was
+  // fetched for (page 1, default sort, the initial filters). Seeding every
+  // query key with it made in-page searches render the initial result set
+  // as if it were the response for the new filters — stale results until a
+  // full reload. Any deviation from the initial query must fetch fresh.
+  const isInitialQuery =
+    currentPage === 1 &&
+    sortBy === "createdAt" &&
+    sortOrder === "desc" &&
+    filters.searchQuery === initialFilters.searchQuery &&
+    filters.category === initialFilters.category &&
+    filters.priceMin === initialFilters.priceMin &&
+    filters.priceMax === initialFilters.priceMax &&
+    filters.dateFrom === initialFilters.dateFrom &&
+    filters.dateTo === initialFilters.dateTo &&
+    !filters.availabilityOnly &&
+    filters.ratingMin === 0;
+
   const { data: response, isLoading, error, isError } = useTripsQuery(queryParams, {
     placeholderData: keepPreviousData,
     // Seed from server-side fetch so first paint shows results without a loading flash.
     // React Query refetches when queryParams change (filters/pagination/sort).
-    initialData: initialResponse as never,
+    initialData: isInitialQuery ? (initialResponse as never) : undefined,
   });
 
   const trips = response?.data || [];

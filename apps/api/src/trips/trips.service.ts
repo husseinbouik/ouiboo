@@ -19,6 +19,7 @@ import {
     normalizeTripTranslations,
     type TripCanonicalSections,
 } from './trip-translations.util';
+import { derivePublicMediaUrl, derivePublicMediaUrls } from '../upload/media-url.util';
 
 @Injectable()
 export class TripsService {
@@ -264,6 +265,11 @@ export class TripsService {
                     { title: { contains: search, mode: 'insensitive' } },
                     { description: { contains: search, mode: 'insensitive' } },
                     { startLocation: { contains: search, mode: 'insensitive' } },
+                    // #440 (Council P1-15): the destination city must be
+                    // searchable too — a trip ENDING in the searched city
+                    // previously returned 0 results because endLocation was
+                    // missing from the OR set.
+                    { endLocation: { contains: search, mode: 'insensitive' } },
                 ];
                 // #546: also match the localized texts. The French columns
                 // above stay the primary match (no search regression for
@@ -399,9 +405,13 @@ export class TripsService {
                 // locale (fallback French -> any language). Without a
                 // locale this resolves to the French columns, i.e. the
                 // payload is byte-identical to the pre-#546 shape.
+                // #447: media URLs are re-derived from the stored file
+                // references against the CURRENT public base on every read
+                // (stored full URLs are provider-coupled — #411).
                 data: templates.map((template) => {
                     const localized = localizeTripPayload(template, locale);
-                    if (!localized.agency) return localized;
+                    const images = derivePublicMediaUrls((template as any).images);
+                    if (!localized.agency) return { ...localized, images };
                     // #569: never publish an umbrella VERIFIED the
                     // components do not support — reconcile on read and
                     // strip the expiry inputs from the payload.
@@ -409,8 +419,11 @@ export class TripsService {
                         localized.agency as typeof localized.agency & { licenceExpiry?: unknown; insuranceExpiry?: unknown };
                     return {
                         ...localized,
+                        images,
                         agency: {
                             ...agency,
+                            // #447: logo re-derived at read time like trip images.
+                            logo: derivePublicMediaUrl((template as any).agency.logo) ?? null,
                             verificationStatus: effectiveVerificationStatus(localized.agency),
                         },
                     };
@@ -534,6 +547,8 @@ export class TripsService {
         const localized = localizeTripPayload(result, locale);
         return {
             ...localized,
+            // #447: re-derive media from stored references at read time.
+            images: derivePublicMediaUrls((result as any).images),
             // #417 (Council P0-11): the resolved cancellation scale
             // (agency bands, or the platform defaults when the trip has
             // none) plus the platform floor terms — this is the scale
@@ -543,6 +558,8 @@ export class TripsService {
             cancellationScale: buildCancellationScaleSnapshot(result.cancellationPolicy),
             agency: {
                 ...publicAgency,
+                // #447: logo re-derived at read time like trip images.
+                logo: derivePublicMediaUrl((result.agency as any).logo) ?? null,
                 // #569: umbrella reconciled with licence + insurance.
                 verificationStatus: effectiveVerificationStatus(result.agency),
                 bankDetails: visibleBankDetails(result.agency),

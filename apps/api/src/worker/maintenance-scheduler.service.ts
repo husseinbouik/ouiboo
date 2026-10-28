@@ -23,6 +23,10 @@ export class MaintenanceSchedulerService implements OnModuleInit {
       this.upsertRecurring(MaintenanceJobName.CompleteFinishedBookings, '15 * * * *'),
       // #369: evaluate staged-payment confirmation deadlines hourly.
       this.upsertRecurring(MaintenanceJobName.GroupConfirmationDeadlines, '5 * * * *'),
+      // #433: refund-due evaluation hourly too (was daily-only via the
+      // serverless maintenance endpoint).
+      this.upsertRecurring(MaintenanceJobName.RefundDueCaseSync, '10 * * * *'),
+      this.upsertRecurring(MaintenanceJobName.RefundOverdueSweep, '15 * * * *'),
     ]);
   }
 

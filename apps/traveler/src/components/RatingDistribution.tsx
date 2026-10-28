@@ -40,7 +40,7 @@ export function RatingDistribution({
                 style={{ width: `${percentage}%` }}
               />
             </div>
-            <span className="text-xs font-medium text-muted-foreground w-8 text-right">{count}</span>
+            <span className="text-xs font-medium text-muted-foreground w-8 text-end">{count}</span>
           </div>
         );
       })}

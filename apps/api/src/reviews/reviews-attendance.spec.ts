@@ -22,6 +22,12 @@ function makeFakeDb(bookingOver: any = {}) {
     booking: { findUnique: jest.fn(async () => booking) },
     review: {
       findUnique: jest.fn(async () => null),
+      // #439 (from the clearance batch): createReview now also reads the
+      // traveller's prior review count to decide PENDING vs VISIBLE.
+      // Model a returning traveller (1 prior review) so this suite keeps
+      // exercising the immediate-publication path it exercised before
+      // #439 — the attendance gate assertions are unchanged.
+      count: jest.fn(async () => 1),
       create: jest.fn(async ({ data }: any) => {
         const row = { id: 'review-1', ...data };
         created.push(row);

@@ -44,6 +44,7 @@ with the reason — never estimated.
 | Stuck states | 0 unresolved > 48h | `stuck.total` |
 | Duplicate bookings | < 1% | `duplicates.rate` |
 | Terms recorded | 100% of new bookings | `terms.recordedRate` |
+| Fee capture (#431) | ≥ 98% of platform service fees captured | `feeCapture` — wired as a gate value in `BETA_EXIT_GATES`, **inactive** while the beta is free (no fee exists to capture); activates with the monetisation gate (#426) |
 
 The endpoint returns each criterion with its measured value and a
 `pass` flag (`null` when the window has no data to judge — an empty

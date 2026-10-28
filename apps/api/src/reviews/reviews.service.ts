@@ -2,8 +2,12 @@ import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/com
 import { DatabaseService } from '../database/database.service';
 import { CreateReviewDto, UpdateReviewDto, ReviewResponseDto } from './dto/create-review.dto';
 
-export type ReviewStatusValue = 'VISIBLE' | 'HIDDEN' | 'REMOVED';
+export type ReviewStatusValue = 'PENDING' | 'VISIBLE' | 'HIDDEN' | 'REMOVED';
 export type ReviewModerationAction = 'HIDE' | 'REMOVE' | 'RESTORE';
+
+/** #439 (Council P1-14): author edit budget — at most 3 edits, within 30 days. */
+export const MAX_REVIEW_EDITS = 3;
+export const REVIEW_EDIT_WINDOW_DAYS = 30;
 
 const MODERATION_TARGETS: Record<ReviewModerationAction, ReviewStatusValue> = {
   HIDE: 'HIDDEN',
@@ -11,8 +15,11 @@ const MODERATION_TARGETS: Record<ReviewModerationAction, ReviewStatusValue> = {
   RESTORE: 'VISIBLE',
 };
 
-/** Allowed status transitions. REMOVED is terminal. */
+/** Allowed status transitions. REMOVED is terminal. #439: a PENDING
+ * (pre-publication moderation) review can be approved to VISIBLE or
+ * removed; it cannot be hidden (it is not public yet). */
 const MODERATION_TRANSITIONS: Record<ReviewStatusValue, ReviewStatusValue[]> = {
+  PENDING: ['VISIBLE', 'REMOVED'],
   VISIBLE: ['HIDDEN', 'REMOVED'],
   HIDDEN: ['VISIBLE', 'REMOVED'],
   REMOVED: [],
@@ -98,6 +105,26 @@ export class ReviewsService {
       throw new BadRequestException('Review already exists for this booking');
     }
 
+    // #439 (Council P1-14): pre-publication moderation + self-booking
+    // friction. The verified-booking gate above is unchanged. A
+    // traveller's FIRST review is held in PENDING until an admin approves
+    // it through moderateReview; a review of the traveller's OWN agency's
+    // trip (self-booking) is always held, however many reviews they have.
+    // PENDING reviews are invisible to the public list and aggregates,
+    // which only count VISIBLE rows.
+    const [priorReviewCount, agencyOwner] = await Promise.all([
+      this.prisma.review.count({ where: { travelerId } }),
+      this.prisma.agencyProfile?.findUnique
+        ? this.prisma.agencyProfile.findUnique({
+            where: { id: booking.session.template.agencyId },
+            select: { userId: true },
+          })
+        : Promise.resolve(null),
+    ]);
+    const isSelfBookingReview = !!agencyOwner && agencyOwner.userId === travelerId;
+    const initialStatus: ReviewStatusValue =
+      priorReviewCount === 0 || isSelfBookingReview ? 'PENDING' : 'VISIBLE';
+
     // Create review
     const review = await this.prisma.review.create({
       data: {
@@ -107,11 +134,14 @@ export class ReviewsService {
         rating: dto.rating,
         comment: dto.comment,
         isVerifiedBooking: true,
+        status: initialStatus,
       },
     });
 
-    // Update trip template rating
-    await this.updateTripRating(booking.session.template.id);
+    // Only a publicly visible review moves the stored trip rating.
+    if (initialStatus === 'VISIBLE') {
+      await this.updateTripRating(booking.session.template.id);
+    }
 
     return review;
   }
@@ -240,11 +270,37 @@ export class ReviewsService {
       throw new ForbiddenException('Not authorized to update this review');
     }
 
+    // #439 (Council P1-14): edit limits — previously unlimited edits,
+    // forever. A removed review is terminal; otherwise the author gets
+    // at most MAX_REVIEW_EDITS edits inside REVIEW_EDIT_WINDOW_DAYS of
+    // publication. Editing a VISIBLE review sends it back to PENDING
+    // pre-publication moderation, so an approved review cannot be
+    // swapped for different content after the fact.
+    if ((review.status ?? 'VISIBLE') === 'REMOVED') {
+      throw new BadRequestException('A removed review cannot be edited');
+    }
+    const editCount: number = review.editCount ?? 0;
+    if (editCount >= MAX_REVIEW_EDITS) {
+      throw new BadRequestException(
+        `Review edit limit reached (${MAX_REVIEW_EDITS} edits)`,
+      );
+    }
+    if (review.createdAt) {
+      const windowMs = REVIEW_EDIT_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+      if (Date.now() - new Date(review.createdAt).getTime() > windowMs) {
+        throw new BadRequestException(
+          `Reviews can only be edited within ${REVIEW_EDIT_WINDOW_DAYS} days of posting`,
+        );
+      }
+    }
+
     const updatedReview = await this.prisma.review.update({
       where: { id: reviewId },
       data: {
         rating: dto.rating ?? review.rating,
         comment: dto.comment ?? review.comment,
+        editCount: editCount + 1,
+        ...((review.status ?? 'VISIBLE') === 'VISIBLE' ? { status: 'PENDING' as const } : {}),
       },
     });
 
@@ -286,8 +342,10 @@ export class ReviewsService {
   /**
    * Moderate review (admin only) — #393.
    *
-   * Lifecycle: reviews start VISIBLE (the pre-moderation behaviour, so
-   * existing rows keep showing). An admin may HIDE a VISIBLE review,
+   * Lifecycle: since #439 a traveller's first review and any self-booking
+   * review start PENDING (existing rows keep their stored status). An
+   * admin approves a PENDING review via RESTORE (-> VISIBLE) or removes
+   * it. An admin may HIDE a VISIBLE review,
    * REMOVE a VISIBLE or HIDDEN review, or RESTORE a HIDDEN review back
    * to VISIBLE. REMOVED is terminal: a removed review cannot be
    * restored through this endpoint (its content is retained in the
