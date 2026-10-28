@@ -543,7 +543,11 @@
       "pass": "ناجح",
       "fail": "فاشل",
       "noData": "بيانات غير كافية",
-      "supportNotDerivable": "معدل استجابة الدعم غير قابل للاشتقاق"
+      "supportNotDerivable": "معدل استجابة الدعم غير قابل للاشتقاق",
+      "supportResponseRate": "الرد الأول من الدعم خلال 48 ساعة",
+      "supportTickets": "{{count}} تذكرة دعم مفتوحة",
+      "supportTicketsDetail": "{{responded}} تلقت ردًا أول، منها {{within}} خلال 48 ساعة",
+      "supportAwaiting": "{{count}} تذكرة مفتوحة تنتظر الرد الأول منذ أكثر من 48 ساعة"
     },
     "diagnostics": {
       "title": "البناء والعلامات",

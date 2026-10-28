@@ -31,6 +31,9 @@ export function Footer() {
           <Link href="/support" className="hover:text-foreground transition-colors">
             {t('footer.support')}
           </Link>
+          <Link href="/help" className="hover:text-foreground transition-colors">
+            {t('footer.help')}
+          </Link>
           <Link href="/privacy" className="hover:text-foreground transition-colors">
             {t('footer.privacy')}
           </Link>

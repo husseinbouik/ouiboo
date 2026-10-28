@@ -55,6 +55,27 @@ describe('BetaMetricsPanel (#559)', () => {
     expect(screen.getByText(/terms recorded on 100%/).parentElement?.textContent).toContain('dashboard.betaMetrics.noData');
   });
 
+  it('renders the #446 support-ticket card when the service provides ticket counts', () => {
+    const withTickets: AdminBetaMetrics = {
+      ...metrics,
+      support: {
+        responseWithin48hPercent: 50,
+        derivable: true,
+        reason: 'Derived from help-centre tickets.',
+        ticketsOpened: 4,
+        ticketsByStatus: { OPEN: 1, RESOLVED: 3 },
+        ticketsByCategory: { BOOKING: 4 },
+        ticketsWithFirstResponse: 2,
+        firstResponsesWithin48h: 1,
+        awaitingFirstResponseOver48h: 1,
+      },
+    };
+    render(<BetaMetricsPanel t={t} metrics={withTickets} />);
+    expect(screen.getByText('50%')).not.toBeNull();
+    expect(screen.getByText(/supportTickets/)).not.toBeNull();
+    expect(screen.queryByTestId('beta-metrics-not-derivable')).toBeNull();
+  });
+
   it('shows loading and error states without inventing numbers', () => {
     const { rerender } = render(<BetaMetricsPanel t={t} metrics={null} isLoading />);
     expect(screen.getByText('dashboard.betaMetrics.loading')).not.toBeNull();

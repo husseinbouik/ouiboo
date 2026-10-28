@@ -543,7 +543,11 @@
       "pass": "Réussi",
       "fail": "Échoué",
       "noData": "Données insuffisantes",
-      "supportNotDerivable": "Le taux de réponse du support n’est pas dérivable"
+      "supportNotDerivable": "Le taux de réponse du support n’est pas dérivable",
+      "supportResponseRate": "Première réponse du support sous 48 heures",
+      "supportTickets": "{{count}} tickets d'assistance ouverts",
+      "supportTicketsDetail": "{{responded}} avec une première réponse, dont {{within}} sous 48 heures",
+      "supportAwaiting": "{{count}} tickets ouverts sans première réponse depuis plus de 48 heures"
     },
     "diagnostics": {
       "title": "Build et drapeaux",

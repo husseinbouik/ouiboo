@@ -225,12 +225,7 @@ export class BetaMetricsService {
         count: interventionCount,
         per100Bookings: interventionsPer100,
       },
-      support: {
-        responseWithin48hPercent: null,
-        derivable: false,
-        reason:
-          'Platform support runs over email (support@ouiboo.com, #419 split); no ticket or response timestamps are stored, so a 48h response rate cannot be derived from the database.',
-      },
+      support: await this.supportMetrics(window, now),
       exitCriteria: [
         {
           key: 'zeroResultRate',
@@ -269,6 +264,99 @@ export class BetaMetricsService {
           pass: termsRecordedRate === null ? null : termsRecordedRate === 100,
         },
       ],
+    };
+  }
+
+  /**
+   * #446 (Council P2-07): support metrics from help-centre tickets.
+   *
+   * Before #446 support ran only over email (#419) and this block was
+   * honestly `derivable: false`. Tickets now store createdAt and a
+   * firstResponseAt stamp, so the 48-hour first-response rate is
+   * derived from tickets opened in the window: denominator = tickets
+   * with a recorded first response, numerator = those responded to
+   * within 48 hours of creation. Email-only contacts still store no
+   * timestamps and are never estimated into this rate — when no ticket
+   * in the window has a first response, the rate stays not derivable.
+   * A missing SupportTicket table (migration not yet applied to this
+   * environment) also degrades to not-derivable instead of failing
+   * the whole beta-metrics response.
+   */
+  private async supportMetrics(window: { gte: Date; lte: Date }, now: Date) {
+    const notDerivable = (reason: string, extra: Record<string, unknown> = {}) => ({
+      responseWithin48hPercent: null as number | null,
+      derivable: false,
+      reason,
+      ticketsOpened: 0,
+      ticketsByStatus: {} as Record<string, number>,
+      ticketsByCategory: {} as Record<string, number>,
+      ticketsWithFirstResponse: 0,
+      firstResponsesWithin48h: 0,
+      awaitingFirstResponseOver48h: 0,
+      ...extra,
+    });
+    const client = (this.prisma as unknown as Record<string, unknown>).supportTicket as
+      | { findMany: (args: unknown) => Promise<Array<{ status: string; category: string; createdAt: Date; firstResponseAt: Date | null }>> }
+      | undefined;
+    if (!client) {
+      return notDerivable(
+        'No support-ticket store is available in this environment, and email support (#419) stores no response timestamps, so a 48h response rate cannot be derived.',
+      );
+    }
+    let tickets: Array<{ status: string; category: string; createdAt: Date; firstResponseAt: Date | null }>;
+    try {
+      tickets = await client.findMany({
+        where: { createdAt: window },
+        select: { status: true, category: true, createdAt: true, firstResponseAt: true },
+      });
+    } catch {
+      return notDerivable(
+        'The support-ticket store could not be read in this environment (the #446 migration may not be applied yet), and email support (#419) stores no response timestamps, so a 48h response rate cannot be derived.',
+      );
+    }
+    const byStatus: Record<string, number> = {};
+    const byCategory: Record<string, number> = {};
+    let responded = 0;
+    let within48h = 0;
+    let awaitingOver48h = 0;
+    const responseCutoff = now.getTime() - FORTY_EIGHT_HOURS_MS;
+    for (const ticket of tickets) {
+      byStatus[ticket.status] = (byStatus[ticket.status] ?? 0) + 1;
+      byCategory[ticket.category] = (byCategory[ticket.category] ?? 0) + 1;
+      if (ticket.firstResponseAt) {
+        responded += 1;
+        if (ticket.firstResponseAt.getTime() - ticket.createdAt.getTime() <= FORTY_EIGHT_HOURS_MS) {
+          within48h += 1;
+        }
+      } else if (ticket.createdAt.getTime() <= responseCutoff && ticket.status === 'OPEN') {
+        awaitingOver48h += 1;
+      }
+    }
+    const rate = percent(within48h, responded);
+    if (responded === 0) {
+      return notDerivable(
+        tickets.length === 0
+          ? 'No help-centre tickets were opened in this window, and email support (#419) stores no response timestamps, so a 48h response rate cannot be derived.'
+          : 'Help-centre tickets were opened in this window but none has a recorded first response yet, so a 48h response rate cannot be derived yet.',
+        {
+          ticketsOpened: tickets.length,
+          ticketsByStatus: byStatus,
+          ticketsByCategory: byCategory,
+          awaitingFirstResponseOver48h: awaitingOver48h,
+        },
+      );
+    }
+    return {
+      responseWithin48hPercent: rate,
+      derivable: true,
+      reason:
+        'Derived from help-centre tickets (#446): first responses within 48 hours of ticket creation, over tickets with a recorded first response in the window. Email-only support contacts are not included.',
+      ticketsOpened: tickets.length,
+      ticketsByStatus: byStatus,
+      ticketsByCategory: byCategory,
+      ticketsWithFirstResponse: responded,
+      firstResponsesWithin48h: within48h,
+      awaitingFirstResponseOver48h: awaitingOver48h,
     };
   }
 

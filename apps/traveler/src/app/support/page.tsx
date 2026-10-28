@@ -78,6 +78,19 @@ export default function TravelerSupportPage() {
           ))}
         </div>
 
+        {/* #446: the help centre — searchable FAQ + a stored support
+            ticket — is the self-serve companion to this page. */}
+        <div className="mt-10 rounded-2xl border border-border bg-muted p-6">
+          <h2 className="text-xl font-semibold text-foreground">{t('support.helpCentre')}</h2>
+          <p className="mt-2 text-muted-foreground">{t('support.helpCentreBody')}</p>
+          <Link
+            href="/help"
+            className="mt-3 inline-flex items-center gap-2 text-base font-black text-sunset-orange hover:text-orange-600"
+          >
+            {t('support.helpCentre')}
+          </Link>
+        </div>
+
         <p className="mt-8 text-sm text-muted-foreground">{t('support.safetyNote')}</p>
       </div>
     </div>
