@@ -337,6 +337,7 @@
     "previousImage": "Image précédente",
     "nextImage": "Image suivante",
     "viewImage": "Voir l'image {{count}}",
+    "imageCounter": "{{current}} / {{total}}",
     "defaultCategory": "Aventure",
     "priceTba": "Prix à venir",
     "spots_one": "{{count}} place",
@@ -758,6 +759,10 @@
     "searchPlaceholder": "Rechercher par mot-clé — réservation, paiement, remboursement…",
     "title": "Centre d'aide"
   },
+  "bookings": {
+    "title": "Mes réservations",
+    "subtitle": "Gérez vos voyages passés et à venir."
+  },
   "bookingDetail": {
     "reference": "Référence de réservation",
     "subtitle": "Consultez les détails de votre réservation, l’état du paiement et les prochaines actions.",
@@ -783,6 +788,10 @@
     "paymentSnapshot": "Aperçu du paiement",
     "total": "Total",
     "method": "Méthode",
+    "paymentMethodValue": {
+      "MANUAL": "Virement manuel",
+      "GATEWAY": "Paiement en ligne"
+    },
     "proof": "Justificatif",
     "refund": "Remboursement",
     "confirmed": "Confirmé le",
@@ -792,6 +801,11 @@
     "proofReceived": "Justificatif reçu. {{agency}} doit encore confirmer le virement sur son compte bancaire — votre paiement n’est pas réglé avant cette confirmation.",
     "paymentProofNote": "Note sur le justificatif",
     "refundStatus": "État du remboursement",
+    "refundStatusValue": {
+      "PENDING": "En attente",
+      "PROCESSED": "Traité",
+      "FAILED": "Échoué"
+    },
     "uploadReceipt": "Téléverser le reçu",
     "retryPayment": "Réessayer le paiement",
     "cancelBooking": "Annuler la réservation",

@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card, Badge, Button, SafeImage } from '@ouiboo/ui';
-import { MapPin, Star, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
+import React from 'react';
+import { Card, Badge, Button } from '@ouiboo/ui';
+import { MapPin, Star, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,6 +10,7 @@ import { apiClient } from '@/lib/api-client';
 import { cn } from '@ouiboo/ui/utils';
 import { SessionStatus, type SessionStatusType, VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 import { WishlistButton } from './WishlistButton';
+import { SnapRail } from './SnapRail';
 import { useDisplayPrice } from '@/lib/display-currency';
 import { tripCoverViewTransitionName } from '@/lib/view-transition';
 
@@ -57,8 +57,7 @@ interface TripCardProps {
 
 export function TripCard({ trip }: TripCardProps) {
   const { t, i18n } = useTranslation();
-  const [currentImage, setCurrentImage] = useState(0);
-  const images = trip.images && trip.images.length > 0 
+  const images = trip.images && trip.images.length > 0
     ? trip.images 
     : ['https://images.unsplash.com/photo-1489749798305-4fea3ae63d43'];
   const sessions = trip.sessions || [];
@@ -132,182 +131,32 @@ export function TripCard({ trip }: TripCardProps) {
     });
   };
 
-  const goToNextImage = () => {
-    setCurrentImage((prev) => (prev + 1) % images.length);
-  };
-
-  const goToPrevImage = () => {
-    setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
-  };
-
-  const nextImage = (e: React.MouseEvent) => {
-    e.preventDefault();
-    goToNextImage();
-  };
-
-  const prevImage = (e: React.MouseEvent) => {
-    e.preventDefault();
-    goToPrevImage();
-  };
-
-  // Touch swipe support for the image carousel (mobile): a horizontal swipe
-  // changes the image, while vertical gestures still scroll the page. The
-  // container uses `touch-pan-y`, so the browser natively handles vertical
-  // panning and only horizontal-dominant gestures reach these handlers.
-  const SWIPE_THRESHOLD_PX = 40;
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-  const swipeHandledRef = useRef(false);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    swipeHandledRef.current = false;
-    if (images.length <= 1) return;
-    const touch = e.touches[0];
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (images.length <= 1 || !touchStartRef.current) return;
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - touchStartRef.current.x;
-    const dy = touch.clientY - touchStartRef.current.y;
-    touchStartRef.current = null;
-    if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) <= Math.abs(dy)) return;
-    swipeHandledRef.current = true;
-    window.setTimeout(() => {
-      swipeHandledRef.current = false;
-    }, 400);
-    // In RTL the carousel is mirrored (next sits on the left), so the swipe
-    // direction that advances to the next image flips with it.
-    const advancesNext = i18n.dir() === 'rtl' ? dx > 0 : dx < 0;
-    if (advancesNext) {
-      goToNextImage();
-    } else {
-      goToPrevImage();
-    }
-  };
-
-  // #490 rework: pointer drag support (mouse) alongside touch swipe —
-  // the card previously advanced only via touch swipe or the arrows, so
-  // a desktop drag did nothing. Mouse pointer events drive the same
-  // threshold logic; touch keeps its dedicated handlers above.
-  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
-  const handlePointerDown = (e: React.PointerEvent) => {
-    if (e.pointerType !== 'mouse' || images.length <= 1) return;
-    pointerStartRef.current = { x: e.clientX, y: e.clientY };
-  };
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (e.pointerType !== 'mouse' || !pointerStartRef.current) return;
-    const dx = e.clientX - pointerStartRef.current.x;
-    const dy = e.clientY - pointerStartRef.current.y;
-    pointerStartRef.current = null;
-    if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) <= Math.abs(dy)) return;
-    swipeHandledRef.current = true;
-    window.setTimeout(() => {
-      swipeHandledRef.current = false;
-    }, 400);
-    const advancesNext = i18n.dir() === 'rtl' ? dx > 0 : dx < 0;
-    if (advancesNext) {
-      goToNextImage();
-    } else {
-      goToPrevImage();
-    }
-  };
-
-  // A real swipe is followed by a synthetic click on the touched element;
-  // swallow it so a swipe never toggles the wishlist or follows a link.
-  // Plain taps are unaffected because the flag is only set after a swipe.
-  const handleClickCapture = (e: React.MouseEvent) => {
-    if (swipeHandledRef.current) {
-      e.preventDefault();
-      e.stopPropagation();
-      swipeHandledRef.current = false;
-    }
-  };
-
   return (
     <Card onMouseEnter={prefetchTrip} onFocus={prefetchTrip} onPointerDown={prefetchTrip} className="group border-border shadow-sm hover:shadow-xl transition-all duration-300 rounded-3xl overflow-hidden bg-card h-full flex flex-col">
-      <div
-        className="relative h-64 overflow-hidden touch-pan-y"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        onClickCapture={handleClickCapture}
-      >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentImage}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="absolute inset-0"
-          >
-            <SafeImage
-              src={images[currentImage]}
-              className="w-full h-full object-cover"
-              alt={trip.imageAlts?.[currentImage]?.trim() || (trip.startLocation ? `${trip.title} · ${trip.startLocation}` : trip.title)}
-              fill
-              sizes="(min-width: 1024px) 33vw, 100vw"
-              blurDataURL={trip.imageBlurDataURLs?.[currentImage] ?? undefined}
-              style={{ viewTransitionName: tripCoverViewTransitionName(trip.id) }}
-            />
-          </motion.div>
-        </AnimatePresence>
-        
-        {/* #571: the photo previously carried five overlay layers and
-            the price appeared twice (badge here + footer). What remains:
-            this legibility gradient (indicators only), the category
-            badge, ONE availability badge, the wishlist button and the
-            carousel controls — the footer is the single price surface.
-            #573: the crossfade above is opacity-only; the image no
-            longer also scales on hover (double transform). */}
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/50 to-transparent opacity-50" />
-
-        {/* Navigation Arrows */}
-        {images.length > 1 && (
-          <>
-            <button
-              onClick={prevImage}
-              aria-label={t('tripCard.previousImage')}
-              className="absolute start-3 top-1/2 -translate-y-1/2 w-11 h-11 min-w-11 min-h-11 rounded-full bg-card/95 backdrop-blur-sm shadow-md flex items-center justify-center text-foreground opacity-100 transition-all hover:scale-105"
-            >
-              <ChevronLeft className="h-5 w-5 rtl:rotate-180" />
-            </button>
-            <button
-              onClick={nextImage}
-              aria-label={t('tripCard.nextImage')}
-              className="absolute end-3 top-1/2 -translate-y-1/2 w-11 h-11 min-w-11 min-h-11 rounded-full bg-card/95 backdrop-blur-sm shadow-md flex items-center justify-center text-foreground opacity-100 transition-all hover:scale-105"
-            >
-              <ChevronRight className="h-5 w-5 rtl:rotate-180" />
-            </button>
-          </>
-        )}
-
-        {/* Indicators — real buttons (Session #3 P0-1): keyboard/touch
-            reachable, not decorative divs. */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-          {images.map((_: string, i: number) => (
-            <button
-              key={i}
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                setCurrentImage(i);
-              }}
-              aria-label={t('tripCard.viewImage', { count: i + 1 })}
-              aria-current={currentImage === i || undefined}
-              className="p-1 -m-0.5 flex items-center justify-center"
-            >
-              <span
-                className={cn(
-                  "h-1.5 rounded-full transition-all duration-300 shadow-sm block",
-                  currentImage === i ? "w-6 bg-white" : "w-1.5 bg-white/60"
-                )}
-              />
-            </button>
-          ))}
-        </div>
+      <div className="relative h-64 overflow-hidden">
+        {/* #490 round 2: the card renders the SAME Snap Rail component
+            as the trip-page gallery — native scroll-snap glide (touch
+            swipe and mouse drag both advance it), counter + caption
+            always visible, 44px arrows that DISABLE at the ends with
+            NO loop. The old crossfade carousel looped its arrows,
+            showed dots only, and its drag/swipe advanced nothing.
+            #571: the overlays stay minimal — category badge, ONE
+            availability badge, the wishlist button and the rail
+            controls; the footer is the single price surface. */}
+        <SnapRail
+          images={images}
+          imageAlts={trip.imageAlts}
+          imageBlurDataURLs={trip.imageBlurDataURLs}
+          captionFallback={trip.startLocation ? `${trip.title} · ${trip.startLocation}` : trip.title}
+          ariaLabel={t('tripDetails.photosLabel')}
+          rootClassName="absolute inset-0"
+          viewportClassName="h-full"
+          sizes="(min-width: 1024px) 33vw, 100vw"
+          showIndicators
+          slideStyle={(idx, isActive) =>
+            isActive ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined
+          }
+        />
 
         <div className="absolute top-3 start-3">
           <Badge className="bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none">

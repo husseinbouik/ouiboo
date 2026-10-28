@@ -337,6 +337,7 @@
     "previousImage": "Previous image",
     "nextImage": "Next image",
     "viewImage": "View image {{count}}",
+    "imageCounter": "{{current}} / {{total}}",
     "defaultCategory": "Adventure",
     "priceTba": "Price TBA",
     "spots_one": "{{count}} spot",
@@ -758,6 +759,10 @@
     "searchPlaceholder": "Search by keyword — booking, payment, refund…",
     "title": "Help centre"
   },
+  "bookings": {
+    "title": "My Bookings",
+    "subtitle": "Manage your past and upcoming trips."
+  },
   "bookingDetail": {
     "reference": "Booking reference",
     "subtitle": "Review your reservation details, payment state, and next actions.",
@@ -783,6 +788,10 @@
     "paymentSnapshot": "Payment snapshot",
     "total": "Total",
     "method": "Method",
+    "paymentMethodValue": {
+      "MANUAL": "Manual transfer",
+      "GATEWAY": "Online payment"
+    },
     "proof": "Proof",
     "refund": "Refund",
     "confirmed": "Confirmed",
@@ -792,6 +801,11 @@
     "proofReceived": "Proof received. {{agency}} still has to confirm the transfer in its bank account — your payment is not settled until then.",
     "paymentProofNote": "Payment proof note",
     "refundStatus": "Refund status",
+    "refundStatusValue": {
+      "PENDING": "Pending",
+      "PROCESSED": "Processed",
+      "FAILED": "Failed"
+    },
     "uploadReceipt": "Upload receipt",
     "retryPayment": "Retry payment",
     "cancelBooking": "Cancel booking",

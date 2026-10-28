@@ -3,8 +3,13 @@
  *
  * #495 rework: the traveller profile menu must be reliable first and
  * hover-intent second. Locked behaviour:
- * - click toggles deterministically (functional setState — no stale
- *   closure re-opening the menu),
+ * - click toggles deterministically (decisions read a synchronously
+ *   synced ref — no stale closure re-opening the menu),
+ * - round 2: the FIRST click always lands on an open menu — when
+ *   hover (or keyboard focus) opened the menu during the same
+ *   gesture, the click pins it open instead of toggling it shut
+ *   (the witnessed "first click does nothing" defect); a click
+ *   toggles shut only a menu a previous click opened,
  * - pointerdown outside the menu closes it,
  * - Escape closes it,
  * - hover open/close (with the intent close delay) applies only on
@@ -97,13 +102,22 @@ describe('Navbar profile menu (#495)', () => {
     expect(menu()).not.toBeNull();
   });
 
-  it('a click right after a hover-open closes the menu (no stale-closure fight)', () => {
+  it('the first click after a hover-open pins the menu open; the next click closes it', () => {
     render(<Navbar />);
     const wrapper = trigger().parentElement as HTMLElement;
+    // Pointer arrival hover-opens the menu before any click lands —
+    // the exact sequence the deployed witness run performs.
     fireEvent.mouseEnter(wrapper);
     expect(menu()).not.toBeNull();
+    // First click: must leave the menu OPEN (round-1 toggled it shut,
+    // so the click appeared to do nothing).
+    fireEvent.click(trigger());
+    expect(menu()).not.toBeNull();
+    expect(trigger().getAttribute('aria-expanded')).toBe('true');
+    // The menu is now click-opened, so the next click toggles it shut.
     fireEvent.click(trigger());
     expect(menu()).toBeNull();
+    expect(trigger().getAttribute('aria-expanded')).toBe('false');
   });
 
   it('closes on pointerdown outside the menu', () => {

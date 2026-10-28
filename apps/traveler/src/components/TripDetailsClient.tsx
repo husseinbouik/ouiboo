@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -10,7 +10,6 @@ import {
   Users,
   Check,
   ChevronLeft,
-  ChevronRight,
   Banknote,
   Languages,
   Star,
@@ -32,6 +31,8 @@ import { SessionStatus, type CancellationScaleSnapshot, type SessionStatusType }
 import { formatCurrency } from '@ouiboo/utils';
 import { CancellationScaleCard } from '@/components/CancellationScaleCard';
 import { RatingDistribution } from '@/components/RatingDistribution';
+import { SnapRail } from '@/components/SnapRail';
+import { useDisplayAmountConverter } from '@/lib/display-currency';
 
 type TripDay = {
   dayNumber: number;
@@ -118,8 +119,6 @@ export default function TripDetailsClient({
   const { t, i18n } = useTranslation();
   const { user, setShowLoginModal } = useAuth();
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
-  const [activeImage, setActiveImage] = useState(0);
-  const railRef = useRef<HTMLDivElement | null>(null);
 
   // Content-language audit (2026-10-27, #546): the server fetch sends
   // no locale, so the ISR payload is canonical French. It previously
@@ -158,6 +157,14 @@ export default function TripDetailsClient({
       return response.data;
     }
   });
+
+  // #615: every price on this page honours the traveller's display
+  // currency, exactly like the cards. All of a trip's sessions share
+  // the trip currency (API invariant), so one converter bound to the
+  // first session's currency covers the price header, the session
+  // rows and the cancellation scale. Display only — checkout still
+  // charges the session currency.
+  const convertDisplayAmount = useDisplayAmountConverter(trip?.sessions?.[0]?.currency);
 
   if (isLoading) return (
     <div className="min-h-screen bg-background pb-32" role="status" aria-label={t('tripDetails.loading')}>
@@ -203,40 +210,23 @@ export default function TripDetailsClient({
     if (!Number.isFinite(Number(session.price))) return lowest;
     return !lowest || Number(session.price) < Number(lowest.price) ? session : lowest;
   }, null);
+  // #615: the "from" price renders in the display currency (converted
+  // through the MAD-base rates), not the session currency.
+  const formatDisplayAmount = (amount: number | string | null | undefined): string => {
+    const converted = convertDisplayAmount(amount);
+    return converted ? formatCurrency(converted.amount, converted.currency, i18n.language) : '—';
+  };
   const minPriceLabel = lowestPricedSession
-    ? formatCurrency(lowestPricedSession.price, lowestPricedSession.currency, i18n.language)
+    ? formatDisplayAmount(lowestPricedSession.price)
     : t('tripDetails.onRequest');
 
   // #417: refund amounts on the cancellation scale are computed on the
   // selected session's price, falling back to the lowest open price.
+  // #615: the scale's base is converted to the display currency too,
+  // so the refund amounts it derives match the cards.
   const selectedSessionData = openSessions.find((session) => session.id === selectedSession) ?? null;
   const scaleBaseSession = selectedSessionData ?? lowestPricedSession;
-
-  // #490 rework — Option A "Snap Rail" (founder decision, FINAL):
-  // ONE component, one behaviour on mobile AND desktop, replacing the
-  // old main-image + desktop side-tile grid + mobile thumbnail strip.
-  // Native scroll-snap does the gliding (no JS swipe math), the counter
-  // + caption are always visible, and desktop gets 44px prev/next
-  // arrows that DISABLE at the ends — no loop.
-  const imageCount = trip.images?.length ?? 0;
-
-  const handleRailScroll = () => {
-    const el = railRef.current;
-    if (!el || el.clientWidth === 0) return;
-    const idx = Math.round(Math.abs(el.scrollLeft) / el.clientWidth);
-    setActiveImage(Math.max(0, Math.min(imageCount - 1, idx)));
-  };
-
-  const scrollToImage = (idx: number) => {
-    const el = railRef.current;
-    if (!el) return;
-    const clamped = Math.max(0, Math.min(imageCount - 1, idx));
-    el.scrollTo({
-      left: (i18n.dir() === 'rtl' ? -1 : 1) * clamped * el.clientWidth,
-      behavior: 'smooth',
-    });
-    setActiveImage(clamped);
-  };
+  const scaleBaseConverted = scaleBaseSession ? convertDisplayAmount(scaleBaseSession.price) : null;
 
   // #571 rework: prominent trip-level spots indicator (previously the
   // count existed only as 10px text inside session-picker rows).
@@ -260,66 +250,26 @@ export default function TripDetailsClient({
             {t('tripDetails.backToCatalog')}
         </Link>
 
-        {/* #490 rework — Option A "Snap Rail": one native scroll-snap
-            rail for mobile AND desktop (see the state comment above). */}
-        <div className="mb-8 sm:mb-12" data-testid="trip-gallery-snap-rail">
-          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl shadow-black/5 dark:shadow-black/20 border border-border/50">
-            <div
-              ref={railRef}
-              onScroll={handleRailScroll}
-              role="group"
-              aria-label={t('tripDetails.photosLabel')}
-              className="flex h-[280px] sm:h-[400px] lg:h-[520px] overflow-x-auto snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            >
-              {(trip.images && trip.images.length > 0 ? trip.images : ['']).map((src, idx) => (
-                <div key={idx} className="relative h-full w-full shrink-0 snap-center snap-always">
-                  <SafeImage
-                    src={src}
-                    className="w-full h-full object-cover"
-                    alt={trip.imageAlts?.[idx]?.trim() || trip.title}
-                    fill
-                    sizes="100vw"
-                    blurDataURL={trip.imageBlurDataURLs?.[idx] ?? undefined}
-                    style={idx === activeImage ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined}
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent" />
-            {imageCount > 1 ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => scrollToImage(activeImage - 1)}
-                  disabled={activeImage === 0}
-                  aria-label={t('tripCard.previousImage')}
-                  className="absolute start-4 top-1/2 hidden h-11 w-11 min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-full bg-card/95 text-foreground shadow-md backdrop-blur-sm transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100 lg:flex"
-                >
-                  <ChevronLeft className="h-5 w-5 rtl:rotate-180" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => scrollToImage(activeImage + 1)}
-                  disabled={activeImage >= imageCount - 1}
-                  aria-label={t('tripCard.nextImage')}
-                  className="absolute end-4 top-1/2 hidden h-11 w-11 min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-full bg-card/95 text-foreground shadow-md backdrop-blur-sm transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100 lg:flex"
-                >
-                  <ChevronRight className="h-5 w-5 rtl:rotate-180" />
-                </button>
-              </>
-            ) : null}
-            <div className="pointer-events-none absolute inset-x-4 bottom-4 flex items-end justify-between gap-3">
-              <span className="min-w-0 truncate rounded-full bg-black/55 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md">
-                {trip.imageAlts?.[activeImage]?.trim() || trip.title}
-              </span>
-              {imageCount > 1 ? (
-                <span data-testid="trip-gallery-counter" className="shrink-0 rounded-full bg-black/55 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md">
-                  {t('tripDetails.imageCounter', { current: activeImage + 1, total: imageCount })}
-                </span>
-              ) : null}
-            </div>
-          </div>
-        </div>
+        {/* #490 — Option A "Snap Rail": the shared rail component.
+            Round 2 extracted it from this file (where it passed
+            witnessed verification) so the home/search cards render
+            the identical component and behaviour — see SnapRail.tsx. */}
+        <SnapRail
+          testId="trip-gallery-snap-rail"
+          counterTestId="trip-gallery-counter"
+          images={trip.images && trip.images.length > 0 ? trip.images : ['']}
+          imageAlts={trip.imageAlts}
+          imageBlurDataURLs={trip.imageBlurDataURLs}
+          captionFallback={trip.title}
+          ariaLabel={t('tripDetails.photosLabel')}
+          rootClassName="mb-8 sm:mb-12 overflow-hidden rounded-2xl border border-border/50 shadow-2xl shadow-black/5 dark:shadow-black/20 sm:rounded-3xl"
+          viewportClassName="h-[280px] sm:h-[400px] lg:h-[520px]"
+          sizes="100vw"
+          arrowsClassName="hidden lg:flex"
+          slideStyle={(idx, isActive) =>
+            isActive ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined
+          }
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16 relative">
           {/* Left Side: Information */}
@@ -549,11 +499,14 @@ export default function TripDetailsClient({
                </div>
              )}
 
-             {/* #417: the cancellation scale, shown before payment. */}
+             {/* #417: the cancellation scale, shown before payment.
+                 #615: base + currency arrive already converted to the
+                 display currency, so the refund amounts match the
+                 cards; the card itself keeps formatting them. */}
              <CancellationScaleCard
                scale={trip.cancellationScale}
-               baseAmount={scaleBaseSession ? Number(scaleBaseSession.price) : null}
-               currency={scaleBaseSession?.currency ?? trip.sessions?.[0]?.currency}
+               baseAmount={scaleBaseConverted ? scaleBaseConverted.amount : null}
+               currency={scaleBaseConverted?.currency ?? scaleBaseSession?.currency ?? trip.sessions?.[0]?.currency}
                className="pt-6"
              />
 
@@ -671,11 +624,11 @@ export default function TripDetailsClient({
                                           <>
                                             <div className="flex justify-between text-[11px] font-bold">
                                               <span className="text-sunset-orange uppercase tracking-tighter">{t('tripDetails.depositDue')}</span>
-                                              <span className="text-foreground">{formatCurrency(session.deposit, session.currency, i18n.language)}</span>
+                                              <span className="text-foreground">{formatDisplayAmount(session.deposit)}</span>
                                             </div>
                                             <div className="flex justify-between text-[11px] font-bold">
                                               <span className="text-muted-foreground uppercase tracking-tighter">{t('tripDetails.balanceAfterConfirmation')}</span>
-                                              <span className="text-foreground">{formatCurrency(Number(session.price) - Number(session.deposit), session.currency, i18n.language)}</span>
+                                              <span className="text-foreground">{formatDisplayAmount(Number(session.price) - Number(session.deposit))}</span>
                                             </div>
                                             <p className="text-[10px] text-muted-foreground">
                                               {t('tripDetails.minParticipants', { count: session.minBookings })}
@@ -688,7 +641,7 @@ export default function TripDetailsClient({
                                           <>
                                             <div className="flex justify-between text-[11px] font-bold">
                                               <span className="text-sunset-orange uppercase tracking-tighter">{t('tripDetails.totalDue')}</span>
-                                              <span className="text-foreground">{formatCurrency(session.price, session.currency, i18n.language)}</span>
+                                              <span className="text-foreground">{formatDisplayAmount(session.price)}</span>
                                             </div>
                                             <p className="text-[10px] text-muted-foreground">
                                               {t('tripDetails.fullAmountRequired')}

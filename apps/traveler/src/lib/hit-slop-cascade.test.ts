@@ -17,8 +17,11 @@ const tokensCss = readFileSync(
   resolve(__dirname, '../../../../packages/tokens/tokens.css'),
   'utf8',
 );
+// #490 round 2: the card carousel is the shared SnapRail component
+// (extracted from the trip-page gallery), so the carousel-control
+// invariants below assert against SnapRail.tsx — same guards, new home.
 const tripCard = readFileSync(
-  resolve(__dirname, '../components/TripCard.tsx'),
+  resolve(__dirname, '../components/SnapRail.tsx'),
   'utf8',
 );
 

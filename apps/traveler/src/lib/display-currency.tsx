@@ -164,6 +164,39 @@ function useMadRate(currency: string): number | null {
 }
 
 /**
+ * #615: numeric companion to useDisplayPrice for surfaces that must
+ * format SEVERAL amounts derived from one base — the trip page's
+ * cancellation scale multiplies the session price by each band's
+ * percent, so it needs the converted NUMBER, not a formatted string.
+ * Returns a converter bound to one authoritative currency:
+ * amount -> { amount, currency } in the display currency, falling
+ * back to the authoritative amount/currency when no rate exists.
+ */
+export function useDisplayAmountConverter(fromCurrency?: string | null) {
+  const { displayCurrency } = useDisplayCurrency();
+  const from = normalizeCurrency(fromCurrency);
+  const fromRate = useMadRate(from);
+  const displayRate = useMadRate(displayCurrency);
+
+  return useCallback(
+    (amount: number | string | null | undefined): { amount: number; currency: string } | null => {
+      if (amount === null || amount === undefined) return null;
+      const numeric = Number(amount);
+      if (!Number.isFinite(numeric)) return null;
+      if (from === displayCurrency) return { amount: numeric, currency: from };
+      const converted = convertViaMadRates(numeric, from, displayCurrency, {
+        [from]: fromRate,
+        [displayCurrency]: displayRate,
+      });
+      return converted === null
+        ? { amount: numeric, currency: from }
+        : { amount: converted, currency: displayCurrency };
+    },
+    [from, displayCurrency, fromRate, displayRate],
+  );
+}
+
+/**
  * Format `amount` (denominated in the authoritative `fromCurrency`)
  * in the traveller's display currency. Falls back to the authoritative
  * currency when conversion is impossible (missing/failed rate) — a
