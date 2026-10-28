@@ -165,6 +165,23 @@ describe('BetaMetricsService', () => {
     expect(m.support.ticketsOpened).toBe(1);
   });
 
+  it('keeps support not-derivable when the ticket store cannot be read (#446 migration not applied)', async () => {
+    const throwing = buildMock({
+      supportTicket: {
+        findMany: jest.fn(async () => {
+          throw new Error('relation "SupportTicket" does not exist');
+        }),
+      },
+    });
+    const service = new BetaMetricsService(throwing as any);
+    const m = await service.getBetaMetrics(undefined, undefined, NOW);
+    expect(m.support.derivable).toBe(false);
+    expect(m.support.responseWithin48hPercent).toBeNull();
+    expect(m.support.reason).toContain('could not be read');
+    // the rest of the metrics still resolve
+    expect(m.bookings.created).toBe(40);
+  });
+
   it('rejects an inverted window', async () => {
     const service = new BetaMetricsService(buildMock() as any);
     await expect(

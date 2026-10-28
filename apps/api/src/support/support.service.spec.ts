@@ -81,6 +81,19 @@ describe('SupportService (#446)', () => {
     expect(updates[0]).not.toHaveProperty('firstResponseAt');
   });
 
+  it('lists tickets newest first, capped, with normalised status/category filters', async () => {
+    const calls: Array<Record<string, unknown>> = [];
+    (db.supportTicket.findMany as jest.Mock).mockImplementation(async (args: Record<string, unknown>) => {
+      calls.push(args);
+      return [];
+    });
+    await service.listTickets(' open ', ' booking ');
+    expect(calls[0]).toMatchObject({ where: { status: 'OPEN', category: 'BOOKING' }, take: 200 });
+    await service.listTickets();
+    expect(calls[1]).toMatchObject({ take: 200 });
+    expect((calls[1] as { where?: unknown }).where).toBeUndefined();
+  });
+
   it('throws for an unknown ticket id', async () => {
     stored = null;
     await expect(service.updateTicket('nope', { status: 'RESOLVED' }, 'admin-1')).rejects.toThrow(NotFoundException);
