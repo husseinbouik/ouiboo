@@ -28,15 +28,16 @@ agency's bank confirmation settles a booking. Refunds are paid by the
 agency directly, tracked as a `RefundCase` with a 7-day initiation
 SLA (`REFUND_SLA_DAYS = 7`).
 
-**Localisation status.** The macros in this document are the English
-working copies. The traveller-facing support *pages* and the
-transactional email system carry equivalent support copy in EN / FR /
-AR (locale files and `apps/api/src/email/email-i18n.ts`, parity-tested).
-These macros have **not** yet been translated into FR / AR in this
-document: before replying to a traveller in French or Arabic, translate
-the macro — do not send the English text as if it were the localised
-version, and keep the 48-hour and agency-first facts identical in every
-language.
+**Localisation status (#446).** The macros in this document now exist
+in English, French and Arabic. The English text is the working source;
+the FR and AR versions below carry exactly the same facts — the
+48-hour normal lane, the agency-first emergency lane, direct payment
+to the agency, and the 7-day refund-initiation SLA — and must be kept
+in step whenever an English macro changes. The traveller-facing
+support *pages*, the help centre (`/help`) and the transactional email
+system carry equivalent support copy in EN / FR / AR (locale files and
+`apps/api/src/email/email-i18n.ts`, parity-tested). Do not send the
+English text as if it were the localised version.
 
 ## Traveller Macros
 
@@ -194,6 +195,279 @@ after `refundDueAt` with no initiation:
 > your wallet balance") were removed: there is no wallet or payout
 > flow in the launch money model — agencies are paid directly by
 > travellers.
+
+## Traveller Macros — Français (#446)
+
+### 1. Réservation reçue
+
+Objet : Votre réservation Ouiboo a bien été reçue
+
+Bonjour {{traveler_name}},
+
+Nous avons bien reçu votre réservation pour « {{trip_title}} ».
+Pour confirmer votre réservation, veuillez effectuer le virement bancaire en suivant les instructions de paiement affichées au moment du paiement et téléverser votre justificatif de paiement depuis votre page de réservation. Vous payez l'agence directement — Ouiboo ne reçoit ni ne détient votre paiement.
+
+Référence de réservation : `{{booking_id}}`
+
+Cordialement,
+Assistance Ouiboo
+
+### 2. Justificatif de paiement en cours d'examen
+
+Objet : Votre justificatif de paiement est en cours d'examen
+
+Bonjour {{traveler_name}},
+
+Nous avons bien reçu votre justificatif de paiement pour la réservation `{{booking_id}}`.
+L'agence examine le justificatif par rapport à son compte bancaire, et votre réservation est confirmée dès que l'agence confirme l'arrivée du virement. L'acceptation du justificatif seul ne règle pas la réservation — c'est la confirmation bancaire de l'agence qui la règle.
+
+Nous répondons aux e-mails d'assistance sous 48 heures ; si vous n'avez aucune nouvelle de l'agence d'ici là, répondez à cet e-mail et nous la relancerons pour vous.
+
+Cordialement,
+Assistance Ouiboo
+
+### 3. Paiement confirmé
+
+Objet : Votre réservation est confirmée
+
+Bonjour {{traveler_name}},
+
+Votre paiement pour la réservation `{{booking_id}}` a été confirmé par l'agence.
+Votre voyage est désormais confirmé pour « {{trip_title}} ».
+
+Cordialement,
+Assistance Ouiboo
+
+### 4. Paiement rejeté
+
+Objet : Action requise pour le paiement de votre réservation
+
+Bonjour {{traveler_name}},
+
+L'agence n'a pas pu approuver le justificatif de paiement de la réservation `{{booking_id}}`.
+
+Motif : `{{rejection_reason}}`
+
+Veuillez téléverser un justificatif de paiement corrigé ou contacter l'assistance si vous avez besoin d'aide.
+
+Cordialement,
+Assistance Ouiboo
+
+### 5. Dossier de remboursement ouvert
+
+Objet : Votre dossier de remboursement est ouvert
+
+Bonjour {{traveler_name}},
+
+Un dossier de remboursement a été ouvert pour la réservation `{{booking_id}}`.
+Votre paiement est allé directement à {{agency_name}}, donc votre remboursement vient également d'elle — Ouiboo ne détient jamais votre argent. L'agence dispose d'un délai jusqu'au `{{due_date}}` (7 jours) pour initier votre remboursement, et nous la relançons pour vous en cas de retard. Vous pouvez suivre l'état de votre remboursement à tout moment dans vos réservations.
+
+Cordialement,
+Assistance Ouiboo
+
+### 6. Remboursement initié
+
+Objet : Votre remboursement a été initié
+
+Bonjour {{traveler_name}},
+
+{{agency_name}} a initié votre remboursement de `{{amount}} MAD` pour la réservation `{{booking_id}}`.
+Nous vous tiendrons informé dès que le remboursement sera terminé avec la preuve bancaire de l'agence.
+
+Cordialement,
+Assistance Ouiboo
+
+### 7. Remboursement terminé
+
+Objet : Votre remboursement est terminé
+
+Bonjour {{traveler_name}},
+
+Votre remboursement pour la réservation `{{booking_id}}` a été effectué par {{agency_name}}.
+Si les fonds ne sont pas encore visibles, veuillez tenir compte du délai de traitement de votre banque.
+
+Cordialement,
+Assistance Ouiboo
+
+### 8. Problème de service (accusé de réception d'un incident)
+
+Objet : Nous avons connaissance d'un problème sur Ouiboo
+
+Bonjour {{traveler_name}},
+
+Nous avons connaissance d'un problème affectant Ouiboo et nous travaillons à le résoudre. Nous vous tiendrons informé par e-mail dès qu'il sera résolu.
+Si vous voyagez aujourd'hui, le contact d'urgence de votre agence — figurant sur la carte des contacts de votre réservation — reste votre premier appel.
+
+Cordialement,
+Assistance Ouiboo
+
+## Agency Macros — Français (#446)
+
+### 1. Vérification en attente
+
+Bonjour {{agency_name}},
+
+Le profil de votre agence est en cours d'examen.
+Nous vous informerons dès que la vérification sera terminée ou si nous avons besoin d'informations supplémentaires.
+
+Cordialement,
+Équipe Ouiboo
+
+### 2. Relance remboursement (agence)
+
+> Objet : Remboursement en retard — réservation `{{booking_id}}`
+>
+> Bonjour {{agency_name}}, le remboursement de {{amount}} MAD pour la réservation
+> `{{booking_id}}` était dû le {{due_date}} et n'a pas été initié.
+> Veuillez l'initier aujourd'hui et envoyer la référence bancaire ; les
+> remboursements en retard non résolus restreignent les nouvelles réservations
+> sur votre compte. — Ouiboo
+
+### 3. Information voyageur au jour 3 du remboursement
+
+> Objet : Point sur votre remboursement — réservation `{{booking_id}}`
+>
+> Bonjour {{traveler_name}}, votre remboursement de {{amount}} MAD est toujours
+> chez {{agency_name}}, qui paie les remboursements directement. Il était dû le
+> {{due_date}} ; nous avons relancé l'agence aujourd'hui et nous vous tiendrons
+> informé d'ici le {{next_update_date}}. Votre dossier reste ouvert jusqu'à ce
+> que le remboursement soit terminé avec une preuve bancaire. — Assistance Ouiboo
+
+## Traveller Macros — العربية (#446)
+
+### 1. تم استلام الحجز
+
+الموضوع: تم استلام حجزك على Ouiboo
+
+مرحبًا {{traveler_name}}،
+
+لقد استلمنا حجزك لرحلة «{{trip_title}}».
+لتأكيد حجزك، يرجى إتمام التحويل البنكي باتباع تعليمات الدفع المعروضة عند الدفع ورفع إثبات الدفع من صفحة حجزك. تدفع للوكالة مباشرة — Ouiboo لا يتلقى دفعتك ولا يحتفظ بها.
+
+مرجع الحجز: `{{booking_id}}`
+
+مع التحيات،
+دعم Ouiboo
+
+### 2. إثبات الدفع قيد المراجعة
+
+الموضوع: إثبات الدفع الخاص بك قيد المراجعة
+
+مرحبًا {{traveler_name}}،
+
+لقد استلمنا إثبات الدفع الخاص بك للحجز `{{booking_id}}`.
+تراجع الوكالة الإثبات مقابل حسابها البنكي، ويتم تأكيد حجزك بمجرد تأكيد الوكالة وصول التحويل. قبول الإثبات وحده لا يعني تسوية الحجز — التأكيد البنكي من الوكالة هو الذي يسوّيه.
+
+نرد على رسائل الدعم الإلكترونية خلال 48 ساعة؛ إذا لم تسمع من الوكالة بحلول ذلك الوقت، رد على هذا البريد وسنتابع الأمر معها نيابة عنك.
+
+مع التحيات،
+دعم Ouiboo
+
+### 3. تم تأكيد الدفع
+
+الموضوع: تم تأكيد حجزك
+
+مرحبًا {{traveler_name}}،
+
+لقد أكدت الوكالة دفعتك للحجز `{{booking_id}}`.
+رحلتك مؤكدة الآن لرحلة «{{trip_title}}».
+
+مع التحيات،
+دعم Ouiboo
+
+### 4. تم رفض الدفع
+
+الموضوع: إجراء مطلوب لدفع حجزك
+
+مرحبًا {{traveler_name}}،
+
+لم تتمكن الوكالة من الموافقة على إثبات الدفع للحجز `{{booking_id}}`.
+
+السبب: `{{rejection_reason}}`
+
+يرجى رفع إثبات دفع مصحح أو الاتصال بالدعم إذا احتجت إلى مساعدة.
+
+مع التحيات،
+دعم Ouiboo
+
+### 5. تم فتح ملف استرداد
+
+الموضوع: ملف الاسترداد الخاص بك مفتوح
+
+مرحبًا {{traveler_name}}،
+
+تم فتح ملف استرداد للحجز `{{booking_id}}`.
+ذهبت دفعتك مباشرة إلى {{agency_name}}، لذا يأتي استردادك منها أيضًا — Ouiboo لا يحتفظ بأموالك أبدًا. أمام الوكالة حتى `{{due_date}}` (7 أيام) لبدء الاسترداد، وسنتابعها نيابة عنك إذا تأخرت. يمكنك متابعة حالة الاسترداد في أي وقت في حجوزاتك.
+
+مع التحيات،
+دعم Ouiboo
+
+### 6. تم بدء الاسترداد
+
+الموضوع: تم بدء الاسترداد الخاص بك
+
+مرحبًا {{traveler_name}}،
+
+بدأت {{agency_name}} استردادك بمبلغ `{{amount}} MAD` للحجز `{{booking_id}}`.
+سنعلمك بمجرد إتمام الاسترداد مع الدليل البنكي للوكالة.
+
+مع التحيات،
+دعم Ouiboo
+
+### 7. اكتمل الاسترداد
+
+الموضوع: اكتمل الاسترداد الخاص بك
+
+مرحبًا {{traveler_name}}،
+
+أتمت {{agency_name}} استردادك للحجز `{{booking_id}}`.
+إذا لم ترَ الأموال بعد، يرجى مراعاة وقت معالجة بنكك.
+
+مع التحيات،
+دعم Ouiboo
+
+### 8. مشكلة في الخدمة (إقرار بوجود مشكلة)
+
+الموضوع: نحن على علم بوجود مشكلة في Ouiboo
+
+مرحبًا {{traveler_name}}،
+
+نحن على علم بوجود مشكلة تؤثر على Ouiboo ونعمل على حلها. سنعلمك عبر البريد الإلكتروني عند حلها.
+إذا كنت مسافرًا اليوم، فإن جهة اتصال الطوارئ لدى وكالتك — الموجودة في بطاقة جهات اتصال حجزك — تظل اتصالك الأول.
+
+مع التحيات،
+دعم Ouiboo
+
+## Agency Macros — العربية (#446)
+
+### 1. التحقق قيد الانتظار
+
+مرحبًا {{agency_name}}،
+
+ملف وكالتك قيد المراجعة.
+سنعلمك بمجرد اكتمال التحقق أو إذا احتجنا إلى معلومات إضافية.
+
+مع التحيات،
+فريق Ouiboo
+
+### 2. متابعة الاسترداد (الوكالة)
+
+> الموضوع: استرداد متأخر — الحجز `{{booking_id}}`
+>
+> مرحبًا {{agency_name}}، كان استرداد مبلغ {{amount}} MAD للحجز
+> `{{booking_id}}` مستحقًا في {{due_date}} ولم يتم بدؤه.
+> يرجى بدؤه اليوم وإرسال المرجع البنكي؛ فالمبالغ المستردة المتأخرة غير
+> المحلولة تقيّد الحجوزات الجديدة على حسابك. — Ouiboo
+
+### 3. تحديث المسافر في اليوم الثالث للاسترداد
+
+> الموضوع: تحديث حول الاسترداد الخاص بك — الحجز `{{booking_id}}`
+>
+> مرحبًا {{traveler_name}}، ما زال استردادك بمبلغ {{amount}} MAD لدى
+> {{agency_name}}، التي تدفع المبالغ المستردة مباشرة. كان مستحقًا في
+> {{due_date}}؛ وقد تابعنا الأمر مع الوكالة اليوم وسنعلمك مجددًا بحلول
+> {{next_update_date}}. يبقى ملفك مفتوحًا حتى يكتمل الاسترداد مع دليل
+> بنكي. — دعم Ouiboo
 
 ## Escalation Matrix
 

@@ -267,7 +267,18 @@ export type AdminBetaMetrics = {
   terms: { nullTermsInWindow: number; recordedRate: number | null; nullTermsAllTime: number };
   sweepPauses: { agenciesCurrentlyPaused: number; note: string };
   interventions: { count: number; per100Bookings: number | null };
-  support: { responseWithin48hPercent: number | null; derivable: boolean; reason: string };
+  support: {
+    responseWithin48hPercent: number | null;
+    derivable: boolean;
+    reason: string;
+    /** #446: help-centre ticket counts, when the API provides them. */
+    ticketsOpened?: number;
+    ticketsByStatus?: Record<string, number>;
+    ticketsByCategory?: Record<string, number>;
+    ticketsWithFirstResponse?: number;
+    firstResponsesWithin48h?: number;
+    awaitingFirstResponseOver48h?: number;
+  };
   exitCriteria: Array<{ key: string; target: string; value: number | null; pass: boolean | null }>;
 };
 

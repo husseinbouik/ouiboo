@@ -1185,6 +1185,62 @@ model CopyrightReport {
   resolvedBy    String?
 }
 
+enum SupportTicketCategory {
+  BOOKING
+  PAYMENT
+  REFUND
+  ACCOUNT
+  TRIP
+  COMPLAINT
+  TECHNICAL
+  OTHER
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum SupportRequesterRole {
+  TRAVELER
+  AGENCY
+  GUEST
+}
+
+// #446 (Council P2-07): help-centre support tickets. Email remains a
+// published lane (#419); a ticket is what a traveller or agency opens
+// from the help centre instead of — or alongside — that email, so the
+// support operation gains stored timestamps. firstResponseAt is set
+// exactly once, when support first responds (admin update from OPEN),
+// which is what makes the 48-hour first-response rate in
+// BetaMetricsService derivable instead of honestly not-derivable.
+// No traveller/agency foreign key: a guest with no account can still
+// ask for help before signing in, mirroring the public copyright
+// report. bookingRef is a free-text reference the requester supplies,
+// never a trusted booking lookup.
+model SupportTicket {
+  id             String                @id @default(cuid())
+  requesterName  String
+  requesterEmail String
+  requesterRole  SupportRequesterRole  @default(GUEST)
+  category       SupportTicketCategory @default(OTHER)
+  subject        String
+  message        String                @db.Text
+  bookingRef     String?
+  status         SupportTicketStatus   @default(OPEN)
+  firstResponseAt DateTime?
+  resolvedAt     DateTime?
+  resolvedBy     String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([category, createdAt])
+}
+
 enum InvoiceStatus {
   ISSUED
 }

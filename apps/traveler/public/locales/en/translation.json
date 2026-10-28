@@ -185,7 +185,8 @@
     "rights": "Copyright {{year}} Ouiboo. All rights reserved.",
     "support": "Support",
     "privacy": "Privacy",
-    "terms": "Terms"
+    "terms": "Terms",
+    "help": "Help centre"
   },
   "login": {
     "title": "Welcome back",
@@ -658,6 +659,80 @@
     "normalBodyNoEmail": "For everything else — bookings, payments, refunds, your account — your booking page carries your agency's contact and, during your trip, the OuiBoo escalation route. We reply within {{hours}} hours on the normal support lane.",
     "complaintsBodyNoEmail": "To complain about a trip, an agency, or OuiBoo itself, use the contacts on your booking page and mention your booking reference. Complaints are answered on the normal support timeline.",
     "escalationCall": "Call OuiBoo",
-    "escalationWhatsApp": "WhatsApp"
+    "escalationWhatsApp": "WhatsApp",
+    "helpCentre": "Help centre",
+    "helpCentreBody": "Search the frequently asked questions or open a support ticket — your ticket is recorded and answered on the normal support lane."
+  },
+  "help": {
+    "backToSupport": "Back to support",
+    "faq": {
+      "bookingConfirmation": {
+        "answer": "You pay the agency directly by bank transfer and upload your payment proof from your booking page. Your booking is confirmed once the agency confirms the transfer arrived in its bank account — accepting the proof alone does not settle the booking.",
+        "question": "How is my booking confirmed?"
+      },
+      "complaint": {
+        "answer": "Open a ticket below with the Complaint category and your booking reference, or email support if an address is shown on the support page. Complaints are answered on the normal support timeline.",
+        "question": "How do I make a complaint?"
+      },
+      "normalSupport": {
+        "answer": "Normal support replies within {{hours}} hours. There is no 24/7 hotline: during an active trip, your agency is your first call and Ouiboo is the escalation.",
+        "question": "How quickly will support reply?"
+      },
+      "paymentProof": {
+        "answer": "It is the receipt or screenshot of your bank transfer to the agency. Upload it from your booking page so the agency can match your payment to your booking and confirm it against its bank account.",
+        "question": "What is a payment proof?"
+      },
+      "paymentRejected": {
+        "answer": "The agency could not match the proof to its bank account. Check the reason shown on your booking, upload a corrected proof, or open a ticket below and we will chase it for you.",
+        "question": "My payment proof was rejected — what now?"
+      },
+      "refundStatus": {
+        "answer": "You receive an email as soon as a refund case is opened for you, and you can follow its status any time in your bookings.",
+        "question": "How can I follow my refund?"
+      },
+      "refundTiming": {
+        "answer": "Refunds are paid by the agency directly — Ouiboo never holds your money. The agency has 7 days to initiate your refund once a refund case is opened, and Ouiboo chases it if it slips.",
+        "question": "How long does a refund take?"
+      },
+      "tripEmergency": {
+        "answer": "First call your agency's emergency contact — you will find it on your booking page. If they do not respond, contact Ouiboo support and we will escalate with the agency during your trip period. If anyone is in danger, contact local emergency services first.",
+        "question": "Something is wrong during my trip — who do I call first?"
+      }
+    },
+    "faqTitle": "Frequently asked questions",
+    "form": {
+      "bookingRef": "Booking reference",
+      "bookingRefOptional": "optional",
+      "category": "Topic",
+      "categoryAccount": "Account",
+      "categoryBooking": "Booking",
+      "categoryComplaint": "Complaint",
+      "categoryOther": "Other",
+      "categoryPayment": "Payment",
+      "categoryRefund": "Refund",
+      "categoryTechnical": "Technical problem",
+      "categoryTrip": "Trip",
+      "email": "Your email",
+      "emailFallback": "Or email support directly",
+      "error": "We could not send your ticket. Check the fields and try again.",
+      "intro": "Tell us what happened and we will reply by email within {{hours}} hours on the normal support lane.",
+      "message": "How can we help?",
+      "name": "Your full name",
+      "receivedBody": "Thank you. Your ticket is recorded and we will reply to your email within {{hours}} hours on the normal support lane.",
+      "receivedTitle": "Ticket received",
+      "role": "I am a…",
+      "roleAgency": "Agency",
+      "roleGuest": "Visitor (no account)",
+      "roleTraveler": "Traveller",
+      "subject": "Subject",
+      "submit": "Send ticket",
+      "submitting": "Sending…",
+      "title": "Open a support ticket"
+    },
+    "intro": "Find an answer below, or open a support ticket. Normal support replies within {{hours}} hours.",
+    "noResults": "No answer matches your search. Open a ticket below and we will help you directly.",
+    "searchLabel": "Search the help centre",
+    "searchPlaceholder": "Search by keyword — booking, payment, refund…",
+    "title": "Help centre"
   }
 }

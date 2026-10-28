@@ -543,7 +543,11 @@
       "pass": "Pass",
       "fail": "Fail",
       "noData": "Not enough data",
-      "supportNotDerivable": "Support response rate is not derivable"
+      "supportNotDerivable": "Support response rate is not derivable",
+      "supportResponseRate": "Support first response within 48 hours",
+      "supportTickets": "{{count}} support tickets opened",
+      "supportTicketsDetail": "{{responded}} with a first response, {{within}} within 48 hours",
+      "supportAwaiting": "{{count}} open tickets awaiting a first response for over 48 hours"
     },
     "diagnostics": {
       "title": "Build & flags",

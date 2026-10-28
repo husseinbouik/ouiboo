@@ -185,7 +185,8 @@
     "rights": "Copyright {{year}} Ouiboo. Tous droits réservés.",
     "support": "Assistance",
     "privacy": "Confidentialité",
-    "terms": "Conditions"
+    "terms": "Conditions",
+    "help": "Centre d'aide"
   },
   "login": {
     "title": "Bon retour",
@@ -658,6 +659,80 @@
     "normalBodyNoEmail": "Pour tout le reste — réservations, paiements, remboursements, votre compte — votre page de réservation indique le contact de votre agence et, pendant votre voyage, la voie d'escalade OuiBoo. Nous répondons sous {{hours}} heures dans le cadre de l'assistance normale.",
     "complaintsBodyNoEmail": "Pour vous plaindre d'un voyage, d'une agence ou d'OuiBoo, utilisez les contacts figurant sur votre page de réservation en mentionnant votre référence de réservation. Les réclamations sont traitées dans les délais de l'assistance normale.",
     "escalationCall": "Appeler OuiBoo",
-    "escalationWhatsApp": "WhatsApp"
+    "escalationWhatsApp": "WhatsApp",
+    "helpCentre": "Centre d'aide",
+    "helpCentreBody": "Recherchez dans les questions fréquentes ou ouvrez un ticket d'assistance — votre ticket est enregistré et traité dans les délais de l'assistance normale."
+  },
+  "help": {
+    "backToSupport": "Retour à l'assistance",
+    "faq": {
+      "bookingConfirmation": {
+        "answer": "Vous payez l'agence directement par virement bancaire et vous téléversez votre justificatif de paiement depuis votre page de réservation. Votre réservation est confirmée lorsque l'agence confirme que le virement est arrivé sur son compte bancaire — l'acceptation du justificatif seul ne règle pas la réservation.",
+        "question": "Comment ma réservation est-elle confirmée ?"
+      },
+      "complaint": {
+        "answer": "Ouvrez un ticket ci-dessous avec la catégorie Réclamation et votre référence de réservation, ou écrivez à l'assistance si une adresse est indiquée sur la page d'assistance. Les réclamations sont traitées dans les délais de l'assistance normale.",
+        "question": "Comment déposer une réclamation ?"
+      },
+      "normalSupport": {
+        "answer": "L'assistance normale répond sous {{hours}} heures. Il n'y a pas de ligne d'urgence 24h/24 : pendant un voyage en cours, votre agence est votre premier appel et Ouiboo prend le relais.",
+        "question": "Sous quel délai l'assistance répond-elle ?"
+      },
+      "paymentProof": {
+        "answer": "C'est le reçu ou la capture d'écran de votre virement bancaire à l'agence. Téléversez-le depuis votre page de réservation afin que l'agence puisse associer votre paiement à votre réservation et le confirmer sur son compte bancaire.",
+        "question": "Qu'est-ce qu'un justificatif de paiement ?"
+      },
+      "paymentRejected": {
+        "answer": "L'agence n'a pas pu associer le justificatif à son compte bancaire. Vérifiez le motif indiqué sur votre réservation, téléversez un justificatif corrigé ou ouvrez un ticket ci-dessous et nous relancerons l'agence pour vous.",
+        "question": "Mon justificatif de paiement a été rejeté — que faire ?"
+      },
+      "refundStatus": {
+        "answer": "Vous recevez un e-mail dès qu'un dossier de remboursement est ouvert pour vous, et vous pouvez suivre son état à tout moment dans vos réservations.",
+        "question": "Comment suivre mon remboursement ?"
+      },
+      "refundTiming": {
+        "answer": "Les remboursements sont payés directement par l'agence — Ouiboo ne détient jamais votre argent. L'agence dispose de 7 jours pour initier votre remboursement dès l'ouverture d'un dossier de remboursement, et Ouiboo la relance en cas de retard.",
+        "question": "Combien de temps prend un remboursement ?"
+      },
+      "tripEmergency": {
+        "answer": "Appelez d'abord le contact d'urgence de votre agence — il figure sur votre page de réservation. S'il ne répond pas, contactez l'assistance Ouiboo et nous ferons remonter le problème auprès de l'agence pendant la période de votre voyage. Si une personne est en danger, contactez d'abord les services d'urgence locaux.",
+        "question": "Un problème pendant mon voyage — qui appeler en premier ?"
+      }
+    },
+    "faqTitle": "Questions fréquentes",
+    "form": {
+      "bookingRef": "Référence de réservation",
+      "bookingRefOptional": "facultatif",
+      "category": "Sujet",
+      "categoryAccount": "Compte",
+      "categoryBooking": "Réservation",
+      "categoryComplaint": "Réclamation",
+      "categoryOther": "Autre",
+      "categoryPayment": "Paiement",
+      "categoryRefund": "Remboursement",
+      "categoryTechnical": "Problème technique",
+      "categoryTrip": "Voyage",
+      "email": "Votre e-mail",
+      "emailFallback": "Ou écrivez directement à l'assistance",
+      "error": "Nous n'avons pas pu envoyer votre ticket. Vérifiez les champs et réessayez.",
+      "intro": "Dites-nous ce qui s'est passé et nous vous répondrons par e-mail sous {{hours}} heures dans le cadre de l'assistance normale.",
+      "message": "Comment pouvons-nous vous aider ?",
+      "name": "Votre nom complet",
+      "receivedBody": "Merci. Votre ticket est enregistré et nous répondrons à votre e-mail sous {{hours}} heures dans le cadre de l'assistance normale.",
+      "receivedTitle": "Ticket reçu",
+      "role": "Je suis…",
+      "roleAgency": "Agence",
+      "roleGuest": "Visiteur (sans compte)",
+      "roleTraveler": "Voyageur",
+      "subject": "Objet",
+      "submit": "Envoyer le ticket",
+      "submitting": "Envoi…",
+      "title": "Ouvrir un ticket d'assistance"
+    },
+    "intro": "Trouvez une réponse ci-dessous ou ouvrez un ticket d'assistance. L'assistance normale répond sous {{hours}} heures.",
+    "noResults": "Aucune réponse ne correspond à votre recherche. Ouvrez un ticket ci-dessous et nous vous aiderons directement.",
+    "searchLabel": "Rechercher dans le centre d'aide",
+    "searchPlaceholder": "Rechercher par mot-clé — réservation, paiement, remboursement…",
+    "title": "Centre d'aide"
   }
 }

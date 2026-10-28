@@ -118,6 +118,30 @@ export default function BetaMetricsPanel({ t, metrics, isLoading = false, isErro
                 </p>
               </CardContent>
             </Card>
+            {/* #446: support tickets — rendered only when the service
+                provides ticket counts; the rate itself stays "—" while
+                the service marks it not derivable. */}
+            {showMetrics.support && typeof showMetrics.support.ticketsOpened === 'number' && (
+              <Card className="border-none shadow-sm rounded-2xl">
+                <CardContent className="p-5 space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t('dashboard.betaMetrics.supportResponseRate')}</p>
+                  <p className="text-2xl font-black text-foreground">{formatPercent(showMetrics.support.responseWithin48hPercent)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t('dashboard.betaMetrics.supportTickets', { count: showMetrics.support.ticketsOpened })}
+                    {' · '}
+                    {t('dashboard.betaMetrics.supportTicketsDetail', {
+                      responded: showMetrics.support.ticketsWithFirstResponse ?? 0,
+                      within: showMetrics.support.firstResponsesWithin48h ?? 0,
+                    })}
+                  </p>
+                  {(showMetrics.support.awaitingFirstResponseOver48h ?? 0) > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {t('dashboard.betaMetrics.supportAwaiting', { count: showMetrics.support.awaitingFirstResponseOver48h ?? 0 })}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           <Card className="border-none shadow-sm rounded-2xl">
