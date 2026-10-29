@@ -5,10 +5,11 @@ import { useTranslation } from 'react-i18next';
 import Image from 'next/image';
 import { Card, CardContent, Button, Badge } from '@ouiboo/ui';
 import { MapPin, Calendar, Users, Banknote, CheckCircle2 } from 'lucide-react';
-import { formatCurrency } from '@ouiboo/utils';
+import { formatCurrency, normalizeCurrency } from '@ouiboo/utils';
 import type { CheckoutTrip } from './checkout-types';
 import SellerIdentity from '../SellerIdentity';
 import { CancellationScaleCard } from '../CancellationScaleCard';
+import { useDisplayAmountConverter } from '@/lib/display-currency';
 
 type CheckoutSummaryProps = {
   trip: CheckoutTrip;
@@ -39,6 +40,21 @@ export function CheckoutSummary({
   stagedAmounts,
 }: CheckoutSummaryProps) {
   const { t } = useTranslation();
+  // #619: render every amount in the traveller's display currency, like
+  // the trip page (#498/#615) does. Conversion is display-only — the
+  // charge itself stays in the session currency, and when no rate is
+  // available the converter falls back to that authoritative currency.
+  const convertAmount = useDisplayAmountConverter(selectedCurrency);
+  const displayAmount = (amount: number): { amount: number; currency: string } =>
+    convertAmount(amount) ?? { amount, currency: normalizeCurrency(selectedCurrency) };
+  const formatDisplayAmount = (amount: number): string => {
+    const converted = displayAmount(amount);
+    return formatCurrency(converted.amount, converted.currency, language);
+  };
+  const totalDisplay = displayAmount(totalPrice);
+  const showsConvertedCurrency =
+    normalizeCurrency(selectedCurrency) !== '' &&
+    totalDisplay.currency !== normalizeCurrency(selectedCurrency);
   return (
     <Card className="border-none shadow-2xl shadow-black/10 rounded-[3rem] overflow-hidden p-10 space-y-8 bg-card ring-1 ring-border/50">
       <div className="space-y-6">
@@ -70,7 +86,7 @@ export function CheckoutSummary({
         <div className="space-y-4 pt-6 border-t border-border/50">
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground font-medium">{t('checkout.subtotal')}</span>
-            <span className="oui-numeric font-bold">{formatCurrency(totalPrice, selectedCurrency, language)}</span>
+            <span className="oui-numeric font-bold">{formatDisplayAmount(totalPrice)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground font-medium">{t('checkout.serviceFee')}</span>
@@ -80,12 +96,12 @@ export function CheckoutSummary({
             <>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground font-medium">{t('checkout.balanceAfterConfirmation')}</span>
-                <span className="oui-numeric font-bold">{formatCurrency(stagedAmounts.balanceDue, selectedCurrency, language)}</span>
+                <span className="oui-numeric font-bold">{formatDisplayAmount(stagedAmounts.balanceDue)}</span>
               </div>
               <div className="flex justify-between items-end pt-4 border-t border-border/50">
                 <span className="text-lg font-black font-display tracking-tight text-foreground">{t('checkout.depositToPayNow')}</span>
                 <div className="text-end">
-                  <span className="oui-numeric text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatCurrency(stagedAmounts.depositDue, selectedCurrency, language)}</span>
+                  <span className="oui-numeric text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatDisplayAmount(stagedAmounts.depositDue)}</span>
                 </div>
               </div>
             </>
@@ -93,7 +109,7 @@ export function CheckoutSummary({
             <div className="flex justify-between items-end pt-4 border-t border-border/50">
               <span className="text-lg font-black font-display tracking-tight text-foreground">{t('checkout.totalToPay')}</span>
               <div className="text-end">
-                <span className="oui-numeric text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatCurrency(totalPrice, selectedCurrency, language)}</span>
+                <span className="oui-numeric text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatDisplayAmount(totalPrice)}</span>
               </div>
             </div>
           )}
@@ -103,9 +119,20 @@ export function CheckoutSummary({
       {/* #417: the cancellation scale, repeated at checkout before payment. */}
       <CancellationScaleCard
         scale={trip.cancellationScale}
-        baseAmount={totalPrice}
-        currency={selectedCurrency}
+        baseAmount={totalDisplay.amount}
+        currency={totalDisplay.currency}
       />
+
+      {/* #619: when the amounts render in a different currency than the
+          session is charged in, say so — the conversion is display-only. */}
+      {showsConvertedCurrency && (
+        <p className="text-[10px] font-semibold text-muted-foreground text-center">
+          {t('checkout.displayCurrencyNote', {
+            display: totalDisplay.currency,
+            charged: normalizeCurrency(selectedCurrency),
+          })}
+        </p>
+      )}
 
       {errorMessage && (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-xs font-semibold text-rose-700">

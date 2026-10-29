@@ -132,6 +132,7 @@
     "submitting": "Submitting booking...",
     "completeBooking": "Complete Booking",
     "directPaymentNote": "Direct payment to the agency — Ouiboo never holds your money",
+    "displayCurrencyNote": "Shown in {{display}} for reference — you will pay in {{charged}}.",
     "disclaimerTitle": "Important Disclaimer",
     "disclaimerBody": "Uploading a payment proof does not complete your payment. Your booking stays pending until the agency confirms the transfer in its bank account — accepting the proof image alone is not settlement. This usually takes 2-4 business hours.",
     "prevailingLanguage": "If there is any inconsistency between the language versions of these terms, the French version prevails.",

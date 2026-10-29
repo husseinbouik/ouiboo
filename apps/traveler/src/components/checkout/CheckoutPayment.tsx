@@ -9,6 +9,7 @@ import { Calendar, Info, Banknote, UploadCloud, LifeBuoy, X, Clock } from 'lucid
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
 import { formatCurrency } from '@ouiboo/utils';
+import { useDisplayAmountConverter } from '@/lib/display-currency';
 
 type CheckoutPaymentProps = {
   bankDetails: string;
@@ -40,6 +41,11 @@ export function CheckoutPayment({
   stagedInfo,
 }: CheckoutPaymentProps) {
   const { t } = useTranslation();
+  // #619: the staged-deposit copy quotes the deposit in the traveller's
+  // display currency like every other checkout amount (display-only —
+  // the transfer itself stays in the session currency).
+  const convertAmount = useDisplayAmountConverter(stagedInfo?.currency);
+  const depositDisplay = stagedInfo ? convertAmount(stagedInfo.depositDue) : null;
   return (
     <div className="space-y-8 pt-10 border-t">
       <div className="flex items-center gap-4">
@@ -96,7 +102,9 @@ export function CheckoutPayment({
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">
             {t('checkout.stagedBody', {
-              deposit: formatCurrency(stagedInfo.depositDue, stagedInfo.currency, stagedInfo.language),
+              deposit: depositDisplay
+                ? formatCurrency(depositDisplay.amount, depositDisplay.currency, stagedInfo.language)
+                : formatCurrency(stagedInfo.depositDue, stagedInfo.currency, stagedInfo.language),
               agencyName: stagedInfo.agencyName,
               minimum: stagedInfo.minimumParticipants,
               deadline: stagedInfo.confirmationDeadline

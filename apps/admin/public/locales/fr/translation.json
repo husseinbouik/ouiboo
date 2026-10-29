@@ -42,6 +42,7 @@
       "verify": "Vérifier",
       "verifying": "Vérification...",
       "invalid": "Ce code n’a pas été accepté. Vérifiez le code et réessayez.",
+      "expired": "Votre session de connexion a expiré. Saisissez à nouveau votre mot de passe pour recevoir une nouvelle demande de code.",
       "useRecovery": "Utiliser un code de récupération",
       "useAuthenticator": "Utiliser le code d’authentification",
       "back": "Retour à la connexion",

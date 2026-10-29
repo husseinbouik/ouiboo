@@ -232,6 +232,35 @@ describe('anonymous session probing (#245)', () => {
     expect(locationStub.href).toBe('');
   });
 
+  it('leaves pre-session auth-flow 401s to the caller: no refresh, no redirect (#640)', async () => {
+    const postSpy = jest
+      .spyOn(axios, 'post')
+      .mockRejectedValue(new Error('refresh must not be called'));
+    // Mid-challenge state: the in-memory token slot holds the MFA
+    // challenge token and a session hint exists — exactly the state in
+    // which a wrong TOTP code used to bounce the admin to /login.
+    await setBrowserAccessToken('challenge-token');
+    const client = createBrowserApiClient(BASE_URL);
+    client.defaults.adapter = async (
+      config: InternalAxiosRequestConfig,
+    ): Promise<AxiosResponse> => {
+      throw httpError(config, 401);
+    };
+
+    for (const path of [
+      '/auth/mfa/verify',
+      '/auth/mfa/recovery',
+      '/auth/mfa/enrollment/confirm',
+      '/auth/break-glass',
+    ]) {
+      await expect(client.post(path, {})).rejects.toBeTruthy();
+      expect(locationStub.href).toBe('');
+    }
+    expect(postSpy).not.toHaveBeenCalled();
+    // The challenge token must survive: the form retries with it.
+    expect(hasBrowserSessionHint()).toBe(true);
+  });
+
   it('attempts the refresh when only the persisted hint remains (post-reload)', async () => {
     // Fresh module registry = empty in-memory token, like after a reload;
     // the hint in localStorage is the only trace of the earlier login.

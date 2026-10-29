@@ -141,6 +141,54 @@ describe('AdminLoginPage (#418)', () => {
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/'));
   });
 
+  it('keeps a wrong TOTP code on the challenge step with an inline error (#640)', async () => {
+    postMock.mockImplementation(async (url: string) => {
+      if (url === '/auth/login') return { data: { mfaRequired: true, challengeToken: 'ct-1' } };
+      if (url === '/auth/mfa/verify') {
+        const error = new Error('Unauthorized') as Error & { response?: unknown };
+        error.response = { status: 401 };
+        throw error;
+      }
+      throw new Error(`unexpected POST ${url}`);
+    });
+
+    const { byId } = renderPage();
+    await submitCredentials(byId);
+
+    fireEvent.change(await screen.findByLabelText('Authenticator code'), { target: { value: '000000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Verify' }));
+
+    expect(
+      await screen.findByText('That code was not accepted. Check the code and try again.'),
+    ).toBeTruthy();
+    // Still on the challenge step: the code field is present and no
+    // navigation happened — the admin retries with the same challenge.
+    expect(screen.getByLabelText('Authenticator code')).toBeTruthy();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it('returns to credentials with an explanation when the challenge has expired (#640)', async () => {
+    const expiredChallenge = `x.${Buffer.from(JSON.stringify({ exp: 1 })).toString('base64url')}.y`;
+    postMock.mockImplementation(async (url: string) => {
+      if (url === '/auth/login') return { data: { mfaRequired: true, challengeToken: expiredChallenge } };
+      throw new Error(`unexpected POST ${url}`);
+    });
+
+    const { byId } = renderPage();
+    await submitCredentials(byId);
+
+    fireEvent.change(await screen.findByLabelText('Authenticator code'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Verify' }));
+
+    expect(
+      await screen.findByText('Your sign-in session expired. Enter your password again to get a new code prompt.'),
+    ).toBeTruthy();
+    // Back on the credentials step, and the expired challenge was never
+    // sent to the API.
+    expect(byId('username')).toBeTruthy();
+    expect(postMock).not.toHaveBeenCalledWith('/auth/mfa/verify', expect.anything());
+  });
+
   it('refuses a non-admin account even with valid tokens', async () => {
     postMock.mockResolvedValue({
       data: { accessToken: 'at', refreshToken: 'rt', user: { id: 'u-1', email: 't@x.io', role: 'TRAVELER' } },
