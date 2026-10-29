@@ -8,7 +8,7 @@ import mockEnTranslations from '../../../public/locales/en/translation.json';
 jest.mock('react-i18next', () => {
     // #424: resolve keys against the real English locale file so the
     // assertions below read the shipped copy, not raw key names.
-    const React = require('react');
+    const React = jest.requireActual('react');
     const lookup = (key: string): unknown =>
         key.split('.').reduce<any>((acc, part) => acc?.[part], mockEnTranslations);
     return {
