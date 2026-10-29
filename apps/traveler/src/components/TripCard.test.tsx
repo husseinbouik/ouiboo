@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { TripCard, type TripCardTrip } from './TripCard';
 
 jest.mock('react-i18next', () => ({
@@ -191,5 +191,39 @@ describe('TripCard spots badge + carousel controls (#571/#490 rework)', () => {
             expect(btn.className).not.toContain('opacity-0');
             expect(btn.className).not.toContain('w-8');
         }
+    });
+});
+
+describe('TripCard photo tap (founder decision 2026-10-29: link to the trip page, no card viewer)', () => {
+    function photoTrip(): TripCardTrip {
+        return {
+            id: 'trip-3',
+            title: 'Chefchaouen Blues',
+            startLocation: 'Chefchaouen',
+            durationDays: 2,
+            images: ['https://cdn.example.com/a.jpg', 'https://cdn.example.com/b.jpg'],
+            sessions: [],
+            agency: null,
+        };
+    }
+
+    it('wraps the photo in a link to the trip page', () => {
+        const { container } = render(<TripCard trip={photoTrip()} />);
+        const img = container.querySelector('img[src="https://cdn.example.com/a.jpg"]');
+        expect(img).not.toBeNull();
+        expect(img?.closest('a')?.getAttribute('href')).toBe('/trip/trip-3');
+    });
+
+    it('never opens the full-screen photo viewer from a card photo or arrow tap', () => {
+        // jsdom has no layout: the rail's programmatic scroll target
+        // does not exist there, so stand in for it.
+        (window.HTMLElement.prototype as any).scrollTo = jest.fn();
+        const { container } = render(<TripCard trip={photoTrip()} />);
+        const img = container.querySelector('img[src="https://cdn.example.com/a.jpg"]');
+        fireEvent.click(img as Element);
+        expect(screen.queryByTestId('photo-viewer')).toBeNull();
+        // Arrow taps cycle the rail in place — still no viewer.
+        fireEvent.click(screen.getByLabelText('tripCard.nextImage'));
+        expect(screen.queryByTestId('photo-viewer')).toBeNull();
     });
 });

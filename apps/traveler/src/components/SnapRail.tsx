@@ -503,7 +503,14 @@ export function SnapRail({
         <>
           <button
             type="button"
-            onClick={() => step(-1)}
+            onClick={(event) => {
+              // A host may wrap the rail in a link (trip cards link
+              // the photo to the trip page): an arrow tap cycles
+              // photos in place and must never activate that link.
+              // On hosts without a surrounding link this is a no-op.
+              event.preventDefault();
+              step(-1);
+            }}
             aria-label={t('tripCard.previousImage')}
             className={cn(
               'absolute start-4 top-1/2 flex w-11 h-11 min-w-11 min-h-11 -translate-y-1/2 items-center justify-center rounded-full bg-card/95 text-foreground shadow-md backdrop-blur-sm transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100',
@@ -514,7 +521,12 @@ export function SnapRail({
           </button>
           <button
             type="button"
-            onClick={() => step(1)}
+            onClick={(event) => {
+              // See the previous-arrow note: never activate a
+              // surrounding host link.
+              event.preventDefault();
+              step(1);
+            }}
             aria-label={t('tripCard.nextImage')}
             className={cn(
               'absolute end-4 top-1/2 flex w-11 h-11 min-w-11 min-h-11 -translate-y-1/2 items-center justify-center rounded-full bg-card/95 text-foreground shadow-md backdrop-blur-sm transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100',
