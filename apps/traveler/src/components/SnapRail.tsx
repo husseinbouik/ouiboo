@@ -104,6 +104,22 @@ export interface SnapRailProps {
    * native snap settle it was verified with. */
   dragAdvanceOnRelease?: boolean;
   onActiveChange?: (index: number) => void;
+  /** #623: host-driven jump (the full-screen viewer's filmstrip).
+   * When this value changes to a real index other than the one the
+   * rail already rests on, the rail scrolls to that photo. Drags and
+   * arrow steps report back through onActiveChange, so a host that
+   * mirrors the active index here sees no feedback loop: the effect
+   * below no-ops whenever the requested index is already active. */
+  externalIndex?: number;
+  /** #623: the full-screen viewer shows photos whole (contain) on a
+   * dark backdrop; every other surface fills its frame (cover). */
+  imageFit?: 'cover' | 'contain';
+  /** #623: a genuine click on a slide (never the click that follows
+   * a drag — the root capture handler swallows those first) reports
+   * the slide's real index. Hosts open the full-screen viewer with
+   * it. Arrow/indicator clicks are outside the slides and never
+   * reach this handler. */
+  onSlideClick?: (index: number) => void;
   /** Per-slide style hook (e.g. the shared-element view-transition
    * name belongs on the active slide only). */
   slideStyle?: (index: number, isActive: boolean) => React.CSSProperties | undefined;
@@ -131,6 +147,9 @@ export function SnapRail({
   showIndicators = false,
   dragAdvanceOnRelease = false,
   onActiveChange,
+  externalIndex,
+  imageFit = 'cover',
+  onSlideClick,
   slideStyle,
 }: SnapRailProps) {
   const { t, i18n } = useTranslation();
@@ -241,6 +260,19 @@ export function SnapRail({
     const clamped = Math.max(0, Math.min(imageCount - 1, realIdx));
     scrollToExt(loop ? clamped + 1 : clamped);
   };
+
+  // #623: host-driven jump (filmstrip). Fires only when the host
+  // requests a photo the rail is not already resting on, so the
+  // onActiveChange → host state → externalIndex round trip settles
+  // instead of looping.
+  useEffect(() => {
+    if (externalIndex === undefined) return;
+    if (externalIndex === currentRef.current) return;
+    scrollToImage(externalIndex);
+    // scrollToImage is render-scoped; the guard above keys the jump
+    // to the requested index only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalIndex]);
 
   // Arrow step: normalize first (a click can land in the brief
   // window where the strip rests on a clone), then move exactly
@@ -448,11 +480,12 @@ export function SnapRail({
             <div
               key={pos}
               aria-hidden={isClone || undefined}
+              onClick={onSlideClick ? () => onSlideClick(logical) : undefined}
               className="relative h-full w-full shrink-0 snap-center snap-always"
             >
               <SafeImage
                 src={images[logical]}
-                className="w-full h-full object-cover"
+                className={imageFit === 'contain' ? 'w-full h-full object-contain' : 'w-full h-full object-cover'}
                 alt={imageAlts?.[logical]?.trim() || captionFallback}
                 fill
                 sizes={sizes}

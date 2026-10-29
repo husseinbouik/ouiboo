@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, Badge, Button } from '@ouiboo/ui';
 import { MapPin, Star, Zap } from 'lucide-react';
 import Link from 'next/link';
@@ -11,6 +11,7 @@ import { cn } from '@ouiboo/ui/utils';
 import { SessionStatus, type SessionStatusType, VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 import { WishlistButton } from './WishlistButton';
 import { SnapRail } from './SnapRail';
+import { PhotoViewer } from './PhotoViewer';
 import { useDisplayPrice } from '@/lib/display-currency';
 import { tripCoverViewTransitionName } from '@/lib/view-transition';
 
@@ -57,6 +58,10 @@ interface TripCardProps {
 
 export function TripCard({ trip }: TripCardProps) {
   const { t, i18n } = useTranslation();
+  // #623: tapping a card photo opens the full-screen viewer at that
+  // photo (the rail swallows post-drag clicks, so swipes never open
+  // it by accident).
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const images = trip.images && trip.images.length > 0
     ? trip.images 
     : ['https://images.unsplash.com/photo-1489749798305-4fea3ae63d43'];
@@ -153,6 +158,7 @@ export function TripCard({ trip }: TripCardProps) {
           viewportClassName="h-full"
           sizes="(min-width: 1024px) 33vw, 100vw"
           showIndicators
+          onSlideClick={(idx) => setViewerIndex(idx)}
           slideStyle={(idx, isActive) =>
             isActive ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined
           }
@@ -236,6 +242,17 @@ export function TripCard({ trip }: TripCardProps) {
           </span>
         </div>
       </Link>
+
+      {viewerIndex !== null ? (
+        <PhotoViewer
+          images={images}
+          imageAlts={trip.imageAlts}
+          imageBlurDataURLs={trip.imageBlurDataURLs}
+          captionFallback={trip.startLocation ? `${trip.title} · ${trip.startLocation}` : trip.title}
+          initialIndex={viewerIndex}
+          onClose={() => setViewerIndex(null)}
+        />
+      ) : null}
     </Card>
   );
 }
