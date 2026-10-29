@@ -217,7 +217,8 @@
     "globalNavigationLabel": "Global",
     "openMainMenu": "Open main menu",
     "closeMenu": "Close menu",
-    "dashboardImageAlt": "Ouiboo Dashboard",
+    "heroTravelerAlt": "Ouiboo traveller app — Atlas Mountains trip page",
+    "heroAgencyAlt": "Ouiboo agency dashboard — bookings and payments overview",
     "travelerImageAlt": "Traveler enjoying a mountainous view",
     "agencyImageAlt": "Agency dashboard on a laptop"
   },
