@@ -73,6 +73,17 @@ import { cn } from '@ouiboo/ui/utils';
  * copy of the same photo (identical image at the identical
  * offset — invisible). Arrows never disable; the counter,
  * caption and dots always report the REAL position (1..count).
+ *
+ * Round 6 (2026-10-29, #654 — Council Session #5): host-driven
+ * jumps of MORE than one position no longer smooth-scroll. A
+ * filmstrip tap on a distant photo (and the viewer's keyboard
+ * wrap from the last photo back to the first, which arrives here
+ * as a distant externalIndex jump) visibly REWOUND through every
+ * intermediate slide — contradicting the seamless-loop contract
+ * above. Distant jumps now land instantly (scrollLeft assigned
+ * with scroll-behavior forced off, the normalizeLoop technique);
+ * genuine ±1 steps — arrows, drag settles, adjacent filmstrip
+ * taps — keep the smooth glide.
  */
 export interface SnapRailProps {
   images: string[];
@@ -248,10 +259,23 @@ export function SnapRail({
     const el = railRef.current;
     if (!el) return;
     const clamped = Math.max(0, Math.min(extCount - 1, ext));
-    el.scrollTo({
-      left: (i18n.dir() === 'rtl' ? -1 : 1) * clamped * el.clientWidth,
-      behavior: 'smooth',
-    });
+    // #654: a jump of more than one position lands INSTANTLY — a
+    // smooth scroll would traverse (visibly rewind through) every
+    // intermediate slide. The instant path assigns scrollLeft with
+    // scroll-behavior forced off, exactly like normalizeLoop's
+    // clone repositioning, and targets an exact snap point, so the
+    // mandatory snap engine has nothing to correct. ±1 steps keep
+    // the smooth glide.
+    if (Math.abs(clamped - extRef.current) > 1) {
+      el.style.scrollBehavior = 'auto';
+      el.scrollLeft = (i18n.dir() === 'rtl' ? -1 : 1) * clamped * el.clientWidth;
+      el.style.scrollBehavior = '';
+    } else {
+      el.scrollTo({
+        left: (i18n.dir() === 'rtl' ? -1 : 1) * clamped * el.clientWidth,
+        behavior: 'smooth',
+      });
+    }
     setExt(clamped);
     setActive(toReal(clamped));
   };

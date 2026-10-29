@@ -8,9 +8,41 @@ import mockEnTranslations from '../../../public/locales/en/translation.json';
 jest.mock('react-i18next', () => {
     // #424: resolve keys against the real English locale file so the
     // assertions below read the shipped copy, not raw key names.
+    const React = require('react');
     const lookup = (key: string): unknown =>
         key.split('.').reduce<any>((acc, part) => acc?.[part], mockEnTranslations);
     return {
+        // Minimal <Trans> (#655): resolve the key against the real
+        // locale file, interpolate {{values}}, and wrap <tag>…</tag>
+        // segments in the matching `components` entry — enough to
+        // render the bidi-isolated currency notes for real.
+        Trans: ({ i18nKey, values, components }: any) => {
+            const raw = lookup(i18nKey);
+            if (typeof raw !== 'string') return React.createElement(React.Fragment, null, i18nKey);
+            const interpolate = (s: string) => {
+                let out = s;
+                if (values) {
+                    for (const [name, replacement] of Object.entries(values)) {
+                        out = out.replaceAll(`{{${name}}}`, String(replacement));
+                    }
+                }
+                return out;
+            };
+            const parts: unknown[] = [];
+            const tagPattern = /<(\w+)>(.*?)<\/\1>/g;
+            let lastIndex = 0;
+            let match: RegExpExecArray | null;
+            let k = 0;
+            while ((match = tagPattern.exec(raw)) !== null) {
+                if (match.index > lastIndex) parts.push(interpolate(raw.slice(lastIndex, match.index)));
+                const component = components?.[match[1]];
+                const inner = interpolate(match[2]);
+                parts.push(component ? React.cloneElement(component, { key: k++ }, inner) : inner);
+                lastIndex = match.index + match[0].length;
+            }
+            if (lastIndex < raw.length) parts.push(interpolate(raw.slice(lastIndex)));
+            return React.createElement(React.Fragment, null, ...parts);
+        },
         useTranslation: () => ({
             t: (key: string, options?: Record<string, unknown>) => {
                 let value = lookup(key);
@@ -123,10 +155,10 @@ describe('CheckoutPayment (#424 localized payment step)', () => {
     });
 });
 
-describe('CheckoutPayment display currency (#619)', () => {
-    it('quotes the staged deposit in the display currency', async () => {
+describe('CheckoutPayment display currency (#619, corrected by #655)', () => {
+    it('names the MAD deposit as the amount to transfer, with the EUR figure reference-only (#655)', async () => {
         mockUser = { id: 'u1', name: 'Sara', email: 's@x.io', role: 'TRAVELER', displayCurrency: 'EUR' };
-        renderWithProviders(
+        const { container } = renderWithProviders(
             <CheckoutPayment
                 {...baseProps}
                 stagedInfo={{
@@ -139,7 +171,32 @@ describe('CheckoutPayment display currency (#619)', () => {
                 }}
             />,
         );
-        // 300 MAD x 0.092 = EUR 27.60 inside the staged body copy.
-        expect(await screen.findByText(/27\.60/)).toBeTruthy();
+        // #655: the transfer instruction itself names the SESSION
+        // currency amount — 300 MAD is the deposit to transfer, NOT
+        // the €27.60 conversion the pre-fix copy put in this
+        // sentence (the behaviour the old #619 test pinned).
+        const body = await screen.findByText(
+            (_, el) => el?.tagName === 'P' && /You pay a deposit of/.test(el.textContent ?? ''),
+        );
+        expect(body.textContent).toMatch(/MAD\s300\.00/);
+        expect(body.textContent).not.toContain('27.60');
+        // The converted figure (300 MAD x 0.092 = EUR 27.60) appears
+        // only beside the instruction, explicitly labelled
+        // reference-only…
+        const reference = await screen.findByText(
+            (_, el) => el?.tagName === 'P' && /For reference only/.test(el.textContent ?? ''),
+        );
+        expect(reference.textContent).toContain('27.60');
+        // …and the charge-currency note sits adjacent to the
+        // instruction with both currency codes bidi-isolated.
+        expect(
+            screen.getByText(
+                (_, el) =>
+                    el?.tagName === 'P' &&
+                    el.textContent === 'Shown in EUR for reference — you will pay in MAD.',
+            ),
+        ).toBeTruthy();
+        const bdis = Array.from(container.querySelectorAll('bdi')).map((b) => b.textContent);
+        expect(bdis).toEqual(expect.arrayContaining(['EUR', 'MAD']));
     });
 });

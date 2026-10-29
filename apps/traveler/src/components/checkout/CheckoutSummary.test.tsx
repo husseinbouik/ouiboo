@@ -8,9 +8,41 @@ import mockEnTranslations from '../../../public/locales/en/translation.json';
 jest.mock('react-i18next', () => {
     // #424: resolve keys against the real English locale file so the
     // assertions below read the shipped copy, not raw key names.
+    const React = require('react');
     const lookup = (key: string): unknown =>
         key.split('.').reduce<any>((acc, part) => acc?.[part], mockEnTranslations);
     return {
+        // Minimal <Trans> (#655): resolve the key against the real
+        // locale file, interpolate {{values}}, and wrap <tag>…</tag>
+        // segments in the matching `components` entry — enough to
+        // render the bidi-isolated currency notes for real.
+        Trans: ({ i18nKey, values, components }: any) => {
+            const raw = lookup(i18nKey);
+            if (typeof raw !== 'string') return React.createElement(React.Fragment, null, i18nKey);
+            const interpolate = (s: string) => {
+                let out = s;
+                if (values) {
+                    for (const [name, replacement] of Object.entries(values)) {
+                        out = out.replaceAll(`{{${name}}}`, String(replacement));
+                    }
+                }
+                return out;
+            };
+            const parts: unknown[] = [];
+            const tagPattern = /<(\w+)>(.*?)<\/\1>/g;
+            let lastIndex = 0;
+            let match: RegExpExecArray | null;
+            let k = 0;
+            while ((match = tagPattern.exec(raw)) !== null) {
+                if (match.index > lastIndex) parts.push(interpolate(raw.slice(lastIndex, match.index)));
+                const component = components?.[match[1]];
+                const inner = interpolate(match[2]);
+                parts.push(component ? React.cloneElement(component, { key: k++ }, inner) : inner);
+                lastIndex = match.index + match[0].length;
+            }
+            if (lastIndex < raw.length) parts.push(interpolate(raw.slice(lastIndex)));
+            return React.createElement(React.Fragment, null, ...parts);
+        },
         useTranslation: () => ({
             t: (key: string, options?: Record<string, unknown>) => {
                 let value = lookup(key);
@@ -113,10 +145,16 @@ describe('CheckoutSummary display currency (#619)', () => {
         renderWithProviders(<CheckoutSummary {...baseProps} />);
         // 1200 MAD x 0.092 = EUR 110.40 — shown as subtotal AND total.
         expect(await screen.findAllByText(/110\.40/)).toHaveLength(2);
+        // #655: the note renders through <Trans> with the currency
+        // codes wrapped in <bdi>, so match the paragraph's full text
+        // (tags stripped from the shipped copy) instead of a single
+        // text node.
+        const expectedNote = en.displayCurrencyNote
+            .replace(/<\/?(?:display|charged)>/g, '')
+            .replace('{{display}}', 'EUR')
+            .replace('{{charged}}', 'MAD');
         expect(
-            screen.getByText(
-                en.displayCurrencyNote.replace('{{display}}', 'EUR').replace('{{charged}}', 'MAD'),
-            ),
+            screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === expectedNote),
         ).toBeTruthy();
     });
 
