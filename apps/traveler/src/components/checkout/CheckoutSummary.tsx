@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import Image from 'next/image';
 import { Card, CardContent, Button, Badge } from '@ouiboo/ui';
 import { MapPin, Calendar, Users, Banknote, CheckCircle2 } from 'lucide-react';
@@ -124,13 +124,20 @@ export function CheckoutSummary({
       />
 
       {/* #619: when the amounts render in a different currency than the
-          session is charged in, say so — the conversion is display-only. */}
+          session is charged in, say so — the conversion is display-only.
+          #655: the note renders at 12px (was 10px) with the currency
+          codes bidi-isolated; the same note also sits adjacent to the
+          transfer instruction in CheckoutPayment. */}
       {showsConvertedCurrency && (
-        <p className="text-[10px] font-semibold text-muted-foreground text-center">
-          {t('checkout.displayCurrencyNote', {
-            display: totalDisplay.currency,
-            charged: normalizeCurrency(selectedCurrency),
-          })}
+        <p className="text-xs font-semibold text-muted-foreground text-center">
+          <Trans
+            i18nKey="checkout.displayCurrencyNote"
+            values={{
+              display: totalDisplay.currency,
+              charged: normalizeCurrency(selectedCurrency),
+            }}
+            components={{ display: <bdi />, charged: <bdi /> }}
+          />
         </p>
       )}
 

@@ -217,8 +217,50 @@ describe('SnapRail (#490)', () => {
         fireEvent.click(dot);
         expect(counter().textContent).toBe('3 / 3');
         expect(dot.getAttribute('aria-current')).toBe('true');
-        // Photo 3 rests at extended position 3 (one clone before it).
-        expect(viewport.scrollTo).toHaveBeenLastCalledWith({ left: 900, behavior: 'smooth' });
+        // #654: photo 3 rests at extended position 3 (one clone
+        // before it) — two positions away, so the jump lands
+        // INSTANTLY (direct scrollLeft assignment, no smooth
+        // scrollTo that would rewind through photo 2).
+        expect(viewport.scrollTo).not.toHaveBeenCalled();
+        expect(viewport.scrollLeft).toBe(900);
+    });
+
+    it('host-driven distant jumps land instantly; single steps keep the smooth glide (#654)', () => {
+        const rail = (ext?: number) => (
+            <SnapRail
+                images={IMAGES}
+                imageAlts={['First alt', 'Second alt', 'Third alt']}
+                captionFallback="Fallback title"
+                ariaLabel="Trip photos"
+                counterTestId="rail-counter"
+                externalIndex={ext}
+            />
+        );
+        const utils = render(rail(0));
+        const viewport = utils.container.querySelector('[role="group"]') as HTMLDivElement;
+        Object.defineProperty(viewport, 'clientWidth', { value: 300, configurable: true });
+        viewport.scrollTo = jest.fn();
+        viewport.scrollLeft = 300;
+        fireEvent.scroll(viewport);
+        // Filmstrip-style jump, photo 1 → photo 3: no smooth
+        // traversal of photo 2 — the rail is simply THERE.
+        utils.rerender(rail(2));
+        expect(counter().textContent).toBe('3 / 3');
+        expect(viewport.scrollTo).not.toHaveBeenCalled();
+        expect(viewport.scrollLeft).toBe(900);
+        // A single step back (photo 3 → photo 2) still glides.
+        utils.rerender(rail(1));
+        expect(counter().textContent).toBe('2 / 3');
+        expect(viewport.scrollTo).toHaveBeenLastCalledWith({ left: 600, behavior: 'smooth' });
+        // The viewer keyboard wrap (last photo → first) arrives as
+        // a distant jump too: instant, never a backwards rewind.
+        utils.rerender(rail(2));
+        expect(viewport.scrollLeft).toBe(900);
+        (viewport.scrollTo as jest.Mock).mockClear();
+        utils.rerender(rail(0));
+        expect(counter().textContent).toBe('1 / 3');
+        expect(viewport.scrollTo).not.toHaveBeenCalled();
+        expect(viewport.scrollLeft).toBe(300);
     });
 
     describe('dragAdvanceOnRelease (#490 round 3 — wide-slide gallery)', () => {

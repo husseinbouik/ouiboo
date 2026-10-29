@@ -1,14 +1,14 @@
 'use client';
 
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Badge } from '@ouiboo/ui';
 import { Calendar, Info, Banknote, UploadCloud, LifeBuoy, X, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
-import { formatCurrency } from '@ouiboo/utils';
+import { formatCurrency, normalizeCurrency } from '@ouiboo/utils';
 import { useDisplayAmountConverter } from '@/lib/display-currency';
 
 type CheckoutPaymentProps = {
@@ -41,11 +41,21 @@ export function CheckoutPayment({
   stagedInfo,
 }: CheckoutPaymentProps) {
   const { t } = useTranslation();
-  // #619: the staged-deposit copy quotes the deposit in the traveller's
-  // display currency like every other checkout amount (display-only —
-  // the transfer itself stays in the session currency).
+  // #619 quoted the staged deposit in the traveller's display
+  // currency inside this instruction — #655 (Council Session #5,
+  // transaction P0): that made the CONVERTED figure read as the
+  // amount to transfer ("You pay a deposit of €27.60…") while the
+  // authoritative session-currency amount sat in a 10px note in
+  // the summary. The instruction now always names the SESSION
+  // currency amount as THE amount to transfer; the display figure
+  // appears only beside it, explicitly labelled reference-only,
+  // with the charge-currency note adjacent at readable size.
   const convertAmount = useDisplayAmountConverter(stagedInfo?.currency);
   const depositDisplay = stagedInfo ? convertAmount(stagedInfo.depositDue) : null;
+  const showsConvertedDeposit =
+    depositDisplay !== null &&
+    stagedInfo != null &&
+    normalizeCurrency(depositDisplay.currency) !== normalizeCurrency(stagedInfo.currency);
   return (
     <div className="space-y-8 pt-10 border-t">
       <div className="flex items-center gap-4">
@@ -102,9 +112,10 @@ export function CheckoutPayment({
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">
             {t('checkout.stagedBody', {
-              deposit: depositDisplay
-                ? formatCurrency(depositDisplay.amount, depositDisplay.currency, stagedInfo.language)
-                : formatCurrency(stagedInfo.depositDue, stagedInfo.currency, stagedInfo.language),
+              // #655: the transfer instruction names the SESSION
+              // currency (MAD) amount — that is the amount the
+              // traveller must actually transfer to the agency.
+              deposit: formatCurrency(stagedInfo.depositDue, stagedInfo.currency, stagedInfo.language),
               agencyName: stagedInfo.agencyName,
               minimum: stagedInfo.minimumParticipants,
               deadline: stagedInfo.confirmationDeadline
@@ -112,6 +123,29 @@ export function CheckoutPayment({
                 : '',
             })}
           </p>
+          {showsConvertedDeposit && depositDisplay && (
+            <>
+              <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                <Trans
+                  i18nKey="checkout.depositReferenceOnly"
+                  values={{
+                    amount: formatCurrency(depositDisplay.amount, depositDisplay.currency, stagedInfo.language),
+                  }}
+                  components={{ amount: <span className="oui-numeric" /> }}
+                />
+              </p>
+              <p className="text-xs font-medium text-muted-foreground">
+                <Trans
+                  i18nKey="checkout.displayCurrencyNote"
+                  values={{
+                    display: depositDisplay.currency,
+                    charged: normalizeCurrency(stagedInfo.currency),
+                  }}
+                  components={{ display: <bdi />, charged: <bdi /> }}
+                />
+              </p>
+            </>
+          )}
         </div>
       )}
 
