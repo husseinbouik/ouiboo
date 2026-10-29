@@ -13,14 +13,19 @@ export class CurrencyController {
     @Query('target') targetCurrency: string = 'USD',
     @Query('force') forceRefresh: boolean = false,
   ) {
-    const rate = await this.currencyService.getExchangeRates(
+    const info = await this.currencyService.getExchangeRateInfo(
       targetCurrency,
       forceRefresh,
     );
     return {
       baseCurrency: 'MAD',
       targetCurrency,
-      rate,
+      rate: info.rate,
+      // #649: additive — where this rate came from and how old it
+      // is, so a fallback can never pass as a live rate downstream.
+      source: info.source,
+      fetchedAt: info.fetchedAt,
+      ageSeconds: info.ageSeconds,
     };
   }
 
