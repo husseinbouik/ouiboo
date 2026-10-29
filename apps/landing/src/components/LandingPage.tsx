@@ -88,9 +88,10 @@ export default function LandingPage() {
   }, []);
 
   // --- Animation Hooks & Variants ---
+  // #668: subtle settle only — the old 1.05→0.9 shrink + −3° tilt fought
+  // the real-screenshots band's wide aspect and exaggerated the hero.
   const { scrollYProgress } = useScroll();
-  const heroImageScale = useTransform(scrollYProgress, [0, 0.2], [1.05, 0.9]);
-  const heroImageRotate = useTransform(scrollYProgress, [0, 0.2], [0, -3]);
+  const heroImageScale = useTransform(scrollYProgress, [0, 0.2], [1, 0.98]);
 
   const refTravelerImage = useRef(null);
   const { scrollYProgress: scrollYTraveler } = useScroll({ target: refTravelerImage, offset: ["start end", "end start"] });
@@ -329,11 +330,11 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <main id="main-content" tabIndex={-1} className="isolate">
-        <div className="relative pt-24 sm:pt-32 overflow-hidden">
+        <div className="relative pt-24 sm:pt-28 overflow-hidden">
             <div aria-hidden="true" className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
                 <div style={{ clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)' }} className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-sunset-orange opacity-10 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"/>
             </div>
-            <div className="py-24 sm:py-32">
+            <div className="py-16 sm:py-24">
                 <div className="mx-auto max-w-7xl px-6 lg:px-8">
                     <motion.div 
                       variants={staggerContainer} 
@@ -393,9 +394,21 @@ export default function LandingPage() {
                             </motion.a>
                         </motion.div>
                     </motion.div>
-                    <motion.div style={{ scale: heroImageScale, rotate: heroImageRotate }} className="mt-16 flow-root sm:mt-24">
-                        <div className="-m-2 rounded-xl bg-gray-900/5 p-2 ring-1 ring-inset ring-gray-900/10 lg:-m-4 lg:rounded-2xl lg:p-4">
-                            <Image src="/dashboard-hero.webp" alt={t('common.dashboardImageAlt')} width={1024} height={1024} priority className="rounded-md shadow-2xl ring-1 ring-gray-900/10"/>
+                    <motion.div style={{ scale: heroImageScale }} className="mt-12 flow-root sm:mt-16">
+                        {/* #668: real product screenshots band (founder pick, Option A) —
+                            genuine captures of the traveller trip page (main panel) and
+                            the agency dashboard (secondary panel), replacing the
+                            fabricated dashboard mockup. Panels fill their frames
+                            (object-cover), so the old ~190px dead gray band is gone. */}
+                        <div className="-m-2 rounded-xl bg-deep-blue/5 p-2 ring-1 ring-inset ring-deep-blue/10 lg:-m-4 lg:rounded-2xl lg:p-4">
+                            <div className="flex flex-col gap-2 sm:gap-3 lg:flex-row lg:gap-4">
+                                <div className="overflow-hidden rounded-md shadow-2xl ring-1 ring-deep-blue/15 lg:w-[60%]">
+                                    <Image src="/hero-traveler.webp" alt={t('common.heroTravelerAlt')} width={1680} height={1050} priority sizes="(min-width: 1024px) 700px, 100vw" className="block aspect-[16/10] w-full object-cover object-top"/>
+                                </div>
+                                <div className="relative aspect-[21/10] overflow-hidden rounded-md shadow-2xl ring-1 ring-deep-blue/15 sm:aspect-[16/10] lg:aspect-auto lg:flex-1">
+                                    <Image src="/hero-agency.webp" alt={t('common.heroAgencyAlt')} width={1440} height={900} sizes="(min-width: 1024px) 470px, 100vw" className="absolute inset-0 block h-full w-full object-cover object-left-top"/>
+                                </div>
+                            </div>
                         </div>
                     </motion.div>
                 </div>

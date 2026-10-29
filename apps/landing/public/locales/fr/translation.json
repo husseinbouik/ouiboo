@@ -217,7 +217,8 @@
     "globalNavigationLabel": "Navigation principale",
     "openMainMenu": "Ouvrir le menu principal",
     "closeMenu": "Fermer le menu",
-    "dashboardImageAlt": "Tableau de bord Ouiboo",
+    "heroTravelerAlt": "Application voyageur Ouiboo — page du voyage Montagnes de l'Atlas",
+    "heroAgencyAlt": "Tableau de bord agence Ouiboo — aperçu des réservations et paiements",
     "travelerImageAlt": "Voyageur admirant une vue montagneuse",
     "agencyImageAlt": "Tableau de bord d'agence sur un ordinateur portable"
   },

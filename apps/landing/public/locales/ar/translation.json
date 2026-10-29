@@ -217,7 +217,8 @@
     "globalNavigationLabel": "التنقل الرئيسي",
     "openMainMenu": "افتح القائمة الرئيسية",
     "closeMenu": "أغلق القائمة",
-    "dashboardImageAlt": "لوحة تحكم Ouiboo",
+    "heroTravelerAlt": "تطبيق المسافر Ouiboo — صفحة رحلة جبال الأطلس",
+    "heroAgencyAlt": "لوحة تحكم وكالة Ouiboo — نظرة عامة على الحجوزات والمدفوعات",
     "travelerImageAlt": "مسافر يستمتع بإطلالة جبلية",
     "agencyImageAlt": "لوحة تحكم الوكالة على حاسوب محمول"
   },
