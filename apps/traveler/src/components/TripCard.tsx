@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, Badge, Button } from '@ouiboo/ui';
 import { MapPin, Star, Zap } from 'lucide-react';
 import Link from 'next/link';
@@ -11,7 +11,6 @@ import { cn } from '@ouiboo/ui/utils';
 import { SessionStatus, type SessionStatusType, VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 import { WishlistButton } from './WishlistButton';
 import { SnapRail } from './SnapRail';
-import { PhotoViewer } from './PhotoViewer';
 import { useDisplayPrice } from '@/lib/display-currency';
 import { tripCoverViewTransitionName } from '@/lib/view-transition';
 
@@ -58,10 +57,6 @@ interface TripCardProps {
 
 export function TripCard({ trip }: TripCardProps) {
   const { t, i18n } = useTranslation();
-  // #623: tapping a card photo opens the full-screen viewer at that
-  // photo (the rail swallows post-drag clicks, so swipes never open
-  // it by accident).
-  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const images = trip.images && trip.images.length > 0
     ? trip.images 
     : ['https://images.unsplash.com/photo-1489749798305-4fea3ae63d43'];
@@ -148,21 +143,28 @@ export function TripCard({ trip }: TripCardProps) {
             #571: the overlays stay minimal — category badge, ONE
             availability badge, the wishlist button and the rail
             controls; the footer is the single price surface. */}
-        <SnapRail
-          images={images}
-          imageAlts={trip.imageAlts}
-          imageBlurDataURLs={trip.imageBlurDataURLs}
-          captionFallback={trip.startLocation ? `${trip.title} · ${trip.startLocation}` : trip.title}
-          ariaLabel={t('tripDetails.photosLabel')}
-          rootClassName="absolute inset-0"
-          viewportClassName="h-full"
-          sizes="(min-width: 1024px) 33vw, 100vw"
-          showIndicators
-          onSlideClick={(idx) => setViewerIndex(idx)}
-          slideStyle={(idx, isActive) =>
-            isActive ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined
-          }
-        />
+        {/* Founder decision 2026-10-29: a card photo tap is a plain
+            link to the trip page — the #623 full-screen viewer opens
+            from the trip page only, never from cards. The rail's root
+            click-capture swallows the click that follows a drag, so
+            swipes never navigate; its arrows and indicators cancel
+            their own clicks, so they keep cycling photos in place. */}
+        <Link href={`/trip/${trip.id}`} className="absolute inset-0 block">
+          <SnapRail
+            images={images}
+            imageAlts={trip.imageAlts}
+            imageBlurDataURLs={trip.imageBlurDataURLs}
+            captionFallback={trip.startLocation ? `${trip.title} · ${trip.startLocation}` : trip.title}
+            ariaLabel={t('tripDetails.photosLabel')}
+            rootClassName="h-full"
+            viewportClassName="h-full"
+            sizes="(min-width: 1024px) 33vw, 100vw"
+            showIndicators
+            slideStyle={(idx, isActive) =>
+              isActive ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined
+            }
+          />
+        </Link>
 
         <div className="absolute top-3 start-3">
           <Badge className="bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none">
@@ -243,16 +245,6 @@ export function TripCard({ trip }: TripCardProps) {
         </div>
       </Link>
 
-      {viewerIndex !== null ? (
-        <PhotoViewer
-          images={images}
-          imageAlts={trip.imageAlts}
-          imageBlurDataURLs={trip.imageBlurDataURLs}
-          captionFallback={trip.startLocation ? `${trip.title} · ${trip.startLocation}` : trip.title}
-          initialIndex={viewerIndex}
-          onClose={() => setViewerIndex(null)}
-        />
-      ) : null}
     </Card>
   );
 }

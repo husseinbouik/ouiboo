@@ -96,6 +96,18 @@ describe('SnapRail (#490)', () => {
         expect(next().disabled).toBe(false);
     });
 
+    it('arrow clicks cancel their default action, so a surrounding host link never fires', () => {
+        renderRail();
+        // fireEvent returns false when a cancelable event's default
+        // was prevented — the contract that lets trip cards wrap the
+        // rail in a link to the trip page (founder decision
+        // 2026-10-29) while the arrows keep cycling photos in place.
+        expect(fireEvent.click(next())).toBe(false);
+        expect(counter().textContent).toBe('2 / 3');
+        expect(fireEvent.click(prev())).toBe(false);
+        expect(counter().textContent).toBe('1 / 3');
+    });
+
     it('arrows step one photo and wrap seamlessly past both ends', () => {
         const { viewport } = renderRail();
         fireEvent.click(next());
