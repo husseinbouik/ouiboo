@@ -8,6 +8,22 @@ import { cn } from '@ouiboo/ui/utils';
 import { formatCurrency } from '@ouiboo/utils';
 import type { CheckoutTripSession } from './checkout-types';
 import type { BookingDetails } from '@ouiboo/types';
+import { useDisplayPrice } from '@/lib/display-currency';
+
+/**
+ * #619: the per-session price badge in the traveller's display currency
+ * (display-only; the charge stays in the session currency, and the hook
+ * falls back to it when no rate exists). A child component because each
+ * session carries its own authoritative currency.
+ */
+function SessionPriceBadge({ session, language }: { session: CheckoutTripSession; language: string }) {
+  const displayPrice = useDisplayPrice(session.price, session.currency, language);
+  return (
+    <Badge variant="outline" className="text-[10px] font-black">
+      {displayPrice ?? formatCurrency(session.price, session.currency, language)}
+    </Badge>
+  );
+}
 
 type CheckoutGuestFormProps = {
   trip: { sessions?: CheckoutTripSession[] };
@@ -75,7 +91,7 @@ export function CheckoutGuestForm({
                   <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{t('checkout.seatsLeft', { count: session.availableSeats })}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge variant="outline" className="text-[10px] font-black">{formatCurrency(session.price, session.currency, language)}</Badge>
+                  <SessionPriceBadge session={session} language={language} />
                   <RadioGroupItem
                     value={session.id}
                     aria-label={t('checkout.sessionAriaLabel', { dates: formatSessionDates(session), count: session.availableSeats })}

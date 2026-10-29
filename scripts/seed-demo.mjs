@@ -173,7 +173,10 @@ async function main() {
   });
 
   console.log(JSON.stringify({
-    password: DEMO_PASSWORD,
+    // #638: never print the demo password by default (it lands in CI /
+    // terminal logs — CodeQL js/clear-text-logging). Local demo work
+    // that truly needs it opts in explicitly per run.
+    password: process.env.SEED_DEMO_SHOW_PASSWORD === '1' ? DEMO_PASSWORD : '[redacted — set SEED_DEMO_SHOW_PASSWORD=1 to print]',
     accounts: {
       admin: admin.email,
       agency: agencyUser.email,

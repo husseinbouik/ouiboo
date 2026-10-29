@@ -101,6 +101,25 @@ export function clearBrowserAccessToken() {
   }
 }
 
+/**
+ * #641: awaited variant for explicit sign-out. Clears the in-memory
+ * token + session hint synchronously, then WAITS for the BFF app
+ * session to be deleted before resolving, so a caller that navigates
+ * to the login page immediately afterwards cannot race the still-live
+ * session cookie. Best-effort: a failed clear never blocks sign-out
+ * (the proxy fails closed on the next request either way).
+ */
+export async function clearBrowserSession(): Promise<void> {
+  browserAccessToken = null
+  if (typeof window === 'undefined') return
+  removeBrowserSessionHint()
+  try {
+    await clearAppSession()
+  } catch {
+    // Best-effort; the proxy will fail closed on the next request.
+  }
+}
+
 async function postAppSession(accessToken: string): Promise<Response> {
   const controller = new AbortController()
   const timer = setTimeout(
@@ -306,11 +325,24 @@ export function attachBrowserAuth(
     (response) => response,
     async (error) => {
       const originalRequest = error.config
+      const requestUrl = String(originalRequest?.url || '')
+
+      // #640: pre-session auth-flow endpoints are caller-handled. A 401
+      // from login / MFA verify / recovery / break-glass / enrolment is
+      // an expected answer the calling form must render inline (a wrong
+      // TOTP code is not an expired session) — never attempt a refresh
+      // and never hard-redirect to the login page, which would discard
+      // the in-progress challenge state.
+      const isPreSessionAuthFlow =
+        requestUrl.includes('/auth/login') ||
+        requestUrl.includes('/auth/mfa/') ||
+        requestUrl.includes('/auth/break-glass')
 
       if (
         error.response?.status === 401 &&
+        !isPreSessionAuthFlow &&
         !originalRequest?._retry &&
-        !String(originalRequest?.url || '').includes('/auth/refresh')
+        !requestUrl.includes('/auth/refresh')
       ) {
         const hadAccessToken = Boolean(browserAccessToken)
         originalRequest._retry = true
@@ -337,7 +369,6 @@ export function attachBrowserAuth(
 
         if (typeof window !== 'undefined') {
           clearBrowserAccessToken()
-          const requestUrl = String(originalRequest?.url || '')
           const isAnonymousProfileProbe =
             !hadAccessToken &&
             requestUrl.includes('/users/me')

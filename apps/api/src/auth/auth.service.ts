@@ -426,9 +426,30 @@ export class AuthService {
         }
         await this.checkMfaGate(user.id);
         const secret = mfa.decryptSecret(user.mfaTotpSecret);
-        if (!mfa.verifyTotp(secret, code)) {
+        const matchedStep = mfa.verifyTotpStep(secret, code);
+        if (matchedStep === null) {
             await this.recordMfaFailure(user.id);
             await this.writeAdminAudit(user, 'ADMIN_LOGIN_FAILED', { stage: 'mfa-totp' });
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        // #642: single-use TOTP. The ±1 window stays for clock drift,
+        // but a code whose step is at or below the last accepted step
+        // is a replay and fails with the same generic 401. The claim is
+        // one conditional update, so two concurrent verifications of
+        // the same code cannot both win.
+        const claimed = await this.db.user.updateMany({
+            where: {
+                id: user.id,
+                OR: [
+                    { mfaTotpLastAcceptedStep: null },
+                    { mfaTotpLastAcceptedStep: { lt: matchedStep } },
+                ],
+            },
+            data: { mfaTotpLastAcceptedStep: matchedStep },
+        });
+        if (claimed.count === 0) {
+            await this.recordMfaFailure(user.id);
+            await this.writeAdminAudit(user, 'ADMIN_LOGIN_FAILED', { stage: 'mfa-totp-replay' });
             throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
         }
         await this.burnChallenge(jti);
@@ -545,7 +566,8 @@ export class AuthService {
         }
         await this.checkMfaGate(user.id);
         const pendingSecret = mfa.decryptSecret(pendingEncrypted);
-        if (!mfa.verifyTotp(pendingSecret, code)) {
+        const matchedStep = mfa.verifyTotpStep(pendingSecret, code);
+        if (matchedStep === null) {
             await this.recordMfaFailure(user.id);
             throw new BadRequestException('INVALID_MFA_CODE');
         }
@@ -558,6 +580,9 @@ export class AuthService {
                 mfaTotpSecret: pendingEncrypted,
                 mfaRecoveryCodeHashes: recoveryCodeHashes,
                 mfaEnrolledAt: new Date(),
+                // #642: the enrolment code is consumed too — it cannot
+                // be replayed as the first sign-in code in its window.
+                mfaTotpLastAcceptedStep: matchedStep,
             },
         });
         await redis.del(pendingKey);

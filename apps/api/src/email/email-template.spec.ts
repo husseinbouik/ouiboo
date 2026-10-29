@@ -1,6 +1,7 @@
 import {
   emailButton,
   emailHeading,
+  emailPanel,
   emailParagraph,
   emailToPlainText,
   escapeHtml,
@@ -114,5 +115,54 @@ describe('marketing email layout (#322)', () => {
     })
     expect(html).not.toContain('<script>alert(1)</script>')
     expect(html).toContain('&lt;script&gt;')
+  })
+})
+
+describe('emailToPlainText hardening (#638)', () => {
+  // Golden pins: captured from the pre-#638 converter. The scanner
+  // rewrite must not change standard template output by a single char.
+  it('keeps the transactional template plain text byte-identical', () => {
+    const html = renderEmail({
+      title: 'Booking received',
+      preheader: 'Your booking is in.',
+      content: `${emailHeading('Booking received')}${emailParagraph('Hi Amina, your booking is ready & confirmed.')}${emailPanel('<strong>Atlas Trek</strong> — 1 200 MAD')}${emailButton('View booking', 'https://app.ouiboo.test/bookings/1')}`,
+    })
+    const year = new Date().getFullYear()
+    expect(emailToPlainText(html)).toBe(
+      `Your booking is in.\n\n                      Ouiboo\n\n                      Le voyage rendu personnel\n\n              Booking received\nHi Amina, your booking is ready & confirmed.\nAtlas Trek — 1 200 MAD\n\n          View booking\n\n                Ceci est un message de service de Ouiboo.\n&copy; ${year} Ouiboo. Tous droits réservés.`,
+    )
+  })
+
+  it('keeps the marketing template plain text byte-identical', () => {
+    const html = renderMarketingEmail({
+      title: 'Ouiboo is live',
+      preheader: 'We launched',
+      content: emailParagraph('Hello!'),
+      unsubscribeUrl: 'https://api.ouiboo.test/api/v1/email/unsubscribe?t=abc.def',
+      postalAddress: 'Ouiboo, 12 Rue Example, Casablanca, Morocco',
+      locale: 'en',
+    })
+    const year = new Date().getFullYear()
+    expect(emailToPlainText(html)).toBe(
+      `We launched\n\n                      Ouiboo\n\n                      Travel made personal\n\n              Hello!\n\n                You are receiving this email because you subscribed to Ouiboo updates.\nOuiboo, 12 Rue Example, Casablanca, Morocco\nUnsubscribe &middot; &copy; ${year} Ouiboo. All rights reserved.`,
+    )
+  })
+
+  it('decodes each entity at most once: &amp;lt; stays literal text', () => {
+    expect(emailToPlainText('<p>Fish &amp; Chips</p>')).toBe('Fish & Chips')
+    expect(emailToPlainText('<p>1 &amp;lt; 2</p>')).toBe('1 &lt; 2')
+    expect(emailToPlainText('<p>&amp;amp;</p>')).toBe('&amp;')
+    expect(emailToPlainText('<p>a &lt; b &gt; c</p>')).toBe('a < b > c')
+  })
+
+  it('strips nested and broken tags without leaking markup', () => {
+    expect(emailToPlainText('<scr<script>ipt>alert(1)')).toBe('ipt>alert(1)')
+    expect(emailToPlainText('<<div>hello</div>')).toBe('hello')
+    expect(emailToPlainText('<p title="a>b">kept</p>')).toBe('b">kept')
+  })
+
+  it('drops style and head contents entirely', () => {
+    const html = '<html><head><title>Secret title</title><style>.x{color:red}</style></head><body><p>Visible</p><style>.y{}</style></body></html>'
+    expect(emailToPlainText(html)).toBe('Visible')
   })
 })

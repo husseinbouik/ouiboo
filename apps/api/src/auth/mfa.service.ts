@@ -21,6 +21,8 @@ import {
  */
 
 export const MFA_ISSUER = 'Ouiboo Admin';
+/** TOTP step length (otplib default) — one step per 30 seconds. */
+export const TOTP_STEP_SECONDS = 30;
 export const MFA_RECOVERY_CODE_COUNT = 10;
 export const BREAK_GLASS_DEFAULT_TTL_DAYS = 90;
 export const BREAK_GLASS_MAX_TTL_DAYS = 365;
@@ -136,6 +138,27 @@ export class MfaService {
             return authenticator.verify({ token, secret });
         } catch {
             return false;
+        }
+    }
+
+    /**
+     * #642: like verifyTotp, but returns the absolute TOTP step the code
+     * belongs to (steps are 30-second counters since the Unix epoch), or
+     * null when the code does not verify inside the ±1 window. Callers
+     * persist the returned step and refuse any later code at or below
+     * it, which makes every code single-use without narrowing the
+     * drift window.
+     */
+    verifyTotpStep(secret: string, code: string): number | null {
+        const token = code.trim().replace(/\s/g, '');
+        if (!/^\d{6}$/.test(token)) return null;
+        try {
+            const delta = authenticator.checkDelta(token, secret);
+            if (delta === null) return null;
+            const currentStep = Math.floor(Date.now() / 1000 / TOTP_STEP_SECONDS);
+            return currentStep + delta;
+        } catch {
+            return null;
         }
     }
 

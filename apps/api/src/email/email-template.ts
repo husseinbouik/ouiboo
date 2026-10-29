@@ -153,18 +153,77 @@ export function renderEmail({ title, preheader, content, footerHtml, locale }: E
 </html>`
 }
 
+/**
+ * #638: the entity set the converter decodes — exactly the entities the
+ * email templates emit. Decoding runs as ONE pass with a lookup, so an
+ * escaped entity is decoded at most once: `&amp;lt;` becomes the literal
+ * text `&lt;`, never `<` (the old chained replaces double-decoded it —
+ * CodeQL js/double-escaping).
+ */
+const PLAIN_TEXT_ENTITIES: Record<string, string> = {
+  nbsp: ' ',
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  '#039': "'",
+}
+
+function decodePlainTextEntities(text: string): string {
+  return text.replace(/&(nbsp|amp|lt|gt|quot|#039);/g, (_whole, name: string) => PLAIN_TEXT_ENTITIES[name])
+}
+
+/** Tags whose END (for `br`: the tag itself) maps to a line break, matching
+ * the converter's long-standing output for the standard templates. */
+const PLAIN_TEXT_BREAK_TAGS = new Set(['br', '/p', '/div', '/li', '/tr', '/h1', '/h2', '/h3', '/h4', '/h5', '/h6'])
+/** Sections removed with their contents (never rendered as text). */
+const PLAIN_TEXT_DROPPED_SECTIONS = new Set(['style', 'head'])
+
+/**
+ * Convert rendered email HTML to its plain-text alternative.
+ *
+ * #638: tag stripping is a single-pass scanner, not a chain of regex
+ * replaces (CodeQL js/incomplete-multi-character-sanitization: a regex
+ * pass can leave a re-formed tag behind, and sequential passes can
+ * re-process each other's output). The scanner walks the input once,
+ * tracks tag boundaries explicitly, drops <style>/<head> sections with
+ * their contents, turns the block-level tags above into line breaks,
+ * and decodes entities in text runs exactly once. Output for the
+ * standard transactional/marketing templates is pinned by golden tests
+ * in email-template.spec.ts and is unchanged by this rewrite.
+ */
 export function emailToPlainText(html: string): string {
-  return html
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<head[\s\S]*?<\/head>/gi, '')
-    .replace(/<(br|\/p|\/div|\/h[1-6]|\/li|\/tr)>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
+  const lower = html.toLowerCase()
+  let out = ''
+  let i = 0
+  while (i < html.length) {
+    const open = html.indexOf('<', i)
+    if (open === -1) {
+      out += decodePlainTextEntities(html.slice(i))
+      break
+    }
+    if (open > i) out += decodePlainTextEntities(html.slice(i, open))
+    const close = html.indexOf('>', open)
+    if (close === -1) {
+      // Unterminated tag at end of input: the old converter left the
+      // remainder as text; keep that.
+      out += decodePlainTextEntities(html.slice(open))
+      break
+    }
+    const tagBody = lower.slice(open + 1, close).trim()
+    const tagName = tagBody.split(/[\s/]/, 1)[0]
+    if (PLAIN_TEXT_DROPPED_SECTIONS.has(tagName)) {
+      const sectionClose = lower.indexOf(`</${tagName}`, close)
+      if (sectionClose !== -1) {
+        const sectionCloseEnd = html.indexOf('>', sectionClose)
+        i = sectionCloseEnd === -1 ? html.length : sectionCloseEnd + 1
+        continue
+      }
+    }
+    if (PLAIN_TEXT_BREAK_TAGS.has(tagBody)) out += '\n'
+    i = close + 1
+  }
+  return out
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
