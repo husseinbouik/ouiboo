@@ -173,7 +173,9 @@ async function main() {
   });
 
   console.log(JSON.stringify({
-    password: DEMO_PASSWORD,
+    // #638: the demo password is never printed — no opt-in. It is the
+    // DEMO_PASSWORD constant at the top of this file; anyone who can
+    // run this seed can read it there. (CodeQL js/clear-text-logging.)
     accounts: {
       admin: admin.email,
       agency: agencyUser.email,

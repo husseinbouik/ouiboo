@@ -42,6 +42,7 @@
       "verify": "Verify",
       "verifying": "Verifying...",
       "invalid": "That code was not accepted. Check the code and try again.",
+      "expired": "Your sign-in session expired. Enter your password again to get a new code prompt.",
       "useRecovery": "Use a recovery code",
       "useAuthenticator": "Use authenticator code",
       "back": "Back to sign in",

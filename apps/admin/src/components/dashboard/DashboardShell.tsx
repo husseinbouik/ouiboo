@@ -160,11 +160,13 @@ export default function DashboardShell({
                <DropdownMenuItem
                  onSelect={async (event) => {
                    event.preventDefault();
-                   try {
-                     await onLogout();
-                   } finally {
-                     window.location.href = '/login';
-                   }
+                   // #641: logout() now fully tears the session down
+                   // (cache + BFF cookie) and navigates to /login
+                   // itself. The hard window.location redirect that
+                   // used to follow raced that teardown and bounced
+                   // back to the dashboard, so sign-out took two
+                   // clicks.
+                   await onLogout();
                  }}
                  className="text-danger focus:text-danger cursor-pointer"
                >

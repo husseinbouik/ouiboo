@@ -16,6 +16,7 @@
 import { HttpException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { authenticator } from 'otplib';
 import { AuthService } from './auth.service';
 import { MfaService } from './mfa.service';
 
@@ -86,6 +87,26 @@ function makeDb(admin: FakeUser) {
                 const user = state.users.find((u) => u.id === where.id) as FakeUser;
                 Object.assign(user, data);
                 return user;
+            }),
+            // #642: the single-use TOTP claim — honour the exact where
+            // shape AuthService uses (id + OR over the step column).
+            updateMany: jest.fn(async ({ where, data }: any) => {
+                const user = state.users.find((u) => u.id === where.id) as FakeUser;
+                if (!user) return { count: 0 };
+                const conditions: any[] = where.OR ?? [];
+                const matches = conditions.some((cond) => {
+                    if (!('mfaTotpLastAcceptedStep' in cond)) return false;
+                    const expected = cond.mfaTotpLastAcceptedStep;
+                    if (expected === null) return user.mfaTotpLastAcceptedStep == null;
+                    if (expected && typeof expected === 'object' && 'lt' in expected) {
+                        return user.mfaTotpLastAcceptedStep != null
+                            && user.mfaTotpLastAcceptedStep < expected.lt;
+                    }
+                    return false;
+                });
+                if (conditions.length > 0 && !matches) return { count: 0 };
+                Object.assign(user, data);
+                return { count: 1 };
             }),
         },
         auditLog: {
@@ -161,6 +182,7 @@ describe('AuthService admin MFA + break-glass (#418)', () => {
             mfaTotpSecret: null,
             mfaRecoveryCodeHashes: null,
             mfaEnrolledAt: null,
+            mfaTotpLastAcceptedStep: null,
             ...adminOverrides,
         };
         const { db, state } = makeDb(admin);
@@ -177,10 +199,32 @@ describe('AuthService admin MFA + break-glass (#418)', () => {
         return { service, state, admin, emailService, redis };
     }
 
+    /** TOTP code for the step `stepOffset` away from the current one,
+     * generated mid-step so the step it belongs to is unambiguous.
+     * (otplib v12 takes `epoch` in milliseconds.) */
+    function totpCodeForStep(secret: string, stepOffset: number): string {
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        const currentStepStart = Math.floor(nowSeconds / 30) * 30;
+        const epoch = (currentStepStart + stepOffset * 30 + 15) * 1000;
+        authenticator.options = { window: 1, epoch };
+        try {
+            return mfa.generateTotpCode(secret);
+        } finally {
+            // otplib options merge and never unset: a shifted epoch
+            // would poison every later verification in this process.
+            authenticator.resetOptions();
+            authenticator.options = { window: 1 };
+        }
+    }
+
     async function enrollAdmin(service: AuthService) {
         const start = await service.startMfaEnrollment('admin-1', false, ADMIN_PASSWORD);
         const secret = start.secret;
-        const code = mfa.generateTotpCode(secret);
+        // #642: enrolment consumes the code it confirms with (it is
+        // recorded as the last accepted step), so confirm with the
+        // PREVIOUS step's code — exactly like an admin who enrolled a
+        // moment ago. The current step's code stays usable below.
+        const code = totpCodeForStep(secret, -1);
         const confirmed = await service.confirmMfaEnrollment('admin-1', false, code);
         return { secret, recoveryCodes: confirmed.recoveryCodes as string[] };
     }
@@ -222,6 +266,58 @@ describe('AuthService admin MFA + break-glass (#418)', () => {
         const error = await service.verifyMfa(begin.challengeToken, good).catch((e) => e);
         expect(error).toBeInstanceOf(HttpException);
         expect((error as HttpException).getStatus()).toBe(429);
+    });
+
+    describe('single-use TOTP (#642)', () => {
+        it('refuses the same code a second time (fresh challenge)', async () => {
+            const { service, admin } = makeService();
+            const { secret } = await enrollAdmin(service);
+            const code = totpCodeForStep(secret, 0);
+
+            const begin1: any = await service.beginLogin(admin);
+            const tokens = await service.verifyMfa(begin1.challengeToken, code);
+            expect(tokens.accessToken).toBeTruthy();
+            expect(admin.mfaTotpLastAcceptedStep).not.toBeNull();
+
+            const begin2: any = await service.beginLogin(admin);
+            await expect(service.verifyMfa(begin2.challengeToken, code))
+                .rejects.toBeInstanceOf(UnauthorizedException);
+        });
+
+        it('refuses a previous-step code after the current step succeeded', async () => {
+            const { service, admin } = makeService();
+            const { secret } = await enrollAdmin(service);
+
+            const begin1: any = await service.beginLogin(admin);
+            await service.verifyMfa(begin1.challengeToken, totpCodeForStep(secret, 0));
+
+            const begin2: any = await service.beginLogin(admin);
+            await expect(service.verifyMfa(begin2.challengeToken, totpCodeForStep(secret, -1)))
+                .rejects.toBeInstanceOf(UnauthorizedException);
+        });
+
+        it('still admits the next step code — the ±1 drift window is unchanged', async () => {
+            const { service, admin } = makeService();
+            const { secret } = await enrollAdmin(service);
+
+            const begin1: any = await service.beginLogin(admin);
+            await service.verifyMfa(begin1.challengeToken, totpCodeForStep(secret, 0));
+
+            const begin2: any = await service.beginLogin(admin);
+            const tokens = await service.verifyMfa(begin2.challengeToken, totpCodeForStep(secret, 1));
+            expect(tokens.accessToken).toBeTruthy();
+        });
+
+        it('consumes the enrolment code: it cannot be replayed as the first sign-in code', async () => {
+            const { service, admin } = makeService();
+            const start = await service.startMfaEnrollment('admin-1', false, ADMIN_PASSWORD);
+            const enrollCode = totpCodeForStep(start.secret, 0);
+            await service.confirmMfaEnrollment('admin-1', false, enrollCode);
+
+            const begin: any = await service.beginLogin(admin);
+            await expect(service.verifyMfa(begin.challengeToken, enrollCode))
+                .rejects.toBeInstanceOf(UnauthorizedException);
+        });
     });
 
     it('forces enrolment at login when ADMIN_MFA_REQUIRED=true', async () => {

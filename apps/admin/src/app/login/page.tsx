@@ -37,6 +37,26 @@ type AuthResult = {
 // forced MFA enrolment (ADMIN_MFA_REQUIRED), or choose break-glass.
 type LoginStep = 'credentials' | 'mfa' | 'enroll' | 'breakglass';
 
+/**
+ * #640: the challenge JWT carries its own expiry (5-minute TTL). The API
+ * deliberately answers every MFA failure with the same generic 401 (no
+ * oracle), so an expired challenge is recognised client-side from the
+ * token's `exp` claim — for display only; the server stays
+ * authoritative.
+ */
+function isChallengeExpired(token: string | null): boolean {
+  if (!token) return false;
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return false;
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const claims = JSON.parse(atob(normalized)) as { exp?: number };
+    return typeof claims.exp === 'number' && claims.exp * 1000 <= Date.now();
+  } catch {
+    return false;
+  }
+}
+
 export default function AdminLoginPage() {
   const { t, ready } = useTranslation();
   const router = useRouter();
@@ -111,6 +131,16 @@ export default function AdminLoginPage() {
     },
   });
 
+  // #640: an expired challenge returns to the credentials step with an
+  // explanation, instead of the misleading "code not accepted" error.
+  const expireChallenge = () => {
+    setStep('credentials');
+    setChallengeToken(null);
+    setIssuedRecoveryCodes(null);
+    setPendingTokens(null);
+    setError(t('login.mfa.expired', 'Your sign-in session expired. Enter your password again to get a new code prompt.'));
+  };
+
   const mfaMutation = useMutation({
     mutationFn: async () => {
       const payload = useRecovery
@@ -121,6 +151,10 @@ export default function AdminLoginPage() {
     },
     onSuccess: completeLogin,
     onError: () => {
+      if (isChallengeExpired(challengeToken)) {
+        expireChallenge();
+        return;
+      }
       setError(t('login.mfa.invalid', 'That code was not accepted. Check the code and try again.'));
     },
   });
@@ -180,6 +214,10 @@ export default function AdminLoginPage() {
       await completeLogin(data);
     },
     onError: () => {
+      if (isChallengeExpired(challengeToken)) {
+        expireChallenge();
+        return;
+      }
       setError(t('login.mfa.invalid', 'That code was not accepted. Check the code and try again.'));
     },
   });
@@ -359,7 +397,11 @@ export default function AdminLoginPage() {
               <Button
                 type="button"
                 disabled={mfaMutation.isPending || (useRecovery ? recoveryCode.trim().length < 4 : mfaCode.length !== 6)}
-                onClick={() => { setError(null); mfaMutation.mutate(); }}
+                onClick={() => {
+                  if (isChallengeExpired(challengeToken)) { expireChallenge(); return; }
+                  setError(null);
+                  mfaMutation.mutate();
+                }}
                 className="w-full h-12 bg-deep-blue hover:bg-deep-blue/90 text-white font-semibold"
               >
                 {mfaMutation.isPending ? t('login.mfa.verifying', 'Verifying...') : t('login.mfa.verify', 'Verify')}
@@ -430,7 +472,11 @@ export default function AdminLoginPage() {
                   <Button
                     type="button"
                     disabled={enrollConfirmMutation.isPending || enrollCode.length !== 6}
-                    onClick={() => { setError(null); enrollConfirmMutation.mutate(); }}
+                    onClick={() => {
+                      if (isChallengeExpired(challengeToken)) { expireChallenge(); return; }
+                      setError(null);
+                      enrollConfirmMutation.mutate();
+                    }}
                     className="w-full h-12 bg-deep-blue hover:bg-deep-blue/90 text-white font-semibold"
                   >
                     {t('login.mfa.enrollConfirm', 'Confirm and continue')}

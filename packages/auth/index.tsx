@@ -2,9 +2,9 @@
 
 import React, { createContext, useContext, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AxiosInstance } from 'axios';
-import { clearBrowserAccessToken, createBrowserApiClient, hasPossibleBrowserSession } from '@ouiboo/api-client';
+import { clearBrowserSession, createBrowserApiClient, hasPossibleBrowserSession } from '@ouiboo/api-client';
 
 const defaultApiClient = createBrowserApiClient(
     process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1',
@@ -73,19 +73,30 @@ export function createAuthContext<TUser extends AuthBaseUser>(options: AuthConte
         });
 
         const [showLoginModal, setShowLoginModal] = useState(false);
+        const queryClient = useQueryClient();
 
         const logout = async () => {
             try {
                 await apiClient.post('/auth/logout');
-            } finally {
-                clearBrowserAccessToken();
+            } catch {
+                // #641: a failed logout call must not strand the user —
+                // local session teardown proceeds regardless.
             }
+            // #641: drop the cached user BEFORE navigating. Shells and
+            // login pages redirect away when a user is present, so
+            // navigating while the query cache still held the signed-in
+            // user bounced straight back to the dashboard and sign-out
+            // needed a second click once the cache finally settled.
+            await queryClient.cancelQueries({ queryKey });
+            queryClient.setQueryData(queryKey, null);
+            // Await the BFF session clear so the proxy cookie is gone
+            // before the login page renders.
+            await clearBrowserSession();
             if (navigation === 'replace') {
                 router.replace(loginPath);
                 router.refresh();
             } else {
                 router.push(loginPath);
-                await refetch();
             }
         };
 

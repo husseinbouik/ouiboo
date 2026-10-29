@@ -9,7 +9,8 @@
  * - Recovery codes / break-glass secrets are bcrypt-hashed, matched
  *   case/dash-insensitively, and match exactly once per stored hash.
  */
-import { MfaService, normalizeHumanCode } from './mfa.service';
+import { authenticator } from 'otplib';
+import { MfaService, normalizeHumanCode, TOTP_STEP_SECONDS } from './mfa.service';
 
 const TEST_KEY_HEX = 'a1'.repeat(32); // 64 hex chars = 32 bytes
 
@@ -80,6 +81,40 @@ describe('MfaService (#418)', () => {
             expect(service.verifyTotp(secret, 'abcdef')).toBe(false);
             expect(service.verifyTotp(secret, '12345')).toBe(false);
             expect(service.verifyTotp(secret, '')).toBe(false);
+        });
+
+        it('verifyTotpStep returns the absolute step of the matched code (#642)', () => {
+            const secret = service.generateTotpSecret();
+            const code = service.generateTotpCode(secret);
+            const before = Math.floor(Date.now() / 1000 / TOTP_STEP_SECONDS);
+            const step = service.verifyTotpStep(secret, code);
+            const after = Math.floor(Date.now() / 1000 / TOTP_STEP_SECONDS);
+            expect(step).not.toBeNull();
+            expect([before, after]).toContain(step);
+        });
+
+        it('verifyTotpStep identifies a previous-step code inside the window (#642)', () => {
+            const secret = service.generateTotpSecret();
+            const currentStep = Math.floor(Date.now() / 1000 / TOTP_STEP_SECONDS);
+            authenticator.options = { window: 1, epoch: ((currentStep - 1) * TOTP_STEP_SECONDS + 15) * 1000 };
+            let prevCode: string;
+            try {
+                prevCode = service.generateTotpCode(secret);
+            } finally {
+                // See auth.service.mfa.spec: reset the merged epoch.
+                authenticator.resetOptions();
+                authenticator.options = { window: 1 };
+            }
+            expect(service.verifyTotpStep(secret, prevCode)).toBe(currentStep - 1);
+        });
+
+        it('verifyTotpStep returns null for wrong and malformed codes (#642)', () => {
+            const secret = service.generateTotpSecret();
+            const code = service.generateTotpCode(secret);
+            const wrong = code === '000000' ? '111111' : '000000';
+            expect(service.verifyTotpStep(secret, wrong)).toBeNull();
+            expect(service.verifyTotpStep(secret, 'abcdef')).toBeNull();
+            expect(service.verifyTotpStep(secret, '')).toBeNull();
         });
 
         it('builds an otpauth:// URL carrying the issuer and account', () => {

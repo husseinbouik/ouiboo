@@ -317,6 +317,10 @@ model User {
   mfaTotpSecret           String?
   mfaRecoveryCodeHashes   Json?
   mfaEnrolledAt           DateTime?
+  // #642: single-use TOTP. The ±1-step acceptance window stays (clock
+  // drift), but the last accepted step is persisted and any code at or
+  // below it is refused, so one code can never sign in twice.
+  mfaTotpLastAcceptedStep Int?
   refreshTokens           RefreshToken[]
   breakGlassCredentials   BreakGlassCredential[]  @relation("BreakGlassCreatedBy")
   agencyProfile           AgencyProfile?
