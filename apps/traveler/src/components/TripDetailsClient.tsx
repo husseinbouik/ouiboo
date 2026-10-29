@@ -32,6 +32,8 @@ import { formatCurrency } from '@ouiboo/utils';
 import { CancellationScaleCard } from '@/components/CancellationScaleCard';
 import { RatingDistribution } from '@/components/RatingDistribution';
 import { SnapRail } from '@/components/SnapRail';
+import { PhotoViewer } from '@/components/PhotoViewer';
+import { TripMosaic } from '@/components/TripMosaic';
 import { useDisplayAmountConverter } from '@/lib/display-currency';
 
 type TripDay = {
@@ -119,6 +121,9 @@ export default function TripDetailsClient({
   const { t, i18n } = useTranslation();
   const { user, setShowLoginModal } = useAuth();
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  // #623: full-screen photo viewer — opened at the tapped photo from
+  // either gallery surface (mobile rail or desktop mosaic).
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   // Content-language audit (2026-10-27, #546): the server fetch sends
   // no locale, so the ISR payload is canonical French. It previously
@@ -234,6 +239,8 @@ export default function TripDetailsClient({
     (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
   )[0] ?? null;
 
+  const galleryImages = trip.images && trip.images.length > 0 ? trip.images : [''];
+
   return (
     <div className="min-h-screen bg-background pb-32 font-sans text-foreground overflow-hidden relative">
       {/* Background Blobs */}
@@ -259,24 +266,57 @@ export default function TripDetailsClient({
             advances a card fell short of this rail's halfway snap
             point and settled back onto the starting photo; a moved
             drag now settles one slide over. Cards keep the native
-            settle (they do not pass the flag). */}
-        <SnapRail
-          dragAdvanceOnRelease
-          testId="trip-gallery-snap-rail"
-          counterTestId="trip-gallery-counter"
-          images={trip.images && trip.images.length > 0 ? trip.images : ['']}
-          imageAlts={trip.imageAlts}
-          imageBlurDataURLs={trip.imageBlurDataURLs}
-          captionFallback={trip.title}
-          ariaLabel={t('tripDetails.photosLabel')}
-          rootClassName="mb-8 sm:mb-12 overflow-hidden rounded-2xl border border-border/50 shadow-2xl shadow-black/5 dark:shadow-black/20 sm:rounded-3xl"
-          viewportClassName="h-[280px] sm:h-[400px] lg:h-[520px]"
-          sizes="100vw"
-          arrowsClassName="hidden lg:flex"
-          slideStyle={(idx, isActive) =>
-            isActive ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined
-          }
-        />
+            settle (they do not pass the flag).
+            #625 (design batch): below desktop the rail runs
+            FULL-BLEED — the negative margins cancel this container's
+            px-4 / sm:px-6 so the photo touches both screen edges,
+            with no card frame or rounding on the outer edges; the
+            counter pill + caption keep their scrims. #624: at lg+
+            the mosaic below replaces the rail entirely. #623:
+            tapping a photo on either surface opens the full-screen
+            viewer at that photo. */}
+        <div className="-mx-4 sm:-mx-6 lg:hidden">
+          <SnapRail
+            dragAdvanceOnRelease
+            testId="trip-gallery-snap-rail"
+            counterTestId="trip-gallery-counter"
+            images={galleryImages}
+            imageAlts={trip.imageAlts}
+            imageBlurDataURLs={trip.imageBlurDataURLs}
+            captionFallback={trip.title}
+            ariaLabel={t('tripDetails.photosLabel')}
+            rootClassName="mb-8 sm:mb-12 overflow-hidden border-y border-border/50 shadow-2xl shadow-black/5 dark:shadow-black/20"
+            viewportClassName="h-[280px] sm:h-[400px]"
+            sizes="100vw"
+            onSlideClick={(idx) => setViewerIndex(idx)}
+            slideStyle={(idx, isActive) =>
+              isActive ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined
+            }
+          />
+        </div>
+
+        {/* #624: desktop mosaic (1 large + up to 4 small). */}
+        <div className="mb-12 hidden lg:block">
+          <TripMosaic
+            images={galleryImages}
+            imageAlts={trip.imageAlts}
+            imageBlurDataURLs={trip.imageBlurDataURLs}
+            captionFallback={trip.title}
+            onPhotoClick={(idx) => setViewerIndex(idx)}
+            coverStyle={{ viewTransitionName: tripCoverViewTransitionName(trip.id) }}
+          />
+        </div>
+
+        {viewerIndex !== null ? (
+          <PhotoViewer
+            images={galleryImages}
+            imageAlts={trip.imageAlts}
+            imageBlurDataURLs={trip.imageBlurDataURLs}
+            captionFallback={trip.title}
+            initialIndex={viewerIndex}
+            onClose={() => setViewerIndex(null)}
+          />
+        ) : null}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16 relative">
           {/* Left Side: Information */}

@@ -219,7 +219,7 @@ const [isOpen, setIsOpen] = useState(false);
         animate={{ y: 0 }}
         transition={{ duration: 0.5 }}
         className={cn(
-          "pointer-events-auto flex items-center justify-between transition-all duration-300 w-full px-6 lg:px-8 h-20",
+          "pointer-events-auto flex items-center justify-between transition-all duration-300 w-full px-4 sm:px-6 lg:px-8 h-20",
           scrolled 
             ? "bg-card/80 backdrop-blur-md shadow-sm" 
             : "bg-transparent"
@@ -261,12 +261,21 @@ const [isOpen, setIsOpen] = useState(false);
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:gap-4">
+            {/* #648: on mobile the bar used to carry every control in
+                one row until items clipped off the screen edge — the
+                theme toggle below sm, then login/sign-up at phone
+                widths (founder-witnessed in EN/FR/AR). The bar now
+                keeps only what must be one tap away at every width:
+                the theme toggle, sign-up and the avatar. Language and
+                currency selectors join the links in the mobile menu
+                below md (the desktop cluster here is md+ only, as
+                before at desktop widths). */}
+            <div className="hidden md:flex items-center gap-2">
                 <LanguageSwitcher />
                 <CurrencySelector />
-                <ThemeToggle />
             </div>
+            <ThemeToggle />
 
             {isAuthLoading ? (
                 <div className="flex items-center gap-4">
@@ -378,11 +387,15 @@ const [isOpen, setIsOpen] = useState(false);
                     </AnimatePresence>
                 </div>
             ) : (
-                <div className="flex items-center gap-4">
-                    <Link href="/login" className="text-sm font-semibold text-foreground hover:text-sunset-orange transition-colors">
+                <div className="flex items-center gap-2 sm:gap-4">
+                    {/* #648: login moves into the mobile menu below md;
+                        sign-up — the primary CTA — stays visible in
+                        the bar at every width, sized down on phones so
+                        nothing clips. */}
+                    <Link href="/login" className="hidden md:inline-flex text-sm font-semibold text-foreground hover:text-sunset-orange transition-colors">
                         {t('nav.login')}
                     </Link>
-                    <Button asChild className="rounded-md bg-sunset-orange-dark hover:bg-[#b03d11] text-white font-semibold text-sm px-5 py-2.5 h-auto border-none shadow-sm transition-transform hover:scale-105">
+                    <Button asChild className="rounded-md bg-sunset-orange-dark hover:bg-[#b03d11] text-white font-semibold text-sm px-3.5 sm:px-5 py-2.5 h-auto border-none shadow-sm transition-transform hover:scale-105">
               <Link href="/signup">{t('nav.joinNow')}</Link>
             </Button>
                 </div>
@@ -454,6 +467,14 @@ const [isOpen, setIsOpen] = useState(false);
                         <Link onClick={() => setIsOpen(false)} href="/support" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
                             {t('nav.support')} <LifeBuoy className="text-sunset-orange" />
                         </Link>
+               </div>
+
+               {/* #648: language + currency selectors live in the
+                   mobile menu (below md they leave the bar so the
+                   toggle, sign-up and avatar always fit). */}
+               <div className="flex items-center gap-3">
+                   <LanguageSwitcher />
+                   <CurrencySelector />
                </div>
 
                {!isAuthLoading && !user && (
