@@ -8,6 +8,11 @@
  * - with ADMIN_MFA_REQUIRED=true an unenrolled admin is forced through
  *   enrolment (start → confirm) before any token exists;
  * - recovery codes burn on use and alert by email;
+ * - #660: recovery burn is atomic under concurrency — the challenge is
+ *   claimed with SET NX before matching, and the code itself is claimed
+ *   with a conditional updateMany keyed on the exact hashes array, so
+ *   parallel submits can neither double-spend one code nor resurrect
+ *   another via lost update;
  * - break-glass is a SEPARATE one-time credential: password + secret,
  *   atomic claim, audit-before-tokens (ADMIN_BREAK_GLASS_USED), alert
  *   fan-out, and uniform 401s on every failure mode;
@@ -37,7 +42,15 @@ function makeFakeRedis() {
         async get(key: string) {
             return alive(key)?.value ?? null;
         },
-        async set(key: string, value: string, _mode?: string, ttlSeconds?: number) {
+        async set(key: string, value: string, ...rest: any[]) {
+            // ioredis call shapes used by AuthService: set(k, v) and
+            // set(k, v, 'EX', seconds) and — #660 — set(k, v, 'EX',
+            // seconds, 'NX'), where NX on a live key replies null and
+            // writes nothing (the atomic challenge claim).
+            const nx = rest.includes('NX');
+            if (nx && alive(key)) return null;
+            const exIndex = rest.indexOf('EX');
+            const ttlSeconds = exIndex >= 0 ? Number(rest[exIndex + 1]) : undefined;
             store.set(key, {
                 value: String(value),
                 expiresAt: ttlSeconds ? Date.now() + ttlSeconds * 1000 : Number.MAX_SAFE_INTEGER,
@@ -90,9 +103,18 @@ function makeDb(admin: FakeUser) {
             }),
             // #642: the single-use TOTP claim — honour the exact where
             // shape AuthService uses (id + OR over the step column).
+            // #660: the recovery-code claim — conditional on the Json
+            // hashes array equalling the exact value that was matched.
             updateMany: jest.fn(async ({ where, data }: any) => {
                 const user = state.users.find((u) => u.id === where.id) as FakeUser;
                 if (!user) return { count: 0 };
+                if (where.mfaRecoveryCodeHashes && 'equals' in where.mfaRecoveryCodeHashes) {
+                    const expected = JSON.stringify(where.mfaRecoveryCodeHashes.equals ?? null);
+                    const actual = JSON.stringify(user.mfaRecoveryCodeHashes ?? null);
+                    if (expected !== actual) return { count: 0 };
+                    Object.assign(user, data);
+                    return { count: 1 };
+                }
                 const conditions: any[] = where.OR ?? [];
                 const matches = conditions.some((cond) => {
                     if (!('mfaTotpLastAcceptedStep' in cond)) return false;
@@ -361,6 +383,72 @@ describe('AuthService admin MFA + break-glass (#418)', () => {
         const begin2: any = await service.beginLogin(admin);
         await expect(service.verifyMfaRecovery(begin2.challengeToken, recoveryCodes[0]))
             .rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('#660: parallel dual-submit of ONE recovery code (two challenges) succeeds exactly once', async () => {
+        const { service, admin } = makeService();
+        const { recoveryCodes } = await enrollAdmin(service);
+
+        const beginA: any = await service.beginLogin(admin);
+        const beginB: any = await service.beginLogin(admin);
+        const results = await Promise.allSettled([
+            service.verifyMfaRecovery(beginA.challengeToken, recoveryCodes[0]),
+            service.verifyMfaRecovery(beginB.challengeToken, recoveryCodes[0]),
+        ]);
+        const fulfilled = results.filter((r) => r.status === 'fulfilled');
+        const rejected = results.filter((r) => r.status === 'rejected');
+        expect(fulfilled).toHaveLength(1);
+        expect(rejected).toHaveLength(1);
+        expect((rejected[0] as PromiseRejectedResult).reason).toBeInstanceOf(UnauthorizedException);
+        // The code burned exactly once — 9 remain, not 8, and the spent
+        // code cannot be resurrected by the losing write.
+        expect(admin.mfaRecoveryCodeHashes).toHaveLength(9);
+        const status = await service.getMfaStatus('admin-1');
+        expect(status.recoveryCodesRemaining).toBe(9);
+    });
+
+    it('#660: parallel submit of TWO different recovery codes burns both exactly once', async () => {
+        const { service, admin } = makeService();
+        const { recoveryCodes } = await enrollAdmin(service);
+
+        const beginA: any = await service.beginLogin(admin);
+        const beginB: any = await service.beginLogin(admin);
+        const results = await Promise.allSettled([
+            service.verifyMfaRecovery(beginA.challengeToken, recoveryCodes[0]),
+            service.verifyMfaRecovery(beginB.challengeToken, recoveryCodes[1]),
+        ]);
+        expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(2);
+        // Neither code was resurrected by the other's lost update.
+        expect(admin.mfaRecoveryCodeHashes).toHaveLength(8);
+    });
+
+    it('#660: parallel submits carrying the SAME challenge succeed exactly once', async () => {
+        const { service, admin } = makeService();
+        const { recoveryCodes } = await enrollAdmin(service);
+
+        const begin: any = await service.beginLogin(admin);
+        const results = await Promise.allSettled([
+            service.verifyMfaRecovery(begin.challengeToken, recoveryCodes[0]),
+            service.verifyMfaRecovery(begin.challengeToken, recoveryCodes[0]),
+        ]);
+        expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+        expect(results.filter((r) => r.status === 'rejected')).toHaveLength(1);
+        expect(admin.mfaRecoveryCodeHashes).toHaveLength(9);
+    });
+
+    it('#660: a failed code match still spends the challenge (claim before matching)', async () => {
+        const { service, admin } = makeService();
+        const { recoveryCodes } = await enrollAdmin(service);
+
+        const begin: any = await service.beginLogin(admin);
+        await expect(service.verifyMfaRecovery(begin.challengeToken, 'ZZZZ-ZZZZ'))
+            .rejects.toBeInstanceOf(UnauthorizedException);
+        // The same challenge cannot be retried with the correct code —
+        // it was claimed by the failed attempt; a fresh login is needed.
+        await expect(service.verifyMfaRecovery(begin.challengeToken, recoveryCodes[0]))
+            .rejects.toBeInstanceOf(UnauthorizedException);
+        // …and the correct code itself was NOT burned by any of this.
+        expect(admin.mfaRecoveryCodeHashes).toHaveLength(10);
     });
 
     it('leaves non-admin login untouched', async () => {
