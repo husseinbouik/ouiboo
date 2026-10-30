@@ -38,6 +38,17 @@ describe('lib/support channel configuration', () => {
     );
   });
 
+  it('builds agency wa.me deep links from the number on record (#679)', async () => {
+    jest.resetModules();
+    const support = await import('./support');
+    expect(support.whatsAppHrefFor(null)).toBeNull();
+    expect(support.whatsAppHrefFor('  ')).toBeNull();
+    expect(support.agencyWhatsAppHref('+212 6 12 34 56 78')).toBe('https://wa.me/212612345678');
+    expect(support.agencyWhatsAppHref('+212612345678', 'Hello there')).toBe(
+      'https://wa.me/212612345678?text=Hello%20there',
+    );
+  });
+
   it('builds tel: and wa.me hrefs from the configured escalation number', async () => {
     process.env.NEXT_PUBLIC_SUPPORT_PHONE = '+212 6 12 34 56 78';
     jest.resetModules();

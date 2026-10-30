@@ -28,6 +28,7 @@ import {
   getTravelerPaymentStatusMeta,
   getTravelerProofStatus,
   shouldShowUploadAction,
+  shouldShowTripContacts,
   formatCurrency,
 } from '@ouiboo/utils';
 import { ReviewForm } from '@/components/ReviewForm';
@@ -202,6 +203,10 @@ export default function BookingDetailsPage() {
   const formatDate = (value: string) =>
     new Intl.DateTimeFormat(i18n.language || 'en', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value));
   const showUploadAction = shouldShowUploadAction(booking.status, Boolean(booking.paymentProof));
+  // #680: when the Emergency Card renders, the meeting point rides on
+  // it — the standalone block below remains only for booking states
+  // the card does not cover (cancelled / completed).
+  const showContactsCard = shouldShowTripContacts(booking.status);
   const showRetryPayment = canRetryTravelerPayment(booking);
   const canReviewBooking = booking.status === BookingStatus.Completed && !booking.review;
   const retryHref = `/checkout/${booking.session.template.id}?session=${booking.session.id}&guests=${booking.guestsCount}&retryBooking=${booking.id}`;
@@ -279,7 +284,7 @@ export default function BookingDetailsPage() {
               {/* #676: the booking view is where the EXACT meeting
                   point appears — address + map link (public trip
                   pages show the area only), plus the pickup note. */}
-              {booking.session.template.meetingPoint && (
+              {booking.session.template.meetingPoint && !showContactsCard && (
                 <div className="rounded-2xl border border-border/60 bg-muted/20 p-5" data-testid="booking-meeting-point">
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                     {t('bookingDetail.meetingPoint')}

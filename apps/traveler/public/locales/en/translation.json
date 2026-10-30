@@ -721,6 +721,11 @@
     "complaintsBodyNoEmail": "To complain about a trip, an agency, or OuiBoo itself, use the contacts on your booking page and mention your booking reference. Complaints are answered on the normal support timeline.",
     "escalationCall": "Call OuiBoo",
     "escalationWhatsApp": "WhatsApp",
+    "emergencyCardTitle": "Emergency card",
+    "agencyWhatsApp": "WhatsApp the agency",
+    "agencyWhatsAppGreeting": "Hello, I have a booking with you through OuiBoo and I have a question about my trip.",
+    "messageAgencyInApp": "Message the agency in OuiBoo",
+    "escalationWhatsAppDuringTrip": "WhatsApp escalation is available during your trip dates.",
     "helpCentre": "Help centre",
     "helpCentreBody": "Search the frequently asked questions or open a support ticket — your ticket is recorded and answered on the normal support lane."
   },

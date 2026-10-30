@@ -183,6 +183,15 @@ export function assertCommercialTermsPublishable(args: {
     }
 }
 
+/** #680 publish gate: a reachable agency emergency contact, or no publish. */
+export function assertEmergencyContactPublishable(emergencyContactPhone: string | null | undefined) {
+    if (!emergencyContactPhone?.trim()) {
+        throw new BadRequestException(
+            'An agency emergency contact is required to publish a trip — add the emergency contact name and phone in the agency settings (travellers holding a booking see it on their booking during the trip)',
+        );
+    }
+}
+
 /** #676 publish gate: meeting address or pickup, never neither. */
 export function assertMeetingPointPublishable(meetingPoint: MeetingPoint | null) {
     if (!hasPublishableMeetingPoint(meetingPoint)) {

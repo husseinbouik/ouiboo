@@ -627,6 +627,8 @@ describe('TripsService', () => {
             // Session #3 P0-13: a complete licence record (issue facts).
             licenceIssuedAt: new Date('2024-03-01'),
             licenceIssuingAuthority: 'Ministère du Tourisme',
+            // #680: publish-gated emergency contact.
+            emergencyContactPhone: '+212612345678',
         };
 
         beforeEach(() => {
@@ -729,6 +731,18 @@ describe('TripsService', () => {
 
             await expect(service.activateTemplate('trip-123', 'agency-123'))
                 .rejects.toThrow(/licence record is incomplete/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('blocks re-activation when the agency has no emergency contact on record (#680)', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                emergencyContactPhone: null,
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/emergency contact is required to publish/i);
             expect(db.tripTemplate.update).not.toHaveBeenCalled();
         });
 
@@ -868,6 +882,8 @@ describe('TripsService', () => {
             // Session #3 P0-13: complete licence record (issue facts).
             licenceIssuedAt: new Date('2024-03-01'),
             licenceIssuingAuthority: 'Ministère du Tourisme',
+            // #680: publish-gated emergency contact.
+            emergencyContactPhone: '+212612345678',
         };
 
         beforeEach(() => {
@@ -1036,6 +1052,8 @@ describe('TripsService', () => {
             insuranceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
             licenceIssuedAt: new Date('2024-03-01'),
             licenceIssuingAuthority: 'Ministère du Tourisme',
+            // #680: publish-gated emergency contact.
+            emergencyContactPhone: '+212612345678',
         };
         const publishableTrip = {
             ...mockTripTemplate,

@@ -22,6 +22,7 @@ import {
 import { deriveDestinationSlug, isDestinationSlug } from './destinations.util';
 import {
     assertCommercialTermsPublishable,
+    assertEmergencyContactPublishable,
     assertMeetingPointPublishable,
     collectTripTexts,
     findProhibitedCommercialTerms,
@@ -71,6 +72,10 @@ export class TripsService {
                 insuranceExpiry: true,
                 licenceIssuedAt: true,
                 licenceIssuingAuthority: true,
+                // #680: the agency emergency contact is publish-gated —
+                // travellers holding a booking must have a first call
+                // during an active trip.
+                emergencyContactPhone: true,
             },
         });
         const block = agency ? getAgencyActivationBlock(agency) : 'Agency profile not found';
@@ -96,6 +101,12 @@ export class TripsService {
                     'The agency licence record is incomplete — the licence issue date and issuing authority are required before trips can be published',
                 );
             }
+            // #680 (Council S6): the emergency-contact gate runs on the
+            // same transitions into ACTIVE as the licence gates, so
+            // already-published trips are never retro-blocked — but an
+            // agency may not publish (or re-publish) a trip until its
+            // emergency contact is on record.
+            assertEmergencyContactPublishable(agency.emergencyContactPhone);
         }
     }
 

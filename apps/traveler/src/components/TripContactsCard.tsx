@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { LifeBuoy, Mail, MessageCircle, Phone } from 'lucide-react';
+import { LifeBuoy, Mail, MapPin, MessageCircle, Phone } from 'lucide-react';
 import { Card } from '@ouiboo/ui';
 import type { BookingDetails } from '@ouiboo/types';
 import { isTripActiveWindow, NORMAL_SUPPORT_RESPONSE_HOURS, shouldShowTripContacts } from '@ouiboo/utils';
@@ -10,19 +10,28 @@ import '../lib/i18n';
 import {
     SUPPORT_EMAIL,
     SUPPORT_PHONE,
+    agencyWhatsAppHref,
     supportMailto,
     supportTelHref,
     supportWhatsAppHref,
 } from '@/lib/support';
 
 /**
- * #419 (Council P0-16): the departure pack. On a booking, the traveller
- * sees — in this order —
+ * #419 (Council P0-16) departure pack, extended by Council S6 #679/#680
+ * into the booking's EMERGENCY CARD. On a booking, the traveller sees —
+ * in this order —
  *  1. the AGENCY's emergency contact (first call during an active
  *     trip), with an honest fallback when the agency has not published
- *     one, and
- *  2. the OuiBoo escalation route, honestly scoped to the active trip
- *     period (not a 24/7 hotline promise),
+ *     one, plus a WhatsApp deep link to the agency's number on record
+ *     and the in-app messaging alternative (#679 — links only: the chat
+ *     happens in WhatsApp, never inside OuiBoo, and WhatsApp is never
+ *     a mandatory field),
+ *  2. the trip's structured MEETING POINT (#676/#680 — the booking
+ *     view is the authorised surface for the exact address + maps
+ *     link), and
+ *  3. the OuiBoo escalation route, honestly scoped to the active trip
+ *     period (not a 24/7 hotline promise), with its WhatsApp deep link
+ *     shown during the trip window (#679),
  * plus the normal support lane (email, reply within 48 hours) for
  * everything else.
  */
@@ -38,13 +47,15 @@ export function TripContactsCard({ booking }: { booking: BookingDetails }) {
     const emergencyName = agency.emergencyContactName?.trim();
     const tripActive = isTripActiveWindow(booking.session.startDate, booking.session.endDate);
     const telHref = emergencyPhone ? `tel:${emergencyPhone.replace(/[\s().-]/g, '')}` : null;
+    const agencyWhatsApp = agencyWhatsAppHref(emergencyPhone, t('support.agencyWhatsAppGreeting'));
+    const meetingPoint = booking.session.template.meetingPoint;
 
     return (
-        <Card className="rounded-3xl border border-border shadow-sm bg-card">
+        <Card className="rounded-3xl border border-border shadow-sm bg-card" data-testid="emergency-card">
             <div className="p-8 space-y-6">
                 <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                        <LifeBuoy className="h-4 w-4 text-sunset-orange" /> {t('support.contactsTitle')}
+                        <LifeBuoy className="h-4 w-4 text-sunset-orange" /> {t('support.emergencyCardTitle')}
                     </p>
                     <p className="mt-2 text-sm text-muted-foreground">{t('support.contactsSubtitle')}</p>
                     {tripActive && (
@@ -71,6 +82,29 @@ export function TripContactsCard({ booking }: { booking: BookingDetails }) {
                                 >
                                     <Phone className="h-4 w-4" /> {emergencyPhone}
                                 </a>
+                                {/* #679: traveller → agency WhatsApp deep
+                                    link from the agency's number on
+                                    record (prefilled neutral greeting).
+                                    Offered alongside — never instead of —
+                                    in-app messaging. */}
+                                <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
+                                    {agencyWhatsApp ? (
+                                        <a
+                                            href={agencyWhatsApp}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="inline-flex items-center gap-2 text-sm font-black text-sunset-orange hover:text-orange-600"
+                                        >
+                                            <MessageCircle className="h-4 w-4" /> {t('support.agencyWhatsApp')}
+                                        </a>
+                                    ) : null}
+                                    <Link
+                                        href="/messages"
+                                        className="inline-flex items-center gap-2 text-sm font-black text-sunset-orange hover:text-orange-600"
+                                    >
+                                        <Mail className="h-4 w-4" /> {t('support.messageAgencyInApp')}
+                                    </Link>
+                                </div>
                             </div>
                         ) : (
                             <p className="mt-4 text-sm font-semibold text-foreground">
@@ -88,7 +122,9 @@ export function TripContactsCard({ booking }: { booking: BookingDetails }) {
                             channel — the founder number (call / WhatsApp)
                             renders only when NEXT_PUBLIC_SUPPORT_PHONE is
                             configured; the number itself is founder-provided
-                            (BETA_OPS_CHECKLIST §4), never hardcoded. */}
+                            (BETA_OPS_CHECKLIST §4), never hardcoded. #679:
+                            the WhatsApp deep link is a trip-window channel
+                            and renders while the trip is active. */}
                         {SUPPORT_PHONE && supportTelHref ? (
                             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
                                 <a
@@ -97,7 +133,7 @@ export function TripContactsCard({ booking }: { booking: BookingDetails }) {
                                 >
                                     <Phone className="h-4 w-4" /> {t('support.escalationCall')} · {SUPPORT_PHONE}
                                 </a>
-                                {supportWhatsAppHref ? (
+                                {supportWhatsAppHref && tripActive ? (
                                     <a
                                         href={supportWhatsAppHref}
                                         target="_blank"
@@ -108,6 +144,11 @@ export function TripContactsCard({ booking }: { booking: BookingDetails }) {
                                     </a>
                                 ) : null}
                             </div>
+                        ) : null}
+                        {SUPPORT_PHONE && !tripActive ? (
+                            <p className="mt-3 text-xs text-muted-foreground">
+                                {t('support.escalationWhatsAppDuringTrip')}
+                            </p>
                         ) : null}
                         {/* Session #3 P0-7a (#555): the escalation mailto
                             renders only when a monitored inbox is
@@ -122,6 +163,37 @@ export function TripContactsCard({ booking }: { booking: BookingDetails }) {
                         ) : null}
                     </div>
                 </div>
+
+                {/* #680: the meeting point rides on the Emergency Card —
+                    exact address + maps link (the booking view is the
+                    authorised surface; public trip pages show the area
+                    only), under the agency contact and above the normal
+                    support lane. */}
+                {meetingPoint && (
+                    <div className="rounded-2xl border border-border/60 bg-muted/20 p-5" data-testid="emergency-meeting-point">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                            {t('bookingDetail.meetingPoint')}
+                        </p>
+                        <div className="mt-3 space-y-2 text-sm">
+                            {meetingPoint.address && (
+                                <p className="font-semibold text-foreground">{meetingPoint.address}</p>
+                            )}
+                            {meetingPoint.pickupAvailable && (
+                                <p className="text-muted-foreground">{t('bookingDetail.meetingPickup')}</p>
+                            )}
+                            {meetingPoint.mapsUrl && (
+                                <a
+                                    href={meetingPoint.mapsUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 font-semibold text-sunset-orange hover:underline"
+                                >
+                                    <MapPin className="h-4 w-4" /> {t('bookingDetail.viewOnMap')}
+                                </a>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 <p className="text-sm text-muted-foreground">
                     {t('support.normalLine', { hours: NORMAL_SUPPORT_RESPONSE_HOURS })}{' '}

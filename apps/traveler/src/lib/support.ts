@@ -44,3 +44,22 @@ export const supportTelHref: string | null = SUPPORT_PHONE
 export const supportWhatsAppHref: string | null = SUPPORT_PHONE
     ? `https://wa.me/${SUPPORT_PHONE.replace(/\D/g, '')}`
     : null;
+
+/**
+ * #679 (Council S6): a wa.me deep link for ANY phone number on record,
+ * with an optional prefilled message. Links only — the chat happens in
+ * WhatsApp itself; OuiBoo never intermediates, stores or monitors it,
+ * and a WhatsApp number is never a mandatory account field.
+ */
+export const whatsAppHrefFor = (phone: string | null | undefined, text?: string): string | null => {
+    const digits = (phone ?? '').replace(/\D/g, '');
+    if (!digits) return null;
+    const base = `https://wa.me/${digits}`;
+    return text?.trim() ? `${base}?text=${encodeURIComponent(text.trim())}` : base;
+};
+
+/** #679: traveller → agency WhatsApp deep link from the agency's number on record. */
+export const agencyWhatsAppHref = (
+    agencyPhone: string | null | undefined,
+    greeting?: string,
+): string | null => whatsAppHrefFor(agencyPhone, greeting);
