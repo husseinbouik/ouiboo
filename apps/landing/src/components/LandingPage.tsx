@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link';
 import { Bars3Icon, XMarkIcon, GlobeAltIcon, BuildingOffice2Icon, CheckCircleIcon, SparklesIcon, ChartBarIcon, UserGroupIcon } from '@heroicons/react/24/outline'
 import { motion, useScroll, useTransform, useInView, animate, Variants } from 'framer-motion'
 import dynamic from 'next/dynamic'
@@ -712,6 +713,14 @@ export default function LandingPage() {
                       {item.name}
                     </a>
                 ))}
+{/* #683: Layer A guides + verification explainer (indexed,
+                    non-transactional — waitlist only). */}
+                <Link href="/guides/tangier" className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300">
+                  {t('guides.footerGuides')}
+                </Link>
+                <Link href="/verification" className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300">
+                  {t('guides.verificationLink')}
+                </Link>
 <a href="/privacy" className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300">
                   {t('footer.privacy')}
                 </a>

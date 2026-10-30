@@ -305,6 +305,156 @@
     "continueWithoutAnalytics": "Continuer sans analytics",
     "allowAnalytics": "Autoriser les analytics"
   },
+  "guides": {
+    "bookingsNotOpen": "Les réservations ne sont pas encore ouvertes.",
+    "waitlistCta": "Rejoindre la liste d’attente",
+    "waitlistNote": "OuiBoo fonctionne en bêta fermée. Rejoignez la liste d’attente et nous vous écrirons quand les réservations ouvriront — aucun voyage n’est vendu depuis cette page.",
+    "faqTitle": "Les voyageurs demandent",
+    "highlightsTitle": "À voir",
+    "verificationLink": "Comment fonctionne la vérification des agences sur OuiBoo",
+    "footerGuides": "Guides du Nord du Maroc",
+    "tangier": {
+      "name": "Tanger",
+      "title": "Guide de voyage de Tanger",
+      "description": "Que voir et que faire à Tanger, au Maroc — la médina, la Kasbah, le cap Spartel et la rencontre de deux mers. Les réservations ne sont pas encore ouvertes ; rejoignez la liste d’attente.",
+      "intro": "Tanger se tient là où la Méditerranée rencontre l’Atlantique : une ville portuaire aux ruelles de médina blanchies à la chaux, aux terrasses de cafés et aux vues sur la mer dans toutes les directions. Ce guide couvre les lieux que les voyageurs demandent le plus, à peu près dans l’ordre où vous pourriez les parcourir à pied.",
+      "highlights": [
+        {
+          "title": "La Kasbah et la médina",
+          "text": "Commencez par le quartier de la Kasbah pour les vues sur le détroit, puis descendez par les ruelles de la médina vers le Grand Socco — la place qui relie la vieille ville à la nouvelle."
+        },
+        {
+          "title": "Le cap Spartel et les grottes d’Hercule",
+          "text": "À l’ouest de la ville, le phare du cap Spartel marque la rencontre des deux mers ; les grottes d’Hercule se trouvent juste en dessous, côté Atlantique."
+        },
+        {
+          "title": "Cafés et corniche",
+          "text": "La culture des cafés fait partie de la visite à Tanger : un thé à la menthe en terrasse, puis une promenade sur la corniche quand la lumière change sur la baie."
+        }
+      ],
+      "worldCup": {
+        "title": "Tanger et la Coupe du monde 2030",
+        "text": "Tanger est l’une des villes marocaines hôtes de la Coupe du monde de la FIFA 2030, avec des matchs prévus au Grand Stade de Tanger (stade Ibn Batouta). Cette page grandira à l’approche du tournoi — que voir entre les matchs et comment la ville se prépare. Rejoignez la liste d’attente pour les nouvelles."
+      },
+      "faq": [
+        {
+          "q": "Quelle est la meilleure période pour visiter Tanger ?",
+          "a": "Le printemps et l’automne offrent un temps doux pour parcourir la médina et la côte. L’été est chaud et animé ; l’hiver est plus calme et peut être venteux sur le détroit."
+        },
+        {
+          "q": "Comment se rendre à Tanger ?",
+          "a": "Tanger dispose d’un aéroport international (Ibn Battouta), d’un port de ferrys relié à l’Espagne, et de trains à grande vitesse Al Boraq vers Rabat et Casablanca depuis la gare de Tanger Ville."
+        },
+        {
+          "q": "Puis-je déjà réserver des voyages à Tanger sur OuiBoo ?",
+          "a": "Pas encore. Les réservations ne sont pas ouvertes pendant la bêta fermée d’OuiBoo. Rejoignez la liste d’attente et nous vous écrirons à l’ouverture."
+        }
+      ]
+    },
+    "tetouan": {
+      "name": "Tétouan",
+      "title": "Guide de voyage de Tétouan",
+      "description": "Que voir et que faire à Tétouan, au Maroc — la médina classée à l’UNESCO, l’Ensanche et un centre d’artisanat traditionnel. Les réservations ne sont pas encore ouvertes ; rejoignez la liste d’attente.",
+      "intro": "Tétouan, entre les montagnes du Rif et la Méditerranée, est connue pour son héritage andalou — sa médina est inscrite au patrimoine mondial de l’UNESCO — et pour son rythme plus lent que celui de sa grande voisine, Tanger.",
+      "highlights": [
+        {
+          "title": "La médina (UNESCO)",
+          "text": "L’une des médinas les plus complètes du Maroc, façonnée par des réfugiés andalous venus d’Espagne : ruelles blanches, petites places et ateliers d’artisans — une ville qui travaille, pas un musée."
+        },
+        {
+          "title": "L’Ensanche et la place Feddan",
+          "text": "La ville nouvelle d’époque espagnole, juste à côté : boulevards réguliers, la place du palais royal (Feddan) et des terrasses de cafés face aux montagnes."
+        },
+        {
+          "title": "Artisans et marchés",
+          "text": "Tétouan est un centre d’artisanat traditionnel — tissage, poterie et peinture — avec des ateliers concentrés autour des portes de la médina."
+        }
+      ],
+      "faq": [
+        {
+          "q": "Quelle est la meilleure période pour visiter Tétouan ?",
+          "a": "Le printemps et le début de l’automne conviennent le mieux aux ruelles de la médina. La côte voisine (Martil, M’diq) est la plus animée en été."
+        },
+        {
+          "q": "Comment se rendre à Tétouan ?",
+          "a": "Tétouan est à environ une heure de route de Tanger. Bus et grands taxis la relient à Tanger et Chefchaouen ; les aéroports les plus proches sont ceux de Tanger et de Tétouan même."
+        },
+        {
+          "q": "Puis-je déjà réserver des voyages à Tétouan sur OuiBoo ?",
+          "a": "Pas encore. Les réservations ne sont pas ouvertes pendant la bêta fermée d’OuiBoo. Rejoignez la liste d’attente et nous vous écrirons à l’ouverture."
+        }
+      ]
+    },
+    "chefchaouen": {
+      "name": "Chefchaouen",
+      "title": "Guide de voyage de Chefchaouen",
+      "description": "Que voir et que faire à Chefchaouen, au Maroc — la médina bleue, Ras El Maa et les montagnes du Rif. Les réservations ne sont pas encore ouvertes ; rejoignez la liste d’attente.",
+      "intro": "Chefchaouen, dans les montagnes du Rif, est la ville de montagne lavée de bleu que les voyageurs photographient depuis sa kasbah et ses ruelles — et aussi une ville qui travaille, avec ses tisserands, ses marchés et ses départs de sentiers vers le Rif.",
+      "highlights": [
+        {
+          "title": "La médina bleue",
+          "text": "Les ruelles lavées de bleu de la vieille ville montent depuis la place Uta el-Hammam, la place principale, avec la kasbah et la Grande Mosquée."
+        },
+        {
+          "title": "Ras El Maa et la mosquée espagnole",
+          "text": "Montez jusqu’à Ras El Maa, là où arrive l’eau de la ville, puis continuez vers la mosquée espagnole sur la colline pour la vue classique sur la ville bleue au coucher du soleil."
+        },
+        {
+          "title": "Vers le Rif",
+          "text": "Chefchaouen est la base habituelle des randonnées dans le Rif ; les cascades et les bassins d’Akchour sont l’excursion d’une journée la plus connue, accessible en grand taxi."
+        }
+      ],
+      "faq": [
+        {
+          "q": "Pourquoi Chefchaouen est-elle bleue ?",
+          "a": "Selon la plupart des récits, le lavage bleu a commencé dans le quartier juif de la ville dans les années 1930, et les habitants ont continué à repeindre les ruelles en bleu ; la ville entretient aujourd’hui elle-même la tradition."
+        },
+        {
+          "q": "Comment se rendre à Chefchaouen ?",
+          "a": "Chefchaouen n’a ni gare ni aéroport : la plupart des voyageurs arrivent en bus ou en grand taxi depuis Tanger ou Tétouan — environ deux heures depuis Tanger."
+        },
+        {
+          "q": "Puis-je déjà réserver des voyages à Chefchaouen sur OuiBoo ?",
+          "a": "Pas encore. Les réservations ne sont pas ouvertes pendant la bêta fermée d’OuiBoo. Rejoignez la liste d’attente et nous vous écrirons à l’ouverture."
+        }
+      ]
+    },
+    "verification": {
+      "title": "Comment fonctionne la vérification des agences",
+      "description": "Les contrôles qu’une agence passe avant de pouvoir publier des voyages sur OuiBoo : licence de voyage, assurance responsabilité civile et identité du vendeur — et ce que la vérification ne prétend pas.",
+      "intro": "OuiBoo est une plateforme technologique : les agences vendent leurs propres voyages, et les voyageurs paient l’agence directement. Avant qu’une agence puisse publier des voyages sur OuiBoo, elle passe une porte de vérification. Cette page explique ce qui est contrôlé — et ce que la vérification ne prétend pas.",
+      "stepsTitle": "Les contrôles",
+      "steps": [
+        {
+          "title": "Licence de voyage",
+          "text": "L’agence soumet sa licence de voyage au titre de la loi 11-16 (organisateur-distributeur — ODV — pour les agences qui organisent des voyages). Le numéro de licence, sa date de délivrance et son autorité de délivrance sont enregistrés, et le document de licence est confronté à la liste de l’autorité de délivrance lorsqu’elle est disponible."
+        },
+        {
+          "title": "Assurance responsabilité civile",
+          "text": "Le certificat d’assurance RC (responsabilité civile) de l’agence est enregistré — assureur, numéro de police et dates de validité — et doit être en vigueur pour que des voyages puissent être publiés."
+        },
+        {
+          "title": "Identité du vendeur",
+          "text": "La raison sociale, l’immatriculation et l’adresse de l’agence sont enregistrés, afin que le vendeur de référence montré aux voyageurs soit l’entreprise réelle derrière l’annonce."
+        },
+        {
+          "title": "L’expiration est appliquée",
+          "text": "Quand une licence ou une police d’assurance expire ou échoue à la vérification, les annonces de l’agence se mettent automatiquement en pause — sans période de grâce."
+        }
+      ],
+      "datedLine": "Cette page décrit la porte de vérification telle qu’elle fonctionne le 30 octobre 2026. La vérification énonce ce qui a été contrôlé et quand ; elle ne garantit le résultat d’aucun voyage.",
+      "faq": [
+        {
+          "q": "La vérification signifie-t-elle qu’OuiBoo garantit mon voyage ?",
+          "a": "Non. OuiBoo fournit la technologie ; l’agence est le vendeur du voyage et est responsable de sa réalisation. La vérification couvre la licence, l’assurance et l’identité décrites sur cette page."
+        },
+        {
+          "q": "Puis-je réserver un voyage maintenant ?",
+          "a": "Pas encore — les réservations ne sont pas ouvertes pendant la bêta fermée. Rejoignez la liste d’attente pour être prévenu à l’ouverture."
+        }
+      ]
+    }
+  },
   "beta": {
     "explainer": "Bêta fermée — voyageurs invités uniquement ; vous payez toujours l'agence directement."
   }

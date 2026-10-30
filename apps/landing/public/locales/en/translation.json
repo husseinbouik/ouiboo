@@ -305,6 +305,156 @@
     "continueWithoutAnalytics": "Continue without analytics",
     "allowAnalytics": "Allow analytics"
   },
+  "guides": {
+    "bookingsNotOpen": "Bookings are not open yet.",
+    "waitlistCta": "Join the waitlist",
+    "waitlistNote": "OuiBoo is running a closed beta. Join the waitlist and we will email you when bookings open — no trips are sold from this page.",
+    "faqTitle": "Travellers ask",
+    "highlightsTitle": "What to see",
+    "verificationLink": "How agency verification works on OuiBoo",
+    "footerGuides": "Northern Morocco guides",
+    "tangier": {
+      "name": "Tangier",
+      "title": "Tangier travel guide",
+      "description": "What to see and do in Tangier, Morocco — the medina, the Kasbah, Cap Spartel and the meeting of two seas. Bookings are not open yet; join the waitlist.",
+      "intro": "Tangier sits where the Mediterranean meets the Atlantic: a port city of whitewashed medina lanes, café terraces and sea views in every direction. This guide covers the places travellers ask about most, in roughly the order you might walk them.",
+      "highlights": [
+        {
+          "title": "The Kasbah and the medina",
+          "text": "Start at the Kasbah quarter for the views over the strait, then walk down through the medina lanes toward the Grand Socco — the square that joins the old town to the new."
+        },
+        {
+          "title": "Cap Spartel and the Caves of Hercules",
+          "text": "West of the city, the lighthouse at Cap Spartel marks the meeting of the two seas; the Caves of Hercules sit just below it on the Atlantic side."
+        },
+        {
+          "title": "Cafés and the corniche",
+          "text": "Tangier café culture is part of the visit: mint tea on a terrace, then a walk along the corniche as the light changes over the bay."
+        }
+      ],
+      "worldCup": {
+        "title": "Tangier and the 2030 World Cup",
+        "text": "Tangier is one of the Moroccan host cities for the 2030 FIFA World Cup, with matches planned at the Grand Stade de Tanger (Ibn Batouta Stadium). This page will grow as the tournament approaches — what to see between matches and how the city prepares. Join the waitlist for updates."
+      },
+      "faq": [
+        {
+          "q": "When is the best time to visit Tangier?",
+          "a": "Spring and autumn bring mild weather for walking the medina and the coast. Summer is warm and busy; winter is quieter and can be windy on the strait."
+        },
+        {
+          "q": "How do I get to Tangier?",
+          "a": "Tangier has an international airport (Ibn Battouta), a ferry port with links to Spain, and Al Boraq high-speed trains to Rabat and Casablanca from Tanger Ville station."
+        },
+        {
+          "q": "Can I book trips in Tangier on OuiBoo yet?",
+          "a": "Not yet. Bookings are not open while OuiBoo runs its closed beta. Join the waitlist and we will email you when bookings open."
+        }
+      ]
+    },
+    "tetouan": {
+      "name": "Tétouan",
+      "title": "Tétouan travel guide",
+      "description": "What to see and do in Tétouan, Morocco — the UNESCO-listed medina, the Ensanche and a centre for traditional crafts. Bookings are not open yet; join the waitlist.",
+      "intro": "Tétouan, between the Rif mountains and the Mediterranean, is known for its Andalusian heritage — its medina is a UNESCO World Heritage site — and for a slower pace than its larger neighbour, Tangier.",
+      "highlights": [
+        {
+          "title": "The medina (UNESCO)",
+          "text": "One of Morocco’s most complete medinas, shaped by Andalusian refugees from Spain: white lanes, small squares and artisan workshops — still a working town rather than a museum."
+        },
+        {
+          "title": "The Ensanche and Feddan square",
+          "text": "The Spanish-era new town next door: regular boulevards, the royal palace square (Feddan) and café terraces facing the mountains."
+        },
+        {
+          "title": "Artisans and markets",
+          "text": "Tétouan is a centre for traditional crafts — weaving, pottery and painting — with workshops concentrated around the medina gates."
+        }
+      ],
+      "faq": [
+        {
+          "q": "When is the best time to visit Tétouan?",
+          "a": "Spring and early autumn suit the medina lanes best. The nearby coast (Martil, M’diq) is busiest in summer."
+        },
+        {
+          "q": "How do I get to Tétouan?",
+          "a": "Tétouan is about an hour by road from Tangier. Buses and shared taxis link it with Tangier and Chefchaouen; the nearest airports are in Tangier and Tétouan itself."
+        },
+        {
+          "q": "Can I book trips in Tétouan on OuiBoo yet?",
+          "a": "Not yet. Bookings are not open while OuiBoo runs its closed beta. Join the waitlist and we will email you when bookings open."
+        }
+      ]
+    },
+    "chefchaouen": {
+      "name": "Chefchaouen",
+      "title": "Chefchaouen travel guide",
+      "description": "What to see and do in Chefchaouen, Morocco — the blue medina, Ras El Maa and the Rif mountains. Bookings are not open yet; join the waitlist.",
+      "intro": "Chefchaouen, in the Rif mountains, is the blue-washed mountain town travellers photograph from its kasbah and lanes — and also a working town of weavers, markets and trailheads into the Rif.",
+      "highlights": [
+        {
+          "title": "The blue medina",
+          "text": "The old town’s blue-washed lanes climb from Place Uta el-Hammam, the main square, with the kasbah and the Grand Mosque."
+        },
+        {
+          "title": "Ras El Maa and the Spanish Mosque",
+          "text": "Walk up to Ras El Maa, where the town’s water arrives, and continue to the Spanish Mosque on the hill for the classic view back over the blue town at sunset."
+        },
+        {
+          "title": "Into the Rif",
+          "text": "Chefchaouen is the usual base for Rif mountain walks; the waterfalls and pools of Akchour are the best-known day out, reached by shared taxi."
+        }
+      ],
+      "faq": [
+        {
+          "q": "Why is Chefchaouen blue?",
+          "a": "By most accounts the blue wash began in the town’s Jewish quarter in the 1930s, and residents kept repainting the lanes blue; the town itself now maintains the tradition."
+        },
+        {
+          "q": "How do I get to Chefchaouen?",
+          "a": "Chefchaouen has no train station or airport: most travellers arrive by bus or shared taxi from Tangier or Tétouan — roughly two hours from Tangier."
+        },
+        {
+          "q": "Can I book trips in Chefchaouen on OuiBoo yet?",
+          "a": "Not yet. Bookings are not open while OuiBoo runs its closed beta. Join the waitlist and we will email you when bookings open."
+        }
+      ]
+    },
+    "verification": {
+      "title": "How agency verification works",
+      "description": "The checks an agency passes before it can publish trips on OuiBoo: travel licence, civil-liability insurance and seller identity — and what verification does not claim.",
+      "intro": "OuiBoo is a technology platform: agencies sell their own trips, and travellers pay the agency directly. Before an agency can publish trips on OuiBoo, it passes a verification gate. This page explains what is checked — and what verification does not claim.",
+      "stepsTitle": "The checks",
+      "steps": [
+        {
+          "title": "Travel licence",
+          "text": "The agency submits its Law 11-16 travel licence (organiser-distributor — ODV — for agencies that organise trips). The licence number, issue date and issuing authority are recorded, and the licence document is checked against the issuing authority’s list where one is available."
+        },
+        {
+          "title": "Civil-liability insurance",
+          "text": "The agency’s RC (responsabilité civile) insurance certificate is recorded — insurer, policy number and validity dates — and must be in force for trips to publish."
+        },
+        {
+          "title": "Seller identity",
+          "text": "The agency’s legal name, registration and address are recorded, so the seller of record shown to travellers is the real business behind the listing."
+        },
+        {
+          "title": "Expiry is enforced",
+          "text": "When a licence or insurance policy expires or fails verification, the agency’s listings pause automatically — there is no grace period."
+        }
+      ],
+      "datedLine": "This page describes the verification gate as it runs on 30 October 2026. Verification states what was checked and when; it is not a guarantee of any trip’s outcome.",
+      "faq": [
+        {
+          "q": "Does verification mean OuiBoo guarantees my trip?",
+          "a": "No. OuiBoo provides the technology; the agency is the seller of the trip and is responsible for delivering it. Verification covers the licence, insurance and identity records described on this page."
+        },
+        {
+          "q": "Can I book a trip now?",
+          "a": "Not yet — bookings are not open during the closed beta. Join the waitlist to be told when they open."
+        }
+      ]
+    }
+  },
   "beta": {
     "explainer": "Closed beta — invited travellers only; you always pay the agency directly."
   }

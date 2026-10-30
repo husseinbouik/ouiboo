@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { absoluteLandingUrl, isLandingIndexable } from '../lib/site'
+import { GUIDE_PATHS } from '../lib/guides'
 
 // Council P0-06 + #564: the landing stays noindexed until the liquidity
 // gate (P0-17) passes. That decision is now a single switch —
@@ -11,7 +12,14 @@ import { absoluteLandingUrl, isLandingIndexable } from '../lib/site'
 // advertises the sitemap on the resolved public origin.
 export default function robots(): MetadataRoute.Robots {
   if (!isLandingIndexable()) {
-    return { rules: [{ userAgent: '*', disallow: '/' }] }
+    // #683 (Council S6 Layer A): carve out exactly the guide +
+    // verification routes — they are indexed during the beta while
+    // everything else on this host stays disallowed. The sitemap
+    // (which lists only those routes in this state) is advertised.
+    return {
+      rules: [{ userAgent: '*', allow: [...GUIDE_PATHS], disallow: '/' }],
+      sitemap: absoluteLandingUrl('/sitemap.xml'),
+    }
   }
   return {
     rules: [{ userAgent: '*', allow: '/' }],
