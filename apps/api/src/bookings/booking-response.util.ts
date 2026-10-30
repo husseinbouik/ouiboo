@@ -78,6 +78,11 @@ type BookingMapperInput = {
   attendance?: string | null;
   attendanceRecordedAt?: NullableDate;
   attendanceRecordedBy?: string | null;
+  /** #693: traveller dispute of the recorded attendance. */
+  attendanceDisputedAt?: NullableDate;
+  attendanceDisputeReason?: string | null;
+  /** #689: Booking Pass QR check-in stamp (second attendance signal). */
+  passCheckInAt?: NullableDate;
   termsVersion?: string | null;
   /** #481: server timestamp of the terms acceptance (null if unrecorded). */
   termsAcceptedAt?: NullableDate;
@@ -164,6 +169,27 @@ type BookingMapperInput = {
          * callers that never load it simply omit it. */
         emergencyContactName?: string | null;
         emergencyContactPhone?: string | null;
+        /** #688/#700: seller-of-record + verification-record facts,
+         * loaded by the booking include (`agency: true`); optional so
+         * callers that load a partial profile simply omit them. The
+         * licence facts are gated client-side by SellerIdentity, the
+         * same derivation the public profile endpoint applies. */
+        legalName?: string | null;
+        travelLicenceType?: string | null;
+        travelLicenceNumber?: string | null;
+        travelLicenceStatus?: string | null;
+        licenceExpiry?: NullableDate;
+        licenceIssuedAt?: NullableDate;
+        licenceIssuingAuthority?: string | null;
+        licenceVerifiedAt?: NullableDate;
+        insuranceStatus?: string | null;
+        insuranceInsurer?: string | null;
+        insuranceExpiry?: NullableDate;
+        insuranceVerifiedAt?: NullableDate;
+        businessAddress?: string | null;
+        businessPhone?: string | null;
+        rc?: string | null;
+        taxId?: string | null;
       } | null;
     };
   };
@@ -293,6 +319,9 @@ export const mapBookingDetails = (
   attendance: (booking.attendance as BookingAttendanceType | null | undefined) ?? null,
   attendanceRecordedAt: toIsoString(booking.attendanceRecordedAt) ?? null,
   attendanceRecordedBy: booking.attendanceRecordedBy ?? null,
+  attendanceDisputedAt: toIsoString(booking.attendanceDisputedAt) ?? null,
+  attendanceDisputeReason: booking.attendanceDisputeReason ?? null,
+  passCheckInAt: toIsoString(booking.passCheckInAt) ?? null,
   termsVersion: booking.termsVersion ?? null,
   termsAcceptedAt: toIsoString(booking.termsAcceptedAt) ?? null,
   locale: booking.locale ?? null,
@@ -388,6 +417,25 @@ export const mapBookingDetails = (
       agency: {
         id: booking.session.template.agency?.id || booking.session.template.agencyId || '',
         companyName: booking.session.template.agency?.companyName || '',
+        // #688/#700: seller-of-record + verification facts ride the
+        // booking response (the booking view is the receipt surface —
+        // its seller block and Verification Record link read these).
+        legalName: booking.session.template.agency?.legalName ?? null,
+        travelLicenceType: booking.session.template.agency?.travelLicenceType ?? null,
+        travelLicenceNumber: booking.session.template.agency?.travelLicenceNumber ?? null,
+        travelLicenceStatus: booking.session.template.agency?.travelLicenceStatus ?? null,
+        licenceExpiry: toIsoString(booking.session.template.agency?.licenceExpiry) ?? null,
+        licenceIssuedAt: toIsoString(booking.session.template.agency?.licenceIssuedAt) ?? null,
+        licenceIssuingAuthority: booking.session.template.agency?.licenceIssuingAuthority ?? null,
+        licenceVerifiedAt: toIsoString(booking.session.template.agency?.licenceVerifiedAt) ?? null,
+        insuranceStatus: booking.session.template.agency?.insuranceStatus ?? null,
+        insuranceInsurer: booking.session.template.agency?.insuranceInsurer ?? null,
+        insuranceExpiry: toIsoString(booking.session.template.agency?.insuranceExpiry) ?? null,
+        insuranceVerifiedAt: toIsoString(booking.session.template.agency?.insuranceVerifiedAt) ?? null,
+        businessAddress: booking.session.template.agency?.businessAddress ?? null,
+        businessPhone: booking.session.template.agency?.businessPhone ?? null,
+        rc: booking.session.template.agency?.rc ?? null,
+        taxId: booking.session.template.agency?.taxId ?? null,
         // #419: expose the emergency contact on booking responses only —
         // the audience is the traveller holding this booking (departure
         // pack), never public trip pages (which use a different mapper).

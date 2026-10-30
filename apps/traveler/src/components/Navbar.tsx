@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
 import { useTranslation } from 'react-i18next';
 import { CurrencySelector } from './CurrencySelector';
+import { clearPwaCachesOnLogout } from './ServiceWorkerRegister';
 
 export function Navbar() {
   const { t } = useTranslation();
@@ -375,8 +376,8 @@ const [isOpen, setIsOpen] = useState(false);
                                     </Link>
                                 </div>
                                 <div className="p-1 border-t border-border">
-                                    <button 
-                                        onClick={logout}
+                                    <button
+                                        onClick={() => { clearPwaCachesOnLogout(); logout(); }}
                                         className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-danger hover:bg-danger/10 rounded-lg"
                                     >
                                         <LogOut className="w-4 h-4" /> {t('nav.logout')}

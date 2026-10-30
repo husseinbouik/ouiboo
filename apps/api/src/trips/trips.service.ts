@@ -3,7 +3,7 @@ import { DatabaseService } from '../database/database.service';
 import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripSessionDto } from './dto/create-trip.dto';
 import { BookingPaymentStatus, BookingStatus, Prisma, SessionStatus, TripStatus } from '@ouiboo/database';
 import { toMoneyDecimal } from '../common/money.util';
-import { canOrganise, effectiveVerificationStatus, getAgencyActivationBlock, sellerBlockMissingFields } from '../common/agency-licence.util';
+import { canOrganise, effectiveInsuranceStatus, effectiveVerificationStatus, getAgencyActivationBlock, sellerBlockMissingFields } from '../common/agency-licence.util';
 import { visibleBankDetails } from '../common/bank-details.util';
 import { BETA_CATALOG_CURRENCY, isCatalogCurrencyAllowed, isMadOnlyCatalogEnabled } from '../common/catalog-currency.util';
 import { resolveStagedSessionConfig } from '../staged-payments/staged-payments.util';
@@ -663,6 +663,14 @@ export class TripsService {
                         // #569: feeds the umbrella reconciliation below;
                         // stripped from the payload, never exposed.
                         insuranceExpiry: true,
+                        // #688/#700 (Council S6): Public Verification
+                        // Record + Law 31-08 seller block facts for the
+                        // trip page and checkout.
+                        insuranceInsurer: true,
+                        businessAddress: true,
+                        businessPhone: true,
+                        rc: true,
+                        taxId: true,
                     },
                 },
                 itinerary: {
@@ -708,6 +716,13 @@ export class TripsService {
                 // #569: umbrella reconciled with licence + insurance.
                 verificationStatus: effectiveVerificationStatus(result.agency),
                 bankDetails: visibleBankDetails(result.agency),
+                // #688: the insurance validity window joins the public
+                // payload ONLY while the insurance is effectively
+                // verified (the raw expiry stays stripped above, #569).
+                insuranceExpiry:
+                    effectiveInsuranceStatus(result.agency) === 'VERIFIED'
+                        ? ((result.agency as any).insuranceExpiry ?? null)
+                        : null,
             },
         };
     }

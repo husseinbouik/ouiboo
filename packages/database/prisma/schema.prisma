@@ -464,6 +464,11 @@ model AgencyProfile {
   legalName              String?
   rc                     String?
   taxId                  String?
+  // #700 (Council S6): the agency's public business phone for the
+  // Law 31-08 Art. 29(2) seller block at checkout (legal name, address,
+  // phone, IF/RC). Distinct from emergencyContactPhone, which is only
+  // shown to travellers holding a booking.
+  businessPhone          String?
   legalRepresentative    String?
   businessAddress        String?
   travelLicenceType      TravelLicenceType?
@@ -713,6 +718,15 @@ model Booking {
   attendance                  BookingAttendance?
   attendanceRecordedAt        DateTime?
   attendanceRecordedBy        String?
+  // #693 (Council S6): the traveller may dispute the agency-recorded
+  // attendance through a defined path; the dispute is stamped here and
+  // resolved under the published moderation rules (the recorded outcome
+  // itself is never silently rewritten). #689: the Booking Pass QR
+  // check-in, recorded by the owning agency at the meeting point, is
+  // the second, independent attendance signal.
+  attendanceDisputedAt        DateTime?
+  attendanceDisputeReason     String?
+  passCheckInAt               DateTime?
   // #417 (Council P0-11): snapshot of the trip's resolved cancellation
   // scale ({ version, bands, floorRefundPercent, refundInitiationDays })
   // taken at booking creation. Later template edits can never rewrite

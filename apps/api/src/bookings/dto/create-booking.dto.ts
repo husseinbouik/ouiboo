@@ -99,6 +99,21 @@ export class MarkAttendanceDto {
     attended!: boolean;
 }
 
+export class VerifyBookingPassDto {
+    @ApiProperty({ description: 'The signed Booking Pass token from the traveller\'s QR code (#689)' })
+    @IsString()
+    @IsNotEmpty()
+    token!: string;
+}
+
+export class DisputeAttendanceDto {
+    @ApiProperty({ example: 'I attended the trip; the agency marked me absent by mistake.', description: 'Why the recorded attendance is wrong (#693)' })
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(1000)
+    reason!: string;
+}
+
 export class VerifyManualPaymentDto {
     @ApiProperty({ example: true })
     @IsBoolean()

@@ -47,6 +47,15 @@ export type CheckoutTrip = {
     licenceVerifiedAt?: string | null;
     insuranceStatus?: string | null;
     insuranceVerifiedAt?: string | null;
+    /** #688/#700 (Council S6): Verification Record + Art. 29(2) block. */
+    id?: string;
+    insuranceInsurer?: string | null;
+    insuranceExpiry?: string | null;
+    verificationStatus?: string | null;
+    businessAddress?: string | null;
+    businessPhone?: string | null;
+    rc?: string | null;
+    taxId?: string | null;
   } | null;
   images?: string[];
   /** #332: agency-provided alt text per image (index-aligned); may be absent. */

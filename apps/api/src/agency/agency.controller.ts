@@ -511,6 +511,12 @@ export class AgencyController {
                 taxId: data.taxId?.trim(),
                 legalRepresentative: data.legalRepresentative?.trim(),
                 businessAddress: data.businessAddress?.trim(),
+                // #700: public seller phone — same undefined-skips /
+                // empty-clears semantics as the emergency contact below.
+                businessPhone:
+                    data.businessPhone !== undefined
+                        ? data.businessPhone.trim() || null
+                        : undefined,
                 // #419: emergency contact — undefined skips the field,
                 // an empty string clears it (same semantics as the
                 // nullable profile fields above).

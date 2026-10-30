@@ -39,6 +39,19 @@ export class AgencyPublicController {
                 insuranceStatus: true,
                 insuranceExpiry: true,
                 insuranceVerifiedAt: true,
+                // #688 (Council S6): the Public Verification Record —
+                // insurer name + validity window, and the seller-block
+                // facts (address / phone / IF / RC) the record and the
+                // checkout block (#700) render from. Metadata only: no
+                // document key is ever selected here.
+                insuranceInsurer: true,
+                insuranceValidFrom: true,
+                businessAddress: true,
+                businessPhone: true,
+                rc: true,
+                taxId: true,
+                verificationPausedAt: true,
+                verificationPauseReason: true,
             }
         });
 
@@ -79,6 +92,43 @@ export class AgencyPublicController {
             licenceVerifiedAt: licenceVerified ? agency.licenceVerifiedAt : null,
             insuranceStatus: effectiveInsurance,
             insuranceVerifiedAt: insuranceVerified ? agency.insuranceVerifiedAt : null,
+            // #688: the checkable Public Verification Record. Insurer
+            // facts ride only while the insurance is effectively
+            // VERIFIED (same withholding rule as the licence number);
+            // `checkedOn` is the latest of the two verification stamps;
+            // `tripsPaused` is the live consequence of a lapse — the
+            // umbrella status already derives to non-VERIFIED when a
+            // component lapses, and the expiry sweep's pause stamp is
+            // surfaced verbatim when present. Seller-block facts are
+            // public seller identity (Law 31-08), not verification
+            // claims, so they are not gated on the licence state.
+            verificationRecord: {
+                legalName: agency.legalName,
+                licenceNumber: licenceVerified ? agency.travelLicenceNumber : null,
+                licenceType: licenceVerified ? agency.travelLicenceType : null,
+                issuingAuthority: licenceVerified ? agency.licenceIssuingAuthority : null,
+                licenceExpiry: licenceVerified ? agency.licenceExpiry : null,
+                licenceStatus: effectiveLicenceStatus(agency),
+                insurer: insuranceVerified ? agency.insuranceInsurer : null,
+                insuranceValidFrom: insuranceVerified ? agency.insuranceValidFrom : null,
+                insuranceExpiry: insuranceVerified ? agency.insuranceExpiry : null,
+                insuranceStatus: effectiveInsurance,
+                checkedOn: latestStamp(agency.licenceVerifiedAt, agency.insuranceVerifiedAt),
+                status: effectiveVerificationStatus(agency),
+                tripsPaused:
+                    effectiveVerificationStatus(agency) !== 'VERIFIED' || Boolean(agency.verificationPausedAt),
+                pausedAt: agency.verificationPausedAt,
+                pauseReason: agency.verificationPauseReason,
+            },
+            businessAddress: agency.businessAddress,
+            businessPhone: agency.businessPhone,
+            rc: agency.rc,
+            taxId: agency.taxId,
         };
     }
+}
+
+function latestStamp(...values: Array<Date | null | undefined>): Date | null {
+    const times = values.filter((v): v is Date => v instanceof Date).map((v) => v.getTime());
+    return times.length ? new Date(Math.max(...times)) : null;
 }

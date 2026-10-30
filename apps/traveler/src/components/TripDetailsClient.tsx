@@ -25,6 +25,7 @@ import { cn } from '@ouiboo/ui/utils';
 import { useAuth } from '@/components/AuthContext';
 import { ReviewList } from '@/components/ReviewList';
 import SellerIdentity from '@/components/SellerIdentity';
+import VerificationRecord from '@/components/VerificationRecord';
 import { TRAVELER_URL } from '@/lib/site';
 import { tripCoverViewTransitionName } from '@/lib/view-transition';
 import { SessionStatus, type CancellationScaleSnapshot, type SessionStatusType } from '@ouiboo/types';
@@ -100,6 +101,17 @@ type TripDetails = {
     licenceVerifiedAt?: string | null;
     insuranceStatus?: string | null;
     insuranceVerifiedAt?: string | null;
+    /** #688/#700 (Council S6): Verification Record + seller block. */
+    travelLicenceType?: string | null;
+    licenceIssuedAt?: string | null;
+    licenceIssuingAuthority?: string | null;
+    insuranceInsurer?: string | null;
+    insuranceExpiry?: string | null;
+    verificationStatus?: string | null;
+    businessAddress?: string | null;
+    businessPhone?: string | null;
+    rc?: string | null;
+    taxId?: string | null;
   } | null;
   sessions?: TripSession[];
   itinerary?: TripDay[];
@@ -406,6 +418,10 @@ export default function TripDetailsClient({
 
                     {/* #371: seller of record + verified travel licence */}
                     <SellerIdentity agency={trip.agency} className="mt-4" />
+
+                    {/* #688 (Council S6): the checkable Public Verification
+                        Record for this agency (metadata only). */}
+                    <VerificationRecord agency={trip.agency} className="mt-4" />
 
                     {/* #676: meeting AREA only before booking — the
                         exact address + map link appear on the booking
