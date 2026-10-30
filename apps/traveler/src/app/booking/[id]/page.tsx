@@ -30,6 +30,7 @@ import {
   shouldShowUploadAction,
   shouldShowTripContacts,
   formatCurrency,
+  toPaginatedList,
 } from '@ouiboo/utils';
 import { ReviewForm } from '@/components/ReviewForm';
 import { useTranslation } from 'react-i18next';
@@ -69,16 +70,21 @@ export default function BookingDetailsPage() {
   // #699 (Council S6): this booking's refund case, if any — rendered
   // end-to-end by RefundCaseCard below (agency = obligor, Ouiboo =
   // tracking). Same query key as the bookings list, so both surfaces
-  // share one fetch.
-  const { data: myRefundCases } = useQuery<TravelerRefundCaseView[]>({
+  // share one fetch. The shared cache entry is the RAW paginated
+  // payload (the bookings list's shape): both surfaces must cache
+  // the same shape and normalize at read time. Caching an unwrapped
+  // array here instead made the list-cached object crash this page
+  // ("find is not a function") on the list -> detail navigation
+  // (Batch D witness fix).
+  const { data: rawRefundCases } = useQuery<unknown>({
     enabled: Boolean(bookingId),
     queryKey: ['my-refunds'],
     queryFn: async () => {
       const response = await apiClient.get('/refunds/mine', { params: { limit: 100 } });
-      const payload = response.data as { data?: TravelerRefundCaseView[] } | TravelerRefundCaseView[];
-      return Array.isArray(payload) ? payload : (payload.data ?? []);
+      return response.data;
     },
   });
+  const { data: myRefundCases } = toPaginatedList<TravelerRefundCaseView>(rawRefundCases);
 
   const uploadProofMutation = useMutation({
     mutationFn: async (file: File) => {
