@@ -59,6 +59,15 @@ interface TripCardProps {
   trip: TripCardTrip;
 }
 
+/** #673: a licence expiry only supports the dated statement while it is
+ * still in the future. Kept outside the component (same pattern as
+ * SellerIdentity's isLicenceVerifiedForDisplay) so render stays pure. */
+function futureLicenceExpiry(value?: string | null): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) || date.getTime() <= new Date().getTime() ? null : date;
+}
+
 export function TripCard({ trip }: TripCardProps) {
   const { t, i18n } = useTranslation();
   const images = trip.images && trip.images.length > 0
@@ -101,11 +110,7 @@ export function TripCard({ trip }: TripCardProps) {
       ? null
       : new Intl.DateTimeFormat(i18n.language || 'en', { dateStyle: 'medium' }).format(date);
   };
-  const licenceExpiryDate = (() => {
-    if (!trip.agency?.licenceExpiry) return null;
-    const date = new Date(trip.agency.licenceExpiry);
-    return Number.isNaN(date.getTime()) || date.getTime() <= Date.now() ? null : date;
-  })();
+  const licenceExpiryDate = futureLicenceExpiry(trip.agency?.licenceExpiry);
   const licenceCheckedDate =
     trip.agency?.travelLicenceStatus === 'VERIFIED' && (!trip.agency?.licenceExpiry || licenceExpiryDate)
       ? formatCheckDate(trip.agency?.licenceVerifiedAt)
