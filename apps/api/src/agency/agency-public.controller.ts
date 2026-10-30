@@ -52,12 +52,40 @@ export class AgencyPublicController {
                 taxId: true,
                 verificationPausedAt: true,
                 verificationPauseReason: true,
+                // #691 (Council S6): storefront — language-keyed about
+                // + languages the agency works in.
+                aboutTranslations: true,
+                languages: true,
+                userId: true,
             }
         });
 
         if (!agency) {
             throw new NotFoundException('Agency not found');
         }
+
+        // #691: storefront aggregates — live trip count, the verified
+        // review aggregate under the #681 threshold rule (count always
+        // published; the average only from 5 VISIBLE reviews), and the
+        // median first-response time from real conversations (null
+        // when there is nothing to measure — never an invented number).
+        const [liveTripCount, reviewAggregate, medianResponseTimeHours] = await Promise.all([
+            this.prisma.tripTemplate?.count
+                ? this.prisma.tripTemplate.count({
+                      where: { agencyId: agency.id, status: 'ACTIVE' },
+                  })
+                : Promise.resolve(0),
+            this.prisma.review?.aggregate
+                ? this.prisma.review.aggregate({
+                      where: { agencyId: agency.id, status: 'VISIBLE' },
+                      _avg: { rating: true },
+                      _count: { _all: true },
+                  })
+                : Promise.resolve({ _avg: { rating: null }, _count: { _all: 0 } }),
+            this.computeMedianResponseTimeHours(agency.id, agency.userId),
+        ]);
+        const reviewCount = reviewAggregate._count._all;
+        const MIN_REVIEWS_FOR_RATING = 5;
 
         const licenceVerified = effectiveLicenceStatus(agency) === 'VERIFIED';
         const effectiveInsurance = effectiveInsuranceStatus(agency);
@@ -124,7 +152,66 @@ export class AgencyPublicController {
             businessPhone: agency.businessPhone,
             rc: agency.rc,
             taxId: agency.taxId,
+            // #691: the storefront block. The agency's own name/brand
+            // leads the page; Ouiboo is the frame (verification record
+            // above), not the seller.
+            storefront: {
+                about: agency.aboutTranslations ?? null,
+                languages: agency.languages ?? [],
+                liveTripCount,
+                reviewAggregate: {
+                    count: reviewCount,
+                    average:
+                        reviewCount >= MIN_REVIEWS_FOR_RATING && reviewAggregate._avg.rating != null
+                            ? Math.round(reviewAggregate._avg.rating * 10) / 10
+                            : null,
+                    minReviewsForRating: MIN_REVIEWS_FOR_RATING,
+                    belowThreshold: reviewCount < MIN_REVIEWS_FOR_RATING,
+                },
+                medianResponseTimeHours,
+                sharePath: `/agency/${agency.id}`,
+            },
         };
+    }
+
+    /**
+     * #691: median hours between a traveller's first message in a
+     * conversation and the agency's first reply after it, across the
+     * agency's recent conversations. Null when unmeasurable.
+     */
+    private async computeMedianResponseTimeHours(agencyId: string, agencyUserId: string): Promise<number | null> {
+        try {
+            if (!this.prisma.conversation?.findMany) return null;
+            const conversations = await this.prisma.conversation.findMany({
+                where: { agencyId },
+                orderBy: { createdAt: 'desc' },
+                take: 100,
+                select: {
+                    messages: {
+                        orderBy: { createdAt: 'asc' },
+                        take: 50,
+                        select: { senderId: true, createdAt: true },
+                    },
+                },
+            });
+            const deltas: number[] = [];
+            for (const conversation of conversations) {
+                const firstTraveller = conversation.messages.find((m) => m.senderId !== agencyUserId);
+                if (!firstTraveller) continue;
+                const firstReply = conversation.messages.find(
+                    (m) => m.senderId === agencyUserId && m.createdAt > firstTraveller.createdAt,
+                );
+                if (!firstReply) continue;
+                deltas.push((firstReply.createdAt.getTime() - firstTraveller.createdAt.getTime()) / 3_600_000);
+            }
+            if (deltas.length === 0) return null;
+            deltas.sort((a, b) => a - b);
+            const mid = Math.floor(deltas.length / 2);
+            const median = deltas.length % 2 === 1 ? deltas[mid] : (deltas[mid - 1] + deltas[mid]) / 2;
+            return Math.round(median * 10) / 10;
+        } catch {
+            return null;
+        }
     }
 }
 

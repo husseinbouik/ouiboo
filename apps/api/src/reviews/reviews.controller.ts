@@ -140,4 +140,23 @@ export class AdminReviewsController {
       dto.reason,
     );
   }
+
+  /**
+   * #692: moderate the agency REPLY on a review — same lifecycle,
+   * same guard, same DTO as review moderation.
+   */
+  @Post(':id/response/moderate')
+  @HttpCode(HttpStatus.OK)
+  async moderateReviewResponse(
+    @Param('id') reviewId: string,
+    @Body() dto: ModerateReviewDto,
+    @Request() req: any,
+  ) {
+    return this.reviewsService.moderateReviewResponse(
+      reviewId,
+      { id: req.user.id ?? req.user.userId, email: req.user.email },
+      dto.action,
+      dto.reason,
+    );
+  }
 }

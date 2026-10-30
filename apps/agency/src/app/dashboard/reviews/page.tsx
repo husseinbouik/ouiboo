@@ -265,7 +265,11 @@ export default function ReviewsManager() {
                           </p>
                         </td>
                         <td className="px-6 py-4">
-                          {review.response ? (
+                          {review.response && (review as any).responseStatus === 'PENDING' ? (
+                            <Badge className="bg-warning/10 text-warning ring-warning/20">
+                              <AlertCircle className="h-3 w-3 me-1" /> {t('reviews.responsePendingModeration')}
+                            </Badge>
+                          ) : review.response ? (
                             <Badge className="bg-success/10 text-success ring-success/20">
                               <Check className="h-3 w-3 me-1" /> {t('reviews.responded')}
                             </Badge>
@@ -301,6 +305,7 @@ export default function ReviewsManager() {
             <div className="space-y-2">
               <h2 className="text-2xl font-bold text-foreground">{t('reviews.modalTitle')}</h2>
               <p className="text-muted-foreground">{t('reviews.modalSubtitle')}</p>
+              <p className="text-sm text-muted-foreground">{t('reviews.responseModerationNote')}</p>
             </div>
 
             <div className="space-y-4">

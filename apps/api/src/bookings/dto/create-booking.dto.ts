@@ -1,5 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsString, IsInt, IsPositive, IsEnum, IsIn, IsOptional, IsNotEmpty, MaxLength } from 'class-validator';
+import { IsBoolean, IsString, IsInt, IsPositive, IsEnum, IsIn, IsOptional, IsNotEmpty, MaxLength, IsArray, ValidateNested, Min, Max, ArrayMaxSize } from 'class-validator';
+import { Type } from 'class-transformer';
+
+/** #695 (Council S6): one selected paid add-on. Price is NEVER taken
+ * from the client — the server resolves it from the trip's add-on row. */
+export class BookingAddOnSelectionDto {
+    @ApiProperty({ example: 'clxpcyz12000008l2h3j4k5l6' })
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(64)
+    addOnId!: string;
+
+    @ApiProperty({ example: 1, required: false })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    @Max(50)
+    quantity?: number;
+}
 import { CURRENT_BOOKING_TERMS_VERSION } from '@ouiboo/types';
 
 /**
@@ -79,6 +97,24 @@ export class CreateBookingDto {
     @ApiProperty({ example: true, description: 'Explicit acceptance of the booking terms (the checkout checkbox). Must be true.' })
     @IsBoolean()
     termsAccepted!: boolean;
+
+    // #695 (Council S6): optional agency-priced variant (option tier)
+    // for this trip. The server resolves its stored price and unit;
+    // an id that does not belong to the booked trip is rejected.
+    @ApiProperty({ required: false, description: 'Selected pricing variant (option tier) id for the trip (#695)' })
+    @IsOptional()
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(64)
+    variantId?: string;
+
+    @ApiProperty({ required: false, type: [BookingAddOnSelectionDto], description: 'Selected paid add-ons for the trip (#695)' })
+    @IsOptional()
+    @IsArray()
+    @ArrayMaxSize(20)
+    @ValidateNested({ each: true })
+    @Type(() => BookingAddOnSelectionDto)
+    addOns?: BookingAddOnSelectionDto[];
 
     @ApiProperty({ example: '1.0', enum: [...ALLOWED_BOOKING_TERMS_VERSIONS], description: 'Version of the booking terms accepted at checkout (server allowlist)' })
     @IsString()

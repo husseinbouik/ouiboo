@@ -9,7 +9,8 @@ import { type BookingDetails } from '@ouiboo/types';
 import { Card, CardContent } from '@ouiboo/ui';
 import { CheckoutSkeleton } from '@/components/Skeletons';
 import { useTranslation } from 'react-i18next';
-import { getStagedAmounts, isStagedSession, type CheckoutTrip } from '@/components/checkout/checkout-types';
+import { computePricingTotal, getStagedAmounts, isStagedSession, type CheckoutTrip, type PricingSelectionState } from '@/components/checkout/checkout-types';
+import { CheckoutPricingOptions } from '@/components/checkout/CheckoutPricingOptions';
 import { CheckoutHeader } from '@/components/checkout/CheckoutHeader';
 import { CheckoutGuestForm } from '@/components/checkout/CheckoutGuestForm';
 import { CheckoutPayment } from '@/components/checkout/CheckoutPayment';
@@ -37,6 +38,9 @@ export default function CheckoutPage() {
   const [phoneNumberOverride, setPhoneNumber] = useState<string | null>(null);
   // B9: explicit terms acceptance — unchecked by default, gates submit.
   const [termsAccepted, setTermsAccepted] = useState(false);
+  // #695: variant + add-on selection (ids/quantities only; the API
+  // recomputes all amounts from the agency's stored prices).
+  const [pricingSelection, setPricingSelection] = useState<PricingSelectionState>({ variantId: null, addOns: {} });
   const retryBookingId = searchParams.get('retryBooking');
 
   useEffect(() => {
@@ -86,11 +90,25 @@ export default function CheckoutPage() {
   const phoneNumber = phoneNumberOverride ?? retryBooking?.phoneNumber ?? '';
   const selectedSession = trip?.sessions?.find((session) => session.id === selectedSessionId);
   const sessionPrice = Number(selectedSession?.price ?? 0);
-  const totalPrice = sessionPrice * guestCount;
+  // #695: with a variant/add-on selection the displayed total is the
+  // selection total (server recomputes it authoritatively at booking).
+  const pricingTotals = trip ? computePricingTotal(trip, sessionPrice, guestCount, pricingSelection) : null;
+  const totalPrice = pricingTotals?.hasSelection ? pricingTotals.total : sessionPrice * guestCount;
   // #369: staged sessions collect only the deposit at checkout; the
   // balance is requested after the trip is confirmed.
   const stagedSession = isStagedSession(selectedSession) ? selectedSession : null;
-  const stagedAmounts = stagedSession ? getStagedAmounts(stagedSession, guestCount) : null;
+  const baseStagedAmounts = stagedSession ? getStagedAmounts(stagedSession, guestCount) : null;
+  // #695: the deposit cap (30%) applies to the FINAL total when a
+  // pricing selection repriced the booking — same rule as the API.
+  const stagedAmounts = baseStagedAmounts
+    ? pricingTotals?.hasSelection
+      ? {
+          depositDue: Math.min(baseStagedAmounts.depositDue, Math.floor(totalPrice * 0.3 * 100) / 100),
+          balanceDue: totalPrice - Math.min(baseStagedAmounts.depositDue, Math.floor(totalPrice * 0.3 * 100) / 100),
+          total: totalPrice,
+        }
+      : baseStagedAmounts
+    : null;
   const selectedCurrency = selectedSession?.currency;
   const bankDetails = trip?.agency?.bankDetails?.trim() ?? '';
   const hasBankDetails = bankDetails.length > 0;
@@ -108,6 +126,7 @@ export default function CheckoutPage() {
     hasBankDetails,
     proofFile,
     termsAccepted,
+    pricingSelection,
   });
 
   const clearProof = () => {
@@ -171,6 +190,12 @@ export default function CheckoutPage() {
                   onFullNameChange={setFullName}
                   phoneNumber={phoneNumber}
                   onPhoneNumberChange={setPhoneNumber}
+                  language={i18n.language}
+                />
+                <CheckoutPricingOptions
+                  trip={trip}
+                  selection={pricingSelection}
+                  onChange={setPricingSelection}
                   language={i18n.language}
                 />
                 <CheckoutPayment

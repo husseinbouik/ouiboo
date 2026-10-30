@@ -1,5 +1,6 @@
 import {
   type BookingDetails,
+  type PricingSelectionSnapshot,
   type BookingPaymentPlan,
   type BookingPaymentPlanStatusType,
   type BookingPaymentStatusType,
@@ -73,6 +74,8 @@ type BookingMapperInput = {
   refundStatus?: string | null;
   /** #417: cancellation scale snapshot stored on the booking (Json). */
   cancellationScale?: unknown;
+  // #695: pricing-selection snapshot (variant + add-ons breakdown).
+  pricingSelection?: unknown;
   /** #481: booking-terms version accepted at checkout (null if unrecorded). */
   /** #434: attendance recorded by the agency (null until recorded). */
   attendance?: string | null;
@@ -311,6 +314,8 @@ export const mapBookingDetails = (
   cancellationScale: buildCancellationScaleSnapshot(
     booking.cancellationScale ?? booking.session?.template?.cancellationPolicy,
   ),
+  // #695: the booking's pricing selection, exactly as snapshotted.
+  pricingSelection: (booking.pricingSelection as PricingSelectionSnapshot | null | undefined) ?? null,
   // #481 + B9: the terms version this booking was made under + the
   // server acceptance timestamp + the checkout locale — the full
   // acceptance record. Null (never omitted) when not recorded, so

@@ -119,6 +119,11 @@ export class StagedPaymentsService {
             guestsCount: number;
             totalAmount: Prisma.Decimal;
             session: SessionForPlan;
+            // #695: when a pricing selection repriced the booking, the
+            // deposit is capped at the platform percent of the FINAL
+            // total (the per-seat session deposit may exceed it for a
+            // cheaper variant).
+            depositAmountCap?: Prisma.Decimal;
         },
     ) {
         const session = args.session;
@@ -127,7 +132,10 @@ export class StagedPaymentsService {
                 'Staged session is missing its confirmation deadline',
             );
         }
-        const depositAmount = multiplyMoney(session.deposit, args.guestsCount);
+        let depositAmount = multiplyMoney(session.deposit, args.guestsCount);
+        if (args.depositAmountCap && depositAmount.greaterThan(args.depositAmountCap)) {
+            depositAmount = args.depositAmountCap;
+        }
         const balanceAmount = args.totalAmount.sub(depositAmount).toDecimalPlaces(2);
         if (balanceAmount.lessThan(0)) {
             throw new BadRequestException('Deposit cannot exceed the booking total');

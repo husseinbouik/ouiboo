@@ -18,6 +18,8 @@ import { isCatalogCurrencyAllowed } from '../common/catalog-currency.util';
 import {
     buildCancellationScaleSnapshot,
 } from '../cancellation/cancellation.util';
+import { resolvePricingSelection, type PricingSelectionResult, type VariantForPricing } from '../trips/pricing-selection.util';
+import { MAX_GROUP_DEPOSIT_PERCENT } from '../staged-payments/staged-payments.util';
 
 const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
 
@@ -67,6 +69,9 @@ export function bookingIdempotencyPayloadHash(dto: CreateBookingDto): string {
         paymentMethod: dto.paymentMethod ?? null,
         termsVersion: dto.termsVersion ?? null,
         locale: dto.locale ?? null,
+        // #695: the pricing selection defines WHAT was booked too.
+        variantId: dto.variantId ?? null,
+        addOns: (dto.addOns ?? []).map((a) => ({ addOnId: a.addOnId, quantity: a.quantity ?? 1 })),
     });
     return createHash('sha256').update(canonical).digest('hex');
 }
@@ -287,6 +292,42 @@ export class BookingsService {
             }
         }
 
+        // #695 (Council S6): resolve the traveller's pricing selection
+        // (variant + add-ons) from the agency's STORED prices — client
+        // input carries ids/quantities only. Rows must belong to the
+        // booked trip; anything else is rejected. The resolved total
+        // replaces the plain session-price total everywhere downstream
+        // (staged plan, deposit cap, cancellation snapshot, refunds).
+        let pricing: PricingSelectionResult | null = null;
+        if (dto.variantId || (dto.addOns?.length ?? 0) > 0) {
+            let variant: VariantForPricing | null = null;
+            if (dto.variantId) {
+                variant = await this.db.tripPricingVariant.findFirst({
+                    where: { id: dto.variantId, templateId: session.templateId },
+                });
+                if (!variant) {
+                    throw new BadRequestException('The selected pricing option is not available for this trip');
+                }
+            }
+            const addOnRows: Array<{ addOn: NonNullable<Awaited<ReturnType<typeof this.db.tripAddOn.findFirst>>>; quantity: number }> = [];
+            for (const selection of dto.addOns ?? []) {
+                const addOn = await this.db.tripAddOn.findFirst({
+                    where: { id: selection.addOnId, templateId: session.templateId },
+                });
+                if (!addOn) {
+                    throw new BadRequestException('A selected add-on is not available for this trip');
+                }
+                addOnRows.push({ addOn, quantity: selection.quantity ?? 1 });
+            }
+            pricing = resolvePricingSelection({
+                sessionPrice: session.price,
+                currency: session.currency || 'MAD',
+                guestsCount: dto.guestsCount,
+                variant,
+                addOns: addOnRows,
+            });
+        }
+
         const runCreateTransaction = () => this.db.$transaction(async (tx) => {
 
             // 2. Atomic update to reserve seats (Concurrent Safe)
@@ -343,7 +384,7 @@ export class BookingsService {
               ? paymentMethodMap[dto.paymentMethod]
               : PaymentMethod.MANUAL;
 
-            const totalAmount = multiplyMoney(sessionWithInfo.price, dto.guestsCount);
+            const totalAmount = pricing ? pricing.totalAmount : multiplyMoney(sessionWithInfo.price, dto.guestsCount);
 
             // #417 (Council P0-11): snapshot the trip's resolved
             // cancellation scale onto the booking, so later template
@@ -363,6 +404,8 @@ export class BookingsService {
                     travelerId,
                     guestsCount: dto.guestsCount,
                     totalAmount,
+                    // #695: immutable pricing-selection snapshot.
+                    pricingSelection: pricing ? (pricing.snapshot as unknown as Prisma.InputJsonValue) : undefined,
                     cancellationScale: cancellationScale as unknown as Prisma.InputJsonValue,
                     currency: sessionWithInfo.currency || 'MAD',
                     status: 'PENDING',
@@ -416,12 +459,20 @@ export class BookingsService {
             // #369: snapshot the staged payment plan (deposit/balance split,
             // minimum, deadline) for minimum-group sessions.
             if (staged) {
+                // #695: the deposit cap applies to the FINAL total
+                // (variant + add-ons included): a cheaper variant can
+                // never leave the per-seat deposit above 30% of what
+                // the traveller actually owes.
+                const depositCap = pricing
+                    ? totalAmount.mul(MAX_GROUP_DEPOSIT_PERCENT).div(100).toDecimalPlaces(2)
+                    : null;
                 const plan = await this.stagedPaymentsService.createPlanInTransaction(tx, {
                     bookingId: booking.id,
                     agencyId: session.template.agencyId,
                     guestsCount: dto.guestsCount,
                     totalAmount,
                     session,
+                    ...(depositCap ? { depositAmountCap: depositCap } : {}),
                 });
                 booking.paymentPlan = plan as typeof booking.paymentPlan;
             }

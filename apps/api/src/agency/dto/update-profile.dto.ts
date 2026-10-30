@@ -1,4 +1,4 @@
-import { IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsArray, IsObject, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 // #419: international phone shape — leading '+' or digit, then digits
 // with common separators. Deliberately not country-specific (no +212
@@ -16,6 +16,18 @@ export class UpdateAgencyProfileDto {
   @IsString()
   @MaxLength(2000)
   bio?: string;
+
+  // #691 (Council S6): storefront about, language-keyed
+  // ({ "fr": "...", "ar": "...", "en": "..." } — data-driven keys).
+  @IsOptional()
+  @IsObject()
+  aboutTranslations?: Record<string, string>;
+
+  // #691: languages the agency works in (ISO codes).
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  languages?: string[];
 
   @IsOptional()
   @IsString()

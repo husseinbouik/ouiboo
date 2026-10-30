@@ -7,6 +7,7 @@ import { getInitialLanguage } from '@ouiboo/i18n/server';
 import SellerIdentity from '@/components/SellerIdentity';
 import VerificationRecord from '@/components/VerificationRecord';
 import SellerBlock from '@/components/SellerBlock';
+import AgencyStorefront, { type StorefrontData } from '@/components/AgencyStorefront';
 
 interface AgencyPublicProfile {
   id: string;
@@ -37,6 +38,8 @@ interface AgencyPublicProfile {
   businessPhone?: string | null;
   rc?: string | null;
   taxId?: string | null;
+  // #691: the storefront block from GET /agencies/:id/public.
+  storefront?: StorefrontData | null;
   verificationRecord?: {
     legalName?: string | null;
     licenceNumber?: string | null;
@@ -91,6 +94,7 @@ async function getAgencyTrips(agencyId: string): Promise<Trip[]> {
 export default async function AgencyPage({ params }: { params: Promise<{ agencyId: string }> }) {
   const { agencyId } = await params;
   const { t } = await getServerTranslations();
+  const locale = await getInitialLanguage();
   const agency = await getAgency(agencyId);
   const trips = await getAgencyTrips(agencyId);
 
@@ -136,6 +140,10 @@ export default async function AgencyPage({ params }: { params: Promise<{ agencyI
             <VerificationRecord agency={agency} className="mt-6 w-full max-w-2xl text-left" />
             {/* #700: the Art. 29(2) seller block facts. */}
             <SellerBlock agency={agency} className="mt-4 w-full max-w-2xl text-left" />
+            {/* #691 (Council S6): the shareable storefront — about,
+                languages, live counts, response time, review aggregate
+                (threshold rule), share link + QR. */}
+            {agency.storefront && <AgencyStorefront storefront={agency.storefront} locale={locale} />}
             {/* #681 (Council S6): this page publishes no agency-level
                 rating average. Trip ratings follow the same threshold
                 rule everywhere: counts always show, averages only from

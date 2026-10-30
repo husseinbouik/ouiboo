@@ -180,6 +180,9 @@ enum NotificationType {
   BOOKING_CONFIRMATION
   CANCELLATION
   REVIEW_REQUEST
+  // #692: the review author is notified when an agency reply to their
+  // review becomes visible (post-moderation).
+  REVIEW_RESPONSE
 }
 
 enum RefundStatus {
@@ -469,6 +472,21 @@ model AgencyProfile {
   // phone, IF/RC). Distinct from emergencyContactPhone, which is only
   // shown to travellers holding a booking.
   businessPhone          String?
+  // #691 (Council S6): storefront — language-keyed about text
+  // ({ "fr": "...", "ar": "...", "en": "..." }; `bio` stays the legacy
+  // single-language fallback) and the languages the agency works in
+  // (ISO codes, data-driven — never a hardcoded trio).
+  aboutTranslations      Json?
+  languages              String[]           @default([])
+  // #698 (Council S6): billing configuration. The codebase had no plan
+  // tier at all (subscription was status-only); these are the minimal
+  // config fields the pricing restructure needs: the tier the agency is
+  // on (FREE is genuinely publishable — see billing-config), whether it
+  // belongs to the closed-beta cohort, and the grandfathering horizon
+  // (beta cohort: Pro free until this date).
+  subscriptionTier       String             @default("FREE")
+  betaCohort             Boolean            @default(false)
+  grandfatheredUntil     DateTime?
   legalRepresentative    String?
   businessAddress        String?
   travelLicenceType      TravelLicenceType?
@@ -563,6 +581,9 @@ model TripTemplate {
   currency           String         @default("MAD")
   sessions           TripSession[]
   quoteRequests      QuoteRequest[]
+  // #695 (Council S6): agency-priced option tiers + paid add-ons.
+  pricingVariants    TripPricingVariant[]
+  addOns             TripAddOn[]
   itinerary          ItineraryDay[]
   reviews            Review[]
   wishlists          Wishlist[]
@@ -734,6 +755,11 @@ model Booking {
   // refunds are computed from this snapshot. Null for bookings created
   // before the scale existed (resolved from the template at read time).
   cancellationScale           Json?
+  // #695: immutable snapshot of the traveller's pricing selection
+  // (variant + add-ons with the agency prices at booking time and the
+  // reconciled base/add-ons/total breakdown). Refunds and the staged
+  // plan compute on totalAmount, which already includes the selection.
+  pricingSelection            Json?
   refundAmount                Decimal?             @db.Decimal(18, 2)
   refundStatus                RefundStatus?
   refundProcessedAt           DateTime?
@@ -1121,6 +1147,17 @@ model Review {
   rating            Int // 1-5
   comment           String?      @db.Text
   response          String?      @db.Text
+  // #692 (Council S6): the agency reply flows through the SAME
+  // moderation lifecycle as the review itself (PENDING -> VISIBLE /
+  // HIDDEN / REMOVED). Public payloads expose `response` only while
+  // responseStatus is VISIBLE — no unmoderated public text. Null on
+  // rows with no reply.
+  responseStatus    ReviewStatus?
+  responseEditCount Int          @default(0)
+  respondedAt       DateTime?
+  responseModeratedById String?
+  responseModeratedAt   DateTime?
+  responseModerationReason String? @db.Text
   isVerifiedBooking Boolean      @default(true)
   status            ReviewStatus @default(VISIBLE)
   // #439: author edit budget (service-enforced: max edits + edit window).
@@ -1139,6 +1176,61 @@ model Review {
   @@index([tripTemplateId, rating])
   @@index([tripTemplateId, status])
   @@index([moderatedById])
+}
+
+// #695 (Council S6): agency-priced variant on a trip (option tier).
+// The price REPLACES the session price for the selected unit:
+// PER_PERSON x guests, PER_GROUP x 1, PER_VEHICLE x ceil(guests/unitSize).
+model TripPricingVariant {
+  id           String       @id @default(cuid())
+  templateId   String
+  agencyId     String
+  template     TripTemplate @relation(fields: [templateId, agencyId], references: [id, agencyId], onDelete: Cascade)
+  // Language-keyed name map { "fr": "...", "ar": "...", "en": "..." } —
+  // data-driven, never a hardcoded locale trio (same rule as #546).
+  name         Json
+  pricingUnit  PricingUnit  @default(PER_PERSON)
+  unitSize     Int          @default(1)
+  price        Decimal      @db.Decimal(18, 2)
+  currency     String       @default("MAD")
+  isActive     Boolean      @default(true)
+  sortOrder    Int          @default(0)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([templateId, isActive])
+  @@index([agencyId])
+}
+
+// #695: paid add-on on a trip (e.g. hotel pickup), priced by the agency.
+// PER_PERSON x guests x quantity, PER_BOOKING x quantity.
+model TripAddOn {
+  id           String       @id @default(cuid())
+  templateId   String
+  agencyId     String
+  template     TripTemplate @relation(fields: [templateId, agencyId], references: [id, agencyId], onDelete: Cascade)
+  name         Json
+  pricingUnit  AddOnPricingUnit @default(PER_BOOKING)
+  price        Decimal      @db.Decimal(18, 2)
+  currency     String       @default("MAD")
+  isActive     Boolean      @default(true)
+  sortOrder    Int          @default(0)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([templateId, isActive])
+  @@index([agencyId])
+}
+
+enum PricingUnit {
+  PER_PERSON
+  PER_GROUP
+  PER_VEHICLE
+}
+
+enum AddOnPricingUnit {
+  PER_PERSON
+  PER_BOOKING
 }
 
 // Wishlist
