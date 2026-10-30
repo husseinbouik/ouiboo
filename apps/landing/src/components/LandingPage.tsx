@@ -404,7 +404,7 @@ export default function LandingPage() {
                             Same real screens as Option A, professionally
                             presented; native-size UI stays legible at phone
                             size and the pair stays compact on mobile. */}
-                        <div className="relative mx-auto max-w-2xl" data-testid="hero-phones">
+                        <div className="relative mx-auto max-w-2xl lg:hidden" data-testid="hero-phones">
                             <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-3/4 w-4/5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-sunset-orange/25 blur-3xl" />
                             <div aria-hidden="true" className="absolute bottom-0 right-0 h-1/2 w-1/2 rounded-full bg-deep-blue/25 blur-3xl" />
                             <div className="relative flex items-start justify-center">
@@ -418,6 +418,46 @@ export default function LandingPage() {
                                     <div className="relative overflow-hidden rounded-[1.85rem]">
                                         <Image src="/hero-agency-phone.webp" alt={t('common.heroAgencyAlt')} width={780} height={1688} sizes="(min-width: 1024px) 228px, 49vw" className="block aspect-[9/19] w-full object-cover object-top"/>
                                         <div aria-hidden="true" className="absolute left-1/2 top-[6px] h-[10px] w-[44px] -translate-x-1/2 rounded-full bg-gray-950 sm:h-[12px] sm:w-[58px]" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {/* #731: device-matched hero (founder decision 2026-10-30) —
+                            laptop/tablet visitors (>=lg, the #672 breakpoint) get
+                            the DESKTOP app in CSS browser-window frames instead
+                            of the phone mockups above: genuine DARK-theme desktop
+                            captures of the traveller trip page (lead) and the
+                            agency dashboard (offset secondary), mirroring the
+                            phone composition. Swap is CSS-only; exactly one
+                            variant is visible per breakpoint. */}
+                        <div className="relative mx-auto hidden max-w-5xl lg:block" data-testid="hero-browsers">
+                            <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-3/4 w-4/5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-sunset-orange/25 blur-3xl" />
+                            <div aria-hidden="true" className="absolute bottom-0 right-0 h-1/2 w-1/2 rounded-full bg-deep-blue/25 blur-3xl" />
+                            <div className="relative flex items-start justify-center">
+                                <div className="relative z-10 w-[58%] shrink-0 -rotate-1 rounded-xl bg-gray-950 p-[6px] shadow-2xl ring-1 ring-black/50">
+                                    <div className="overflow-hidden rounded-lg">
+                                        <div aria-hidden="true" className="flex items-center gap-2 bg-gray-900 px-3 py-2">
+                                            <span className="flex gap-1.5">
+                                                <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]/80" />
+                                                <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]/80" />
+                                                <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]/80" />
+                                            </span>
+                                            <span className="ml-1 flex-1 truncate rounded-md bg-white/5 px-3 py-1 text-[11px] font-medium text-gray-400">Ouiboo · Traveller</span>
+                                        </div>
+                                        <Image src="/hero-traveler-desktop.webp" alt={t('common.heroTravelerAlt')} width={1680} height={1050} priority sizes="620px" className="block aspect-[8/5] w-full object-cover object-top"/>
+                                    </div>
+                                </div>
+                                <div className="relative z-0 -ml-10 mt-28 w-[46%] shrink-0 rotate-1 rounded-xl bg-gray-950 p-[6px] shadow-2xl ring-1 ring-black/50">
+                                    <div className="overflow-hidden rounded-lg">
+                                        <div aria-hidden="true" className="flex items-center gap-2 bg-gray-900 px-3 py-2">
+                                            <span className="flex gap-1.5">
+                                                <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]/80" />
+                                                <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]/80" />
+                                                <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]/80" />
+                                            </span>
+                                            <span className="ml-1 flex-1 truncate rounded-md bg-white/5 px-3 py-1 text-[11px] font-medium text-gray-400">Ouiboo · Agency</span>
+                                        </div>
+                                        <Image src="/hero-agency-desktop.webp" alt={t('common.heroAgencyAlt')} width={1680} height={1050} sizes="500px" className="block aspect-[8/5] w-full object-cover object-top"/>
                                     </div>
                                 </div>
                             </div>
