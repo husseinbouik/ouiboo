@@ -27,11 +27,21 @@ export function isCustomTripRequestsEnabled(env: NodeJS.ProcessEnv = process.env
 
 const REF_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
-/** Pseudonymised public reference, e.g. CTR-7K2QX9. */
+/** Pseudonymised public reference, e.g. CTR-7K2QX9. Rejection
+ * sampling over the crypto bytes — a raw modulo would bias the
+ * distribution (CodeQL js/biased-cryptographic-random). */
 export function generateCustomTripPublicRef(): string {
-    const bytes = randomBytes(6);
+    const alphabetSize = REF_ALPHABET.length;
+    const limit = Math.floor(256 / alphabetSize) * alphabetSize;
     let suffix = '';
-    for (let i = 0; i < 6; i++) suffix += REF_ALPHABET[bytes[i] % REF_ALPHABET.length];
+    while (suffix.length < 6) {
+        const bytes = randomBytes(6 - suffix.length + 4);
+        for (const byte of bytes) {
+            if (byte >= limit) continue;
+            suffix += REF_ALPHABET[byte % alphabetSize];
+            if (suffix.length === 6) break;
+        }
+    }
     return `CTR-${suffix}`;
 }
 
