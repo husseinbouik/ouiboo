@@ -83,17 +83,17 @@ beforeEach(() => {
 });
 
 describe('Navbar mobile layout (#648) — signed out', () => {
-  it('keeps the theme toggle and sign-up in the bar; the bar login link is menu-only below md', () => {
+  it('keeps the theme toggle and sign-up in the bar; the bar login link is menu-only below lg', () => {
     render(<Navbar />);
     expect(screen.getByTestId('theme-toggle')).not.toBeNull();
     const join = screen.getByText('nav.joinNow');
     expect(join.closest('a')?.getAttribute('href')).toBe('/signup');
     // Exactly one login link before the menu opens: the bar copy,
-    // hidden below md by class.
+    // hidden below lg by class.
     const logins = screen.getAllByText('nav.login');
     expect(logins).toHaveLength(1);
     expect(logins[0].className).toContain('hidden');
-    expect(logins[0].className).toContain('md:inline-flex');
+    expect(logins[0].className).toContain('lg:inline-flex');
   });
 
   it('the mobile menu holds the destinations, login and both selectors', () => {
@@ -109,11 +109,11 @@ describe('Navbar mobile layout (#648) — signed out', () => {
     expect(within(dialog).getByTestId('currency-selector')).not.toBeNull();
   });
 
-  it('the selector cluster in the bar is desktop-only (hidden below md)', () => {
+  it('the selector cluster in the bar is desktop-only (hidden below lg)', () => {
     render(<Navbar />);
     const barSwitcher = screen.getAllByTestId('language-switcher')[0];
     expect(barSwitcher.parentElement?.className).toContain('hidden');
-    expect(barSwitcher.parentElement?.className).toContain('md:flex');
+    expect(barSwitcher.parentElement?.className).toContain('lg:flex');
   });
 });
 
