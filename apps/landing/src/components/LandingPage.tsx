@@ -411,13 +411,13 @@ export default function LandingPage() {
                                 <div className="relative z-10 w-[57%] max-w-[272px] shrink-0 -rotate-2 rounded-[2.2rem] bg-gray-950 p-[7px] shadow-2xl ring-1 ring-black/50">
                                     <div className="relative overflow-hidden rounded-[1.85rem]">
                                         <Image src="/hero-traveler-phone.webp" alt={t('common.heroTravelerAlt')} width={780} height={1688} priority sizes="(min-width: 1024px) 272px, 57vw" className="block aspect-[9/19] w-full object-cover object-top"/>
-                                        <div aria-hidden="true" className="absolute left-1/2 top-[7px] h-[14px] w-[58px] -translate-x-1/2 rounded-full bg-gray-950 sm:h-[18px] sm:w-[76px]" />
+                                        <div aria-hidden="true" className="absolute left-1/2 top-[6px] h-[10px] w-[44px] -translate-x-1/2 rounded-full bg-gray-950 sm:h-[12px] sm:w-[58px]" />
                                     </div>
                                 </div>
                                 <div className="relative z-0 -ml-9 mt-16 w-[49%] max-w-[228px] shrink-0 rotate-3 rounded-[2.2rem] bg-gray-950 p-[7px] shadow-2xl ring-1 ring-black/50 sm:-ml-12">
                                     <div className="relative overflow-hidden rounded-[1.85rem]">
                                         <Image src="/hero-agency-phone.webp" alt={t('common.heroAgencyAlt')} width={780} height={1688} sizes="(min-width: 1024px) 228px, 49vw" className="block aspect-[9/19] w-full object-cover object-top"/>
-                                        <div aria-hidden="true" className="absolute left-1/2 top-[7px] h-[14px] w-[58px] -translate-x-1/2 rounded-full bg-gray-950 sm:h-[18px] sm:w-[76px]" />
+                                        <div aria-hidden="true" className="absolute left-1/2 top-[6px] h-[10px] w-[44px] -translate-x-1/2 rounded-full bg-gray-950 sm:h-[12px] sm:w-[58px]" />
                                     </div>
                                 </div>
                             </div>
