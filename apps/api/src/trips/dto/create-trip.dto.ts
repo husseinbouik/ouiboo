@@ -1,7 +1,7 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsString, IsEnum, IsPositive, IsInt, Min, Max, IsArray, ArrayMinSize, ArrayMaxSize, MinLength, IsOptional, IsObject, ValidateNested, IsDateString, Matches, MaxLength } from 'class-validator';
+import { IsString, IsEnum, IsPositive, IsInt, Min, Max, IsArray, ArrayMinSize, ArrayMaxSize, MinLength, IsOptional, IsObject, ValidateNested, IsDateString, Matches, MaxLength, IsNumber, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
-import { TripCategory, TripStatus } from '@ouiboo/types';
+import { AccommodationType, ItineraryMeal, TripCategory, TripStatus } from '@ouiboo/types';
 import { IsDecimalMoney } from '../../common/validators/is-decimal-money.decorator';
 
 export class ItineraryDayDto {
@@ -23,6 +23,66 @@ export class ItineraryDayDto {
     @IsArray()
     @IsString({ each: true })
     activities!: string[];
+
+    // #676 (Council S6): language-neutral slice — all optional, never
+    // language maps (numbers / enums / a proper noun).
+    @ApiProperty({ example: 42.5, required: false })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    @Max(10000)
+    distanceKm?: number;
+
+    @ApiProperty({ example: 75, required: false })
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    @Max(10080)
+    driveTimeMinutes?: number;
+
+    @ApiProperty({ enum: ItineraryMeal, isArray: true, required: false })
+    @IsOptional()
+    @IsArray()
+    @ArrayMaxSize(3)
+    @IsEnum(ItineraryMeal, { each: true })
+    mealsIncluded?: ItineraryMeal[];
+
+    @ApiProperty({ example: 'Riad Goloboy', required: false })
+    @IsOptional()
+    @IsString()
+    @MaxLength(200)
+    accommodationName?: string;
+
+    @ApiProperty({ enum: AccommodationType, required: false })
+    @IsOptional()
+    @IsEnum(AccommodationType)
+    accommodationType?: AccommodationType;
+}
+
+/**
+ * #676: the structured meeting point { address, mapsUrl,
+ * pickupAvailable } stored alongside startLocation (the departure
+ * city/area). The address is not localised; public payloads expose the
+ * area only and booking responses carry the full structure.
+ */
+export class MeetingPointDto {
+    @ApiProperty({ example: 'Place du 9 Avril 1947, Tanger', required: false })
+    @IsOptional()
+    @IsString()
+    @MaxLength(300)
+    address?: string;
+
+    @ApiProperty({ example: 'https://maps.google.com/?q=...', required: false })
+    @IsOptional()
+    @IsString()
+    @MaxLength(1000)
+    @Matches(/^https?:\/\//, { message: 'meetingPoint.mapsUrl must be an http(s) URL' })
+    mapsUrl?: string;
+
+    @ApiProperty({ example: true, required: false })
+    @IsOptional()
+    @IsBoolean()
+    pickupAvailable?: boolean;
 }
 
 /**
@@ -162,6 +222,23 @@ export class CreateTripTemplateDto {
     @ApiProperty({ example: 'Marrakech, Morocco' })
     @IsString()
     startLocation!: string;
+
+    // #675: normalised destination slug from the BETA_DESTINATIONS
+    // configuration (tangier / tetouan / chefchaouen). Validated
+    // against the config in TripsService; omitted = derived from
+    // startLocation on write.
+    @ApiProperty({ example: 'tangier', required: false })
+    @IsOptional()
+    @IsString()
+    @MaxLength(50)
+    destinationSlug?: string;
+
+    // #676: structured meeting point alongside startLocation.
+    @ApiProperty({ type: MeetingPointDto, required: false })
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => MeetingPointDto)
+    meetingPoint?: MeetingPointDto;
 
     @ApiProperty({ example: 'Merzouga, Morocco', required: false })
     @IsOptional()
