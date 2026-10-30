@@ -712,6 +712,14 @@ export default function LandingPage() {
                       {item.name}
                     </a>
                 ))}
+{/* #683: Layer A guides + verification explainer (indexed,
+                    non-transactional — waitlist only). */}
+                <a href="/guides/tangier" className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300">
+                  {t('guides.footerGuides')}
+                </a>
+                <a href="/verification" className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300">
+                  {t('guides.verificationLink')}
+                </a>
 <a href="/privacy" className="text-sm leading-6 text-gray-600 hover:text-sunset-orange transition-colors duration-300">
                   {t('footer.privacy')}
                 </a>
