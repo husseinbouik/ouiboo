@@ -60,6 +60,7 @@
     "analytics": "Analytics",
     "myTrips": "My Trips",
     "bookings": "Bookings",
+    "quotes": "Quote requests",
     "reviews": "Reviews",
     "wallet": "Payments",
     "billing": "Billing",
@@ -567,6 +568,30 @@
     "submitting": "Submitting...",
     "submit": "Submit Response",
     "closeDialog": "Close dialog"
+  },
+  "quotes": {
+    "title": "Quote requests",
+    "subtitle": "Travellers ask for dates on your published trips. Reply within 48 hours with ONE firm total price in MAD (taxes included) — your trip’s cancellation scale is attached automatically — or decline. An accepted quote is saved exactly as sent, with its acceptance timestamp.",
+    "loading": "Loading quote requests…",
+    "empty": "No quote requests yet.",
+    "dates": "Requested dates",
+    "traveller": "Traveller",
+    "guests": "{{count}} guest(s)",
+    "totalLabel": "Firm total (MAD, taxes included)",
+    "totalPlaceholder": "e.g. 2400",
+    "noteLabel": "Note (optional)",
+    "notePlaceholder": "What the total includes",
+    "send": "Send firm quote",
+    "decline": "Decline",
+    "error": "Could not save. Please try again.",
+    "acceptedOn": "Accepted on {{date}}",
+    "status": {
+      "PENDING": "Awaiting your quote",
+      "QUOTED": "Quote sent",
+      "ACCEPTED": "Accepted by the traveller",
+      "DECLINED": "Declined",
+      "CANCELLED": "Cancelled by the traveller"
+    }
   },
   "bookings": {
     "title": "Booking Manager",

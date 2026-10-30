@@ -96,6 +96,19 @@ enum TripStatus {
   INACTIVE
 }
 
+// #682 (Council S6): firm-quote lifecycle for published trips. PENDING
+// (traveller asked for dates) → QUOTED (agency replied with a firm MAD
+// TTC total + its cancellation scale) → ACCEPTED (traveller accepted;
+// quote + scale + acceptance timestamp snapshotted immutably onto the
+// request). DECLINED is the agency's no; CANCELLED the traveller's.
+enum QuoteRequestStatus {
+  PENDING
+  QUOTED
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
 enum TripCategory {
   ADVENTURE
   CULTURAL
@@ -347,6 +360,7 @@ model User {
   moderatedReviews        Review[]                @relation("ReviewModerator")
   wishlist                Wishlist[]
   travelerConversations   Conversation[]          @relation("TravelerConversations")
+  quoteRequests           QuoteRequest[]
   notificationPreferences NotificationPreference?
   displayCurrency         String                  @default("MAD")
   dateOfBirth             DateTime?
@@ -409,6 +423,7 @@ model AgencyProfile {
   templates          TripTemplate[]
   tripSessions       TripSession[]
   bookings           Booking[]
+  quoteRequests      QuoteRequest[]
   paymentTransactions PaymentTransaction[]
   reviews            Review[]
   invoiceLineItems   InvoiceLineItem[]
@@ -542,6 +557,7 @@ model TripTemplate {
   featured           Boolean        @default(false)
   currency           String         @default("MAD")
   sessions           TripSession[]
+  quoteRequests      QuoteRequest[]
   itinerary          ItineraryDay[]
   reviews            Review[]
   wishlists          Wishlist[]
@@ -731,6 +747,50 @@ model Booking {
   @@index([paymentStatus, bookingDate])
   @@index([cancelledAt])
   @@index([status, paymentStatus, createdAt])
+}
+
+// #682 (Council S6): the catalogue firm-quote — the booking INTENT for a
+// published trip before any payment exists. The traveller asks for
+// dates/party; the agency replies within 48h with ONE firm total price
+// in MAD TTC plus its cancellation scale; on acceptance the quote, the
+// scale and the acceptance timestamp are snapshotted into
+// acceptedSnapshot, which is never written again (the service refuses
+// every mutation of an ACCEPTED request). No indicative prices anywhere:
+// a request carries no price until the agency's firm quote. Payments
+// stay disabled in beta — an accepted quote leads to no payment step;
+// it is the record a later booking is made under.
+model QuoteRequest {
+  id                 String             @id @default(cuid())
+  templateId         String
+  template           TripTemplate       @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  agencyId           String
+  agency             AgencyProfile      @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  travelerId         String
+  traveler           User               @relation(fields: [travelerId], references: [id], onDelete: Cascade)
+  requestedStartDate DateTime
+  requestedEndDate   DateTime
+  guestsCount        Int
+  note               String?
+  status             QuoteRequestStatus @default(PENDING)
+  // The agency's firm quote: a TOTAL for the requested dates/party, in
+  // MAD TTC only — the flow never quotes per-person or indicative math.
+  quotedTotalAmount  Decimal?           @db.Decimal(18, 2)
+  quotedCurrency     String             @default("MAD")
+  quoteNote          String?
+  // The agency's cancellation scale as quoted (the trip's structured
+  // scale, resolved server-side at quote time).
+  cancellationScale  Json?
+  quotedAt           DateTime?
+  acceptedAt         DateTime?
+  // Immutable acceptance snapshot: { quotedTotalAmount, quotedCurrency,
+  // cancellationScale, quotedAt, acceptedAt, templateId, agencyId }.
+  acceptedSnapshot   Json?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([travelerId, createdAt])
+  @@index([agencyId, status, createdAt])
+  @@index([templateId])
 }
 
 model PaymentProof {
