@@ -97,6 +97,10 @@ export function AgencySupportPage() {
 
       <SupportBlock />
 
+      {/* #677: the beta offer (verification SLA, assisted listing,
+          support split) also lives on the support surface. */}
+      <BetaOfferCard />
+
       <Card className="border border-border shadow-sm bg-card">
         <CardContent className="p-6 space-y-5">
           <div>
