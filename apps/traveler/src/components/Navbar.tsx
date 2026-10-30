@@ -252,7 +252,7 @@ const [isOpen, setIsOpen] = useState(false);
                                             {link.icon}
                                             <span>{link.name}</span>
                                             {link.href === '/wishlist' && wishlistCountData?.count > 0 && (
-                                                <span className="absolute -top-2 -right-3 inline-flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-[10px] font-bold">
+                                                <span className="absolute -top-2 -right-3 inline-flex items-center justify-center h-5 w-5 rounded-full bg-sunset-orange text-deep-blue text-[10px] font-bold">
                                                     {wishlistCountData.count}
                                                 </span>
                                             )}
@@ -465,7 +465,7 @@ const [isOpen, setIsOpen] = useState(false);
                         <Link onClick={() => setIsOpen(false)} href="/wishlist" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
                             {t('nav.wishlist')} <Heart className="text-red-500" />
                             {wishlistCountData?.count > 0 && (
-                              <span className="ml-2 inline-flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-[12px] font-bold">{wishlistCountData.count}</span>
+                              <span className="ml-2 inline-flex items-center justify-center h-5 w-5 rounded-full bg-sunset-orange text-deep-blue text-[12px] font-bold">{wishlistCountData.count}</span>
                             )}
                         </Link>
                         <Link onClick={() => setIsOpen(false)} href="/support" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
