@@ -101,6 +101,19 @@
       "title": "Touchez de nouveaux voyageurs",
       "description": "Présentez vos voyages à des voyageurs qui recherchent des expériences comme les vôtres."
     },
+    "offerTitle": "L’offre bêta pour les agences",
+    "offer1": {
+      "title": "Vérification sous 48 heures ouvrées",
+      "description": "Votre licence de voyage et votre assurance RC sont vérifiées sous 48 heures ouvrées après un dossier complet."
+    },
+    "offer2": {
+      "title": "Nous construisons vos premières annonces avec vous",
+      "description": "OuiBoo prépare vos premières annonces avec vous — et vous validez chacune avant sa mise en ligne."
+    },
+    "offer3": {
+      "title": "Nous répondons aux questions plateforme des voyageurs",
+      "description": "OuiBoo traite les questions sur la plateforme et les réservations en français, arabe et anglais aux horaires publiés. Vous gardez la logistique du voyage — et pendant un voyage, les voyageurs joignent d’abord votre contact d’urgence."
+    },
     "cta": {
       "registerAgency": "Inscrire l'Agence",
       "alreadyPartner": "Déjà partenaire ? Se connecter"

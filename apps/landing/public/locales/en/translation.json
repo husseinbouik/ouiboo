@@ -101,6 +101,19 @@
       "title": "Reach New Travelers",
       "description": "Present your trips to travelers actively looking for experiences like yours."
     },
+    "offerTitle": "The beta offer for agencies",
+    "offer1": {
+      "title": "Verification within 48 working hours",
+      "description": "Your travel licence and RC insurance are checked within 48 working hours of a complete submission."
+    },
+    "offer2": {
+      "title": "We build your first listings with you",
+      "description": "OuiBoo prepares your first listings together with you — and you approve every one before it goes live."
+    },
+    "offer3": {
+      "title": "We answer travellers’ platform questions",
+      "description": "OuiBoo handles platform and booking questions in French, Arabic and English at published hours. You keep trip logistics — and during a trip, travellers reach your emergency contact first."
+    },
     "cta": {
       "registerAgency": "Register Agency",
       "alreadyPartner": "Already a partner? Log in"

@@ -185,6 +185,15 @@
     "contactTitle": "Questions?",
     "contactBody": "Reach out to privacy@ouiboo.com and we'll respond quickly."
   },
+  "betaOffer": {
+    "title": "Your beta offer",
+    "verificationTitle": "Verification within {{hours}} working hours",
+    "verificationBody": "We check your travel licence and RC insurance within {{hours}} working hours of a complete submission — the same gate every beta agency passes.",
+    "assistedTitle": "Assisted first listings",
+    "assistedBody": "We build your first listings with you — photos, itinerary, prices — and nothing is published until you approve it.",
+    "supportTitle": "Support split, stated up front",
+    "supportBody": "OuiBoo answers platform and booking questions in French, Arabic and English at the published support hours (replies within {{hours}} hours). You answer trip logistics — meeting points, timings, the day itself. During an active trip, your emergency contact is the traveller’s first call and OuiBoo is the escalation."
+  },
   "onboarding": {
     "title": "Compliance & Onboarding",
     "subtitle": "Complete your profile to start publishing trips.",

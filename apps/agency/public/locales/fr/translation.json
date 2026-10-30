@@ -185,6 +185,15 @@
     "contactTitle": "Des questions ?",
     "contactBody": "Écrivez à privacy@ouiboo.com et nous répondrons rapidement."
   },
+  "betaOffer": {
+    "title": "Votre offre bêta",
+    "verificationTitle": "Vérification sous {{hours}} heures ouvrées",
+    "verificationBody": "Nous vérifions votre licence de voyage et votre assurance RC sous {{hours}} heures ouvrées après un dossier complet — le même contrôle pour chaque agence de la bêta.",
+    "assistedTitle": "Premières annonces assistées",
+    "assistedBody": "Nous construisons vos premières annonces avec vous — photos, itinéraire, prix — et rien n’est publié avant votre validation.",
+    "supportTitle": "Partage d’assistance, annoncé dès le départ",
+    "supportBody": "OuiBoo répond aux questions sur la plateforme et les réservations en français, arabe et anglais aux horaires d’assistance publiés (réponse sous {{hours}} heures). Vous répondez sur la logistique du voyage — points de rendez-vous, horaires, le jour même. Pendant un voyage en cours, votre contact d’urgence est le premier appel du voyageur et OuiBoo est l’escalade."
+  },
   "onboarding": {
     "title": "Conformité et intégration",
     "subtitle": "Complétez votre profil pour commencer à publier des voyages.",

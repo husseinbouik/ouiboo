@@ -525,6 +525,22 @@ export default function LandingPage() {
                       </motion.div>
                     ))}
                   </motion.dl>
+                  {/* #677 (Council S6): the published beta offer pack —
+                      48-working-hour verification SLA, assisted first
+                      listings (agency approves before publish), and the
+                      support-relief split. Factual service promises
+                      only; no supply claims (#661 discipline). */}
+                  <div className="mt-10 rounded-2xl border border-gray-200 bg-gray-50 p-6">
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-deep-blue">{t('agencies.offerTitle')}</h3>
+                    <ul className="mt-4 space-y-4">
+                      {(['offer1', 'offer2', 'offer3'] as const).map((key) => (
+                        <li key={key}>
+                          <p className="font-semibold text-deep-blue">{t(`agencies.${key}.title`)}</p>
+                          <p className="text-gray-600">{t(`agencies.${key}.description`)}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                   <motion.div 
                     variants={fadeInUp}
                     className="mt-10 flex items-center gap-x-6"
@@ -581,6 +597,22 @@ export default function LandingPage() {
                       </motion.div>
                     ))}
                   </motion.dl>
+                  {/* #677 (Council S6): the published beta offer pack —
+                      48-working-hour verification SLA, assisted first
+                      listings (agency approves before publish), and the
+                      support-relief split. Factual service promises
+                      only; no supply claims (#661 discipline). */}
+                  <div className="mt-10 rounded-2xl border border-gray-200 bg-gray-50 p-6">
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-deep-blue">{t('agencies.offerTitle')}</h3>
+                    <ul className="mt-4 space-y-4">
+                      {(['offer1', 'offer2', 'offer3'] as const).map((key) => (
+                        <li key={key}>
+                          <p className="font-semibold text-deep-blue">{t(`agencies.${key}.title`)}</p>
+                          <p className="text-gray-600">{t(`agencies.${key}.description`)}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                   <motion.div 
                     variants={fadeInUp}
                     className="mt-10 flex items-center gap-x-6"
