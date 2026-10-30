@@ -831,6 +831,36 @@
     "title": "Mes réservations",
     "subtitle": "Gérez vos voyages passés et à venir."
   },
+  "quotes": {
+    "title": "Demander ces dates",
+    "subtitle": "D’autres dates en tête ? Demandez un devis ferme à l’agence. Elle répond sous 48 heures avec un prix total ferme (MAD, taxes incluses) et son échelle d’annulation — jamais un prix indicatif.",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "guests": "Voyageurs",
+    "note": "Note pour l’agence (optionnel)",
+    "notePlaceholder": "Tout ce que l’agence doit savoir",
+    "submit": "Envoyer la demande",
+    "signIn": "Connectez-vous pour demander un devis",
+    "sent": "Demande envoyée — l’agence a 48 heures pour répondre avec un devis ferme.",
+    "error": "Impossible d’envoyer la demande. Veuillez réessayer.",
+    "yourRequests": "Vos demandes pour ce voyage",
+    "allTitle": "Demandes de devis",
+    "guestsLine": "{{count}} voyageur(s)",
+    "firmTotal": "Total ferme (MAD, taxes incluses)",
+    "agencyNote": "Note de l’agence",
+    "cancellationScale": "Échelle d’annulation",
+    "bandLine": "{{days}}+ jours avant le départ : remboursement de {{percent}} %",
+    "accept": "Accepter ce devis",
+    "acceptedOn": "Accepté le {{date}} — le devis, son échelle et cet horodatage d’acceptation sont enregistrés sur la demande.",
+    "acceptedNote": "Les devis acceptés sont définitifs. Pendant la bêta, aucun paiement n’est prélevé sur OuiBoo — l’agence confirme les étapes suivantes directement avec vous.",
+    "status": {
+      "PENDING": "En attente de l’agence",
+      "QUOTED": "Devis ferme reçu",
+      "ACCEPTED": "Accepté",
+      "DECLINED": "Refusé par l’agence",
+      "CANCELLED": "Annulé"
+    }
+  },
   "bookingDetail": {
     "reference": "Référence de réservation",
     "subtitle": "Consultez les détails de votre réservation, l’état du paiement et les prochaines actions.",

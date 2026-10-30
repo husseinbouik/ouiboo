@@ -462,6 +462,65 @@ export interface TripSession {
     groupStatus?: SessionGroupStatus;
 }
 
+/**
+ * #682 (Council S6): firm-quote lifecycle for published trips — the
+ * traveller requests dates/party (PENDING), the agency replies with a
+ * firm MAD TTC total + its cancellation scale (QUOTED), the traveller
+ * accepts (ACCEPTED — quote, scale and acceptance timestamp are
+ * snapshotted immutably) or the flow ends (DECLINED/CANCELLED).
+ */
+export enum QuoteRequestStatus {
+    Pending = "PENDING",
+    Quoted = "QUOTED",
+    Accepted = "ACCEPTED",
+    Declined = "DECLINED",
+    Cancelled = "CANCELLED",
+}
+
+export type QuoteRequestStatusType = QuoteRequestStatus;
+
+/**
+ * #682: one firm-quote request and, once accepted, its immutable
+ * snapshot. Amounts are stringified decimals (house money convention);
+ * the total is the TOTAL for the requested dates/party in MAD TTC —
+ * never an indicative or per-person figure.
+ */
+export interface QuoteRequest {
+    id: string;
+    templateId: string;
+    agencyId: string;
+    travelerId: string;
+    requestedStartDate: string;
+    requestedEndDate: string;
+    guestsCount: number;
+    note?: string | null;
+    status: QuoteRequestStatusType;
+    quotedTotalAmount?: string | null;
+    quotedCurrency: string;
+    quoteNote?: string | null;
+    cancellationScale?: CancellationScaleSnapshot | null;
+    quotedAt?: string | null;
+    acceptedAt?: string | null;
+    acceptedSnapshot?: {
+        quotedTotalAmount: string;
+        quotedCurrency: string;
+        cancellationScale: CancellationScaleSnapshot | null;
+        quotedAt: string | null;
+        acceptedAt: string;
+        templateId: string;
+        agencyId: string;
+    } | null;
+    createdAt: string;
+    updatedAt: string;
+    template?: {
+        id: string;
+        title: string;
+        startLocation: string;
+        agency?: { id: string; companyName: string } | null;
+    } | null;
+    traveler?: { email: string; name?: string | null } | null;
+}
+
 export enum BookingStatus {
     Pending = "PENDING",
     AwaitingValidation = "AWAITING_VALIDATION",

@@ -831,6 +831,36 @@
     "title": "My Bookings",
     "subtitle": "Manage your past and upcoming trips."
   },
+  "quotes": {
+    "title": "Request these dates",
+    "subtitle": "Different dates in mind? Ask the agency for a firm quote. The agency replies within 48 hours with a firm total price (MAD, taxes included) and its cancellation scale — never an indicative price.",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "guests": "Guests",
+    "note": "Note for the agency (optional)",
+    "notePlaceholder": "Anything the agency should know",
+    "submit": "Send request",
+    "signIn": "Sign in to request a quote",
+    "sent": "Request sent — the agency has 48 hours to reply with a firm quote.",
+    "error": "Could not send the request. Please try again.",
+    "yourRequests": "Your requests for this trip",
+    "allTitle": "Quote requests",
+    "guestsLine": "{{count}} guest(s)",
+    "firmTotal": "Firm total (MAD, taxes included)",
+    "agencyNote": "Agency note",
+    "cancellationScale": "Cancellation scale",
+    "bandLine": "{{days}}+ days before departure: {{percent}}% refund",
+    "accept": "Accept this quote",
+    "acceptedOn": "Accepted on {{date}} — the quote, its scale and this acceptance time are saved on the request.",
+    "acceptedNote": "Accepted quotes are final. In the beta, no payment is taken on OuiBoo — the agency confirms the next steps with you directly.",
+    "status": {
+      "PENDING": "Waiting for the agency",
+      "QUOTED": "Firm quote received",
+      "ACCEPTED": "Accepted",
+      "DECLINED": "Declined by the agency",
+      "CANCELLED": "Cancelled"
+    }
+  },
   "bookingDetail": {
     "reference": "Booking reference",
     "subtitle": "Review your reservation details, payment state, and next actions.",

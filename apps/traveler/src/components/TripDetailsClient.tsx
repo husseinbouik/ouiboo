@@ -30,6 +30,7 @@ import { tripCoverViewTransitionName } from '@/lib/view-transition';
 import { SessionStatus, type CancellationScaleSnapshot, type SessionStatusType } from '@ouiboo/types';
 import { formatCurrency } from '@ouiboo/utils';
 import { CancellationScaleCard } from '@/components/CancellationScaleCard';
+import { QuoteRequestPanel } from '@/components/QuoteRequestPanel';
 import { RatingDistribution } from '@/components/RatingDistribution';
 import { SnapRail } from '@/components/SnapRail';
 import { PhotoViewer } from '@/components/PhotoViewer';
@@ -797,6 +798,13 @@ export default function TripDetailsClient({
                             {t('tripDetails.directPaymentNote')}
                         </p>
                     </div>
+                </div>
+
+                {/* #682 (Council S6): firm-quote for other dates — the
+                    traveller asks, the agency answers with a firm MAD
+                    TTC total + its cancellation scale. */}
+                <div className="mt-6">
+                    <QuoteRequestPanel templateId={tripId} />
                 </div>
             </motion.div>
           </div>

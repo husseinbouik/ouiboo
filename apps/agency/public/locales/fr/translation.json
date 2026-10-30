@@ -60,6 +60,7 @@
     "analytics": "Analytique",
     "myTrips": "Mes voyages",
     "bookings": "Réservations",
+    "quotes": "Demandes de devis",
     "reviews": "Avis",
     "wallet": "Paiements",
     "billing": "Facturation",
@@ -567,6 +568,30 @@
     "submitting": "Envoi...",
     "submit": "Envoyer la réponse",
     "closeDialog": "Fermer la boîte de dialogue"
+  },
+  "quotes": {
+    "title": "Demandes de devis",
+    "subtitle": "Les voyageurs demandent des dates sur vos voyages publiés. Répondez sous 48 heures avec UN prix total ferme en MAD (taxes incluses) — l’échelle d’annulation de votre voyage est jointe automatiquement — ou refusez. Un devis accepté est enregistré exactement tel qu’envoyé, avec son horodatage d’acceptation.",
+    "loading": "Chargement des demandes de devis…",
+    "empty": "Aucune demande de devis pour le moment.",
+    "dates": "Dates demandées",
+    "traveller": "Voyageur",
+    "guests": "{{count}} voyageur(s)",
+    "totalLabel": "Total ferme (MAD, taxes incluses)",
+    "totalPlaceholder": "ex. 2400",
+    "noteLabel": "Note (optionnel)",
+    "notePlaceholder": "Ce que le total comprend",
+    "send": "Envoyer le devis ferme",
+    "decline": "Refuser",
+    "error": "Impossible d’enregistrer. Veuillez réessayer.",
+    "acceptedOn": "Accepté le {{date}}",
+    "status": {
+      "PENDING": "En attente de votre devis",
+      "QUOTED": "Devis envoyé",
+      "ACCEPTED": "Accepté par le voyageur",
+      "DECLINED": "Refusé",
+      "CANCELLED": "Annulé par le voyageur"
+    }
   },
   "bookings": {
     "title": "Gestion des réservations",

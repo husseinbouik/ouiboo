@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { ReviewForm } from '@/components/ReviewForm';
 import { RebookingSuggestions, type RebookingSuggestionItem } from '@/components/RebookingSuggestions';
+import { MyQuoteRequests } from '@/components/MyQuoteRequests';
 import { TravelerRefundActions } from '@/components/TravelerRefundActions';
 import {
     canRetryTravelerPayment,
@@ -561,6 +562,8 @@ export default function MyBookingsPage() {
                 </div>
                 <Pagination pagination={bookingsPagination} onPageChange={setCurrentPage} className="mt-8" />
                 <RebookingSuggestions suggestions={rebookingSuggestions} />
+                {/* #682: firm-quote requests + acceptance snapshots. */}
+                <MyQuoteRequests />
             </div>
 
             {reviewModalOpen && (
