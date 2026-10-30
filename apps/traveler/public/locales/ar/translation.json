@@ -721,6 +721,11 @@
     "complaintsBodyNoEmail": "للشكوى بشأن رحلة أو وكالة أو OuiBoo نفسه، استخدم جهات الاتصال الموجودة في صفحة حجزك واذكر مرجع حجزك. تُعالج الشكاوى ضمن آجال الدعم العادي.",
     "escalationCall": "اتصل بـ OuiBoo",
     "escalationWhatsApp": "واتساب",
+    "emergencyCardTitle": "بطاقة الطوارئ",
+    "agencyWhatsApp": "مراسلة الوكالة عبر واتساب",
+    "agencyWhatsAppGreeting": "مرحباً، لدي حجز لديكم عبر OuiBoo ولدي سؤال عن رحلتي.",
+    "messageAgencyInApp": "مراسلة الوكالة داخل OuiBoo",
+    "escalationWhatsAppDuringTrip": "التصعيد عبر واتساب متاح خلال تواريخ رحلتك.",
     "helpCentre": "مركز المساعدة",
     "helpCentreBody": "ابحث في الأسئلة الشائعة أو افتح تذكرة دعم — تُسجل تذكرتك وتُعالج ضمن آجال الدعم العادي."
   },

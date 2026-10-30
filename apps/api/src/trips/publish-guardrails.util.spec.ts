@@ -1,5 +1,6 @@
 import {
     assertCommercialTermsPublishable,
+    assertEmergencyContactPublishable,
     assertMeetingPointPublishable,
     collectTripTexts,
     findProhibitedCommercialTerms,
@@ -10,6 +11,18 @@ import {
 } from './publish-guardrails.util';
 
 describe('publish guardrails (#674 / #676)', () => {
+    describe('emergency contact gate (#680)', () => {
+        it('accepts a recorded emergency contact phone', () => {
+            expect(() => assertEmergencyContactPublishable('+212612345678')).not.toThrow();
+        });
+
+        it('rejects a missing or blank emergency contact phone', () => {
+            expect(() => assertEmergencyContactPublishable(null)).toThrow(/emergency contact is required/i);
+            expect(() => assertEmergencyContactPublishable(undefined)).toThrow(/emergency contact is required/i);
+            expect(() => assertEmergencyContactPublishable('   ')).toThrow(/emergency contact is required/i);
+        });
+    });
+
     describe('free-text commercial terms scan', () => {
         it('flags the Eden-style pasted terms (ferme, non remboursable et non annulable)', () => {
             expect(findProhibitedCommercialTerms(['Tarif ferme, non remboursable et non annulable'])).toEqual(

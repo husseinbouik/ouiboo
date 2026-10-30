@@ -721,6 +721,11 @@
     "complaintsBodyNoEmail": "Pour vous plaindre d'un voyage, d'une agence ou d'OuiBoo, utilisez les contacts figurant sur votre page de réservation en mentionnant votre référence de réservation. Les réclamations sont traitées dans les délais de l'assistance normale.",
     "escalationCall": "Appeler OuiBoo",
     "escalationWhatsApp": "WhatsApp",
+    "emergencyCardTitle": "Carte d'urgence",
+    "agencyWhatsApp": "Écrire à l'agence sur WhatsApp",
+    "agencyWhatsAppGreeting": "Bonjour, j'ai une réservation chez vous via OuiBoo et j'ai une question sur mon voyage.",
+    "messageAgencyInApp": "Écrire à l'agence dans OuiBoo",
+    "escalationWhatsAppDuringTrip": "L'escalade WhatsApp est disponible pendant les dates de votre voyage.",
     "helpCentre": "Centre d'aide",
     "helpCentreBody": "Recherchez dans les questions fréquentes ou ouvrez un ticket d'assistance — votre ticket est enregistré et traité dans les délais de l'assistance normale."
   },

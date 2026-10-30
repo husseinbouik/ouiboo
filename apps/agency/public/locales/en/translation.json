@@ -834,7 +834,7 @@
     "emergencyNamePlaceholder": "Guide or on-call manager",
     "emergencyPhone": "Emergency phone",
     "emergencyPhonePlaceholder": "+XXX XX XX XX XX",
-    "emergencyHint": "Use a number that is actually answered during trips. If you leave this empty, travellers are told to message you and escalate to OuiBoo."
+    "emergencyHint": "Use a number that is actually answered during trips. This contact is required to publish a trip: without it, new trips cannot go live (trips already published are not affected). Travellers holding a booking see it on their booking’s Emergency Card."
   },
   "analytics": {
     "dashboardTitle": "Analytics Dashboard",
