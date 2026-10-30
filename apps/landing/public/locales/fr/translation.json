@@ -476,5 +476,196 @@
   },
   "beta": {
     "explainer": "Bêta fermée — voyageurs invités uniquement ; vous payez toujours l'agence directement."
+  },
+  "hw": {
+    "nav": {
+      "guides": "Guides",
+      "faq": "FAQ",
+      "login": "Se connecter",
+      "signup": "S'inscrire"
+    },
+    "hero": {
+      "statusPill": "Bêta fermée · Vitrine uniquement — aucune réservation ni paiement sur Ouiboo pour le moment",
+      "titleA": "Le Maroc, à vous",
+      "titleB": "de l'explorer.",
+      "subline": "Des voyages organisés par les agences du pays — chacune vérifiée avant d'apparaître ici.",
+      "ctaSignup": "S'inscrire gratuitement",
+      "ctaExplore": "Découvrir les voyages vitrine",
+      "agencyLink": "Vous êtes une agence ? Rejoignez la bêta gratuite",
+      "trustLine": "Chaque agence est vérifiée avant d'apparaître ici — licence, assurance, identité.",
+      "photoCredit": "Photo du voyage — Atlas Adventures SARL · Chefchaouen",
+      "heroAlt": "Panorama des maisons chaulées de bleu de Chefchaouen, dans les montagnes du Rif"
+    },
+    "showcase": {
+      "eyebrow": "Vitrine",
+      "title": "De vrais voyages, de vraies agences",
+      "intro": "Un premier aperçu des voyages que les agences fondatrices publieront — documents vérifiés, organisateurs nommés, aucun listing anonyme.",
+      "noteLead": "Vitrine uniquement.",
+      "note": "Les réservations ouvriront avec la cohorte bêta fondatrice — aucun prix ni date n'est affiché tant qu'ils ne peuvent pas être réellement réservés.",
+      "viewTrip": "Voir le détail du voyage",
+      "organiser": "Organisateur",
+      "checkLine": "Licence vérifiée le 30 oct. 2026 · Assurance RC valable jusqu'au 31 déc. 2027",
+      "cards": {
+        "chefchaouen": {
+          "dest": "Chefchaouen · La Perle Bleue",
+          "title": "Circuit photo dans la Perle Bleue",
+          "tags": [
+            "2 jours · 1 nuit",
+            "Photographie",
+            "Culturel"
+          ],
+          "city": "Chefchaouen",
+          "imgAlt": "Cour peinte en bleu dans la médina de Chefchaouen"
+        },
+        "merzouga": {
+          "dest": "Merzouga · Erg Chebbi",
+          "title": "Trek à dos de chameau et nuit dans les dunes de Merzouga",
+          "tags": [
+            "2 jours · 1 nuit",
+            "Trek à dos de chameau",
+            "Aventure"
+          ],
+          "city": "Merzouga",
+          "imgAlt": "Caravane de chameaux traversant les dunes de l'Erg Chebbi à Merzouga"
+        },
+        "atlas": {
+          "dest": "Imlil · Haut Atlas",
+          "title": "Trek dans le Haut Atlas : Imlil et villages berbères",
+          "tags": [
+            "4 jours · 3 nuits",
+            "Trek en montagne",
+            "Aventure"
+          ],
+          "city": "Imlil",
+          "imgAlt": "La vallée verdoyante d'Imlil sous les sommets enneigés du Haut Atlas"
+        }
+      },
+      "guidesLabel": "Explorez le Maroc — commencez par nos guides des villes :",
+      "guidesCta": "Découvrir les guides",
+      "verifyLink": "Comment nous vérifions les agences"
+    },
+    "how": {
+      "eyebrow": "Comment ça marche",
+      "title": "Des agences vérifiées. Un paiement direct. Des règles claires.",
+      "intro": "Ouiboo est la technologie entre vous et les agences locales — jamais un intermédiaire qui garde votre argent.",
+      "steps": {
+        "step1": {
+          "title": "Choisissez un voyage d'une agence vérifiée",
+          "text": "Chaque voyage appartient à une agence nommée, dont Ouiboo a vérifié la licence de tourisme et l'assurance — avec les dates affichées, jamais cachées."
+        },
+        "step2": {
+          "title": "Payez l'agence directement",
+          "text": "Payez l'agence directement — un acompte d'abord, le solde lorsque votre groupe est confirmé. Ouiboo ne détient jamais votre argent."
+        },
+        "step3": {
+          "title": "Des règles claires protègent votre acompte",
+          "text": "Chaque réservation inclut l'échelle d'annulation de l'agence, acceptée avant le paiement — et si le minimum du groupe n'est pas atteint, votre acompte vous est intégralement remboursé."
+        }
+      },
+      "panel": {
+        "title": "Ce que Ouiboo vérifie",
+        "items": {
+          "licence": {
+            "label": "Licence de tourisme",
+            "text": "numéro, autorité de délivrance (Ministère du Tourisme) et date d'expiration vérifiés sur le document lui-même."
+          },
+          "insurance": {
+            "label": "Assurance RC",
+            "text": "police de responsabilité civile professionnelle justifiée, nommée et en cours de validité."
+          },
+          "registration": {
+            "label": "Immatriculation",
+            "text": "registre de commerce (RC) et identifiant fiscal au dossier avant toute publication."
+          }
+        },
+        "recordTitle": "Exemple de dossier — Atlas Adventures SARL",
+        "recordLicenceLabel": "Licence de tourisme (ODV)",
+        "recordLicence": "vérifiée le 30 oct. 2026 · valable jusqu'au 31 déc. 2028",
+        "recordInsuranceLabel": "Assurance RC",
+        "recordInsurance": "police justifiée · valable jusqu'au 31 déc. 2027",
+        "recordNote": "L'agence reste l'organisatrice et votre contact pour tout remboursement. Ouiboo fournit uniquement la technologie — et montre ses vérifications, avec leurs dates. Le statut est revérifié automatiquement ; les voyages sont suspendus si un document expire.",
+        "panelLink": "Voir la norme de vérification"
+      }
+    },
+    "agencies": {
+      "eyebrow": "Pour les agences · Bêta fondatrice",
+      "titleA": "Vendez vos voyages sur Ouiboo.",
+      "titleB": "Gratuit pendant la bêta.",
+      "lead": "Nous invitons 3 à 5 agences vérifiées, venues de tout le Maroc, à fonder la marketplace avec nous — un accompagnement personnel par le fondateur, aucun formulaire avant d'avoir parlé à un humain.",
+      "chips": [
+        "Gratuit pendant la bêta",
+        "Vérification sous 48 heures",
+        "Nous vous aidons à publier vos premiers voyages"
+      ],
+      "objections": {
+        "payDirect": {
+          "title": "Vous êtes payée directement",
+          "text": "Les voyageurs paient votre agence — acompte et solde. L'argent ne transite jamais par Ouiboo, et nous ne nous interposons pas entre vous et vos clients."
+        },
+        "brand": {
+          "title": "Votre marque, vos voyages",
+          "text": "Vous restez l'organisatrice et la vendeuse officielle. Le nom de votre agence figure sur chaque voyage, chaque réservation et chaque avis."
+        },
+        "fees": {
+          "title": "Aucun frais pendant la bêta",
+          "text": "Ensuite, tout frais fera l'objet d'une facture mensuelle publiée, adressée à votre agence — convenue par écrit au préalable, jamais déduite des paiements des voyageurs."
+        },
+        "exclusive": {
+          "title": "Sans exclusivité",
+          "text": "Publiez sur Ouiboo et partout ailleurs. Partez quand vous voulez — vos voyages, vos photos et vos contenus restent les vôtres."
+        }
+      },
+      "cta": "Rejoindre la bêta gratuite",
+      "note": "3 à 5 places fondatrices · des agences de tout le Maroc · nous préparons vos premiers voyages avec vous"
+    },
+    "faq": {
+      "eyebrow": "Transparence",
+      "title": "Des réponses franches",
+      "intro": "Qui vous payez, qui vous rembourse, et ce qu'est Ouiboo — en mots simples.",
+      "items": {
+        "whoPay": {
+          "q": "Qui est-ce que je paie pour un voyage ?",
+          "lead": "Toujours l'agence, directement",
+          "rest": " — un acompte d'abord (jusqu'à 30 %), et le solde uniquement lorsque le minimum du groupe est confirmé. Ouiboo ne détient jamais l'argent des voyageurs, sur aucun voyage."
+        },
+        "whoRefund": {
+          "q": "Qui me rembourse si mes plans changent ?",
+          "lead": "L'agence",
+          "rest": " — c'est elle l'organisatrice de votre voyage. Chaque réservation inclut son échelle d'annulation, affichée avant le paiement, et Ouiboo gère une procédure de litige en cas de problème."
+        },
+        "charges": {
+          "q": "Que facture Ouiboo ?",
+          "lead": "La bêta est gratuite.",
+          "rest": " Les frais futurs seront publiés avant de s'appliquer — facturés aux agences par facture mensuelle, jamais ajoutés au prix que vous payez."
+        },
+        "whenBook": {
+          "q": "Quand puis-je réserver ?",
+          "lead": "Les réservations ouvriront avec la cohorte bêta fondatrice.",
+          "rest": " D'ici là, ce site est une vitrine : de vrais voyages et de vraies vérifications, montrés honnêtement, sans réservation ni paiement acceptés."
+        }
+      }
+    },
+    "footer": {
+      "tagline": "La technologie au service des agences de voyage marocaines. Les voyageurs paient les agences directement — Ouiboo ne détient jamais votre argent.",
+      "colExplore": "Explorer",
+      "guides": "Guides des villes",
+      "colTrust": "Confiance",
+      "verification": "Norme de vérification",
+      "payments": "Comment fonctionnent les paiements",
+      "faq": "FAQ",
+      "colAgencies": "Agences",
+      "joinBeta": "Rejoindre la bêta gratuite",
+      "agencyLogin": "Espace agence",
+      "travellerLogin": "Espace voyageur",
+      "support": "Assistance",
+      "bottomLeft": "© {{year}} Ouiboo · Bêta fermée — vitrine uniquement",
+      "madeIn": "Fait à Tanger, Maroc",
+      "copyright": "Droits d'auteur"
+    },
+    "guidesPage": {
+      "title": "Guides des villes du Maroc",
+      "intro": "Que voir et que faire, ville par ville — pour toutes celles et ceux qui préparent un voyage au Maroc.",
+      "readGuide": "Lire le guide"
+    }
   }
 }
