@@ -25,7 +25,10 @@ describe('CronController deadlines (#433)', () => {
         sendSubscriptionRenewalReminders: jest.fn(async () => undefined),
       },
       currencyService: { updateExchangeRates: jest.fn(async () => undefined) },
-      stagedPaymentsService: { evaluateConfirmationDeadlines: jest.fn(async () => ({ confirmed: 0, notConfirmed: 0 })) },
+      stagedPaymentsService: {
+        evaluateConfirmationDeadlines: jest.fn(async () => ({ confirmed: 0, notConfirmed: 0 })),
+        expirePayLaterHolds: jest.fn(async () => ({ evaluated: 0, released: 0 })),
+      },
       refundsService: {
         syncRefundDueCases: jest.fn(async () => ({ created: 0 })),
         markOverdueCases: jest.fn(async () => ({ marked: 0 })),
@@ -55,10 +58,11 @@ describe('CronController deadlines (#433)', () => {
     expect(services.stagedPaymentsService.evaluateConfirmationDeadlines).not.toHaveBeenCalled();
   });
 
-  it('runs exactly the three deadline jobs', async () => {
+  it('runs exactly the deadline jobs', async () => {
     const res = await controller.runDeadlines(`Bearer ${SECRET}`);
     expect(res.results).toEqual({
       groupConfirmationDeadlines: 'ok',
+      payLaterHoldExpiry: 'ok',
       refundDueCaseSync: 'ok',
       refundOverdueSweep: 'ok',
     });

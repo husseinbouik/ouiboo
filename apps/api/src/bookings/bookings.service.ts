@@ -20,6 +20,7 @@ import {
 } from '../cancellation/cancellation.util';
 import { resolvePricingSelection, type PricingSelectionResult, type VariantForPricing } from '../trips/pricing-selection.util';
 import { MAX_GROUP_DEPOSIT_PERCENT } from '../staged-payments/staged-payments.util';
+import { payOnArrivalBookingError, resolvePayLaterDeadline, type PickupPoint } from '../trips/batch-f.util';
 
 const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
 
@@ -72,6 +73,11 @@ export function bookingIdempotencyPayloadHash(dto: CreateBookingDto): string {
         // #695: the pricing selection defines WHAT was booked too.
         variantId: dto.variantId ?? null,
         addOns: (dto.addOns ?? []).map((a) => ({ addOnId: a.addOnId, quantity: a.quantity ?? 1 })),
+        // Batch F: payment-shape elections + pickup choice are part of
+        // WHAT was booked (#694 private is session-derived, not client).
+        payLater: dto.payLater ?? null,
+        payOnArrival: dto.payOnArrival ?? null,
+        pickupPointId: dto.pickupPointId ?? null,
     });
     return createHash('sha256').update(canonical).digest('hex');
 }
@@ -273,8 +279,16 @@ export class BookingsService {
             throw new BadRequestException('This payment method is not available');
         }
 
+        // #694 (Council S6): a PRIVATE session is priced per-group and
+        // booked exclusively — the min-group staged branch (and its
+        // PENDING_MINIMUM state) NEVER applies to it.
+        const isPrivateSession = (session as any).sessionKind === 'PRIVATE';
+        if (isPrivateSession && dto.guestsCount > session.totalSeats) {
+            throw new BadRequestException('A private booking cannot exceed the departure size');
+        }
+
         // #369 staged payments: minimum-group trips collect a deposit first.
-        const staged = this.stagedPaymentsService.isStagedSession(session);
+        const staged = isPrivateSession ? false : this.stagedPaymentsService.isStagedSession(session);
         if (staged) {
             if (session.groupStatus === SessionGroupStatus.NOT_CONFIRMED) {
                 throw new BadRequestException('This trip was not confirmed because the minimum group size was not reached');
@@ -328,20 +342,74 @@ export class BookingsService {
             });
         }
 
+        // Batch F payment-shape elections, validated against the
+        // session/template facts + the FINAL total (variant/add-ons
+        // included) before any seat moves.
+        const totalPreview = pricing
+            ? pricing.totalAmount
+            : isPrivateSession
+                ? session.price
+                : multiplyMoney(session.price, dto.guestsCount);
+        let payOnArrival = false;
+        if (dto.payOnArrival) {
+            const error = payOnArrivalBookingError({
+                payOnArrivalEnabled: (session.template as any).payOnArrivalEnabled ?? false,
+                durationDays: session.template.durationDays,
+                sessionMinBookings: session.minBookings ?? 1,
+                totalAmount: Number(totalPreview),
+            });
+            if (error) throw new BadRequestException(error);
+            payOnArrival = true;
+        }
+        let payLaterDeadline: Date | null = null;
+        if (dto.payLater) {
+            if (payOnArrival) {
+                throw new BadRequestException('Choose either pay-on-arrival or reserve-now-pay-later, not both');
+            }
+            payLaterDeadline = resolvePayLaterDeadline({
+                requested: true,
+                allowPayLater: (session as any).allowPayLater ?? false,
+                payLaterHoldHours: (session as any).payLaterHoldHours ?? null,
+                sessionStart: session.startDate,
+                now,
+            });
+            if (!payLaterDeadline) {
+                throw new BadRequestException('This session does not offer reserve-now-pay-later');
+            }
+        }
+        let pickupPointSnapshot: PickupPoint | null = null;
+        if (dto.pickupPointId) {
+            const points = (((session.template as any).pickupPoints ?? []) as PickupPoint[]);
+            const found = points.find((point) => point.id === dto.pickupPointId);
+            if (!found) {
+                throw new BadRequestException('The selected pickup point is not available for this trip');
+            }
+            pickupPointSnapshot = found;
+        }
+
         const runCreateTransaction = () => this.db.$transaction(async (tx) => {
 
             // 2. Atomic update to reserve seats (Concurrent Safe)
             // returning count helps know if it succeeded
+            // #694: a private booking takes the WHOLE departure — the
+            // claim requires every seat still free and consumes them all.
             const result = await tx.tripSession.updateMany({
-                where: {
-                    id: dto.sessionId,
-                    status: 'OPEN',
-                    startDate: { gt: now },
-                    availableSeats: { gte: dto.guestsCount }
-                },
+                where: isPrivateSession
+                    ? {
+                        id: dto.sessionId,
+                        status: 'OPEN',
+                        startDate: { gt: now },
+                        availableSeats: session.totalSeats,
+                    }
+                    : {
+                        id: dto.sessionId,
+                        status: 'OPEN',
+                        startDate: { gt: now },
+                        availableSeats: { gte: dto.guestsCount }
+                    },
                 data: {
                     availableSeats: {
-                        decrement: dto.guestsCount,
+                        decrement: isPrivateSession ? session.totalSeats : dto.guestsCount,
                     },
                 },
             });
@@ -384,7 +452,13 @@ export class BookingsService {
               ? paymentMethodMap[dto.paymentMethod]
               : PaymentMethod.MANUAL;
 
-            const totalAmount = pricing ? pricing.totalAmount : multiplyMoney(sessionWithInfo.price, dto.guestsCount);
+            // #694: a private session's price is PER-GROUP — the total
+            // is the session price itself, never price × guests.
+            const totalAmount = pricing
+                ? pricing.totalAmount
+                : isPrivateSession
+                    ? sessionWithInfo.price
+                    : multiplyMoney(sessionWithInfo.price, dto.guestsCount);
 
             // #417 (Council P0-11): snapshot the trip's resolved
             // cancellation scale onto the booking, so later template
@@ -406,6 +480,16 @@ export class BookingsService {
                     totalAmount,
                     // #695: immutable pricing-selection snapshot.
                     pricingSelection: pricing ? (pricing.snapshot as unknown as Prisma.InputJsonValue) : undefined,
+                    // Batch F snapshots: private nature (#694), the
+                    // pay-later hold deadline (#696), pay-on-arrival
+                    // (#697) and the chosen pickup point (#701).
+                    isPrivateSession,
+                    payLaterDeadline,
+                    payOnArrival,
+                    pickupPointId: dto.pickupPointId ?? null,
+                    pickupPointSnapshot: pickupPointSnapshot
+                        ? (pickupPointSnapshot as unknown as Prisma.InputJsonValue)
+                        : undefined,
                     cancellationScale: cancellationScale as unknown as Prisma.InputJsonValue,
                     currency: sessionWithInfo.currency || 'MAD',
                     status: 'PENDING',
@@ -983,6 +1067,36 @@ export class BookingsService {
         }
 
         return { booking, paymentProof, paymentProofId };
+    }
+
+    /**
+     * #697 (Council S6): agency confirmation of a pay-on-arrival
+     * booking. Confirmation moves NO money — the traveller pays the
+     * agency on site; the booking simply becomes CONFIRMED with its
+     * payment still UNPAID (payOnArrival flag carries the terms).
+     */
+    async confirmPayOnArrival(bookingId: string, tenantId: string) {
+        const booking = await this.db.booking.findUnique({
+            where: { id: bookingId },
+            include: { session: { include: { template: true } } },
+        });
+        if (!booking) throw new BadRequestException('Booking not found');
+        const agency = await this.db.agencyProfile.findUnique({ where: { id: tenantId } });
+        if (!agency || booking.session.template.agencyId !== agency.id) {
+            throw new ForbiddenException('Forbidden');
+        }
+        if (!(booking as any).payOnArrival) {
+            throw new BadRequestException('This booking is not a pay-on-arrival booking');
+        }
+        if (booking.status !== 'PENDING' && booking.status !== 'AWAITING_VALIDATION') {
+            throw new BadRequestException('This booking can no longer be confirmed');
+        }
+        const updated = await this.db.booking.update({
+            where: { id: bookingId },
+            data: { status: 'CONFIRMED', confirmedAt: new Date() },
+            include: BOOKING_RESPONSE_INCLUDE,
+        });
+        return mapBookingDetails(updated as never);
     }
 
     async verifyPayment(bookingId: string, tenantId: string, approved: boolean, rejectionReason?: string) {

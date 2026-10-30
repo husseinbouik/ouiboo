@@ -14,6 +14,8 @@ import { SnapRail } from './SnapRail';
 import { useDisplayPrice } from '@/lib/display-currency';
 import { tripCoverViewTransitionName } from '@/lib/view-transition';
 import { ratingDisplayState } from '@/lib/review-display';
+import { CancellationOneLiner } from './CancellationOneLiner';
+import type { CancellationSummary } from '@ouiboo/types';
 
 export interface TripCardTrip {
   id: string;
@@ -34,6 +36,10 @@ export interface TripCardTrip {
   imageBlurDataURLs?: (string | null)[];
   averageRating?: number | null;
   reviewCount?: number;
+  /** #687: one-line cancellation summary from the API. */
+  cancellationSummary?: CancellationSummary | null;
+  payOnArrivalEnabled?: boolean;
+  privateTourEnabled?: boolean;
   sessions?: Array<{
     id: string;
     status: SessionStatusType | string;
@@ -43,6 +49,7 @@ export interface TripCardTrip {
     startDate: string;
   }>;
   agency?: {
+    companyName?: string;
     verificationStatus?: VerificationStatusType;
     /** #413 (Council B10): what+when verification statement fields. */
     travelLicenceStatus?: string;
@@ -252,6 +259,20 @@ export function TripCard({ trip }: TripCardProps) {
             <span>•</span>
             <span className="flex items-center gap-1"><Zap className="h-3.5 w-3.5" /> {trip.durationDays ? t('tripCard.days', { count: trip.durationDays }) : ''}</span>
           </div>
+
+          {/* #687: the one-line cancellation summary on the card,
+              naming the agency as refund obligor. */}
+          <CancellationOneLiner summary={trip.cancellationSummary} agencyName={trip.agency?.companyName} />
+          {(trip.payOnArrivalEnabled || trip.privateTourEnabled) ? (
+            <div className="flex flex-wrap gap-1.5">
+              {trip.payOnArrivalEnabled ? (
+                <Badge className="bg-sky-700 text-white text-[10px] font-bold rounded-lg px-2 py-0.5 border-none">{t('batchF.payOnArrivalBadge')}</Badge>
+              ) : null}
+              {trip.privateTourEnabled ? (
+                <Badge className="bg-violet-700 text-white text-[10px] font-bold rounded-lg px-2 py-0.5 border-none">{t('batchF.privateBadge')}</Badge>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         <div className="mt-6 pt-4 border-t border-border flex items-center justify-between">

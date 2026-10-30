@@ -18,6 +18,7 @@ import type { TFunction } from 'i18next';
 import { ReviewForm } from '@/components/ReviewForm';
 import { RebookingSuggestions, type RebookingSuggestionItem } from '@/components/RebookingSuggestions';
 import { MyQuoteRequests } from '@/components/MyQuoteRequests';
+import { MyCustomTripRequests } from '@/components/MyCustomTripRequests';
 import { TravelerRefundActions } from '@/components/TravelerRefundActions';
 import {
     canRetryTravelerPayment,
@@ -346,6 +347,36 @@ export default function MyBookingsPage() {
                                                 </div>
                                             </div>
 
+                                            {/* Batch F: payment-shape facts on the booking —
+                                                pay-later deadline (#696), pay-on-arrival (#697),
+                                                private departure (#694), pickup point (#701). */}
+                                            {(booking.payLaterDeadline || booking.payOnArrival || booking.isPrivateSession || booking.pickupPointSnapshot) && (
+                                                <div className="rounded-2xl border border-sky-500/30 bg-sky-50 dark:bg-sky-950/20 px-5 py-4 space-y-1.5" data-testid="booking-batchf-strip">
+                                                    {booking.isPrivateSession && (
+                                                        <p className="text-sm font-semibold text-foreground">{t('batchF.bookingPrivate')}</p>
+                                                    )}
+                                                    {booking.payOnArrival && (
+                                                        <p className="text-sm font-semibold text-foreground">
+                                                            {t('batchF.bookingPayOnArrival', { agency: booking.session.template.agency?.companyName || t('batchF.theAgency') })}
+                                                        </p>
+                                                    )}
+                                                    {booking.payLaterDeadline && booking.paymentStatus === 'UNPAID' && (
+                                                        <p className="text-sm font-semibold text-foreground">
+                                                            {t('batchF.payLaterDeadline', {
+                                                                agency: booking.session.template.agency?.companyName || t('batchF.theAgency'),
+                                                                date: new Date(booking.payLaterDeadline).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' }),
+                                                            })}
+                                                        </p>
+                                                    )}
+                                                    {booking.pickupPointSnapshot && (
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {t('batchF.pickupTitle')}: {booking.pickupPointSnapshot.name}
+                                                            {booking.pickupPointSnapshot.address ? ` — ${booking.pickupPointSnapshot.address}` : ''}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )}
+
                                             {/* #369: staged payment plan strip (plan §42 copy).
                                                 #588: copy lives in the paymentPlan locale
                                                 namespace (en/fr/ar parity) — it was hardcoded
@@ -564,6 +595,7 @@ export default function MyBookingsPage() {
                 <RebookingSuggestions suggestions={rebookingSuggestions} />
                 {/* #682: firm-quote requests + acceptance snapshots. */}
                 <MyQuoteRequests />
+                <MyCustomTripRequests />
             </div>
 
             {reviewModalOpen && (

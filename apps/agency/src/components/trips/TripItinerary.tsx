@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { Button, Input, Card, CardContent } from '@ouiboo/ui';
 import type { TFunction } from 'i18next';
 import type { TripWizardFormApi } from './useTripWizardForm';
@@ -19,7 +19,7 @@ type Props = {
  * `translations.<lang>.itinerary[i]` (positionally aligned here, the
  * API stamps the canonical dayNumber at the write boundary).
  */
-import { AccommodationType, ItineraryMeal } from '@ouiboo/types';
+import { AccommodationTier, AccommodationType, ItineraryMeal, type ItineraryStop } from '@ouiboo/types';
 
 const MEAL_OPTIONS = [
   { value: ItineraryMeal.Breakfast, labelKey: 'trips.create.mealBreakfast' },
@@ -34,6 +34,12 @@ const ACCOMMODATION_TYPES = [
   AccommodationType.Camp,
   AccommodationType.Hostel,
   AccommodationType.Other,
+] as const;
+
+const ACCOMMODATION_TIERS = [
+  AccommodationTier.Standard,
+  AccommodationTier.Comfort,
+  AccommodationTier.Premium,
 ] as const;
 
 export function TripItinerary({ t, form }: Props) {
@@ -160,6 +166,35 @@ export function TripItinerary({ t, form }: Props) {
                       })}
                     </div>
                   </div>
+                  {/* #701 (Batch F): accommodation tier, per-stop detail,
+                      and free-text notes (language-keyed). */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-foreground">{t('batchF.accommodationTier')}</label>
+                    <select
+                      {...register(`itinerary.${index}.accommodationTier`, {
+                        setValueAs: (value) => (value ? (value as AccommodationTier) : undefined),
+                      })}
+                      className="w-full h-12 px-4 bg-background border border-border rounded-xl text-sm focus:outline-none text-foreground"
+                    >
+                      <option value="">—</option>
+                      {ACCOMMODATION_TIERS.map((tier) => (
+                        <option key={tier} value={tier}>{t(`batchF.tiers.${tier}`)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <DayStopsEditor t={t} form={form} index={index} language={activeLanguage} canonical />
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-foreground">{t('batchF.dayNotes')}</label>
+                    <textarea
+                      value={watch(`itinerary.${index}.notes`)?.[activeLanguage] ?? ''}
+                      onChange={(event) => {
+                        const current = watch(`itinerary.${index}.notes`) ?? {};
+                        setValue(`itinerary.${index}.notes`, { ...current, [activeLanguage]: event.target.value }, { shouldDirty: true });
+                      }}
+                      className="w-full h-20 p-4 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
+                      dir={dir}
+                    ></textarea>
+                  </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-4">
@@ -181,6 +216,20 @@ export function TripItinerary({ t, form }: Props) {
                       dir={dir}
                     ></textarea>
                   </div>
+                  <DayStopsEditor t={t} form={form} index={index} language={activeLanguage} canonical={false} />
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-foreground">{t('batchF.dayNotes')}</label>
+                    <textarea
+                      value={watch(`itinerary.${index}.notes`)?.[activeLanguage] ?? ''}
+                      onChange={(event) => {
+                        const current = watch(`itinerary.${index}.notes`) ?? {};
+                        setValue(`itinerary.${index}.notes`, { ...current, [activeLanguage]: event.target.value }, { shouldDirty: true });
+                      }}
+                      className="w-full h-20 p-4 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
+                      placeholder={t('trips.create.dayDescriptionPlaceholder')}
+                      dir={dir}
+                    ></textarea>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -198,5 +247,111 @@ export function TripItinerary({ t, form }: Props) {
         )}
       </div>
     </section>
+  );
+}
+
+
+/**
+ * #701: per-stop editor. Structure (add/remove, duration, admission)
+ * is edited on the canonical (French) tab; stop NAMES are
+ * language-keyed and editable on every language tab.
+ */
+function DayStopsEditor({
+  t,
+  form,
+  index,
+  language,
+  canonical,
+}: {
+  t: TFunction;
+  form: TripWizardFormApi;
+  index: number;
+  language: string;
+  canonical: boolean;
+}) {
+  const stops: ItineraryStop[] = form.watch(`itinerary.${index}.stops`) ?? [];
+  const setStops = (next: ItineraryStop[]) =>
+    form.setValue(
+      `itinerary.${index}.stops`,
+      next.map((stop) => ({
+        name: stop.name,
+        durationMinutes: stop.durationMinutes ?? undefined,
+        admissionIncluded: stop.admissionIncluded ?? undefined,
+        admissionNote: stop.admissionNote ?? undefined,
+      })),
+      { shouldDirty: true },
+    );
+  const updateStop = (stopIndex: number, patch: Partial<ItineraryStop>) =>
+    setStops(stops.map((stop, i) => (i === stopIndex ? { ...stop, ...patch } : stop)));
+
+  if (!canonical && stops.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <span className="text-sm font-semibold text-foreground">{t('batchF.stopsTitle')}</span>
+      {stops.map((stop, stopIndex) => (
+        <div key={stopIndex} className="space-y-2 rounded-xl border border-border p-3">
+          <div className="flex gap-2">
+            <Input
+              value={stop.name[language] ?? ''}
+              placeholder={stop.name.fr ?? t('batchF.stopName')}
+              onChange={(event) =>
+                updateStop(stopIndex, { name: { ...stop.name, [language]: event.target.value } })
+              }
+              dir={language === 'ar' ? 'rtl' : 'ltr'}
+            />
+            {canonical && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={t('common.delete')}
+                onClick={() => setStops(stops.filter((_, i) => i !== stopIndex))}
+                className="text-danger hover:bg-danger/10"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          {canonical && (
+            <div className="flex flex-wrap items-center gap-4">
+              <Input
+                type="number"
+                min={0}
+                step={1}
+                value={stop.durationMinutes ?? ''}
+                placeholder={t('batchF.stopDuration')}
+                onChange={(event) =>
+                  updateStop(stopIndex, {
+                    durationMinutes: event.target.value === '' ? undefined : Number(event.target.value),
+                  })
+                }
+                className="w-40"
+              />
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={stop.admissionIncluded ?? false}
+                  onChange={(event) => updateStop(stopIndex, { admissionIncluded: event.target.checked })}
+                  className="h-4 w-4 text-primary bg-background border-border focus:ring-primary"
+                />
+                <span className="text-sm font-medium text-foreground">{t('batchF.stopAdmission')}</span>
+              </label>
+            </div>
+          )}
+        </div>
+      ))}
+      {canonical && stops.length < 12 && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setStops([...stops, { name: {} }])}
+          className="w-full border-dashed"
+        >
+          <Plus className="h-4 w-4 me-2" /> {t('batchF.stopAdd')}
+        </Button>
+      )}
+    </div>
   );
 }

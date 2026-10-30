@@ -64,6 +64,12 @@ export function tripToFormValues(trip: TripEditorData): CreateTripInput {
         }
       : undefined,
     itinerary: trip.itinerary || [],
+    // Batch F: stored FAQs / pickup points / elections must survive
+    // the reset() round-trip like every other field.
+    faqs: trip.faqs ?? undefined,
+    pickupPoints: trip.pickupPoints ?? undefined,
+    payOnArrivalEnabled: trip.payOnArrivalEnabled ?? false,
+    privateTourEnabled: trip.privateTourEnabled ?? false,
     status: trip.status,
     currency: trip.currency || 'MAD',
   };

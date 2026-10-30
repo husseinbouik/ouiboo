@@ -120,30 +120,30 @@
     }
   },
   "modelFaq": {
-      "title": "Comment fonctionne Ouiboo",
-      "intro": "Ouiboo est la technologie qui vous met en relation avec des agences de voyage. Ouiboo ne vend pas de voyages, et vous payez toujours l'agence directement — Ouiboo ne détient jamais votre argent.",
-      "items": {
-          "whoSells": {
-              "question": "Qui vend mon voyage ?",
-              "answer": "L'agence vend et organise votre voyage. Ouiboo fournit la technologie pour le trouver, le réserver et le gérer."
-          },
-          "payDirect": {
-              "question": "Qui est-ce que je paie ?",
-              "answer": "Vous payez l'agence directement — jamais Ouiboo. Ouiboo ne détient jamais votre argent."
-          },
-          "stagedPayments": {
-              "question": "Comment fonctionnent les paiements ?",
-              "answer": "Pour les voyages en groupe, vous versez à l'agence, directement, un acompte de 30 % au maximum. Le solde n'est demandé qu'après la confirmation du minimum de participants du groupe. Si ce minimum n'est pas atteint, l'agence vous rembourse votre acompte."
-          },
-          "refunds": {
-              "question": "Qui me rembourse ?",
-              "answer": "L'agence qui vous a vendu le voyage est responsable des remboursements — c'est elle la débitrice du remboursement. Ouiboo vous aide à suivre le dossier et surveille les délais, mais le remboursement lui-même est versé par l'agence."
-          },
-          "verification": {
-              "question": "Comment les agences sont-elles vérifiées ?",
-              "answer": "Avant qu'une agence puisse publier des voyages, sa licence de voyage et son assurance sont vérifiées. Chaque page d'agence et de voyage indique le statut de la licence, sa date d'expiration et la date de sa vérification, ainsi que la date de vérification de l'assurance."
-          }
+    "title": "Comment fonctionne Ouiboo",
+    "intro": "Ouiboo est la technologie qui vous met en relation avec des agences de voyage. Ouiboo ne vend pas de voyages, et vous payez toujours l'agence directement — Ouiboo ne détient jamais votre argent.",
+    "items": {
+      "whoSells": {
+        "question": "Qui vend mon voyage ?",
+        "answer": "L'agence vend et organise votre voyage. Ouiboo fournit la technologie pour le trouver, le réserver et le gérer."
+      },
+      "payDirect": {
+        "question": "Qui est-ce que je paie ?",
+        "answer": "Vous payez l'agence directement — jamais Ouiboo. Ouiboo ne détient jamais votre argent."
+      },
+      "stagedPayments": {
+        "question": "Comment fonctionnent les paiements ?",
+        "answer": "Pour les voyages en groupe, vous versez à l'agence, directement, un acompte de 30 % au maximum. Le solde n'est demandé qu'après la confirmation du minimum de participants du groupe. Si ce minimum n'est pas atteint, l'agence vous rembourse votre acompte."
+      },
+      "refunds": {
+        "question": "Qui me rembourse ?",
+        "answer": "L'agence qui vous a vendu le voyage est responsable des remboursements — c'est elle la débitrice du remboursement. Ouiboo vous aide à suivre le dossier et surveille les délais, mais le remboursement lui-même est versé par l'agence."
+      },
+      "verification": {
+        "question": "Comment les agences sont-elles vérifiées ?",
+        "answer": "Avant qu'une agence puisse publier des voyages, sa licence de voyage et son assurance sont vérifiées. Chaque page d'agence et de voyage indique le statut de la licence, sa date d'expiration et la date de sa vérification, ainsi que la date de vérification de l'assurance."
       }
+    }
   },
   "principles": {
     "preTitle": "Nos principes produit",
@@ -453,6 +453,25 @@
           "a": "Pas encore — les réservations ne sont pas ouvertes pendant la bêta fermée. Rejoignez la liste d’attente pour être prévenu à l’ouverture."
         }
       ]
+    },
+    "layerB": {
+      "liveInventoryTitle": "Voyages à {{city}}",
+      "tripCount": "{{count}} voyage(s) d'agences vérifiées",
+      "agencyCount": "{{count}} agence(s) vérifiée(s)",
+      "reviewAggregate": "{{rating}} de moyenne sur {{count}} avis vérifiés",
+      "reviewsCount": "{{count}} avis vérifié(s)",
+      "viewTrip": "Voir le voyage",
+      "fromPrice": "Dès",
+      "categoryTitle": "{{category}} à {{city}}",
+      "backToCity": "Tous les voyages à {{city}}",
+      "categoryNames": {
+        "ADVENTURE": "Aventure",
+        "CULTURAL": "Culture",
+        "LUXURY": "Luxe",
+        "BUDGET": "Économique",
+        "NATURE": "Nature"
+      },
+      "freeCancellation": "Annulation gratuite jusqu'à {{days}} jours avant"
     }
   },
   "beta": {

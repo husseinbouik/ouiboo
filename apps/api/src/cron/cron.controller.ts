@@ -174,6 +174,10 @@ export class CronController {
     await run('groupConfirmationDeadlines', () =>
       this.stagedPaymentsService.evaluateConfirmationDeadlines(),
     );
+    // #696: release seats of pay-later bookings whose hold expired unpaid.
+    await run('payLaterHoldExpiry', () =>
+      this.stagedPaymentsService.expirePayLaterHolds(),
+    );
     // #370: backstop — create RefundCases for any REFUND_DUE plan that
     // does not have one yet (e.g. flipped before #370 shipped).
     await run('refundDueCaseSync', () =>

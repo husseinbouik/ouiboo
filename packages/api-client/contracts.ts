@@ -67,6 +67,8 @@ export interface TripsQueryParams extends PageParams {
   startDateTo?: string
   ratingMin?: number
   available?: boolean
+  /** #687: only trips whose cancellation scale has a free tier. */
+  freeCancellation?: boolean
   sortBy?: 'createdAt' | 'price' | 'rating' | 'popularity' | string
   sortOrder?: 'asc' | 'desc'
 }

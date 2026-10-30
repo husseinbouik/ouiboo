@@ -17,7 +17,11 @@ export default function robots(): MetadataRoute.Robots {
     // everything else on this host stays disallowed. The sitemap
     // (which lists only those routes in this state) is advertised.
     return {
-      rules: [{ userAgent: '*', allow: [...GUIDE_PATHS], disallow: '/' }],
+      // #685: '/guides/' as a prefix allowance also covers the
+      // category×city children — they self-gate with a 404 whenever
+      // the cell has no live inventory, so allowing the crawl can
+      // never surface an empty child.
+      rules: [{ userAgent: '*', allow: [...GUIDE_PATHS, '/guides/'], disallow: '/' }],
       sitemap: absoluteLandingUrl('/sitemap.xml'),
     }
   }

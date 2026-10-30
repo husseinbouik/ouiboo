@@ -498,7 +498,8 @@
       "2-3": "2–3 days",
       "4-7": "4–7 days",
       "8+": "8+ days"
-    }
+    },
+    "freeCancellation": "Free cancellation"
   },
   "messages": {
     "signInTitle": "Sign in to view your messages",
@@ -1068,5 +1069,72 @@
       "REFUND_FAILED": "A refund attempt failed — the agency must retry",
       "REFUND_OVERDUE": "Refund overdue — Ouiboo is escalating"
     }
+  },
+  "batchF": {
+    "freeCancellationUntil": "Free cancellation up to {{days}} days before departure — refunded by {{agency}}",
+    "freeCancellationShort": "Free cancellation up to {{days}} days before",
+    "noFreeCancellation": "The cancellation scale applies — refunds are paid by {{agency}}",
+    "faqTitle": "Frequently asked questions",
+    "payOnArrivalBadge": "Pay on arrival",
+    "payOnArrivalNote": "You pay {{agency}} on site on the day — no payment goes through Ouiboo.",
+    "payOnArrivalBook": "Pay on arrival (pay {{agency}} on site)",
+    "privateBadge": "Private",
+    "privateSessionNote": "Private departure — the whole trip for your group only, at the per-group price shown.",
+    "privatePriceNote": "Per-group price (not per person)",
+    "payLaterBadge": "Reserve now, pay later",
+    "payLaterNote": "Your seat is held until {{date}}. Pay {{agency}} directly before then — Ouiboo stores no card and never charges you automatically.",
+    "payLaterBook": "Reserve now, pay {{agency}} later",
+    "payLaterDeadline": "Pay {{agency}} by {{date}}",
+    "payLaterExpired": "The pay-later deadline passed, so this hold was released.",
+    "accommodationTierLabel": "Accommodation: {{tier}} (or similar)",
+    "tiers": {
+      "STANDARD": "Standard",
+      "COMFORT": "Comfort",
+      "PREMIUM": "Premium"
+    },
+    "stopDuration": "{{count}} min",
+    "dayNotesTitle": "Good to know",
+    "pickupTitle": "Pickup point",
+    "pickupSelect": "Choose your pickup point",
+    "pickupNone": "Meet at the meeting point",
+    "bookingPrivate": "Private booking — whole departure",
+    "bookingPayOnArrival": "Pay on arrival — you will pay {{agency}} on site",
+    "theAgency": "the agency"
+  },
+  "customTrip": {
+    "title": "Request a custom trip",
+    "subtitle": "Describe the trip you want. Verified agencies in the area can reply with a firm quote — you only share your contact details with the agency you accept.",
+    "unavailable": "Custom trip requests are not available yet.",
+    "tripTitle": "Trip title",
+    "description": "What do you want to do?",
+    "destination": "Destination",
+    "startLocation": "Departure place",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "guests": "Travellers",
+    "budget": "Budget ceiling (MAD, optional)",
+    "note": "Anything agencies should know (optional)",
+    "submit": "Send request",
+    "mine": "My custom trip requests",
+    "empty": "No custom trip requests yet.",
+    "expires": "Expires {{date}}",
+    "offers": "{{count}} quote(s)",
+    "noOffers": "No quotes yet — matched agencies have until the expiry date to reply.",
+    "accept": "Accept this quote",
+    "cancel": "Cancel request",
+    "converted": "Converted to a private trip — the agency will complete it and share it with you to book.",
+    "viewTrip": "View the private trip",
+    "statuses": {
+      "PENDING": "Waiting for quotes",
+      "QUOTED": "Quotes received",
+      "ACCEPTED": "Accepted",
+      "DECLINED": "Closed",
+      "CANCELLED": "Cancelled",
+      "EXPIRED": "Expired",
+      "CONVERTED": "Converted to a private trip"
+    },
+    "quoteTotal": "Firm total (MAD, taxes included)",
+    "quoteBy": "Quote from {{agency}}",
+    "sent": "Request sent — reference {{ref}}"
   }
 }

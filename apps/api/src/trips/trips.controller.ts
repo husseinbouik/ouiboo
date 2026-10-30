@@ -70,6 +70,7 @@ export class TripsController {
         @Query('startDateTo') startDateTo?: string,
         @Query('ratingMin') ratingMin?: string,
         @Query('available') available?: string,
+        @Query('freeCancellation') freeCancellation?: string,
         @Query('sortBy') sortBy?: string,
         @Query('sortOrder') sortOrder?: string,
         @Query('page') page?: string,
@@ -98,11 +99,25 @@ export class TripsController {
             startDateTo: parseOptionalDate(startDateTo, 'startDateTo'),
             ratingMin: parseOptionalNumber(ratingMin, 'ratingMin'),
             available: available === 'true',
+            freeCancellation: freeCancellation === 'true',
             sortBy: sortBy || 'createdAt',
             sortOrder: sortOrder?.toLowerCase() === 'asc' ? 'asc' : 'desc',
             page: parsePositiveInteger(page, 1, 'page'),
             limit: parsePositiveInteger(limit, 20, 'limit'),
         });
+    }
+
+    @Get('destinations/:slug')
+    @ApiOperation({ summary: 'Live destination inventory for the Cluster Index Layer B pages (#685): trips, counts and review aggregates computed from live inventory' })
+    getDestinationInventory(
+        @Param('slug') slug: string,
+        @Query('locale') locale?: string,
+        @Headers('x-ouiboo-language') languageHeader?: string,
+    ) {
+        return this.tripsService.getDestinationInventory(
+            slug,
+            normalizeTripLocale(locale) ?? normalizeTripLocale(languageHeader),
+        );
     }
 
     @Get(':id')

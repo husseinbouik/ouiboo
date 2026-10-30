@@ -39,6 +39,8 @@ type SearchFilters = {
   dateTo: string;
   priceMin: string;
   availabilityOnly: boolean;
+  /** #687: free-cancellation filter (standardised definition). */
+  freeCancellationOnly: boolean;
   ratingMin: number;
 };
 
@@ -77,6 +79,7 @@ export function parseFiltersFromSearchParams(searchParams: URLSearchParams): Sea
     dateTo: searchParams.get("dateTo") ?? "",
     priceMin: searchParams.get("priceMin") ?? "",
     availabilityOnly: searchParams.get("available") === "true",
+    freeCancellationOnly: searchParams.get("freeCancellation") === "true",
     ratingMin: Number.isFinite(ratingRaw) && ratingRaw > 0 ? ratingRaw : 0,
   };
 }
@@ -93,6 +96,7 @@ export function buildSearchParams(filters: SearchFilters): URLSearchParams {
   if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
   if (filters.dateTo) params.set("dateTo", filters.dateTo);
   if (filters.availabilityOnly) params.set("available", "true");
+  if (filters.freeCancellationOnly) params.set("freeCancellation", "true");
   if (filters.ratingMin > 0) params.set("ratingMin", String(filters.ratingMin));
   return params;
 }
@@ -204,6 +208,7 @@ export default function SearchClient({
     if (filters.dateFrom) params.startDateFrom = filters.dateFrom;
     if (filters.dateTo) params.startDateTo = filters.dateTo;
     if (filters.availabilityOnly) params.available = true;
+    if (filters.freeCancellationOnly) params.freeCancellation = true;
     if (filters.ratingMin > 0) params.ratingMin = filters.ratingMin;
     return params;
   }, [filters, sortBy, sortOrder, currentPage, i18n.language]);
@@ -226,6 +231,7 @@ export default function SearchClient({
     filters.dateFrom === initialFilters.dateFrom &&
     filters.dateTo === initialFilters.dateTo &&
     filters.availabilityOnly === initialFilters.availabilityOnly &&
+    filters.freeCancellationOnly === initialFilters.freeCancellationOnly &&
     filters.ratingMin === initialFilters.ratingMin;
 
   const { data: response, isLoading, error, isError } = useTripsQuery(queryParams, {
@@ -265,6 +271,7 @@ export default function SearchClient({
       chips.push({ label: `Dates: ${from} - ${to}`, onRemove: () => updateFilters({ dateFrom: "", dateTo: "" }) });
     }
     if (filters.availabilityOnly) chips.push({ label: "Available Only", onRemove: () => updateFilter("availabilityOnly", false) });
+    if (filters.freeCancellationOnly) chips.push({ label: t('search.freeCancellation'), onRemove: () => updateFilter("freeCancellationOnly", false) });
     if (filters.ratingMin > 0) chips.push({ label: `Rating: ${filters.ratingMin}+`, onRemove: () => updateFilter("ratingMin", 0) });
     return chips;
   }, [filters, updateFilter, updateFilters, t]);
@@ -360,6 +367,7 @@ export default function SearchClient({
       <div className="space-y-3">
         <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.availability')}</p>
         <button type="button" onClick={() => updateFilter("availabilityOnly", !filters.availabilityOnly)} aria-pressed={filters.availabilityOnly} className={cn("px-3 py-2 rounded-lg w-full", filters.availabilityOnly ? "bg-success/10 text-success" : "bg-muted")}>{t('search.availabilityOnly')}</button>
+        <button type="button" onClick={() => updateFilter("freeCancellationOnly", !filters.freeCancellationOnly)} aria-pressed={filters.freeCancellationOnly} className={cn("px-3 py-2 rounded-lg w-full mt-2", filters.freeCancellationOnly ? "bg-success/10 text-success" : "bg-muted")} data-testid="filter-free-cancellation">{t('search.freeCancellation')}</button>
       </div>
   );
 
