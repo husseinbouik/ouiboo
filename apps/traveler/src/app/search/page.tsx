@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import SearchClient, {
+import SearchClient, { type SearchInitialFilters } from '@/components/SearchClient';
+import {
   durationBucketRange,
   isDestinationSlugValue,
   isDurationBucketKey,
-  type SearchInitialFilters,
-} from '@/components/SearchClient';
+} from '@/lib/search-facets';
 import { TripCategory, TripStatus } from '@ouiboo/types';
 import { getInitialLanguage } from '@ouiboo/i18n/server';
 

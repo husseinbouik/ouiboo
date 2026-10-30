@@ -18,6 +18,12 @@ import { TripCard } from "@/components/TripCard";
 import { BETA_DESTINATIONS, TripCategory, TripStatus } from "@ouiboo/types";
 import { useTripsQuery, type TripsQueryParams } from "@ouiboo/api-client";
 import { useTranslation } from "react-i18next";
+import {
+  DURATION_BUCKETS,
+  durationBucketRange,
+  isDestinationSlugValue,
+  isDurationBucketKey,
+} from "@/lib/search-facets";
 
 type SearchFilters = {
   category: string;
@@ -41,32 +47,6 @@ type SortBy = "price" | "rating" | "popularity" | "createdAt";
 type SortOrder = "asc" | "desc";
 
 export type SearchInitialFilters = SearchFilters;
-
-/**
- * #675: duration facet buckets (trip length in days). The bucket key
- * travels in the `duration` URL param; the API receives the resolved
- * durationMin/durationMax range (its parameters existed and were
- * parsed server-side — the traveller side never sent them).
- */
-export const DURATION_BUCKETS = [
-  { key: "1", min: 1, max: 1 },
-  { key: "2-3", min: 2, max: 3 },
-  { key: "4-7", min: 4, max: 7 },
-  { key: "8+", min: 8, max: undefined },
-] as const;
-
-export function durationBucketRange(key: string): { min: number; max?: number } | null {
-  const bucket = DURATION_BUCKETS.find((candidate) => candidate.key === key);
-  return bucket ? { min: bucket.min, max: bucket.max } : null;
-}
-
-export function isDurationBucketKey(key: string): boolean {
-  return DURATION_BUCKETS.some((bucket) => bucket.key === key);
-}
-
-export function isDestinationSlugValue(value: string): boolean {
-  return BETA_DESTINATIONS.some((destination) => destination.slug === value);
-}
 
 /**
  * #440: parse the complete filter set from the current URL params.
