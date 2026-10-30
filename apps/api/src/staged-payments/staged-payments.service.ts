@@ -441,6 +441,55 @@ export class StagedPaymentsService {
         return { evaluated: sessions.length, confirmed, notConfirmed };
     }
 
+    /**
+     * #696 (Council S6): pay-later hold expiry — the deadline job for
+     * reserve-now-pay-the-agency-later bookings. A booking whose hold
+     * deadline passed while still UNPAID (no verified payment, no
+     * staged plan progress) is cancelled and its seats are released.
+     * No dunning, no charge attempt: expiry is the whole mechanism.
+     * Idempotent — a cancelled booking leaves the candidate set.
+     */
+    async expirePayLaterHolds(now: Date = new Date()) {
+        const bookings = await this.db.booking.findMany({
+            where: {
+                payLaterDeadline: { lte: now },
+                paymentStatus: BookingPaymentStatus.UNPAID,
+                status: { in: [BookingStatus.PENDING, BookingStatus.AWAITING_VALIDATION, BookingStatus.PENDING_MINIMUM] },
+            },
+            select: { id: true, sessionId: true, guestsCount: true, isPrivateSession: true },
+            take: 500,
+        });
+        let released = 0;
+        for (const booking of bookings) {
+            try {
+                const done = await this.db.$transaction(async (tx) => {
+                    const claim = await tx.booking.updateMany({
+                        where: {
+                            id: booking.id,
+                            paymentStatus: BookingPaymentStatus.UNPAID,
+                            status: { in: [BookingStatus.PENDING, BookingStatus.AWAITING_VALIDATION, BookingStatus.PENDING_MINIMUM] },
+                        },
+                        data: { status: BookingStatus.CANCELLED, cancelledAt: now, cancellationReason: 'PAY_LATER_DEADLINE_EXPIRED' },
+                    });
+                    if (claim.count === 0) return false;
+                    const seats = booking.isPrivateSession
+                        ? ((await tx.tripSession.findUnique({ where: { id: booking.sessionId }, select: { totalSeats: true } }))?.totalSeats ?? booking.guestsCount)
+                        : booking.guestsCount;
+                    await tx.tripSession.update({
+                        where: { id: booking.sessionId },
+                        data: { availableSeats: { increment: seats } },
+                    });
+                    return true;
+                });
+                if (done) released += 1;
+            } catch (error) {
+                this.logger.error(`Pay-later expiry failed for booking ${booking.id}`, error);
+            }
+        }
+        this.logger.log(`Pay-later holds evaluated: ${bookings.length} bookings (${released} released)`);
+        return { evaluated: bookings.length, released };
+    }
+
     // ------------------------------------------------------------------
     // #423: admin stuck-state interventions. These are thin, guarded
     // wrappers over the private group state machine below — the admin

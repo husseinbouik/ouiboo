@@ -16,4 +16,8 @@ export interface AgencyTripSession {
   minBookings?: number;
   confirmationDeadline?: string | null;
   groupStatus?: string;
+  /** Batch F: #694 private per-group sessions, #696 pay-later holds. */
+  sessionKind?: 'SHARED' | 'PRIVATE';
+  allowPayLater?: boolean;
+  payLaterHoldHours?: number | null;
 }

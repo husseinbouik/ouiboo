@@ -48,6 +48,7 @@ function parseFilters(sp: Record<string, string | string[] | undefined>): Search
     // now — the SSR seed must parse them too, or the first paint (and
     // the client's initial-query seed check) would disagree with the URL.
     availabilityOnly: get('available') === 'true',
+    freeCancellationOnly: get('freeCancellation') === 'true',
     ratingMin: (() => {
       const n = Number(get('ratingMin'));
       return Number.isFinite(n) && n > 0 ? n : 0;
@@ -79,6 +80,7 @@ async function fetchInitialTrips(filters: SearchInitialFilters) {
   if (filters.dateFrom) params.set('startDateFrom', filters.dateFrom);
   if (filters.dateTo) params.set('startDateTo', filters.dateTo);
   if (filters.availabilityOnly) params.set('available', 'true');
+  if (filters.freeCancellationOnly) params.set('freeCancellation', 'true');
   if (filters.ratingMin > 0) params.set('ratingMin', String(filters.ratingMin));
   try {
     const res = await fetch(`${API_URL}/trips?${params.toString()}`, { cache: 'no-store' });

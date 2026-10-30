@@ -121,6 +121,30 @@ export class CreateBookingDto {
     @IsIn(ALLOWED_BOOKING_TERMS_VERSIONS)
     @MaxLength(32)
     termsVersion!: string;
+
+    // #696 (Council S6): reserve now, pay the AGENCY later. Only valid
+    // on sessions the agency flagged allowPayLater; the server stamps
+    // the hold deadline. No card is ever collected.
+    @ApiProperty({ required: false, example: true, description: 'Hold the seat and pay the agency before the deadline (#696)' })
+    @IsOptional()
+    @IsBoolean()
+    payLater?: boolean;
+
+    // #697 (Council S6): pay the agency on arrival. Only valid on
+    // trips the agency elected for pay-on-arrival (low-value single-day
+    // activities); the server validates the election + ceiling.
+    @ApiProperty({ required: false, example: true, description: 'Pay the agency on site (#697)' })
+    @IsOptional()
+    @IsBoolean()
+    payOnArrival?: boolean;
+
+    // #701 (Council S6): the traveller's chosen pickup point (id from
+    // the trip's pickupPoints); the server snapshots the point.
+    @ApiProperty({ required: false, example: 'pickup-1', description: 'Chosen pickup point id (#701)' })
+    @IsOptional()
+    @IsString()
+    @MaxLength(64)
+    pickupPointId?: string;
 }
 
 /**

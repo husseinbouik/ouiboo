@@ -74,6 +74,7 @@ const initialFilters: SearchInitialFilters = {
   dateTo: '2026-11-20',
   priceMin: '100',
   availabilityOnly: true,
+  freeCancellationOnly: false,
   ratingMin: 4,
 };
 

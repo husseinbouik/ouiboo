@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+    AccommodationTier,
     AccommodationType,
     BETA_DESTINATIONS,
     BookingPaymentStatus,
@@ -8,6 +9,7 @@ import {
     PaymentMethod,
     PaymentProvider,
     RefundStatus,
+    SessionKind,
     SessionStatus,
     SubscriptionStatus,
     TravelLicenceType,
@@ -75,6 +77,15 @@ export const AgencyProfileSchema = z.object({
     licenceIssuingAuthority: z.string().optional(),
 });
 
+/** #701: one itinerary stop — name is a language map; duration and
+ * admission are language-neutral facts. */
+export const ItineraryStopSchema = z.object({
+    name: z.record(z.string(), z.string().max(200)),
+    durationMinutes: z.number().int().nonnegative().max(10080).optional(),
+    admissionIncluded: z.boolean().optional(),
+    admissionNote: z.record(z.string(), z.string().max(300)).optional(),
+});
+
 export const ItineraryDaySchema = z.object({
     id: z.string(),
     templateId: z.string(),
@@ -88,6 +99,29 @@ export const ItineraryDaySchema = z.object({
     mealsIncluded: z.array(z.nativeEnum(ItineraryMeal)).max(3).optional(),
     accommodationName: z.string().max(200).optional().nullable(),
     accommodationType: z.nativeEnum(AccommodationType).optional().nullable(),
+    // #701 (Council S6 Batch F): accommodation TIER + 'or similar'
+    // rendering, per-stop detail, free-text day notes (language map).
+    accommodationTier: z.nativeEnum(AccommodationTier).optional().nullable(),
+    stops: z.array(ItineraryStopSchema).max(12).optional().nullable(),
+    notes: z.record(z.string(), z.string().max(2000)).optional().nullable(),
+});
+
+
+/** #686: agency-authored FAQ — language-keyed, French required (the
+ * API enforces the cap of 5 and the #674 commercial-terms scan). */
+export const TripFaqSchema = z.object({
+    question: z.record(z.string(), z.string().max(300)),
+    answer: z.record(z.string(), z.string().max(2000)),
+});
+
+/** #701: a named pickup point on the #676 meeting-point structure. */
+export const PickupPointSchema = z.object({
+    id: z.string().max(64),
+    name: z.string().max(200),
+    address: z.string().max(300).optional(),
+    mapsUrl: z.string().url().max(1000).optional(),
+    latitude: z.number().min(-90).max(90).optional(),
+    longitude: z.number().min(-180).max(180).optional(),
 });
 
 /**
@@ -229,6 +263,12 @@ export const CreateTripTemplateSchema = TripTemplateSchema.omit({
     itinerary: true,
 }).extend({
     itinerary: z.array(CreateItineraryDaySchema).optional(),
+    // Batch F (#686/#697/#694/#701): FAQ entries, payment-shape
+    // elections and pickup points.
+    faqs: z.array(TripFaqSchema).max(5).optional(),
+    pickupPoints: z.array(PickupPointSchema).max(10).optional(),
+    payOnArrivalEnabled: z.boolean().optional(),
+    privateTourEnabled: z.boolean().optional(),
 }).superRefine((data, ctx) => {
     // Council S6 Batch B (#674 + #676): editor-side publish validation,
     // mirroring the API publish gates. Publishing (status ACTIVE)
@@ -264,6 +304,10 @@ export const TripSessionSchema = z.object({
     availableSeats: z.number().int().nonnegative(),
     status: z.nativeEnum(SessionStatus),
     currency: z.string().regex(/^[A-Z]{3}$/, "Currency must be an ISO 4217 code"),
+    // Batch F: #694 private per-group sessions, #696 pay-later holds.
+    sessionKind: z.nativeEnum(SessionKind).optional(),
+    allowPayLater: z.boolean().optional(),
+    payLaterHoldHours: z.number().int().min(1).max(336).optional().nullable(),
 });
 
 export const CreateTripSessionSchema = TripSessionSchema.omit({

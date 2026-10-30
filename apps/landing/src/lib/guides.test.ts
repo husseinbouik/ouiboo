@@ -1,4 +1,5 @@
 import { GUIDE_CITY_SLUGS, GUIDE_PATHS, buildFaqJsonLd, buildTouristTripJsonLd, guideCity, guidesContent } from './guides';
+import { layerBContent } from './inventory';
 
 /**
  * #683 (Council S6): Layer A ship-condition census. The guide +
@@ -6,6 +7,12 @@ import { GUIDE_CITY_SLUGS, GUIDE_PATHS, buildFaqJsonLd, buildTouristTripJsonLd, 
  * NO counts-as-supply, NO booking CTAs and NO #661-banned claims
  * (first/only/biggest). If a future edit breaks a condition, this
  * census fails before the page can ship.
+ *
+ * #685 Layer B addendum: the `guides.layerB` strings are the ONE
+ * deliberate exception — they are templates for LIVE inventory
+ * (counts/prices/aggregates arrive from the API, never from copy).
+ * Their own census below pins that contract: interpolation
+ * placeholders only, no hardcoded digits, no #661 claims.
  */
 const LOCALES = ['en', 'fr', 'ar'] as const;
 
@@ -71,6 +78,40 @@ describe('Northern Cluster Layer A (#683)', () => {
             expect(guidesContent(locale).tangier.worldCup).toBeDefined();
             expect(guidesContent(locale).verification.steps).toHaveLength(4);
             expect(guidesContent(locale).verification.datedLine).toMatch(/2026/);
+        }
+    });
+});
+
+
+describe('Guides Layer B (#685)', () => {
+    it('layerB templates exist in every locale with the full key set', () => {
+        for (const locale of LOCALES) {
+            const layerB = layerBContent(locale);
+            expect(layerB.liveInventoryTitle.length).toBeGreaterThan(3);
+            expect(layerB.tripCount).toContain('{{count}}');
+            expect(layerB.agencyCount).toContain('{{count}}');
+            expect(layerB.reviewAggregate).toContain('{{rating}}');
+            expect(layerB.reviewAggregate).toContain('{{count}}');
+            expect(Object.keys(layerB.categoryNames).length).toBeGreaterThan(0);
+        }
+    });
+
+    it('census: layerB copy carries no hardcoded numbers and no #661 claims', () => {
+        const claims = /\b(first|premier|première|only|seul|seule|biggest|largest|plus grand|plus grande|الأول|الأولى|الوحيد|الوحيدة|الأكبر)\b/i;
+        for (const locale of LOCALES) {
+            const strings = allStrings(layerBContent(locale));
+            expect(strings.length).toBeGreaterThan(10);
+            for (const text of strings) {
+                // Counts/prices come from the API: the only digits
+                // allowed live inside {{placeholders}} (there are none
+                // today — any digit at all fails this census).
+                expect({ locale, text, hasDigit: /\d/.test(text) }).toEqual(
+                    expect.objectContaining({ hasDigit: false }),
+                );
+                expect({ locale, text, claim: claims.test(text) }).toEqual(
+                    expect.objectContaining({ claim: false }),
+                );
+            }
         }
     });
 });

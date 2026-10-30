@@ -5,6 +5,7 @@ import { cn } from '@ouiboo/ui/utils';
 import type { TFunction } from 'i18next';
 import type { TripWizardFormApi } from './useTripWizardForm';
 import { TripCancellationScale } from './TripCancellationScale';
+import { TripBatchFSections } from './TripBatchFSections';
 import { ContentLanguageTabs, contentLanguageDir, DEFAULT_CONTENT_LANGUAGE, isCanonicalLanguage, type ContentLanguageCode } from './ContentLanguageTabs';
 
 type Props = {
@@ -180,6 +181,9 @@ export function TripExtras({ t, form, mode }: Props) {
 
       {/* #417 (Council P0-11): per-trip cancellation bands. */}
       <TripCancellationScale t={t} form={form} />
+
+      {/* Council S6 Batch F: payment elections, pickup points, FAQs. */}
+      <TripBatchFSections t={t} form={form} />
 
       {/* Council S6 Batch B (#674/#676): publish-time guardrail hints.
           The scale + meeting requirements are enforced by the form

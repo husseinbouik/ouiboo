@@ -12,13 +12,22 @@ import {
   type GuideCitySlug,
 } from '../../../lib/guides'
 import { absoluteLandingUrl } from '../../../lib/site'
+import { fetchDestinationInventory } from '../../../lib/inventory'
+import { LayerBInventorySection } from '../../../components/LayerBInventory'
 
 /**
  * #683 (Council S6): one template for the three Northern Cluster city
  * guides. Server-rendered from the language maps; INDEXED on purpose
  * (Layer A) while the rest of the landing stays noindexed during the
- * beta. Ship conditions: no trip cards, no prices, no counts, no
- * booking CTAs — waitlist + "bookings not yet open" only.
+ * beta. Layer A ship conditions: no trip cards, no prices, no counts,
+ * no booking CTAs — waitlist + "bookings not yet open" only.
+ *
+ * #685 Layer B: BELOW the Layer A content, live inventory (trip
+ * cards, prices, counts, review aggregates) renders from the
+ * destination-inventory API when — and only when — the city has live
+ * verified trips; the category×city children are gated by the same
+ * payload. Production indexing of Layer B stays behind the legal
+ * gate; this build targets staging.
  */
 
 export function generateStaticParams() {
@@ -59,6 +68,10 @@ export default async function GuideCityPage({
   const shared = guidesContent(locale)
   const content = guideCity(locale, city)
   const jsonLd = [buildTouristTripJsonLd(content, city), buildFaqJsonLd(content.faq)]
+  // #685 Layer B: live inventory from ONE API query (null when the
+  // API is unreachable or the city has no live verified trips — the
+  // Layer A guide then stands alone).
+  const inventory = await fetchDestinationInventory(city, locale)
 
   return (
     <main id="main-content" tabIndex={-1} className="min-h-screen bg-background px-6 py-16 text-foreground sm:py-24">
@@ -109,6 +122,10 @@ export default async function GuideCityPage({
             ))}
           </div>
         </section>
+
+        {inventory ? (
+          <LayerBInventorySection locale={locale} city={city} cityName={content.name} inventory={inventory} />
+        ) : null}
 
         <section className="mt-12 rounded-3xl border border-border bg-card p-7 shadow-sm">
           <p className="leading-7 text-muted-foreground">{shared.waitlistNote}</p>

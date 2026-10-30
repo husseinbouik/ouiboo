@@ -498,7 +498,8 @@
       "2-3": "2–3 jours",
       "4-7": "4–7 jours",
       "8+": "8+ jours"
-    }
+    },
+    "freeCancellation": "Annulation gratuite"
   },
   "messages": {
     "signInTitle": "Connectez-vous pour voir vos messages",
@@ -1068,5 +1069,72 @@
       "REFUND_FAILED": "Une tentative de remboursement a échoué — l’agence doit réessayer",
       "REFUND_OVERDUE": "Remboursement en retard — Ouiboo relance l’agence"
     }
+  },
+  "batchF": {
+    "freeCancellationUntil": "Annulation gratuite jusqu'à {{days}} jours avant le départ — remboursée par {{agency}}",
+    "freeCancellationShort": "Annulation gratuite jusqu'à {{days}} jours avant",
+    "noFreeCancellation": "L'échelle d'annulation s'applique — les remboursements sont effectués par {{agency}}",
+    "faqTitle": "Questions fréquentes",
+    "payOnArrivalBadge": "Paiement sur place",
+    "payOnArrivalNote": "Vous payez {{agency}} sur place le jour même — aucun paiement ne passe par Ouiboo.",
+    "payOnArrivalBook": "Payer sur place (vous payez {{agency}} sur place)",
+    "privateBadge": "Privé",
+    "privateSessionNote": "Départ privé — tout le voyage pour votre groupe uniquement, au prix par groupe indiqué.",
+    "privatePriceNote": "Prix par groupe (et non par personne)",
+    "payLaterBadge": "Réservez maintenant, payez plus tard",
+    "payLaterNote": "Votre place est conservée jusqu'au {{date}}. Payez {{agency}} directement avant cette date — Ouiboo ne conserve aucune carte et ne vous prélève jamais automatiquement.",
+    "payLaterBook": "Réserver maintenant, payer {{agency}} plus tard",
+    "payLaterDeadline": "Payez {{agency}} avant le {{date}}",
+    "payLaterExpired": "La date limite de paiement différé est passée, cette réservation a été libérée.",
+    "accommodationTierLabel": "Hébergement : {{tier}} (ou similaire)",
+    "tiers": {
+      "STANDARD": "Standard",
+      "COMFORT": "Confort",
+      "PREMIUM": "Premium"
+    },
+    "stopDuration": "{{count}} min",
+    "dayNotesTitle": "Bon à savoir",
+    "pickupTitle": "Point de prise en charge",
+    "pickupSelect": "Choisissez votre point de prise en charge",
+    "pickupNone": "Rendez-vous au point de rendez-vous",
+    "bookingPrivate": "Réservation privée — départ entier",
+    "bookingPayOnArrival": "Paiement sur place — vous paierez {{agency}} sur place",
+    "theAgency": "l'agence"
+  },
+  "customTrip": {
+    "title": "Demander un voyage sur mesure",
+    "subtitle": "Décrivez le voyage souhaité. Les agences vérifiées de la zone peuvent répondre avec un devis ferme — vos coordonnées ne sont partagées qu'avec l'agence que vous acceptez.",
+    "unavailable": "Les demandes de voyage sur mesure ne sont pas encore disponibles.",
+    "tripTitle": "Titre du voyage",
+    "description": "Que voulez-vous faire ?",
+    "destination": "Destination",
+    "startLocation": "Lieu de départ",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "guests": "Voyageurs",
+    "budget": "Budget maximum (MAD, optionnel)",
+    "note": "Ce que les agences doivent savoir (optionnel)",
+    "submit": "Envoyer la demande",
+    "mine": "Mes demandes de voyage sur mesure",
+    "empty": "Aucune demande de voyage sur mesure pour l'instant.",
+    "expires": "Expire le {{date}}",
+    "offers": "{{count}} devis",
+    "noOffers": "Pas encore de devis — les agences correspondantes ont jusqu'à la date d'expiration pour répondre.",
+    "accept": "Accepter ce devis",
+    "cancel": "Annuler la demande",
+    "converted": "Convertie en voyage privé — l'agence va le compléter et le partager avec vous pour réserver.",
+    "viewTrip": "Voir le voyage privé",
+    "statuses": {
+      "PENDING": "En attente de devis",
+      "QUOTED": "Devis reçus",
+      "ACCEPTED": "Acceptée",
+      "DECLINED": "Clôturée",
+      "CANCELLED": "Annulée",
+      "EXPIRED": "Expirée",
+      "CONVERTED": "Convertie en voyage privé"
+    },
+    "quoteTotal": "Total ferme (MAD, taxes incluses)",
+    "quoteBy": "Devis de {{agency}}",
+    "sent": "Demande envoyée — référence {{ref}}"
   }
 }

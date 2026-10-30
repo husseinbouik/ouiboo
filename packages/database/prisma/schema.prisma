@@ -109,6 +109,49 @@ enum QuoteRequestStatus {
   CANCELLED
 }
 
+// #684 (Council S6): custom-trip request (private RFQ) lifecycle.
+// PENDING (traveller authored; visible pseudonymised to matched verified
+// cluster agencies) → QUOTED (at least one agency offered a firm quote)
+// → ACCEPTED (traveller accepted one offer; identity revealed to that
+// agency only; the offer converts to a private/unlisted Trip) →
+// CONVERTED once the private Trip exists. DECLINED/CANCELLED/EXPIRED
+// close a request without any conversion. The whole flow exists ONLY
+// behind the CUSTOM_TRIP_REQUESTS_ENABLED flag (post-opinion gate).
+enum CustomTripRequestStatus {
+  PENDING
+  QUOTED
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  EXPIRED
+  CONVERTED
+}
+
+enum CustomTripOfferStatus {
+  QUOTED
+  ACCEPTED
+  DECLINED
+  WITHDRAWN
+}
+
+// #694 (Council S6): session kind. SHARED = the ordinary per-person
+// departure (staged min-group logic applies when configured). PRIVATE =
+// the whole departure is booked by ONE party at a per-group price with
+// an exclusive lock; PENDING_MINIMUM never applies to private sessions.
+enum SessionKind {
+  SHARED
+  PRIVATE
+}
+
+// #701 (Council S6): agency-labelled accommodation tiers for itinerary
+// phase 2. Rendered with "or similar" honesty — the tier is a standard,
+// never a promise of one named property.
+enum AccommodationTier {
+  STANDARD
+  COMFORT
+  PREMIUM
+}
+
 enum TripCategory {
   ADVENTURE
   CULTURAL
@@ -364,6 +407,7 @@ model User {
   wishlist                Wishlist[]
   travelerConversations   Conversation[]          @relation("TravelerConversations")
   quoteRequests           QuoteRequest[]
+  customTripRequests      CustomTripRequest[]
   notificationPreferences NotificationPreference?
   displayCurrency         String                  @default("MAD")
   dateOfBirth             DateTime?
@@ -427,6 +471,7 @@ model AgencyProfile {
   tripSessions       TripSession[]
   bookings           Booking[]
   quoteRequests      QuoteRequest[]
+  customTripOffers   CustomTripOffer[]
   paymentTransactions PaymentTransaction[]
   reviews            Review[]
   invoiceLineItems   InvoiceLineItem[]
@@ -581,6 +626,35 @@ model TripTemplate {
   currency           String         @default("MAD")
   sessions           TripSession[]
   quoteRequests      QuoteRequest[]
+  // #684: set when this template is the private/unlisted Trip an
+  // accepted custom-trip offer converted into. Unlisted templates are
+  // excluded from every public catalogue/search payload.
+  customTripRequestId String?       @unique
+  customTripRequest   CustomTripRequest? @relation(fields: [customTripRequestId], references: [id], onDelete: SetNull)
+  isUnlisted         Boolean        @default(false)
+  // #686: capped agency-authored FAQ entries, language-keyed:
+  // [{ question: {fr,ar,en}, answer: {fr,ar,en} }] — validated and
+  // scanned against the #674 prohibited-terms guardrail on write.
+  faqs               Json?
+  // #687: ONE standardised free-cancellation definition, derived from
+  // the trip's structured scale on every write: freeCancellation is
+  // true exactly when the scale's best band refunds 100% at
+  // >= FREE_CANCELLATION_MIN_DAYS days before start; the days value is
+  // that band's threshold. Indexed so the search filter is a column
+  // predicate, never a JSON scan.
+  freeCancellation   Boolean        @default(false)
+  freeCancellationDays Int?
+  // #697: agency election for pay-on-arrival. Valid only for low-value
+  // dated single-day activities (enforced in TripsService against
+  // PAY_ON_ARRIVAL_MAX_TOTAL_MAD and the trip shape); the traveller
+  // pays the agency on site and no money moves through Ouiboo.
+  payOnArrivalEnabled Boolean       @default(false)
+  // #694: the trip offers a private (per-group, exclusive) variant.
+  privateTourEnabled Boolean        @default(false)
+  // #701: agency-defined pickup points the traveller selects from at
+  // booking: [{ id, name, address, mapsUrl }] — names/addresses are
+  // proper nouns (not language maps), mirroring the meeting point.
+  pickupPoints       Json?
   // #695 (Council S6): agency-priced option tiers + paid add-ons.
   pricingVariants    TripPricingVariant[]
   addOns             TripAddOn[]
@@ -617,6 +691,7 @@ model TripTemplate {
   @@index([status, featured])
   @@index([category, status])
   @@index([destinationSlug, status])
+  @@index([status, freeCancellation])
   @@index([createdAt])
   @@index([status, currency, startingPrice])
 }
@@ -637,6 +712,14 @@ model ItineraryDay {
   mealsIncluded     ItineraryMeal[]    @default([])
   accommodationName String?
   accommodationType AccommodationType?
+  // #701 (Council S6): itinerary phase 2 — the night's accommodation
+  // tier (rendered with "or similar"), per-stop detail
+  // [{ name, durationMinutes, admissionNote }] with language-keyed
+  // name/note maps, and free-text day notes as a language-keyed map
+  // { fr, ar, en }. All optional; the phase-1 fields are untouched.
+  accommodationTier AccommodationTier?
+  stops             Json?
+  notes             Json?
 
   @@unique([templateId, dayNumber])
 }
@@ -666,6 +749,14 @@ model TripSession {
   // and the tracked outcome of that requirement.
   confirmationDeadline DateTime?
   groupStatus          SessionGroupStatus @default(NOT_REQUIRED)
+  // #694: SHARED (default) or PRIVATE — a private session is priced
+  // per-group and booked exclusively by one party (see SessionKind).
+  sessionKind          SessionKind @default(SHARED)
+  // #696: reserve-now-pay-the-agency-later election for this session.
+  // The seat is held until Booking.payLaterDeadline; Ouiboo stores no
+  // card and never auto-charges — expiry simply releases the seat.
+  allowPayLater        Boolean @default(false)
+  payLaterHoldHours    Int?
   paymentPlans         BookingPaymentPlan[]
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
@@ -760,6 +851,22 @@ model Booking {
   // reconciled base/add-ons/total breakdown). Refunds and the staged
   // plan compute on totalAmount, which already includes the selection.
   pricingSelection            Json?
+  // #694: the booked session was PRIVATE (per-group exclusive lock).
+  // Snapshotted so a later session edit cannot rewrite the booking's
+  // nature; private bookings never enter PENDING_MINIMUM.
+  isPrivateSession            Boolean @default(false)
+  // #696: reserve-now-pay-later hold. When set, the traveller owes the
+  // AGENCY by this deadline (transfer + proof on the existing staged
+  // machine); an unpaid booking whose deadline passes is cancelled and
+  // its seats released by the deadline sweep. Null = ordinary booking.
+  payLaterDeadline            DateTime?
+  // #697: pay-on-arrival booking — agency-confirmed, traveller pays
+  // the agency on site; no payment is ever collected through Ouiboo.
+  payOnArrival                Boolean @default(false)
+  // #701: the traveller's chosen pickup point (id into the template's
+  // pickupPoints) plus an immutable snapshot of the point as booked.
+  pickupPointId               String?
+  pickupPointSnapshot         Json?
   refundAmount                Decimal?             @db.Decimal(18, 2)
   refundStatus                RefundStatus?
   refundProcessedAt           DateTime?
@@ -831,6 +938,79 @@ model QuoteRequest {
   @@index([travelerId, createdAt])
   @@index([agencyId, status, createdAt])
   @@index([templateId])
+}
+
+// #684 (Council S6): a traveller-authored CUSTOM-trip request — the
+// private RFQ. The request is visible ONLY to matched verified cluster
+// agencies and ONLY pseudonymised (publicRef + trip facts; the
+// traveller's identity/contact columns are never selected into agency
+// payloads until an offer is ACCEPTED, and then only for the accepted
+// agency). Agency quotes are transmitted UNCHANGED and snapshotted on
+// the offer; acceptance converts the request into a private/unlisted
+// TripTemplate (convertedTemplateId) booked through the ordinary
+// staged agency-direct flow. Ouiboo never prices, marks up, assembles
+// or collects. Requests auto-expire (expiresAt). The feature exists
+// only behind CUSTOM_TRIP_REQUESTS_ENABLED (default OFF).
+model CustomTripRequest {
+  id                 String                  @id @default(cuid())
+  // Pseudonymised reference shown to agencies (e.g. CTR-7K2QX9).
+  publicRef          String                  @unique
+  travelerId         String
+  traveler           User                    @relation(fields: [travelerId], references: [id], onDelete: Cascade)
+  title              String
+  description        String?
+  category           TripCategory @default(CULTURAL)
+  destinationSlug    String?
+  startLocation      String?
+  requestedStartDate DateTime
+  requestedEndDate   DateTime
+  guestsCount        Int
+  // Optional traveller budget ceiling in MAD — a traveller fact,
+  // transmitted as-is; Ouiboo never derives a price from it.
+  budgetMaxMad       Decimal?                @db.Decimal(18, 2)
+  note               String?
+  status             CustomTripRequestStatus @default(PENDING)
+  expiresAt          DateTime
+  acceptedOfferId    String?                 @unique
+  acceptedOffer      CustomTripOffer?        @relation("AcceptedOffer", fields: [acceptedOfferId], references: [id], onDelete: SetNull)
+  // The private/unlisted Trip this request converted into — the link
+  // lives on TripTemplate.customTripRequestId (unique), this is its
+  // back-relation.
+  convertedTemplate  TripTemplate?
+  offers             CustomTripOffer[]       @relation("RequestOffers")
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  @@index([travelerId, createdAt])
+  @@index([status, expiresAt])
+  @@index([destinationSlug, status])
+}
+
+// #684: one agency's firm quote on a custom-trip request. The quoted
+// total is the agency's own firm MAD TTC price, transmitted unchanged;
+// on acceptance the quote + cancellation scale + timestamps are copied
+// into acceptedSnapshot and never written again.
+model CustomTripOffer {
+  id                 String                @id @default(cuid())
+  requestId          String
+  request            CustomTripRequest     @relation("RequestOffers", fields: [requestId], references: [id], onDelete: Cascade)
+  acceptedForRequest CustomTripRequest?    @relation("AcceptedOffer")
+  agencyId           String
+  agency             AgencyProfile         @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  quotedTotalAmount  Decimal               @db.Decimal(18, 2)
+  quotedCurrency     String                @default("MAD")
+  quoteNote          String?
+  cancellationScale  Json?
+  status             CustomTripOfferStatus @default(QUOTED)
+  quotedAt           DateTime              @default(now())
+  acceptedAt         DateTime?
+  acceptedSnapshot   Json?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  @@unique([requestId, agencyId])
+  @@index([agencyId, status, createdAt])
+  @@index([requestId, status])
 }
 
 model PaymentProof {

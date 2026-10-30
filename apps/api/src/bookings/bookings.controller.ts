@@ -163,6 +163,18 @@ export class BookingsController {
         return this.bookingsService.verifyPayment(id, req.tenantId, dto.approved, dto.rejectionReason);
     }
 
+    @Patch(':id/confirm-pay-on-arrival')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
+    @Roles(UserRole.Agency)
+    @ApiOperation({ summary: 'Agency confirms a pay-on-arrival booking (#697): no payment is collected through Ouiboo; the traveller pays the agency on site' })
+    confirmPayOnArrival(
+        @Request() req,
+        @Param('id') id: string,
+    ) {
+        return this.bookingsService.confirmPayOnArrival(id, req.tenantId);
+    }
+
     @Patch(':id/confirm-bank-payment')
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, RateLimitGuard)

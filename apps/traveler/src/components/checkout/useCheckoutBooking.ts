@@ -22,6 +22,10 @@ type UseCheckoutBookingOptions = {
   termsAccepted: boolean;
   /** #695: variant + add-on selection (ids/quantities only). */
   pricingSelection?: PricingSelectionState;
+  /** Batch F elections carried from the trip page (#696/#697/#701). */
+  payLater?: boolean;
+  payOnArrival?: boolean;
+  pickupPointId?: string | null;
 };
 
 export function useCheckoutBooking({
@@ -35,6 +39,9 @@ export function useCheckoutBooking({
   proofFile,
   termsAccepted,
   pricingSelection,
+  payLater,
+  payOnArrival,
+  pickupPointId,
 }: UseCheckoutBookingOptions) {
   const router = useRouter();
   const { t, i18n } = useTranslation();
@@ -56,7 +63,10 @@ export function useCheckoutBooking({
       if (!fullName.trim() || !phoneNumber.trim()) {
         throw new Error(t('checkout.errors.guestDetailsRequired'));
       }
-      if (!hasBankDetails) {
+      // #697: pay-on-arrival bookings collect nothing at checkout —
+      // the traveller pays the agency on site, so bank details and a
+      // proof are not part of this flow at all.
+      if (!hasBankDetails && !payOnArrival) {
         throw new Error(t('checkout.errors.bankDetailsMissing'));
       }
       // B9: never create a booking without the explicit acceptance —
@@ -100,6 +110,11 @@ export function useCheckoutBooking({
                   .map(([addOnId, quantity]) => ({ addOnId, quantity })),
               }
             : {}),
+          // Batch F: payment-shape elections + pickup choice — the
+          // API validates them against the session/template facts.
+          ...(payLater ? { payLater: true } : {}),
+          ...(payOnArrival ? { payOnArrival: true } : {}),
+          ...(pickupPointId ? { pickupPointId } : {}),
         }, {
           headers: { 'Idempotency-Key': bookingIdempotencyKey },
         });

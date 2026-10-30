@@ -31,6 +31,8 @@ export default function CheckoutPage() {
     ? parsedGuestsCount
     : null;
   const [proofFile, setProofFile] = useState<File | null>(null);
+  // Batch F: render-stable "now" for the pay-later deadline preview.
+  const [nowMs] = useState(() => Date.now());
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [selectedSessionOverride, setSelectedSessionId] = useState<string | null>(null);
   const [guestCountOverride, setGuestCount] = useState<number | null>(null);
@@ -42,6 +44,10 @@ export default function CheckoutPage() {
   // recomputes all amounts from the agency's stored prices).
   const [pricingSelection, setPricingSelection] = useState<PricingSelectionState>({ variantId: null, addOns: {} });
   const retryBookingId = searchParams.get('retryBooking');
+  // Batch F elections from the trip page (#694/#696/#697/#701).
+  const payLaterElection = searchParams.get('payLater') === '1';
+  const payOnArrivalElection = searchParams.get('payOnArrival') === '1';
+  const pickupFromQuery = searchParams.get('pickup');
 
   useEffect(() => {
     return () => {
@@ -93,10 +99,17 @@ export default function CheckoutPage() {
   // #695: with a variant/add-on selection the displayed total is the
   // selection total (server recomputes it authoritatively at booking).
   const pricingTotals = trip ? computePricingTotal(trip, sessionPrice, guestCount, pricingSelection) : null;
-  const totalPrice = pricingTotals?.hasSelection ? pricingTotals.total : sessionPrice * guestCount;
+  // #694: a private session's price is per-group — never × guests.
+  const isPrivateCheckout = (selectedSession as { sessionKind?: string } | undefined)?.sessionKind === 'PRIVATE';
+  const totalPrice = pricingTotals?.hasSelection
+    ? pricingTotals.total
+    : isPrivateCheckout
+      ? sessionPrice
+      : sessionPrice * guestCount;
   // #369: staged sessions collect only the deposit at checkout; the
   // balance is requested after the trip is confirmed.
-  const stagedSession = isStagedSession(selectedSession) ? selectedSession : null;
+  // #694: private sessions never use the staged min-group display.
+  const stagedSession = !isPrivateCheckout && isStagedSession(selectedSession) ? selectedSession : null;
   const baseStagedAmounts = stagedSession ? getStagedAmounts(stagedSession, guestCount) : null;
   // #695: the deposit cap (30%) applies to the FINAL total when a
   // pricing selection repriced the booking — same rule as the API.
@@ -127,6 +140,9 @@ export default function CheckoutPage() {
     proofFile,
     termsAccepted,
     pricingSelection,
+    payLater: payLaterElection,
+    payOnArrival: payOnArrivalElection,
+    pickupPointId: pickupFromQuery,
   });
 
   const clearProof = () => {
@@ -198,6 +214,27 @@ export default function CheckoutPage() {
                   onChange={setPricingSelection}
                   language={i18n.language}
                 />
+                {payOnArrivalElection ? (
+                  <div className="rounded-2xl border border-sky-200 bg-sky-50 dark:bg-sky-500/10 p-5 text-sm" data-testid="checkout-pay-on-arrival">
+                    <p className="font-bold text-foreground">{t('batchF.payOnArrivalBadge')}</p>
+                    <p className="mt-1 text-muted-foreground">
+                      {t('batchF.payOnArrivalNote', { agency: trip.agency?.legalName ?? trip.agency?.companyName ?? t('batchF.theAgency') })}
+                    </p>
+                  </div>
+                ) : payLaterElection ? (
+                  <div className="rounded-2xl border border-sky-200 bg-sky-50 dark:bg-sky-500/10 p-5 text-sm" data-testid="checkout-pay-later">
+                    <p className="font-bold text-foreground">{t('batchF.payLaterBadge')}</p>
+                    <p className="mt-1 text-muted-foreground">
+                      {t('batchF.payLaterNote', {
+                        agency: trip.agency?.legalName ?? trip.agency?.companyName ?? t('batchF.theAgency'),
+                        date: selectedSession
+                          ? new Date(Math.min(nowMs + ((selectedSession as { payLaterHoldHours?: number | null }).payLaterHoldHours ?? 48) * 3600_000, new Date(selectedSession.startDate).getTime())).toLocaleDateString(i18n.language)
+                          : '',
+                      })}
+                    </p>
+                  </div>
+                ) : null}
+                {!payOnArrivalElection ? (
                 <CheckoutPayment
                   bankDetails={bankDetails}
                   hasBankDetails={hasBankDetails}
@@ -215,6 +252,7 @@ export default function CheckoutPage() {
                     language: i18n.language,
                   } : null}
                 />
+                ) : null}
               </CardContent>
             </Card>
 

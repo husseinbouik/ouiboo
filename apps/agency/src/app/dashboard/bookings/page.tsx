@@ -34,6 +34,7 @@ import Link from 'next/link';
 import { PaymentProofReviewModal } from '@/components/PaymentProofReviewModal';
 import { usePaymentProofReview } from '@/components/usePaymentProofReview';
 import { useAttendanceMarking } from '@/components/useAttendanceMarking';
+import { usePayOnArrivalConfirm } from '@/components/usePayOnArrivalConfirm';
 import { getAgencyBookingStatusMeta, getAgencyPaymentStatusMeta, getAgencyProofStatusLabel, formatCurrency, formatLocalDate, canMarkAttendance } from '@ouiboo/utils';
 import { Pagination } from '@ouiboo/ui';
 import { TableBodySkeleton } from '@/components/Skeletons';
@@ -67,6 +68,9 @@ export default function BookingsManager() {
 
   // #434: attendance recording (attended / no-show) per booking.
   const { markAttendance, isMarkingAttendance, attendanceError } = useAttendanceMarking();
+
+  // #697: pay-on-arrival confirmation (agency-committed, pay on site).
+  const { confirmPayOnArrival, isConfirmingPayOnArrival } = usePayOnArrivalConfirm();
 
   const bookings = result?.data ?? [];
   const bookingsPagination = result?.pagination ?? null;
@@ -235,6 +239,20 @@ export default function BookingsManager() {
                       )}
                     </td>
                     <td className="px-6 py-5 text-end">
+                      {booking.payOnArrival && (booking.status === BookingStatus.Pending || booking.status === BookingStatus.AwaitingValidation) && (
+                        <div className="mb-2 flex flex-col items-end gap-1">
+                          <span className="text-[11px] font-bold text-foreground">{t('batchF.payOnArrivalBooking')}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isConfirmingPayOnArrival}
+                            onClick={() => confirmPayOnArrival(booking.id)}
+                            data-testid="confirm-pay-on-arrival"
+                          >
+                            {t('batchF.confirmPayOnArrival')}
+                          </Button>
+                        </div>
+                      )}
                       {canMarkAttendance(booking) && (
                         <div className="mb-2 flex justify-end gap-2">
                           <Button

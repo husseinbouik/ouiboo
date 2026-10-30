@@ -120,30 +120,30 @@
     }
   },
   "modelFaq": {
-      "title": "How Ouiboo works",
-      "intro": "Ouiboo is the technology that connects you with travel agencies. Ouiboo does not sell trips, and you always pay the agency directly — Ouiboo never holds your money.",
-      "items": {
-          "whoSells": {
-              "question": "Who sells my trip?",
-              "answer": "The agency sells and organises your trip. Ouiboo provides the technology for finding, booking and managing it."
-          },
-          "payDirect": {
-              "question": "Who do I pay?",
-              "answer": "You pay the agency directly — never Ouiboo. Ouiboo never holds your money."
-          },
-          "stagedPayments": {
-              "question": "How do payments work?",
-              "answer": "For group trips, you pay a deposit of at most 30% directly to the agency. The balance is only requested after the group minimum is confirmed. If the minimum is not reached, the agency refunds your deposit."
-          },
-          "refunds": {
-              "question": "Who refunds me?",
-              "answer": "The agency that sold you the trip is responsible for refunds — it is the refund obligor. Ouiboo helps you follow the case and monitors the deadlines, but the refund itself is paid by the agency."
-          },
-          "verification": {
-              "question": "How are agencies checked?",
-              "answer": "Before an agency can publish trips, its travel licence and insurance are checked. Each agency and trip page shows the licence status, its expiry date and the date it was verified, and the date its insurance was verified."
-          }
+    "title": "How Ouiboo works",
+    "intro": "Ouiboo is the technology that connects you with travel agencies. Ouiboo does not sell trips, and you always pay the agency directly — Ouiboo never holds your money.",
+    "items": {
+      "whoSells": {
+        "question": "Who sells my trip?",
+        "answer": "The agency sells and organises your trip. Ouiboo provides the technology for finding, booking and managing it."
+      },
+      "payDirect": {
+        "question": "Who do I pay?",
+        "answer": "You pay the agency directly — never Ouiboo. Ouiboo never holds your money."
+      },
+      "stagedPayments": {
+        "question": "How do payments work?",
+        "answer": "For group trips, you pay a deposit of at most 30% directly to the agency. The balance is only requested after the group minimum is confirmed. If the minimum is not reached, the agency refunds your deposit."
+      },
+      "refunds": {
+        "question": "Who refunds me?",
+        "answer": "The agency that sold you the trip is responsible for refunds — it is the refund obligor. Ouiboo helps you follow the case and monitors the deadlines, but the refund itself is paid by the agency."
+      },
+      "verification": {
+        "question": "How are agencies checked?",
+        "answer": "Before an agency can publish trips, its travel licence and insurance are checked. Each agency and trip page shows the licence status, its expiry date and the date it was verified, and the date its insurance was verified."
       }
+    }
   },
   "principles": {
     "preTitle": "Our product principles",
@@ -453,6 +453,25 @@
           "a": "Not yet — bookings are not open during the closed beta. Join the waitlist to be told when they open."
         }
       ]
+    },
+    "layerB": {
+      "liveInventoryTitle": "Trips in {{city}}",
+      "tripCount": "{{count}} trip(s) from verified agencies",
+      "agencyCount": "{{count}} verified agency(ies)",
+      "reviewAggregate": "{{rating}} average from {{count}} verified reviews",
+      "reviewsCount": "{{count}} verified review(s)",
+      "viewTrip": "View trip",
+      "fromPrice": "From",
+      "categoryTitle": "{{category}} in {{city}}",
+      "backToCity": "All trips in {{city}}",
+      "categoryNames": {
+        "ADVENTURE": "Adventure",
+        "CULTURAL": "Culture",
+        "LUXURY": "Luxury",
+        "BUDGET": "Budget",
+        "NATURE": "Nature"
+      },
+      "freeCancellation": "Free cancellation up to {{days}} days before"
     }
   },
   "beta": {
