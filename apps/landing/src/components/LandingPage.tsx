@@ -17,6 +17,15 @@ import { CookiePreferencesButton } from './AnalyticsConsent'
 // (founder removal) and no North/city framing anywhere (founder removal —
 // Ouiboo is Morocco-wide; city names appear only as facts of content: a
 // trip's own destination and the photo credit).
+//
+// Polish round (#735 follow-up, founder phone review): the photo credit
+// moved from an absolute overlay into the hero flow (it rendered squeezed
+// under the header on mobile), the verification panel gets airier mobile
+// type/spacing, the showcase is a scroll-snap rail below lg (3-across
+// grid on desktop), and the section colours run through --hw-* CSS
+// variables so the next-themes `.dark` class (system default — there is
+// no toggle; the app follows prefers-color-scheme) renders a true dark
+// page. Hero and the navy agency block are fixed by design in both.
 
 // Fail production builds that are missing the cross-app URLs (#347):
 // NEXT_PUBLIC_* values are inlined at build time, so a missing var would
@@ -35,11 +44,10 @@ if (
 const NAVY = '#0A192F'
 const DEEP = '#060D1A'
 const ORANGE = '#FF6B35'
-const ORANGE_DARK = '#E04E1A'
-const SAND = '#F6F1E6'
-const LINE = '#E3DAC4'
-const MUTED = '#5B6B82'
-const INK = '#14263F'
+// The remaining section colours live in the --hw-* variables at the
+// bottom of this file (light values = the approved design; .dark set =
+// the next-themes dark rendering). NAVY/DEEP/ORANGE stay constants:
+// the hero, the agency block and the footer are navy in both themes.
 
 function ShieldCheck({ className = 'h-[19px] w-[19px]' }: { className?: string }) {
   return (
@@ -110,7 +118,7 @@ export default function LandingPage() {
   ]
 
   return (
-    <div className="bg-white font-sans" style={{ color: INK }}>
+    <div className="hw-root font-sans" style={{ backgroundColor: 'var(--hw-page)', color: 'var(--hw-ink)' }}>
       {/* ---------- Header (absolute over the hero, per the design) ---------- */}
       <header className="absolute inset-x-0 top-0 z-20 text-white">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-5">
@@ -196,7 +204,7 @@ export default function LandingPage() {
             style={{ background: 'linear-gradient(to top, rgba(6,13,26,.78) 0%, rgba(6,13,26,0) 34%)' }}
           />
           <div className="relative z-[2] mx-auto max-w-[1200px] px-6">
-            <div className="max-w-[824px] pb-[72px] pt-[126px] max-sm:pb-[76px] max-sm:pt-[108px]">
+            <div className="max-w-[824px] pb-9 pt-[126px] max-sm:pt-[108px]">
               <span className="inline-flex items-center gap-[9px] rounded-full border border-white/[0.22] bg-[#0A192F]/[0.66] py-2 pe-4 ps-3 text-[13.5px] font-semibold backdrop-blur-[6px]">
                 <span
                   className="h-[9px] w-[9px] rounded-full"
@@ -239,36 +247,39 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
-          <div className="absolute bottom-4 end-[22px] z-[3] rounded-full bg-[#060D1A]/[0.45] px-[11px] py-[5px] text-[12.5px] text-white/[0.85] backdrop-blur-[4px] max-sm:start-6 max-sm:end-auto">
-            {t('hw.hero.photoCredit')}
+          <div className="relative z-[2] mx-auto flex max-w-[1200px] justify-end px-6 pb-5">
+            <span className="rounded-full bg-[#060D1A]/[0.45] px-[11px] py-[5px] text-[12.5px] text-white/[0.85] backdrop-blur-[4px]">
+              {t('hw.hero.photoCredit')}
+            </span>
           </div>
         </section>
 
         {/* ---------- 2 · Showcase ---------- */}
-        <section id="guides" className="pb-[92px] pt-[84px] max-sm:py-16" style={{ backgroundColor: SAND }}>
+        <section id="guides" className="pb-[92px] pt-[84px] max-sm:py-16" style={{ backgroundColor: 'var(--hw-sand)' }}>
           <div className="mx-auto max-w-[1200px] px-6">
             <div id="showcase" className="mb-10 flex flex-wrap items-end justify-between gap-[30px]">
               <div className="max-w-[720px]">
-                <div className="text-xs font-bold uppercase tracking-[0.16em]" style={{ color: ORANGE_DARK }}>
+                <div className="text-xs font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--hw-accent)' }}>
                   {t('hw.showcase.eyebrow')}
                 </div>
-                <h2 className="mb-3 mt-3 text-[clamp(1.7rem,3.2vw,2.35rem)] font-extrabold leading-[1.15] tracking-[-0.015em]" style={{ color: NAVY }}>
+                <h2 className="mb-3 mt-3 text-[clamp(1.7rem,3.2vw,2.35rem)] font-extrabold leading-[1.15] tracking-[-0.015em]" style={{ color: 'var(--hw-heading)' }}>
                   {t('hw.showcase.title')}
                 </h2>
-                <p className="text-[16.5px]" style={{ color: MUTED }}>
+                <p className="text-[16.5px]" style={{ color: 'var(--hw-muted)' }}>
                   {t('hw.showcase.intro')}
                 </p>
               </div>
-              <div className="max-w-[340px] rounded-[14px] border bg-white p-[13px_18px] text-sm" style={{ borderColor: LINE, color: MUTED }}>
-                <b style={{ color: NAVY }}>{t('hw.showcase.noteLead')}</b> {t('hw.showcase.note')}
+              <div className="max-w-[340px] rounded-[14px] border p-[13px_18px] text-sm" style={{ backgroundColor: 'var(--hw-card)', borderColor: 'var(--hw-line)', color: 'var(--hw-muted)' }}>
+                <b style={{ color: 'var(--hw-heading)' }}>{t('hw.showcase.noteLead')}</b> {t('hw.showcase.note')}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-[26px] max-lg:mx-auto max-lg:max-w-[520px] lg:grid-cols-3">
+            <div className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-6 px-6 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mx-0 lg:grid lg:grid-cols-3 lg:gap-[26px] lg:overflow-visible lg:px-0 lg:pb-0">
               {SHOWCASE.map((card) => (
                 <article
                   key={card.key}
-                  className="flex flex-col overflow-hidden rounded-[20px] bg-white shadow-[0_18px_40px_-18px_rgba(10,25,47,.25)]"
+                  className="flex w-[82vw] max-w-[340px] shrink-0 snap-start flex-col overflow-hidden rounded-[20px] shadow-[0_18px_40px_-18px_rgba(10,25,47,.25)] lg:w-auto lg:max-w-none"
+                  style={{ backgroundColor: 'var(--hw-card)' }}
                 >
                   <div className="relative aspect-[16/10] overflow-hidden">
                     <Image
@@ -281,10 +292,10 @@ export default function LandingPage() {
                     />
                   </div>
                   <div className="flex flex-1 flex-col gap-[9px] p-[22px_22px_20px]">
-                    <div className="text-xs font-bold uppercase tracking-[0.13em]" style={{ color: ORANGE_DARK }}>
+                    <div className="text-xs font-bold uppercase tracking-[0.13em]" style={{ color: 'var(--hw-accent)' }}>
                       {t(`hw.showcase.cards.${card.key}.dest`)}
                     </div>
-                    <h3 className="text-[19.5px] font-bold leading-[1.3]" style={{ color: NAVY }}>
+                    <h3 className="text-[19.5px] font-bold leading-[1.3]" style={{ color: 'var(--hw-heading)' }}>
                       {t(`hw.showcase.cards.${card.key}.title`)}
                     </h3>
                     <div className="flex flex-wrap gap-2">
@@ -292,7 +303,7 @@ export default function LandingPage() {
                         <span
                           key={tag}
                           className="rounded-full border px-[10px] py-1 text-xs font-semibold"
-                          style={{ backgroundColor: SAND, borderColor: LINE, color: INK }}
+                          style={{ backgroundColor: 'var(--hw-sand)', borderColor: 'var(--hw-line)', color: 'var(--hw-ink)' }}
                         >
                           {tag}
                         </span>
@@ -307,17 +318,17 @@ export default function LandingPage() {
                         {card.initials}
                       </span>
                       <span>
-                        <span className="block text-[14.5px] font-semibold leading-tight" style={{ color: NAVY }}>
+                        <span className="block text-[14.5px] font-semibold leading-tight" style={{ color: 'var(--hw-heading)' }}>
                           {AGENCY_NAME}
                         </span>
-                        <span className="block text-[12.5px] leading-tight" style={{ color: MUTED }}>
+                        <span className="block text-[12.5px] leading-tight" style={{ color: 'var(--hw-muted)' }}>
                           {t('hw.showcase.organiser')} · {t(`hw.showcase.cards.${card.key}.city`)}
                         </span>
                       </span>
                     </div>
                     <div
                       className="flex items-start gap-2 rounded-[11px] border p-[10px_12px] text-[12.8px] leading-[1.45]"
-                      style={{ backgroundColor: '#FBF8F1', borderColor: LINE, color: MUTED }}
+                      style={{ backgroundColor: 'var(--hw-checkline)', borderColor: 'var(--hw-line)', color: 'var(--hw-muted)' }}
                     >
                       <ShieldCheck className="mt-[1px] h-4 w-4 shrink-0" />
                       <span>{t('hw.showcase.checkLine')}</span>
@@ -325,9 +336,9 @@ export default function LandingPage() {
                     <a
                       href={`${travelerUrl}/trip/${card.tripId}?lang=${currentLang}`}
                       className="mt-auto border-t pt-3 text-[14.5px] font-semibold"
-                      style={{ borderColor: '#F0EADB', color: NAVY }}
+                      style={{ borderColor: 'var(--hw-divider)', color: 'var(--hw-heading)' }}
                     >
-                      {t('hw.showcase.viewTrip')} <span style={{ color: ORANGE_DARK }}><Arrow /></span>
+                      {t('hw.showcase.viewTrip')} <span style={{ color: 'var(--hw-accent)' }}><Arrow /></span>
                     </a>
                   </div>
                 </article>
@@ -335,17 +346,17 @@ export default function LandingPage() {
             </div>
 
             <div className="mt-[42px] flex flex-wrap items-center gap-[14px]">
-              <span className="text-[15px] font-semibold" style={{ color: NAVY }}>
+              <span className="text-[15px] font-semibold" style={{ color: 'var(--hw-heading)' }}>
                 {t('hw.showcase.guidesLabel')}
               </span>
               <Link
                 href="/guides"
                 className="rounded-full border-[1.5px] px-[18px] py-[9px] text-[14.5px] font-semibold transition-colors"
-                style={{ borderColor: NAVY, color: NAVY }}
+                style={{ borderColor: 'var(--hw-heading)', color: 'var(--hw-heading)' }}
               >
                 {t('hw.showcase.guidesCta')} <Arrow />
               </Link>
-              <a href="#how" className="ms-[6px] text-[14.5px] font-semibold" style={{ color: ORANGE_DARK }}>
+              <a href="#how" className="ms-[6px] text-[14.5px] font-semibold" style={{ color: 'var(--hw-accent)' }}>
                 {t('hw.showcase.verifyLink')} <Arrow />
               </a>
             </div>
@@ -356,13 +367,13 @@ export default function LandingPage() {
         <section id="how" className="py-[92px] max-sm:py-16">
           <div className="mx-auto max-w-[1200px] px-6">
             <div className="mb-11 max-w-[720px]">
-              <div className="text-xs font-bold uppercase tracking-[0.16em]" style={{ color: ORANGE_DARK }}>
+              <div className="text-xs font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--hw-accent)' }}>
                 {t('hw.how.eyebrow')}
               </div>
-              <h2 className="mb-3 mt-3 text-[clamp(1.7rem,3.2vw,2.35rem)] font-extrabold leading-[1.15] tracking-[-0.015em]" style={{ color: NAVY }}>
+              <h2 className="mb-3 mt-3 text-[clamp(1.7rem,3.2vw,2.35rem)] font-extrabold leading-[1.15] tracking-[-0.015em]" style={{ color: 'var(--hw-heading)' }}>
                 {t('hw.how.title')}
               </h2>
-              <p className="text-[16.5px]" style={{ color: MUTED }}>
+              <p className="text-[16.5px]" style={{ color: 'var(--hw-muted)' }}>
                 {t('hw.how.intro')}
               </p>
             </div>
@@ -378,64 +389,64 @@ export default function LandingPage() {
                       {i + 1}
                     </span>
                     <div>
-                      <h3 className="mb-[5px] text-[18.5px] font-bold" style={{ color: NAVY }}>
+                      <h3 className="mb-[5px] text-[18.5px] font-bold" style={{ color: 'var(--hw-heading)' }}>
                         {t(`hw.how.steps.${step}.title`)}
                       </h3>
-                      <p className="max-w-[480px] text-[15.5px]" style={{ color: MUTED }}>
+                      <p className="max-w-[480px] text-[15.5px]" style={{ color: 'var(--hw-muted)' }}>
                         {t(`hw.how.steps.${step}.text`)}
                       </p>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="rounded-[20px] border bg-[#F3F7FC] p-[28px_28px_24px]" style={{ borderColor: '#DCE6F2' }}>
-                <h3 className="mb-4 flex items-center gap-[10px] text-[19px] font-bold" style={{ color: NAVY }}>
+              <div className="rounded-[20px] border p-[28px_28px_24px]" style={{ backgroundColor: 'var(--hw-panel)', borderColor: 'var(--hw-panel-border)' }}>
+                <h3 className="mb-4 flex items-center gap-[10px] text-[19px] font-bold" style={{ color: 'var(--hw-heading)' }}>
                   <svg viewBox="0 0 24 24" fill="none" className="h-[22px] w-[22px]" aria-hidden="true">
-                    <path d="M12 3l7 2.6v5.2c0 4.6-3 7.7-7 9.2-4-1.5-7-4.6-7-9.2V5.6L12 3z" fill={NAVY} />
+                    <path d="M12 3l7 2.6v5.2c0 4.6-3 7.7-7 9.2-4-1.5-7-4.6-7-9.2V5.6L12 3z" style={{ fill: 'var(--hw-heading)' }} />
                     <path d="M9 11.6l2.1 2.1 4-4.2" stroke={ORANGE} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                   {t('hw.how.panel.title')}
                 </h3>
-                <ul className="flex flex-col gap-[14px] text-[15px]" style={{ color: INK }}>
+                <ul className="flex flex-col gap-[14px] text-[15px] leading-[1.6] max-lg:gap-5 max-lg:text-base max-lg:leading-[1.65]" style={{ color: 'var(--hw-ink)' }}>
                   {(['licence', 'insurance', 'registration'] as const).map((item) => (
                     <li key={item} className="flex items-start gap-[11px]">
                       <span
                         className="mt-[2px] flex h-[21px] w-[21px] shrink-0 items-center justify-center rounded-full text-xs text-white"
-                        style={{ backgroundColor: NAVY }}
+                        style={{ backgroundColor: 'var(--hw-chip)' }}
                         aria-hidden="true"
                       >
                         ✓
                       </span>
                       <span>
-                        <b style={{ color: NAVY }}>{t(`hw.how.panel.items.${item}.label`)}</b> —{' '}
+                        <b style={{ color: 'var(--hw-heading)' }}>{t(`hw.how.panel.items.${item}.label`)}</b> —{' '}
                         {t(`hw.how.panel.items.${item}.text`)}
                       </span>
                     </li>
                   ))}
                 </ul>
-                <div className="mt-5 rounded-[13px] border bg-white p-[14px_16px]" style={{ borderColor: '#B9C9DE' }}>
-                  <div className="mb-[9px] font-display text-[13.5px] font-bold tracking-[0.02em]" style={{ color: NAVY }}>
+                <div className="mt-5 rounded-[13px] border p-[14px_16px] max-lg:mt-7 max-lg:p-[18px_18px_16px]" style={{ backgroundColor: 'var(--hw-record)', borderColor: 'var(--hw-record-border)' }}>
+                  <div className="mb-[9px] font-display text-[13.5px] font-bold tracking-[0.02em] max-lg:mb-3 max-lg:text-[15px]" style={{ color: 'var(--hw-heading)' }}>
                     {t('hw.how.panel.recordTitle')}
                   </div>
-                  <div className="flex flex-col gap-[7px] text-[13.8px] leading-[1.6]" style={{ color: MUTED }}>
+                  <div className="flex flex-col gap-[7px] text-[13.8px] leading-[1.6] max-lg:gap-[11px] max-lg:text-[15px] max-lg:leading-[1.7]" style={{ color: 'var(--hw-muted)' }}>
                     <div>
-                      <b className="font-semibold" style={{ color: NAVY }}>
+                      <b className="font-semibold" style={{ color: 'var(--hw-heading)' }}>
                         {t('hw.how.panel.recordLicenceLabel')}
                       </b>{' '}
                       — {t('hw.how.panel.recordLicence')}
                     </div>
                     <div>
-                      <b className="font-semibold" style={{ color: NAVY }}>
+                      <b className="font-semibold" style={{ color: 'var(--hw-heading)' }}>
                         {t('hw.how.panel.recordInsuranceLabel')}
                       </b>{' '}
                       — {t('hw.how.panel.recordInsurance')}
                     </div>
-                    <div className="mt-[3px] border-t pt-[9px] text-[13px]" style={{ borderColor: '#E1EAF4' }}>
+                    <div className="mt-[3px] border-t pt-[9px] text-[13px] max-lg:mt-2 max-lg:pt-3 max-lg:text-sm" style={{ borderColor: 'var(--hw-line)' }}>
                       {t('hw.how.panel.recordNote')}
                     </div>
                   </div>
                 </div>
-                <Link href="/verification" className="mt-4 inline-block text-[15px] font-semibold" style={{ color: ORANGE_DARK }}>
+                <Link href="/verification" className="mt-4 inline-block text-[15px] font-semibold" style={{ color: 'var(--hw-accent)' }}>
                   {t('hw.how.panel.panelLink')} <Arrow />
                 </Link>
               </div>
@@ -492,16 +503,16 @@ export default function LandingPage() {
         </section>
 
         {/* ---------- 5 · Transparency FAQ ---------- */}
-        <section id="faq" className="py-[92px] max-sm:py-16" style={{ backgroundColor: SAND }}>
+        <section id="faq" className="py-[92px] max-sm:py-16" style={{ backgroundColor: 'var(--hw-sand)' }}>
           <div className="mx-auto max-w-[1200px] px-6">
             <div className="mb-11 max-w-[720px]">
-              <div className="text-xs font-bold uppercase tracking-[0.16em]" style={{ color: ORANGE_DARK }}>
+              <div className="text-xs font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--hw-accent)' }}>
                 {t('hw.faq.eyebrow')}
               </div>
-              <h2 className="mb-3 mt-3 text-[clamp(1.7rem,3.2vw,2.35rem)] font-extrabold leading-[1.15] tracking-[-0.015em]" style={{ color: NAVY }}>
+              <h2 className="mb-3 mt-3 text-[clamp(1.7rem,3.2vw,2.35rem)] font-extrabold leading-[1.15] tracking-[-0.015em]" style={{ color: 'var(--hw-heading)' }}>
                 {t('hw.faq.title')}
               </h2>
-              <p className="text-[16.5px]" style={{ color: MUTED }}>
+              <p className="text-[16.5px]" style={{ color: 'var(--hw-muted)' }}>
                 {t('hw.faq.intro')}
               </p>
             </div>
@@ -510,24 +521,24 @@ export default function LandingPage() {
                 <details
                   key={key}
                   open={i === 0}
-                  className="hw-faq rounded-2xl border bg-white px-6"
-                  style={{ borderColor: LINE }}
+                  className="hw-faq rounded-2xl border px-6"
+                  style={{ backgroundColor: 'var(--hw-card)', borderColor: 'var(--hw-line)' }}
                 >
                   <summary
                     className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-display text-[17px] font-bold [&::-webkit-details-marker]:hidden"
-                    style={{ color: NAVY }}
+                    style={{ color: 'var(--hw-heading)' }}
                   >
                     {t(`hw.faq.items.${key}.q`)}
                     <span
                       className="hw-faq-plus flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full border-[1.5px] text-lg font-semibold"
-                      style={{ borderColor: LINE, color: ORANGE_DARK }}
+                      style={{ borderColor: 'var(--hw-line)', color: 'var(--hw-accent)' }}
                       aria-hidden="true"
                     >
                       +
                     </span>
                   </summary>
-                  <div className="max-w-[700px] pb-[22px] text-[15.5px]" style={{ color: MUTED }}>
-                    <b style={{ color: NAVY }}>{t(`hw.faq.items.${key}.lead`)}</b>
+                  <div className="max-w-[700px] pb-[22px] text-[15.5px]" style={{ color: 'var(--hw-muted)' }}>
+                    <b style={{ color: 'var(--hw-heading)' }}>{t(`hw.faq.items.${key}.lead`)}</b>
                     {t(`hw.faq.items.${key}.rest`)}
                   </div>
                 </details>
@@ -622,6 +633,43 @@ export default function LandingPage() {
       </footer>
 
       <style jsx global>{`
+        /* #735 polish: theme variables for the Honest Window sections.
+           Light values reproduce the approved design exactly; the .dark
+           set is applied by next-themes (system preference) on <html>. */
+        .hw-root {
+          --hw-page: #ffffff;
+          --hw-sand: #f6f1e6;
+          --hw-card: #ffffff;
+          --hw-panel: #f3f7fc;
+          --hw-panel-border: #dce6f2;
+          --hw-record: #ffffff;
+          --hw-record-border: #b9c9de;
+          --hw-checkline: #fbf8f1;
+          --hw-line: #e3dac4;
+          --hw-divider: #f0eadb;
+          --hw-ink: #14263f;
+          --hw-heading: #0a192f;
+          --hw-muted: #5b6b82;
+          --hw-accent: #e04e1a;
+          --hw-chip: #0a192f;
+        }
+        .dark .hw-root {
+          --hw-page: #060d1a;
+          --hw-sand: #0e2447;
+          --hw-card: #142c50;
+          --hw-panel: #0c2142;
+          --hw-panel-border: #24405f;
+          --hw-record: #091830;
+          --hw-record-border: #33537e;
+          --hw-checkline: #0c2142;
+          --hw-line: #31507a;
+          --hw-divider: #24405f;
+          --hw-ink: #d9e3f0;
+          --hw-heading: #ffffff;
+          --hw-muted: #a3b5cc;
+          --hw-accent: #ff8c5a;
+          --hw-chip: #ff6b35;
+        }
         .hw-faq[open ] .hw-faq-plus {
           background-color: ${ORANGE};
           border-color: ${ORANGE};
