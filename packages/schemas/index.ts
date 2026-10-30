@@ -98,7 +98,9 @@ export const ItineraryDaySchema = z.object({
 export const MeetingPointSchema = z.object({
     address: z.string().max(300).optional().nullable(),
     mapsUrl: z.string().url().max(1000).optional().nullable(),
-    pickupAvailable: z.boolean().optional().default(false),
+    // No .default(): a Zod input/output divergence here breaks the
+    // agency wizard's react-hook-form resolver typing.
+    pickupAvailable: z.boolean().optional(),
 });
 
 /** #675: destination slugs come from the BETA_DESTINATIONS configuration. */
