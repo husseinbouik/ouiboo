@@ -127,7 +127,8 @@ export default function AgencyStorefront({
       {shareUrl && (
         <div className="mt-4 flex items-center gap-4">
           {qrDataUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
+            <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={qrDataUrl}
               alt={t('agency.storefrontQrAlt')}
@@ -136,6 +137,7 @@ export default function AgencyStorefront({
               className="rounded-lg border border-border"
               data-testid="agency-storefront-qr"
             />
+            </>
           )}
           <div className="min-w-0">
             <p className="text-sm font-medium">{t('agency.storefrontShare')}</p>
