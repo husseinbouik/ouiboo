@@ -64,6 +64,14 @@ export class AgencyPublicController {
             verificationStatus: effectiveVerificationStatus(agency),
             legalName: agency.legalName,
             licenceVerified,
+            // #673 (Council S6): the dated verification statement needs
+            // the licence STATUS and EXPIRY alongside the verified-at
+            // stamp (previously only the stamp was exposed). The expiry
+            // is a public seller fact while the licence is verified;
+            // it stays withheld for an unverified licence, like the
+            // number and issue data above.
+            travelLicenceStatus: effectiveLicenceStatus(agency),
+            licenceExpiry: licenceVerified ? agency.licenceExpiry : null,
             travelLicenceType: licenceVerified ? agency.travelLicenceType : null,
             travelLicenceNumber: licenceVerified ? agency.travelLicenceNumber : null,
             licenceIssuedAt: licenceVerified ? agency.licenceIssuedAt : null,

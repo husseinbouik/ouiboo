@@ -7,6 +7,7 @@ import '../../lib/i18n';
 import { apiClient } from '@/lib/api-client';
 import { isSupportEmailConfigured, supportMailto } from '@/lib/support';
 import { NORMAL_SUPPORT_RESPONSE_HOURS } from '@ouiboo/utils';
+import { ModelExplainer } from '@/components/ModelExplainer';
 
 /**
  * #446 (Council P2-07): the help centre.
@@ -123,6 +124,10 @@ export default function HelpCentrePage() {
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
+
+        {/* #678 (Council S6): the model explainer + general FAQ, on the
+            help page as well as landing and checkout. */}
+        <ModelExplainer className="mt-12" />
 
         <section aria-label={t('help.faqTitle')} className="mt-10">
           <h2 className="text-2xl font-bold text-foreground">{t('help.faqTitle')}</h2>

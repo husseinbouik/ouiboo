@@ -180,7 +180,7 @@
     "secureTitle": "Paiements directs",
     "secureDescription": "Vous payez l'agence directement — Ouiboo ne détient jamais votre argent.",
     "verifiedTitle": "Détails de la licence de l'agence",
-    "verifiedDescription": "Numéro de licence fourni par l'agence — non vérifié de manière indépendante par Ouiboo.",
+    "verifiedDescription": "La licence et l'assurance de chaque agence sont vérifiées par Ouiboo. Chaque page de voyage et d'agence indique le statut de la licence, sa date d'expiration et la date de sa vérification, ainsi que la date de vérification de l'assurance.",
     "instantTitle": "Demandes de réservation",
     "instantDescription": "Envoyez une demande de réservation et l'agence confirmera la disponibilité. Aucun frais caché."
   },
@@ -345,8 +345,8 @@
     "spots_one": "{{count}} place",
     "spots_other": "{{count}} places",
     "soldOut": "Complet",
-    "verifiedAgency": "Numéro de licence fourni par l'agence — non vérifié de manière indépendante",
     "licenceChecked": "Licence vérifiée le {{date}}",
+    "licenceValidUntil": "Licence valable jusqu'au {{date}}",
     "insuranceEvidenced": "Assurance RC justifiée le {{date}}",
     "agencyPending": "Agence en attente",
     "days_one": "{{count}} jour",
@@ -382,7 +382,8 @@
   },
   "agency": {
     "notFoundTitle": "Agence introuvable",
-    "verifiedTitle": "Numéro de licence fourni par l'agence — non vérifié de manière indépendante",
+    "verifiedTitle": "Agence vérifiée — licence et assurance vérifiées par Ouiboo, avec les dates affichées sur cette page",
+    "reviewsPolicy": "Avis : nous n'importons, n'achetons ni ne créons jamais d'avis — chaque avis Ouiboo provient d'un voyage terminé. Le nombre d'avis est toujours affiché, et une note moyenne n'apparaît qu'à partir de 5 avis pour un voyage.",
     "noTrips": "Aucun voyage actif trouvé pour cette agence."
   },
   "featuredPage": {
@@ -499,6 +500,7 @@
     "licenceDetailsPending": "Les détails de délivrance de la licence sont en cours de confirmation auprès de l'agence.",
     "licenceNotConfirmed": "Détails de la licence non encore confirmés — renseignez-vous auprès de l'agence avant de payer.",
     "licenceChecked": "Document de licence vérifié le {{date}}",
+    "licenceValidUntil": "Licence valable jusqu'au {{date}}",
     "insuranceEvidenced": "Assurance RC justifiée le {{date}}",
     "poweredBy": "Propulsé par OuiBoo"
   },
@@ -581,6 +583,8 @@
       "loading": "Chargement des avis...",
       "noReviewsYet": "Pas encore d'avis",
       "beFirst": "Soyez le premier à partager votre expérience !",
+      "emptyIntegrity": "Pas encore d'avis — nous n'importons, n'achetons ni ne créons jamais d'avis ; chaque avis Ouiboo provient d'un voyage terminé.",
+      "belowThreshold": "Avis publiés : {{count}} — une moyenne n'est affichée qu'à partir de {{min}} avis ; aucune moyenne n'est donc affichée pour le moment.",
       "sortBy": "Trier par :",
       "sortRecent": "Plus récents",
       "sortHighest": "Meilleures notes",
@@ -688,6 +692,32 @@
     "escalationWhatsApp": "WhatsApp",
     "helpCentre": "Centre d'aide",
     "helpCentreBody": "Recherchez dans les questions fréquentes ou ouvrez un ticket d'assistance — votre ticket est enregistré et traité dans les délais de l'assistance normale."
+  },
+  "modelExplainer": {
+    "title": "Comment fonctionne Ouiboo",
+    "intro": "Ouiboo est la technologie qui vous met en relation avec des agences de voyage. Ouiboo ne vend pas de voyages, et vous payez toujours l'agence directement — Ouiboo ne détient jamais votre argent.",
+    "items": {
+      "whoSells": {
+        "question": "Qui vend mon voyage ?",
+        "answer": "L'agence vend et organise votre voyage. Ouiboo fournit la technologie pour le trouver, le réserver et le gérer."
+      },
+      "payDirect": {
+        "question": "Qui est-ce que je paie ?",
+        "answer": "Vous payez l'agence directement — jamais Ouiboo. Ouiboo ne détient jamais votre argent."
+      },
+      "stagedPayments": {
+        "question": "Comment fonctionnent les paiements ?",
+        "answer": "Pour les voyages en groupe, vous versez à l'agence, directement, un acompte de 30 % au maximum. Le solde n'est demandé qu'après la confirmation du minimum de participants du groupe. Si ce minimum n'est pas atteint, l'agence vous rembourse votre acompte."
+      },
+      "refunds": {
+        "question": "Qui me rembourse ?",
+        "answer": "L'agence qui vous a vendu le voyage est responsable des remboursements — c'est elle la débitrice du remboursement. Ouiboo vous aide à suivre le dossier et surveille les délais, mais le remboursement lui-même est versé par l'agence."
+      },
+      "verification": {
+        "question": "Comment les agences sont-elles vérifiées ?",
+        "answer": "Avant qu'une agence puisse publier des voyages, sa licence de voyage et son assurance sont vérifiées. Chaque page d'agence et de voyage indique le statut de la licence, sa date d'expiration et la date de sa vérification, ainsi que la date de vérification de l'assurance."
+      }
+    }
   },
   "help": {
     "backToSupport": "Retour à l'assistance",

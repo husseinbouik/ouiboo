@@ -8,11 +8,12 @@ import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { cn } from '@ouiboo/ui/utils';
-import { SessionStatus, type SessionStatusType, VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
+import { SessionStatus, type SessionStatusType, type VerificationStatusType } from '@ouiboo/types';
 import { WishlistButton } from './WishlistButton';
 import { SnapRail } from './SnapRail';
 import { useDisplayPrice } from '@/lib/display-currency';
 import { tripCoverViewTransitionName } from '@/lib/view-transition';
+import { ratingDisplayState } from '@/lib/review-display';
 
 export interface TripCardTrip {
   id: string;
@@ -46,6 +47,9 @@ export interface TripCardTrip {
     /** #413 (Council B10): what+when verification statement fields. */
     travelLicenceStatus?: string;
     licenceVerifiedAt?: string | null;
+    /** #673 (Council S6): licence expiry rides along so the card can
+     * state status + expiry + verified-at, never the old hedge. */
+    licenceExpiry?: string | null;
     insuranceStatus?: string;
     insuranceVerifiedAt?: string | null;
   } | null;
@@ -83,12 +87,13 @@ export function TripCard({ trip }: TripCardProps) {
   // rate exists the hook falls back to this authoritative currency.
   // Display only — checkout still charges priceCurrency.
   const displayPrice = useDisplayPrice(minPrice, priceCurrency, i18n.language);
-  const isAgencyVerified = trip.agency?.verificationStatus === VerificationStatus.Verified;
-
-  // #413 (Council B10): the what+when verification statement. Each part is
-  // present only when that check actually passed and carries its real date;
-  // with no dated check on record the card falls back to the plain
-  // disclaimer text (never a shield, never a bare "verified" claim).
+  // #413 (Council B10) + #673 (Council S6): the dated what+when
+  // verification statement. Each part is present only when that check
+  // actually passed and carries its real date (and, for the licence,
+  // its expiry). With no dated check on record the card renders NO
+  // verification line at all — the old hedge ("Licence number provided
+  // by the agency — not independently verified") is retired: no date,
+  // no claim.
   const formatCheckDate = (value?: string | null) => {
     if (!value) return null;
     const date = new Date(value);
@@ -96,8 +101,13 @@ export function TripCard({ trip }: TripCardProps) {
       ? null
       : new Intl.DateTimeFormat(i18n.language || 'en', { dateStyle: 'medium' }).format(date);
   };
+  const licenceExpiryDate = (() => {
+    if (!trip.agency?.licenceExpiry) return null;
+    const date = new Date(trip.agency.licenceExpiry);
+    return Number.isNaN(date.getTime()) || date.getTime() <= Date.now() ? null : date;
+  })();
   const licenceCheckedDate =
-    trip.agency?.travelLicenceStatus === 'VERIFIED'
+    trip.agency?.travelLicenceStatus === 'VERIFIED' && (!trip.agency?.licenceExpiry || licenceExpiryDate)
       ? formatCheckDate(trip.agency?.licenceVerifiedAt)
       : null;
   const insuranceEvidencedDate =
@@ -106,6 +116,9 @@ export function TripCard({ trip }: TripCardProps) {
       : null;
   const verificationChecks = [
     licenceCheckedDate ? t('tripCard.licenceChecked', { date: licenceCheckedDate }) : null,
+    licenceCheckedDate && licenceExpiryDate
+      ? t('tripCard.licenceValidUntil', { date: formatCheckDate(trip.agency?.licenceExpiry) })
+      : null,
     insuranceEvidencedDate ? t('tripCard.insuranceEvidenced', { date: insuranceEvidencedDate }) : null,
   ].filter((part): part is string => Boolean(part));
 
@@ -201,25 +214,31 @@ export function TripCard({ trip }: TripCardProps) {
         <div className="space-y-3 flex-1">
           <div className="flex justify-between items-start gap-3">
             <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-tight">{trip.title}</h3>
+            {/* #681 (Council S6): an average is a claim — it renders only
+                at/above MIN_REVIEWS_FOR_RATING reviews. Below that the
+                count is still published (even when small); at zero the
+                card says "No reviews yet" instead of a bare 0.0. */}
             <div className="flex items-center gap-1 shrink-0 bg-warning/10 px-2 py-0.5 rounded-md">
-              <Star className={cn("h-3.5 w-3.5 text-warning", trip.reviewCount ? "fill-warning" : "fill-none")} />
+              <Star className={cn("h-3.5 w-3.5 text-warning", ratingDisplayState(trip.reviewCount) === 'rated' ? "fill-warning" : "fill-none")} />
               <span className="text-xs font-bold text-warning-dark">
-                {trip.reviewCount ? Number(trip.averageRating || 0).toFixed(1) : t('tripCard.new')}
+                {ratingDisplayState(trip.reviewCount) === 'rated'
+                  ? `${Number(trip.averageRating || 0).toFixed(1)} · ${t('reviews.count', { count: trip.reviewCount ?? 0 })}`
+                  : ratingDisplayState(trip.reviewCount) === 'below-threshold'
+                    ? t('reviews.count', { count: trip.reviewCount ?? 0 })
+                    : t('reviews.noReviewsYet')}
               </span>
             </div>
           </div>
 
           {/* #317: public cards never display an internal approval state.
-              #413 (Council B10): no ShieldCheck beside disclaimer text and
-              no bare "verified" badge — the dated what+when statement when
-              the checks are on record, else the plain disclaimer as text. */}
+              #413 (Council B10) + #673 (Council S6): no ShieldCheck beside
+              disclaimer text and no bare "verified" badge — only the dated
+              what+when statement when the checks are on record; without a
+              dated check on record there is no verification line at all
+              (the old hedge copy is retired). */}
           {verificationChecks.length > 0 ? (
             <p className="text-[11px] font-medium text-muted-foreground">
               {verificationChecks.join(' · ')}
-            </p>
-          ) : isAgencyVerified ? (
-            <p className="text-[11px] font-medium text-muted-foreground">
-              {t('tripCard.verifiedAgency')}
             </p>
           ) : null}
           

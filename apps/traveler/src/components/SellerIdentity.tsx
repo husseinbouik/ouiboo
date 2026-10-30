@@ -134,6 +134,17 @@ export default function SellerIdentity({
             t('seller.licenceChecked', { date, defaultValue: `Licence document checked on ${date}` }),
         );
     }
+    // #673 (Council S6): the dated statement also carries the licence
+    // expiry, so the traveller sees status + expiry + verified-at
+    // together — never the old "provided by the agency — not
+    // independently verified" hedge.
+    const licenceExpiryDate = licenceVerified ? toValidDate(agency.licenceExpiry) : null;
+    if (licenceExpiryDate) {
+        const date = formatDate(licenceExpiryDate);
+        checks.push(
+            t('seller.licenceValidUntil', { date, defaultValue: `Licence valid until ${date}` }),
+        );
+    }
     if (insuranceEvidencedDate) {
         const date = formatDate(insuranceEvidencedDate);
         checks.push(

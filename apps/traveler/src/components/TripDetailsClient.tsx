@@ -35,6 +35,7 @@ import { SnapRail } from '@/components/SnapRail';
 import { PhotoViewer } from '@/components/PhotoViewer';
 import { TripMosaic } from '@/components/TripMosaic';
 import { useDisplayAmountConverter } from '@/lib/display-currency';
+import { MIN_REVIEWS_FOR_RATING, ratingDisplayState } from '@/lib/review-display';
 
 type TripDay = {
   dayNumber: number;
@@ -340,9 +341,11 @@ export default function TripDetailsClient({
                     <div className="flex flex-wrap items-center gap-6">
                         <div className="flex items-center gap-1.5 bg-yellow-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span className="font-bold text-sm text-amber-700 dark:text-yellow-400">{reviewStats?.totalReviews ? (reviewStats.averageRating ?? 0).toFixed(1) : t('tripDetails.newTrip')}</span>
-                            {/* #579: at zero reviews show the localised
-                                "No reviews yet", not a "(0 reviews)" count. */}
+                            {/* #681 (Council S6): the average renders only
+                                at/above the 5-review threshold; below it the
+                                count is published without an average, and at
+                                zero the localised "No reviews yet" (#579). */}
+                            <span className="font-bold text-sm text-amber-700 dark:text-yellow-400">{ratingDisplayState(reviewStats?.totalReviews) === 'rated' ? (reviewStats?.averageRating ?? 0).toFixed(1) : ratingDisplayState(reviewStats?.totalReviews) === 'below-threshold' ? t('tripDetails.reviewsCount', { count: reviewStats?.totalReviews ?? 0 }) : t('tripDetails.newTrip')}</span>
                             <span className="text-xs text-amber-700 dark:text-yellow-400/70 font-medium">{reviewStats?.totalReviews ? t('tripDetails.reviewsCount', { count: reviewStats.totalReviews }) : t('reviews.noReviewsYet')}</span>
                         </div>
                         {/* #468: share this trip (native sheet / intent menu).
@@ -567,8 +570,19 @@ export default function TripDetailsClient({
                  </Badge>
                </div>
                
+               {/* #681 (Council S6): below the 5-review threshold the
+                   count is published with an explicit note, but NO
+                   average and NO distribution are displayed. */}
+               {reviewStats && reviewStats.totalReviews > 0 && ratingDisplayState(reviewStats.totalReviews) === 'below-threshold' && (
+                 <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6" data-testid="reviews-below-threshold">
+                   <p className="text-sm text-muted-foreground">
+                     {t('reviews.belowThreshold', { count: reviewStats.totalReviews, min: MIN_REVIEWS_FOR_RATING })}
+                   </p>
+                 </div>
+               )}
+
                {/* Rating Summary */}
-               {reviewStats && reviewStats.totalReviews > 0 && (
+               {reviewStats && ratingDisplayState(reviewStats.totalReviews) === 'rated' && (
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                    {/* Average Rating Display */}
                    <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6 space-y-4">
