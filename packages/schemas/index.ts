@@ -1,7 +1,10 @@
 import { z } from "zod";
 import {
+    AccommodationType,
+    BETA_DESTINATIONS,
     BookingPaymentStatus,
     BookingStatus,
+    ItineraryMeal,
     PaymentMethod,
     PaymentProvider,
     RefundStatus,
@@ -79,7 +82,31 @@ export const ItineraryDaySchema = z.object({
     title: z.string().optional(),
     description: z.string(),
     activities: z.array(z.string()),
+    // #676 (Council S6): language-neutral slice — all optional.
+    distanceKm: z.number().nonnegative().max(10000).optional().nullable(),
+    driveTimeMinutes: z.number().int().nonnegative().max(10080).optional().nullable(),
+    mealsIncluded: z.array(z.nativeEnum(ItineraryMeal)).max(3).optional(),
+    accommodationName: z.string().max(200).optional().nullable(),
+    accommodationType: z.nativeEnum(AccommodationType).optional().nullable(),
 });
+
+/**
+ * #676: structured meeting point { address, mapsUrl, pickupAvailable }
+ * alongside startLocation. The address is a proper noun/address text —
+ * never localised, never a language map.
+ */
+export const MeetingPointSchema = z.object({
+    address: z.string().max(300).optional().nullable(),
+    mapsUrl: z.string().url().max(1000).optional().nullable(),
+    // No .default(): a Zod input/output divergence here breaks the
+    // agency wizard's react-hook-form resolver typing.
+    pickupAvailable: z.boolean().optional(),
+});
+
+/** #675: destination slugs come from the BETA_DESTINATIONS configuration. */
+export const DestinationSlugSchema = z.enum(
+    BETA_DESTINATIONS.map((d) => d.slug) as [string, ...string[]],
+);
 
 export const CreateItineraryDaySchema = ItineraryDaySchema.omit({
     id: true,
@@ -171,6 +198,11 @@ export const TripTemplateSchema = z.object({
     translations: TripTranslationsSchema.optional(),
     category: z.nativeEnum(TripCategory),
     startLocation: z.string(),
+    // #675: normalised destination (config slugs); omitted = derived
+    // from startLocation by the API.
+    destinationSlug: DestinationSlugSchema.optional().nullable(),
+    // #676: structured meeting point alongside startLocation.
+    meetingPoint: MeetingPointSchema.optional().nullable(),
     endLocation: z.string().optional(),
     durationDays: z.number().int().positive(),
     durationNights: z.number().int().nonnegative(),

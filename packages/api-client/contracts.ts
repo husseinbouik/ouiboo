@@ -57,6 +57,8 @@ export interface TripsQueryParams extends PageParams {
   locale?: string
   category?: TripCategory | string
   agencyId?: string
+  /** #675: destination facet — a slug from the BETA_DESTINATIONS config. */
+  destination?: string
   priceMin?: number
   priceMax?: number
   durationMin?: number
@@ -97,6 +99,14 @@ export interface CreateTripInput {
   description: string
   category: TripCategory | string
   startLocation: string
+  /** #675: destination slug from the BETA_DESTINATIONS config. */
+  destinationSlug?: string | null
+  /** #676: structured meeting point alongside startLocation. */
+  meetingPoint?: {
+    address?: string | null
+    mapsUrl?: string | null
+    pickupAvailable: boolean
+  } | null
   durationDays: number
   durationNights: number
   inclusions?: string[]
@@ -109,6 +119,12 @@ export interface CreateTripInput {
     title?: string
     description: string
     activities?: string[]
+    /** #676: language-neutral day facts. */
+    distanceKm?: number | null
+    driveTimeMinutes?: number | null
+    mealsIncluded?: string[]
+    accommodationName?: string | null
+    accommodationType?: string | null
   }>
 }
 

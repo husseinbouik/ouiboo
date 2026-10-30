@@ -256,6 +256,67 @@ export enum TripCategory {
     Nature = "NATURE",
 }
 
+/**
+ * #676 (Council S6): language-neutral itinerary facts. Meals and
+ * accommodation types are enums (never language maps); distance/drive
+ * time are numbers; the accommodation name is a proper noun.
+ */
+export enum ItineraryMeal {
+    Breakfast = "BREAKFAST",
+    Lunch = "LUNCH",
+    Dinner = "DINNER",
+}
+
+export type ItineraryMealType = ItineraryMeal;
+
+export enum AccommodationType {
+    Hotel = "HOTEL",
+    Riad = "RIAD",
+    Guesthouse = "GUESTHOUSE",
+    Camp = "CAMP",
+    Hostel = "HOSTEL",
+    Other = "OTHER",
+}
+
+export type AccommodationTypeType = AccommodationType;
+
+/**
+ * #676: the structured meeting point, stored on the trip template
+ * alongside startLocation (the departure city/area). Public
+ * pre-booking payloads expose the AREA ONLY (see PublicMeetingPoint);
+ * the exact address + maps link travel only on booking responses.
+ */
+export interface MeetingPoint {
+    address?: string | null;
+    mapsUrl?: string | null;
+    pickupAvailable: boolean;
+}
+
+/** #676: what pre-booking surfaces may show of a meeting point. */
+export interface PublicMeetingPoint {
+    area: string | null;
+    pickupAvailable: boolean;
+}
+
+/**
+ * #675 (Council S6): the destination taxonomy AS CONFIGURATION —
+ * exactly the 3 beta-cluster destinations. `slug` is the stored /
+ * queried value; `aliases` are the free-text startLocation spellings
+ * (EN/FR/AR + local variants) the API derivation and the backfill
+ * migration match against. Adding a destination later is a config
+ * change here plus translations — no schema change.
+ */
+export interface DestinationConfig {
+    slug: string;
+    aliases: string[];
+}
+
+export const BETA_DESTINATIONS: readonly DestinationConfig[] = [
+    { slug: 'tangier', aliases: ['tangier', 'tanger', 'طنجة'] },
+    { slug: 'tetouan', aliases: ['tetouan', 'tétouan', 'tetuan', 'تطوان'] },
+    { slug: 'chefchaouen', aliases: ['chefchaouen', 'chaouen', 'شفشاون'] },
+] as const;
+
 export interface ItineraryDay {
     id: string;
     templateId: string;
@@ -263,6 +324,12 @@ export interface ItineraryDay {
     title?: string;
     description: string;
     activities: string[];
+    /** #676: language-neutral day facts (all optional). */
+    distanceKm?: number | null;
+    driveTimeMinutes?: number | null;
+    mealsIncluded?: ItineraryMeal[];
+    accommodationName?: string | null;
+    accommodationType?: AccommodationType | null;
 }
 
 /**
@@ -322,6 +389,11 @@ export interface TripTemplate {
     description: string;
     category: TripCategory;
     startLocation: string;
+    /** #675: normalised destination slug (BETA_DESTINATIONS config). */
+    destinationSlug?: string | null;
+    /** #676: structured meeting point (full shape on agency/booking
+     * payloads; public trip payloads carry PublicMeetingPoint). */
+    meetingPoint?: MeetingPoint | PublicMeetingPoint | null;
     endLocation?: string;
     durationDays: number;
     durationNights: number;
@@ -484,6 +556,10 @@ export interface BookingTemplateSummary {
     /** #332: alt text per image (index-aligned); may be absent. */
     imageAlts?: string[];
     startLocation: string;
+    /** #676: the FULL structured meeting point — booking responses are
+     * the one traveller surface allowed to carry the exact address and
+     * maps link (the traveller holding the booking is the audience). */
+    meetingPoint?: MeetingPoint | null;
     title: string;
 }
 

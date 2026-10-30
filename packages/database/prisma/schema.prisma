@@ -104,6 +104,23 @@ enum TripCategory {
   NATURE
 }
 
+// #676 (Council S6): language-neutral itinerary facts — enums, never
+// language maps. Meals a day includes; the night's accommodation type.
+enum ItineraryMeal {
+  BREAKFAST
+  LUNCH
+  DINNER
+}
+
+enum AccommodationType {
+  HOTEL
+  RIAD
+  GUESTHOUSE
+  CAMP
+  HOSTEL
+  OTHER
+}
+
 enum BookingStatus {
   PENDING
   AWAITING_VALIDATION
@@ -500,6 +517,16 @@ model TripTemplate {
   description        String
   category           TripCategory
   startLocation      String
+  // #675 (Council S6): normalised destination — a slug from the
+  // BETA_DESTINATIONS configuration in @ouiboo/types (exactly tangier /
+  // tetouan / chefchaouen for the beta). Derived from startLocation on
+  // write when not supplied; backfilled by the batch-B migration.
+  destinationSlug    String?
+  // #676 (Council S6): structured meeting point
+  // { address, mapsUrl, pickupAvailable } alongside startLocation.
+  // Public payloads expose the area only; the full structure rides on
+  // agency-owned and booking responses.
+  meetingPoint       Json?
   endLocation        String?
   durationDays       Int
   durationNights     Int
@@ -547,6 +574,7 @@ model TripTemplate {
   @@index([agencyId, status, createdAt])
   @@index([status, featured])
   @@index([category, status])
+  @@index([destinationSlug, status])
   @@index([createdAt])
   @@index([status, currency, startingPrice])
 }
@@ -559,6 +587,14 @@ model ItineraryDay {
   title       String?
   description String
   activities  String[]
+  // #676 (Council S6): language-neutral slice — all optional. Distance
+  // and drive time are numbers, meals/accommodation type are enums,
+  // and the accommodation name is a proper noun (never a language map).
+  distanceKm        Float?
+  driveTimeMinutes  Int?
+  mealsIncluded     ItineraryMeal[]    @default([])
+  accommodationName String?
+  accommodationType AccommodationType?
 
   @@unique([templateId, dayNumber])
 }

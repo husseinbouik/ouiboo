@@ -1,5 +1,22 @@
 import { BookingPaymentStatus, BookingStatus, PaymentMethod, SessionStatus, VerificationStatus } from '@ouiboo/types';
-import { mapBookingDetails, resolveBankConfirmation } from './booking-response.util';
+import { mapBookingDetails, normalizeBookingMeetingPoint, resolveBankConfirmation } from './booking-response.util';
+
+describe('normalizeBookingMeetingPoint (#676)', () => {
+  it('passes the full structure through for the booking view (exact address + maps link)', () => {
+    expect(normalizeBookingMeetingPoint({
+      address: '  Place du 9 Avril, Tanger ',
+      mapsUrl: ' https://maps.example/x ',
+      pickupAvailable: true,
+    })).toEqual({ address: 'Place du 9 Avril, Tanger', mapsUrl: 'https://maps.example/x', pickupAvailable: true });
+  });
+
+  it('degrades malformed or empty values to null', () => {
+    expect(normalizeBookingMeetingPoint(null)).toBeNull();
+    expect(normalizeBookingMeetingPoint('a string')).toBeNull();
+    expect(normalizeBookingMeetingPoint({ pickupAvailable: false })).toBeNull();
+    expect(normalizeBookingMeetingPoint({ address: '  ' })).toBeNull();
+  });
+});
 
 describe('mapBookingDetails', () => {
   it('returns the canonical booking shape with nested traveler, payment proof, and session template data', () => {
@@ -45,6 +62,7 @@ describe('mapBookingDetails', () => {
           id: 'template-1',
           title: 'Atlas Trek',
           startLocation: 'Marrakech',
+          meetingPoint: { address: 'Gare routière, Marrakech', mapsUrl: 'https://maps.example/gare', pickupAvailable: false },
           images: ['cover.jpg'],
           agency: {
             id: 'agency-1',
@@ -72,6 +90,8 @@ describe('mapBookingDetails', () => {
         template: {
           id: 'template-1',
           title: 'Atlas Trek',
+          // #676: booking responses carry the FULL meeting point.
+          meetingPoint: { address: 'Gare routière, Marrakech', mapsUrl: 'https://maps.example/gare', pickupAvailable: false },
           agency: {
             id: 'agency-1',
             companyName: 'Atlas Adventures',

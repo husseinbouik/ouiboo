@@ -149,6 +149,9 @@ type BookingMapperInput = {
        * present when the caller loaded the full template row. */
       translations?: unknown;
       startLocation: string;
+      /** #676: structured meeting point (Json) — full shape, exposed
+       * on booking responses only (public trip payloads are area-only). */
+      meetingPoint?: unknown;
       /** #417: stored cancellation bands (Json); legacy-snapshot fallback. */
       cancellationPolicy?: unknown;
       images: string[];
@@ -164,6 +167,23 @@ type BookingMapperInput = {
       } | null;
     };
   };
+};
+
+/**
+ * #676: normalize the stored meeting-point Json for a booking
+ * response. Deliberately local (no BadRequest path — a malformed
+ * legacy value degrades to null instead of failing the booking read).
+ */
+export const normalizeBookingMeetingPoint = (
+  raw: unknown,
+): { address: string | null; mapsUrl: string | null; pickupAvailable: boolean } | null => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const record = raw as Record<string, unknown>;
+  const address = typeof record.address === 'string' && record.address.trim() ? record.address.trim() : null;
+  const mapsUrl = typeof record.mapsUrl === 'string' && record.mapsUrl.trim() ? record.mapsUrl.trim() : null;
+  const pickupAvailable = record.pickupAvailable === true;
+  if (!address && !mapsUrl && !pickupAvailable) return null;
+  return { address, mapsUrl, pickupAvailable };
 };
 
 const toIsoString = (value: NullableDate) => {
@@ -359,6 +379,10 @@ export const mapBookingDetails = (
             ).title
           : booking.session.template.title,
       startLocation: booking.session.template.startLocation,
+      // #676: the booking view is where the exact meeting address and
+      // maps link appear — normalized from the stored structure, null
+      // when the trip carries none.
+      meetingPoint: normalizeBookingMeetingPoint(booking.session.template.meetingPoint),
       images: booking.session.template.images,
       imageAlts: booking.session.template.imageAlts,
       agency: {
