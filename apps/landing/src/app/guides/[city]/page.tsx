@@ -112,12 +112,12 @@ export default async function GuideCityPage({
 
         <section className="mt-12 rounded-3xl border border-border bg-card p-7 shadow-sm">
           <p className="leading-7 text-muted-foreground">{shared.waitlistNote}</p>
-          <a
+          <Link
             href="/#waitlist"
             className="mt-4 inline-block rounded-md bg-deep-blue px-6 py-3 text-base font-semibold text-white shadow-sm"
           >
             {shared.waitlistCta}
-          </a>
+          </Link>
           <p className="mt-6">
             <Link href={VERIFICATION_PATH} className="font-semibold text-orange-700 hover:underline">
               {shared.verificationLink}
