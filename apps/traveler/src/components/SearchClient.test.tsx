@@ -66,6 +66,7 @@ jest.mock('@/components/TripCard', () => ({
 
 const initialFilters: SearchInitialFilters = {
   category: 'ADVENTURE',
+  destination: '',
   duration: '',
   priceMax: '900',
   searchQuery: 'atlas',
@@ -159,6 +160,37 @@ describe('SearchClient URL-as-source-of-truth (#440)', () => {
     expect(params.startDateFrom).toBeUndefined();
     expect(params.available).toBeUndefined();
     expect(params.ratingMin).toBeUndefined();
+  });
+
+  it('parses destination + duration facets from the URL and sends them to the API (#675)', () => {
+    currentParams = new URLSearchParams('destination=tetouan&duration=4-7');
+    render(<SearchClient initialFilters={{ ...initialFilters, destination: 'tetouan', duration: '4-7' }} initialResponse={null} />);
+    const params = lastQueryParams();
+    expect(params.destination).toBe('tetouan');
+    expect(params.durationMin).toBe(4);
+    expect(params.durationMax).toBe(7);
+  });
+
+  it('ignores an unknown destination slug and an unknown duration bucket (#675)', () => {
+    currentParams = new URLSearchParams('destination=fes&duration=forever');
+    render(<SearchClient initialFilters={initialFilters} initialResponse={null} />);
+    const params = lastQueryParams();
+    expect(params.destination).toBeUndefined();
+    expect(params.durationMin).toBeUndefined();
+    expect(params.durationMax).toBeUndefined();
+  });
+
+  it('clicking a destination facet writes destination + duration into the URL, keeping the rest (#675)', () => {
+    render(<SearchClient initialFilters={initialFilters} initialResponse={null} />);
+    fireEvent.click(screen.getAllByText('search.destinationNames.chefchaouen')[0]);
+    const afterDestination = new URLSearchParams(lastReplaceUrl().split('?')[1]);
+    expect(afterDestination.get('destination')).toBe('chefchaouen');
+    expect(afterDestination.get('q')).toBe('atlas');
+
+    fireEvent.click(screen.getAllByText('search.durationBuckets.2-3')[0]);
+    const afterDuration = new URLSearchParams(lastReplaceUrl().split('?')[1]);
+    expect(afterDuration.get('duration')).toBe('2-3');
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   it('debounces the text echo by 300ms and writes q via replace, preserving other filters', () => {

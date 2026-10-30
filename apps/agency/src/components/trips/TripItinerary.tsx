@@ -19,8 +19,25 @@ type Props = {
  * `translations.<lang>.itinerary[i]` (positionally aligned here, the
  * API stamps the canonical dayNumber at the write boundary).
  */
+import { AccommodationType, ItineraryMeal } from '@ouiboo/types';
+
+const MEAL_OPTIONS = [
+  { value: ItineraryMeal.Breakfast, labelKey: 'trips.create.mealBreakfast' },
+  { value: ItineraryMeal.Lunch, labelKey: 'trips.create.mealLunch' },
+  { value: ItineraryMeal.Dinner, labelKey: 'trips.create.mealDinner' },
+] as const;
+
+const ACCOMMODATION_TYPES = [
+  AccommodationType.Hotel,
+  AccommodationType.Riad,
+  AccommodationType.Guesthouse,
+  AccommodationType.Camp,
+  AccommodationType.Hostel,
+  AccommodationType.Other,
+] as const;
+
 export function TripItinerary({ t, form }: Props) {
-  const { register, errors, itineraryFields, appendDay } = form;
+  const { register, errors, itineraryFields, appendDay, watch, setValue } = form;
   const [activeLanguage, setActiveLanguage] = useState<ContentLanguageCode>(DEFAULT_CONTENT_LANGUAGE);
   const dir = contentLanguageDir(activeLanguage);
 
@@ -62,6 +79,86 @@ export function TripItinerary({ t, form }: Props) {
                       placeholder={t('trips.create.dayDescriptionPlaceholder')}
                     ></textarea>
                     <input type="hidden" {...register(`itinerary.${index}.dayNumber`, { valueAsNumber: true })} />
+                  </div>
+                  {/* #676: the language-neutral slice — numbers, enums
+                      and a proper noun; shared by every language, so
+                      it is edited here on the canonical tab only. All
+                      optional: gaps become a publish-time completeness
+                      nudge, never a block. */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground">{t('trips.create.dayDistanceKm')}</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.1"
+                        {...register(`itinerary.${index}.distanceKm`, {
+                          setValueAs: (value) => (value === '' || value == null || Number.isNaN(Number(value)) ? undefined : Number(value)),
+                        })}
+                        className="h-12"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground">{t('trips.create.dayDriveTimeMinutes')}</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={1}
+                        {...register(`itinerary.${index}.driveTimeMinutes`, {
+                          setValueAs: (value) => (value === '' || value == null || Number.isNaN(Number(value)) ? undefined : Number(value)),
+                        })}
+                        className="h-12"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground">{t('trips.create.dayAccommodationName')}</label>
+                      <Input
+                        {...register(`itinerary.${index}.accommodationName`, {
+                          setValueAs: (value) => (typeof value === 'string' && value.trim() ? value : undefined),
+                        })}
+                        placeholder={t('trips.create.dayAccommodationNamePlaceholder')}
+                        className="h-12"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-foreground">{t('trips.create.dayAccommodationType')}</label>
+                      <select
+                        {...register(`itinerary.${index}.accommodationType`, {
+                          setValueAs: (value) => (value ? (value as AccommodationType) : undefined),
+                        })}
+                        className="w-full h-12 px-4 bg-background border border-border rounded-xl text-sm focus:outline-none text-foreground"
+                      >
+                        <option value="">—</option>
+                        {ACCOMMODATION_TYPES.map((type) => (
+                          <option key={type} value={type}>{t(`trips.create.accommodationTypes.${type}`)}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <span className="text-sm font-semibold text-foreground">{t('trips.create.dayMeals')}</span>
+                    <div className="flex flex-wrap gap-4">
+                      {MEAL_OPTIONS.map((meal) => {
+                        const selected = (watch(`itinerary.${index}.mealsIncluded`) ?? []).includes(meal.value);
+                        return (
+                          <label key={meal.value} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={(event) => {
+                                const current = watch(`itinerary.${index}.mealsIncluded`) ?? [];
+                                const next = event.target.checked
+                                  ? [...current, meal.value]
+                                  : current.filter((value) => value !== meal.value);
+                                setValue(`itinerary.${index}.mealsIncluded`, next, { shouldDirty: true });
+                              }}
+                              className="h-4 w-4 text-primary bg-background border-border focus:ring-primary"
+                            />
+                            <span className="text-sm font-medium text-foreground">{t(meal.labelKey)}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               ) : (

@@ -469,7 +469,20 @@
     "toggleSortOrder": "Changer l’ordre de tri",
     "ascending": "Croissant",
     "descending": "Décroissant",
-    "noTripsHint": "Essayez d’ajuster vos filtres ou de les effacer."
+    "noTripsHint": "Essayez d’ajuster vos filtres ou de les effacer.",
+    "destination": "Destination",
+    "destinationNames": {
+      "tangier": "Tanger",
+      "tetouan": "Tétouan",
+      "chefchaouen": "Chefchaouen"
+    },
+    "duration": "Durée",
+    "durationBuckets": {
+      "1": "1 jour",
+      "2-3": "2–3 jours",
+      "4-7": "4–7 jours",
+      "8+": "8+ jours"
+    }
   },
   "messages": {
     "signInTitle": "Connectez-vous pour voir vos messages",
@@ -577,63 +590,81 @@
     "viewMoreImages_few": "Voir {{count}} images de plus",
     "viewMoreImages_many": "Voir {{count}} images de plus",
     "imageCounter": "{{current}} / {{total}}",
-    "spotsBannerSoldOut": "Ce voyage est complet"
+    "spotsBannerSoldOut": "Ce voyage est complet",
+    "distanceKm": "{{count}} km",
+    "driveTimeHM": "{{hours}} h {{minutes}} min",
+    "driveTimeM": "{{minutes}} min",
+    "meals": {
+      "BREAKFAST": "Petit-déjeuner inclus",
+      "LUNCH": "Déjeuner inclus",
+      "DINNER": "Dîner inclus"
+    },
+    "accommodationTypes": {
+      "HOTEL": "Hôtel",
+      "RIAD": "Riad",
+      "GUESTHOUSE": "Maison d'hôtes",
+      "CAMP": "Campement",
+      "HOSTEL": "Auberge",
+      "OTHER": "Hébergement"
+    },
+    "meetingArea": "Point de rendez-vous : {{area}} (adresse exacte sur votre réservation)",
+    "meetingPickup": "Ramassage disponible"
   },
   "reviews": {
-      "loading": "Chargement des avis...",
-      "noReviewsYet": "Pas encore d'avis",
-      "beFirst": "Soyez le premier à partager votre expérience !",
-      "emptyIntegrity": "Pas encore d'avis — nous n'importons, n'achetons ni ne créons jamais d'avis ; chaque avis Ouiboo provient d'un voyage terminé.",
-      "belowThreshold": "Avis publiés : {{count}} — une moyenne n'est affichée qu'à partir de {{min}} avis ; aucune moyenne n'est donc affichée pour le moment.",
-      "sortBy": "Trier par :",
-      "sortRecent": "Plus récents",
-      "sortHighest": "Meilleures notes",
-      "sortLowest": "Notes les plus basses",
-      "count_one": "{{count}} avis",
-      "count_other": "{{count}} avis",
-      "anonymous": "Anonyme",
-      "verifiedBooking": "Réservation vérifiée",
-      "showLess": "Afficher moins",
-      "readMore": "Lire la suite",
-      "agencyResponse": "Réponse de l'agence",
-      "pageOf": "Page {{page}} sur {{total}}",
-      "previous": "Précédent",
-      "next": "Suivant"
+    "loading": "Chargement des avis...",
+    "noReviewsYet": "Pas encore d'avis",
+    "beFirst": "Soyez le premier à partager votre expérience !",
+    "emptyIntegrity": "Pas encore d'avis — nous n'importons, n'achetons ni ne créons jamais d'avis ; chaque avis Ouiboo provient d'un voyage terminé.",
+    "belowThreshold": "Avis publiés : {{count}} — une moyenne n'est affichée qu'à partir de {{min}} avis ; aucune moyenne n'est donc affichée pour le moment.",
+    "sortBy": "Trier par :",
+    "sortRecent": "Plus récents",
+    "sortHighest": "Meilleures notes",
+    "sortLowest": "Notes les plus basses",
+    "count_one": "{{count}} avis",
+    "count_other": "{{count}} avis",
+    "anonymous": "Anonyme",
+    "verifiedBooking": "Réservation vérifiée",
+    "showLess": "Afficher moins",
+    "readMore": "Lire la suite",
+    "agencyResponse": "Réponse de l'agence",
+    "pageOf": "Page {{page}} sur {{total}}",
+    "previous": "Précédent",
+    "next": "Suivant"
   },
   "refunds": {
     "panelTitle": "Remboursement",
     "defaultOrganiser": "l'organisateur",
     "expectedBy": " Attendu avant le {{date}}.",
-    "requestPrompt": "Besoin d'un remboursement pour cette r\u00e9servation ? Les remboursements sont g\u00e9r\u00e9s par {{agency}}, qui a re\u00e7u votre paiement.",
+    "requestPrompt": "Besoin d'un remboursement pour cette réservation ? Les remboursements sont gérés par {{agency}}, qui a reçu votre paiement.",
     "requestButton": "Demander un remboursement",
-    "trackingLine": "Nous suivons ce remboursement jusqu'\u00e0 ce que l'organisateur le termine.",
-    "nextUpdateOverdue": "Nous relan\u00e7ons l'organisateur \u2014 sans nouvelles, contactez-nous via la page Assistance.",
+    "trackingLine": "Nous suivons ce remboursement jusqu'à ce que l'organisateur le termine.",
+    "nextUpdateOverdue": "Nous relançons l'organisateur — sans nouvelles, contactez-nous via la page Assistance.",
     "status": {
-      "REFUND_REQUESTED": "Demand\u00e9",
+      "REFUND_REQUESTED": "Demandé",
       "ELIGIBILITY_REVIEW": "En cours d'examen",
-      "REFUND_APPROVED": "Approuv\u00e9",
+      "REFUND_APPROVED": "Approuvé",
       "AGENCY_ACTION_REQUIRED": "Action de l'organisateur requise",
       "REFUND_INITIATED": "En cours d'envoi",
-      "REFUND_COMPLETED": "Termin\u00e9",
-      "REFUND_REJECTED": "Non approuv\u00e9",
-      "REFUND_FAILED": "Tentative \u00e9chou\u00e9e",
+      "REFUND_COMPLETED": "Terminé",
+      "REFUND_REJECTED": "Non approuvé",
+      "REFUND_FAILED": "Tentative échouée",
       "REFUND_OVERDUE": "En retard"
     },
     "case": {
-      "requested": "Remboursement de {{amount}} demand\u00e9. {{agency}} examinera votre demande.",
+      "requested": "Remboursement de {{amount}} demandé. {{agency}} examinera votre demande.",
       "underReview": "Votre remboursement de {{amount}} est en cours d'examen.",
-      "approved": "Remboursement de {{amount}} approuv\u00e9. {{agency}} traitera votre remboursement.{{due}}",
+      "approved": "Remboursement de {{amount}} approuvé. {{agency}} traitera votre remboursement.{{due}}",
       "initiated": "Votre remboursement de {{amount}} est en route depuis {{agency}}.",
-      "completed": "Remboursement de {{amount}} effectu\u00e9 par {{agency}}.",
-      "rejected": "Votre demande de remboursement de {{amount}} n'a pas \u00e9t\u00e9 approuv\u00e9e. Contactez {{agency}} pour plus de d\u00e9tails.",
-      "failed": "Une tentative de remboursement par {{agency}} a \u00e9chou\u00e9. Votre dossier reste ouvert et {{agency}} doit r\u00e9essayer.",
-      "overdue": "Votre remboursement de {{amount}} est en retard. Nous relan\u00e7ons {{agency}}.",
+      "completed": "Remboursement de {{amount}} effectué par {{agency}}.",
+      "rejected": "Votre demande de remboursement de {{amount}} n'a pas été approuvée. Contactez {{agency}} pour plus de détails.",
+      "failed": "Une tentative de remboursement par {{agency}} a échoué. Votre dossier reste ouvert et {{agency}} doit réessayer.",
+      "overdue": "Votre remboursement de {{amount}} est en retard. Nous relançons {{agency}}.",
       "unknown": "Statut du remboursement : {{status}}."
     },
-    "paidInFull": "Pay\u00e9 int\u00e9gralement \u2014 acompte et solde confirm\u00e9s par {{agency}}.",
+    "paidInFull": "Payé intégralement — acompte et solde confirmés par {{agency}}.",
     "defaultAgency": "l'agence",
-    "proofAccepted": "Justificatif accept\u00e9 par {{agency}} \u2014 l'agence doit encore confirmer le virement sur son compte bancaire. Votre paiement n'est pas r\u00e9gl\u00e9 avant cela.",
-    "proofReceived": "Justificatif re\u00e7u. {{agency}} doit encore confirmer le virement sur son compte bancaire \u2014 votre paiement n'est pas r\u00e9gl\u00e9 avant cela.",
+    "proofAccepted": "Justificatif accepté par {{agency}} — l'agence doit encore confirmer le virement sur son compte bancaire. Votre paiement n'est pas réglé avant cela.",
+    "proofReceived": "Justificatif reçu. {{agency}} doit encore confirmer le virement sur son compte bancaire — votre paiement n'est pas réglé avant cela.",
     "confirmReceipt": "Confirmer la réception",
     "confirmReceiptHint": "L'organisateur indique que le remboursement a été envoyé. Si l'argent est arrivé sur votre compte, vous pouvez le confirmer ici. La confirmation est facultative : elle aide à clore le dossier, mais un remboursement n'est marqué terminé que sur la confirmation de la banque ou du prestataire de paiement — jamais sur la seule parole de l'organisateur, et votre confirmation ne remplace pas cette vérification.",
     "receiptConfirmed": "Vous avez confirmé la réception le {{date}}.",
@@ -647,12 +678,12 @@
     "actionFailed": "Une erreur est survenue. Veuillez réessayer."
   },
   "paymentPlan": {
-    "depositDue": "Acompte dû : {{amount}} \u2014 payez l'acompte à {{agency}} pour réserver votre place. Ce voyage nécessite au moins {{count}} participants avant le {{date}}.",
-    "depositPaid": "Acompte confirmé par {{agency}}. En attente de la confirmation du voyage \u2014 ce voyage nécessite au moins {{count}} participants avant le {{date}}. Si le minimum n'est pas atteint, votre acompte vous sera remboursé.",
-    "balanceDue": "Voyage confirmé \u2014 solde restant dû : {{amount}}",
+    "depositDue": "Acompte dû : {{amount}} — payez l'acompte à {{agency}} pour réserver votre place. Ce voyage nécessite au moins {{count}} participants avant le {{date}}.",
+    "depositPaid": "Acompte confirmé par {{agency}}. En attente de la confirmation du voyage — ce voyage nécessite au moins {{count}} participants avant le {{date}}. Si le minimum n'est pas atteint, votre acompte vous sera remboursé.",
+    "balanceDue": "Voyage confirmé — solde restant dû : {{amount}}",
     "balancePayBefore": " (à payer avant le {{date}})",
     "uploadBalanceReceipt": "Téléverser le reçu du solde",
-    "refundDue": "Ce voyage n'a pas été confirmé \u2014 la taille minimale du groupe n'a pas été atteinte. Votre acompte de {{amount}} est remboursable ; {{agency}} traitera votre remboursement."
+    "refundDue": "Ce voyage n'a pas été confirmé — la taille minimale du groupe n'a pas été atteinte. Votre acompte de {{amount}} est remboursable ; {{agency}} traitera votre remboursement."
   },
   "rebooking": {
     "title": "Réservez à nouveau auprès d'agences que vous connaissez",
@@ -878,6 +909,9 @@
       "refundInProgress": "Remboursement en cours",
       "failed": "Paiement échoué",
       "unpaid": "Non payé"
-    }
+    },
+    "meetingPoint": "Point de rendez-vous",
+    "meetingPickup": "L'agence propose le ramassage des voyageurs pour ce voyage.",
+    "viewOnMap": "Voir sur la carte"
   }
 }

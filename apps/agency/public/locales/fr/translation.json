@@ -451,7 +451,45 @@
       "cancellationBandLessThan": "Moins de {{days}} jours avant : remboursement de {{percent}} %",
       "structureNote": "Les jours s'ajoutent et s'ordonnent en français, la structure canonique — cet onglet traduit uniquement le texte de chaque jour.",
       "livePreviewEmptyTitle": "Rien à prévisualiser pour le moment",
-      "livePreviewEmptyBody": "Ajoutez un titre, une description, un lieu ou une photo et l’aperçu de votre voyage apparaîtra ici."
+      "livePreviewEmptyBody": "Ajoutez un titre, une description, un lieu ou une photo et l’aperçu de votre voyage apparaîtra ici.",
+      "destination": "Destination",
+      "destinationAuto": "Automatique (depuis le lieu de départ)",
+      "destinationNames": {
+        "tangier": "Tanger",
+        "tetouan": "Tétouan",
+        "chefchaouen": "Chefchaouen"
+      },
+      "meetingPointTitle": "Point de rendez-vous",
+      "meetingPointSubtitle": "Avant la réservation, les voyageurs voient uniquement la zone de départ. L'adresse exacte et le lien carte apparaissent sur la page de réservation. La publication exige une adresse ou un ramassage.",
+      "meetingAddress": "Adresse du rendez-vous",
+      "meetingAddressPlaceholder": "ex. Place du 9 Avril 1947, Tanger",
+      "meetingMapsUrl": "Lien carte",
+      "meetingMapsUrlPlaceholder": "https://maps.google.com/…",
+      "meetingPickup": "Ramassage des voyageurs proposé",
+      "dayDistanceKm": "Distance (km)",
+      "dayDriveTimeMinutes": "Temps de route (minutes)",
+      "dayAccommodationName": "Nom de l'hébergement",
+      "dayAccommodationNamePlaceholder": "ex. Riad Goloboy",
+      "dayAccommodationType": "Type d'hébergement",
+      "accommodationTypes": {
+        "HOTEL": "Hôtel",
+        "RIAD": "Riad",
+        "GUESTHOUSE": "Maison d'hôtes",
+        "CAMP": "Campement",
+        "HOSTEL": "Auberge",
+        "OTHER": "Autre"
+      },
+      "dayMeals": "Repas inclus",
+      "mealBreakfast": "Petit-déjeuner",
+      "mealLunch": "Déjeuner",
+      "mealDinner": "Dîner",
+      "publishScaleRequired": "La publication exige l'échelle d'annulation structurée — définissez les paliers ci-dessus.",
+      "publishMeetingRequired": "La publication exige un point de rendez-vous — ajoutez son adresse ou activez le ramassage (étape 1).",
+      "commercialTermsProhibited": "Les conditions d'annulation ou de paiement en texte libre sont interdites sur un voyage publié — retirez-les et utilisez l'échelle d'annulation structurée.",
+      "completenessDay": "Jour {{day}} : pensez à ajouter {{missing}} (facultatif — une suggestion, pas un blocage).",
+      "nudgeDriveTime": "le temps de route",
+      "nudgeAccommodation": "l'hébergement",
+      "nudgeMeals": "les repas"
     }
   },
   "payments": {

@@ -469,7 +469,20 @@
     "toggleSortOrder": "Toggle sort order",
     "ascending": "Asc",
     "descending": "Desc",
-    "noTripsHint": "Try adjusting your filters or clearing them."
+    "noTripsHint": "Try adjusting your filters or clearing them.",
+    "destination": "Destination",
+    "destinationNames": {
+      "tangier": "Tangier",
+      "tetouan": "Tétouan",
+      "chefchaouen": "Chefchaouen"
+    },
+    "duration": "Duration",
+    "durationBuckets": {
+      "1": "1 day",
+      "2-3": "2–3 days",
+      "4-7": "4–7 days",
+      "8+": "8+ days"
+    }
   },
   "messages": {
     "signInTitle": "Sign in to view your messages",
@@ -577,28 +590,46 @@
     "viewMoreImages_few": "View {{count}} more images",
     "viewMoreImages_many": "View {{count}} more images",
     "imageCounter": "{{current}} / {{total}}",
-    "spotsBannerSoldOut": "This trip is sold out"
+    "spotsBannerSoldOut": "This trip is sold out",
+    "distanceKm": "{{count}} km",
+    "driveTimeHM": "{{hours}} h {{minutes}} min",
+    "driveTimeM": "{{minutes}} min",
+    "meals": {
+      "BREAKFAST": "Breakfast included",
+      "LUNCH": "Lunch included",
+      "DINNER": "Dinner included"
+    },
+    "accommodationTypes": {
+      "HOTEL": "Hotel",
+      "RIAD": "Riad",
+      "GUESTHOUSE": "Guesthouse",
+      "CAMP": "Camp",
+      "HOSTEL": "Hostel",
+      "OTHER": "Accommodation"
+    },
+    "meetingArea": "Meeting point: {{area}} (exact address on your booking)",
+    "meetingPickup": "Pickup available"
   },
   "reviews": {
-      "loading": "Loading reviews...",
-      "noReviewsYet": "No reviews yet",
-      "beFirst": "Be the first to share your experience!",
-      "emptyIntegrity": "No reviews yet — we never import, buy or seed reviews; every Ouiboo review comes from a completed trip.",
-      "belowThreshold": "Reviews so far: {{count}} — an average is shown only from {{min}} reviews, so no average is displayed yet.",
-      "sortBy": "Sort by:",
-      "sortRecent": "Most Recent",
-      "sortHighest": "Highest Rated",
-      "sortLowest": "Lowest Rated",
-      "count_one": "{{count}} review",
-      "count_other": "{{count}} reviews",
-      "anonymous": "Anonymous",
-      "verifiedBooking": "Verified Booking",
-      "showLess": "Show less",
-      "readMore": "Read more",
-      "agencyResponse": "Agency Response",
-      "pageOf": "Page {{page}} of {{total}}",
-      "previous": "Previous",
-      "next": "Next"
+    "loading": "Loading reviews...",
+    "noReviewsYet": "No reviews yet",
+    "beFirst": "Be the first to share your experience!",
+    "emptyIntegrity": "No reviews yet — we never import, buy or seed reviews; every Ouiboo review comes from a completed trip.",
+    "belowThreshold": "Reviews so far: {{count}} — an average is shown only from {{min}} reviews, so no average is displayed yet.",
+    "sortBy": "Sort by:",
+    "sortRecent": "Most Recent",
+    "sortHighest": "Highest Rated",
+    "sortLowest": "Lowest Rated",
+    "count_one": "{{count}} review",
+    "count_other": "{{count}} reviews",
+    "anonymous": "Anonymous",
+    "verifiedBooking": "Verified Booking",
+    "showLess": "Show less",
+    "readMore": "Read more",
+    "agencyResponse": "Agency Response",
+    "pageOf": "Page {{page}} of {{total}}",
+    "previous": "Previous",
+    "next": "Next"
   },
   "refunds": {
     "panelTitle": "Refund",
@@ -607,7 +638,7 @@
     "requestPrompt": "Need a refund for this booking? Refunds are handled by {{agency}}, which received your payment.",
     "requestButton": "Request refund",
     "trackingLine": "We track this refund until the organiser completes it.",
-    "nextUpdateOverdue": "We are following up with the organiser \u2014 if you hear nothing, reach us via the Support page.",
+    "nextUpdateOverdue": "We are following up with the organiser — if you hear nothing, reach us via the Support page.",
     "status": {
       "REFUND_REQUESTED": "Requested",
       "ELIGIBILITY_REVIEW": "Under review",
@@ -630,10 +661,10 @@
       "overdue": "Your refund of {{amount}} is overdue. We are following up with {{agency}}.",
       "unknown": "Refund status: {{status}}."
     },
-    "paidInFull": "Paid in full \u2014 deposit and balance confirmed by {{agency}}.",
+    "paidInFull": "Paid in full — deposit and balance confirmed by {{agency}}.",
     "defaultAgency": "the agency",
-    "proofAccepted": "Proof accepted by {{agency}} \u2014 they still have to confirm the transfer in their bank account. Your payment is not settled until then.",
-    "proofReceived": "Proof received. {{agency}} still has to confirm the transfer in its bank account \u2014 your payment is not settled until then.",
+    "proofAccepted": "Proof accepted by {{agency}} — they still have to confirm the transfer in their bank account. Your payment is not settled until then.",
+    "proofReceived": "Proof received. {{agency}} still has to confirm the transfer in its bank account — your payment is not settled until then.",
     "confirmReceipt": "Confirm receipt",
     "confirmReceiptHint": "The organiser says the refund has been sent. If the money has arrived in your account, you can confirm it here. Confirming is optional: it helps close the case, but the refund is only ever marked completed on the bank's or payment provider's confirmation — never on the organiser's word alone, and your confirmation does not replace that check.",
     "receiptConfirmed": "You confirmed receipt on {{date}}.",
@@ -647,12 +678,12 @@
     "actionFailed": "Something went wrong. Please try again."
   },
   "paymentPlan": {
-    "depositDue": "Deposit due: {{amount}} \u2014 pay the deposit to {{agency}} to secure your spot. This trip needs at least {{count}} participants by {{date}}.",
-    "depositPaid": "Deposit confirmed by {{agency}}. Waiting for trip confirmation \u2014 this trip needs at least {{count}} participants by {{date}}. If the minimum is not reached, your deposit is refunded.",
-    "balanceDue": "Trip confirmed \u2014 remaining balance due: {{amount}}",
+    "depositDue": "Deposit due: {{amount}} — pay the deposit to {{agency}} to secure your spot. This trip needs at least {{count}} participants by {{date}}.",
+    "depositPaid": "Deposit confirmed by {{agency}}. Waiting for trip confirmation — this trip needs at least {{count}} participants by {{date}}. If the minimum is not reached, your deposit is refunded.",
+    "balanceDue": "Trip confirmed — remaining balance due: {{amount}}",
     "balancePayBefore": " (pay before {{date}})",
     "uploadBalanceReceipt": "Upload Balance Receipt",
-    "refundDue": "This trip was not confirmed \u2014 the minimum group size was not reached. Your deposit of {{amount}} is refundable; {{agency}} will process your refund."
+    "refundDue": "This trip was not confirmed — the minimum group size was not reached. Your deposit of {{amount}} is refundable; {{agency}} will process your refund."
   },
   "rebooking": {
     "title": "Book again with agencies you know",
@@ -878,6 +909,9 @@
       "refundInProgress": "Refund in progress",
       "failed": "Payment failed",
       "unpaid": "Unpaid"
-    }
+    },
+    "meetingPoint": "Meeting point",
+    "meetingPickup": "The agency offers traveller pickup for this trip.",
+    "viewOnMap": "View on map"
   }
 }
