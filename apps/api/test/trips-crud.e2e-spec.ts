@@ -381,7 +381,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
                 title: 'Updated Desert Adventure',
                 description: 'New description',
                 status: 'ACTIVE',
-                cancellationPolicy: [{ upToDaysBeforeStart: 30, refundPercent: 100 }, { upToDaysBeforeStart: 7, refundPercent: 50 }, { upToDaysBeforeStart: null, refundPercent: 0 }],
+                cancellationPolicy: { bands: [{ minDaysBeforeStart: 30, refundPercent: 100 }, { minDaysBeforeStart: 7, refundPercent: 50 }, { minDaysBeforeStart: 0, refundPercent: 0 }] },
                 meetingPoint: { address: '1 Test Street', pickupAvailable: false },
                 itinerary: [
                     { dayNumber: 1, title: 'Day 1', description: 'Travel', activities: [] },
@@ -420,7 +420,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         await request(app.getHttpServer())
             .patch(`/trips/${template.id}`)
             .set('Authorization', 'Bearer agency-123')
-            .send({ status: 'ACTIVE', cancellationPolicy: [{ upToDaysBeforeStart: 30, refundPercent: 100 }, { upToDaysBeforeStart: 7, refundPercent: 50 }, { upToDaysBeforeStart: null, refundPercent: 0 }], meetingPoint: { address: '1 Test Street', pickupAvailable: false } })
+            .send({ status: 'ACTIVE', cancellationPolicy: { bands: [{ minDaysBeforeStart: 30, refundPercent: 100 }, { minDaysBeforeStart: 7, refundPercent: 50 }, { minDaysBeforeStart: 0, refundPercent: 0 }] }, meetingPoint: { address: '1 Test Street', pickupAvailable: false } })
             .expect(200);
 
         const updated = await db.tripTemplate.findUnique({ where: { id: template.id } });
@@ -699,7 +699,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         const res = await request(app.getHttpServer())
             .patch(`/trips/${template.id}`)
             .set('Authorization', 'Bearer agency-123')
-.send({ status: 'ACTIVE', cancellationPolicy: [{ upToDaysBeforeStart: 30, refundPercent: 100 }, { upToDaysBeforeStart: 7, refundPercent: 50 }, { upToDaysBeforeStart: null, refundPercent: 0 }], meetingPoint: { address: '1 Test Street', pickupAvailable: false } })
+            .send({ status: 'ACTIVE', cancellationPolicy: { bands: [{ minDaysBeforeStart: 30, refundPercent: 100 }, { minDaysBeforeStart: 7, refundPercent: 50 }, { minDaysBeforeStart: 0, refundPercent: 0 }] }, meetingPoint: { address: '1 Test Street', pickupAvailable: false } })
             .expect(200);
 
         expect(res.body.status).toBe('ACTIVE');
@@ -1070,7 +1070,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         const published = await request(app.getHttpServer())
             .patch(`/trips/${frenchOnly.id}`)
             .set('Authorization', 'Bearer agency-123')
-.send({ status: 'ACTIVE', cancellationPolicy: [{ upToDaysBeforeStart: 30, refundPercent: 100 }, { upToDaysBeforeStart: 7, refundPercent: 50 }, { upToDaysBeforeStart: null, refundPercent: 0 }], meetingPoint: { address: '1 Test Street', pickupAvailable: false } })
+            .send({ status: 'ACTIVE', cancellationPolicy: { bands: [{ minDaysBeforeStart: 30, refundPercent: 100 }, { minDaysBeforeStart: 7, refundPercent: 50 }, { minDaysBeforeStart: 0, refundPercent: 0 }] }, meetingPoint: { address: '1 Test Street', pickupAvailable: false } })
             .expect(200);
         expect(published.body.status).toBe('ACTIVE');
     });
