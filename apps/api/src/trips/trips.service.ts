@@ -32,6 +32,7 @@ import {
     type MeetingPoint,
 } from './publish-guardrails.util';
 import { derivePublicMediaUrl, derivePublicMediaUrls } from '../upload/media-url.util';
+import { serializeAddOn, serializePricingVariant } from './pricing-selection.util';
 
 @Injectable()
 export class TripsService {
@@ -676,6 +677,16 @@ export class TripsService {
                 itinerary: {
                     orderBy: { dayNumber: 'asc' },
                 },
+                // #695: agency-priced variants + paid add-ons (active
+                // only on the public payload; prices serialized below).
+                pricingVariants: {
+                    where: { isActive: true },
+                    orderBy: { sortOrder: 'asc' },
+                },
+                addOns: {
+                    where: { isActive: true },
+                    orderBy: { sortOrder: 'asc' },
+                },
                 _count: {
                     select: { reviews: true, wishlists: true },
                 },
@@ -709,6 +720,9 @@ export class TripsService {
             // booking at creation. The raw stored policy stays in
             // `cancellationPolicy` for the agency editor.
             cancellationScale: buildCancellationScaleSnapshot(result.cancellationPolicy),
+            // #695: Decimal prices leave the API as fixed strings.
+            pricingVariants: (result as any).pricingVariants?.map(serializePricingVariant) ?? [],
+            addOns: (result as any).addOns?.map(serializeAddOn) ?? [],
             agency: {
                 ...publicAgency,
                 // #447: logo re-derived at read time like trip images.
@@ -1212,6 +1226,138 @@ export class TripsService {
             where: { id: templateId },
             data: { startingPrice: aggregate._min.price },
         });
+    }
+
+    // ---- #695 (Council S6): agency-priced variants + paid add-ons ----
+
+    private async assertOwnedTemplate(agencyId: string, templateId: string) {
+        const template = await this.db.tripTemplate.findFirst({
+            where: { id: templateId, agencyId },
+            select: { id: true, currency: true },
+        });
+        if (!template) throw new NotFoundException('Trip template not found');
+        return template;
+    }
+
+    private assertPricingName(name: unknown) {
+        if (!name || typeof name !== 'object' || Array.isArray(name)) {
+            throw new BadRequestException('A pricing name map is required');
+        }
+        const fr = (name as Record<string, unknown>).fr;
+        if (typeof fr !== 'string' || !fr.trim()) {
+            throw new BadRequestException('The French name is required for a pricing option');
+        }
+        for (const [key, value] of Object.entries(name as Record<string, unknown>)) {
+            if (typeof value !== 'string' || value.length > 120) {
+                throw new BadRequestException(`Invalid pricing name for language "${key}"`);
+            }
+        }
+    }
+
+    async listTripPricing(agencyId: string, templateId: string) {
+        await this.assertOwnedTemplate(agencyId, templateId);
+        const [variants, addOns] = await Promise.all([
+            this.db.tripPricingVariant.findMany({ where: { templateId }, orderBy: { sortOrder: 'asc' } }),
+            this.db.tripAddOn.findMany({ where: { templateId }, orderBy: { sortOrder: 'asc' } }),
+        ]);
+        return {
+            variants: variants.map(serializePricingVariant),
+            addOns: addOns.map(serializeAddOn),
+        };
+    }
+
+    async createPricingVariant(agencyId: string, templateId: string, dto: import('./dto/pricing.dto').UpsertPricingVariantDto) {
+        const template = await this.assertOwnedTemplate(agencyId, templateId);
+        if (dto.name === undefined) throw new BadRequestException('A pricing name map is required');
+        this.assertPricingName(dto.name);
+        if (dto.price === undefined) throw new BadRequestException('A price is required');
+        const created = await this.db.tripPricingVariant.create({
+            data: {
+                templateId,
+                agencyId,
+                name: dto.name as unknown as Prisma.InputJsonValue,
+                pricingUnit: dto.pricingUnit ?? 'PER_PERSON',
+                unitSize: dto.unitSize ?? 1,
+                price: toMoneyDecimal(dto.price, 'variantPrice'),
+                currency: template.currency,
+                isActive: dto.isActive ?? true,
+                sortOrder: dto.sortOrder ?? 0,
+            },
+        });
+        return serializePricingVariant(created);
+    }
+
+    async updatePricingVariant(agencyId: string, templateId: string, variantId: string, dto: import('./dto/pricing.dto').UpsertPricingVariantDto) {
+        await this.assertOwnedTemplate(agencyId, templateId);
+        const existing = await this.db.tripPricingVariant.findFirst({ where: { id: variantId, templateId, agencyId } });
+        if (!existing) throw new NotFoundException('Pricing variant not found');
+        if (dto.name !== undefined) this.assertPricingName(dto.name);
+        const updated = await this.db.tripPricingVariant.update({
+            where: { id: variantId },
+            data: {
+                ...(dto.name !== undefined ? { name: dto.name as unknown as Prisma.InputJsonValue } : {}),
+                ...(dto.pricingUnit !== undefined ? { pricingUnit: dto.pricingUnit } : {}),
+                ...(dto.unitSize !== undefined ? { unitSize: dto.unitSize } : {}),
+                ...(dto.price !== undefined ? { price: toMoneyDecimal(dto.price, 'variantPrice') } : {}),
+                ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+                ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
+            },
+        });
+        return serializePricingVariant(updated);
+    }
+
+    async deletePricingVariant(agencyId: string, templateId: string, variantId: string) {
+        await this.assertOwnedTemplate(agencyId, templateId);
+        const existing = await this.db.tripPricingVariant.findFirst({ where: { id: variantId, templateId, agencyId } });
+        if (!existing) throw new NotFoundException('Pricing variant not found');
+        await this.db.tripPricingVariant.delete({ where: { id: variantId } });
+        return { deleted: true };
+    }
+
+    async createAddOn(agencyId: string, templateId: string, dto: import('./dto/pricing.dto').UpsertAddOnDto) {
+        const template = await this.assertOwnedTemplate(agencyId, templateId);
+        if (dto.name === undefined) throw new BadRequestException('A pricing name map is required');
+        this.assertPricingName(dto.name);
+        if (dto.price === undefined) throw new BadRequestException('A price is required');
+        const created = await this.db.tripAddOn.create({
+            data: {
+                templateId,
+                agencyId,
+                name: dto.name as unknown as Prisma.InputJsonValue,
+                pricingUnit: dto.pricingUnit ?? 'PER_BOOKING',
+                price: toMoneyDecimal(dto.price, 'addOnPrice'),
+                currency: template.currency,
+                isActive: dto.isActive ?? true,
+                sortOrder: dto.sortOrder ?? 0,
+            },
+        });
+        return serializeAddOn(created);
+    }
+
+    async updateAddOn(agencyId: string, templateId: string, addOnId: string, dto: import('./dto/pricing.dto').UpsertAddOnDto) {
+        await this.assertOwnedTemplate(agencyId, templateId);
+        const existing = await this.db.tripAddOn.findFirst({ where: { id: addOnId, templateId, agencyId } });
+        if (!existing) throw new NotFoundException('Add-on not found');
+        if (dto.name !== undefined) this.assertPricingName(dto.name);
+        const updated = await this.db.tripAddOn.update({
+            where: { id: addOnId },
+            data: {
+                ...(dto.name !== undefined ? { name: dto.name as unknown as Prisma.InputJsonValue } : {}),
+                ...(dto.pricingUnit !== undefined ? { pricingUnit: dto.pricingUnit } : {}),
+                ...(dto.price !== undefined ? { price: toMoneyDecimal(dto.price, 'addOnPrice') } : {}),
+                ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+                ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
+            },
+        });
+        return serializeAddOn(updated);
+    }
+
+    async deleteAddOn(agencyId: string, templateId: string, addOnId: string) {
+        await this.assertOwnedTemplate(agencyId, templateId);
+        const existing = await this.db.tripAddOn.findFirst({ where: { id: addOnId, templateId, agencyId } });
+        if (!existing) throw new NotFoundException('Add-on not found');
+        await this.db.tripAddOn.delete({ where: { id: addOnId } });
+        return { deleted: true };
     }
 
     private assertTripCurrency(tripCurrency: string, currency: string) {

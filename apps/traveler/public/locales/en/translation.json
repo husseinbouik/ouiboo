@@ -174,6 +174,15 @@
       "retryPayment": "Retry payment",
       "viewBookings": "View my bookings",
       "backHome": "Back to home"
+    },
+    "pricing": {
+      "variantsTitle": "Choose your option",
+      "standardOption": "Standard (session price)",
+      "addOnsTitle": "Extras",
+      "perPerson": "per person",
+      "perGroup": "per group",
+      "perVehicle": "per vehicle",
+      "perBooking": "per booking"
     }
   },
   "trust": {
@@ -380,7 +389,18 @@
     "notFoundTitle": "Agency not found",
     "verifiedTitle": "Verified agency — licence and insurance checked by Ouiboo, with the dates shown on this page",
     "reviewsPolicy": "Reviews: we never import, buy or seed reviews — every Ouiboo review comes from a completed trip. Review counts are always shown, and an average rating appears only once a trip has at least 5 reviews.",
-    "noTrips": "No active trips found for this agency."
+    "noTrips": "No active trips found for this agency.",
+    "storefrontAbout": "About",
+    "storefrontLanguages": "Languages",
+    "storefrontLiveTrips": "{{count}} live trips",
+    "storefrontLiveTripOne": "1 live trip",
+    "storefrontResponseTime": "Typically responds within {{hours}} h",
+    "storefrontReviews": "{{count}} verified reviews",
+    "storefrontReviewsAverage": "{{average}} average from {{count}} verified reviews",
+    "storefrontShare": "Share this agency",
+    "storefrontCopyLink": "Copy link",
+    "storefrontCopied": "Link copied",
+    "storefrontQrAlt": "QR code linking to this agency page"
   },
   "featuredPage": {
     "badge": "Featured Collection",

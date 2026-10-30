@@ -186,6 +186,11 @@ export class ReviewsService {
       // them against the current public media base at read time.
       reviews: reviews.map((review) => ({
         ...review,
+        // #692: the agency reply is public ONLY while its moderation
+        // status is VISIBLE — a PENDING/HIDDEN/REMOVED reply never
+        // leaves the API as public text.
+        response: review.responseStatus === 'VISIBLE' ? review.response : null,
+        responseStatus: review.responseStatus === 'VISIBLE' ? 'VISIBLE' : null,
         traveler: review.traveler
           ? { ...review.traveler, avatar: derivePublicMediaUrl(review.traveler.avatar) }
           : review.traveler,
@@ -229,7 +234,16 @@ export class ReviewsService {
   }
 
   /**
-   * Add response to review (by agency)
+   * Reply to a review (by the owning agency) — #692 (Council S6).
+   *
+   * One reply per review. The reply does NOT go public on write: it
+   * enters the same moderation lifecycle as the review itself
+   * (PENDING -> VISIBLE / HIDDEN / REMOVED via
+   * moderateReviewResponse) and public payloads expose it only while
+   * VISIBLE. Re-calling this endpoint edits the reply under the same
+   * edit budget as review edits (#439 constants); editing a VISIBLE
+   * reply sends it back to PENDING. The review author is notified when
+   * the reply becomes VISIBLE (see moderateReviewResponse).
    */
   async respondToReview(
     reviewId: string,
@@ -245,19 +259,146 @@ export class ReviewsService {
       throw new BadRequestException('Review not found');
     }
 
-    // Verify agency owns the trip
-    if (review.booking.session.template.agencyId !== agencyId) {
+    // Verify agency owns the trip (tenant comes from the review row
+    // stamped at creation, #428; the template chain is the fallback).
+    const ownerAgencyId = review.agencyId ?? review.booking.session.template.agencyId;
+    if (ownerAgencyId !== agencyId) {
       throw new ForbiddenException(
         'Not authorized to respond to this review',
       );
     }
 
+    if ((review.status ?? 'VISIBLE') !== 'VISIBLE') {
+      throw new BadRequestException('Can only reply to a visible review');
+    }
+    if (review.responseStatus === 'REMOVED') {
+      throw new BadRequestException('A removed reply cannot be edited');
+    }
+
+    const responseText = dto.response?.trim();
+    if (!responseText) {
+      throw new BadRequestException('A reply cannot be empty');
+    }
+
+    const isEdit = !!review.response;
+    const editCount: number = review.responseEditCount ?? 0;
+    if (isEdit && editCount >= MAX_REVIEW_EDITS) {
+      throw new BadRequestException(
+        `Reply edit limit reached (${MAX_REVIEW_EDITS} edits)`,
+      );
+    }
+
     const updatedReview = await this.prisma.review.update({
       where: { id: reviewId },
-      data: { response: dto.response },
+      data: {
+        response: responseText,
+        // Every write (re-)enters moderation: no unmoderated public text.
+        responseStatus: 'PENDING',
+        responseEditCount: isEdit ? editCount + 1 : 0,
+        respondedAt: new Date(),
+        responseModeratedById: null,
+        responseModeratedAt: null,
+        responseModerationReason: null,
+      },
     });
 
     return updatedReview;
+  }
+
+  /**
+   * Moderate an agency reply (admin only) — #692. Mirrors
+   * moderateReview exactly: same actions, same transition table, same
+   * reason requirement for HIDE/REMOVE, same audit trail
+   * (REVIEW_RESPONSE_MODERATED). When a reply becomes VISIBLE the
+   * review author is notified (NotificationLog REVIEW_RESPONSE).
+   */
+  async moderateReviewResponse(
+    reviewId: string,
+    actor: { id?: string; userId?: string; email?: string },
+    action: ReviewModerationAction | 'approve' | 'reject',
+    reason?: string,
+  ) {
+    const normalizedAction = normalizeModerationAction(action);
+    const targetStatus = MODERATION_TARGETS[normalizedAction];
+    const trimmedReason = reason?.trim() || null;
+
+    if (
+      (normalizedAction === 'HIDE' || normalizedAction === 'REMOVE') &&
+      !trimmedReason
+    ) {
+      throw new BadRequestException(
+        `A reason is required to ${normalizedAction.toLowerCase()} a review reply`,
+      );
+    }
+
+    const review = await this.prisma.review.findUnique({
+      where: { id: reviewId },
+      include: {
+        traveler: { select: { email: true, name: true } },
+        tripTemplate: { select: { title: true } },
+        agency: { select: { companyName: true } },
+      },
+    });
+
+    if (!review || !review.response) {
+      throw new BadRequestException('Review reply not found');
+    }
+
+    const currentStatus: ReviewStatusValue = review.responseStatus ?? 'PENDING';
+    const allowed = MODERATION_TRANSITIONS[currentStatus] ?? [];
+    if (!allowed.includes(targetStatus)) {
+      throw new BadRequestException(
+        `Cannot ${normalizedAction.toLowerCase()} a review reply in status ${currentStatus}`,
+      );
+    }
+
+    const actorId = actor?.id ?? actor?.userId ?? null;
+    const updated = await this.prisma.review.update({
+      where: { id: reviewId },
+      data: {
+        responseStatus: targetStatus,
+        responseModeratedById: actorId,
+        responseModeratedAt: new Date(),
+        responseModerationReason: trimmedReason,
+      },
+    });
+
+    await this.prisma.auditLog
+      .create({
+        data: {
+          actorId,
+          actorEmail: actor?.email,
+          action: 'REVIEW_RESPONSE_MODERATED',
+          targetType: 'Review',
+          targetId: reviewId,
+          metadata: {
+            moderationAction: normalizedAction,
+            fromStatus: currentStatus,
+            toStatus: targetStatus,
+            reason: trimmedReason,
+          },
+        },
+      })
+      .catch((err: unknown) => console.error('Audit log failed', err));
+
+    // Author notification: only a VISIBLE reply is news to the author.
+    if (targetStatus === 'VISIBLE' && review.traveler?.email) {
+      await this.prisma.notificationLog
+        .create({
+          data: {
+            userId: review.travelerId,
+            notificationType: 'REVIEW_RESPONSE',
+            recipientEmail: review.traveler.email,
+            subject: 'The agency replied to your review',
+            message: `${review.agency?.companyName ?? 'The agency'} replied to your review of "${review.tripTemplate?.title ?? 'your trip'}": ${review.response}`,
+            status: 'SENT',
+            metadata: { reviewId, agencyId: review.agencyId },
+          },
+        })
+        .catch((err: unknown) => console.error('Reply notification log failed', err));
+    }
+
+    return updated;
   }
 
   /**

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { CURRENT_BOOKING_TERMS_VERSION } from '@ouiboo/types';
-import type { BookingResponse } from './checkout-types';
+import type { BookingResponse, PricingSelectionState } from './checkout-types';
 import { getErrorMessage } from './checkout-types';
 
 type UseCheckoutBookingOptions = {
@@ -20,6 +20,8 @@ type UseCheckoutBookingOptions = {
   proofFile: File | null;
   /** B9: the traveller's explicit terms acceptance (checkout checkbox). */
   termsAccepted: boolean;
+  /** #695: variant + add-on selection (ids/quantities only). */
+  pricingSelection?: PricingSelectionState;
 };
 
 export function useCheckoutBooking({
@@ -32,6 +34,7 @@ export function useCheckoutBooking({
   hasBankDetails,
   proofFile,
   termsAccepted,
+  pricingSelection,
 }: UseCheckoutBookingOptions) {
   const router = useRouter();
   const { t, i18n } = useTranslation();
@@ -87,6 +90,16 @@ export function useCheckoutBooking({
           // terms it was made under and in which language.
           termsAccepted,
           termsVersion: CURRENT_BOOKING_TERMS_VERSION,
+          // #695: pricing selection — sent only when something was
+          // actually selected; the API resolves prices server-side.
+          ...(pricingSelection?.variantId ? { variantId: pricingSelection.variantId } : {}),
+          ...(pricingSelection && Object.entries(pricingSelection.addOns).some(([, q]) => q > 0)
+            ? {
+                addOns: Object.entries(pricingSelection.addOns)
+                  .filter(([, q]) => q > 0)
+                  .map(([addOnId, quantity]) => ({ addOnId, quantity })),
+              }
+            : {}),
         }, {
           headers: { 'Idempotency-Key': bookingIdempotencyKey },
         });

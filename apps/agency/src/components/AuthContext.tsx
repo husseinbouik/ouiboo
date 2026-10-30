@@ -33,6 +33,9 @@ interface User {
         businessAddress?: string;
         // #700: public seller phone (checkout seller block).
         businessPhone?: string;
+        // #691: storefront about (language-keyed) + languages.
+        aboutTranslations?: Record<string, string> | null;
+        languages?: string[];
         travelLicenceType?: string;
         travelLicenceNumber?: string;
         travelLicenceStatus?: string;

@@ -567,7 +567,9 @@
     "cancel": "Annuler",
     "submitting": "Envoi...",
     "submit": "Envoyer la réponse",
-    "closeDialog": "Fermer la boîte de dialogue"
+    "closeDialog": "Fermer la boîte de dialogue",
+    "responsePendingModeration": "Réponse en attente de modération",
+    "responseModerationNote": "Votre réponse est vérifiée avant publication — elle devient visible une fois approuvée."
   },
   "quotes": {
     "title": "Demandes de devis",
@@ -871,7 +873,11 @@
     "emergencyHint": "Indiquez un numéro réellement joignable pendant les voyages. Ce contact est obligatoire pour publier un voyage : sans lui, les nouveaux voyages ne peuvent pas être mis en ligne (les voyages déjà publiés ne sont pas concernés). Les voyageurs ayant une réservation le voient sur la carte d’urgence de leur réservation.",
     "businessPhone": "Téléphone professionnel public",
     "businessPhonePlaceholder": "+212 6 00 00 00 00",
-    "businessPhoneHint": "Affiché aux voyageurs dans le bloc vendeur au paiement (avec votre raison sociale, adresse et RC/IF). Utilisez un numéro professionnel, pas un numéro personnel."
+    "businessPhoneHint": "Affiché aux voyageurs dans le bloc vendeur au paiement (avec votre raison sociale, adresse et RC/IF). Utilisez un numéro professionnel, pas un numéro personnel.",
+    "storefrontAboutFr": "À propos vitrine (français)",
+    "storefrontAboutAr": "À propos vitrine (arabe)",
+    "storefrontAboutEn": "À propos vitrine (anglais)",
+    "storefrontLanguages": "Langues de travail (codes, séparés par des virgules)"
   },
   "analytics": {
     "dashboardTitle": "Tableau de bord analytique",

@@ -326,6 +326,9 @@ export class AgencyController {
             rating: r.rating,
             comment: r.comment,
             response: r.response,
+            // #692: the reply's moderation state — the agency sees its
+            // reply as PENDING until an admin approves it to VISIBLE.
+            responseStatus: r.responseStatus ?? null,
             isVerifiedBooking: r.isVerifiedBooking,
             createdAt: r.createdAt,
             // #447: the traveller avatar is a stored file reference —
@@ -505,6 +508,16 @@ export class AgencyController {
             data: {
                 companyName: data.companyName?.trim(),
                 bio: data.bio?.trim(),
+                // #691: storefront about (language-keyed) + languages —
+                // undefined skips, an empty map/array clears.
+                aboutTranslations:
+                    data.aboutTranslations !== undefined
+                        ? (data.aboutTranslations as unknown as Prisma.InputJsonValue)
+                        : undefined,
+                languages:
+                    data.languages !== undefined
+                        ? data.languages.map((l) => l.trim().toLowerCase()).filter(Boolean).slice(0, 20)
+                        : undefined,
                 logo: data.logo?.trim(),
                 legalName: data.legalName?.trim(),
                 rc: data.rc?.trim(),

@@ -567,7 +567,9 @@
     "cancel": "Cancel",
     "submitting": "Submitting...",
     "submit": "Submit Response",
-    "closeDialog": "Close dialog"
+    "closeDialog": "Close dialog",
+    "responsePendingModeration": "Reply pending moderation",
+    "responseModerationNote": "Your reply is reviewed before it appears publicly — it becomes visible once approved."
   },
   "quotes": {
     "title": "Quote requests",
@@ -871,7 +873,11 @@
     "emergencyHint": "Use a number that is actually answered during trips. This contact is required to publish a trip: without it, new trips cannot go live (trips already published are not affected). Travellers holding a booking see it on their booking’s Emergency Card.",
     "businessPhone": "Public business phone",
     "businessPhonePlaceholder": "+212 6 00 00 00 00",
-    "businessPhoneHint": "Shown to travellers in the seller block at checkout (with your legal name, address and RC/IF). Use a business number, not a personal one."
+    "businessPhoneHint": "Shown to travellers in the seller block at checkout (with your legal name, address and RC/IF). Use a business number, not a personal one.",
+    "storefrontAboutFr": "Storefront about (French)",
+    "storefrontAboutAr": "Storefront about (Arabic)",
+    "storefrontAboutEn": "Storefront about (English)",
+    "storefrontLanguages": "Languages you work in (codes, comma separated)"
   },
   "analytics": {
     "dashboardTitle": "Analytics Dashboard",

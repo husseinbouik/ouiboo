@@ -400,6 +400,62 @@ export interface CancellationScaleSnapshot extends CancellationScale {
     refundInitiationDays: number;
 }
 
+/** #695 (Council S6): agency-priced variant (option tier) on a trip. */
+export type PricingUnit = 'PER_PERSON' | 'PER_GROUP' | 'PER_VEHICLE';
+export type AddOnPricingUnit = 'PER_PERSON' | 'PER_BOOKING';
+
+export interface TripPricingVariant {
+    id: string;
+    templateId: string;
+    agencyId: string;
+    /** Language-keyed name map (ISO code -> label). */
+    name: Record<string, string>;
+    pricingUnit: PricingUnit;
+    unitSize: number;
+    price: string;
+    currency: string;
+    isActive: boolean;
+    sortOrder: number;
+}
+
+export interface TripAddOn {
+    id: string;
+    templateId: string;
+    agencyId: string;
+    name: Record<string, string>;
+    pricingUnit: AddOnPricingUnit;
+    price: string;
+    currency: string;
+    isActive: boolean;
+    sortOrder: number;
+}
+
+/** #695: the booking's immutable pricing-selection snapshot. */
+export interface PricingSelectionSnapshot {
+    variant: {
+        id: string;
+        name: Record<string, string> | null;
+        pricingUnit: PricingUnit;
+        unitSize: number;
+        unitPrice: string;
+        units: number;
+        amount: string;
+    } | null;
+    addOns: Array<{
+        id: string;
+        name: Record<string, string> | null;
+        pricingUnit: AddOnPricingUnit;
+        unitPrice: string;
+        quantity: number;
+        amount: string;
+    }>;
+    baseAmount: string;
+    addOnsTotal: string;
+    totalAmount: string;
+    currency: string;
+    guestsCount: number;
+}
+
 /**
  * TripTemplate represents the "Master" trip definition.
  */
@@ -666,6 +722,9 @@ export interface BookingDetails extends Booking {
     paymentPlan?: BookingPaymentPlan | null;
     /** #417: cancellation scale snapshotted at booking creation (resolved from the template for legacy bookings). */
     cancellationScale?: CancellationScaleSnapshot;
+    /** #695: pricing-selection snapshot (variant + add-ons with agency
+     * prices at booking time and the reconciled breakdown). */
+    pricingSelection?: PricingSelectionSnapshot | null;
     /**
      * #481 + B9 (Council Session #2): the booking-terms version the
      * traveller accepted at checkout (see CURRENT_BOOKING_TERMS_VERSION)
