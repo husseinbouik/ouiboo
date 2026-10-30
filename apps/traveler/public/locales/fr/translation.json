@@ -204,16 +204,12 @@
     "showPassword": "Afficher le mot de passe",
     "hidePassword": "Masquer le mot de passe",
     "signIn": "Se connecter",
-    "orContinue": "Ou continuer avec",
-    "google": "Google",
-    "facebook": "Facebook",
     "noAccount": "Vous n'avez pas de compte ?",
     "signUpLink": "S'inscrire gratuitement",
     "errorFailed": "Échec de la connexion. Veuillez réessayer.",
     "invalidCredentials": "Email ou mot de passe incorrect. Veuillez réessayer.",
     "loggingIn": "Connexion en cours...",
-    "networkError": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
-    "socialComingSoon": "Connexion sociale bientôt disponible"
+    "networkError": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez."
   },
   "signup": {
     "dateOfBirth": "Date de naissance",

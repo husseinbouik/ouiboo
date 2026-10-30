@@ -204,16 +204,12 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "signIn": "Sign In",
-    "orContinue": "Or continue with",
-    "google": "Google",
-    "facebook": "Facebook",
     "noAccount": "Don't have an account?",
     "signUpLink": "Sign up for free",
     "errorFailed": "Login failed. Please try again.",
     "invalidCredentials": "Incorrect email or password. Please try again.",
     "loggingIn": "Logging in...",
-    "networkError": "Cannot reach the server. Please check your connection and try again.",
-    "socialComingSoon": "Social login coming soon"
+    "networkError": "Cannot reach the server. Please check your connection and try again."
   },
   "signup": {
     "dateOfBirth": "Date of birth",
