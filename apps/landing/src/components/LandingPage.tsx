@@ -396,18 +396,29 @@ export default function LandingPage() {
                         </motion.div>
                     </motion.div>
                     <motion.div style={{ scale: heroImageScale }} className="mt-12 flow-root sm:mt-16">
-                        {/* #668: real product screenshots band (founder pick, Option A) —
-                            genuine captures of the traveller trip page (main panel) and
-                            the agency dashboard (secondary panel), replacing the
-                            fabricated dashboard mockup. Panels fill their frames
-                            (object-cover), so the old ~190px dead gray band is gone. */}
-                        <div className="-m-2 rounded-xl bg-deep-blue/5 p-2 ring-1 ring-inset ring-deep-blue/10 lg:-m-4 lg:rounded-2xl lg:p-4">
-                            <div className="flex flex-col gap-2 sm:gap-3 lg:flex-row lg:gap-4">
-                                <div className="overflow-hidden rounded-md shadow-2xl ring-1 ring-deep-blue/15 lg:w-[60%]">
-                                    <Image src="/hero-traveler.webp" alt={t('common.heroTravelerAlt')} width={1680} height={1050} priority sizes="(min-width: 1024px) 700px, 100vw" className="block aspect-[16/10] w-full object-cover object-top"/>
+                        {/* #713: phone-frame mockups (founder direction 2026-10-30,
+                            supersedes the #668 flat band) — genuine DARK-theme
+                            MOBILE captures of the traveller trip page (front,
+                            larger) and the agency dashboard (second, offset
+                            behind), in CSS phone frames over a soft brand glow.
+                            Same real screens as Option A, professionally
+                            presented; native-size UI stays legible at phone
+                            size and the pair stays compact on mobile. */}
+                        <div className="relative mx-auto max-w-2xl" data-testid="hero-phones">
+                            <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-3/4 w-4/5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-sunset-orange/25 blur-3xl" />
+                            <div aria-hidden="true" className="absolute bottom-0 right-0 h-1/2 w-1/2 rounded-full bg-deep-blue/25 blur-3xl" />
+                            <div className="relative flex items-start justify-center">
+                                <div className="relative z-10 w-[57%] max-w-[272px] shrink-0 -rotate-2 rounded-[2.2rem] bg-gray-950 p-[7px] shadow-2xl ring-1 ring-black/50">
+                                    <div className="relative overflow-hidden rounded-[1.85rem]">
+                                        <Image src="/hero-traveler-phone.webp" alt={t('common.heroTravelerAlt')} width={780} height={1688} priority sizes="(min-width: 1024px) 272px, 57vw" className="block aspect-[9/19] w-full object-cover object-top"/>
+                                        <div aria-hidden="true" className="absolute left-1/2 top-[7px] h-[14px] w-[58px] -translate-x-1/2 rounded-full bg-gray-950 sm:h-[18px] sm:w-[76px]" />
+                                    </div>
                                 </div>
-                                <div className="relative aspect-[21/10] overflow-hidden rounded-md shadow-2xl ring-1 ring-deep-blue/15 sm:aspect-[16/10] lg:aspect-auto lg:flex-1">
-                                    <Image src="/hero-agency.webp" alt={t('common.heroAgencyAlt')} width={1440} height={900} sizes="(min-width: 1024px) 470px, 100vw" className="absolute inset-0 block h-full w-full object-cover object-left-top"/>
+                                <div className="relative z-0 -ml-9 mt-16 w-[49%] max-w-[228px] shrink-0 rotate-3 rounded-[2.2rem] bg-gray-950 p-[7px] shadow-2xl ring-1 ring-black/50 sm:-ml-12">
+                                    <div className="relative overflow-hidden rounded-[1.85rem]">
+                                        <Image src="/hero-agency-phone.webp" alt={t('common.heroAgencyAlt')} width={780} height={1688} sizes="(min-width: 1024px) 228px, 49vw" className="block aspect-[9/19] w-full object-cover object-top"/>
+                                        <div aria-hidden="true" className="absolute left-1/2 top-[7px] h-[14px] w-[58px] -translate-x-1/2 rounded-full bg-gray-950 sm:h-[18px] sm:w-[76px]" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -526,23 +537,7 @@ export default function LandingPage() {
                       </motion.div>
                     ))}
                   </motion.dl>
-                  {/* #677 (Council S6): the published beta offer pack —
-                      48-working-hour verification SLA, assisted first
-                      listings (agency approves before publish), and the
-                      support-relief split. Factual service promises
-                      only; no supply claims (#661 discipline). */}
-                  <div className="mt-10 rounded-2xl border border-gray-200 bg-gray-50 p-6">
-                    <h3 className="text-sm font-bold uppercase tracking-wide text-deep-blue">{t('agencies.offerTitle')}</h3>
-                    <ul className="mt-4 space-y-4">
-                      {(['offer1', 'offer2', 'offer3'] as const).map((key) => (
-                        <li key={key}>
-                          <p className="font-semibold text-deep-blue">{t(`agencies.${key}.title`)}</p>
-                          <p className="text-gray-600">{t(`agencies.${key}.description`)}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <motion.div 
+                  <motion.div
                     variants={fadeInUp}
                     className="mt-10 flex items-center gap-x-6"
                   >
