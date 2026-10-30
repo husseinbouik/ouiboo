@@ -220,7 +220,7 @@ const [isOpen, setIsOpen] = useState(false);
         animate={{ y: 0 }}
         transition={{ duration: 0.5 }}
         className={cn(
-          "pointer-events-auto flex items-center justify-between transition-all duration-300 w-full px-4 sm:px-6 lg:px-8 h-20",
+          "pointer-events-auto flex items-center justify-between transition-all duration-300 w-full px-4 sm:px-6 lg:px-6 xl:px-8 h-20",
           scrolled 
             ? "bg-card/80 backdrop-blur-md shadow-sm" 
             : "bg-transparent"
@@ -241,7 +241,7 @@ const [isOpen, setIsOpen] = useState(false);
             <BetaBadge />
         </Link>
 
-        <div className="hidden md:flex items-center gap-8 mx-6">
+        <div className="hidden lg:flex items-center gap-6 mx-4 xl:gap-8 xl:mx-6">
                         {mounted && navLinks.map((link) => (
                                 <Link 
                                         key={link.href}
@@ -270,9 +270,12 @@ const [isOpen, setIsOpen] = useState(false);
                 keeps only what must be one tap away at every width:
                 the theme toggle, sign-up and the avatar. Language and
                 currency selectors join the links in the mobile menu
-                below md (the desktop cluster here is md+ only, as
-                before at desktop widths). */}
-            <div className="hidden md:flex items-center gap-2">
+                below lg (the desktop cluster here is lg+ only —
+                #672 raised the switch from md: at 768-1013px the
+                desktop row is ~1014px wide and clipped Sign up off
+                real tablets, and desktop-mode phone browsers present
+                a ~800-980px layout width, so they now get this bar). */}
+            <div className="hidden lg:flex items-center gap-2">
                 <LanguageSwitcher />
                 <CurrencySelector />
             </div>
@@ -389,11 +392,11 @@ const [isOpen, setIsOpen] = useState(false);
                 </div>
             ) : (
                 <div className="flex items-center gap-2 sm:gap-4">
-                    {/* #648: login moves into the mobile menu below md;
+                    {/* #648: login moves into the mobile menu below lg;
                         sign-up — the primary CTA — stays visible in
                         the bar at every width, sized down on phones so
                         nothing clips. */}
-                    <Link href="/login" className="hidden md:inline-flex text-sm font-semibold text-foreground hover:text-sunset-orange transition-colors">
+                    <Link href="/login" className="hidden lg:inline-flex text-sm font-semibold text-foreground hover:text-sunset-orange transition-colors">
                         {t('nav.login')}
                     </Link>
                     <Button asChild className="rounded-md bg-sunset-orange-dark hover:bg-[#b03d11] text-white font-semibold text-sm px-3.5 sm:px-5 py-2.5 h-auto border-none shadow-sm transition-transform hover:scale-105">
@@ -409,7 +412,7 @@ const [isOpen, setIsOpen] = useState(false);
                 aria-expanded={isOpen}
                 aria-controls="traveler-mobile-menu"
                 className={cn(
-                    "md:hidden w-10 h-10 rounded-xl flex items-center justify-center transition-all hit-slop",
+                    "lg:hidden w-10 h-10 rounded-xl flex items-center justify-center transition-all hit-slop",
                     isTransparent ? "bg-white/10 text-white" : "bg-muted text-foreground"
                 )}
             >
@@ -425,7 +428,7 @@ const [isOpen, setIsOpen] = useState(false);
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md md:hidden pointer-events-auto flex justify-end"
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md lg:hidden pointer-events-auto flex justify-end"
             onClick={() => setIsOpen(false)}
           >
 <motion.div
