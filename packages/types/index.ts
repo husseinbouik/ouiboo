@@ -192,6 +192,8 @@ export interface AgencyProfile {
     taxId?: string;
     legalRepresentative?: string;
     businessAddress?: string;
+    /** #700: public seller phone for the checkout seller block. */
+    businessPhone?: string;
     travelLicenceType?: TravelLicenceType;
     travelLicenceNumber?: string;
     travelLicenceStatus?: LicenceStatus;
@@ -589,6 +591,11 @@ export interface Booking {
     attendance?: BookingAttendance | null;
     attendanceRecordedAt?: string | null;
     attendanceRecordedBy?: string | null;
+    /** #693: traveller dispute of the recorded attendance (stamp + reason). */
+    attendanceDisputedAt?: string | null;
+    attendanceDisputeReason?: string | null;
+    /** #689: Booking Pass QR check-in stamp (second attendance signal). */
+    passCheckInAt?: string | null;
 }
 
 export interface BookingTravelerSummary {
@@ -624,6 +631,14 @@ export interface BookingAgencySummary {
     licenceVerifiedAt?: string | null;
     insuranceStatus?: string | null;
     insuranceVerifiedAt?: string | null;
+    /** #688: RC insurer name + policy validity window (public record). */
+    insuranceInsurer?: string | null;
+    insuranceExpiry?: string | null;
+    /** #700: Law 31-08 Art. 29(2) seller block — address, phone, IF/RC. */
+    businessAddress?: string | null;
+    businessPhone?: string | null;
+    rc?: string | null;
+    taxId?: string | null;
 }
 
 export interface BookingTemplateSummary {
@@ -671,6 +686,37 @@ export interface BookingDetails extends Booking {
     };
     session: BookingSessionSummary;
     traveler: BookingTravelerSummary;
+}
+
+/**
+ * #689 (Council S6): the Booking Pass — issued only once the AGENCY has
+ * confirmed receipt of the deposit in its own bank account. The pass is
+ * a receipt artefact: it states the payment was made to the named
+ * agency and that Ouiboo holds no funds. `token` is the signed QR
+ * payload; it resolves nothing on its own — verification requires an
+ * authenticated agency session (POST /bookings/pass/verify).
+ */
+export interface BookingPass {
+    bookingId: string;
+    status: string;
+    issuedAt: string;
+    token: string;
+    seller: {
+        agencyId: string;
+        legalName: string | null;
+        companyName: string;
+    };
+    tripTitle: string;
+    startDate: string;
+    endDate: string;
+    guestsCount: number;
+    currency: string;
+    totalAmount: DecimalString;
+    depositConfirmedAmount: DecimalString | null;
+    balanceAmount: DecimalString | null;
+    meetingPoint: { address: string | null; mapsUrl: string | null; pickupAvailable: boolean } | null;
+    attendance?: BookingAttendance | null;
+    passCheckInAt?: string | null;
 }
 
 export interface PaymentProof {

@@ -32,6 +32,10 @@ const FAQ_IDS = [
   'tripEmergency',
   'normalSupport',
   'complaint',
+  // #693 (Council S6): the published review-moderation rules and the
+  // attendance dispute path live here, in every language.
+  'attendanceDispute',
+  'reviewModeration',
 ] as const;
 
 const CATEGORIES = [

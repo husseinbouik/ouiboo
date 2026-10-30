@@ -789,6 +789,14 @@
       "tripEmergency": {
         "answer": "First call your agency's emergency contact — you will find it on your booking page. If they do not respond, contact Ouiboo support and we will escalate with the agency during your trip period. If anyone is in danger, contact local emergency services first.",
         "question": "Something is wrong during my trip — who do I call first?"
+      },
+      "attendanceDispute": {
+        "question": "The agency recorded my attendance wrongly — what can I do?",
+        "answer": "Your booking page shows the attendance the agency recorded, plus the second signal from your Booking Pass check-in. If the record is wrong, use “Dispute this record” on the booking page and say briefly what happened. The dispute is stamped and reviewed under the moderation rules — the record is never silently rewritten by either side."
+      },
+      "reviewModeration": {
+        "question": "How are reviews moderated?",
+        "answer": "Only travellers whose booking is completed and recorded as attended can review — reviews are never imported, bought or seeded. Reviews are checked against the booking record before publication; a review can be removed when it is abusive, off-topic, or contradicted by the booking and attendance records. Attendance disputes are resolved first, so a disputed record never quietly blocks or unlocks a review."
       }
     },
     "faqTitle": "Frequently asked questions",
@@ -948,5 +956,101 @@
     "meetingPoint": "Meeting point",
     "meetingPickup": "The agency offers traveller pickup for this trip.",
     "viewOnMap": "View on map"
+  },
+  "verificationRecord": {
+    "title": "Verification record",
+    "legalName": "Legal name",
+    "licence": "Travel-agent licence",
+    "authority": "Issuing authority",
+    "licenceExpiry": "Licence valid until",
+    "insurer": "RC insurer",
+    "insuranceValidity": "Insurance validity",
+    "checkedOn": "Checked by Ouiboo on",
+    "statusLabel": "Status",
+    "statusVerified": "Verified — trips active",
+    "statusNotVerified": "Not currently verified — trips paused",
+    "documentsNote": "Ouiboo checked the licence and insurance documents on the date above. The documents themselves stay private — only this record is public.",
+    "lapseNote": "If the licence or insurance lapses, this record stops showing as verified and the agency’s trips are paused automatically."
+  },
+  "sellerBlock": {
+    "title": "Seller (the agency you pay)",
+    "legalName": "Legal name",
+    "address": "Address",
+    "phone": "Phone",
+    "rc": "Trade register (RC)",
+    "taxId": "Tax ID (IF)",
+    "notYetProvided": "Not yet provided by the agency",
+    "incompleteNote": "Some seller details are still being completed with the agency — ask the agency directly before paying if anything you need is missing.",
+    "verificationRecordLink": "See the agency’s verification record"
+  },
+  "bookingPass": {
+    "title": "Booking Pass",
+    "pending": "Your pass is issued here as soon as the agency confirms receipt of your deposit in its bank account. A proof upload alone does not issue the pass — the agency’s confirmation does.",
+    "paidToAgency": "Payment was made to {{seller}} — the agency selling this trip.",
+    "noFundsHeld": "Ouiboo holds no funds: your money went directly to the agency.",
+    "offlineCopy": "You are seeing the copy saved on this device — it works offline.",
+    "qrAlt": "Booking Pass QR code",
+    "qrHint": "Show this code to the agency at the meeting point",
+    "total": "Trip total",
+    "confirmedReceived": "Confirmed received by the agency",
+    "balance": "Balance still to pay the agency",
+    "notProvided": "Not provided",
+    "meetingPoint": "Meeting point",
+    "pickupAvailable": "Pickup is available for this trip — confirm the details with the agency.",
+    "viewOnMap": "View on map",
+    "checkedIn": "Checked in by the agency on {{date}}",
+    "whatsappAgency": "Message the agency on WhatsApp",
+    "whatsappNote": "State changes are shared through this contact — Ouiboo does not run the chat.",
+    "whatsappGreeting": "Hello {{seller}}, I am writing about my booking on Ouiboo.",
+    "state": {
+      "depositConfirmed": "Deposit confirmed by the agency",
+      "balanceDue": "Group confirmed — balance due to the agency",
+      "fullyPaid": "Paid in full to the agency",
+      "refundDue": "Refund due from the agency — see your refund case below"
+    }
+  },
+  "attendance": {
+    "title": "Attendance",
+    "status": {
+      "notRecorded": "Not recorded yet — the agency records attendance after the trip.",
+      "attended": "Recorded as ATTENDED by the agency.",
+      "noShow": "Recorded as NO SHOW by the agency."
+    },
+    "recordedOn": "Recorded on {{date}}",
+    "qrCheckedIn": "Second signal: the agency scanned your Booking Pass on {{date}}.",
+    "qrNotCheckedIn": "Second signal: no Booking Pass scan recorded yet.",
+    "reviewGateNote": "Only travellers recorded as attended can leave a review — that is what keeps reviews tied to real trips.",
+    "disputeButton": "Dispute this record",
+    "disputePlaceholder": "Explain briefly why this attendance record is wrong…",
+    "disputeSubmit": "Send dispute",
+    "disputedOn": "You disputed this record on {{date}}. It is reviewed under the published moderation rules.",
+    "actionFailed": "Something went wrong. Please try again.",
+    "moderationRulesLink": "Read the review moderation rules"
+  },
+  "refundCase": {
+    "title": "Your refund case",
+    "obligorLine": "{{agency}} — the agency that received your payment — is responsible for paying this refund.",
+    "trackingLine": "Ouiboo tracks the case and escalates with the agency; Ouiboo never holds the money and does not pay refunds itself.",
+    "timelineLabel": "Refund progress",
+    "step": {
+      "requested": "Requested",
+      "review": "Under review",
+      "initiated": "Sent by the agency",
+      "completed": "Completed"
+    },
+    "amount": "Refund amount",
+    "dueBy": "Expected by",
+    "duePending": "Set once the agency confirms the refund",
+    "status": {
+      "REFUND_REQUESTED": "Refund requested",
+      "ELIGIBILITY_REVIEW": "Eligibility under review",
+      "REFUND_APPROVED": "Refund approved",
+      "AGENCY_ACTION_REQUIRED": "Waiting for the agency to act",
+      "REFUND_INITIATED": "Refund sent by the agency",
+      "REFUND_COMPLETED": "Refund completed",
+      "REFUND_REJECTED": "Refund not approved",
+      "REFUND_FAILED": "A refund attempt failed — the agency must retry",
+      "REFUND_OVERDUE": "Refund overdue — Ouiboo is escalating"
+    }
   }
 }

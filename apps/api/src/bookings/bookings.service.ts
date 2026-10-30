@@ -1,4 +1,5 @@
-import { Injectable, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { createHash } from 'node:crypto';
 import { CURRENT_BOOKING_TERMS_VERSION, UserRole } from '@ouiboo/types';
 import { DatabaseService } from '../database/database.service';
@@ -6,7 +7,7 @@ import { CreateBookingDto, PaymentMethodEnum } from './dto/create-booking.dto';
 import { EmailService } from '../email/email.service';
 import { UploadService } from '../upload/upload.service';
 import { BookingPaymentPlanStatus, BookingPaymentStatus, ExternalPaymentStage, PaymentCustodian, PaymentLedgerSource, PaymentMethod, SessionGroupStatus } from '@ouiboo/database';
-import { BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT, mapBookingDetails } from './booking-response.util';
+import { BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT, mapBookingDetails, normalizeBookingMeetingPoint } from './booking-response.util';
 import { resolvePaymentProofDownloadUrl } from './payment-proof-url.util';
 import { Prisma } from '@ouiboo/database';
 import { decimalEqualsMoney, multiplyMoney, toMoneyDecimal, toMoneyString } from '../common/money.util';
@@ -19,6 +20,12 @@ import {
 } from '../cancellation/cancellation.util';
 
 const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
+
+// #689 (Council S6): Booking Pass token purpose — a pass token is a
+// bearer artefact for ONE booking, verified only inside an
+// authenticated agency session; it is never a public URL credential
+// for traveller data (contrast the upload file token, #391).
+export const BOOKING_PASS_TOKEN_PURPOSE = 'ouiboo-booking-pass';
 
 // The include shape create() builds its response from, shared with the
 // #494 idempotency replay lookup so a replayed response is built from
@@ -128,6 +135,8 @@ function isIdempotencyUniqueViolation(error: unknown): boolean {
 
 @Injectable()
 export class BookingsService {
+    private passJwtService?: JwtService;
+
     constructor(
         private db: DatabaseService,
         private emailService: EmailService,
@@ -135,6 +144,23 @@ export class BookingsService {
         private externalPaymentsService: ExternalPaymentsService,
         private stagedPaymentsService: StagedPaymentsService,
     ) { }
+
+    /**
+     * #689: pass tokens are signed with the platform JWT secret (the
+     * same secret AuthModule requires at boot — no fallback secret is
+     * ever invented here). Constructed lazily so the service's existing
+     * constructor contract (and its unit specs) stay unchanged.
+     */
+    private getPassJwt(): JwtService {
+        if (!this.passJwtService) {
+            const secret = process.env.JWT_SECRET;
+            if (!secret) {
+                throw new Error('JWT_SECRET is required');
+            }
+            this.passJwtService = new JwtService({ secret });
+        }
+        return this.passJwtService;
+    }
 
     async create(travelerId: string, dto: CreateBookingDto, rawIdempotencyKey?: string) {
         // #494 (Council Session #2, B16): idempotent creation — one
@@ -1213,6 +1239,231 @@ export class BookingsService {
                     targetType: 'Booking',
                     targetId: bookingId,
                     metadata: { attendance: outcome, agencyId: agency.id },
+                },
+            })
+            .catch((err: unknown) => console.error('Audit log failed', err));
+
+        return this.db.booking.findUniqueOrThrow({ where: { id: bookingId } });
+    }
+
+    /**
+     * #689 (Council S6): the Booking Pass. Issued only when the AGENCY
+     * has confirmed receipt of the deposit — i.e. a bank-confirmed
+     * ExternalPayment exists for the deposit (or full) stage, the same
+     * fact that settles the booking (#422). An accepted proof image
+     * alone never issues a pass: acceptance is not settlement.
+     *
+     * The pass is the receipt: seller legal name, MAD amounts, the
+     * exact meeting point (unlocked here, as on the booking view), and
+     * the signed QR token. It states — in the traveller UI's copy —
+     * that the payment was made to the agency and Ouiboo holds no
+     * funds; the payload itself never claims a platform guarantee.
+     */
+    async getBookingPass(bookingId: string, userId: string, role?: string) {
+        const booking = await this.db.booking.findUnique({
+            where: { id: bookingId },
+            include: {
+                session: { include: { template: { include: { agency: true } } } },
+                paymentPlan: true,
+                externalPayments: {
+                    select: { ...BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT },
+                },
+            },
+        });
+        if (!booking) throw new BadRequestException('Booking not found');
+
+        const agencyProfile = await this.db.agencyProfile.findUnique({ where: { userId } });
+        const isTraveler = booking.travelerId === userId;
+        const isAgencyOwner = Boolean(agencyProfile) && booking.session.template.agencyId === agencyProfile!.id;
+        const isAdmin = role === UserRole.Admin;
+        if (!isTraveler && !isAgencyOwner && !isAdmin) {
+            throw new ForbiddenException('Forbidden');
+        }
+
+        if (booking.status === 'CANCELLED' || booking.status === 'NO_SHOW') {
+            throw new BadRequestException('This booking is no longer valid, so no pass can be issued');
+        }
+
+        const confirmedPayments = (booking.externalPayments ?? []).filter(
+            (payment: any) => payment?.bankConfirmedAt,
+        );
+        if (!confirmedPayments.length) {
+            throw new BadRequestException(
+                'The Booking Pass is issued once the agency confirms receipt of your deposit',
+            );
+        }
+
+        const plan = booking.paymentPlan;
+        // Total the agency has bank-confirmed across stages (deposit,
+        // then balance) — money received by the AGENCY, never Ouiboo.
+        const depositConfirmedAmount = confirmedPayments
+            .reduce((sum: any, payment: any) => sum.plus(payment.confirmedAmount ?? 0), toMoneyDecimal(0 as never, 'amount'))
+            .toFixed(2);
+        const balanceAmount = plan
+            ? (plan.status === BookingPaymentPlanStatus.FULLY_PAID
+                ? '0.00'
+                : toMoneyString(plan.balanceAmount as never))
+            : '0.00';
+
+        // The token stays valid through the trip plus a check-in grace
+        // window; it is bound to this booking and this traveller, and it
+        // verifies ONLY inside an authenticated agency session.
+        const expiresAt = new Date(booking.session.endDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const expiresIn = Math.max(60, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
+        const token = await this.getPassJwt().signAsync(
+            { purpose: BOOKING_PASS_TOKEN_PURPOSE, bookingId: booking.id, travelerId: booking.travelerId },
+            { expiresIn },
+        );
+
+        const agency = booking.session.template.agency;
+        return {
+            bookingId: booking.id,
+            status: booking.status,
+            issuedAt: new Date().toISOString(),
+            token,
+            seller: {
+                agencyId: agency?.id ?? booking.session.template.agencyId,
+                legalName: agency?.legalName ?? null,
+                companyName: agency?.companyName ?? '',
+            },
+            tripTitle: booking.session.template.title,
+            startDate: booking.session.startDate.toISOString(),
+            endDate: booking.session.endDate.toISOString(),
+            guestsCount: booking.guestsCount,
+            currency: booking.currency,
+            totalAmount: toMoneyString(booking.totalAmount as never) ?? '0.00',
+            depositConfirmedAmount,
+            balanceAmount,
+            meetingPoint: normalizeBookingMeetingPoint(booking.session.template.meetingPoint),
+            attendance: booking.attendance ?? null,
+            passCheckInAt: booking.passCheckInAt ? booking.passCheckInAt.toISOString() : null,
+        };
+    }
+
+    /**
+     * #689 + #693: agency-authenticated pass verification. The caller
+     * is resolved from the agency JWT + tenant (controller guards);
+     * the token alone — an unauthenticated scan — verifies nothing and
+     * there is deliberately no public verify route. A successful scan
+     * at/after the trip start stamps `passCheckInAt`: the second,
+     * independent attendance signal next to the agency's own record.
+     * Verifying another agency's pass is refused, as is a pass for a
+     * cancelled booking.
+     */
+    async verifyBookingPass(token: string, tenantId: string, actorUserId: string) {
+        if (!token || typeof token !== 'string') {
+            throw new BadRequestException('A booking pass token is required');
+        }
+        let payload: { purpose?: unknown; bookingId?: unknown };
+        try {
+            payload = await this.getPassJwt().verifyAsync(token);
+        } catch {
+            throw new UnauthorizedException('Invalid or expired booking pass');
+        }
+        if (payload?.purpose !== BOOKING_PASS_TOKEN_PURPOSE || typeof payload?.bookingId !== 'string') {
+            throw new UnauthorizedException('Invalid booking pass');
+        }
+
+        const booking = await this.db.booking.findUnique({
+            where: { id: payload.bookingId },
+            include: { session: { include: { template: true } } },
+        });
+        if (!booking) throw new BadRequestException('Booking not found');
+
+        const agency = await this.db.agencyProfile.findUnique({ where: { id: tenantId } });
+        if (!agency || booking.session.template.agencyId !== agency.id) {
+            throw new ForbiddenException('This pass belongs to another agency');
+        }
+
+        if (booking.status === 'CANCELLED' || booking.status === 'NO_SHOW') {
+            return {
+                valid: false,
+                reason: 'BOOKING_NOT_ACTIVE',
+                bookingId: booking.id,
+                status: booking.status,
+            };
+        }
+
+        let checkInAt = booking.passCheckInAt ?? null;
+        if (!checkInAt && booking.session.startDate <= new Date()) {
+            const claimed = await this.db.booking.updateMany({
+                where: { id: booking.id, passCheckInAt: null },
+                data: { passCheckInAt: new Date() },
+            });
+            if (claimed.count === 1) {
+                checkInAt = new Date();
+                await this.db.auditLog
+                    .create({
+                        data: {
+                            actorId: actorUserId ?? null,
+                            action: 'BOOKING_PASS_CHECK_IN',
+                            targetType: 'Booking',
+                            targetId: booking.id,
+                            metadata: { agencyId: agency.id },
+                        },
+                    })
+                    .catch((err: unknown) => console.error('Audit log failed', err));
+            }
+        }
+
+        return {
+            valid: true,
+            bookingId: booking.id,
+            status: booking.status,
+            travelerName: booking.fullName ?? null,
+            guestsCount: booking.guestsCount,
+            tripTitle: booking.session.template.title,
+            startDate: booking.session.startDate.toISOString(),
+            endDate: booking.session.endDate.toISOString(),
+            attendance: booking.attendance ?? null,
+            passCheckInAt: checkInAt ? new Date(checkInAt).toISOString() : null,
+        };
+    }
+
+    /**
+     * #693 (Council S6): the traveller disputes the agency-recorded
+     * attendance. The dispute is stamped on the booking (reason +
+     * timestamp) and audited; the recorded outcome itself is NOT
+     * rewritten by the dispute — resolution happens under the
+     * published review-moderation rules (help surface), so neither
+     * party can silently flip the review-eligibility fact.
+     */
+    async disputeAttendance(bookingId: string, userId: string, reason: string) {
+        const trimmed = typeof reason === 'string' ? reason.trim() : '';
+        if (!trimmed) {
+            throw new BadRequestException('A reason is required to dispute the attendance record');
+        }
+        if (trimmed.length > 1000) {
+            throw new BadRequestException('The dispute reason is too long');
+        }
+        const booking = await this.db.booking.findUnique({ where: { id: bookingId } });
+        if (!booking) throw new BadRequestException('Booking not found');
+        if (booking.travelerId !== userId) {
+            throw new ForbiddenException('Forbidden');
+        }
+        if (!booking.attendance) {
+            throw new BadRequestException('No attendance has been recorded for this booking yet');
+        }
+        if (booking.attendanceDisputedAt) {
+            throw new ConflictException('This attendance record has already been disputed');
+        }
+
+        const claimed = await this.db.booking.updateMany({
+            where: { id: bookingId, attendanceDisputedAt: null },
+            data: { attendanceDisputedAt: new Date(), attendanceDisputeReason: trimmed },
+        });
+        if (claimed.count !== 1) {
+            throw new ConflictException('This attendance record has already been disputed');
+        }
+
+        await this.db.auditLog
+            .create({
+                data: {
+                    actorId: userId,
+                    action: 'BOOKING_ATTENDANCE_DISPUTED',
+                    targetType: 'Booking',
+                    targetId: bookingId,
+                    metadata: { attendance: booking.attendance, reason: trimmed },
                 },
             })
             .catch((err: unknown) => console.error('Audit log failed', err));

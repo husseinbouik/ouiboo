@@ -868,7 +868,10 @@
     "emergencyNamePlaceholder": "Guide or on-call manager",
     "emergencyPhone": "Emergency phone",
     "emergencyPhonePlaceholder": "+XXX XX XX XX XX",
-    "emergencyHint": "Use a number that is actually answered during trips. This contact is required to publish a trip: without it, new trips cannot go live (trips already published are not affected). Travellers holding a booking see it on their booking’s Emergency Card."
+    "emergencyHint": "Use a number that is actually answered during trips. This contact is required to publish a trip: without it, new trips cannot go live (trips already published are not affected). Travellers holding a booking see it on their booking’s Emergency Card.",
+    "businessPhone": "Public business phone",
+    "businessPhonePlaceholder": "+212 6 00 00 00 00",
+    "businessPhoneHint": "Shown to travellers in the seller block at checkout (with your legal name, address and RC/IF). Use a business number, not a personal one."
   },
   "analytics": {
     "dashboardTitle": "Analytics Dashboard",

@@ -40,6 +40,7 @@ type SettingsFormValues = {
   email: string;
   emergencyContactName: string;
   emergencyContactPhone: string;
+  businessPhone: string;
   name: string;
 };
 
@@ -64,6 +65,8 @@ export default function SettingsPage() {
       // #419: trip emergency contact (departure pack on traveller bookings).
       emergencyContactName: user?.agencyProfile?.emergencyContactName || '',
       emergencyContactPhone: user?.agencyProfile?.emergencyContactPhone || '',
+      // #700 (Council S6): public seller phone for the checkout block.
+      businessPhone: user?.agencyProfile?.businessPhone || '',
     }
   });
 
@@ -90,7 +93,8 @@ export default function SettingsPage() {
           bankAccountHolderName: data.bankAccountHolderName,
           bankAttestationUrl: data.bankAttestationUrl,
           emergencyContactName: data.emergencyContactName,
-          emergencyContactPhone: data.emergencyContactPhone
+          emergencyContactPhone: data.emergencyContactPhone,
+          businessPhone: data.businessPhone
         }),
       ]);
       setFeedback({ type: 'success', text: t('settings.updateSuccess') });
@@ -257,6 +261,16 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">{t('settings.emergencyHint')}</p>
+                <div className="space-y-2">
+                  <Label htmlFor="settings-business-phone">{t('settings.businessPhone')}</Label>
+                  <Input
+                    id="settings-business-phone"
+                    type="tel"
+                    {...register('businessPhone')}
+                    placeholder={t('settings.businessPhonePlaceholder')}
+                  />
+                  <p className="text-xs text-muted-foreground">{t('settings.businessPhoneHint')}</p>
+                </div>
               </CardContent>
             </Card>
 

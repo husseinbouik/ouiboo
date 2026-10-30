@@ -44,6 +44,10 @@ export async function generateMetadata(): Promise<Metadata> {
       template: "%s | Ouiboo",
     },
     description: copy.description,
+    // #690 (Council S6): PWA — installable traveller app; the Booking
+    // Pass renders offline once loaded (auth-aware service worker).
+    manifest: "/manifest.webmanifest",
+    appleWebApp: { capable: true, statusBarStyle: "default", title: SITE_NAME },
     keywords: ["travel marketplace", "travel experiences", "local travel agencies", "Morocco trips", "Ouiboo"],
     openGraph: {
       type: "website",
@@ -65,6 +69,7 @@ export async function generateMetadata(): Promise<Metadata> {
 import { getInitialLanguage, languageInitScript, type SupportedLanguage } from '@ouiboo/i18n/server';
 import { SkipLink } from '@/components/SkipLink';
 import { WebVitals } from '@/components/WebVitals';
+import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 
 export default async function RootLayout({
   children,
@@ -82,6 +87,7 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: languageInitScript }}
         />
         <SkipLink />
+        <ServiceWorkerRegister />
         <Providers>
           <Navbar />
           <main id="main-content" className="min-h-screen" tabIndex={-1}>

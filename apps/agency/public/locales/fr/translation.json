@@ -868,7 +868,10 @@
     "emergencyNamePlaceholder": "Guide ou responsable de permanence",
     "emergencyPhone": "Téléphone d'urgence",
     "emergencyPhonePlaceholder": "+XXX XX XX XX XX",
-    "emergencyHint": "Indiquez un numéro réellement joignable pendant les voyages. Ce contact est obligatoire pour publier un voyage : sans lui, les nouveaux voyages ne peuvent pas être mis en ligne (les voyages déjà publiés ne sont pas concernés). Les voyageurs ayant une réservation le voient sur la carte d’urgence de leur réservation."
+    "emergencyHint": "Indiquez un numéro réellement joignable pendant les voyages. Ce contact est obligatoire pour publier un voyage : sans lui, les nouveaux voyages ne peuvent pas être mis en ligne (les voyages déjà publiés ne sont pas concernés). Les voyageurs ayant une réservation le voient sur la carte d’urgence de leur réservation.",
+    "businessPhone": "Téléphone professionnel public",
+    "businessPhonePlaceholder": "+212 6 00 00 00 00",
+    "businessPhoneHint": "Affiché aux voyageurs dans le bloc vendeur au paiement (avec votre raison sociale, adresse et RC/IF). Utilisez un numéro professionnel, pas un numéro personnel."
   },
   "analytics": {
     "dashboardTitle": "Tableau de bord analytique",

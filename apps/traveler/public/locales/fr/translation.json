@@ -789,6 +789,14 @@
       "tripEmergency": {
         "answer": "Appelez d'abord le contact d'urgence de votre agence — il figure sur votre page de réservation. S'il ne répond pas, contactez l'assistance Ouiboo et nous ferons remonter le problème auprès de l'agence pendant la période de votre voyage. Si une personne est en danger, contactez d'abord les services d'urgence locaux.",
         "question": "Un problème pendant mon voyage — qui appeler en premier ?"
+      },
+      "attendanceDispute": {
+        "question": "L’agence a mal enregistré ma présence — que puis-je faire ?",
+        "answer": "Votre page de réservation affiche la présence enregistrée par l’agence, ainsi que le second signal issu du scan de votre Pass de réservation. Si l’enregistrement est erroné, utilisez « Contester cet enregistrement » sur la page de réservation et décrivez brièvement les faits. La contestation est horodatée et examinée selon les règles de modération — l’enregistrement n’est jamais réécrit silencieusement par l’une ou l’autre partie."
+      },
+      "reviewModeration": {
+        "question": "Comment les avis sont-ils modérés ?",
+        "answer": "Seuls les voyageurs dont la réservation est terminée et enregistrée comme présente peuvent laisser un avis — les avis ne sont jamais importés, achetés ni créés de toutes pièces. Les avis sont confrontés au dossier de réservation avant publication ; un avis peut être retiré s’il est abusif, hors sujet ou contredit par les enregistrements de réservation et de présence. Les contestations de présence sont résolues en premier, afin qu’un enregistrement contesté ne bloque ni ne débloque silencieusement un avis."
       }
     },
     "faqTitle": "Questions fréquentes",
@@ -948,5 +956,101 @@
     "meetingPoint": "Point de rendez-vous",
     "meetingPickup": "L'agence propose le ramassage des voyageurs pour ce voyage.",
     "viewOnMap": "Voir sur la carte"
+  },
+  "verificationRecord": {
+    "title": "Fiche de vérification",
+    "legalName": "Raison sociale",
+    "licence": "Licence d’agent de voyages",
+    "authority": "Autorité de délivrance",
+    "licenceExpiry": "Licence valable jusqu’au",
+    "insurer": "Assureur RC",
+    "insuranceValidity": "Validité de l’assurance",
+    "checkedOn": "Vérifié par Ouiboo le",
+    "statusLabel": "Statut",
+    "statusVerified": "Vérifiée — voyages actifs",
+    "statusNotVerified": "Non vérifiée actuellement — voyages en pause",
+    "documentsNote": "Ouiboo a contrôlé les documents de licence et d’assurance à la date ci-dessus. Les documents eux-mêmes restent privés — seule cette fiche est publique.",
+    "lapseNote": "Si la licence ou l’assurance expire, cette fiche cesse d’apparaître comme vérifiée et les voyages de l’agence sont automatiquement mis en pause."
+  },
+  "sellerBlock": {
+    "title": "Vendeur (l’agence que vous payez)",
+    "legalName": "Raison sociale",
+    "address": "Adresse",
+    "phone": "Téléphone",
+    "rc": "Registre de commerce (RC)",
+    "taxId": "Identifiant fiscal (IF)",
+    "notYetProvided": "Pas encore fourni par l’agence",
+    "incompleteNote": "Certaines informations du vendeur sont encore en cours de complétion avec l’agence — demandez directement à l’agence avant de payer s’il vous manque un élément.",
+    "verificationRecordLink": "Voir la fiche de vérification de l’agence"
+  },
+  "bookingPass": {
+    "title": "Pass de réservation",
+    "pending": "Votre pass est émis ici dès que l’agence confirme la réception de votre acompte sur son compte bancaire. Un envoi de justificatif seul n’émet pas le pass — c’est la confirmation de l’agence qui l’émet.",
+    "paidToAgency": "Le paiement a été fait à {{seller}} — l’agence qui vend ce voyage.",
+    "noFundsHeld": "Ouiboo ne détient aucun fonds : votre argent est allé directement à l’agence.",
+    "offlineCopy": "Vous voyez la copie enregistrée sur cet appareil — elle fonctionne hors ligne.",
+    "qrAlt": "Code QR du Pass de réservation",
+    "qrHint": "Présentez ce code à l’agence au point de rendez-vous",
+    "total": "Total du voyage",
+    "confirmedReceived": "Réception confirmée par l’agence",
+    "balance": "Solde restant à payer à l’agence",
+    "notProvided": "Non fourni",
+    "meetingPoint": "Point de rendez-vous",
+    "pickupAvailable": "Une prise en charge est possible pour ce voyage — confirmez les détails avec l’agence.",
+    "viewOnMap": "Voir sur la carte",
+    "checkedIn": "Enregistré par l’agence le {{date}}",
+    "whatsappAgency": "Contacter l’agence sur WhatsApp",
+    "whatsappNote": "Les changements d’état passent par ce contact — Ouiboo n’héberge pas la conversation.",
+    "whatsappGreeting": "Bonjour {{seller}}, je vous écris au sujet de ma réservation sur Ouiboo.",
+    "state": {
+      "depositConfirmed": "Acompte confirmé par l’agence",
+      "balanceDue": "Groupe confirmé — solde à payer à l’agence",
+      "fullyPaid": "Payé intégralement à l’agence",
+      "refundDue": "Remboursement dû par l’agence — voir votre dossier ci-dessous"
+    }
+  },
+  "attendance": {
+    "title": "Présence",
+    "status": {
+      "notRecorded": "Pas encore enregistrée — l’agence enregistre la présence après le voyage.",
+      "attended": "Enregistré comme PRÉSENT par l’agence.",
+      "noShow": "Enregistré comme ABSENT par l’agence."
+    },
+    "recordedOn": "Enregistré le {{date}}",
+    "qrCheckedIn": "Second signal : l’agence a scanné votre Pass de réservation le {{date}}.",
+    "qrNotCheckedIn": "Second signal : aucun scan du Pass de réservation enregistré pour le moment.",
+    "reviewGateNote": "Seuls les voyageurs enregistrés comme présents peuvent laisser un avis — c’est ce qui lie les avis à des voyages réels.",
+    "disputeButton": "Contester cet enregistrement",
+    "disputePlaceholder": "Expliquez brièvement pourquoi cet enregistrement de présence est erroné…",
+    "disputeSubmit": "Envoyer la contestation",
+    "disputedOn": "Vous avez contesté cet enregistrement le {{date}}. Il est examiné selon les règles de modération publiées.",
+    "actionFailed": "Une erreur est survenue. Veuillez réessayer.",
+    "moderationRulesLink": "Lire les règles de modération des avis"
+  },
+  "refundCase": {
+    "title": "Votre dossier de remboursement",
+    "obligorLine": "{{agency}} — l’agence qui a reçu votre paiement — est responsable du paiement de ce remboursement.",
+    "trackingLine": "Ouiboo suit le dossier et relance l’agence ; Ouiboo ne détient jamais l’argent et ne paie pas les remboursements lui-même.",
+    "timelineLabel": "Progression du remboursement",
+    "step": {
+      "requested": "Demandé",
+      "review": "En examen",
+      "initiated": "Envoyé par l’agence",
+      "completed": "Terminé"
+    },
+    "amount": "Montant du remboursement",
+    "dueBy": "Attendu avant le",
+    "duePending": "Fixé dès que l’agence confirme le remboursement",
+    "status": {
+      "REFUND_REQUESTED": "Remboursement demandé",
+      "ELIGIBILITY_REVIEW": "Éligibilité en cours d’examen",
+      "REFUND_APPROVED": "Remboursement approuvé",
+      "AGENCY_ACTION_REQUIRED": "En attente d’action de l’agence",
+      "REFUND_INITIATED": "Remboursement envoyé par l’agence",
+      "REFUND_COMPLETED": "Remboursement terminé",
+      "REFUND_REJECTED": "Remboursement non approuvé",
+      "REFUND_FAILED": "Une tentative de remboursement a échoué — l’agence doit réessayer",
+      "REFUND_OVERDUE": "Remboursement en retard — Ouiboo relance l’agence"
+    }
   }
 }

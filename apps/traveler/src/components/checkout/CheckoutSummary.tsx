@@ -8,6 +8,7 @@ import { MapPin, Calendar, Users, Banknote, CheckCircle2 } from 'lucide-react';
 import { formatCurrency, normalizeCurrency } from '@ouiboo/utils';
 import type { CheckoutTrip } from './checkout-types';
 import SellerIdentity from '../SellerIdentity';
+import SellerBlock from '../SellerBlock';
 import { ModelExplainer } from '../ModelExplainer';
 import { CancellationScaleCard } from '../CancellationScaleCard';
 import { useDisplayAmountConverter } from '@/lib/display-currency';
@@ -70,6 +71,10 @@ export function CheckoutSummary({
             </div>
             {/* #371: seller of record + verified travel licence */}
             <SellerIdentity agency={trip.agency} className="pt-1 normal-case tracking-normal" />
+            {/* #700 (Council S6): the complete Law 31-08 Art. 29(2)
+                seller block at checkout, with the link to the agency's
+                Public Verification Record (#688). */}
+            <SellerBlock agency={trip.agency} className="pt-2 normal-case tracking-normal" showRecordLink />
           </div>
         </div>
 

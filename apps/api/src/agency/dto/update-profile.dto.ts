@@ -67,6 +67,18 @@ export class UpdateAgencyProfileDto {
   @MaxLength(300)
   businessAddress?: string;
 
+  // #700 (Council S6): public business phone for the Law 31-08
+  // Art. 29(2) seller block at checkout. Same reachable-number shape
+  // as the emergency contact; never a personal number by assumption —
+  // the agency supplies it as its public seller phone.
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  @Matches(EMERGENCY_CONTACT_PHONE_PATTERN, {
+    message: 'businessPhone must be a reachable phone number',
+  })
+  businessPhone?: string;
+
   // #419 (Council P0-16): trip emergency contact — shown to travellers
   // holding a booking (departure pack) as the FIRST call during an
   // active trip. Optional: an agency without one gets the honest
