@@ -311,6 +311,25 @@ export interface DestinationConfig {
     aliases: string[];
 }
 
+/**
+ * #677 (Council S6): the beta agency offer pack AS CONFIGURATION — the
+ * published service promises every recruited agency sees, in one place:
+ * the licence+insurance verification SLA (48 working hours from a
+ * complete submission), the assisted-listing offer (OuiBoo builds the
+ * first listings WITH the agency; the agency approves before publish),
+ * and the support-relief split (OuiBoo answers platform/booking
+ * questions in FR/AR/EN at the published support hours; the agency
+ * answers trip logistics; during an active trip the agency emergency
+ * contact is first call and OuiBoo is the escalation). Surfaces render
+ * these numbers from here so the promise can never drift per page.
+ */
+export const BETA_AGENCY_OFFER = {
+    verificationSlaWorkingHours: 48,
+    supportResponseHours: 48,
+    assistedListing: true,
+    supportLanguages: ['fr', 'ar', 'en'],
+} as const;
+
 export const BETA_DESTINATIONS: readonly DestinationConfig[] = [
     { slug: 'tangier', aliases: ['tangier', 'tanger', 'طنجة'] },
     { slug: 'tetouan', aliases: ['tetouan', 'tétouan', 'tetuan', 'تطوان'] },
