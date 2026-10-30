@@ -245,6 +245,26 @@ describe('Golden Path E2E: booking → payment → invoice → refund (#431)', (
 
         // ---- 3. Invoice: monthly platform service fee for the agency ----
         const confirmedAt = booking!.confirmedAt!;
+        // #698 (Council S6): the per-booking service fee accrues ONLY on
+        // COMPLETED bookings — while this booking is merely CONFIRMED
+        // (paid, trip not yet taken) the period has nothing billable.
+        await http()
+            .post('/admin/invoices/generate')
+            .set('Authorization', AUTH_ADMIN)
+            .send({
+                agencyId: agency.id,
+                year: confirmedAt.getUTCFullYear(),
+                month: confirmedAt.getUTCMonth() + 1,
+                commissionRatePercent: 10,
+            })
+            .expect(400);
+        // The trip runs and completes (the completion job's end state,
+        // set directly here as elsewhere in this suite) — now the fee
+        // accrues and the invoice generates.
+        await db.booking.update({
+            where: { id: bookingId },
+            data: { status: 'COMPLETED' },
+        });
         const invoiceRes = await http()
             .post('/admin/invoices/generate')
             .set('Authorization', AUTH_ADMIN)
