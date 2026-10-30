@@ -451,7 +451,45 @@
       "cancellationBandLessThan": "Less than {{days}} days before: {{percent}}% refund",
       "structureNote": "Days are added and ordered in French, the canonical structure — this tab only translates each day's text.",
       "livePreviewEmptyTitle": "Nothing to preview yet",
-      "livePreviewEmptyBody": "Add a title, description, location or photo and the preview of your trip will appear here."
+      "livePreviewEmptyBody": "Add a title, description, location or photo and the preview of your trip will appear here.",
+      "destination": "Destination",
+      "destinationAuto": "Automatic (from starting location)",
+      "destinationNames": {
+        "tangier": "Tangier",
+        "tetouan": "Tétouan",
+        "chefchaouen": "Chefchaouen"
+      },
+      "meetingPointTitle": "Meeting point",
+      "meetingPointSubtitle": "Before booking, travellers see only the departure area. The exact address and map link appear on the booking view. Publishing requires an address or pickup.",
+      "meetingAddress": "Meeting address",
+      "meetingAddressPlaceholder": "e.g. Place du 9 Avril 1947, Tangier",
+      "meetingMapsUrl": "Map link",
+      "meetingMapsUrlPlaceholder": "https://maps.google.com/…",
+      "meetingPickup": "Traveller pickup available",
+      "dayDistanceKm": "Distance (km)",
+      "dayDriveTimeMinutes": "Drive time (minutes)",
+      "dayAccommodationName": "Accommodation name",
+      "dayAccommodationNamePlaceholder": "e.g. Riad Goloboy",
+      "dayAccommodationType": "Accommodation type",
+      "accommodationTypes": {
+        "HOTEL": "Hotel",
+        "RIAD": "Riad",
+        "GUESTHOUSE": "Guesthouse",
+        "CAMP": "Camp",
+        "HOSTEL": "Hostel",
+        "OTHER": "Other"
+      },
+      "dayMeals": "Meals included",
+      "mealBreakfast": "Breakfast",
+      "mealLunch": "Lunch",
+      "mealDinner": "Dinner",
+      "publishScaleRequired": "Publishing requires the structured cancellation scale — set the bands above.",
+      "publishMeetingRequired": "Publishing requires a meeting point — add the meeting address or enable pickup (step 1).",
+      "commercialTermsProhibited": "Free-text cancellation or payment terms are not allowed on a published trip — remove them and use the structured cancellation scale instead.",
+      "completenessDay": "Day {{day}}: consider adding {{missing}} (optional — a suggestion, not a block).",
+      "nudgeDriveTime": "drive time",
+      "nudgeAccommodation": "accommodation",
+      "nudgeMeals": "meals"
     }
   },
   "payments": {

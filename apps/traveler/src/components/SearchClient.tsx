@@ -15,12 +15,17 @@ import { Button, Input, Badge, MobileFilterDrawer, TripCardSkeletonGrid } from "
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@ouiboo/ui/utils";
 import { TripCard } from "@/components/TripCard";
-import { TripCategory, TripStatus } from "@ouiboo/types";
+import { BETA_DESTINATIONS, TripCategory, TripStatus } from "@ouiboo/types";
 import { useTripsQuery, type TripsQueryParams } from "@ouiboo/api-client";
 import { useTranslation } from "react-i18next";
 
 type SearchFilters = {
   category: string;
+  /** #675: destination facet — a slug from BETA_DESTINATIONS, '' = any. */
+  destination: string;
+  /** #675: duration facet — a DURATION_BUCKETS key, '' = any. The
+   * field existed in this type for years but was never parsed from
+   * the URL, never serialized, and never sent to the API. */
   duration: string;
   priceMax: string;
   searchQuery: string;
@@ -38,6 +43,32 @@ type SortOrder = "asc" | "desc";
 export type SearchInitialFilters = SearchFilters;
 
 /**
+ * #675: duration facet buckets (trip length in days). The bucket key
+ * travels in the `duration` URL param; the API receives the resolved
+ * durationMin/durationMax range (its parameters existed and were
+ * parsed server-side — the traveller side never sent them).
+ */
+export const DURATION_BUCKETS = [
+  { key: "1", min: 1, max: 1 },
+  { key: "2-3", min: 2, max: 3 },
+  { key: "4-7", min: 4, max: 7 },
+  { key: "8+", min: 8, max: undefined },
+] as const;
+
+export function durationBucketRange(key: string): { min: number; max?: number } | null {
+  const bucket = DURATION_BUCKETS.find((candidate) => candidate.key === key);
+  return bucket ? { min: bucket.min, max: bucket.max } : null;
+}
+
+export function isDurationBucketKey(key: string): boolean {
+  return DURATION_BUCKETS.some((bucket) => bucket.key === key);
+}
+
+export function isDestinationSlugValue(value: string): boolean {
+  return BETA_DESTINATIONS.some((destination) => destination.slug === value);
+}
+
+/**
  * #440: parse the complete filter set from the current URL params.
  * `date` is accepted as the legacy alias of `dateFrom` (the server page
  * does the same); everything else uses the canonical param names that
@@ -51,9 +82,15 @@ export function parseFiltersFromSearchParams(searchParams: URLSearchParams): Sea
     ? normalizedCategory
     : rawCategory;
   const ratingRaw = Number(searchParams.get("ratingMin"));
+  // #675: destination + duration facets — parsed from the URL and
+  // validated against the configuration / bucket keys (anything else
+  // is ignored rather than sent to the API).
+  const rawDestination = searchParams.get("destination") ?? "";
+  const rawDuration = searchParams.get("duration") ?? "";
   return {
     category,
-    duration: "",
+    destination: isDestinationSlugValue(rawDestination) ? rawDestination : "",
+    duration: isDurationBucketKey(rawDuration) ? rawDuration : "",
     priceMax: searchParams.get("priceMax") ?? "",
     searchQuery: searchParams.get("q") ?? "",
     dateFrom: searchParams.get("date") || searchParams.get("dateFrom") || "",
@@ -69,6 +106,8 @@ export function buildSearchParams(filters: SearchFilters): URLSearchParams {
   const params = new URLSearchParams();
   if (filters.searchQuery) params.set("q", filters.searchQuery);
   if (filters.category) params.set("category", filters.category);
+  if (filters.destination) params.set("destination", filters.destination);
+  if (filters.duration) params.set("duration", filters.duration);
   if (filters.priceMin) params.set("priceMin", filters.priceMin);
   if (filters.priceMax) params.set("priceMax", filters.priceMax);
   if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
@@ -172,6 +211,14 @@ export default function SearchClient({
     };
     if (filters.searchQuery) params.q = filters.searchQuery;
     if (filters.category) params.category = filters.category;
+    // #675: destination facet end to end (API parses ?destination=).
+    if (filters.destination) params.destination = filters.destination;
+    // #675: duration facet — bucket key resolved to the API range.
+    const durationRange = filters.duration ? durationBucketRange(filters.duration) : null;
+    if (durationRange) {
+      params.durationMin = durationRange.min;
+      if (durationRange.max !== undefined) params.durationMax = durationRange.max;
+    }
     if (filters.priceMin) params.priceMin = Number(filters.priceMin);
     if (filters.priceMax) params.priceMax = Number(filters.priceMax);
     if (filters.dateFrom) params.startDateFrom = filters.dateFrom;
@@ -192,6 +239,8 @@ export default function SearchClient({
     sortOrder === "desc" &&
     filters.searchQuery === initialFilters.searchQuery &&
     filters.category === initialFilters.category &&
+    filters.destination === initialFilters.destination &&
+    filters.duration === initialFilters.duration &&
     filters.priceMin === initialFilters.priceMin &&
     filters.priceMax === initialFilters.priceMax &&
     filters.dateFrom === initialFilters.dateFrom &&
@@ -219,6 +268,12 @@ export default function SearchClient({
 
   const activeFilterChips = useMemo(() => {
     const chips: { label: string; onRemove: () => void }[] = [];
+    if (filters.destination) {
+      chips.push({ label: t(`search.destinationNames.${filters.destination}`), onRemove: () => updateFilter("destination", "") });
+    }
+    if (filters.duration) {
+      chips.push({ label: t(`search.durationBuckets.${filters.duration}`), onRemove: () => updateFilter("duration", "") });
+    }
     if (filters.priceMin || filters.priceMax) {
       const min = filters.priceMin || "0";
       const max = filters.priceMax || "8";
@@ -232,7 +287,7 @@ export default function SearchClient({
     if (filters.availabilityOnly) chips.push({ label: "Available Only", onRemove: () => updateFilter("availabilityOnly", false) });
     if (filters.ratingMin > 0) chips.push({ label: `Rating: ${filters.ratingMin}+`, onRemove: () => updateFilter("ratingMin", 0) });
     return chips;
-  }, [filters, updateFilter, updateFilters]);
+  }, [filters, updateFilter, updateFilters, t]);
 
   const renderCategoryGroup = () => (
       <div className="space-y-3">
@@ -250,6 +305,53 @@ export default function SearchClient({
               )}
             >
               {category.label}
+            </button>
+          ))}
+        </div>
+      </div>
+  );
+
+  // #675: destination facet — exactly the configured beta-cluster
+  // destinations; labels are localised names (proper nouns per locale).
+  const renderDestinationGroup = () => (
+      <div className="space-y-3">
+        <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.destination')}</p>
+        <div className="grid gap-2">
+          {BETA_DESTINATIONS.map((destination) => (
+            <button
+              key={destination.slug}
+              type="button"
+              onClick={() => updateFilter("destination", filters.destination === destination.slug ? "" : destination.slug)}
+              aria-pressed={filters.destination === destination.slug}
+              className={cn(
+                "px-3 py-2 rounded-lg text-sm text-left",
+                filters.destination === destination.slug ? "bg-sunset-orange/10 text-sunset-orange-dark" : "bg-muted",
+              )}
+            >
+              {t(`search.destinationNames.${destination.slug}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+  );
+
+  // #675: duration facet — day-count buckets resolved to API ranges.
+  const renderDurationGroup = () => (
+      <div className="space-y-3">
+        <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.duration')}</p>
+        <div className="grid gap-2">
+          {DURATION_BUCKETS.map((bucket) => (
+            <button
+              key={bucket.key}
+              type="button"
+              onClick={() => updateFilter("duration", filters.duration === bucket.key ? "" : bucket.key)}
+              aria-pressed={filters.duration === bucket.key}
+              className={cn(
+                "px-3 py-2 rounded-lg text-sm text-left",
+                filters.duration === bucket.key ? "bg-sunset-orange/10 text-sunset-orange-dark" : "bg-muted",
+              )}
+            >
+              {t(`search.durationBuckets.${bucket.key}`)}
             </button>
           ))}
         </div>
@@ -301,6 +403,8 @@ export default function SearchClient({
   const renderFilterControls = () => (
     <div className="space-y-6">
       {renderCategoryGroup()}
+      {renderDestinationGroup()}
+      {renderDurationGroup()}
       {renderDatesGroup()}
       {renderPriceGroup()}
       {renderAvailabilityGroup()}
@@ -315,6 +419,8 @@ export default function SearchClient({
   const renderSidebarFilterControls = () => (
     <div className="space-y-6">
       {renderCategoryGroup()}
+      {renderDestinationGroup()}
+      {renderDurationGroup()}
       {renderSortGroup()}
       <div>
         <button

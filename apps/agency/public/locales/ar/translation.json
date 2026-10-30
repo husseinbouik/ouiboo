@@ -453,7 +453,45 @@
       "cancellationBandLessThan": "قبل أقل من {{days}} أيام: استرداد {{percent}}٪",
       "structureNote": "تُضاف الأيام وتُرتَّب بالفرنسية، وهي البنية الأساسية — هذه العلامة تترجم نص كل يوم فقط.",
       "livePreviewEmptyTitle": "لا شيء للمعاينة بعد",
-      "livePreviewEmptyBody": "أضف عنوانًا أو وصفًا أو موقعًا أو صورة وسيظهر هنا معاينة رحلتك."
+      "livePreviewEmptyBody": "أضف عنوانًا أو وصفًا أو موقعًا أو صورة وسيظهر هنا معاينة رحلتك.",
+      "destination": "الوجهة",
+      "destinationAuto": "تلقائي (من مكان الانطلاق)",
+      "destinationNames": {
+        "tangier": "طنجة",
+        "tetouan": "تطوان",
+        "chefchaouen": "شفشاون"
+      },
+      "meetingPointTitle": "نقطة الالتقاء",
+      "meetingPointSubtitle": "قبل الحجز، يرى المسافرون منطقة الانطلاق فقط. يظهر العنوان الدقيق ورابط الخريطة في صفحة الحجز. يتطلب النشر عنوانًا أو خدمة الاستلام.",
+      "meetingAddress": "عنوان الالتقاء",
+      "meetingAddressPlaceholder": "مثال: ساحة 9 أبريل 1947، طنجة",
+      "meetingMapsUrl": "رابط الخريطة",
+      "meetingMapsUrlPlaceholder": "https://maps.google.com/…",
+      "meetingPickup": "توفير استلام المسافرين",
+      "dayDistanceKm": "المسافة (كم)",
+      "dayDriveTimeMinutes": "مدة القيادة (دقائق)",
+      "dayAccommodationName": "اسم الإقامة",
+      "dayAccommodationNamePlaceholder": "مثال: رياض غولوبوي",
+      "dayAccommodationType": "نوع الإقامة",
+      "accommodationTypes": {
+        "HOTEL": "فندق",
+        "RIAD": "رياض",
+        "GUESTHOUSE": "دار ضيافة",
+        "CAMP": "مخيم",
+        "HOSTEL": "نزل",
+        "OTHER": "أخرى"
+      },
+      "dayMeals": "الوجبات المشمولة",
+      "mealBreakfast": "فطور",
+      "mealLunch": "غداء",
+      "mealDinner": "عشاء",
+      "publishScaleRequired": "يتطلب النشر سلم الإلغاء المنظم — حدد النطاقات أعلاه.",
+      "publishMeetingRequired": "يتطلب النشر نقطة التقاء — أضف عنوان الالتقاء أو فعّل الاستلام (الخطوة 1).",
+      "commercialTermsProhibited": "شروط الإلغاء أو الدفع كنص حر غير مسموح بها في رحلة منشورة — احذفها واستخدم سلم الإلغاء المنظم بدلاً منها.",
+      "completenessDay": "اليوم {{day}}: فكر في إضافة {{missing}} (اختياري — اقتراح وليس حظرًا).",
+      "nudgeDriveTime": "مدة القيادة",
+      "nudgeAccommodation": "الإقامة",
+      "nudgeMeals": "الوجبات"
     }
   },
   "payments": {

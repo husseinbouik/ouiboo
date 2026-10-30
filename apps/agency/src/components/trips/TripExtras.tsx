@@ -181,6 +181,36 @@ export function TripExtras({ t, form, mode }: Props) {
       {/* #417 (Council P0-11): per-trip cancellation bands. */}
       <TripCancellationScale t={t} form={form} />
 
+      {/* Council S6 Batch B (#674/#676): publish-time guardrail hints.
+          The scale + meeting requirements are enforced by the form
+          schema and the API publish gate; the itinerary-depth items are
+          a completeness NUDGE only — publishing is never blocked by
+          them and travellers never see them as a defect. */}
+      {watch('status') === 'ACTIVE' && (
+        <div className="space-y-2 rounded-xl bg-warning/10 border border-warning/30 p-4" data-testid="publish-nudges">
+          {!watch('cancellationPolicy')?.bands?.length && (
+            <p className="text-sm font-medium text-foreground">{t('trips.create.publishScaleRequired')}</p>
+          )}
+          {(() => {
+            const meeting = watch('meetingPoint');
+            return !meeting?.address?.trim() && !meeting?.pickupAvailable ? (
+              <p className="text-sm font-medium text-foreground">{t('trips.create.publishMeetingRequired')}</p>
+            ) : null;
+          })()}
+          {(watch('itinerary') ?? []).map((day, index) => {
+            const missing: string[] = [];
+            if (day.driveTimeMinutes == null) missing.push(t('trips.create.nudgeDriveTime'));
+            if (!day.accommodationName?.trim() && !day.accommodationType) missing.push(t('trips.create.nudgeAccommodation'));
+            if (!day.mealsIncluded?.length) missing.push(t('trips.create.nudgeMeals'));
+            return missing.length > 0 ? (
+              <p key={index} className="text-sm text-muted-foreground">
+                {t('trips.create.completenessDay', { day: day.dayNumber ?? index + 1, missing: missing.join(', ') })}
+              </p>
+            ) : null;
+          })}
+        </div>
+      )}
+
       <div className="space-y-4 pt-4 border-t border-border">
         <label className="text-sm font-semibold text-foreground">{t('trips.create.publishStatus')}</label>
         <div className="flex gap-6">

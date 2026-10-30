@@ -276,6 +276,35 @@ export default function BookingDetailsPage() {
                   licence type + number, issue date, issuing authority,
                   and the #413 what+when checks. Legacy records missing
                   the issue data show the honest pending line. */}
+              {/* #676: the booking view is where the EXACT meeting
+                  point appears — address + map link (public trip
+                  pages show the area only), plus the pickup note. */}
+              {booking.session.template.meetingPoint && (
+                <div className="rounded-2xl border border-border/60 bg-muted/20 p-5" data-testid="booking-meeting-point">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    {t('bookingDetail.meetingPoint')}
+                  </p>
+                  <div className="mt-3 space-y-2 text-sm">
+                    {booking.session.template.meetingPoint.address && (
+                      <p className="font-semibold text-foreground">{booking.session.template.meetingPoint.address}</p>
+                    )}
+                    {booking.session.template.meetingPoint.pickupAvailable && (
+                      <p className="text-muted-foreground">{t('bookingDetail.meetingPickup')}</p>
+                    )}
+                    {booking.session.template.meetingPoint.mapsUrl && (
+                      <a
+                        href={booking.session.template.meetingPoint.mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 font-semibold text-sunset-orange hover:underline"
+                      >
+                        <MapPin className="h-4 w-4" /> {t('bookingDetail.viewOnMap')}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <SellerIdentity agency={booking.session.template.agency} />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -42,6 +42,12 @@ type TripDay = {
   title?: string;
   description?: string;
   activities?: string[];
+  /** #676: language-neutral slice (numbers / enums / proper noun). */
+  distanceKm?: number | null;
+  driveTimeMinutes?: number | null;
+  mealsIncluded?: string[];
+  accommodationName?: string | null;
+  accommodationType?: string | null;
 };
 
 type TripSession = {
@@ -96,6 +102,9 @@ type TripDetails = {
   } | null;
   sessions?: TripSession[];
   itinerary?: TripDay[];
+  /** #676: public meeting point — AREA ONLY (the API never sends the
+   * exact address/maps link on this pre-booking surface). */
+  meetingPoint?: { area: string | null; pickupAvailable: boolean } | null;
   /** #417: the resolved cancellation scale from GET /trips/:id (bands + floor). */
   cancellationScale?: CancellationScaleSnapshot | null;
   inclusions?: string[];
@@ -396,6 +405,19 @@ export default function TripDetailsClient({
 
                     {/* #371: seller of record + verified travel licence */}
                     <SellerIdentity agency={trip.agency} className="mt-4" />
+
+                    {/* #676: meeting AREA only before booking — the
+                        exact address + map link appear on the booking
+                        view once the traveller holds a booking. */}
+                    {(trip.meetingPoint?.area || trip.meetingPoint?.pickupAvailable) ? (
+                      <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground" data-testid="trip-meeting-area">
+                        <MapPin className="h-4 w-4 text-sunset-orange shrink-0" />
+                        {trip.meetingPoint.area ? t('tripDetails.meetingArea', { area: trip.meetingPoint.area }) : null}
+                        {trip.meetingPoint.pickupAvailable ? (
+                          <span>{trip.meetingPoint.area ? ' · ' : ''}{t('tripDetails.meetingPickup')}</span>
+                        ) : null}
+                      </p>
+                    ) : null}
                 </motion.div>
 
                 {/* Quick Stats Grid */}
@@ -461,6 +483,42 @@ export default function TripDetailsClient({
                                   {act}
                                 </Badge>
                               ))}
+                            </div>
+                          )}
+
+                          {/* #676: the language-neutral day facts —
+                              distance / drive time (numbers), meals +
+                              accommodation type (enum labels), and the
+                              accommodation name (proper noun, shown
+                              as-is in every language). */}
+                          {(day.distanceKm != null || day.driveTimeMinutes != null || (day.mealsIncluded && day.mealsIncluded.length > 0) || day.accommodationName || day.accommodationType) && (
+                            <div className="flex flex-wrap gap-2 pt-2" data-testid={`itinerary-day-facts-${day.dayNumber}`}>
+                              {day.distanceKm != null && (
+                                <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider py-1 px-2.5 border-border bg-muted/30">
+                                  {t('tripDetails.distanceKm', { count: day.distanceKm })}
+                                </Badge>
+                              )}
+                              {day.driveTimeMinutes != null && (
+                                <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider py-1 px-2.5 border-border bg-muted/30">
+                                  {day.driveTimeMinutes >= 60
+                                    ? t('tripDetails.driveTimeHM', { hours: Math.floor(day.driveTimeMinutes / 60), minutes: day.driveTimeMinutes % 60 })
+                                    : t('tripDetails.driveTimeM', { minutes: day.driveTimeMinutes })}
+                                </Badge>
+                              )}
+                              {day.mealsIncluded?.map((meal) => (
+                                <Badge key={meal} variant="outline" className="text-[10px] font-bold uppercase tracking-wider py-1 px-2.5 border-border bg-muted/30">
+                                  {t(`tripDetails.meals.${meal}`)}
+                                </Badge>
+                              ))}
+                              {(day.accommodationName || day.accommodationType) && (
+                                <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider py-1 px-2.5 border-border bg-muted/30">
+                                  {day.accommodationName
+                                    ? day.accommodationType
+                                      ? `${day.accommodationName} · ${t(`tripDetails.accommodationTypes.${day.accommodationType}`)}`
+                                      : day.accommodationName
+                                    : t(`tripDetails.accommodationTypes.${day.accommodationType}`)}
+                                </Badge>
+                              )}
                             </div>
                           )}
                         </div>

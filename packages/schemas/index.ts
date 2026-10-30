@@ -229,6 +229,28 @@ export const CreateTripTemplateSchema = TripTemplateSchema.omit({
     itinerary: true,
 }).extend({
     itinerary: z.array(CreateItineraryDaySchema).optional(),
+}).superRefine((data, ctx) => {
+    // Council S6 Batch B (#674 + #676): editor-side publish validation,
+    // mirroring the API publish gates. Publishing (status ACTIVE)
+    // requires the ONE structured cancellation scale and a meeting
+    // point (address or pickup). Drafts stay freely saveable.
+    if (data.status === TripStatus.Active) {
+        if (!data.cancellationPolicy?.bands?.length) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['cancellationPolicy'],
+                message: 'A structured cancellation scale is required to publish — set the cancellation bands (free-text terms are not accepted)',
+            });
+        }
+        const meeting = data.meetingPoint;
+        if (!meeting?.address?.trim() && !meeting?.pickupAvailable) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['meetingPoint'],
+                message: 'A meeting point is required to publish — provide the meeting address or enable traveller pickup',
+            });
+        }
+    }
 });
 
 export const TripSessionSchema = z.object({
