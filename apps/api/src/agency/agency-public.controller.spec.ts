@@ -45,6 +45,9 @@ describe('AgencyPublicController (#371, #413)', () => {
         expect(select.insuranceVerifiedAt).toBe(true);
 
         expect(result.licenceVerified).toBe(true);
+        // #673: status + expiry ride along with the verified-at stamp.
+        expect(result.travelLicenceStatus).toBe('VERIFIED');
+        expect(result.licenceExpiry).toEqual(new Date('2027-10-24T00:00:00.000Z'));
         expect(result.travelLicenceNumber).toBe('AV-2024-0187');
         expect(result.licenceVerifiedAt).toEqual(new Date('2026-10-24T00:00:00.000Z'));
         expect(result.insuranceStatus).toBe('VERIFIED');
@@ -79,6 +82,10 @@ describe('AgencyPublicController (#371, #413)', () => {
 
         expect(result.licenceVerified).toBe(false);
         expect(result.travelLicenceNumber).toBeNull();
+        // #673: the status is still stated honestly, but the expiry is
+        // withheld while the licence is not verified.
+        expect(result.travelLicenceStatus).toBe('PENDING_REVIEW');
+        expect(result.licenceExpiry).toBeNull();
         expect(result.licenceVerifiedAt).toBeNull();
         expect(result.insuranceVerifiedAt).toBeNull();
     });

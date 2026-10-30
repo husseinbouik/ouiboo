@@ -643,6 +643,27 @@ export default function LandingPage() {
             </div>
         </section>
 
+        {/* #678 (Council S6): "How Ouiboo works" explainer + general FAQ.
+            Same model copy as checkout and the traveller help page:
+            Ouiboo is the technology, the agency is the seller and the
+            refund obligor, and travellers pay the agency directly. */}
+        <section id="how-ouiboo-works" className="py-24 sm:py-32" data-testid="model-faq">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="mx-auto max-w-2xl lg:text-center">
+              <h2 className="text-3xl font-bold tracking-tight text-deep-blue sm:text-4xl">{t('modelFaq.title')}</h2>
+              <p className="mt-6 text-lg leading-8 text-gray-600">{t('modelFaq.intro')}</p>
+            </div>
+            <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 lg:max-w-5xl lg:grid-cols-2">
+              {(['whoSells', 'payDirect', 'stagedPayments', 'refunds', 'verification'] as const).map((id) => (
+                <article key={id} className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200">
+                  <h3 className="text-lg font-semibold text-deep-blue">{t(`modelFaq.items.${id}.question`)}</h3>
+                  <p className="mt-3 text-base leading-7 text-gray-600">{t(`modelFaq.items.${id}.answer`)}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* --- PRICING SECTION --- */}
         <PricingSection />
 

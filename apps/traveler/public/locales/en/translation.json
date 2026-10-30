@@ -180,7 +180,7 @@
     "secureTitle": "Direct payments",
     "secureDescription": "You pay the agency directly — Ouiboo never holds your money.",
     "verifiedTitle": "Agency licence details",
-    "verifiedDescription": "Licence number provided by the agency — not independently verified by Ouiboo.",
+    "verifiedDescription": "Every agency's licence and insurance are checked by Ouiboo. Each trip and agency page shows the licence status, its expiry date and the date it was verified, and the date its insurance was verified.",
     "instantTitle": "Booking requests",
     "instantDescription": "Send a booking request and the agency confirms availability. No hidden fees."
   },
@@ -345,8 +345,8 @@
     "spots_one": "{{count}} spot",
     "spots_other": "{{count}} spots",
     "soldOut": "Sold out",
-    "verifiedAgency": "Licence number provided by the agency — not independently verified",
     "licenceChecked": "Licence checked {{date}}",
+    "licenceValidUntil": "Licence valid until {{date}}",
     "insuranceEvidenced": "RC insurance evidenced {{date}}",
     "agencyPending": "Agency Pending",
     "days_one": "{{count}} Day",
@@ -382,7 +382,8 @@
   },
   "agency": {
     "notFoundTitle": "Agency not found",
-    "verifiedTitle": "Licence number provided by the agency — not independently verified",
+    "verifiedTitle": "Verified agency — licence and insurance checked by Ouiboo, with the dates shown on this page",
+    "reviewsPolicy": "Reviews: we never import, buy or seed reviews — every Ouiboo review comes from a completed trip. Review counts are always shown, and an average rating appears only once a trip has at least 5 reviews.",
     "noTrips": "No active trips found for this agency."
   },
   "featuredPage": {
@@ -499,6 +500,7 @@
     "licenceDetailsPending": "Licence issue details are being confirmed with the agency.",
     "licenceNotConfirmed": "Licence details not yet confirmed — ask the agency before paying.",
     "licenceChecked": "Licence document checked on {{date}}",
+    "licenceValidUntil": "Licence valid until {{date}}",
     "insuranceEvidenced": "RC insurance evidenced on {{date}}",
     "poweredBy": "Powered by OuiBoo"
   },
@@ -581,6 +583,8 @@
       "loading": "Loading reviews...",
       "noReviewsYet": "No reviews yet",
       "beFirst": "Be the first to share your experience!",
+      "emptyIntegrity": "No reviews yet — we never import, buy or seed reviews; every Ouiboo review comes from a completed trip.",
+      "belowThreshold": "Reviews so far: {{count}} — an average is shown only from {{min}} reviews, so no average is displayed yet.",
       "sortBy": "Sort by:",
       "sortRecent": "Most Recent",
       "sortHighest": "Highest Rated",
@@ -688,6 +692,32 @@
     "escalationWhatsApp": "WhatsApp",
     "helpCentre": "Help centre",
     "helpCentreBody": "Search the frequently asked questions or open a support ticket — your ticket is recorded and answered on the normal support lane."
+  },
+  "modelExplainer": {
+    "title": "How Ouiboo works",
+    "intro": "Ouiboo is the technology that connects you with travel agencies. Ouiboo does not sell trips, and you always pay the agency directly — Ouiboo never holds your money.",
+    "items": {
+      "whoSells": {
+        "question": "Who sells my trip?",
+        "answer": "The agency sells and organises your trip. Ouiboo provides the technology for finding, booking and managing it."
+      },
+      "payDirect": {
+        "question": "Who do I pay?",
+        "answer": "You pay the agency directly — never Ouiboo. Ouiboo never holds your money."
+      },
+      "stagedPayments": {
+        "question": "How do payments work?",
+        "answer": "For group trips, you pay a deposit of at most 30% directly to the agency. The balance is only requested after the group minimum is confirmed. If the minimum is not reached, the agency refunds your deposit."
+      },
+      "refunds": {
+        "question": "Who refunds me?",
+        "answer": "The agency that sold you the trip is responsible for refunds — it is the refund obligor. Ouiboo helps you follow the case and monitors the deadlines, but the refund itself is paid by the agency."
+      },
+      "verification": {
+        "question": "How are agencies checked?",
+        "answer": "Before an agency can publish trips, its travel licence and insurance are checked. Each agency and trip page shows the licence status, its expiry date and the date it was verified, and the date its insurance was verified."
+      }
+    }
   },
   "help": {
     "backToSupport": "Back to support",

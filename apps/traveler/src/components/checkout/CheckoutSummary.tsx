@@ -8,6 +8,7 @@ import { MapPin, Calendar, Users, Banknote, CheckCircle2 } from 'lucide-react';
 import { formatCurrency, normalizeCurrency } from '@ouiboo/utils';
 import type { CheckoutTrip } from './checkout-types';
 import SellerIdentity from '../SellerIdentity';
+import { ModelExplainer } from '../ModelExplainer';
 import { CancellationScaleCard } from '../CancellationScaleCard';
 import { useDisplayAmountConverter } from '@/lib/display-currency';
 
@@ -161,6 +162,11 @@ export function CheckoutSummary({
         <Banknote className="h-5 w-5" />
         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('checkout.directPaymentNote')}</span>
       </div>
+
+      {/* #678 (Council S6): the model explainer at the point of payment —
+          the agency is the seller and refund obligor; you pay the agency
+          directly; Ouiboo never holds your money. */}
+      <ModelExplainer compact />
     </Card>
   );
 }

@@ -413,9 +413,13 @@ export class TripsService {
                     const images = derivePublicMediaUrls((template as any).images);
                     if (!localized.agency) return { ...localized, images };
                     // #569: never publish an umbrella VERIFIED the
-                    // components do not support — reconcile on read and
-                    // strip the expiry inputs from the payload.
-                    const { licenceExpiry: _licenceExpiry, insuranceExpiry: _insuranceExpiry, ...agency } =
+                    // components do not support — reconcile on read.
+                    // #673 (Council S6): the licence EXPIRY is part of the
+                    // dated verification statement the card renders
+                    // (status + expiry + verified-at), so it is exposed;
+                    // the insurance expiry stays an internal
+                    // reconciliation input and is still stripped.
+                    const { insuranceExpiry: _insuranceExpiry, ...agency } =
                         localized.agency as typeof localized.agency & { licenceExpiry?: unknown; insuranceExpiry?: unknown };
                     return {
                         ...localized,

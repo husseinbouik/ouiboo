@@ -16,6 +16,17 @@ interface AgencyPublicProfile {
   legalName?: string | null;
   licenceVerified?: boolean;
   travelLicenceNumber?: string | null;
+  // #673 (Council S6): dated verification statements — licence status,
+  // expiry and verified-at; insurance status and verified-at. These ride
+  // through to SellerIdentity, which renders them with their dates.
+  travelLicenceType?: string | null;
+  travelLicenceStatus?: string | null;
+  licenceExpiry?: string | null;
+  licenceIssuedAt?: string | null;
+  licenceIssuingAuthority?: string | null;
+  licenceVerifiedAt?: string | null;
+  insuranceStatus?: string | null;
+  insuranceVerifiedAt?: string | null;
 }
 
 interface Trip {
@@ -93,6 +104,11 @@ export default async function AgencyPage({ params }: { params: Promise<{ agencyI
             {agency.bio && <p className="text-muted-foreground max-w-2xl">{agency.bio}</p>}
             {/* #371: seller of record + verified travel licence */}
             <SellerIdentity agency={agency} className="mt-4" />
+            {/* #681 (Council S6): this page publishes no agency-level
+                rating average. Trip ratings follow the same threshold
+                rule everywhere: counts always show, averages only from
+                5 reviews, and reviews come only from completed trips. */}
+            <p className="mt-4 max-w-2xl text-sm text-muted-foreground">{t('agency.reviewsPolicy')}</p>
         </div>
 
         {/* Trips Grid */}

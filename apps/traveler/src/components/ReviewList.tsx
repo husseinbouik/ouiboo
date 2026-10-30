@@ -89,6 +89,9 @@ export function ReviewList({ tripId }: ReviewListProps) {
           <Star className="h-8 w-8 text-muted-foreground" />
         </div>
         <h3 className="text-lg font-bold text-foreground">{t('reviews.noReviewsYet')}</h3>
+        {/* #681 (Council S6): the zero state is proof of integrity, not
+            a prompt to seed — state the rule explicitly. */}
+        <p className="text-muted-foreground mt-2">{t('reviews.emptyIntegrity')}</p>
         <p className="text-muted-foreground mt-2">{t('reviews.beFirst')}</p>
       </div>
     );
