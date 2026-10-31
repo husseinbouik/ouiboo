@@ -50,7 +50,8 @@
     "subtitle": "Réservez des aventures uniques conçues par des experts locaux. Vivez la culture marocaine authentique.",
     "where": "Où allez-vous ?",
     "when": "Quand ?",
-    "search": "Rechercher"
+    "search": "Rechercher",
+    "dateRangeError": "La date de fin doit être postérieure ou égale à la date de début."
   },
   "featured": {
     "title": "Expériences en vedette",
