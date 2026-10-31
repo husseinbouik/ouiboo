@@ -50,7 +50,8 @@
     "subtitle": "Book unique adventures curated by local experts. Experience authentic Moroccan culture like never before.",
     "where": "Where to?",
     "when": "When?",
-    "search": "Search"
+    "search": "Search",
+    "dateRangeError": "The end date must be on or after the start date."
   },
   "featured": {
     "title": "Featured Experiences",
