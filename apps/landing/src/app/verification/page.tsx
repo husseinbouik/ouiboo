@@ -9,7 +9,7 @@ import { absoluteLandingUrl } from '../../lib/site'
  * verification gate checks (licence, RC insurance, seller identity,
  * enforced expiry), stated factually and dated, with the honest limit
  * up front: verification is not a guarantee. Indexed as part of
- * Layer A; no booking CTAs — waitlist only.
+ * Layer A; no booking CTAs — homepage showcase only.
  */
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getInitialLanguage()
@@ -75,7 +75,7 @@ export default async function VerificationPage() {
         <section className="mt-12 rounded-3xl border border-border bg-card p-7 shadow-sm">
           <p className="leading-7 text-muted-foreground">{shared.waitlistNote}</p>
           <Link
-            href="/#waitlist"
+            href="/#showcase"
             className="mt-4 inline-block rounded-md bg-deep-blue px-6 py-3 text-base font-semibold text-white shadow-sm"
           >
             {shared.waitlistCta}
