@@ -321,7 +321,7 @@ export default function AdminLoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute end-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
                     aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -351,7 +351,7 @@ export default function AdminLoginPage() {
               <button
                 type="button"
                 onClick={() => { setError(null); setStep('breakglass'); }}
-                className="w-full text-center text-xs font-semibold text-muted-foreground hover:text-foreground"
+                className="inline-flex min-h-[44px] w-full items-center justify-center text-center text-xs font-semibold text-muted-foreground hover:text-foreground"
               >
                 <KeyRound className="inline h-4 w-4 me-1" />
                 {t('login.mfa.breakGlassLink', 'Lost your authenticator? Use a break-glass secret')}
@@ -407,12 +407,12 @@ export default function AdminLoginPage() {
                 {mfaMutation.isPending ? t('login.mfa.verifying', 'Verifying...') : t('login.mfa.verify', 'Verify')}
               </Button>
               <div className="flex items-center justify-between text-xs font-semibold">
-                <button type="button" onClick={() => setUseRecovery((prev) => !prev)} className="text-muted-foreground hover:text-foreground">
+                <button type="button" onClick={() => setUseRecovery((prev) => !prev)} className="inline-flex min-h-[44px] items-center text-muted-foreground hover:text-foreground">
                   {useRecovery
                     ? t('login.mfa.useAuthenticator', 'Use authenticator code')
                     : t('login.mfa.useRecovery', 'Use a recovery code')}
                 </button>
-                <button type="button" onClick={backToCredentials} className="text-muted-foreground hover:text-foreground">
+                <button type="button" onClick={backToCredentials} className="inline-flex min-h-[44px] items-center text-muted-foreground hover:text-foreground">
                   {t('login.mfa.back', 'Back to sign in')}
                 </button>
               </div>
@@ -481,7 +481,7 @@ export default function AdminLoginPage() {
                   >
                     {t('login.mfa.enrollConfirm', 'Confirm and continue')}
                   </Button>
-                  <button type="button" onClick={backToCredentials} className="w-full text-center text-xs font-semibold text-muted-foreground hover:text-foreground">
+                  <button type="button" onClick={backToCredentials} className="inline-flex min-h-[44px] w-full items-center justify-center text-center text-xs font-semibold text-muted-foreground hover:text-foreground">
                     {t('login.mfa.back', 'Back to sign in')}
                   </button>
                 </>
@@ -543,7 +543,7 @@ export default function AdminLoginPage() {
               >
                 {t('login.mfa.breakGlassSubmit', 'Sign in with break-glass secret')}
               </Button>
-              <button type="button" onClick={backToCredentials} className="w-full text-center text-xs font-semibold text-muted-foreground hover:text-foreground">
+              <button type="button" onClick={backToCredentials} className="inline-flex min-h-[44px] w-full items-center justify-center text-center text-xs font-semibold text-muted-foreground hover:text-foreground">
                 {t('login.mfa.back', 'Back to sign in')}
               </button>
             </form>

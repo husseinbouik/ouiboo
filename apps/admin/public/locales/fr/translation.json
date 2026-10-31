@@ -605,7 +605,10 @@
     "description": "Espace d'administration privé de la plateforme Ouiboo."
   },
   "common": {
-    "skipToContent": "Aller au contenu"
+    "skipToContent": "Aller au contenu",
+    "switchLanguage": "Changer de langue — actuelle : {{language}}",
+    "switchFrom": "Passer de {{language}}",
+    "toggleTheme": "Basculer le thème"
   },
   "pagination": {
     "showing": "Affichage",
