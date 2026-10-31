@@ -2,6 +2,7 @@ import { Controller, Get, Param, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { DatabaseService } from '../database/database.service';
 import { effectiveInsuranceStatus, effectiveLicenceStatus, effectiveVerificationStatus } from '../common/agency-licence.util';
+import { canAgencyAcceptBookings } from '../common/agency-booking-eligibility.util';
 import { derivePublicMediaUrl } from '../upload/media-url.util';
 
 @ApiTags('Agency Public')
@@ -52,6 +53,13 @@ export class AgencyPublicController {
                 taxId: true,
                 verificationPausedAt: true,
                 verificationPauseReason: true,
+                // #728: booking-eligibility inputs for the storefront
+                // live-trip count below — selected for the predicate
+                // only, never returned in the public payload.
+                subscriptionStatus: true,
+                trialEndsAt: true,
+                subscriptionEndsAt: true,
+                newBookingsRestrictedAt: true,
                 // #691 (Council S6): storefront — language-keyed about
                 // + languages the agency works in.
                 aboutTranslations: true,
@@ -69,9 +77,15 @@ export class AgencyPublicController {
         // published; the average only from 5 VISIBLE reviews), and the
         // median first-response time from real conversations (null
         // when there is nothing to measure — never an invented number).
+        // #728: the storefront's "live trips" are the trips public
+        // discovery can advertise — an agency that cannot accept
+        // bookings has zero live trips here too, matching the
+        // catalogue (whose queries filter on the same predicate).
+        const agencyCanAcceptBookings = canAgencyAcceptBookings(agency);
+        const tripTemplateModel = (this.prisma as any).tripTemplate;
         const [liveTripCount, reviewAggregate, medianResponseTimeHours] = await Promise.all([
-            this.prisma.tripTemplate?.count
-                ? this.prisma.tripTemplate.count({
+            agencyCanAcceptBookings && tripTemplateModel?.count
+                ? tripTemplateModel.count({
                       where: { agencyId: agency.id, status: 'ACTIVE' },
                   })
                 : Promise.resolve(0),

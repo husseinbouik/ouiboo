@@ -4,6 +4,7 @@ import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripSessionDto } fro
 import { BookingPaymentStatus, BookingStatus, Prisma, SessionStatus, TripStatus } from '@ouiboo/database';
 import { toMoneyDecimal } from '../common/money.util';
 import { canOrganise, effectiveInsuranceStatus, effectiveVerificationStatus, getAgencyActivationBlock, sellerBlockMissingFields } from '../common/agency-licence.util';
+import { publicBookableAgencyWhere } from '../common/agency-booking-eligibility.util';
 import { visibleBankDetails } from '../common/bank-details.util';
 import { BETA_CATALOG_CURRENCY, isCatalogCurrencyAllowed, isMadOnlyCatalogEnabled } from '../common/catalog-currency.util';
 import { resolveStagedSessionConfig } from '../staged-payments/staged-payments.util';
@@ -391,14 +392,17 @@ export class TripsService {
 
             // Build WHERE clause for trip templates
             // Only show trips from verified agencies (launch blocker #182)
+            // #728: …that can actually accept a booking. The fragment is
+            // the booking gate's eligibility predicate in Prisma form —
+            // subscription validity, the new-bookings restriction and
+            // effective licence/insurance included — so the catalogue
+            // never advertises a trip whose booking would be rejected.
             const where: any = {
                 status: TripStatus.ACTIVE,
                 // #684: private/unlisted trips (converted custom-trip
                 // requests) never appear in the public catalogue.
                 isUnlisted: false,
-                agency: {
-                    verificationStatus: 'VERIFIED',
-                },
+                agency: publicBookableAgencyWhere(),
             };
 
             if (featured) where.featured = true;
@@ -645,7 +649,10 @@ export class TripsService {
             where: {
                 id,
                 status: TripStatus.ACTIVE,
-                agency: { verificationStatus: 'VERIFIED' },
+                // #728: same bookable-agency gate as the catalogue — an
+                // ineligible agency's trip answers NotFound, exactly
+                // like the MAD-only gate below.
+                agency: publicBookableAgencyWhere(),
                 // B24(f) / #498: a non-MAD trip is not publicly visible
                 // while the beta gate is on — same NotFound as absent.
                 ...(isMadOnlyCatalogEnabled() ? { currency: BETA_CATALOG_CURRENCY } : {}),
@@ -866,7 +873,9 @@ export class TripsService {
                 destinationSlug: slug,
                 status: TripStatus.ACTIVE,
                 isUnlisted: false,
-                agency: { verificationStatus: 'VERIFIED' },
+                // #728: destination inventory is public discovery too —
+                // counts and trips derive from bookable agencies only.
+                agency: publicBookableAgencyWhere(),
                 ...(isMadOnlyCatalogEnabled() ? { currency: BETA_CATALOG_CURRENCY } : {}),
             },
             include: {
@@ -1106,7 +1115,9 @@ export class TripsService {
             where: {
                 id: templateId,
                 status: TripStatus.ACTIVE,
-                agency: { verificationStatus: 'VERIFIED' },
+                // #728: public session listing follows the same
+                // bookable-agency gate as the trip detail it feeds.
+                agency: publicBookableAgencyWhere(),
             },
             select: { id: true, currency: true },
         });

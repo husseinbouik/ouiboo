@@ -192,6 +192,46 @@ describe('AgencyPublicController (#371, #413)', () => {
             expect(JSON.stringify(result)).not.toContain('insuranceCertificateKey');
         });
 
+        it('reports zero live trips while the agency cannot accept bookings (#728)', async () => {
+            const makeStorefrontController = (agency: Record<string, unknown>) => {
+                const prisma = {
+                    agencyProfile: { findUnique: jest.fn().mockResolvedValue(agency) },
+                    tripTemplate: { count: jest.fn().mockResolvedValue(12) },
+                    review: {
+                        aggregate: jest
+                            .fn()
+                            .mockResolvedValue({ _avg: { rating: null }, _count: { _all: 0 } }),
+                    },
+                };
+                return { controller: new AgencyPublicController(prisma as any), prisma };
+            };
+
+            // Bookable: ACTIVE subscription + verified licence/insurance.
+            const bookable = makeStorefrontController({
+                ...recordAgency,
+                subscriptionStatus: 'ACTIVE',
+                subscriptionEndsAt: null,
+                trialEndsAt: null,
+                newBookingsRestrictedAt: null,
+            });
+            const bookableResult: any = await bookable.controller.getPublicProfile('agency-1');
+            expect(bookableResult.storefront.liveTripCount).toBe(12);
+            expect(bookable.prisma.tripTemplate.count).toHaveBeenCalled();
+
+            // The staging-seed shape: TRIAL with no trial end — never
+            // bookable, so the storefront must not claim live trips.
+            const lapsed = makeStorefrontController({
+                ...recordAgency,
+                subscriptionStatus: 'TRIAL',
+                trialEndsAt: null,
+                subscriptionEndsAt: null,
+                newBookingsRestrictedAt: null,
+            });
+            const lapsedResult: any = await lapsed.controller.getPublicProfile('agency-1');
+            expect(lapsedResult.storefront.liveTripCount).toBe(0);
+            expect(lapsed.prisma.tripTemplate.count).not.toHaveBeenCalled();
+        });
+
         it('a lapsed licence auto-pauses the record: verified claims withheld, tripsPaused true', async () => {
             const { controller } = makeController({
                 ...recordAgency,
