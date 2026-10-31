@@ -103,8 +103,8 @@
     },
     "offerTitle": "L’offre bêta pour les agences",
     "offer1": {
-      "title": "Vérification sous 48 heures ouvrées",
-      "description": "Votre licence de voyage et votre assurance RC sont vérifiées sous 48 heures ouvrées après un dossier complet."
+      "title": "Vérifiée avant mise en ligne",
+      "description": "Votre licence de voyage et votre assurance RC sont vérifiées avant la mise en ligne de vos voyages — le même contrôle pour chaque agence."
     },
     "offer2": {
       "title": "Nous construisons vos premières annonces avec vous",
@@ -594,7 +594,7 @@
       "lead": "Nous invitons 3 à 5 agences vérifiées, venues de tout le Maroc, à fonder la marketplace avec nous — un accompagnement personnel par le fondateur, aucun formulaire avant d'avoir parlé à un humain.",
       "chips": [
         "Gratuit pendant la bêta",
-        "Vérification sous 48 heures",
+        "Vérifiée avant mise en ligne",
         "Nous vous aidons à publier vos premiers voyages"
       ],
       "objections": {
@@ -615,7 +615,7 @@
           "text": "Publiez sur Ouiboo et partout ailleurs. Partez quand vous voulez — vos voyages, vos photos et vos contenus restent les vôtres."
         }
       },
-      "cta": "Rejoindre la bêta gratuite",
+      "cta": "Découvrir l'offre agences",
       "note": "3 à 5 places fondatrices · des agences de tout le Maroc · nous préparons vos premiers voyages avec vous"
     },
     "faq": {
@@ -666,6 +666,134 @@
       "title": "Guides des villes du Maroc",
       "intro": "Que voir et que faire, ville par ville — pour toutes celles et ceux qui préparent un voyage au Maroc.",
       "readGuide": "Lire le guide"
+    },
+    "agencesPage": {
+      "nav": {
+        "back": "Accueil"
+      },
+      "hero": {
+        "eyebrow": "Pour les agences · Bêta fondatrice",
+        "titleA": "Vendez vos voyages sur Ouiboo.",
+        "titleB": "Vous êtes payé directement.",
+        "titleC": "Gratuit pendant la bêta.",
+        "lead": "Ouiboo présente vos voyages aux voyageurs ; vous restez l'organisateur et le vendeur, et les voyageurs paient votre agence directement. Pendant la bêta fondatrice : aucun abonnement, aucun frais.",
+        "founderRole": "Fondateur d'Ouiboo · Tanger",
+        "founderLine": "Je recrute personnellement les 3 à 5 agences fondatrices. Vous parlez au fondateur, pas à un service commercial.",
+        "ctaWhatsapp": "Discuter avec le fondateur sur WhatsApp",
+        "ctaNote": "Pas de formulaire. Une conversation d'abord.",
+        "whatsappMessage": "Bonjour Hussein, je dirige une agence de voyages et je souhaite discuter de la bêta gratuite Ouiboo. (Page agences)"
+      },
+      "steps": {
+        "eyebrow": "Pour commencer",
+        "title": "Comment ça commence",
+        "intro": "Trois étapes simples — et un humain au bout du fil dès la première.",
+        "step1": {
+          "title": "Une conversation de 15 minutes",
+          "text": "Nous parlons de vos voyages et de vos questions, sur WhatsApp ou par téléphone. Aucun formulaire avant cette conversation."
+        },
+        "step2": {
+          "title": "Vous envoyez trois documents",
+          "text": "Votre licence d'agence de voyages (ODV), votre assurance RC professionnelle et votre immatriculation au registre de commerce. Une photo WhatsApp suffit pour chacun — et quand le contrôle est terminé, un dossier daté le confirme."
+        },
+        "step3": {
+          "title": "Vos premiers voyages, publiés ensemble",
+          "text": "Nous préparons vos premiers voyages avec vous — photos, itinéraire, prix — et vous validez chaque mot avant publication. Rien n'apparaît sans votre accord."
+        },
+        "chip": "Vérifiée avant mise en ligne"
+      },
+      "money": {
+        "eyebrow": "L'argent",
+        "title": "Vous êtes payé directement — toujours",
+        "items": {
+          "direct": {
+            "title": "Le voyageur paie votre agence",
+            "text": "Un acompte (jusqu'à 30 %) à la réservation, puis le solde lorsque le minimum du groupe est confirmé. Si le minimum n'est pas atteint, l'acompte est intégralement remboursé au voyageur."
+          },
+          "never": {
+            "title": "Ouiboo ne touche jamais l'argent des voyageurs",
+            "text": "Aucun paiement ne transite par Ouiboo — ni aujourd'hui, ni plus tard."
+          },
+          "beta": {
+            "title": "Pendant la bêta : 0 MAD",
+            "text": "Aucun abonnement, aucun frais, aucune retenue sur vos paiements."
+          }
+        },
+        "guaranteeTitle": "Après la bêta, notre engagement écrit",
+        "guarantee": "Tout frais futur ne s'appliquera que par facture mensuelle publiée, adressée à votre agence, convenue par écrit à l'avance, avec un préavis et le droit de partir avant le premier frais — et jamais déduit des paiements des voyageurs."
+      },
+      "proof": {
+        "eyebrow": "Preuves",
+        "title": "Ce que vos voyageurs verront",
+        "intro": "Deux exemples — exactement ce qu'Ouiboo affiche pour une agence dont les documents ont été vérifiés.",
+        "exampleChip": "Exemple",
+        "recordTitle": "Dossier de vérification — Atlas Adventures SARL",
+        "recordLicenceLabel": "Licence de tourisme (ODV)",
+        "recordLicence": "vérifiée le 30 oct. 2026 · valable jusqu'au 31 déc. 2028",
+        "recordInsuranceLabel": "Assurance RC",
+        "recordInsurance": "police justifiée · valable jusqu'au 31 déc. 2027",
+        "recordNote": "Le même dossier daté est public sur la page de l'agence et sur chaque voyage.",
+        "passTitle": "Le Pass Réservation",
+        "passText": "Après une réservation, le voyageur reçoit un pass avec un code QR : vous le scannez le jour du départ, et la présence est confirmée.",
+        "storefrontTitle": "Votre page agence",
+        "storefrontText": "Votre nom, vos voyages et votre dossier de vérification daté — une page publique qui prouve qui vous êtes."
+      },
+      "qa": {
+        "eyebrow": "Vos questions",
+        "title": "En toute franchise",
+        "items": {
+          "exclusive": {
+            "q": "Suis-je lié à Ouiboo par une exclusivité ?",
+            "a": "Non. Publiez sur Ouiboo et partout ailleurs — vos autres canaux ne nous regardent pas."
+          },
+          "leave": {
+            "q": "Puis-je partir quand je veux ?",
+            "a": "Oui, à tout moment et sans frais. Vos voyages, vos photos et vos avis restent les vôtres."
+          },
+          "client": {
+            "q": "Le client reste-t-il mon client ?",
+            "a": "Oui. Vos coordonnées figurent sur chaque réservation, les voyageurs vous contactent directement, et votre nom apparaît sur chaque voyage et chaque avis."
+          },
+          "cancel": {
+            "q": "Qui fixe les règles d'annulation ?",
+            "a": "Vous. Votre échelle d'annulation est affichée au voyageur avant le paiement. En cas de litige, une procédure visible s'applique — et vous restez l'organisateur du voyage."
+          },
+          "provide": {
+            "q": "Que dois-je fournir ?",
+            "a": "Trois documents : votre licence, votre assurance RC et votre immatriculation. Une photo WhatsApp de chacun suffit pour commencer."
+          },
+          "golive": {
+            "q": "Combien de temps avant d'être en ligne ?",
+            "a": "Vos documents sont vérifiés avant toute mise en ligne — c'est la règle, pour chaque agence. Ensuite, nous préparons vos premiers voyages ensemble et vous les validez avant publication."
+          },
+          "french": {
+            "q": "Le français suffit-il ?",
+            "a": "Oui. Le français suffit pour publier vos voyages ; l'arabe et l'anglais sont un plus, jamais une condition."
+          },
+          "computer": {
+            "q": "Faut-il un ordinateur ?",
+            "a": "Non. WhatsApp et un téléphone suffisent pour démarrer et pour presque tout le reste."
+          }
+        }
+      },
+      "honesty": {
+        "eyebrow": "Transparence",
+        "title": "Ce qu'est la bêta — et ce qu'elle n'est pas encore",
+        "items": [
+          "Aujourd'hui, Ouiboo est une vitrine : aucune réservation ni aucun paiement n'est encore accepté.",
+          "Les réservations ouvriront avec les agences fondatrices — pas avant.",
+          "3 à 5 places seulement au départ : chaque agence est accompagnée personnellement.",
+          "Pendant la bêta, l'assistance est assurée par le fondateur lui-même.",
+          "Les agences fondatrices participent aux choix du produit."
+        ],
+        "legal": "Pourquoi cette prudence ? Ouiboo termine ses formalités légales — classification de l'activité et protection des données — avant d'ouvrir les réservations. La bêta commence donc en vitrine, et c'est assumé."
+      },
+      "final": {
+        "title": "Parlons de vos voyages",
+        "text": "Je réponds personnellement à chaque agence qui écrit.",
+        "emailLabel": "Ou par e-mail",
+        "signupQuiet": "Vous préférez vous inscrire directement ? Créer votre compte agence"
+      },
+      "stickyCta": "Discuter sur WhatsApp"
     }
   }
 }

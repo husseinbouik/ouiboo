@@ -27,11 +27,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: 'monthly',
     priority: 0.8,
   }))
-  if (!isLandingIndexable()) return guideEntries
+  // #749 (Council S11 §4): /agences is indexable from day one like the
+  // Layer A guides, so it is listed in both gate states.
+  const agencesEntry: MetadataRoute.Sitemap = [{
+    url: absoluteLandingUrl('/agences'),
+    lastModified: new Date(),
+    changeFrequency: 'monthly',
+    priority: 0.9,
+  }]
+  if (!isLandingIndexable()) return [...agencesEntry, ...guideEntries]
   return [{
     url: absoluteLandingUrl('/'),
     lastModified: new Date(),
     changeFrequency: 'weekly',
     priority: 1,
-  }, ...guideEntries]
+  }, ...agencesEntry, ...guideEntries]
 }

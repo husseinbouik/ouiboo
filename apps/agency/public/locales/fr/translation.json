@@ -188,8 +188,8 @@
   },
   "betaOffer": {
     "title": "Votre offre bêta",
-    "verificationTitle": "Vérification sous {{hours}} heures ouvrées",
-    "verificationBody": "Nous vérifions votre licence de voyage et votre assurance RC sous {{hours}} heures ouvrées après un dossier complet — le même contrôle pour chaque agence de la bêta.",
+    "verificationTitle": "Vérifiée avant mise en ligne",
+    "verificationBody": "Nous vérifions votre licence de voyage et votre assurance RC avant la mise en ligne de vos voyages — le même contrôle pour chaque agence de la bêta.",
     "assistedTitle": "Premières annonces assistées",
     "assistedBody": "Nous construisons vos premières annonces avec vous — photos, itinéraire, prix — et rien n’est publié avant votre validation.",
     "supportTitle": "Partage d’assistance, annoncé dès le départ",

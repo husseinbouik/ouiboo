@@ -14,11 +14,12 @@ jest.mock('react-i18next', () => ({
 }));
 
 describe('BetaOfferCard (#677)', () => {
-    it('renders the three offer promises driven by the 48h configuration', () => {
+    it('renders the three offer promises (verification carries no time-bound claim)', () => {
         render(<BetaOfferCard />);
 
         expect(screen.getByTestId('beta-offer-card')).not.toBeNull();
-        expect(screen.getByText('betaOffer.verificationTitle:48')).not.toBeNull();
+        expect(screen.getByText('betaOffer.verificationTitle')).not.toBeNull();
+        expect(screen.getByText('betaOffer.verificationBody')).not.toBeNull();
         expect(screen.getByText('betaOffer.assistedTitle')).not.toBeNull();
         expect(screen.getByText('betaOffer.supportTitle')).not.toBeNull();
         expect(screen.getByText('betaOffer.supportBody:48')).not.toBeNull();

@@ -21,7 +21,8 @@ export default function robots(): MetadataRoute.Robots {
       // category×city children — they self-gate with a 404 whenever
       // the cell has no live inventory, so allowing the crawl can
       // never surface an empty child.
-      rules: [{ userAgent: '*', allow: [...GUIDE_PATHS, '/guides/'], disallow: '/' }],
+      // #749: '/agences' joins the carve-out — the agency page is indexable from day one (S11 §4).
+      rules: [{ userAgent: '*', allow: [...GUIDE_PATHS, '/guides/', '/agences'], disallow: '/' }],
       sitemap: absoluteLandingUrl('/sitemap.xml'),
     }
   }
