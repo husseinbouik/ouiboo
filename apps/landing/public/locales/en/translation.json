@@ -103,8 +103,8 @@
     },
     "offerTitle": "The beta offer for agencies",
     "offer1": {
-      "title": "Verification within 48 working hours",
-      "description": "Your travel licence and RC insurance are checked within 48 working hours of a complete submission."
+      "title": "Checked before listing",
+      "description": "Your travel licence and RC insurance are checked before any of your trips can be listed — the same gate for every agency."
     },
     "offer2": {
       "title": "We build your first listings with you",
@@ -594,7 +594,7 @@
       "lead": "We're inviting 3–5 verified agencies from across Morocco to found the marketplace with us — founder-led onboarding, no forms before a human conversation.",
       "chips": [
         "Free during the beta",
-        "Verification within 48 hours",
+        "Checked before listing",
         "We help you list your first trips"
       ],
       "objections": {
@@ -615,7 +615,7 @@
           "text": "List on Ouiboo and anywhere else. Leave anytime — your trips, photos and content stay yours."
         }
       },
-      "cta": "Join the free beta",
+      "cta": "Discover the agency offer",
       "note": "3–5 founding places · agencies from across Morocco · we set up your first trips with you"
     },
     "faq": {
@@ -666,6 +666,134 @@
       "title": "Morocco city guides",
       "intro": "What to see and do, city by city — written for anyone planning to explore Morocco.",
       "readGuide": "Read the guide"
+    },
+    "agencesPage": {
+      "nav": {
+        "back": "Home"
+      },
+      "hero": {
+        "eyebrow": "For agencies · Founding beta",
+        "titleA": "Sell your trips on Ouiboo.",
+        "titleB": "You get paid directly.",
+        "titleC": "Free during the beta.",
+        "lead": "Ouiboo puts your trips in front of travellers; you stay the organiser and the seller, and travellers pay your agency directly. During the founding beta: no subscription, no fees.",
+        "founderRole": "Founder of Ouiboo · Tangier",
+        "founderLine": "I am personally recruiting the 3 to 5 founding agencies. You talk to the founder — not to a sales department.",
+        "ctaWhatsapp": "Talk to the founder on WhatsApp",
+        "ctaNote": "No form. A conversation first.",
+        "whatsappMessage": "Hello Hussein, I run a travel agency and I would like to talk about Ouiboo's free beta. (Agencies page)"
+      },
+      "steps": {
+        "eyebrow": "Getting started",
+        "title": "How it starts",
+        "intro": "Three simple steps — with a human at the other end from the very first one.",
+        "step1": {
+          "title": "A 15-minute conversation",
+          "text": "We talk about your trips and your questions, on WhatsApp or by phone. No form before that conversation."
+        },
+        "step2": {
+          "title": "You send three documents",
+          "text": "Your travel agency licence (ODV), your professional liability (RC) insurance and your trade-register registration. A WhatsApp photo is enough for each — and when the check is done, a dated record confirms it."
+        },
+        "step3": {
+          "title": "Your first trips, published together",
+          "text": "We prepare your first trips with you — photos, itinerary, prices — and you approve every word before publication. Nothing appears without your agreement."
+        },
+        "chip": "Checked before listing"
+      },
+      "money": {
+        "eyebrow": "The money",
+        "title": "You are paid directly — always",
+        "items": {
+          "direct": {
+            "title": "The traveller pays your agency",
+            "text": "A deposit (up to 30%) at booking, then the balance when the group minimum is confirmed. If the minimum is not reached, the deposit is refunded to the traveller in full."
+          },
+          "never": {
+            "title": "Ouiboo never touches travellers' money",
+            "text": "No payment ever passes through Ouiboo — not today, not later."
+          },
+          "beta": {
+            "title": "During the beta: 0 MAD",
+            "text": "No subscription, no fees, nothing withheld from your payments."
+          }
+        },
+        "guaranteeTitle": "After the beta, our written commitment",
+        "guarantee": "Any future fee will apply only through a published monthly invoice addressed to your agency, agreed in writing in advance, with notice and the right to leave before the first fee — and never deducted from traveller payments."
+      },
+      "proof": {
+        "eyebrow": "Proof",
+        "title": "What your travellers will see",
+        "intro": "Two examples — exactly what Ouiboo shows for an agency whose documents have been checked.",
+        "exampleChip": "Example",
+        "recordTitle": "Verification record — Atlas Adventures SARL",
+        "recordLicenceLabel": "Tourism licence (ODV)",
+        "recordLicence": "checked 30 Oct 2026 · valid to 31 Dec 2028",
+        "recordInsuranceLabel": "RC insurance",
+        "recordInsurance": "policy evidenced · valid to 31 Dec 2027",
+        "recordNote": "The same dated record is public on the agency's page and on every trip.",
+        "passTitle": "The Booking Pass",
+        "passText": "After a booking, the traveller receives a pass with a QR code: you scan it on the day of departure and attendance is confirmed.",
+        "storefrontTitle": "Your agency page",
+        "storefrontText": "Your name, your trips and your dated verification record — a public page that proves who you are."
+      },
+      "qa": {
+        "eyebrow": "Your questions",
+        "title": "Straight answers",
+        "items": {
+          "exclusive": {
+            "q": "Am I tied to Ouiboo exclusively?",
+            "a": "No. Publish on Ouiboo and everywhere else — your other channels are your business."
+          },
+          "leave": {
+            "q": "Can I leave whenever I want?",
+            "a": "Yes, at any time and free of charge. Your trips, photos and reviews stay yours."
+          },
+          "client": {
+            "q": "Does the client stay my client?",
+            "a": "Yes. Your contact details appear on every booking, travellers contact you directly, and your name is on every trip and every review."
+          },
+          "cancel": {
+            "q": "Who sets the cancellation rules?",
+            "a": "You do. Your cancellation scale is shown to the traveller before payment. If a dispute arises, a visible procedure applies — and you remain the organiser of the trip."
+          },
+          "provide": {
+            "q": "What do I need to provide?",
+            "a": "Three documents: your licence, your RC insurance and your registration. A WhatsApp photo of each is enough to start."
+          },
+          "golive": {
+            "q": "How long before I am live?",
+            "a": "Your documents are checked before anything goes live — that is the rule, for every agency. Then we prepare your first trips together and you approve them before publication."
+          },
+          "french": {
+            "q": "Is French enough?",
+            "a": "Yes. French is enough to publish your trips; Arabic and English are a plus, never a condition."
+          },
+          "computer": {
+            "q": "Do I need a computer?",
+            "a": "No. WhatsApp and a phone are enough to start — and for almost everything else."
+          }
+        }
+      },
+      "honesty": {
+        "eyebrow": "Transparency",
+        "title": "What the beta is — and what it is not yet",
+        "items": [
+          "Today, Ouiboo is a showcase: no booking and no payment is accepted yet.",
+          "Bookings will open with the founding agencies — not before.",
+          "Only 3 to 5 places at the start: every agency is accompanied personally.",
+          "During the beta, support is handled by the founder himself.",
+          "Founding agencies get a say in the product."
+        ],
+        "legal": "Why this caution? Ouiboo is completing its legal formalities — activity classification and data protection — before opening bookings. So the beta starts as a showcase, openly."
+      },
+      "final": {
+        "title": "Let's talk about your trips",
+        "text": "I personally reply to every agency that writes.",
+        "emailLabel": "Or by e-mail",
+        "signupQuiet": "Prefer to register directly? Create your agency account"
+      },
+      "stickyCta": "Chat on WhatsApp"
     }
   }
 }

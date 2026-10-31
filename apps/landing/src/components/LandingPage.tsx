@@ -18,6 +18,11 @@ import { CookiePreferencesButton } from './AnalyticsConsent'
 // Ouiboo is Morocco-wide; city names appear only as facts of content: a
 // trip's own destination and the photo credit).
 //
+// #749 (Council S11): the agency block is now a TEASER — its primary
+// action, the header "For agencies" pill, the hero agency link and the
+// footer agency link all route to the dedicated /agences page; the
+// block keeps its design and its objection cards.
+//
 // Polish round (#735 follow-up, founder phone review): the photo credit
 // moved from an absolute overlay into the hero flow (it rendered squeezed
 // under the header on mobile), the verification panel gets airier mobile
@@ -167,12 +172,12 @@ export default function LandingPage() {
             >
               {t('hw.nav.signup')}
             </a>
-            <a
-              href="#agencies"
+            <Link
+              href="/agences"
               className="hidden whitespace-nowrap rounded-full border-[1.5px] border-white/55 px-[18px] py-[9px] text-sm font-semibold hover:bg-white/[0.12] sm:block"
             >
               {t('nav.forAgencies')}
-            </a>
+            </Link>
           </div>
         </div>
       </header>
@@ -235,12 +240,12 @@ export default function LandingPage() {
                   {t('hw.hero.ctaExplore')}
                 </a>
               </div>
-              <a
-                href="#agencies"
+              <Link
+                href="/agences"
                 className="mb-[26px] inline-block text-[14.5px] font-semibold text-white/90 underline decoration-[rgba(255,107,53,.75)] underline-offset-[5px] hover:text-white"
               >
                 {t('hw.hero.agencyLink')} <Arrow />
-              </a>
+              </Link>
               <div className="flex max-w-[680px] items-center gap-[9px] text-sm font-medium text-white/[0.92]">
                 <ShieldCheck />
                 <span>{t('hw.hero.trustLine')}</span>
@@ -490,13 +495,13 @@ export default function LandingPage() {
               ))}
             </div>
             <div className="flex flex-wrap items-center gap-5">
-              <a
-                href={`${agencyUrl}/signup?lang=${currentLang}`}
+              <Link
+                href="/agences"
                 className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-[26px] py-[14px] text-[15.5px] font-semibold text-white shadow-[0_10px_24px_-8px_rgba(255,107,53,.55)]"
                 style={{ backgroundColor: ORANGE }}
               >
-                {t('hw.agencies.cta')}
-              </a>
+                {t('hw.agencies.cta')} <Arrow />
+              </Link>
               <span className="text-[13.8px] text-white/[0.65]">{t('hw.agencies.note')}</span>
             </div>
           </div>
@@ -599,9 +604,9 @@ export default function LandingPage() {
               <h4 className="mb-4 font-display text-sm font-bold uppercase tracking-[0.1em] text-white">{t('hw.footer.colAgencies')}</h4>
               <ul className="flex flex-col gap-[11px] text-[14.5px]">
                 <li>
-                  <a href="#agencies" className="hover:text-white">
+                  <Link href="/agences" className="hover:text-white">
                     {t('hw.footer.joinBeta')}
-                  </a>
+                  </Link>
                 </li>
                 <li>
                   <a href={`${agencyUrl}/login?lang=${currentLang}`} className="hover:text-white">

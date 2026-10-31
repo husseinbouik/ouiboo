@@ -372,19 +372,25 @@ export interface DestinationConfig {
 }
 
 /**
- * #677 (Council S6): the beta agency offer pack AS CONFIGURATION — the
- * published service promises every recruited agency sees, in one place:
- * the licence+insurance verification SLA (48 working hours from a
- * complete submission), the assisted-listing offer (OuiBoo builds the
- * first listings WITH the agency; the agency approves before publish),
- * and the support-relief split (OuiBoo answers platform/booking
- * questions in FR/AR/EN at the published support hours; the agency
- * answers trip logistics; during an active trip the agency emergency
- * contact is first call and OuiBoo is the escalation). Surfaces render
- * these numbers from here so the promise can never drift per page.
+ * #677 (Council S6) + #749 (Council S11): the beta agency offer pack AS
+ * CONFIGURATION — the published service promises every recruited agency
+ * sees, in one place: the licence+insurance verification promise, the
+ * assisted-listing offer (OuiBoo builds the first listings WITH the
+ * agency; the agency approves before publish), and the support-relief
+ * split (OuiBoo answers platform/booking questions in FR/AR/EN at the
+ * published support hours; the agency answers trip logistics; during
+ * an active trip the agency emergency contact is first call and
+ * OuiBoo is the escalation). Surfaces render these numbers from here
+ * so the promise can never drift per page.
+ *
+ * The verification promise is "checked before listing" with NO
+ * time-bound claim: the founder declined to underwrite a 48-hour SLA
+ * (2026-10-31, S11), so no verification-hours field exists here and
+ * none may be reintroduced without a fresh founder decision. The
+ * supportResponseHours below is a different, standing commitment —
+ * the adopted <=48h normal-support policy — and is unaffected.
  */
 export const BETA_AGENCY_OFFER = {
-    verificationSlaWorkingHours: 48,
     supportResponseHours: 48,
     assistedListing: true,
     supportLanguages: ['fr', 'ar', 'en'],

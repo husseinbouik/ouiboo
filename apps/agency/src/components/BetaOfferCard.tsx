@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock3, Handshake, MessagesSquare } from 'lucide-react';
+import { Handshake, MessagesSquare, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@ouiboo/ui';
 import { BETA_AGENCY_OFFER } from '@ouiboo/types';
@@ -10,8 +10,9 @@ import { BETA_AGENCY_OFFER } from '@ouiboo/types';
  * agency meets the offer — onboarding and the support page. The three
  * published promises, driven by the BETA_AGENCY_OFFER configuration in
  * @ouiboo/types so the wording can never drift per surface:
- *  1. the 48-working-hour verification SLA for the licence+insurance
- *     gate,
+ *  1. the checked-before-listing verification promise for the
+ *     licence+insurance gate (no time-bound claim — founder decision
+ *     2026-10-31, Council S11: the 48h SLA was never underwritten),
  *  2. assisted listing — Ouiboo builds the first listings WITH the
  *     agency, and the agency approves before anything publishes,
  *  3. the support-relief split — Ouiboo answers platform/booking
@@ -21,13 +22,12 @@ import { BETA_AGENCY_OFFER } from '@ouiboo/types';
  */
 export function BetaOfferCard() {
   const { t } = useTranslation();
-  const hours = BETA_AGENCY_OFFER.verificationSlaWorkingHours;
 
   const items = [
     {
-      icon: Clock3,
-      title: t('betaOffer.verificationTitle', { hours }),
-      body: t('betaOffer.verificationBody', { hours }),
+      icon: ShieldCheck,
+      title: t('betaOffer.verificationTitle'),
+      body: t('betaOffer.verificationBody'),
     },
     {
       icon: Handshake,

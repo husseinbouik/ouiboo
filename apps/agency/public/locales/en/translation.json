@@ -188,8 +188,8 @@
   },
   "betaOffer": {
     "title": "Your beta offer",
-    "verificationTitle": "Verification within {{hours}} working hours",
-    "verificationBody": "We check your travel licence and RC insurance within {{hours}} working hours of a complete submission — the same gate every beta agency passes.",
+    "verificationTitle": "Checked before listing",
+    "verificationBody": "We check your travel licence and RC insurance before any of your trips can be listed — the same gate every beta agency passes.",
     "assistedTitle": "Assisted first listings",
     "assistedBody": "We build your first listings with you — photos, itinerary, prices — and nothing is published until you approve it.",
     "supportTitle": "Support split, stated up front",
