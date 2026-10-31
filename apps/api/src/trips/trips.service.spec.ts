@@ -474,10 +474,61 @@ describe('TripsService', () => {
             const args = db.tripTemplate.findMany.mock.calls[0][0];
             // Anonymous catalog must never include pending/rejected/suspended agencies (#182, #317)
             expect(args.where.status).toBe('ACTIVE');
-            expect(args.where.agency).toEqual({ verificationStatus: 'VERIFIED' });
+            expect(args.where.agency.verificationStatus).toBe('VERIFIED');
             // The traveler card derives its verified badge from this field; if it
             // is dropped from the select again, every card is mislabeled (#317).
             expect(args.include.agency.select.verificationStatus).toBe(true);
+        });
+
+        // #728: the catalogue gate is the full booking-eligibility
+        // predicate, not identity alone — a lapsed/unrestricted agency
+        // must not advertise trips whose booking would be rejected.
+        it('restricts the public catalog to agencies that can accept bookings (#728)', async () => {
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(0);
+
+            await service.findAllTemplates({});
+
+            const args = db.tripTemplate.findMany.mock.calls[0][0];
+            expect(args.where.agency.newBookingsRestrictedAt).toBeNull();
+            expect(args.where.agency.travelLicenceStatus).toBe('VERIFIED');
+            expect(args.where.agency.licenceExpiry.gt).toBeInstanceOf(Date);
+            expect(args.where.agency.insuranceStatus).toBe('VERIFIED');
+            expect(args.where.agency.insuranceExpiry.gt).toBeInstanceOf(Date);
+            expect(args.where.agency.OR).toEqual([
+                {
+                    subscriptionStatus: 'ACTIVE',
+                    OR: [
+                        { subscriptionEndsAt: null },
+                        { subscriptionEndsAt: { gt: expect.any(Date) } },
+                    ],
+                },
+                { subscriptionStatus: 'TRIAL', trialEndsAt: { gt: expect.any(Date) } },
+            ]);
+            // The count query carries the same gate, so pagination
+            // totals cannot count ineligible trips either.
+            const countArgs = db.tripTemplate.count.mock.calls[0][0];
+            expect(countArgs.where.agency).toEqual(args.where.agency);
+        });
+
+        it('applies the bookable-agency gate to detail, destination inventory and sessions (#728)', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue(null);
+            await expect(service.findOneTemplate('trip-123')).rejects.toThrow(NotFoundException);
+            const detailArgs = db.tripTemplate.findFirst.mock.calls[0][0];
+            expect(detailArgs.where.agency.verificationStatus).toBe('VERIFIED');
+            expect(detailArgs.where.agency.OR).toHaveLength(2);
+
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            await service.getDestinationInventory('tangier');
+            const destArgs = db.tripTemplate.findMany.mock.calls[0][0];
+            expect(destArgs.where.agency.verificationStatus).toBe('VERIFIED');
+            expect(destArgs.where.agency.OR).toHaveLength(2);
+
+            db.tripTemplate.findFirst.mockResolvedValue(null);
+            await expect(service.findSessionsByTemplate('trip-123')).rejects.toThrow(NotFoundException);
+            const sessionArgs = db.tripTemplate.findFirst.mock.calls[1][0];
+            expect(sessionArgs.where.agency.verificationStatus).toBe('VERIFIED');
+            expect(sessionArgs.where.agency.OR).toHaveLength(2);
         });
     });
     describe('MAD-only beta catalogue gate (B24(f) / #498)', () => {

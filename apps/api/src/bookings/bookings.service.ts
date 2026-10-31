@@ -14,6 +14,7 @@ import { decimalEqualsMoney, multiplyMoney, toMoneyDecimal, toMoneyString } from
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
 import { isInsuranceVerified, isLicenceVerified } from '../common/agency-licence.util';
+import { isAgencySubscriptionValid } from '../common/agency-booking-eligibility.util';
 import { isCatalogCurrencyAllowed } from '../common/catalog-currency.util';
 import {
     buildCancellationScaleSnapshot,
@@ -237,11 +238,11 @@ export class BookingsService {
 
         const now = new Date();
         const agency = session.template.agency;
-        const subscriptionValid = agency.subscriptionStatus === 'ACTIVE'
-            ? !agency.subscriptionEndsAt || agency.subscriptionEndsAt > now
-            : agency.subscriptionStatus === 'TRIAL'
-                && !!agency.trialEndsAt
-                && agency.trialEndsAt > now;
+        // #728: the subscription leg of the shared booking-eligibility
+        // definition — public discovery filters on the same predicate
+        // (agency-booking-eligibility.util), so a trip the catalogue
+        // advertises can never dead-end here on eligibility grounds.
+        const subscriptionValid = isAgencySubscriptionValid(agency, now);
 
         if (session.template.status !== 'ACTIVE'
             || session.status !== 'OPEN'
