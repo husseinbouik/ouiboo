@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nes
 import { BookingsService } from './bookings.service';
 import { RebookingService } from './rebooking.service';
 import { normalizeTripLocale } from '../trips/trip-translations.util';
-import { ConfirmBankPaymentDto, CreateBookingDto, MarkAttendanceDto, VerifyManualPaymentDto } from './dto/create-booking.dto';
+import { ConfirmBankPaymentDto, CreateBookingDto, DisputeAttendanceDto, MarkAttendanceDto, VerifyBookingPassDto, VerifyManualPaymentDto } from './dto/create-booking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
@@ -163,6 +163,18 @@ export class BookingsController {
         return this.bookingsService.verifyPayment(id, req.tenantId, dto.approved, dto.rejectionReason);
     }
 
+    @Patch(':id/confirm-pay-on-arrival')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard)
+    @Roles(UserRole.Agency)
+    @ApiOperation({ summary: 'Agency confirms a pay-on-arrival booking (#697): no payment is collected through Ouiboo; the traveller pays the agency on site' })
+    confirmPayOnArrival(
+        @Request() req,
+        @Param('id') id: string,
+    ) {
+        return this.bookingsService.confirmPayOnArrival(id, req.tenantId);
+    }
+
     @Patch(':id/confirm-bank-payment')
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, RateLimitGuard)
@@ -207,6 +219,45 @@ export class BookingsController {
         @Body() dto: MarkAttendanceDto,
     ) {
         return this.bookingsService.markAttendance(id, req.tenantId, req.user.userId ?? req.user.id, dto.attended);
+    }
+
+    @Get(':id/pass')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Get the Booking Pass for a booking (#689): issued once the agency confirms deposit receipt; the signed token verifies only inside an authenticated agency session' })
+    getBookingPass(
+        @Request() req,
+        @Param('id') id: string,
+    ) {
+        return this.bookingsService.getBookingPass(id, req.user.userId, req.user?.role);
+    }
+
+    @Post('pass/verify')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, RateLimitGuard)
+    @Roles(UserRole.Agency)
+    @RateLimit({ points: 30, windowMs: 60_000, keyPrefix: 'bookings:pass-verify' })
+    @RateLimitSensitive()
+    @ApiOperation({ summary: 'Verify a Booking Pass token (agency-authenticated, #689) — an unauthenticated scan verifies nothing; a valid scan at/after trip start records the QR check-in (#693)' })
+    verifyBookingPass(
+        @Request() req,
+        @Body() dto: VerifyBookingPassDto,
+    ) {
+        return this.bookingsService.verifyBookingPass(dto.token, req.tenantId, req.user.userId ?? req.user.id);
+    }
+
+    @Post(':id/attendance-dispute')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RateLimitGuard)
+    @RateLimit({ points: 10, windowMs: 60_000, keyPrefix: 'bookings:attendance-dispute' })
+    @RateLimitSensitive()
+    @ApiOperation({ summary: 'Dispute the agency-recorded attendance for my booking (#693)' })
+    disputeAttendance(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() dto: DisputeAttendanceDto,
+    ) {
+        return this.bookingsService.disputeAttendance(id, req.user.userId, dto.reason);
     }
 
     @Patch(':id/cancel')

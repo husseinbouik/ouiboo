@@ -12,6 +12,7 @@ jest.mock('react-i18next', () => ({
             if (key === 'seller.licenceDetailsPending') return 'Licence issue details are being confirmed with the agency.';
             if (key === 'seller.licenceNotConfirmed') return 'Licence details not yet confirmed — ask the agency before paying.';
             if (key === 'seller.licenceChecked') return `Licence document checked on ${options?.date}`;
+            if (key === 'seller.licenceValidUntil') return `Licence valid until ${options?.date}`;
             if (key === 'seller.insuranceEvidenced') return `RC insurance evidenced on ${options?.date}`;
             if (key === 'seller.poweredBy') return 'Powered by OuiBoo';
             return key;
@@ -213,6 +214,27 @@ describe('SellerIdentity (#371)', () => {
         expect(
             screen.getByText(
                 `Licence document checked on ${fmt(licenceDate)} · RC insurance evidenced on ${fmt(insuranceDate)}`,
+            ),
+        ).not.toBeNull();
+    });
+
+    it('states the licence expiry with the checked date (#673)', () => {
+        const fmt = (d: Date) => new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(d);
+        render(
+            <SellerIdentity
+                agency={{
+                    companyName: 'Atlas Adventures',
+                    legalName: 'Atlas Adventures SARL',
+                    travelLicenceStatus: 'VERIFIED',
+                    travelLicenceNumber: 'AV-2024-0187',
+                    licenceVerifiedAt: '2026-10-24T00:00:00.000Z',
+                    licenceExpiry: '2027-10-24T00:00:00.000Z',
+                }}
+            />,
+        );
+        expect(
+            screen.getByText(
+                `Licence document checked on ${fmt(new Date('2026-10-24T00:00:00.000Z'))} · Licence valid until ${fmt(new Date('2027-10-24T00:00:00.000Z'))}`,
             ),
         ).not.toBeNull();
     });

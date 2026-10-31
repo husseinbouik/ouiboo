@@ -5,6 +5,9 @@ import { VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
 import { getServerTranslations } from '@/lib/server-translations';
 import { getInitialLanguage } from '@ouiboo/i18n/server';
 import SellerIdentity from '@/components/SellerIdentity';
+import VerificationRecord from '@/components/VerificationRecord';
+import SellerBlock from '@/components/SellerBlock';
+import AgencyStorefront, { type StorefrontData } from '@/components/AgencyStorefront';
 
 interface AgencyPublicProfile {
   id: string;
@@ -16,6 +19,42 @@ interface AgencyPublicProfile {
   legalName?: string | null;
   licenceVerified?: boolean;
   travelLicenceNumber?: string | null;
+  // #673 (Council S6): dated verification statements — licence status,
+  // expiry and verified-at; insurance status and verified-at. These ride
+  // through to SellerIdentity, which renders them with their dates.
+  travelLicenceType?: string | null;
+  travelLicenceStatus?: string | null;
+  licenceExpiry?: string | null;
+  licenceIssuedAt?: string | null;
+  licenceIssuingAuthority?: string | null;
+  licenceVerifiedAt?: string | null;
+  insuranceStatus?: string | null;
+  insuranceVerifiedAt?: string | null;
+  // #688/#700 (Council S6): the derived Public Verification Record and
+  // the Law 31-08 seller-block facts from GET /agencies/:id/public.
+  insuranceInsurer?: string | null;
+  insuranceExpiry?: string | null;
+  businessAddress?: string | null;
+  businessPhone?: string | null;
+  rc?: string | null;
+  taxId?: string | null;
+  // #691: the storefront block from GET /agencies/:id/public.
+  storefront?: StorefrontData | null;
+  verificationRecord?: {
+    legalName?: string | null;
+    licenceNumber?: string | null;
+    licenceType?: string | null;
+    issuingAuthority?: string | null;
+    licenceExpiry?: string | null;
+    licenceStatus?: string | null;
+    insurer?: string | null;
+    insuranceValidFrom?: string | null;
+    insuranceExpiry?: string | null;
+    insuranceStatus?: string | null;
+    checkedOn?: string | null;
+    status?: string | null;
+    tripsPaused?: boolean;
+  } | null;
 }
 
 interface Trip {
@@ -55,6 +94,7 @@ async function getAgencyTrips(agencyId: string): Promise<Trip[]> {
 export default async function AgencyPage({ params }: { params: Promise<{ agencyId: string }> }) {
   const { agencyId } = await params;
   const { t } = await getServerTranslations();
+  const locale = await getInitialLanguage();
   const agency = await getAgency(agencyId);
   const trips = await getAgencyTrips(agencyId);
 
@@ -93,6 +133,22 @@ export default async function AgencyPage({ params }: { params: Promise<{ agencyI
             {agency.bio && <p className="text-muted-foreground max-w-2xl">{agency.bio}</p>}
             {/* #371: seller of record + verified travel licence */}
             <SellerIdentity agency={agency} className="mt-4" />
+            {/* #688 (Council S6): the Public Verification Record — the
+                canonical, checkable record this page anchors at
+                #verification-record (linked from trips, checkout and
+                bookings). Metadata only; documents stay private. */}
+            <VerificationRecord agency={agency} className="mt-6 w-full max-w-2xl text-left" />
+            {/* #700: the Art. 29(2) seller block facts. */}
+            <SellerBlock agency={agency} className="mt-4 w-full max-w-2xl text-left" />
+            {/* #691 (Council S6): the shareable storefront — about,
+                languages, live counts, response time, review aggregate
+                (threshold rule), share link + QR. */}
+            {agency.storefront && <AgencyStorefront storefront={agency.storefront} locale={locale} />}
+            {/* #681 (Council S6): this page publishes no agency-level
+                rating average. Trip ratings follow the same threshold
+                rule everywhere: counts always show, averages only from
+                5 reviews, and reviews come only from completed trips. */}
+            <p className="mt-4 max-w-2xl text-sm text-muted-foreground">{t('agency.reviewsPolicy')}</p>
         </div>
 
         {/* Trips Grid */}

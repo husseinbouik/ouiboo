@@ -605,7 +605,10 @@
     "description": "Private Ouiboo platform administration workspace."
   },
   "common": {
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "switchLanguage": "Switch language current is {{language}}",
+    "switchFrom": "Switch from {{language}}",
+    "toggleTheme": "Toggle theme"
   },
   "pagination": {
     "showing": "Showing",

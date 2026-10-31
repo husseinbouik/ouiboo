@@ -1,13 +1,15 @@
 'use client';
 
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import Image from 'next/image';
 import { Card, CardContent, Button, Badge } from '@ouiboo/ui';
 import { MapPin, Calendar, Users, Banknote, CheckCircle2 } from 'lucide-react';
 import { formatCurrency, normalizeCurrency } from '@ouiboo/utils';
 import type { CheckoutTrip } from './checkout-types';
 import SellerIdentity from '../SellerIdentity';
+import SellerBlock from '../SellerBlock';
+import { ModelExplainer } from '../ModelExplainer';
 import { CancellationScaleCard } from '../CancellationScaleCard';
 import { useDisplayAmountConverter } from '@/lib/display-currency';
 
@@ -69,6 +71,10 @@ export function CheckoutSummary({
             </div>
             {/* #371: seller of record + verified travel licence */}
             <SellerIdentity agency={trip.agency} className="pt-1 normal-case tracking-normal" />
+            {/* #700 (Council S6): the complete Law 31-08 Art. 29(2)
+                seller block at checkout, with the link to the agency's
+                Public Verification Record (#688). */}
+            <SellerBlock agency={trip.agency} className="pt-2 normal-case tracking-normal" showRecordLink />
           </div>
         </div>
 
@@ -124,13 +130,20 @@ export function CheckoutSummary({
       />
 
       {/* #619: when the amounts render in a different currency than the
-          session is charged in, say so — the conversion is display-only. */}
+          session is charged in, say so — the conversion is display-only.
+          #655: the note renders at 12px (was 10px) with the currency
+          codes bidi-isolated; the same note also sits adjacent to the
+          transfer instruction in CheckoutPayment. */}
       {showsConvertedCurrency && (
-        <p className="text-[10px] font-semibold text-muted-foreground text-center">
-          {t('checkout.displayCurrencyNote', {
-            display: totalDisplay.currency,
-            charged: normalizeCurrency(selectedCurrency),
-          })}
+        <p className="text-xs font-semibold text-muted-foreground text-center">
+          <Trans
+            i18nKey="checkout.displayCurrencyNote"
+            values={{
+              display: totalDisplay.currency,
+              charged: normalizeCurrency(selectedCurrency),
+            }}
+            components={{ display: <bdi />, charged: <bdi /> }}
+          />
         </p>
       )}
 
@@ -154,6 +167,11 @@ export function CheckoutSummary({
         <Banknote className="h-5 w-5" />
         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('checkout.directPaymentNote')}</span>
       </div>
+
+      {/* #678 (Council S6): the model explainer at the point of payment —
+          the agency is the seller and refund obligor; you pay the agency
+          directly; Ouiboo never holds your money. */}
+      <ModelExplainer compact />
     </Card>
   );
 }

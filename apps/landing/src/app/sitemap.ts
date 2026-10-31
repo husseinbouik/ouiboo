@@ -1,5 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { absoluteLandingUrl, isLandingIndexable } from '../lib/site'
+import { GUIDE_CITY_SLUGS, GUIDE_PATHS } from '../lib/guides'
+import { fetchDestinationInventory, liveCategoryPaths } from '../lib/inventory'
 
 // #564: URLs come from the resolved public origin in lib/site (the
 // traveller resolver's Vercel-host fallback pattern) — a deployed build
@@ -7,12 +9,37 @@ import { absoluteLandingUrl, isLandingIndexable } from '../lib/site'
 // gate is closed (closed beta), the sitemap is deliberately empty so it
 // cannot contradict robots.ts; flipping NEXT_PUBLIC_LANDING_INDEXABLE
 // to 'true' at public launch populates it together with robots.
-export default function sitemap(): MetadataRoute.Sitemap {
-  if (!isLandingIndexable()) return []
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // #683 (Council S6 Layer A): the guide + verification routes are
+  // indexable BY DESIGN during the beta, so they are listed even while
+  // the global gate keeps the rest of the landing out of the sitemap.
+  // #685 Layer B: category×city children join the sitemap ONLY for
+  // cells with live inventory (fetched per city; a failed fetch just
+  // omits the children, never the Layer A routes).
+  const categoryPaths: string[] = []
+  for (const slug of GUIDE_CITY_SLUGS) {
+    const inventory = await fetchDestinationInventory(slug, 'fr')
+    categoryPaths.push(...liveCategoryPaths(slug, inventory))
+  }
+  const guideEntries: MetadataRoute.Sitemap = [...GUIDE_PATHS, ...categoryPaths].map((path) => ({
+    url: absoluteLandingUrl(path),
+    lastModified: new Date(),
+    changeFrequency: 'monthly',
+    priority: 0.8,
+  }))
+  // #749 (Council S11 §4): /agences is indexable from day one like the
+  // Layer A guides, so it is listed in both gate states.
+  const agencesEntry: MetadataRoute.Sitemap = [{
+    url: absoluteLandingUrl('/agences'),
+    lastModified: new Date(),
+    changeFrequency: 'monthly',
+    priority: 0.9,
+  }]
+  if (!isLandingIndexable()) return [...agencesEntry, ...guideEntries]
   return [{
     url: absoluteLandingUrl('/'),
     lastModified: new Date(),
     changeFrequency: 'weekly',
     priority: 1,
-  }]
+  }, ...agencesEntry, ...guideEntries]
 }

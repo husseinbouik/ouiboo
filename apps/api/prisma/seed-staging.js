@@ -252,9 +252,47 @@ async function main() {
         verificationStatus: 'VERIFIED',
         bio: 'Demo agency for staging testing. Showcasing the best of Morocco.',
         bankDetails: JSON.stringify({ bank: 'Demo Bank', rib: 'STAGING-RIB-001' }),
+        // #728: the demo agency is the documented synthetic booking
+        // fixture (test-only agency + trips + future OPEN sessions that
+        // CAN accept a booking in staging/e2e, unblocking the
+        // payment-proof witnesses #503/#588). It must satisfy every leg
+        // of the booking-eligibility predicate — the previous shape
+        // silently defaulted to subscriptionStatus TRIAL with no
+        // trialEndsAt, which can never accept a booking, while its
+        // trips stayed publicly advertised.
+        subscriptionStatus: 'ACTIVE',
+        subscriptionEndsAt: null,
+        legalName: DEMO_AGENCY.companyName,
+        rc: '654322',
+        taxId: '98765433',
+        travelLicenceType: 'ODV',
+        travelLicenceNumber: 'ODV-2026-TEST-002',
+        travelLicenceStatus: 'VERIFIED',
+        licenceVerifiedAt: new Date(),
+        licenceExpiry: new Date('2028-12-31T00:00:00.000Z'),
+        licenceIssuedAt: new Date('2024-03-15T00:00:00.000Z'),
+        licenceIssuingAuthority: 'Ministère du Tourisme',
+        insuranceStatus: 'VERIFIED',
+        insuranceInsurer: 'Staging Test Insurance SARL',
+        insuranceValidFrom: new Date('2026-01-01T00:00:00.000Z'),
+        insuranceExpiry: new Date('2027-12-31T00:00:00.000Z'),
+        insuranceVerifiedAt: new Date(),
+        bankDetailsStatus: 'VERIFIED',
+        emergencyContactName: 'Test Emergency',
+        emergencyContactPhone: '+212600000000',
       },
     });
     console.log(`  Created verified agency profile`);
+  } else if (profile.subscriptionStatus === 'TRIAL' && !profile.trialEndsAt) {
+    // #728 fixture repair: a profile left in the pre-fix seed shape
+    // (TRIAL with no trial end) can never accept a booking. Promote
+    // exactly that broken shape to the documented fixture state; any
+    // other existing state is left untouched.
+    profile = await prisma.agencyProfile.update({
+      where: { id: profile.id },
+      data: { subscriptionStatus: 'ACTIVE', subscriptionEndsAt: null },
+    });
+    console.log(`  Repaired demo agency subscription (was TRIAL with no trial end)`);
   }
 
   // Create trips

@@ -33,6 +33,17 @@ export function tripToFormValues(trip: TripEditorData): CreateTripInput {
     translations: trip.translations ?? undefined,
     category: trip.category,
     startLocation: trip.startLocation,
+    // #675: the stored destination stamp (null = derive on save).
+    destinationSlug: trip.destinationSlug ?? undefined,
+    // #676: the structured meeting point; the editor binds the object
+    // fields directly (absent parts stay undefined until provided).
+    meetingPoint: trip.meetingPoint
+      ? {
+          address: trip.meetingPoint.address ?? undefined,
+          mapsUrl: trip.meetingPoint.mapsUrl ?? undefined,
+          pickupAvailable: trip.meetingPoint.pickupAvailable ?? false,
+        }
+      : undefined,
     endLocation: trip.endLocation,
     durationDays: trip.durationDays,
     durationNights: trip.durationNights,
@@ -53,6 +64,12 @@ export function tripToFormValues(trip: TripEditorData): CreateTripInput {
         }
       : undefined,
     itinerary: trip.itinerary || [],
+    // Batch F: stored FAQs / pickup points / elections must survive
+    // the reset() round-trip like every other field.
+    faqs: trip.faqs ?? undefined,
+    pickupPoints: trip.pickupPoints ?? undefined,
+    payOnArrivalEnabled: trip.payOnArrivalEnabled ?? false,
+    privateTourEnabled: trip.privateTourEnabled ?? false,
     status: trip.status,
     currency: trip.currency || 'MAD',
   };

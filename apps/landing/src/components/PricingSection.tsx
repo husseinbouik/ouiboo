@@ -56,12 +56,12 @@ export default function PricingSection() {
         >
           <p className="text-xl font-semibold text-deep-blue">{t('pricing.betaStatement')}</p>
           <motion.a
-            href="#waitlist"
+            href="/#showcase"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="mt-8 inline-block rounded-md bg-deep-blue px-6 py-2.5 text-sm font-semibold leading-6 text-white shadow-sm hover:shadow-md hover:bg-blue-900 transition-all duration-300"
           >
-            {t('joinWaitlist')}
+            {t('hw.hero.ctaExplore')}
           </motion.a>
         </motion.div>
       </div>

@@ -3,14 +3,18 @@ import { DatabaseService } from '../database/database.service';
 import { CreateTripTemplateDto, CreateTripSessionDto, UpdateTripSessionDto } from './dto/create-trip.dto';
 import { BookingPaymentStatus, BookingStatus, Prisma, SessionStatus, TripStatus } from '@ouiboo/database';
 import { toMoneyDecimal } from '../common/money.util';
-import { canOrganise, effectiveVerificationStatus, getAgencyActivationBlock, sellerBlockMissingFields } from '../common/agency-licence.util';
+import { canOrganise, effectiveInsuranceStatus, effectiveVerificationStatus, getAgencyActivationBlock, sellerBlockMissingFields } from '../common/agency-licence.util';
+import { publicBookableAgencyWhere } from '../common/agency-booking-eligibility.util';
 import { visibleBankDetails } from '../common/bank-details.util';
 import { BETA_CATALOG_CURRENCY, isCatalogCurrencyAllowed, isMadOnlyCatalogEnabled } from '../common/catalog-currency.util';
 import { resolveStagedSessionConfig } from '../staged-payments/staged-payments.util';
 import {
     buildCancellationScaleSnapshot,
     normalizeCancellationPolicyInput,
+    summarizeCancellation,
 } from '../cancellation/cancellation.util';
+import { buildTripFaqJsonLd, generateTripFaqs, normalizeTripFaqs } from './trip-faq.util';
+import { normalizeDayNotes, normalizeItineraryStops, normalizePickupPoints, payOnArrivalTripError } from './batch-f.util';
 import {
     buildTripTranslations,
     frenchSectionsMissing,
@@ -19,7 +23,20 @@ import {
     normalizeTripTranslations,
     type TripCanonicalSections,
 } from './trip-translations.util';
+import { deriveDestinationSlug, isDestinationSlug } from './destinations.util';
+import {
+    assertCommercialTermsPublishable,
+    assertEmergencyContactPublishable,
+    assertMeetingPointPublishable,
+    collectTripTexts,
+    findProhibitedCommercialTerms,
+    itineraryCompletenessWarnings,
+    normalizeMeetingPoint,
+    publicMeetingPoint,
+    type MeetingPoint,
+} from './publish-guardrails.util';
 import { derivePublicMediaUrl, derivePublicMediaUrls } from '../upload/media-url.util';
+import { serializeAddOn, serializePricingVariant } from './pricing-selection.util';
 
 @Injectable()
 export class TripsService {
@@ -60,6 +77,10 @@ export class TripsService {
                 insuranceExpiry: true,
                 licenceIssuedAt: true,
                 licenceIssuingAuthority: true,
+                // #680: the agency emergency contact is publish-gated —
+                // travellers holding a booking must have a first call
+                // during an active trip.
+                emergencyContactPhone: true,
             },
         });
         const block = agency ? getAgencyActivationBlock(agency) : 'Agency profile not found';
@@ -85,6 +106,12 @@ export class TripsService {
                     'The agency licence record is incomplete — the licence issue date and issuing authority are required before trips can be published',
                 );
             }
+            // #680 (Council S6): the emergency-contact gate runs on the
+            // same transitions into ACTIVE as the licence gates, so
+            // already-published trips are never retro-blocked — but an
+            // agency may not publish (or re-publish) a trip until its
+            // emergency contact is on record.
+            assertEmergencyContactPublishable(agency.emergencyContactPhone);
         }
     }
 
@@ -116,6 +143,100 @@ export class TripsService {
         }
     }
 
+    /**
+     * #675: resolve the destination slug for a write. A supplied slug
+     * must come from the BETA_DESTINATIONS configuration (anything else
+     * is a client error); an omitted slug is derived from the
+     * startLocation text; an explicit null clears the stamp.
+     */
+    private resolveDestinationSlug(
+        supplied: string | null | undefined,
+        startLocation: string | null | undefined,
+    ): string | null | undefined {
+        if (supplied !== undefined) {
+            if (supplied === null) return null;
+            if (!isDestinationSlug(supplied)) {
+                throw new BadRequestException(
+                    `destinationSlug must be one of the configured destinations (tangier, tetouan, chefchaouen)`,
+                );
+            }
+            return supplied;
+        }
+        // Omitted: derive from the (post-write) startLocation. A null
+        // derivation clears a stale stamp on update; createTemplate
+        // converts that null back to undefined (nothing to clear).
+        return deriveDestinationSlug(startLocation);
+    }
+
+    /**
+     * Council S6 Batch B publish gates (#674 + #676), evaluated on the
+     * POST-WRITE state of a trip entering (or staying in) the
+     * marketplace: exactly one structured cancellation scale, no
+     * free-text cancellation/payment terms anywhere in the trip text,
+     * and a meeting address or pickup. Like the licence/French gates,
+     * these run on transitions into ACTIVE (and, for the free-text
+     * scan, on text edits to already-ACTIVE trips) — already-published
+     * trips are never retro-blocked by an unrelated edit.
+     */
+    private assertBatchBPublishable(trip: {
+        cancellationPolicy?: unknown;
+        meetingPoint?: unknown;
+        title?: string | null;
+        description?: string | null;
+        inclusions?: string[] | null;
+        exclusions?: string[] | null;
+        checklist?: string[] | null;
+        itinerary?: Array<{ title?: string | null; description?: string | null; activities?: string[] | null }> | null;
+        translations?: unknown;
+    }) {
+        assertCommercialTermsPublishable({
+            cancellationPolicy: trip.cancellationPolicy,
+            texts: collectTripTexts(trip),
+        });
+        assertMeetingPointPublishable(normalizeMeetingPoint(trip.meetingPoint));
+    }
+
+    /**
+     * #701: normalize itinerary days for a write — per-stop detail and
+     * free-text notes are validated and converted to plain JSON values
+     * (DTO class instances never reach Prisma's Json columns).
+     */
+    private normalizeItineraryForWrite(
+        itinerary: Array<Record<string, unknown>> | undefined,
+    ): Array<Record<string, unknown>> | undefined {
+        if (!itinerary) return undefined;
+        try {
+            return itinerary.map((day) => ({
+                ...day,
+                stops: normalizeItineraryStops(day.stops) ?? undefined,
+                notes: normalizeDayNotes(day.notes) ?? undefined,
+            }));
+        } catch (error) {
+            throw new BadRequestException(error instanceof Error ? error.message : 'Invalid itinerary stops/notes');
+        }
+    }
+
+    /** Stored meeting points were validated on write; a malformed
+     * legacy value degrades to null rather than failing a read. */
+    private safeMeetingPoint(raw: unknown): MeetingPoint | null {
+        try {
+            return normalizeMeetingPoint(raw);
+        } catch {
+            return null;
+        }
+    }
+
+    /** #676: non-blocking completeness warnings for a publish response. */
+    private publishWarningsFor(days: Array<{
+        dayNumber: number;
+        driveTimeMinutes?: number | null;
+        accommodationName?: string | null;
+        accommodationType?: string | null;
+        mealsIncluded?: string[] | null;
+    }> | null | undefined): string[] {
+        return itineraryCompletenessWarnings(days);
+    }
+
     async createTemplate(agencyId: string, dto: CreateTripTemplateDto) {
         const agency = await this.db.agencyProfile.findUnique({
             where: { id: agencyId }
@@ -137,10 +258,47 @@ export class TripsService {
             );
         }
 
-        const { itinerary, imageAlts, cancellationPolicy, translations, ...tripData } = dto;
+        const { itinerary: rawItinerary, imageAlts, cancellationPolicy, translations, destinationSlug, meetingPoint, faqs, pickupPoints, ...tripData } = dto;
+        const itinerary = this.normalizeItineraryForWrite(rawItinerary as never) as any;
+
+        // Batch F (#686/#697/#701): validate the new write surfaces once.
+        let normalizedFaqs: ReturnType<typeof normalizeTripFaqs>;
+        let normalizedPickupPoints: ReturnType<typeof normalizePickupPoints>;
+        try {
+            normalizedFaqs = normalizeTripFaqs(faqs);
+            normalizedPickupPoints = normalizePickupPoints(pickupPoints);
+        } catch (error) {
+            throw new BadRequestException(error instanceof Error ? error.message : 'Invalid trip FAQ / pickup points');
+        }
+        const payOnArrivalError = payOnArrivalTripError({
+            durationDays: dto.durationDays,
+            payOnArrivalEnabled: dto.payOnArrivalEnabled ?? false,
+        });
+        if (payOnArrivalError) throw new BadRequestException(payOnArrivalError);
+        // #687: the indexed free-cancellation columns derive from the
+        // scale being stored (platform defaults when none is supplied).
+        const createSummary = summarizeCancellation(cancellationPolicy ?? null);
 
         const data = {
             ...tripData,
+            faqs: normalizedFaqs ? (normalizedFaqs as unknown as Prisma.InputJsonValue) : undefined,
+            pickupPoints: normalizedPickupPoints
+                ? (normalizedPickupPoints as unknown as Prisma.InputJsonValue)
+                : undefined,
+            freeCancellation: createSummary.freeCancellation,
+            freeCancellationDays: createSummary.freeCancellationDays,
+            // #675: stamp the normalised destination (supplied slug
+            // validated against the configuration, else derived from
+            // startLocation; non-cluster trips stay unstamped).
+            destinationSlug:
+                this.resolveDestinationSlug(destinationSlug, dto.startLocation) ?? undefined,
+            // #676: normalized structured meeting point (absent when
+            // the agency has not provided any part of it yet — drafts
+            // may be incomplete; publishing is gated in
+            // publish-guardrails).
+            meetingPoint: normalizeMeetingPoint(meetingPoint)
+                ? (normalizeMeetingPoint(meetingPoint) as unknown as Prisma.InputJsonValue)
+                : undefined,
             // #417 (Council P0-11): validate + normalize the agency's
             // cancellation bands before they are stored as structured
             // data (throws on coverage gaps / duplicates / bad ranges).
@@ -183,6 +341,7 @@ export class TripsService {
         status?: string;
         q?: string;
         category?: string;
+        destination?: string;
         agencyId?: string;
         currency?: string;
         priceMin?: number;
@@ -193,6 +352,8 @@ export class TripsService {
         startDateTo?: Date;
         ratingMin?: number;
         available?: boolean;
+        /** #687: the free-cancellation filter (standardised definition). */
+        freeCancellation?: boolean;
         sortBy?: string;
         sortOrder?: 'asc' | 'desc';
         page?: number;
@@ -206,6 +367,7 @@ export class TripsService {
                 featured,
                 q,
                 category,
+                destination,
                 agencyId,
                 currency,
                 priceMin,
@@ -216,6 +378,7 @@ export class TripsService {
                 startDateTo,
                 ratingMin,
                 available,
+                freeCancellation,
                 sortBy = 'createdAt',
                 sortOrder = 'desc',
                 page = 1,
@@ -229,14 +392,34 @@ export class TripsService {
 
             // Build WHERE clause for trip templates
             // Only show trips from verified agencies (launch blocker #182)
+            // #728: …that can actually accept a booking. The fragment is
+            // the booking gate's eligibility predicate in Prisma form —
+            // subscription validity, the new-bookings restriction and
+            // effective licence/insurance included — so the catalogue
+            // never advertises a trip whose booking would be rejected.
             const where: any = {
                 status: TripStatus.ACTIVE,
-                agency: {
-                    verificationStatus: 'VERIFIED',
-                },
+                // #684: private/unlisted trips (converted custom-trip
+                // requests) never appear in the public catalogue.
+                isUnlisted: false,
+                agency: publicBookableAgencyWhere(),
             };
 
             if (featured) where.featured = true;
+            // #687: free-cancellation filter — a column predicate on
+            // the standardised indexed definition, never a JSON scan.
+            if (freeCancellation) where.freeCancellation = true;
+            // #675: destination facet — the slug must come from the
+            // BETA_DESTINATIONS configuration; an unknown slug is a
+            // client error, never a silent empty page.
+            if (destination) {
+                if (!isDestinationSlug(destination)) {
+                    throw new BadRequestException(
+                        `destination must be one of the configured destinations (tangier, tetouan, chefchaouen)`,
+                    );
+                }
+                where.destinationSlug = destination;
+            }
             if (agencyId) where.agencyId = agencyId;
             if (currency) where.currency = currency;
             // B24(f) / #498: while the MAD-only beta gate is on, the
@@ -411,15 +594,35 @@ export class TripsService {
                 data: templates.map((template) => {
                     const localized = localizeTripPayload(template, locale);
                     const images = derivePublicMediaUrls((template as any).images);
-                    if (!localized.agency) return { ...localized, images };
+                    // #676: public payloads carry the meeting AREA only —
+                    // the exact address / maps link never leave on a
+                    // pre-booking surface.
+                    const meetingPoint = publicMeetingPoint(
+                        this.safeMeetingPoint((template as any).meetingPoint),
+                        template.startLocation,
+                    );
+                    // Batch F: the #687 one-line summary + election
+                    // flags ride on every list payload (card surface).
+                    const batchF = {
+                        cancellationSummary: summarizeCancellation((template as any).cancellationPolicy),
+                        payOnArrivalEnabled: (template as any).payOnArrivalEnabled ?? false,
+                        privateTourEnabled: (template as any).privateTourEnabled ?? false,
+                    };
+                    if (!localized.agency) return { ...localized, ...batchF, images, meetingPoint };
                     // #569: never publish an umbrella VERIFIED the
-                    // components do not support — reconcile on read and
-                    // strip the expiry inputs from the payload.
-                    const { licenceExpiry: _licenceExpiry, insuranceExpiry: _insuranceExpiry, ...agency } =
+                    // components do not support — reconcile on read.
+                    // #673 (Council S6): the licence EXPIRY is part of the
+                    // dated verification statement the card renders
+                    // (status + expiry + verified-at), so it is exposed;
+                    // the insurance expiry stays an internal
+                    // reconciliation input and is still stripped.
+                    const { insuranceExpiry: _insuranceExpiry, ...agency } =
                         localized.agency as typeof localized.agency & { licenceExpiry?: unknown; insuranceExpiry?: unknown };
                     return {
                         ...localized,
+                        ...batchF,
                         images,
+                        meetingPoint,
                         agency: {
                             ...agency,
                             // #447: logo re-derived at read time like trip images.
@@ -446,7 +649,10 @@ export class TripsService {
             where: {
                 id,
                 status: TripStatus.ACTIVE,
-                agency: { verificationStatus: 'VERIFIED' },
+                // #728: same bookable-agency gate as the catalogue — an
+                // ineligible agency's trip answers NotFound, exactly
+                // like the MAD-only gate below.
+                agency: publicBookableAgencyWhere(),
                 // B24(f) / #498: a non-MAD trip is not publicly visible
                 // while the beta gate is on — same NotFound as absent.
                 ...(isMadOnlyCatalogEnabled() ? { currency: BETA_CATALOG_CURRENCY } : {}),
@@ -461,6 +667,12 @@ export class TripsService {
                 translations: true,
                 category: true,
                 startLocation: true,
+                // #675 + #676: destination slug rides along; the meeting
+                // point is selected so it can be re-shaped to area-only
+                // below (the stored address/maps link are NOT selected
+                // into the public payload).
+                destinationSlug: true,
+                meetingPoint: true,
                 endLocation: true,
                 durationDays: true,
                 durationNights: true,
@@ -475,6 +687,14 @@ export class TripsService {
                 averageRating: true,
                 reviewCount: true,
                 cancellationPolicy: true,
+                // Batch F (#686/#687/#694/#697/#701) public facts.
+                faqs: true,
+                freeCancellation: true,
+                freeCancellationDays: true,
+                payOnArrivalEnabled: true,
+                privateTourEnabled: true,
+                pickupPoints: true,
+                isUnlisted: true,
                 minBookings: true,
                 createdAt: true,
                 updatedAt: true,
@@ -524,10 +744,28 @@ export class TripsService {
                         // #569: feeds the umbrella reconciliation below;
                         // stripped from the payload, never exposed.
                         insuranceExpiry: true,
+                        // #688/#700 (Council S6): Public Verification
+                        // Record + Law 31-08 seller block facts for the
+                        // trip page and checkout.
+                        insuranceInsurer: true,
+                        businessAddress: true,
+                        businessPhone: true,
+                        rc: true,
+                        taxId: true,
                     },
                 },
                 itinerary: {
                     orderBy: { dayNumber: 'asc' },
+                },
+                // #695: agency-priced variants + paid add-ons (active
+                // only on the public payload; prices serialized below).
+                pricingVariants: {
+                    where: { isActive: true },
+                    orderBy: { sortOrder: 'asc' },
+                },
+                addOns: {
+                    where: { isActive: true },
+                    orderBy: { sortOrder: 'asc' },
                 },
                 _count: {
                     select: { reviews: true, wishlists: true },
@@ -545,8 +783,36 @@ export class TripsService {
         // (fallback French -> any language; no locale = French columns,
         // identical to the pre-#546 payload).
         const localized = localizeTripPayload(result, locale);
+        // #686: generated FAQ facts, computed once for both the block
+        // and its JSON-LD.
+        const faqMeeting = publicMeetingPoint(
+            this.safeMeetingPoint((result as any).meetingPoint),
+            result.startLocation,
+        );
+        const generatedFaqs = generateTripFaqs({
+            startLocation: result.startLocation,
+            meetingArea: faqMeeting?.area,
+            pickupAvailable: faqMeeting?.pickupAvailable,
+            cancellationPolicy: result.cancellationPolicy,
+            agencyName: (result.agency as any)?.legalName ?? (result.agency as any)?.companyName ?? null,
+            inclusions: result.inclusions,
+            exclusions: result.exclusions,
+            checklist: result.checklist,
+            hasStagedSessions: ((result as any).sessions ?? []).some(
+                (s: any) => (s.minBookings ?? 1) > 1 && Number(s.deposit ?? 0) > 0,
+            ),
+            payOnArrivalEnabled: (result as any).payOnArrivalEnabled ?? false,
+            privateTourEnabled: (result as any).privateTourEnabled ?? false,
+            hasPayLaterSessions: ((result as any).sessions ?? []).some((s: any) => s.allowPayLater),
+        });
         return {
             ...localized,
+            // #676: area only on this pre-booking surface — the exact
+            // address and maps link appear on the booking view only.
+            meetingPoint: publicMeetingPoint(
+                this.safeMeetingPoint((result as any).meetingPoint),
+                result.startLocation,
+            ),
             // #447: re-derive media from stored references at read time.
             images: derivePublicMediaUrls((result as any).images),
             // #417 (Council P0-11): the resolved cancellation scale
@@ -556,6 +822,19 @@ export class TripsService {
             // booking at creation. The raw stored policy stays in
             // `cancellationPolicy` for the agency editor.
             cancellationScale: buildCancellationScaleSnapshot(result.cancellationPolicy),
+            // #687: the one-line summary (hero + booking box surfaces).
+            cancellationSummary: summarizeCancellation(result.cancellationPolicy),
+            // #686: FAQ block — entries generated from structured data
+            // plus the capped agency entries (stored in `faqs`), with
+            // FAQPage JSON-LD for the request locale.
+            generatedFaqs,
+            faqJsonLd: buildTripFaqJsonLd(
+                [...generatedFaqs, ...(((result as any).faqs as any[]) ?? [])],
+                locale ?? 'fr',
+            ),
+            // #695: Decimal prices leave the API as fixed strings.
+            pricingVariants: (result as any).pricingVariants?.map(serializePricingVariant) ?? [],
+            addOns: (result as any).addOns?.map(serializeAddOn) ?? [],
             agency: {
                 ...publicAgency,
                 // #447: logo re-derived at read time like trip images.
@@ -563,7 +842,106 @@ export class TripsService {
                 // #569: umbrella reconciled with licence + insurance.
                 verificationStatus: effectiveVerificationStatus(result.agency),
                 bankDetails: visibleBankDetails(result.agency),
+                // #688: the insurance validity window joins the public
+                // payload ONLY while the insurance is effectively
+                // verified (the raw expiry stays stripped above, #569).
+                insuranceExpiry:
+                    effectiveInsuranceStatus(result.agency) === 'VERIFIED'
+                        ? ((result.agency as any).insuranceExpiry ?? null)
+                        : null,
             },
+        };
+    }
+
+    /**
+     * #685 (Council S6): Cluster Index Layer B — live inventory for one
+     * destination, computed from the database at request time (counts
+     * reconcile with live inventory BY CONSTRUCTION: the trip list, the
+     * counts and the category children all derive from the same query).
+     * Only ACTIVE, listed trips of verified agencies count; review
+     * aggregates are REAL (stored counters) and the average follows
+     * the #681 threshold rule (null below the minimum count).
+     */
+    async getDestinationInventory(slug: string, locale?: string) {
+        if (!isDestinationSlug(slug)) {
+            throw new BadRequestException(
+                'destination must be one of the configured destinations (tangier, tetouan, chefchaouen)',
+            );
+        }
+        const templates = await this.db.tripTemplate.findMany({
+            where: {
+                destinationSlug: slug,
+                status: TripStatus.ACTIVE,
+                isUnlisted: false,
+                // #728: destination inventory is public discovery too —
+                // counts and trips derive from bookable agencies only.
+                agency: publicBookableAgencyWhere(),
+                ...(isMadOnlyCatalogEnabled() ? { currency: BETA_CATALOG_CURRENCY } : {}),
+            },
+            include: {
+                sessions: {
+                    where: { status: SessionStatus.OPEN, startDate: { gte: new Date() } },
+                    orderBy: { startDate: 'asc' },
+                    take: 5,
+                },
+                agency: {
+                    select: {
+                        id: true,
+                        companyName: true,
+                        legalName: true,
+                        logo: true,
+                        verificationStatus: true,
+                        travelLicenceStatus: true,
+                        licenceVerifiedAt: true,
+                        licenceExpiry: true,
+                        insuranceStatus: true,
+                        insuranceVerifiedAt: true,
+                        insuranceExpiry: true,
+                    },
+                },
+                _count: { select: { sessions: true, reviews: true, wishlists: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 100,
+        });
+        const trips = templates.map((template) => {
+            const localized = localizeTripPayload(template, locale);
+            const { insuranceExpiry: _ie, ...agency } = (localized as any).agency ?? {};
+            return {
+                ...localized,
+                images: derivePublicMediaUrls((template as any).images),
+                meetingPoint: publicMeetingPoint(
+                    this.safeMeetingPoint((template as any).meetingPoint),
+                    template.startLocation,
+                ),
+                cancellationSummary: summarizeCancellation((template as any).cancellationPolicy),
+                payOnArrivalEnabled: (template as any).payOnArrivalEnabled ?? false,
+                privateTourEnabled: (template as any).privateTourEnabled ?? false,
+                agency: (localized as any).agency
+                    ? { ...agency, logo: derivePublicMediaUrl((template as any).agency.logo) ?? null }
+                    : null,
+            };
+        });
+        const reviewCount = templates.reduce((sum, t) => sum + (t.reviewCount ?? 0), 0);
+        const weighted = templates.reduce(
+            (sum, t) => sum + (t.averageRating ?? 0) * (t.reviewCount ?? 0),
+            0,
+        );
+        // #681: an average is a claim — publish it only at/above the
+        // platform minimum review count (5, mirroring review-display).
+        const averageRating = reviewCount >= 5 ? Number((weighted / reviewCount).toFixed(2)) : null;
+        const byCategory = new Map<string, number>();
+        for (const t of templates) byCategory.set(t.category, (byCategory.get(t.category) ?? 0) + 1);
+        return {
+            slug,
+            tripCount: templates.length,
+            agencyCount: new Set(templates.map((t) => t.agencyId)).size,
+            reviewCount,
+            averageRating,
+            // Category×city children exist ONLY for cells with >= 1
+            // live verified trip — this list IS that gate.
+            categories: [...byCategory.entries()].map(([category, tripCount]) => ({ category, tripCount })),
+            trips,
         };
     }
 
@@ -580,7 +958,7 @@ export class TripsService {
                 id: templateId,
                 agencyId: agencyId,
             },
-            select: { id: true, currency: true },
+            select: { id: true, currency: true, privateTourEnabled: true },
         });
 
         if (!template) throw new NotFoundException('Trip template not found');
@@ -602,12 +980,24 @@ export class TripsService {
         const requestedCurrency = dto.currency ?? template.currency;
         this.assertTripCurrency(template.currency, requestedCurrency);
 
+        // #694: a PRIVATE session requires the trip's private-tour
+        // election, and the min-group staged branch NEVER applies to
+        // it (no PENDING_MINIMUM, no confirmation deadline).
+        const isPrivate = dto.sessionKind === 'PRIVATE';
+        if (isPrivate && !(template as any).privateTourEnabled) {
+            throw new BadRequestException(
+                'Private sessions require the trip\'s private-tour option to be enabled first',
+            );
+        }
+
         // #369: staged-payment configuration (deposit cap, deadline rules).
         const stagedConfig = resolveStagedSessionConfig({
             price,
             deposit,
-            minBookings: dto.minBookings ?? 1,
-            confirmationDeadline: dto.confirmationDeadline ? new Date(dto.confirmationDeadline) : null,
+            minBookings: isPrivate ? 1 : (dto.minBookings ?? 1),
+            confirmationDeadline: isPrivate
+                ? null
+                : dto.confirmationDeadline ? new Date(dto.confirmationDeadline) : null,
             startDate,
         });
 
@@ -627,6 +1017,9 @@ export class TripsService {
                 minBookings: dto.minBookings ?? 1,
                 confirmationDeadline: stagedConfig.confirmationDeadline,
                 groupStatus: stagedConfig.groupStatus,
+                sessionKind: (dto.sessionKind ?? 'SHARED') as any,
+                allowPayLater: dto.allowPayLater ?? false,
+                payLaterHoldHours: dto.payLaterHoldHours ?? null,
             },
         });
         await this.refreshStartingPrice(templateId);
@@ -666,13 +1059,17 @@ export class TripsService {
         // #369: validate the merged staged-payment configuration (a partial
         // update can create or break a staged session).
         const minBookings = dto.minBookings ?? session.minBookings;
+        // #694: private sessions bypass the min-group branch entirely.
+        const mergedKind = dto.sessionKind ?? (session as any).sessionKind ?? 'SHARED';
         const stagedConfig = resolveStagedSessionConfig({
             price,
             deposit,
-            minBookings,
-            confirmationDeadline: dto.confirmationDeadline
-                ? new Date(dto.confirmationDeadline)
-                : session.confirmationDeadline,
+            minBookings: mergedKind === 'PRIVATE' ? 1 : minBookings,
+            confirmationDeadline: mergedKind === 'PRIVATE'
+                ? null
+                : dto.confirmationDeadline
+                    ? new Date(dto.confirmationDeadline)
+                    : session.confirmationDeadline,
             startDate,
         });
 
@@ -690,6 +1087,9 @@ export class TripsService {
                 minBookings,
                 confirmationDeadline: stagedConfig.confirmationDeadline,
                 groupStatus: stagedConfig.groupStatus,
+                sessionKind: dto.sessionKind as any,
+                allowPayLater: dto.allowPayLater,
+                payLaterHoldHours: dto.payLaterHoldHours,
             },
         });
         await this.refreshStartingPrice(templateId);
@@ -715,7 +1115,9 @@ export class TripsService {
             where: {
                 id: templateId,
                 status: TripStatus.ACTIVE,
-                agency: { verificationStatus: 'VERIFIED' },
+                // #728: public session listing follows the same
+                // bookable-agency gate as the trip detail it feeds.
+                agency: publicBookableAgencyWhere(),
             },
             select: { id: true, currency: true },
         });
@@ -740,7 +1142,19 @@ export class TripsService {
         const agency = await this.db.agencyProfile.findUnique({ where: { id: agencyId } });
         if (!agency) throw new NotFoundException('Agency profile not found');
 
-        const { itinerary, status: requestedStatus, imageAlts, cancellationPolicy, translations, ...tripData } = dto;
+        const { itinerary: rawItinerary, status: requestedStatus, imageAlts, cancellationPolicy, translations, destinationSlug, meetingPoint, faqs, pickupPoints, ...tripData } = dto;
+        const itinerary = this.normalizeItineraryForWrite(rawItinerary as never) as any;
+        // Batch F (#686/#701): validated write surfaces (undefined =
+        // untouched on this PATCH).
+        let normalizedFaqs: ReturnType<typeof normalizeTripFaqs> | undefined;
+        let normalizedPickupPoints: ReturnType<typeof normalizePickupPoints> | undefined;
+        try {
+            normalizedFaqs = faqs === undefined ? undefined : normalizeTripFaqs(faqs);
+            normalizedPickupPoints = pickupPoints === undefined ? undefined : normalizePickupPoints(pickupPoints);
+        } catch (error) {
+            throw new BadRequestException(error instanceof Error ? error.message : 'Invalid trip FAQ / pickup points');
+        }
+
 
         // Verify ownership
         const existing = await this.db.tripTemplate.findFirst({
@@ -783,39 +1197,128 @@ export class TripsService {
                 ? buildTripTranslations(existing.translations, { title: nextTitle, description: nextDescription, ...frenchSections })
                 : undefined);
 
+        // Batch B (#675/#676): post-write destination + meeting point.
+        // The slug resolves when supplied or when startLocation moves;
+        // the meeting point normalizes when supplied (null clears it).
+        const resolvedDestinationSlug =
+            destinationSlug !== undefined || dto.startLocation !== undefined
+                ? this.resolveDestinationSlug(destinationSlug, dto.startLocation ?? existing.startLocation)
+                : undefined;
+        const effectiveMeetingPoint: MeetingPoint | null | undefined =
+            meetingPoint !== undefined
+                ? normalizeMeetingPoint(meetingPoint)
+                : undefined;
+        // #417: normalize the supplied bands once — the publish gate
+        // below and the stored value share the exact same scale.
+        const normalizedCancellationPolicy = cancellationPolicy
+            ? normalizeCancellationPolicyInput(cancellationPolicy)
+            : undefined;
+        const effectiveCancellationPolicy =
+            normalizedCancellationPolicy ?? (existing as { cancellationPolicy?: unknown }).cancellationPolicy;
+        // #697: the pay-on-arrival election is validated against the
+        // post-write trip shape.
+        if (dto.payOnArrivalEnabled !== undefined) {
+            const err = payOnArrivalTripError({
+                durationDays: dto.durationDays ?? existing.durationDays,
+                payOnArrivalEnabled: dto.payOnArrivalEnabled,
+            });
+            if (err) throw new BadRequestException(err);
+        }
+        // #687: re-derive the indexed columns whenever the scale moves.
+        const updateSummary = normalizedCancellationPolicy
+            ? summarizeCancellation(normalizedCancellationPolicy)
+            : undefined;
+
+        const isPublishTransition =
+            status === TripStatus.ACTIVE && existing.status !== TripStatus.ACTIVE;
+        // Itinerary rows the gates/warnings evaluate: the replacement
+        // carried by this PATCH, else the stored days.
+        const gateItinerary =
+            status === TripStatus.ACTIVE
+                ? (itinerary ?? await this.db.itineraryDay.findMany({
+                    where: { templateId: id },
+                    orderBy: { dayNumber: 'asc' },
+                }))
+                : undefined;
+        const postWriteTexts = {
+            title: nextTitle,
+            description: nextDescription,
+            translations: effectiveTranslations ?? existing.translations,
+            itinerary: gateItinerary,
+            inclusions: dto.inclusions ?? existing.inclusions,
+            exclusions: dto.exclusions ?? existing.exclusions,
+            checklist: dto.checklist ?? existing.checklist,
+        };
+
         // #371: a status change INTO Active is a publish transition and
         // goes through the same identity + licence gate as activate.
-        if (status === TripStatus.ACTIVE && existing.status !== TripStatus.ACTIVE) {
+        if (isPublishTransition) {
             await this.assertAgencyCanPublish(agencyId);
             // #546: ... and the French content gate, evaluated on the
             // post-write content (this PATCH may itself supply French).
             // #584: sections gate on the post-write canonical sections
             // (itinerary rows are fetched when the PATCH doesn't carry
             // a replacement itinerary).
-            const gateItinerary = itinerary ?? await this.db.itineraryDay.findMany({
-                where: { templateId: id },
-                orderBy: { dayNumber: 'asc' },
+            this.assertFrenchPublishable(postWriteTexts);
+            // Council S6 Batch B: commercial-terms + meeting gates,
+            // also on the post-write state (this PATCH may itself
+            // supply the scale / meeting point that satisfies them).
+            this.assertBatchBPublishable({
+                cancellationPolicy: effectiveCancellationPolicy,
+                meetingPoint: effectiveMeetingPoint ?? (existing as { meetingPoint?: unknown }).meetingPoint,
+                ...postWriteTexts,
             });
-            this.assertFrenchPublishable({
-                title: nextTitle,
-                description: nextDescription,
-                translations: effectiveTranslations ?? existing.translations,
-                itinerary: gateItinerary,
-                inclusions: dto.inclusions ?? existing.inclusions,
-                exclusions: dto.exclusions ?? existing.exclusions,
-                checklist: dto.checklist ?? existing.checklist,
-            });
+        } else if (status === TripStatus.ACTIVE && existing.status === TripStatus.ACTIVE) {
+            // #674: a published trip may not be edited INTO carrying
+            // free-text cancellation/payment terms either — scan any
+            // text this PATCH touches (the scale/meeting gates do not
+            // re-run for already-published trips, per the #371 rule).
+            const touchesText =
+                dto.title !== undefined || dto.description !== undefined || translations !== undefined
+                || dto.inclusions !== undefined || dto.exclusions !== undefined
+                || dto.checklist !== undefined || itinerary !== undefined;
+            if (touchesText) {
+                const prohibited = findProhibitedCommercialTerms(collectTripTexts(postWriteTexts));
+                if (prohibited.length > 0) {
+                    throw new BadRequestException(
+                        `Free-text cancellation/payment terms are not allowed on a published trip (${prohibited.join(', ')}) — the structured cancellation scale is the only cancellation text a trip may carry`,
+                    );
+                }
+            }
         }
 
-        return this.db.tripTemplate.update({
+        const updated = await this.db.tripTemplate.update({
             where: { id },
             data: {
                 ...tripData,
+                // #675 + #676: resolved destination stamp + normalized
+                // meeting point (undefined = untouched on this PATCH;
+                // an explicit clear stores JSON null, per the codebase's
+                // JsonNull convention for nullable Json columns).
+                destinationSlug: resolvedDestinationSlug,
+                meetingPoint: effectiveMeetingPoint === undefined
+                    ? undefined
+                    : effectiveMeetingPoint === null
+                        ? Prisma.JsonNull
+                        : (effectiveMeetingPoint as unknown as Prisma.InputJsonValue),
                 // #417: same validated normalization as create; omitting
                 // the field leaves the stored bands untouched.
-                cancellationPolicy: cancellationPolicy
-                    ? (normalizeCancellationPolicyInput(cancellationPolicy) as unknown as Prisma.InputJsonValue)
+                cancellationPolicy: normalizedCancellationPolicy
+                    ? (normalizedCancellationPolicy as unknown as Prisma.InputJsonValue)
                     : undefined,
+                // Batch F: FAQ / pickup-point JSON + the #687 columns.
+                faqs: normalizedFaqs === undefined
+                    ? undefined
+                    : normalizedFaqs === null
+                        ? Prisma.JsonNull
+                        : (normalizedFaqs as unknown as Prisma.InputJsonValue),
+                pickupPoints: normalizedPickupPoints === undefined
+                    ? undefined
+                    : normalizedPickupPoints === null
+                        ? Prisma.JsonNull
+                        : (normalizedPickupPoints as unknown as Prisma.InputJsonValue),
+                freeCancellation: updateSummary?.freeCancellation,
+                freeCancellationDays: updateSummary ? updateSummary.freeCancellationDays : undefined,
                 translations: effectiveTranslations
                     ? (effectiveTranslations as unknown as Prisma.InputJsonValue)
                     : undefined,
@@ -830,6 +1333,13 @@ export class TripsService {
                 itinerary: true
             }
         });
+        // #676: a publish transition reports the non-blocking
+        // completeness warnings alongside the trip (never persisted,
+        // never traveller-facing).
+        if (isPublishTransition) {
+            return { ...updated, publishWarnings: this.publishWarningsFor(gateItinerary) };
+        }
+        return updated;
     }
 
     /**
@@ -898,10 +1408,13 @@ export class TripsService {
         // not carry the itinerary relation, so fetch the days.
         const days = await this.db.itineraryDay.findMany({ where: { templateId: id } });
         this.assertFrenchPublishable({ ...existing, itinerary: days });
-        return this.db.tripTemplate.update({
+        // Council S6 Batch B: commercial-terms + meeting gates too.
+        this.assertBatchBPublishable({ ...existing, itinerary: days });
+        const updated = await this.db.tripTemplate.update({
             where: { id },
             data: { status: TripStatus.ACTIVE },
         });
+        return { ...updated, publishWarnings: this.publishWarningsFor(days) };
     }
 
     async archiveTemplate(id: string, agencyId: string) {
@@ -936,10 +1449,13 @@ export class TripsService {
         // #584: sections included, days fetched as in activateTemplate.
         const days = await this.db.itineraryDay.findMany({ where: { templateId: id } });
         this.assertFrenchPublishable({ ...existing, itinerary: days });
-        return this.db.tripTemplate.update({
+        // Council S6 Batch B: commercial-terms + meeting gates too.
+        this.assertBatchBPublishable({ ...existing, itinerary: days });
+        const updated = await this.db.tripTemplate.update({
             where: { id },
             data: { status: TripStatus.ACTIVE },
         });
+        return { ...updated, publishWarnings: this.publishWarningsFor(days) };
     }
 
     async deleteTemplate(id: string, agencyId: string) {
@@ -976,6 +1492,138 @@ export class TripsService {
             where: { id: templateId },
             data: { startingPrice: aggregate._min.price },
         });
+    }
+
+    // ---- #695 (Council S6): agency-priced variants + paid add-ons ----
+
+    private async assertOwnedTemplate(agencyId: string, templateId: string) {
+        const template = await this.db.tripTemplate.findFirst({
+            where: { id: templateId, agencyId },
+            select: { id: true, currency: true },
+        });
+        if (!template) throw new NotFoundException('Trip template not found');
+        return template;
+    }
+
+    private assertPricingName(name: unknown) {
+        if (!name || typeof name !== 'object' || Array.isArray(name)) {
+            throw new BadRequestException('A pricing name map is required');
+        }
+        const fr = (name as Record<string, unknown>).fr;
+        if (typeof fr !== 'string' || !fr.trim()) {
+            throw new BadRequestException('The French name is required for a pricing option');
+        }
+        for (const [key, value] of Object.entries(name as Record<string, unknown>)) {
+            if (typeof value !== 'string' || value.length > 120) {
+                throw new BadRequestException(`Invalid pricing name for language "${key}"`);
+            }
+        }
+    }
+
+    async listTripPricing(agencyId: string, templateId: string) {
+        await this.assertOwnedTemplate(agencyId, templateId);
+        const [variants, addOns] = await Promise.all([
+            this.db.tripPricingVariant.findMany({ where: { templateId }, orderBy: { sortOrder: 'asc' } }),
+            this.db.tripAddOn.findMany({ where: { templateId }, orderBy: { sortOrder: 'asc' } }),
+        ]);
+        return {
+            variants: variants.map(serializePricingVariant),
+            addOns: addOns.map(serializeAddOn),
+        };
+    }
+
+    async createPricingVariant(agencyId: string, templateId: string, dto: import('./dto/pricing.dto').UpsertPricingVariantDto) {
+        const template = await this.assertOwnedTemplate(agencyId, templateId);
+        if (dto.name === undefined) throw new BadRequestException('A pricing name map is required');
+        this.assertPricingName(dto.name);
+        if (dto.price === undefined) throw new BadRequestException('A price is required');
+        const created = await this.db.tripPricingVariant.create({
+            data: {
+                templateId,
+                agencyId,
+                name: dto.name as unknown as Prisma.InputJsonValue,
+                pricingUnit: dto.pricingUnit ?? 'PER_PERSON',
+                unitSize: dto.unitSize ?? 1,
+                price: toMoneyDecimal(dto.price, 'variantPrice'),
+                currency: template.currency,
+                isActive: dto.isActive ?? true,
+                sortOrder: dto.sortOrder ?? 0,
+            },
+        });
+        return serializePricingVariant(created);
+    }
+
+    async updatePricingVariant(agencyId: string, templateId: string, variantId: string, dto: import('./dto/pricing.dto').UpsertPricingVariantDto) {
+        await this.assertOwnedTemplate(agencyId, templateId);
+        const existing = await this.db.tripPricingVariant.findFirst({ where: { id: variantId, templateId, agencyId } });
+        if (!existing) throw new NotFoundException('Pricing variant not found');
+        if (dto.name !== undefined) this.assertPricingName(dto.name);
+        const updated = await this.db.tripPricingVariant.update({
+            where: { id: variantId },
+            data: {
+                ...(dto.name !== undefined ? { name: dto.name as unknown as Prisma.InputJsonValue } : {}),
+                ...(dto.pricingUnit !== undefined ? { pricingUnit: dto.pricingUnit } : {}),
+                ...(dto.unitSize !== undefined ? { unitSize: dto.unitSize } : {}),
+                ...(dto.price !== undefined ? { price: toMoneyDecimal(dto.price, 'variantPrice') } : {}),
+                ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+                ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
+            },
+        });
+        return serializePricingVariant(updated);
+    }
+
+    async deletePricingVariant(agencyId: string, templateId: string, variantId: string) {
+        await this.assertOwnedTemplate(agencyId, templateId);
+        const existing = await this.db.tripPricingVariant.findFirst({ where: { id: variantId, templateId, agencyId } });
+        if (!existing) throw new NotFoundException('Pricing variant not found');
+        await this.db.tripPricingVariant.delete({ where: { id: variantId } });
+        return { deleted: true };
+    }
+
+    async createAddOn(agencyId: string, templateId: string, dto: import('./dto/pricing.dto').UpsertAddOnDto) {
+        const template = await this.assertOwnedTemplate(agencyId, templateId);
+        if (dto.name === undefined) throw new BadRequestException('A pricing name map is required');
+        this.assertPricingName(dto.name);
+        if (dto.price === undefined) throw new BadRequestException('A price is required');
+        const created = await this.db.tripAddOn.create({
+            data: {
+                templateId,
+                agencyId,
+                name: dto.name as unknown as Prisma.InputJsonValue,
+                pricingUnit: dto.pricingUnit ?? 'PER_BOOKING',
+                price: toMoneyDecimal(dto.price, 'addOnPrice'),
+                currency: template.currency,
+                isActive: dto.isActive ?? true,
+                sortOrder: dto.sortOrder ?? 0,
+            },
+        });
+        return serializeAddOn(created);
+    }
+
+    async updateAddOn(agencyId: string, templateId: string, addOnId: string, dto: import('./dto/pricing.dto').UpsertAddOnDto) {
+        await this.assertOwnedTemplate(agencyId, templateId);
+        const existing = await this.db.tripAddOn.findFirst({ where: { id: addOnId, templateId, agencyId } });
+        if (!existing) throw new NotFoundException('Add-on not found');
+        if (dto.name !== undefined) this.assertPricingName(dto.name);
+        const updated = await this.db.tripAddOn.update({
+            where: { id: addOnId },
+            data: {
+                ...(dto.name !== undefined ? { name: dto.name as unknown as Prisma.InputJsonValue } : {}),
+                ...(dto.pricingUnit !== undefined ? { pricingUnit: dto.pricingUnit } : {}),
+                ...(dto.price !== undefined ? { price: toMoneyDecimal(dto.price, 'addOnPrice') } : {}),
+                ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+                ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
+            },
+        });
+        return serializeAddOn(updated);
+    }
+
+    async deleteAddOn(agencyId: string, templateId: string, addOnId: string) {
+        await this.assertOwnedTemplate(agencyId, templateId);
+        const existing = await this.db.tripAddOn.findFirst({ where: { id: addOnId, templateId, agencyId } });
+        if (!existing) throw new NotFoundException('Add-on not found');
+        await this.db.tripAddOn.delete({ where: { id: addOnId } });
+        return { deleted: true };
     }
 
     private assertTripCurrency(tripCurrency: string, currency: string) {

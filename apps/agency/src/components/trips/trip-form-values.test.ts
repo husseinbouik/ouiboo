@@ -53,6 +53,38 @@ describe('tripToFormValues cancellation scale (#417)', () => {
   });
 });
 
+describe('tripToFormValues destination + meeting point (#675/#676)', () => {
+  it('carries the destination slug and the full meeting point into the form', () => {
+    const values = tripToFormValues({
+      ...baseTrip,
+      destinationSlug: 'chefchaouen',
+      meetingPoint: { address: 'Place Outa el Hammam', mapsUrl: 'https://maps.example/outh', pickupAvailable: true },
+    });
+    expect(values.destinationSlug).toBe('chefchaouen');
+    expect(values.meetingPoint).toEqual({
+      address: 'Place Outa el Hammam',
+      mapsUrl: 'https://maps.example/outh',
+      pickupAvailable: true,
+    });
+  });
+
+  it('maps null destination/meeting point to undefined (derive / not yet provided)', () => {
+    const apiTrip = { ...baseTrip, destinationSlug: null, meetingPoint: null } as unknown as TripEditorData;
+    const values = tripToFormValues(apiTrip);
+    expect(values.destinationSlug).toBeUndefined();
+    expect(values.meetingPoint).toBeUndefined();
+  });
+
+  it('defaults pickupAvailable to false when the stored point omits it', () => {
+    const apiTrip = { ...baseTrip, meetingPoint: { address: 'Gare de Tanger' } } as unknown as TripEditorData;
+    expect(tripToFormValues(apiTrip).meetingPoint).toEqual({
+      address: 'Gare de Tanger',
+      mapsUrl: undefined,
+      pickupAvailable: false,
+    });
+  });
+});
+
 describe('tripToFormValues translations (#546)', () => {
   it('carries the stored language map into the form values', () => {
     const translations = {

@@ -50,6 +50,33 @@ describe('TripContactsCard (#419)', () => {
         expect(screen.getByText('support.normalLine')).not.toBeNull();
     });
 
+    it('offers the agency WhatsApp deep link and in-app messaging alongside (#679)', () => {
+        render(<TripContactsCard booking={makeBooking()} />);
+
+        const whatsApp = screen.getByRole('link', { name: /support\.agencyWhatsApp/ });
+        expect(whatsApp.getAttribute('href')).toContain('https://wa.me/212612345678?text=');
+        const inApp = screen.getByRole('link', { name: /support\.messageAgencyInApp/ });
+        expect(inApp.getAttribute('href')).toBe('/messages');
+    });
+
+    it('renders the Emergency Card with the meeting point, agency first (#680)', () => {
+        const booking = makeBooking();
+        booking.session.template.meetingPoint = {
+            address: 'Place du 9 Avril, Tanger',
+            mapsUrl: 'https://maps.example.com/place',
+            pickupAvailable: false,
+        };
+        const { container } = render(<TripContactsCard booking={booking} />);
+
+        expect(screen.getByTestId('emergency-card')).not.toBeNull();
+        expect(screen.getByText('Place du 9 Avril, Tanger')).not.toBeNull();
+        const maps = screen.getByRole('link', { name: /bookingDetail\.viewOnMap/ });
+        expect(maps.getAttribute('href')).toBe('https://maps.example.com/place');
+        // Agency-first ordering: the agency block precedes the escalation block.
+        const text = container.textContent ?? '';
+        expect(text.indexOf('support.agencyFirstTitle')).toBeLessThan(text.indexOf('support.escalationTitle'));
+    });
+
     it('shows the honest fallback when the agency published no emergency contact', () => {
         const booking = makeBooking();
         booking.session.template.agency = { id: 'agency-1', companyName: 'Atlas Adventures' };

@@ -125,7 +125,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             data: {
                 id: 'agency-profile-123',
                 userId: agencyUser1.id,
-                companyName: 'Test Agency', ice: 'ICE100004', patente: 'PAT100004', rib: 'RIB100004', verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', travelLicenceNumber: 'LIC-100004', licenceExpiry: new Date('2030-01-01T00:00:00.000Z'), licenceIssuedAt: new Date('2024-01-15T00:00:00.000Z'), licenceIssuingAuthority: 'Ministère du Tourisme', travelLicenceType: 'ODV', insuranceStatus: 'VERIFIED', insuranceExpiry: new Date('2030-01-01T00:00:00.000Z'),
+                companyName: 'Test Agency', ice: 'ICE100004', patente: 'PAT100004', rib: 'RIB100004', verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', travelLicenceNumber: 'LIC-100004', licenceExpiry: new Date('2030-01-01T00:00:00.000Z'), licenceIssuedAt: new Date('2024-01-15T00:00:00.000Z'), licenceIssuingAuthority: 'Ministère du Tourisme', travelLicenceType: 'ODV', insuranceStatus: 'VERIFIED', insuranceExpiry: new Date('2030-01-01T00:00:00.000Z'), emergencyContactName: 'Test On-Call', emergencyContactPhone: '+212600000099', subscriptionStatus: 'ACTIVE',
             } as any,
         });
 
@@ -146,7 +146,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             data: {
                 id: 'agency-profile-456',
                 userId: agencyUser2.id,
-                companyName: 'Other Agency', ice: 'ICE100005', patente: 'PAT100005', rib: 'RIB100005', verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', travelLicenceNumber: 'LIC-100005', licenceExpiry: new Date('2030-01-01T00:00:00.000Z'), licenceIssuedAt: new Date('2024-01-15T00:00:00.000Z'), licenceIssuingAuthority: 'Ministère du Tourisme', travelLicenceType: 'ODV', insuranceStatus: 'VERIFIED', insuranceExpiry: new Date('2030-01-01T00:00:00.000Z'),
+                companyName: 'Other Agency', ice: 'ICE100005', patente: 'PAT100005', rib: 'RIB100005', verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', travelLicenceNumber: 'LIC-100005', licenceExpiry: new Date('2030-01-01T00:00:00.000Z'), licenceIssuedAt: new Date('2024-01-15T00:00:00.000Z'), licenceIssuingAuthority: 'Ministère du Tourisme', travelLicenceType: 'ODV', insuranceStatus: 'VERIFIED', insuranceExpiry: new Date('2030-01-01T00:00:00.000Z'), emergencyContactName: 'Test On-Call', emergencyContactPhone: '+212600000099', subscriptionStatus: 'ACTIVE',
             } as any,
         });
 
@@ -381,6 +381,8 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
                 title: 'Updated Desert Adventure',
                 description: 'New description',
                 status: 'ACTIVE',
+                cancellationPolicy: { bands: [{ minDaysBeforeStart: 30, refundPercent: 100 }, { minDaysBeforeStart: 7, refundPercent: 50 }, { minDaysBeforeStart: 0, refundPercent: 0 }] },
+                meetingPoint: { address: '1 Test Street', pickupAvailable: false },
                 itinerary: [
                     { dayNumber: 1, title: 'Day 1', description: 'Travel', activities: [] },
                     { dayNumber: 2, title: 'Day 2', description: 'Trek', activities: [] },
@@ -418,7 +420,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         await request(app.getHttpServer())
             .patch(`/trips/${template.id}`)
             .set('Authorization', 'Bearer agency-123')
-            .send({ status: 'ACTIVE' })
+            .send({ status: 'ACTIVE', cancellationPolicy: { bands: [{ minDaysBeforeStart: 30, refundPercent: 100 }, { minDaysBeforeStart: 7, refundPercent: 50 }, { minDaysBeforeStart: 0, refundPercent: 0 }] }, meetingPoint: { address: '1 Test Street', pickupAvailable: false } })
             .expect(200);
 
         const updated = await db.tripTemplate.findUnique({ where: { id: template.id } });
@@ -697,7 +699,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         const res = await request(app.getHttpServer())
             .patch(`/trips/${template.id}`)
             .set('Authorization', 'Bearer agency-123')
-            .send({ status: 'ACTIVE' })
+            .send({ status: 'ACTIVE', cancellationPolicy: { bands: [{ minDaysBeforeStart: 30, refundPercent: 100 }, { minDaysBeforeStart: 7, refundPercent: 50 }, { minDaysBeforeStart: 0, refundPercent: 0 }] }, meetingPoint: { address: '1 Test Street', pickupAvailable: false } })
             .expect(200);
 
         expect(res.body.status).toBe('ACTIVE');
@@ -768,6 +770,51 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         expect(tripIds.includes(t1.id)).toBe(true);
         expect(tripIds.includes(t2.id)).toBe(true);
         expect(res.body.data.some((t: any) => t.status === 'DRAFT')).toBe(false);
+    });
+
+    // #728: public discovery must never advertise a trip whose agency
+    // cannot accept bookings — the seed-shaped agency below is fully
+    // verified (identity/licence/insurance) but its subscription is a
+    // TRIAL with no trial end on record, so the booking gate would
+    // reject every booking it appears to offer.
+    it('Public discovery hides ACTIVE trips from agencies that cannot accept bookings (#728)', async () => {
+        const { agency1 } = await seedTestData();
+
+        const lapsedUser = await db.user.create({
+            data: {
+                id: 'agency-user-789',
+                email: 'lapsed@test.com',
+                name: 'Lapsed Agency',
+                password: 'hashed-password',
+                role: UserRole.Agency,
+                isEmailVerified: true,
+            } as any,
+        });
+        const lapsedAgency = await db.agencyProfile.create({
+            data: {
+                id: 'agency-profile-789',
+                userId: lapsedUser.id,
+                companyName: 'Lapsed Agency', ice: 'ICE100007', patente: 'PAT100007', rib: 'RIB100007', verificationStatus: 'VERIFIED', travelLicenceStatus: 'VERIFIED', travelLicenceNumber: 'LIC-100007', licenceExpiry: new Date('2030-01-01T00:00:00.000Z'), licenceIssuedAt: new Date('2024-01-15T00:00:00.000Z'), licenceIssuingAuthority: 'Ministère du Tourisme', travelLicenceType: 'ODV', insuranceStatus: 'VERIFIED', insuranceExpiry: new Date('2030-01-01T00:00:00.000Z'), emergencyContactName: 'Test On-Call', emergencyContactPhone: '+212600000099', subscriptionStatus: 'TRIAL', trialEndsAt: null,
+            } as any,
+        });
+
+        const bookableTrip = await createTripTemplate(agency1.id, { status: 'ACTIVE', title: 'Bookable Trip' });
+        const lapsedTrip = await createTripTemplate(lapsedAgency.id, { status: 'ACTIVE', title: 'Lapsed Agency Trip' });
+
+        const list = await request(app.getHttpServer())
+            .get('/trips')
+            .expect(200);
+        const listedIds = list.body.data.map((t: any) => t.id);
+        expect(listedIds.includes(bookableTrip.id)).toBe(true);
+        expect(listedIds.includes(lapsedTrip.id)).toBe(false);
+        expect(list.body.pagination.total).toBe(1);
+
+        // Detail and public sessions answer NotFound for the ineligible
+        // agency's trip (indistinguishable from an absent trip), and
+        // 200 for the bookable one.
+        await request(app.getHttpServer()).get(`/trips/${lapsedTrip.id}`).expect(404);
+        await request(app.getHttpServer()).get(`/trips/${lapsedTrip.id}/sessions`).expect(404);
+        await request(app.getHttpServer()).get(`/trips/${bookableTrip.id}`).expect(200);
     });
 
     // ===== Section 10: Trip Image Upload Tests =====
@@ -1068,7 +1115,7 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         const published = await request(app.getHttpServer())
             .patch(`/trips/${frenchOnly.id}`)
             .set('Authorization', 'Bearer agency-123')
-            .send({ status: 'ACTIVE' })
+            .send({ status: 'ACTIVE', cancellationPolicy: { bands: [{ minDaysBeforeStart: 30, refundPercent: 100 }, { minDaysBeforeStart: 7, refundPercent: 50 }, { minDaysBeforeStart: 0, refundPercent: 0 }] }, meetingPoint: { address: '1 Test Street', pickupAvailable: false } })
             .expect(200);
         expect(published.body.status).toBe('ACTIVE');
     });

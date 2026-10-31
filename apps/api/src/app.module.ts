@@ -26,6 +26,8 @@ import { UploadModule } from './upload/upload.module'
 import { UsersModule } from './users/users.module'
 import { ExternalPaymentsModule } from './external-payments/external-payments.module'
 import { WishlistModule } from './wishlist/wishlist.module'
+import { QuoteRequestsModule } from './quote-requests/quote-requests.module'
+import { CustomTripsModule } from './custom-trips/custom-trips.module'
 
 @Module({
   imports: [
@@ -58,6 +60,8 @@ import { WishlistModule } from './wishlist/wishlist.module'
     InvoicesModule,
     RefundsModule,
     MessagesModule,
+    QuoteRequestsModule,
+    CustomTripsModule,
   ],
 })
 export class AppModule {}

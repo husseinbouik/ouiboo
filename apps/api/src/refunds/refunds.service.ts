@@ -85,6 +85,10 @@ const CASE_INCLUDE = {
             totalAmount: true,
             currency: true,
             guestsCount: true,
+            // #699 (Council S6): the traveller's end-to-end refund view
+            // renders the scale the case was opened under — the
+            // booking's own snapshot, never the trip's current policy.
+            cancellationScale: true,
             session: {
                 select: {
                     id: true,
@@ -97,7 +101,9 @@ const CASE_INCLUDE = {
             },
         },
     },
-    agency: { select: { id: true, companyName: true } },
+    // #699: legalName rides along so the traveller view can name the
+    // agency as the refund obligor by its legal (seller-of-record) name.
+    agency: { select: { id: true, companyName: true, legalName: true } },
     traveler: { select: { id: true, name: true, email: true } },
     // #416C: the evidence trail travels with the case so every surface
     // (agency form, admin audit queue, traveller view) can show WHAT a

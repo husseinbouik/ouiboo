@@ -13,6 +13,7 @@ import {
     Res,
     UseGuards,
     Request,
+    ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
@@ -48,8 +49,8 @@ export class UploadController {
                 },
                 intent: {
                     type: 'string',
-                    enum: ['trip-asset', 'identity-document'],
-                    description: 'Upload intent. Defaults to trip-asset.',
+                    enum: ['trip-asset', 'identity-document', 'payment-proof', 'avatar'],
+                    description: 'Upload intent. Omitted intent resolves by role (agency: trip-asset, others: avatar). Private intents never receive a public URL.',
                 },
             },
         },
@@ -80,19 +81,42 @@ export class UploadController {
         @Body() dto: UploadFileDto,
         @Request() req,
     ) {
-        const intent: UploadIntent = dto.intent ?? 'trip-asset';
+        // #665: every generic upload is bound to a declared purpose and
+        // an entity the caller owns. An omitted intent resolves by role
+        // (agency → its catalogue, everyone else → their own avatar), so
+        // the default can never mint an unattached public file either.
+        const intent: UploadIntent =
+            dto.intent ?? (req.user?.role === 'AGENCY' ? 'trip-asset' : 'avatar');
+        // Public trip assets are agency work: a traveller declaring the
+        // trip-asset purpose is asking to publish into a catalogue they
+        // do not own — refused, never silently re-homed.
+        if (intent === 'trip-asset' && req.user?.role !== 'AGENCY') {
+            throw new ForbiddenException(
+                'Public trip assets can only be uploaded by an agency account. Use a private upload intent for documents and payment proofs.',
+            );
+        }
         const folder = this.resolveFolder(intent, req.user);
         return this.uploadService.uploadFile(file, folder);
     }
 
     /**
-     * Resolve the storage folder from the upload intent (#191).
-     * - trip-asset: `trips/{agencyId}/` (tenant-isolated, publicly servable)
+     * Resolve the storage folder from the upload intent (#191, #665).
+     * - trip-asset: `trips/{agencyId}/` (tenant-isolated, publicly servable, agency-only)
      * - identity-document: `private/{userId}/` (never publicly servable)
+     * - payment-proof: `private/{userId}/payment-proofs/` (never publicly
+     *   servable; the `{userId}` segment keeps signed-URL ownership checks
+     *   working exactly like identity documents)
+     * - avatar: `avatars/{userId}/` (public, bound to the caller's profile)
      */
     private resolveFolder(intent: UploadIntent, user?: { userId?: string; agencyId?: string | null }): string {
         if (intent === 'identity-document') {
             return `private/${user?.userId || 'anonymous'}`;
+        }
+        if (intent === 'payment-proof') {
+            return `private/${user?.userId || 'anonymous'}/payment-proofs`;
+        }
+        if (intent === 'avatar') {
+            return `avatars/${user?.userId || 'anonymous'}`;
         }
         return `trips/${user?.agencyId || user?.userId || 'anonymous'}`;
     }

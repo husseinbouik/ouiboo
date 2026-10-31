@@ -118,3 +118,37 @@ export function localizedLandingUrl(locale: SupportedLanguage): string {
 export function landingOgImageUrl(locale: SupportedLanguage): string {
   return absoluteLandingUrl(`/og-image?lang=${locale}`)
 }
+
+/**
+ * /agences copy (#749, Council S11 §4): the dedicated agency page is
+ * FR-first (authored French title pattern from the S11 build
+ * conditions), indexable in all three locales from day one, and its
+ * canonical/hreflang set carries `x-default` -> FR. Kept beside
+ * SITE_COPY so the landing's per-route copy lives in one module.
+ */
+export interface AgencesCopy {
+  title: string
+  description: string
+}
+
+export const AGENCES_COPY: Record<SupportedLanguage, AgencesCopy> = {
+  fr: {
+    title: 'Ouiboo pour les agences — vendez vos voyages, payés en direct | Bêta gratuite au Maroc',
+    description:
+      "Rejoignez la bêta gratuite d'Ouiboo : présentez vos voyages, soyez payé directement par les voyageurs, 0 MAD pendant la bêta — vérification avant mise en ligne.",
+  },
+  en: {
+    title: 'Ouiboo for agencies — sell your trips, get paid directly | Free beta in Morocco',
+    description:
+      "Join Ouiboo's free beta: present your trips, get paid directly by travellers, 0 MAD during the beta — checked before listing.",
+  },
+  ar: {
+    title: 'Ouiboo للوكالات — بيعوا رحلاتكم واقبضوا مباشرة | نسخة تجريبية مجانية في المغرب',
+    description:
+      'انضموا إلى النسخة التجريبية المجانية من Ouiboo: اعرضوا رحلاتكم واقبضوا مباشرة من المسافرين، 0 درهم خلال النسخة التجريبية — مع التحقق قبل النشر.',
+  },
+}
+
+export function localizedAgencesUrl(locale: SupportedLanguage): string {
+  return `${LANDING_URL}/agences?lang=${locale}`
+}

@@ -1,5 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsString, IsInt, IsPositive, IsEnum, IsIn, IsOptional, IsNotEmpty, MaxLength } from 'class-validator';
+import { IsBoolean, IsString, IsInt, IsPositive, IsEnum, IsIn, IsOptional, IsNotEmpty, MaxLength, IsArray, ValidateNested, Min, Max, ArrayMaxSize } from 'class-validator';
+import { Type } from 'class-transformer';
+
+/** #695 (Council S6): one selected paid add-on. Price is NEVER taken
+ * from the client — the server resolves it from the trip's add-on row. */
+export class BookingAddOnSelectionDto {
+    @ApiProperty({ example: 'clxpcyz12000008l2h3j4k5l6' })
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(64)
+    addOnId!: string;
+
+    @ApiProperty({ example: 1, required: false })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    @Max(50)
+    quantity?: number;
+}
 import { CURRENT_BOOKING_TERMS_VERSION } from '@ouiboo/types';
 
 /**
@@ -80,11 +98,53 @@ export class CreateBookingDto {
     @IsBoolean()
     termsAccepted!: boolean;
 
+    // #695 (Council S6): optional agency-priced variant (option tier)
+    // for this trip. The server resolves its stored price and unit;
+    // an id that does not belong to the booked trip is rejected.
+    @ApiProperty({ required: false, description: 'Selected pricing variant (option tier) id for the trip (#695)' })
+    @IsOptional()
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(64)
+    variantId?: string;
+
+    @ApiProperty({ required: false, type: [BookingAddOnSelectionDto], description: 'Selected paid add-ons for the trip (#695)' })
+    @IsOptional()
+    @IsArray()
+    @ArrayMaxSize(20)
+    @ValidateNested({ each: true })
+    @Type(() => BookingAddOnSelectionDto)
+    addOns?: BookingAddOnSelectionDto[];
+
     @ApiProperty({ example: '1.0', enum: [...ALLOWED_BOOKING_TERMS_VERSIONS], description: 'Version of the booking terms accepted at checkout (server allowlist)' })
     @IsString()
     @IsIn(ALLOWED_BOOKING_TERMS_VERSIONS)
     @MaxLength(32)
     termsVersion!: string;
+
+    // #696 (Council S6): reserve now, pay the AGENCY later. Only valid
+    // on sessions the agency flagged allowPayLater; the server stamps
+    // the hold deadline. No card is ever collected.
+    @ApiProperty({ required: false, example: true, description: 'Hold the seat and pay the agency before the deadline (#696)' })
+    @IsOptional()
+    @IsBoolean()
+    payLater?: boolean;
+
+    // #697 (Council S6): pay the agency on arrival. Only valid on
+    // trips the agency elected for pay-on-arrival (low-value single-day
+    // activities); the server validates the election + ceiling.
+    @ApiProperty({ required: false, example: true, description: 'Pay the agency on site (#697)' })
+    @IsOptional()
+    @IsBoolean()
+    payOnArrival?: boolean;
+
+    // #701 (Council S6): the traveller's chosen pickup point (id from
+    // the trip's pickupPoints); the server snapshots the point.
+    @ApiProperty({ required: false, example: 'pickup-1', description: 'Chosen pickup point id (#701)' })
+    @IsOptional()
+    @IsString()
+    @MaxLength(64)
+    pickupPointId?: string;
 }
 
 /**
@@ -97,6 +157,21 @@ export class MarkAttendanceDto {
     @ApiProperty({ example: true, description: 'Whether the traveller attended the trip' })
     @IsBoolean()
     attended!: boolean;
+}
+
+export class VerifyBookingPassDto {
+    @ApiProperty({ description: 'The signed Booking Pass token from the traveller\'s QR code (#689)' })
+    @IsString()
+    @IsNotEmpty()
+    token!: string;
+}
+
+export class DisputeAttendanceDto {
+    @ApiProperty({ example: 'I attended the trip; the agency marked me absent by mistake.', description: 'Why the recorded attendance is wrong (#693)' })
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(1000)
+    reason!: string;
 }
 
 export class VerifyManualPaymentDto {

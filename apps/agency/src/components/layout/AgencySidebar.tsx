@@ -6,10 +6,11 @@ import { usePathname } from 'next/navigation';
 import {
   BarChart3,
   Calendar,
+  FileText,
   ChevronLeft,
   ChevronRight,
   CreditCard,
-  LayoutDashboard,
+  LayoutDashboard, Sparkles,
   LifeBuoy,
   LogOut,
   Map,
@@ -44,6 +45,8 @@ export function AgencySidebar() {
     { name: t('sidebar.analytics'), href: '/dashboard/analytics', icon: BarChart3 },
     { name: t('sidebar.myTrips'), href: '/dashboard/trips', icon: Map },
     { name: t('sidebar.bookings'), href: '/dashboard/bookings', icon: Calendar },
+    { name: t('sidebar.quotes'), href: '/dashboard/quotes', icon: FileText },
+    { name: t('batchF.customRequests'), href: '/dashboard/custom-requests', icon: Sparkles },
     { name: t('sidebar.reviews'), href: '/dashboard/reviews', icon: Star },
     { name: t('sidebar.wallet'), href: '/dashboard/wallet', icon: CreditCard },
     // #370: refund cases the agency must act on (SLA-tracked).

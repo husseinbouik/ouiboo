@@ -73,6 +73,17 @@ import { cn } from '@ouiboo/ui/utils';
  * copy of the same photo (identical image at the identical
  * offset — invisible). Arrows never disable; the counter,
  * caption and dots always report the REAL position (1..count).
+ *
+ * Round 6 (2026-10-29, #654 — Council Session #5): host-driven
+ * jumps of MORE than one position no longer smooth-scroll. A
+ * filmstrip tap on a distant photo (and the viewer's keyboard
+ * wrap from the last photo back to the first, which arrives here
+ * as a distant externalIndex jump) visibly REWOUND through every
+ * intermediate slide — contradicting the seamless-loop contract
+ * above. Distant jumps now land instantly (scrollLeft assigned
+ * with scroll-behavior forced off, the normalizeLoop technique);
+ * genuine ±1 steps — arrows, drag settles, adjacent filmstrip
+ * taps — keep the smooth glide.
  */
 export interface SnapRailProps {
   images: string[];
@@ -104,6 +115,22 @@ export interface SnapRailProps {
    * native snap settle it was verified with. */
   dragAdvanceOnRelease?: boolean;
   onActiveChange?: (index: number) => void;
+  /** #623: host-driven jump (the full-screen viewer's filmstrip).
+   * When this value changes to a real index other than the one the
+   * rail already rests on, the rail scrolls to that photo. Drags and
+   * arrow steps report back through onActiveChange, so a host that
+   * mirrors the active index here sees no feedback loop: the effect
+   * below no-ops whenever the requested index is already active. */
+  externalIndex?: number;
+  /** #623: the full-screen viewer shows photos whole (contain) on a
+   * dark backdrop; every other surface fills its frame (cover). */
+  imageFit?: 'cover' | 'contain';
+  /** #623: a genuine click on a slide (never the click that follows
+   * a drag — the root capture handler swallows those first) reports
+   * the slide's real index. Hosts open the full-screen viewer with
+   * it. Arrow/indicator clicks are outside the slides and never
+   * reach this handler. */
+  onSlideClick?: (index: number) => void;
   /** Per-slide style hook (e.g. the shared-element view-transition
    * name belongs on the active slide only). */
   slideStyle?: (index: number, isActive: boolean) => React.CSSProperties | undefined;
@@ -131,6 +158,9 @@ export function SnapRail({
   showIndicators = false,
   dragAdvanceOnRelease = false,
   onActiveChange,
+  externalIndex,
+  imageFit = 'cover',
+  onSlideClick,
   slideStyle,
 }: SnapRailProps) {
   const { t, i18n } = useTranslation();
@@ -229,10 +259,23 @@ export function SnapRail({
     const el = railRef.current;
     if (!el) return;
     const clamped = Math.max(0, Math.min(extCount - 1, ext));
-    el.scrollTo({
-      left: (i18n.dir() === 'rtl' ? -1 : 1) * clamped * el.clientWidth,
-      behavior: 'smooth',
-    });
+    // #654: a jump of more than one position lands INSTANTLY — a
+    // smooth scroll would traverse (visibly rewind through) every
+    // intermediate slide. The instant path assigns scrollLeft with
+    // scroll-behavior forced off, exactly like normalizeLoop's
+    // clone repositioning, and targets an exact snap point, so the
+    // mandatory snap engine has nothing to correct. ±1 steps keep
+    // the smooth glide.
+    if (Math.abs(clamped - extRef.current) > 1) {
+      el.style.scrollBehavior = 'auto';
+      el.scrollLeft = (i18n.dir() === 'rtl' ? -1 : 1) * clamped * el.clientWidth;
+      el.style.scrollBehavior = '';
+    } else {
+      el.scrollTo({
+        left: (i18n.dir() === 'rtl' ? -1 : 1) * clamped * el.clientWidth,
+        behavior: 'smooth',
+      });
+    }
     setExt(clamped);
     setActive(toReal(clamped));
   };
@@ -241,6 +284,19 @@ export function SnapRail({
     const clamped = Math.max(0, Math.min(imageCount - 1, realIdx));
     scrollToExt(loop ? clamped + 1 : clamped);
   };
+
+  // #623: host-driven jump (filmstrip). Fires only when the host
+  // requests a photo the rail is not already resting on, so the
+  // onActiveChange → host state → externalIndex round trip settles
+  // instead of looping.
+  useEffect(() => {
+    if (externalIndex === undefined) return;
+    if (externalIndex === currentRef.current) return;
+    scrollToImage(externalIndex);
+    // scrollToImage is render-scoped; the guard above keys the jump
+    // to the requested index only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalIndex]);
 
   // Arrow step: normalize first (a click can land in the brief
   // window where the strip rests on a clone), then move exactly
@@ -448,11 +504,12 @@ export function SnapRail({
             <div
               key={pos}
               aria-hidden={isClone || undefined}
+              onClick={onSlideClick ? () => onSlideClick(logical) : undefined}
               className="relative h-full w-full shrink-0 snap-center snap-always"
             >
               <SafeImage
                 src={images[logical]}
-                className="w-full h-full object-cover"
+                className={imageFit === 'contain' ? 'w-full h-full object-contain' : 'w-full h-full object-cover'}
                 alt={imageAlts?.[logical]?.trim() || captionFallback}
                 fill
                 sizes={sizes}
@@ -470,7 +527,14 @@ export function SnapRail({
         <>
           <button
             type="button"
-            onClick={() => step(-1)}
+            onClick={(event) => {
+              // A host may wrap the rail in a link (trip cards link
+              // the photo to the trip page): an arrow tap cycles
+              // photos in place and must never activate that link.
+              // On hosts without a surrounding link this is a no-op.
+              event.preventDefault();
+              step(-1);
+            }}
             aria-label={t('tripCard.previousImage')}
             className={cn(
               'absolute start-4 top-1/2 flex w-11 h-11 min-w-11 min-h-11 -translate-y-1/2 items-center justify-center rounded-full bg-card/95 text-foreground shadow-md backdrop-blur-sm transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100',
@@ -481,7 +545,12 @@ export function SnapRail({
           </button>
           <button
             type="button"
-            onClick={() => step(1)}
+            onClick={(event) => {
+              // See the previous-arrow note: never activate a
+              // surrounding host link.
+              event.preventDefault();
+              step(1);
+            }}
             aria-label={t('tripCard.nextImage')}
             className={cn(
               'absolute end-4 top-1/2 flex w-11 h-11 min-w-11 min-h-11 -translate-y-1/2 items-center justify-center rounded-full bg-card/95 text-foreground shadow-md backdrop-blur-sm transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100',

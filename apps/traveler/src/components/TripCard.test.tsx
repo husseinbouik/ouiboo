@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { TripCard, type TripCardTrip } from './TripCard';
 
 jest.mock('react-i18next', () => ({
@@ -10,8 +10,9 @@ jest.mock('react-i18next', () => ({
         t: (key: string, options?: any) => {
             if (key === 'tripCard.licenceChecked') return `Licence checked ${options?.date}`;
             if (key === 'tripCard.insuranceEvidenced') return `RC insurance evidenced ${options?.date}`;
-            if (key === 'tripCard.verifiedAgency')
-                return 'Licence number provided by the agency — not independently verified';
+            if (key === 'tripCard.licenceValidUntil') return `Licence valid until ${options?.date}`;
+            if (key === 'reviews.count') return `${options?.count} reviews`;
+            if (key === 'reviews.noReviewsYet') return 'No reviews yet';
             if (key === 'tripCard.days') return `${options?.count} Days`;
             if (key === 'tripCard.spots') return `${options?.count} spots`;
             return key;
@@ -105,13 +106,28 @@ describe('TripCard verification statement (#413, Council B10)', () => {
         expect(screen.queryByText(/RC insurance evidenced/)).toBeNull();
     });
 
-    it('falls back to the plain disclaimer (no badge claim) without dated checks', () => {
+    it('renders no verification line without dated checks (#673: the hedge is retired)', () => {
         render(<TripCard trip={makeTrip({ verificationStatus: 'VERIFIED' as any })} />);
 
-        expect(
-            screen.getByText('Licence number provided by the agency — not independently verified'),
-        ).not.toBeNull();
+        expect(screen.queryByText(/not independently verified/)).toBeNull();
         expect(screen.queryByText(/Licence checked/)).toBeNull();
+        expect(screen.queryByText(/Licence valid until/)).toBeNull();
+    });
+
+    it('states licence expiry alongside the checked date (#673)', () => {
+        render(
+            <TripCard
+                trip={makeTrip({
+                    verificationStatus: 'VERIFIED' as any,
+                    travelLicenceStatus: 'VERIFIED',
+                    licenceVerifiedAt: LICENCE_DATE,
+                    licenceExpiry: '2027-10-24T00:00:00.000Z',
+                })}
+            />,
+        );
+        expect(
+            screen.getByText(`Licence checked ${fmt(LICENCE_DATE)} · Licence valid until ${fmt('2027-10-24T00:00:00.000Z')}`),
+        ).not.toBeNull();
     });
 
     it('never dates a check that has no stamp on record', () => {
@@ -126,9 +142,7 @@ describe('TripCard verification statement (#413, Council B10)', () => {
         );
 
         expect(screen.queryByText(/Licence checked/)).toBeNull();
-        expect(
-            screen.getByText('Licence number provided by the agency — not independently verified'),
-        ).not.toBeNull();
+        expect(screen.queryByText(/not independently verified/)).toBeNull();
     });
 
     it('renders no verification line at all for an unverified agency', () => {
@@ -137,6 +151,25 @@ describe('TripCard verification statement (#413, Council B10)', () => {
         expect(screen.queryByText(/not independently verified/)).toBeNull();
         expect(screen.queryByText(/Licence checked/)).toBeNull();
         expect(screen.queryByText(/RC insurance evidenced/)).toBeNull();
+    });
+});
+
+describe('TripCard review claim thresholds (#681)', () => {
+    it('shows no average below 5 reviews, but still publishes the count', () => {
+        render(<TripCard trip={{ ...makeTrip(null), reviewCount: 3, averageRating: 4.9 }} />);
+        expect(screen.getByText('3 reviews')).not.toBeNull();
+        expect(screen.queryByText(/4\.9/)).toBeNull();
+    });
+
+    it('shows the average at 5 reviews', () => {
+        render(<TripCard trip={{ ...makeTrip(null), reviewCount: 5, averageRating: 4.9 }} />);
+        expect(screen.getByText('4.9 · 5 reviews')).not.toBeNull();
+    });
+
+    it('shows the empty state at zero reviews, never a 0.0 average', () => {
+        render(<TripCard trip={{ ...makeTrip(null), reviewCount: 0, averageRating: 0 }} />);
+        expect(screen.getByText('No reviews yet')).not.toBeNull();
+        expect(screen.queryByText(/0\.0/)).toBeNull();
     });
 });
 
@@ -191,5 +224,39 @@ describe('TripCard spots badge + carousel controls (#571/#490 rework)', () => {
             expect(btn.className).not.toContain('opacity-0');
             expect(btn.className).not.toContain('w-8');
         }
+    });
+});
+
+describe('TripCard photo tap (founder decision 2026-10-29: link to the trip page, no card viewer)', () => {
+    function photoTrip(): TripCardTrip {
+        return {
+            id: 'trip-3',
+            title: 'Chefchaouen Blues',
+            startLocation: 'Chefchaouen',
+            durationDays: 2,
+            images: ['https://cdn.example.com/a.jpg', 'https://cdn.example.com/b.jpg'],
+            sessions: [],
+            agency: null,
+        };
+    }
+
+    it('wraps the photo in a link to the trip page', () => {
+        const { container } = render(<TripCard trip={photoTrip()} />);
+        const img = container.querySelector('img[src="https://cdn.example.com/a.jpg"]');
+        expect(img).not.toBeNull();
+        expect(img?.closest('a')?.getAttribute('href')).toBe('/trip/trip-3');
+    });
+
+    it('never opens the full-screen photo viewer from a card photo or arrow tap', () => {
+        // jsdom has no layout: the rail's programmatic scroll target
+        // does not exist there, so stand in for it.
+        (window.HTMLElement.prototype as any).scrollTo = jest.fn();
+        const { container } = render(<TripCard trip={photoTrip()} />);
+        const img = container.querySelector('img[src="https://cdn.example.com/a.jpg"]');
+        fireEvent.click(img as Element);
+        expect(screen.queryByTestId('photo-viewer')).toBeNull();
+        // Arrow taps cycle the rail in place — still no viewer.
+        fireEvent.click(screen.getByLabelText('tripCard.nextImage'));
+        expect(screen.queryByTestId('photo-viewer')).toBeNull();
     });
 });

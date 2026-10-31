@@ -53,14 +53,20 @@ export default function EditTripPage() {
       return;
     }
 
-    // Clean up itinerary data to remove IDs and ensure proper types
+    // Clean up itinerary data to remove IDs and ensure proper types.
+    // Batch B (#676): the language-neutral slice rides along.
     const cleanedData = {
       ...data,
-      itinerary: data.itinerary?.map((day: { dayNumber: number; title?: string; description: string; activities: string[] }) => ({
+      itinerary: data.itinerary?.map((day) => ({
         dayNumber: Number(day.dayNumber),
         title: day.title,
         description: day.description,
-        activities: Array.isArray(day.activities) ? day.activities : []
+        activities: Array.isArray(day.activities) ? day.activities : [],
+        distanceKm: day.distanceKm ?? undefined,
+        driveTimeMinutes: day.driveTimeMinutes ?? undefined,
+        mealsIncluded: day.mealsIncluded?.length ? day.mealsIncluded : undefined,
+        accommodationName: day.accommodationName ?? undefined,
+        accommodationType: day.accommodationType ?? undefined,
       })),
       // Ensure inclusions, exclusions, and checklist are arrays of strings
       inclusions: data.inclusions?.filter((item: string) => typeof item === 'string' && item.trim() !== '') || [],

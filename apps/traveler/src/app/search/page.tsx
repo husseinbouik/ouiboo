@@ -1,5 +1,10 @@
 import type { Metadata } from 'next';
 import SearchClient, { type SearchInitialFilters } from '@/components/SearchClient';
+import {
+  durationBucketRange,
+  isDestinationSlugValue,
+  isDurationBucketKey,
+} from '@/lib/search-facets';
 import { TripCategory, TripStatus } from '@ouiboo/types';
 import { getInitialLanguage } from '@ouiboo/i18n/server';
 
@@ -25,9 +30,15 @@ function parseFilters(sp: Record<string, string | string[] | undefined>): Search
   const category = Object.values(TripCategory).includes(normalizedCategory as TripCategory)
     ? normalizedCategory
     : rawCategory;
+  // #675: destination + duration facets — the SSR seed must parse
+  // them too, or the first paint would disagree with the URL (the
+  // client validates them against the same configuration).
+  const rawDestination = get('destination');
+  const rawDuration = get('duration');
   return {
     category,
-    duration: '',
+    destination: isDestinationSlugValue(rawDestination) ? rawDestination : '',
+    duration: isDurationBucketKey(rawDuration) ? rawDuration : '',
     priceMax: get('priceMax'),
     searchQuery: q,
     dateFrom: get('date') || get('dateFrom'),
@@ -37,6 +48,7 @@ function parseFilters(sp: Record<string, string | string[] | undefined>): Search
     // now — the SSR seed must parse them too, or the first paint (and
     // the client's initial-query seed check) would disagree with the URL.
     availabilityOnly: get('available') === 'true',
+    freeCancellationOnly: get('freeCancellation') === 'true',
     ratingMin: (() => {
       const n = Number(get('ratingMin'));
       return Number.isFinite(n) && n > 0 ? n : 0;
@@ -57,11 +69,18 @@ async function fetchInitialTrips(filters: SearchInitialFilters) {
   });
   if (filters.searchQuery) params.set('q', filters.searchQuery);
   if (filters.category) params.set('category', filters.category);
+  if (filters.destination) params.set('destination', filters.destination);
+  const durationRange = filters.duration ? durationBucketRange(filters.duration) : null;
+  if (durationRange) {
+    params.set('durationMin', String(durationRange.min));
+    if (durationRange.max !== undefined) params.set('durationMax', String(durationRange.max));
+  }
   if (filters.priceMin) params.set('priceMin', filters.priceMin);
   if (filters.priceMax) params.set('priceMax', filters.priceMax);
   if (filters.dateFrom) params.set('startDateFrom', filters.dateFrom);
   if (filters.dateTo) params.set('startDateTo', filters.dateTo);
   if (filters.availabilityOnly) params.set('available', 'true');
+  if (filters.freeCancellationOnly) params.set('freeCancellation', 'true');
   if (filters.ratingMin > 0) params.set('ratingMin', String(filters.ratingMin));
   try {
     const res = await fetch(`${API_URL}/trips?${params.toString()}`, { cache: 'no-store' });

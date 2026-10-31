@@ -25,20 +25,38 @@ import { cn } from '@ouiboo/ui/utils';
 import { useAuth } from '@/components/AuthContext';
 import { ReviewList } from '@/components/ReviewList';
 import SellerIdentity from '@/components/SellerIdentity';
+import VerificationRecord from '@/components/VerificationRecord';
 import { TRAVELER_URL } from '@/lib/site';
 import { tripCoverViewTransitionName } from '@/lib/view-transition';
 import { SessionStatus, type CancellationScaleSnapshot, type SessionStatusType } from '@ouiboo/types';
 import { formatCurrency } from '@ouiboo/utils';
 import { CancellationScaleCard } from '@/components/CancellationScaleCard';
+import { CancellationOneLiner } from '@/components/CancellationOneLiner';
+import { TripFaqSection, pickFaqText } from '@/components/TripFaqSection';
+import type { CancellationSummary, PickupPoint, TripFaqEntry } from '@ouiboo/types';
+import { QuoteRequestPanel } from '@/components/QuoteRequestPanel';
 import { RatingDistribution } from '@/components/RatingDistribution';
 import { SnapRail } from '@/components/SnapRail';
+import { PhotoViewer } from '@/components/PhotoViewer';
+import { TripMosaic } from '@/components/TripMosaic';
 import { useDisplayAmountConverter } from '@/lib/display-currency';
+import { MIN_REVIEWS_FOR_RATING, ratingDisplayState } from '@/lib/review-display';
 
 type TripDay = {
   dayNumber: number;
   title?: string;
   description?: string;
   activities?: string[];
+  /** #676: language-neutral slice (numbers / enums / proper noun). */
+  distanceKm?: number | null;
+  driveTimeMinutes?: number | null;
+  mealsIncluded?: string[];
+  accommodationName?: string | null;
+  accommodationType?: string | null;
+  /** #701: itinerary phase 2. */
+  accommodationTier?: string | null;
+  stops?: Array<{ name: Record<string, string>; durationMinutes?: number | null; admissionNote?: Record<string, string> | null }> | null;
+  notes?: Record<string, string> | null;
 };
 
 type TripSession = {
@@ -54,6 +72,10 @@ type TripSession = {
   minBookings?: number;
   confirmationDeadline?: string | null;
   groupStatus?: string;
+  /** Batch F: #694 private kind, #696 pay-later election. */
+  sessionKind?: string;
+  allowPayLater?: boolean;
+  payLaterHoldHours?: number | null;
 };
 
 /** #369: a session is staged when it needs a minimum group and a deposit. */
@@ -90,11 +112,33 @@ type TripDetails = {
     licenceVerifiedAt?: string | null;
     insuranceStatus?: string | null;
     insuranceVerifiedAt?: string | null;
+    /** #688/#700 (Council S6): Verification Record + seller block. */
+    travelLicenceType?: string | null;
+    licenceIssuedAt?: string | null;
+    licenceIssuingAuthority?: string | null;
+    insuranceInsurer?: string | null;
+    insuranceExpiry?: string | null;
+    verificationStatus?: string | null;
+    businessAddress?: string | null;
+    businessPhone?: string | null;
+    rc?: string | null;
+    taxId?: string | null;
   } | null;
   sessions?: TripSession[];
   itinerary?: TripDay[];
+  /** #676: public meeting point — AREA ONLY (the API never sends the
+   * exact address/maps link on this pre-booking surface). */
+  meetingPoint?: { area: string | null; pickupAvailable: boolean } | null;
   /** #417: the resolved cancellation scale from GET /trips/:id (bands + floor). */
   cancellationScale?: CancellationScaleSnapshot | null;
+  /** Batch F payloads from GET /trips/:id. */
+  cancellationSummary?: CancellationSummary | null;
+  faqs?: TripFaqEntry[] | null;
+  generatedFaqs?: TripFaqEntry[];
+  faqJsonLd?: Record<string, unknown> | null;
+  payOnArrivalEnabled?: boolean;
+  privateTourEnabled?: boolean;
+  pickupPoints?: PickupPoint[] | null;
   inclusions?: string[];
   exclusions?: string[];
   checklist?: string[];
@@ -119,6 +163,16 @@ export default function TripDetailsClient({
   const { t, i18n } = useTranslation();
   const { user, setShowLoginModal } = useAuth();
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  // Batch F booking-box elections (#696/#697/#701).
+  const [pickupPointId, setPickupPointId] = useState<string>('');
+  // Batch F: render-stable "now" for the pay-later deadline preview
+  // (lazy initial state — the purity lint forbids Date.now in render).
+  const [nowMs] = useState(() => Date.now());
+  const [payLater, setPayLater] = useState(false);
+  const [payOnArrival, setPayOnArrival] = useState(false);
+  // #623: full-screen photo viewer — opened at the tapped photo from
+  // either gallery surface (mobile rail or desktop mosaic).
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   // Content-language audit (2026-10-27, #546): the server fetch sends
   // no locale, so the ISR payload is canonical French. It previously
@@ -234,6 +288,8 @@ export default function TripDetailsClient({
     (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
   )[0] ?? null;
 
+  const galleryImages = trip.images && trip.images.length > 0 ? trip.images : [''];
+
   return (
     <div className="min-h-screen bg-background pb-32 font-sans text-foreground overflow-hidden relative">
       {/* Background Blobs */}
@@ -259,24 +315,57 @@ export default function TripDetailsClient({
             advances a card fell short of this rail's halfway snap
             point and settled back onto the starting photo; a moved
             drag now settles one slide over. Cards keep the native
-            settle (they do not pass the flag). */}
-        <SnapRail
-          dragAdvanceOnRelease
-          testId="trip-gallery-snap-rail"
-          counterTestId="trip-gallery-counter"
-          images={trip.images && trip.images.length > 0 ? trip.images : ['']}
-          imageAlts={trip.imageAlts}
-          imageBlurDataURLs={trip.imageBlurDataURLs}
-          captionFallback={trip.title}
-          ariaLabel={t('tripDetails.photosLabel')}
-          rootClassName="mb-8 sm:mb-12 overflow-hidden rounded-2xl border border-border/50 shadow-2xl shadow-black/5 dark:shadow-black/20 sm:rounded-3xl"
-          viewportClassName="h-[280px] sm:h-[400px] lg:h-[520px]"
-          sizes="100vw"
-          arrowsClassName="hidden lg:flex"
-          slideStyle={(idx, isActive) =>
-            isActive ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined
-          }
-        />
+            settle (they do not pass the flag).
+            #625 (design batch): below desktop the rail runs
+            FULL-BLEED — the negative margins cancel this container's
+            px-4 / sm:px-6 so the photo touches both screen edges,
+            with no card frame or rounding on the outer edges; the
+            counter pill + caption keep their scrims. #624: at lg+
+            the mosaic below replaces the rail entirely. #623:
+            tapping a photo on either surface opens the full-screen
+            viewer at that photo. */}
+        <div className="-mx-4 sm:-mx-6 lg:hidden">
+          <SnapRail
+            dragAdvanceOnRelease
+            testId="trip-gallery-snap-rail"
+            counterTestId="trip-gallery-counter"
+            images={galleryImages}
+            imageAlts={trip.imageAlts}
+            imageBlurDataURLs={trip.imageBlurDataURLs}
+            captionFallback={trip.title}
+            ariaLabel={t('tripDetails.photosLabel')}
+            rootClassName="mb-8 sm:mb-12 overflow-hidden border-y border-border/50 shadow-2xl shadow-black/5 dark:shadow-black/20"
+            viewportClassName="h-[280px] sm:h-[400px]"
+            sizes="100vw"
+            onSlideClick={(idx) => setViewerIndex(idx)}
+            slideStyle={(idx, isActive) =>
+              isActive ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined
+            }
+          />
+        </div>
+
+        {/* #624: desktop mosaic (1 large + up to 4 small). */}
+        <div className="mb-12 hidden lg:block">
+          <TripMosaic
+            images={galleryImages}
+            imageAlts={trip.imageAlts}
+            imageBlurDataURLs={trip.imageBlurDataURLs}
+            captionFallback={trip.title}
+            onPhotoClick={(idx) => setViewerIndex(idx)}
+            coverStyle={{ viewTransitionName: tripCoverViewTransitionName(trip.id) }}
+          />
+        </div>
+
+        {viewerIndex !== null ? (
+          <PhotoViewer
+            images={galleryImages}
+            imageAlts={trip.imageAlts}
+            imageBlurDataURLs={trip.imageBlurDataURLs}
+            captionFallback={trip.title}
+            initialIndex={viewerIndex}
+            onClose={() => setViewerIndex(null)}
+          />
+        ) : null}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16 relative">
           {/* Left Side: Information */}
@@ -300,9 +389,11 @@ export default function TripDetailsClient({
                     <div className="flex flex-wrap items-center gap-6">
                         <div className="flex items-center gap-1.5 bg-yellow-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span className="font-bold text-sm text-amber-700 dark:text-yellow-400">{reviewStats?.totalReviews ? (reviewStats.averageRating ?? 0).toFixed(1) : t('tripDetails.newTrip')}</span>
-                            {/* #579: at zero reviews show the localised
-                                "No reviews yet", not a "(0 reviews)" count. */}
+                            {/* #681 (Council S6): the average renders only
+                                at/above the 5-review threshold; below it the
+                                count is published without an average, and at
+                                zero the localised "No reviews yet" (#579). */}
+                            <span className="font-bold text-sm text-amber-700 dark:text-yellow-400">{ratingDisplayState(reviewStats?.totalReviews) === 'rated' ? (reviewStats?.averageRating ?? 0).toFixed(1) : ratingDisplayState(reviewStats?.totalReviews) === 'below-threshold' ? t('tripDetails.reviewsCount', { count: reviewStats?.totalReviews ?? 0 }) : t('tripDetails.newTrip')}</span>
                             <span className="text-xs text-amber-700 dark:text-yellow-400/70 font-medium">{reviewStats?.totalReviews ? t('tripDetails.reviewsCount', { count: reviewStats.totalReviews }) : t('reviews.noReviewsYet')}</span>
                         </div>
                         {/* #468: share this trip (native sheet / intent menu).
@@ -353,6 +444,41 @@ export default function TripDetailsClient({
 
                     {/* #371: seller of record + verified travel licence */}
                     <SellerIdentity agency={trip.agency} className="mt-4" />
+
+                    {/* #688 (Council S6): the checkable Public Verification
+                        Record for this agency (metadata only). */}
+                    <VerificationRecord agency={trip.agency} className="mt-4" />
+
+                    {/* #676: meeting AREA only before booking — the
+                        exact address + map link appear on the booking
+                        view once the traveller holds a booking. */}
+                    {(trip.meetingPoint?.area || trip.meetingPoint?.pickupAvailable) ? (
+                      <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground" data-testid="trip-meeting-area">
+                        <MapPin className="h-4 w-4 text-sunset-orange shrink-0" />
+                        {trip.meetingPoint.area ? t('tripDetails.meetingArea', { area: trip.meetingPoint.area }) : null}
+                        {trip.meetingPoint.pickupAvailable ? (
+                          <span>{trip.meetingPoint.area ? ' · ' : ''}{t('tripDetails.meetingPickup')}</span>
+                        ) : null}
+                      </p>
+                    ) : null}
+
+                    {/* #687: one-line cancellation summary in the hero,
+                        agency named as refund obligor. */}
+                    <CancellationOneLiner
+                      summary={trip.cancellationSummary}
+                      agencyName={trip.agency?.legalName ?? trip.agency?.companyName}
+                      className="mt-4 text-sm"
+                    />
+                    {(trip.payOnArrivalEnabled || trip.privateTourEnabled) ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {trip.payOnArrivalEnabled ? (
+                          <span className="rounded-lg bg-sky-700 px-2.5 py-1 text-[11px] font-bold text-white">{t('batchF.payOnArrivalBadge')}</span>
+                        ) : null}
+                        {trip.privateTourEnabled ? (
+                          <span className="rounded-lg bg-violet-700 px-2.5 py-1 text-[11px] font-bold text-white">{t('batchF.privateBadge')}</span>
+                        ) : null}
+                      </div>
+                    ) : null}
                 </motion.div>
 
                 {/* Quick Stats Grid */}
@@ -420,6 +546,68 @@ export default function TripDetailsClient({
                               ))}
                             </div>
                           )}
+
+                          {/* #676: the language-neutral day facts —
+                              distance / drive time (numbers), meals +
+                              accommodation type (enum labels), and the
+                              accommodation name (proper noun, shown
+                              as-is in every language). */}
+                          {(day.distanceKm != null || day.driveTimeMinutes != null || (day.mealsIncluded && day.mealsIncluded.length > 0) || day.accommodationName || day.accommodationType || day.accommodationTier) && (
+                            <div className="flex flex-wrap gap-2 pt-2" data-testid={`itinerary-day-facts-${day.dayNumber}`}>
+                              {day.distanceKm != null && (
+                                <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider py-1 px-2.5 border-border bg-muted/30">
+                                  {t('tripDetails.distanceKm', { count: day.distanceKm })}
+                                </Badge>
+                              )}
+                              {day.driveTimeMinutes != null && (
+                                <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider py-1 px-2.5 border-border bg-muted/30">
+                                  {day.driveTimeMinutes >= 60
+                                    ? t('tripDetails.driveTimeHM', { hours: Math.floor(day.driveTimeMinutes / 60), minutes: day.driveTimeMinutes % 60 })
+                                    : t('tripDetails.driveTimeM', { minutes: day.driveTimeMinutes })}
+                                </Badge>
+                              )}
+                              {day.mealsIncluded?.map((meal) => (
+                                <Badge key={meal} variant="outline" className="text-[10px] font-bold uppercase tracking-wider py-1 px-2.5 border-border bg-muted/30">
+                                  {t(`tripDetails.meals.${meal}`)}
+                                </Badge>
+                              ))}
+                              {(day.accommodationName || day.accommodationType) && (
+                                <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider py-1 px-2.5 border-border bg-muted/30">
+                                  {day.accommodationName
+                                    ? day.accommodationType
+                                      ? `${day.accommodationName} · ${t(`tripDetails.accommodationTypes.${day.accommodationType}`)}`
+                                      : day.accommodationName
+                                    : t(`tripDetails.accommodationTypes.${day.accommodationType}`)}
+                                </Badge>
+                              )}
+                              {/* #701: the night's tier, "or similar". */}
+                              {day.accommodationTier && (
+                                <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider py-1 px-2.5 border-border bg-muted/30" data-testid={`itinerary-day-tier-${day.dayNumber}`}>
+                                  {t('batchF.accommodationTierLabel', { tier: t(`batchF.tiers.${day.accommodationTier}`) })}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+
+                          {/* #701: per-stop detail (durations + admission notes). */}
+                          {day.stops && day.stops.length > 0 && (
+                            <ul className="space-y-1.5 pt-1" data-testid={`itinerary-day-stops-${day.dayNumber}`}>
+                              {day.stops.map((stop, stopIdx) => (
+                                <li key={stopIdx} className="text-sm text-muted-foreground">
+                                  <span className="font-semibold text-foreground">{pickFaqText(stop.name, i18n.language)}</span>
+                                  {stop.durationMinutes != null ? <span> · {t('batchF.stopDuration', { count: stop.durationMinutes })}</span> : null}
+                                  {stop.admissionNote ? <span> · {pickFaqText(stop.admissionNote, i18n.language)}</span> : null}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+
+                          {/* #701: free-text day notes (language-keyed). */}
+                          {day.notes && pickFaqText(day.notes, i18n.language) ? (
+                            <p className="text-sm text-muted-foreground italic" data-testid={`itinerary-day-notes-${day.dayNumber}`}>
+                              {pickFaqText(day.notes, i18n.language)}
+                            </p>
+                          ) : null}
                         </div>
                       </div>
                     ))}
@@ -517,6 +705,10 @@ export default function TripDetailsClient({
                className="pt-6"
              />
 
+             {/* #686: per-trip FAQ — generated from structured data +
+                 capped agency Q&As, with FAQPage JSON-LD. */}
+             <TripFaqSection generatedFaqs={trip.generatedFaqs} faqs={trip.faqs} faqJsonLd={trip.faqJsonLd} />
+
              {/* Reviews Section */}
              <div className="space-y-6 pt-6">
                <div className="flex items-center justify-between">
@@ -527,8 +719,19 @@ export default function TripDetailsClient({
                  </Badge>
                </div>
                
+               {/* #681 (Council S6): below the 5-review threshold the
+                   count is published with an explicit note, but NO
+                   average and NO distribution are displayed. */}
+               {reviewStats && reviewStats.totalReviews > 0 && ratingDisplayState(reviewStats.totalReviews) === 'below-threshold' && (
+                 <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6" data-testid="reviews-below-threshold">
+                   <p className="text-sm text-muted-foreground">
+                     {t('reviews.belowThreshold', { count: reviewStats.totalReviews, min: MIN_REVIEWS_FOR_RATING })}
+                   </p>
+                 </div>
+               )}
+
                {/* Rating Summary */}
-               {reviewStats && reviewStats.totalReviews > 0 && (
+               {reviewStats && ratingDisplayState(reviewStats.totalReviews) === 'rated' && (
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                    {/* Average Rating Display */}
                    <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6 space-y-4">
@@ -619,6 +822,16 @@ export default function TripDetailsClient({
                                           <span className={cn("text-xs font-bold mt-1", session.availableSeats < 5 ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400")}>
                                               {t('tripDetails.spotsLeft', { count: session.availableSeats })}
                                           </span>
+                                          {(session.sessionKind === 'PRIVATE' || session.allowPayLater) ? (
+                                            <span className="mt-1 flex gap-1">
+                                              {session.sessionKind === 'PRIVATE' ? (
+                                                <span className="rounded bg-violet-700 px-1.5 py-0.5 text-[10px] font-bold text-white">{t('batchF.privateBadge')}</span>
+                                              ) : null}
+                                              {session.allowPayLater ? (
+                                                <span className="rounded bg-sky-700 px-1.5 py-0.5 text-[10px] font-bold text-white">{t('batchF.payLaterBadge')}</span>
+                                              ) : null}
+                                            </span>
+                                          ) : null}
                                       </div>
                                       <div className="w-5 h-5 rounded-full border-2 border-border dark:border-slate-600 flex items-center justify-center group-hover:border-sunset-orange">
                                           {selectedSession === session.id && <div className="w-2.5 h-2.5 rounded-full bg-sunset-orange" />}
@@ -655,6 +868,25 @@ export default function TripDetailsClient({
                                             </p>
                                           </>
                                         )}
+                                        {/* Batch F session notes (#694/#696/#697). */}
+                                        {session.sessionKind === 'PRIVATE' ? (
+                                          <p className="text-[10px] font-semibold text-violet-700 dark:text-violet-300">
+                                            {t('batchF.privateSessionNote')} {t('batchF.privatePriceNote')}
+                                          </p>
+                                        ) : null}
+                                        {session.allowPayLater ? (
+                                          <p className="text-[10px] text-muted-foreground">
+                                            {t('batchF.payLaterNote', {
+                                              agency: trip.agency?.legalName ?? trip.agency?.companyName ?? t('batchF.theAgency'),
+                                              date: new Date(Math.min(nowMs + (session.payLaterHoldHours ?? 48) * 3600_000, new Date(session.startDate).getTime())).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' }),
+                                            })}
+                                          </p>
+                                        ) : null}
+                                        {trip.payOnArrivalEnabled ? (
+                                          <p className="text-[10px] text-muted-foreground">
+                                            {t('batchF.payOnArrivalNote', { agency: trip.agency?.legalName ?? trip.agency?.companyName ?? t('batchF.theAgency') })}
+                                          </p>
+                                        ) : null}
                                       </div>
                                     )}
                                 </div>
@@ -667,6 +899,37 @@ export default function TripDetailsClient({
                         </div>
                     </div>
 
+                    {/* Batch F: pickup selection + payment-shape elections. */}
+                    {trip.pickupPoints && trip.pickupPoints.length > 0 ? (
+                      <div className="space-y-2">
+                        <label htmlFor="pickup-point-select" className="text-xs font-bold text-foreground uppercase tracking-wider ms-1">{t('batchF.pickupTitle')}</label>
+                        <select
+                          id="pickup-point-select"
+                          value={pickupPointId}
+                          onChange={(event) => setPickupPointId(event.target.value)}
+                          className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
+                        >
+                          <option value="">{t('batchF.pickupNone')}</option>
+                          {trip.pickupPoints.map((point) => (
+                            <option key={point.id} value={point.id}>{point.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : null}
+                    {selectedSessionData?.allowPayLater ? (
+                      <label className="flex items-start gap-2 text-sm text-foreground">
+                        <input type="checkbox" checked={payLater} onChange={(event) => { setPayLater(event.target.checked); if (event.target.checked) setPayOnArrival(false); }} className="mt-1" />
+                        <span>{t('batchF.payLaterBook', { agency: trip.agency?.legalName ?? trip.agency?.companyName ?? t('batchF.theAgency') })}</span>
+                      </label>
+                    ) : null}
+                    {trip.payOnArrivalEnabled && selectedSessionData && selectedSessionData.sessionKind !== 'PRIVATE' ? (
+                      <label className="flex items-start gap-2 text-sm text-foreground">
+                        <input type="checkbox" checked={payOnArrival} onChange={(event) => { setPayOnArrival(event.target.checked); if (event.target.checked) setPayLater(false); }} className="mt-1" />
+                        <span>{t('batchF.payOnArrivalBook', { agency: trip.agency?.legalName ?? trip.agency?.companyName ?? t('batchF.theAgency') })}</span>
+                      </label>
+                    ) : null}
+                    <CancellationOneLiner summary={trip.cancellationSummary} agencyName={trip.agency?.legalName ?? trip.agency?.companyName} />
+
                     <div className="pt-2">
                         <Button 
                             disabled={!selectedSession}
@@ -674,7 +937,11 @@ export default function TripDetailsClient({
                                 if (!user) {
                                     setShowLoginModal(true);
                                 } else {
-                                    router.push(`/checkout/${tripId}?session=${selectedSession}`);
+                                    const params = new URLSearchParams(selectedSession ? { session: selectedSession } : {});
+                                    if (pickupPointId) params.set('pickup', pickupPointId);
+                                    if (payLater) params.set('payLater', '1');
+                                    if (payOnArrival) params.set('payOnArrival', '1');
+                                    router.push(`/checkout/${tripId}?${params.toString()}`);
                                 }
                             }}
                             className="w-full h-14 rounded-xl text-lg font-bold bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-orange-600 text-white shadow-lg shadow-blue-900/20 dark:shadow-orange-900/20 transition-all active:scale-95 disabled:opacity-50"
@@ -685,6 +952,13 @@ export default function TripDetailsClient({
                             {t('tripDetails.directPaymentNote')}
                         </p>
                     </div>
+                </div>
+
+                {/* #682 (Council S6): firm-quote for other dates — the
+                    traveller asks, the agency answers with a firm MAD
+                    TTC total + its cancellation scale. */}
+                <div className="mt-6">
+                    <QuoteRequestPanel templateId={tripId} />
                 </div>
             </motion.div>
           </div>

@@ -74,7 +74,7 @@
     },
     "feature2": {
       "title": "Sachez qui vend votre voyage",
-      "description": "Numéro de licence fourni par l'agence — non vérifié de manière indépendante par Ouiboo."
+      "description": "La licence et l'assurance de chaque agence sont vérifiées par Ouiboo avant qu'elle puisse publier. Ses pages de voyage et d'agence indiquent le statut de la licence, sa date d'expiration et sa date de vérification, ainsi que la date de vérification de l'assurance."
     },
     "feature3": {
       "title": "Économisez Temps & Efforts",
@@ -101,9 +101,48 @@
       "title": "Touchez de nouveaux voyageurs",
       "description": "Présentez vos voyages à des voyageurs qui recherchent des expériences comme les vôtres."
     },
+    "offerTitle": "L’offre bêta pour les agences",
+    "offer1": {
+      "title": "Vérifiée avant mise en ligne",
+      "description": "Votre licence de voyage et votre assurance RC sont vérifiées avant la mise en ligne de vos voyages — le même contrôle pour chaque agence."
+    },
+    "offer2": {
+      "title": "Nous construisons vos premières annonces avec vous",
+      "description": "OuiBoo prépare vos premières annonces avec vous — et vous validez chacune avant sa mise en ligne."
+    },
+    "offer3": {
+      "title": "Nous répondons aux questions plateforme des voyageurs",
+      "description": "OuiBoo traite les questions sur la plateforme et les réservations en français, arabe et anglais aux horaires publiés. Vous gardez la logistique du voyage — et pendant un voyage, les voyageurs joignent d’abord votre contact d’urgence."
+    },
     "cta": {
       "registerAgency": "Inscrire l'Agence",
       "alreadyPartner": "Déjà partenaire ? Se connecter"
+    }
+  },
+  "modelFaq": {
+    "title": "Comment fonctionne Ouiboo",
+    "intro": "Ouiboo est la technologie qui vous met en relation avec des agences de voyage. Ouiboo ne vend pas de voyages, et vous payez toujours l'agence directement — Ouiboo ne détient jamais votre argent.",
+    "items": {
+      "whoSells": {
+        "question": "Qui vend mon voyage ?",
+        "answer": "L'agence vend et organise votre voyage. Ouiboo fournit la technologie pour le trouver, le réserver et le gérer."
+      },
+      "payDirect": {
+        "question": "Qui est-ce que je paie ?",
+        "answer": "Vous payez l'agence directement — jamais Ouiboo. Ouiboo ne détient jamais votre argent."
+      },
+      "stagedPayments": {
+        "question": "Comment fonctionnent les paiements ?",
+        "answer": "Pour les voyages en groupe, vous versez à l'agence, directement, un acompte de 30 % au maximum. Le solde n'est demandé qu'après la confirmation du minimum de participants du groupe. Si ce minimum n'est pas atteint, l'agence vous rembourse votre acompte."
+      },
+      "refunds": {
+        "question": "Qui me rembourse ?",
+        "answer": "L'agence qui vous a vendu le voyage est responsable des remboursements — c'est elle la débitrice du remboursement. Ouiboo vous aide à suivre le dossier et surveille les délais, mais le remboursement lui-même est versé par l'agence."
+      },
+      "verification": {
+        "question": "Comment les agences sont-elles vérifiées ?",
+        "answer": "Avant qu'une agence puisse publier des voyages, sa licence de voyage et son assurance sont vérifiées. Chaque page d'agence et de voyage indique le statut de la licence, sa date d'expiration et la date de sa vérification, ainsi que la date de vérification de l'assurance."
+      }
     }
   },
   "principles": {
@@ -217,7 +256,8 @@
     "globalNavigationLabel": "Navigation principale",
     "openMainMenu": "Ouvrir le menu principal",
     "closeMenu": "Fermer le menu",
-    "dashboardImageAlt": "Tableau de bord Ouiboo",
+    "heroTravelerAlt": "Application voyageur Ouiboo — page du voyage Montagnes de l'Atlas",
+    "heroAgencyAlt": "Tableau de bord agence Ouiboo — aperçu des réservations et paiements",
     "travelerImageAlt": "Voyageur admirant une vue montagneuse",
     "agencyImageAlt": "Tableau de bord d'agence sur un ordinateur portable"
   },
@@ -265,7 +305,495 @@
     "continueWithoutAnalytics": "Continuer sans analytics",
     "allowAnalytics": "Autoriser les analytics"
   },
+  "guides": {
+    "bookingsNotOpen": "Les réservations ne sont pas encore ouvertes.",
+    "waitlistCta": "Découvrir les voyages vitrine",
+    "waitlistNote": "OuiBoo fonctionne en bêta fermée — les réservations ne sont pas encore ouvertes et aucun voyage n’est vendu depuis cette page. Découvrez la vitrine sur la page d’accueil pour voir les voyages que les agences fondatrices publieront.",
+    "faqTitle": "Les voyageurs demandent",
+    "highlightsTitle": "À voir",
+    "verificationLink": "Comment fonctionne la vérification des agences sur OuiBoo",
+    "footerGuides": "Guides du Nord du Maroc",
+    "tangier": {
+      "name": "Tanger",
+      "title": "Guide de voyage de Tanger",
+      "description": "Que voir et que faire à Tanger, au Maroc — la médina, la Kasbah, le cap Spartel et la rencontre de deux mers. Les réservations ne sont pas encore ouvertes ; rejoignez la liste d’attente.",
+      "intro": "Tanger se tient là où la Méditerranée rencontre l’Atlantique : une ville portuaire aux ruelles de médina blanchies à la chaux, aux terrasses de cafés et aux vues sur la mer dans toutes les directions. Ce guide couvre les lieux que les voyageurs demandent le plus, à peu près dans l’ordre où vous pourriez les parcourir à pied.",
+      "highlights": [
+        {
+          "title": "La Kasbah et la médina",
+          "text": "Commencez par le quartier de la Kasbah pour les vues sur le détroit, puis descendez par les ruelles de la médina vers le Grand Socco — la place qui relie la vieille ville à la nouvelle."
+        },
+        {
+          "title": "Le cap Spartel et les grottes d’Hercule",
+          "text": "À l’ouest de la ville, le phare du cap Spartel marque la rencontre des deux mers ; les grottes d’Hercule se trouvent juste en dessous, côté Atlantique."
+        },
+        {
+          "title": "Cafés et corniche",
+          "text": "La culture des cafés fait partie de la visite à Tanger : un thé à la menthe en terrasse, puis une promenade sur la corniche quand la lumière change sur la baie."
+        }
+      ],
+      "worldCup": {
+        "title": "Tanger et la Coupe du monde 2030",
+        "text": "Tanger est l’une des villes marocaines hôtes de la Coupe du monde de la FIFA 2030, avec des matchs prévus au Grand Stade de Tanger (stade Ibn Batouta). Cette page grandira à l’approche du tournoi — que voir entre les matchs et comment la ville se prépare. Rejoignez la liste d’attente pour les nouvelles."
+      },
+      "faq": [
+        {
+          "q": "Quelle est la meilleure période pour visiter Tanger ?",
+          "a": "Le printemps et l’automne offrent un temps doux pour parcourir la médina et la côte. L’été est chaud et animé ; l’hiver est plus calme et peut être venteux sur le détroit."
+        },
+        {
+          "q": "Comment se rendre à Tanger ?",
+          "a": "Tanger dispose d’un aéroport international (Ibn Battouta), d’un port de ferrys relié à l’Espagne, et de trains à grande vitesse Al Boraq vers Rabat et Casablanca depuis la gare de Tanger Ville."
+        },
+        {
+          "q": "Puis-je déjà réserver des voyages à Tanger sur OuiBoo ?",
+          "a": "Pas encore. Les réservations ne sont pas ouvertes pendant la bêta fermée d’OuiBoo. Rejoignez la liste d’attente et nous vous écrirons à l’ouverture."
+        }
+      ]
+    },
+    "tetouan": {
+      "name": "Tétouan",
+      "title": "Guide de voyage de Tétouan",
+      "description": "Que voir et que faire à Tétouan, au Maroc — la médina classée à l’UNESCO, l’Ensanche et un centre d’artisanat traditionnel. Les réservations ne sont pas encore ouvertes ; rejoignez la liste d’attente.",
+      "intro": "Tétouan, entre les montagnes du Rif et la Méditerranée, est connue pour son héritage andalou — sa médina est inscrite au patrimoine mondial de l’UNESCO — et pour son rythme plus lent que celui de sa grande voisine, Tanger.",
+      "highlights": [
+        {
+          "title": "La médina (UNESCO)",
+          "text": "L’une des médinas les plus complètes du Maroc, façonnée par des réfugiés andalous venus d’Espagne : ruelles blanches, petites places et ateliers d’artisans — une ville qui travaille, pas un musée."
+        },
+        {
+          "title": "L’Ensanche et la place Feddan",
+          "text": "La ville nouvelle d’époque espagnole, juste à côté : boulevards réguliers, la place du palais royal (Feddan) et des terrasses de cafés face aux montagnes."
+        },
+        {
+          "title": "Artisans et marchés",
+          "text": "Tétouan est un centre d’artisanat traditionnel — tissage, poterie et peinture — avec des ateliers concentrés autour des portes de la médina."
+        }
+      ],
+      "faq": [
+        {
+          "q": "Quelle est la meilleure période pour visiter Tétouan ?",
+          "a": "Le printemps et le début de l’automne conviennent le mieux aux ruelles de la médina. La côte voisine (Martil, M’diq) est la plus animée en été."
+        },
+        {
+          "q": "Comment se rendre à Tétouan ?",
+          "a": "Tétouan est à environ une heure de route de Tanger. Bus et grands taxis la relient à Tanger et Chefchaouen ; les aéroports les plus proches sont ceux de Tanger et de Tétouan même."
+        },
+        {
+          "q": "Puis-je déjà réserver des voyages à Tétouan sur OuiBoo ?",
+          "a": "Pas encore. Les réservations ne sont pas ouvertes pendant la bêta fermée d’OuiBoo. Rejoignez la liste d’attente et nous vous écrirons à l’ouverture."
+        }
+      ]
+    },
+    "chefchaouen": {
+      "name": "Chefchaouen",
+      "title": "Guide de voyage de Chefchaouen",
+      "description": "Que voir et que faire à Chefchaouen, au Maroc — la médina bleue, Ras El Maa et les montagnes du Rif. Les réservations ne sont pas encore ouvertes ; rejoignez la liste d’attente.",
+      "intro": "Chefchaouen, dans les montagnes du Rif, est la ville de montagne lavée de bleu que les voyageurs photographient depuis sa kasbah et ses ruelles — et aussi une ville qui travaille, avec ses tisserands, ses marchés et ses départs de sentiers vers le Rif.",
+      "highlights": [
+        {
+          "title": "La médina bleue",
+          "text": "Les ruelles lavées de bleu de la vieille ville montent depuis la place Uta el-Hammam, la place principale, avec la kasbah et la Grande Mosquée."
+        },
+        {
+          "title": "Ras El Maa et la mosquée espagnole",
+          "text": "Montez jusqu’à Ras El Maa, là où arrive l’eau de la ville, puis continuez vers la mosquée espagnole sur la colline pour la vue classique sur la ville bleue au coucher du soleil."
+        },
+        {
+          "title": "Vers le Rif",
+          "text": "Chefchaouen est la base habituelle des randonnées dans le Rif ; les cascades et les bassins d’Akchour sont l’excursion d’une journée la plus connue, accessible en grand taxi."
+        }
+      ],
+      "faq": [
+        {
+          "q": "Pourquoi Chefchaouen est-elle bleue ?",
+          "a": "Selon la plupart des récits, le lavage bleu a commencé dans le quartier juif de la ville dans les années 1930, et les habitants ont continué à repeindre les ruelles en bleu ; la ville entretient aujourd’hui elle-même la tradition."
+        },
+        {
+          "q": "Comment se rendre à Chefchaouen ?",
+          "a": "Chefchaouen n’a ni gare ni aéroport : la plupart des voyageurs arrivent en bus ou en grand taxi depuis Tanger ou Tétouan — environ deux heures depuis Tanger."
+        },
+        {
+          "q": "Puis-je déjà réserver des voyages à Chefchaouen sur OuiBoo ?",
+          "a": "Pas encore. Les réservations ne sont pas ouvertes pendant la bêta fermée d’OuiBoo. Rejoignez la liste d’attente et nous vous écrirons à l’ouverture."
+        }
+      ]
+    },
+    "verification": {
+      "title": "Comment fonctionne la vérification des agences",
+      "description": "Les contrôles qu’une agence passe avant de pouvoir publier des voyages sur OuiBoo : licence de voyage, assurance responsabilité civile et identité du vendeur — et ce que la vérification ne prétend pas.",
+      "intro": "OuiBoo est une plateforme technologique : les agences vendent leurs propres voyages, et les voyageurs paient l’agence directement. Avant qu’une agence puisse publier des voyages sur OuiBoo, elle passe une porte de vérification. Cette page explique ce qui est contrôlé — et ce que la vérification ne prétend pas.",
+      "stepsTitle": "Les contrôles",
+      "steps": [
+        {
+          "title": "Licence de voyage",
+          "text": "L’agence soumet sa licence de voyage au titre de la loi 11-16 (organisateur-distributeur — ODV — pour les agences qui organisent des voyages). Le numéro de licence, sa date de délivrance et son autorité de délivrance sont enregistrés, et le document de licence est confronté à la liste de l’autorité de délivrance lorsqu’elle est disponible."
+        },
+        {
+          "title": "Assurance responsabilité civile",
+          "text": "Le certificat d’assurance RC (responsabilité civile) de l’agence est enregistré — assureur, numéro de police et dates de validité — et doit être en vigueur pour que des voyages puissent être publiés."
+        },
+        {
+          "title": "Identité du vendeur",
+          "text": "La raison sociale, l’immatriculation et l’adresse de l’agence sont enregistrés, afin que le vendeur de référence montré aux voyageurs soit l’entreprise réelle derrière l’annonce."
+        },
+        {
+          "title": "L’expiration est appliquée",
+          "text": "Quand une licence ou une police d’assurance expire ou échoue à la vérification, les annonces de l’agence se mettent automatiquement en pause — sans période de grâce."
+        }
+      ],
+      "datedLine": "Cette page décrit la porte de vérification telle qu’elle fonctionne le 30 octobre 2026. La vérification énonce ce qui a été contrôlé et quand ; elle ne garantit le résultat d’aucun voyage.",
+      "faq": [
+        {
+          "q": "La vérification signifie-t-elle qu’OuiBoo garantit mon voyage ?",
+          "a": "Non. OuiBoo fournit la technologie ; l’agence est le vendeur du voyage et est responsable de sa réalisation. La vérification couvre la licence, l’assurance et l’identité décrites sur cette page."
+        },
+        {
+          "q": "Puis-je réserver un voyage maintenant ?",
+          "a": "Pas encore — les réservations ne sont pas ouvertes pendant la bêta fermée. Rejoignez la liste d’attente pour être prévenu à l’ouverture."
+        }
+      ]
+    },
+    "layerB": {
+      "liveInventoryTitle": "Voyages à {{city}}",
+      "tripCount": "{{count}} voyage(s) d'agences vérifiées",
+      "agencyCount": "{{count}} agence(s) vérifiée(s)",
+      "reviewAggregate": "{{rating}} de moyenne sur {{count}} avis vérifiés",
+      "reviewsCount": "{{count}} avis vérifié(s)",
+      "viewTrip": "Voir le voyage",
+      "fromPrice": "Dès",
+      "categoryTitle": "{{category}} à {{city}}",
+      "backToCity": "Tous les voyages à {{city}}",
+      "categoryNames": {
+        "ADVENTURE": "Aventure",
+        "CULTURAL": "Culture",
+        "LUXURY": "Luxe",
+        "BUDGET": "Économique",
+        "NATURE": "Nature"
+      },
+      "freeCancellation": "Annulation gratuite jusqu'à {{days}} jours avant"
+    }
+  },
   "beta": {
     "explainer": "Bêta fermée — voyageurs invités uniquement ; vous payez toujours l'agence directement."
+  },
+  "hw": {
+    "nav": {
+      "guides": "Guides",
+      "faq": "FAQ",
+      "login": "Se connecter",
+      "signup": "S'inscrire"
+    },
+    "hero": {
+      "statusPill": "Bêta fermée · Vitrine uniquement — aucune réservation ni paiement sur Ouiboo pour le moment",
+      "titleA": "Le Maroc, à vous",
+      "titleB": "de l'explorer.",
+      "subline": "Des voyages organisés par les agences du pays — chacune vérifiée avant d'apparaître ici.",
+      "ctaSignup": "S'inscrire gratuitement",
+      "ctaExplore": "Découvrir les voyages vitrine",
+      "agencyLink": "Vous êtes une agence ? Rejoignez la bêta gratuite",
+      "trustLine": "Chaque agence est vérifiée avant d'apparaître ici — licence, assurance, identité.",
+      "photoCredit": "Photo du voyage — Atlas Adventures SARL · Chefchaouen",
+      "heroAlt": "Panorama des maisons chaulées de bleu de Chefchaouen, dans les montagnes du Rif"
+    },
+    "showcase": {
+      "eyebrow": "Vitrine",
+      "title": "De vrais voyages, de vraies agences",
+      "intro": "Un premier aperçu des voyages que les agences fondatrices publieront — documents vérifiés, organisateurs nommés, aucun listing anonyme.",
+      "noteLead": "Vitrine uniquement.",
+      "note": "Les réservations ouvriront avec la cohorte bêta fondatrice — aucun prix ni date n'est affiché tant qu'ils ne peuvent pas être réellement réservés.",
+      "viewTrip": "Voir le détail du voyage",
+      "organiser": "Organisateur",
+      "checkLine": "Licence vérifiée le 30 oct. 2026 · Assurance RC valable jusqu'au 31 déc. 2027",
+      "cards": {
+        "chefchaouen": {
+          "dest": "Chefchaouen · La Perle Bleue",
+          "title": "Circuit photo dans la Perle Bleue",
+          "tags": [
+            "2 jours · 1 nuit",
+            "Photographie",
+            "Culturel"
+          ],
+          "city": "Chefchaouen",
+          "imgAlt": "Cour peinte en bleu dans la médina de Chefchaouen"
+        },
+        "merzouga": {
+          "dest": "Merzouga · Erg Chebbi",
+          "title": "Trek à dos de chameau et nuit dans les dunes de Merzouga",
+          "tags": [
+            "2 jours · 1 nuit",
+            "Trek à dos de chameau",
+            "Aventure"
+          ],
+          "city": "Merzouga",
+          "imgAlt": "Caravane de chameaux traversant les dunes de l'Erg Chebbi à Merzouga"
+        },
+        "atlas": {
+          "dest": "Imlil · Haut Atlas",
+          "title": "Trek dans le Haut Atlas : Imlil et villages berbères",
+          "tags": [
+            "4 jours · 3 nuits",
+            "Trek en montagne",
+            "Aventure"
+          ],
+          "city": "Imlil",
+          "imgAlt": "La vallée verdoyante d'Imlil sous les sommets enneigés du Haut Atlas"
+        }
+      },
+      "guidesLabel": "Explorez le Maroc — commencez par nos guides des villes :",
+      "guidesCta": "Découvrir les guides",
+      "verifyLink": "Comment nous vérifions les agences"
+    },
+    "how": {
+      "eyebrow": "Comment ça marche",
+      "title": "Des agences vérifiées. Un paiement direct. Des règles claires.",
+      "intro": "Ouiboo est la technologie entre vous et les agences locales — jamais un intermédiaire qui garde votre argent.",
+      "steps": {
+        "step1": {
+          "title": "Choisissez un voyage d'une agence vérifiée",
+          "text": "Chaque voyage appartient à une agence nommée, dont Ouiboo a vérifié la licence de tourisme et l'assurance — avec les dates affichées, jamais cachées."
+        },
+        "step2": {
+          "title": "Payez l'agence directement",
+          "text": "Payez l'agence directement — un acompte d'abord, le solde lorsque votre groupe est confirmé. Ouiboo ne détient jamais votre argent."
+        },
+        "step3": {
+          "title": "Des règles claires protègent votre acompte",
+          "text": "Chaque réservation inclut l'échelle d'annulation de l'agence, acceptée avant le paiement — et si le minimum du groupe n'est pas atteint, votre acompte vous est intégralement remboursé."
+        }
+      },
+      "panel": {
+        "title": "Ce que Ouiboo vérifie",
+        "items": {
+          "licence": {
+            "label": "Licence de tourisme",
+            "text": "numéro, autorité de délivrance (Ministère du Tourisme) et date d'expiration vérifiés sur le document lui-même."
+          },
+          "insurance": {
+            "label": "Assurance RC",
+            "text": "police de responsabilité civile professionnelle justifiée, nommée et en cours de validité."
+          },
+          "registration": {
+            "label": "Immatriculation",
+            "text": "registre de commerce (RC) et identifiant fiscal au dossier avant toute publication."
+          }
+        },
+        "recordTitle": "Exemple de dossier — Atlas Adventures SARL",
+        "recordLicenceLabel": "Licence de tourisme (ODV)",
+        "recordLicence": "vérifiée le 30 oct. 2026 · valable jusqu'au 31 déc. 2028",
+        "recordInsuranceLabel": "Assurance RC",
+        "recordInsurance": "police justifiée · valable jusqu'au 31 déc. 2027",
+        "recordNote": "L'agence reste l'organisatrice et votre contact pour tout remboursement. Ouiboo fournit uniquement la technologie — et montre ses vérifications, avec leurs dates. Le statut est revérifié automatiquement ; les voyages sont suspendus si un document expire.",
+        "panelLink": "Voir la norme de vérification"
+      }
+    },
+    "agencies": {
+      "eyebrow": "Pour les agences · Bêta fondatrice",
+      "titleA": "Vendez vos voyages sur Ouiboo.",
+      "titleB": "Gratuit pendant la bêta.",
+      "lead": "Nous invitons 3 à 5 agences vérifiées, venues de tout le Maroc, à fonder la marketplace avec nous — un accompagnement personnel par le fondateur, aucun formulaire avant d'avoir parlé à un humain.",
+      "chips": [
+        "Gratuit pendant la bêta",
+        "Vérifiée avant mise en ligne",
+        "Nous vous aidons à publier vos premiers voyages"
+      ],
+      "objections": {
+        "payDirect": {
+          "title": "Vous êtes payée directement",
+          "text": "Les voyageurs paient votre agence — acompte et solde. L'argent ne transite jamais par Ouiboo, et nous ne nous interposons pas entre vous et vos clients."
+        },
+        "brand": {
+          "title": "Votre marque, vos voyages",
+          "text": "Vous restez l'organisatrice et la vendeuse officielle. Le nom de votre agence figure sur chaque voyage, chaque réservation et chaque avis."
+        },
+        "fees": {
+          "title": "Aucun frais pendant la bêta",
+          "text": "Ensuite, tout frais fera l'objet d'une facture mensuelle publiée, adressée à votre agence — convenue par écrit au préalable, jamais déduite des paiements des voyageurs."
+        },
+        "exclusive": {
+          "title": "Sans exclusivité",
+          "text": "Publiez sur Ouiboo et partout ailleurs. Partez quand vous voulez — vos voyages, vos photos et vos contenus restent les vôtres."
+        }
+      },
+      "cta": "Découvrir l'offre agences",
+      "note": "3 à 5 places fondatrices · des agences de tout le Maroc · nous préparons vos premiers voyages avec vous"
+    },
+    "faq": {
+      "eyebrow": "Transparence",
+      "title": "Des réponses franches",
+      "intro": "Qui vous payez, qui vous rembourse, et ce qu'est Ouiboo — en mots simples.",
+      "items": {
+        "whoPay": {
+          "q": "Qui est-ce que je paie pour un voyage ?",
+          "lead": "Toujours l'agence, directement",
+          "rest": " — un acompte d'abord (jusqu'à 30 %), et le solde uniquement lorsque le minimum du groupe est confirmé. Ouiboo ne détient jamais l'argent des voyageurs, sur aucun voyage."
+        },
+        "whoRefund": {
+          "q": "Qui me rembourse si mes plans changent ?",
+          "lead": "L'agence",
+          "rest": " — c'est elle l'organisatrice de votre voyage. Chaque réservation inclut son échelle d'annulation, affichée avant le paiement, et Ouiboo gère une procédure de litige en cas de problème."
+        },
+        "charges": {
+          "q": "Que facture Ouiboo ?",
+          "lead": "La bêta est gratuite.",
+          "rest": " Les frais futurs seront publiés avant de s'appliquer — facturés aux agences par facture mensuelle, jamais ajoutés au prix que vous payez."
+        },
+        "whenBook": {
+          "q": "Quand puis-je réserver ?",
+          "lead": "Les réservations ouvriront avec la cohorte bêta fondatrice.",
+          "rest": " D'ici là, ce site est une vitrine : de vrais voyages et de vraies vérifications, montrés honnêtement, sans réservation ni paiement acceptés."
+        }
+      }
+    },
+    "footer": {
+      "tagline": "La technologie au service des agences de voyage marocaines. Les voyageurs paient les agences directement — Ouiboo ne détient jamais votre argent.",
+      "colExplore": "Explorer",
+      "guides": "Guides des villes",
+      "colTrust": "Confiance",
+      "verification": "Norme de vérification",
+      "payments": "Comment fonctionnent les paiements",
+      "faq": "FAQ",
+      "colAgencies": "Agences",
+      "joinBeta": "Rejoindre la bêta gratuite",
+      "agencyLogin": "Espace agence",
+      "travellerLogin": "Espace voyageur",
+      "support": "Assistance",
+      "bottomLeft": "© {{year}} Ouiboo · Bêta fermée — vitrine uniquement",
+      "madeIn": "Fait à Tanger, Maroc",
+      "copyright": "Droits d'auteur"
+    },
+    "guidesPage": {
+      "title": "Guides des villes du Maroc",
+      "intro": "Que voir et que faire, ville par ville — pour toutes celles et ceux qui préparent un voyage au Maroc.",
+      "readGuide": "Lire le guide"
+    },
+    "agencesPage": {
+      "nav": {
+        "back": "Accueil"
+      },
+      "hero": {
+        "eyebrow": "Pour les agences · Bêta fondatrice",
+        "titleA": "Vendez vos voyages sur Ouiboo.",
+        "titleB": "Vous êtes payé directement.",
+        "titleC": "Gratuit pendant la bêta.",
+        "lead": "Ouiboo présente vos voyages aux voyageurs ; vous restez l'organisateur et le vendeur, et les voyageurs paient votre agence directement. Pendant la bêta fondatrice : aucun abonnement, aucun frais.",
+        "founderRole": "Fondateur d'Ouiboo · Tanger",
+        "founderLine": "Je recrute personnellement les 3 à 5 agences fondatrices. Vous parlez au fondateur, pas à un service commercial.",
+        "ctaWhatsapp": "Discuter avec le fondateur sur WhatsApp",
+        "ctaNote": "Pas de formulaire. Une conversation d'abord.",
+        "whatsappMessage": "Bonjour Hussein, je dirige une agence de voyages et je souhaite discuter de la bêta gratuite Ouiboo. (Page agences)"
+      },
+      "steps": {
+        "eyebrow": "Pour commencer",
+        "title": "Comment ça commence",
+        "intro": "Trois étapes simples — et un humain au bout du fil dès la première.",
+        "step1": {
+          "title": "Une conversation de 15 minutes",
+          "text": "Nous parlons de vos voyages et de vos questions, sur WhatsApp ou par téléphone. Aucun formulaire avant cette conversation."
+        },
+        "step2": {
+          "title": "Vous envoyez trois documents",
+          "text": "Votre licence d'agence de voyages (ODV), votre assurance RC professionnelle et votre immatriculation au registre de commerce. Une photo WhatsApp suffit pour chacun — et quand le contrôle est terminé, un dossier daté le confirme."
+        },
+        "step3": {
+          "title": "Vos premiers voyages, publiés ensemble",
+          "text": "Nous préparons vos premiers voyages avec vous — photos, itinéraire, prix — et vous validez chaque mot avant publication. Rien n'apparaît sans votre accord."
+        },
+        "chip": "Vérifiée avant mise en ligne"
+      },
+      "money": {
+        "eyebrow": "L'argent",
+        "title": "Vous êtes payé directement — toujours",
+        "items": {
+          "direct": {
+            "title": "Le voyageur paie votre agence",
+            "text": "Un acompte (jusqu'à 30 %) à la réservation, puis le solde lorsque le minimum du groupe est confirmé. Si le minimum n'est pas atteint, l'acompte est intégralement remboursé au voyageur."
+          },
+          "never": {
+            "title": "Ouiboo ne touche jamais l'argent des voyageurs",
+            "text": "Aucun paiement ne transite par Ouiboo — ni aujourd'hui, ni plus tard."
+          },
+          "beta": {
+            "title": "Pendant la bêta : 0 MAD",
+            "text": "Aucun abonnement, aucun frais, aucune retenue sur vos paiements."
+          }
+        },
+        "guaranteeTitle": "Après la bêta, notre engagement écrit",
+        "guarantee": "Tout frais futur ne s'appliquera que par facture mensuelle publiée, adressée à votre agence, convenue par écrit à l'avance, avec un préavis et le droit de partir avant le premier frais — et jamais déduit des paiements des voyageurs."
+      },
+      "proof": {
+        "eyebrow": "Preuves",
+        "title": "Ce que vos voyageurs verront",
+        "intro": "Deux exemples — exactement ce qu'Ouiboo affiche pour une agence dont les documents ont été vérifiés.",
+        "exampleChip": "Exemple",
+        "recordTitle": "Dossier de vérification — Atlas Adventures SARL",
+        "recordLicenceLabel": "Licence de tourisme (ODV)",
+        "recordLicence": "vérifiée le 30 oct. 2026 · valable jusqu'au 31 déc. 2028",
+        "recordInsuranceLabel": "Assurance RC",
+        "recordInsurance": "police justifiée · valable jusqu'au 31 déc. 2027",
+        "recordNote": "Le même dossier daté est public sur la page de l'agence et sur chaque voyage.",
+        "passTitle": "Le Pass Réservation",
+        "passText": "Après une réservation, le voyageur reçoit un pass avec un code QR : vous le scannez le jour du départ, et la présence est confirmée.",
+        "storefrontTitle": "Votre page agence",
+        "storefrontText": "Votre nom, vos voyages et votre dossier de vérification daté — une page publique qui prouve qui vous êtes."
+      },
+      "qa": {
+        "eyebrow": "Vos questions",
+        "title": "En toute franchise",
+        "items": {
+          "exclusive": {
+            "q": "Suis-je lié à Ouiboo par une exclusivité ?",
+            "a": "Non. Publiez sur Ouiboo et partout ailleurs — vos autres canaux ne nous regardent pas."
+          },
+          "leave": {
+            "q": "Puis-je partir quand je veux ?",
+            "a": "Oui, à tout moment et sans frais. Vos voyages, vos photos et vos avis restent les vôtres."
+          },
+          "client": {
+            "q": "Le client reste-t-il mon client ?",
+            "a": "Oui. Vos coordonnées figurent sur chaque réservation, les voyageurs vous contactent directement, et votre nom apparaît sur chaque voyage et chaque avis."
+          },
+          "cancel": {
+            "q": "Qui fixe les règles d'annulation ?",
+            "a": "Vous. Votre échelle d'annulation est affichée au voyageur avant le paiement. En cas de litige, une procédure visible s'applique — et vous restez l'organisateur du voyage."
+          },
+          "provide": {
+            "q": "Que dois-je fournir ?",
+            "a": "Trois documents : votre licence, votre assurance RC et votre immatriculation. Une photo WhatsApp de chacun suffit pour commencer."
+          },
+          "golive": {
+            "q": "Combien de temps avant d'être en ligne ?",
+            "a": "Vos documents sont vérifiés avant toute mise en ligne — c'est la règle, pour chaque agence. Ensuite, nous préparons vos premiers voyages ensemble et vous les validez avant publication."
+          },
+          "french": {
+            "q": "Le français suffit-il ?",
+            "a": "Oui. Le français suffit pour publier vos voyages ; l'arabe et l'anglais sont un plus, jamais une condition."
+          },
+          "computer": {
+            "q": "Faut-il un ordinateur ?",
+            "a": "Non. WhatsApp et un téléphone suffisent pour démarrer et pour presque tout le reste."
+          }
+        }
+      },
+      "honesty": {
+        "eyebrow": "Transparence",
+        "title": "Ce qu'est la bêta — et ce qu'elle n'est pas encore",
+        "items": [
+          "Aujourd'hui, Ouiboo est une vitrine : aucune réservation ni aucun paiement n'est encore accepté.",
+          "Les réservations ouvriront avec les agences fondatrices — pas avant.",
+          "3 à 5 places seulement au départ : chaque agence est accompagnée personnellement.",
+          "Pendant la bêta, l'assistance est assurée par le fondateur lui-même.",
+          "Les agences fondatrices participent aux choix du produit."
+        ],
+        "legal": "Pourquoi cette prudence ? Ouiboo termine ses formalités légales — classification de l'activité et protection des données — avant d'ouvrir les réservations. La bêta commence donc en vitrine, et c'est assumé."
+      },
+      "final": {
+        "title": "Parlons de vos voyages",
+        "text": "Je réponds personnellement à chaque agence qui écrit.",
+        "emailLabel": "Ou par e-mail",
+        "signupQuiet": "Vous préférez vous inscrire directement ? Créer votre compte agence"
+      },
+      "stickyCta": "Discuter sur WhatsApp"
+    }
   }
 }

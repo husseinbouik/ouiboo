@@ -474,10 +474,61 @@ describe('TripsService', () => {
             const args = db.tripTemplate.findMany.mock.calls[0][0];
             // Anonymous catalog must never include pending/rejected/suspended agencies (#182, #317)
             expect(args.where.status).toBe('ACTIVE');
-            expect(args.where.agency).toEqual({ verificationStatus: 'VERIFIED' });
+            expect(args.where.agency.verificationStatus).toBe('VERIFIED');
             // The traveler card derives its verified badge from this field; if it
             // is dropped from the select again, every card is mislabeled (#317).
             expect(args.include.agency.select.verificationStatus).toBe(true);
+        });
+
+        // #728: the catalogue gate is the full booking-eligibility
+        // predicate, not identity alone — a lapsed/unrestricted agency
+        // must not advertise trips whose booking would be rejected.
+        it('restricts the public catalog to agencies that can accept bookings (#728)', async () => {
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(0);
+
+            await service.findAllTemplates({});
+
+            const args = db.tripTemplate.findMany.mock.calls[0][0];
+            expect(args.where.agency.newBookingsRestrictedAt).toBeNull();
+            expect(args.where.agency.travelLicenceStatus).toBe('VERIFIED');
+            expect(args.where.agency.licenceExpiry.gt).toBeInstanceOf(Date);
+            expect(args.where.agency.insuranceStatus).toBe('VERIFIED');
+            expect(args.where.agency.insuranceExpiry.gt).toBeInstanceOf(Date);
+            expect(args.where.agency.OR).toEqual([
+                {
+                    subscriptionStatus: 'ACTIVE',
+                    OR: [
+                        { subscriptionEndsAt: null },
+                        { subscriptionEndsAt: { gt: expect.any(Date) } },
+                    ],
+                },
+                { subscriptionStatus: 'TRIAL', trialEndsAt: { gt: expect.any(Date) } },
+            ]);
+            // The count query carries the same gate, so pagination
+            // totals cannot count ineligible trips either.
+            const countArgs = db.tripTemplate.count.mock.calls[0][0];
+            expect(countArgs.where.agency).toEqual(args.where.agency);
+        });
+
+        it('applies the bookable-agency gate to detail, destination inventory and sessions (#728)', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue(null);
+            await expect(service.findOneTemplate('trip-123')).rejects.toThrow(NotFoundException);
+            const detailArgs = db.tripTemplate.findFirst.mock.calls[0][0];
+            expect(detailArgs.where.agency.verificationStatus).toBe('VERIFIED');
+            expect(detailArgs.where.agency.OR).toHaveLength(2);
+
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            await service.getDestinationInventory('tangier');
+            const destArgs = db.tripTemplate.findMany.mock.calls[0][0];
+            expect(destArgs.where.agency.verificationStatus).toBe('VERIFIED');
+            expect(destArgs.where.agency.OR).toHaveLength(2);
+
+            db.tripTemplate.findFirst.mockResolvedValue(null);
+            await expect(service.findSessionsByTemplate('trip-123')).rejects.toThrow(NotFoundException);
+            const sessionArgs = db.tripTemplate.findFirst.mock.calls[1][0];
+            expect(sessionArgs.where.agency.verificationStatus).toBe('VERIFIED');
+            expect(sessionArgs.where.agency.OR).toHaveLength(2);
         });
     });
     describe('MAD-only beta catalogue gate (B24(f) / #498)', () => {
@@ -627,6 +678,8 @@ describe('TripsService', () => {
             // Session #3 P0-13: a complete licence record (issue facts).
             licenceIssuedAt: new Date('2024-03-01'),
             licenceIssuingAuthority: 'Ministère du Tourisme',
+            // #680: publish-gated emergency contact.
+            emergencyContactPhone: '+212612345678',
         };
 
         beforeEach(() => {
@@ -732,9 +785,28 @@ describe('TripsService', () => {
             expect(db.tripTemplate.update).not.toHaveBeenCalled();
         });
 
+        it('blocks re-activation when the agency has no emergency contact on record (#680)', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({
+                ...verifiedAgency,
+                emergencyContactPhone: null,
+            });
+            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/emergency contact is required to publish/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
         it('allows re-activation for a verified agency with a verified licence', async () => {
             db.agencyProfile.findUnique.mockResolvedValue(verifiedAgency);
-            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE' });
+            // Batch B: a publishable trip also carries its structured
+            // cancellation scale + a meeting point (gates below).
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                status: 'INACTIVE',
+                cancellationPolicy: { version: 'cancellation-v1', bands: [{ minDaysBeforeStart: 0, refundPercent: 50 }] },
+                meetingPoint: { address: 'Place du 9 Avril, Tanger', pickupAvailable: false },
+            });
 
             const result = await service.activateTemplate('trip-123', 'agency-123');
 
@@ -861,6 +933,8 @@ describe('TripsService', () => {
             // Session #3 P0-13: complete licence record (issue facts).
             licenceIssuedAt: new Date('2024-03-01'),
             licenceIssuingAuthority: 'Ministère du Tourisme',
+            // #680: publish-gated emergency contact.
+            emergencyContactPhone: '+212612345678',
         };
 
         beforeEach(() => {
@@ -916,7 +990,14 @@ describe('TripsService', () => {
 
         it('publishes a French-only trip (Arabic/English encouraged, never blocking)', async () => {
             db.agencyProfile.findUnique.mockResolvedValue(verifiedAgency);
-            db.tripTemplate.findFirst.mockResolvedValue({ ...mockTripTemplate, status: 'INACTIVE', translations: null });
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate,
+                status: 'INACTIVE',
+                translations: null,
+                // Batch B publish gates: structured scale + meeting point.
+                cancellationPolicy: { version: 'cancellation-v1', bands: [{ minDaysBeforeStart: 0, refundPercent: 50 }] },
+                meetingPoint: { pickupAvailable: true },
+            });
 
             const result = await service.activateTemplate('trip-123', 'agency-123');
 
@@ -1008,6 +1089,162 @@ describe('TripsService', () => {
             expect(args.select.translations).toBe(true);
             expect(result.title).toBe('Title EN');
             expect(result.description).toBe('Description EN');
+        });
+    });
+
+    describe('Council S6 Batch B: commercial terms, destinations, meeting point (#674/#675/#676)', () => {
+        const verifiedAgency = {
+            id: 'agency-123',
+            verificationStatus: 'VERIFIED',
+            travelLicenceStatus: 'VERIFIED',
+            licenceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            travelLicenceType: 'ODV',
+            insuranceStatus: 'VERIFIED',
+            insuranceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            licenceIssuedAt: new Date('2024-03-01'),
+            licenceIssuingAuthority: 'Ministère du Tourisme',
+            // #680: publish-gated emergency contact.
+            emergencyContactPhone: '+212612345678',
+        };
+        const publishableTrip = {
+            ...mockTripTemplate,
+            status: 'INACTIVE',
+            startLocation: 'Tangier, Morocco',
+            cancellationPolicy: { version: 'cancellation-v1', bands: [{ minDaysBeforeStart: 0, refundPercent: 50 }] },
+            meetingPoint: { address: 'Place du 9 Avril, Tanger', mapsUrl: null, pickupAvailable: false },
+        };
+
+        beforeEach(() => {
+            db.agencyProfile.findUnique.mockResolvedValue(verifiedAgency);
+            db.tripTemplate.update.mockResolvedValue({ ...mockTripTemplate, status: 'ACTIVE' });
+        });
+
+        it('#674 rejects re-activation when the trip has no explicit structured cancellation scale', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({ ...publishableTrip, cancellationPolicy: null });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/structured cancellation scale is required/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('#674 rejects publishing when trip text carries free-text cancellation terms (Eden pattern)', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...publishableTrip,
+                description: 'Tarif ferme, non remboursable et non annulable',
+            });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/free-text cancellation\/payment terms are not allowed/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('#674 rejects a PATCH publish whose new description states a 50% deposit term', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({ ...publishableTrip, status: 'DRAFT' });
+
+            await expect(service.updateTemplate('trip-123', 'agency-123', {
+                status: 'ACTIVE',
+                description: 'Acompte de 50% à verser avant le départ, merci',
+            } as any)).rejects.toThrow(/free-text cancellation\/payment terms are not allowed/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('#674 rejects a text edit that adds prohibited terms to an already-ACTIVE trip', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({ ...publishableTrip, status: 'ACTIVE' });
+
+            await expect(service.updateTemplate('trip-123', 'agency-123', {
+                inclusions: ['Guide', 'Non-refundable booking'],
+            } as any)).rejects.toThrow(/free-text cancellation\/payment terms are not allowed/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('#676 rejects publishing with neither a meeting address nor pickup', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({ ...publishableTrip, meetingPoint: null });
+
+            await expect(service.activateTemplate('trip-123', 'agency-123'))
+                .rejects.toThrow(/meeting point is required/i);
+            expect(db.tripTemplate.update).not.toHaveBeenCalled();
+        });
+
+        it('#676 publishes with pickupAvailable=true and no address, returning completeness warnings', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...publishableTrip,
+                meetingPoint: { address: null, mapsUrl: null, pickupAvailable: true },
+            });
+            db.itineraryDay.findMany.mockResolvedValue([
+                { dayNumber: 1, title: 'Jour 1', description: 'Arrivée', activities: [], driveTimeMinutes: null, accommodationName: null, accommodationType: null, mealsIncluded: [] },
+            ]);
+
+            const result = await service.activateTemplate('trip-123', 'agency-123') as any;
+
+            expect(result.status).toBe('ACTIVE');
+            expect(result.publishWarnings).toEqual([
+                'DAY_1_MISSING_DRIVE_TIME',
+                'DAY_1_MISSING_ACCOMMODATION',
+                'DAY_1_MISSING_MEALS',
+            ]);
+        });
+
+        it('#676 a PATCH publish can satisfy the gates with the scale + meeting point it carries', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...mockTripTemplate, status: 'DRAFT', cancellationPolicy: null, meetingPoint: null,
+            });
+
+            await service.updateTemplate('trip-123', 'agency-123', {
+                status: 'ACTIVE',
+                cancellationPolicy: { bands: [{ minDaysBeforeStart: 0, refundPercent: 25 }] },
+                meetingPoint: { address: 'Gare de Tanger Ville', pickupAvailable: false },
+            } as any);
+
+            expect(db.tripTemplate.update).toHaveBeenCalled();
+            const data = db.tripTemplate.update.mock.calls[0][0].data;
+            expect(data.cancellationPolicy.bands).toEqual([{ minDaysBeforeStart: 0, refundPercent: 25 }]);
+            expect(data.meetingPoint).toEqual({ address: 'Gare de Tanger Ville', mapsUrl: null, pickupAvailable: false });
+        });
+
+        it('#675 stamps the derived destination on create and validates a supplied slug', async () => {
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123', travelLicenceType: 'ODV' });
+            db.tripTemplate.create.mockResolvedValue(mockTripTemplate);
+
+            await service.createTemplate('agency-123', { title: 'T', startLocation: 'Tétouan, Maroc' } as any);
+            expect(db.tripTemplate.create.mock.calls[0][0].data.destinationSlug).toBe('tetouan');
+
+            await expect(service.createTemplate('agency-123', {
+                title: 'T', startLocation: 'Marrakech', destinationSlug: 'marrakech',
+            } as any)).rejects.toThrow(/configured destinations/i);
+        });
+
+        it('#675 findAll filters by destination slug and rejects an unknown slug', async () => {
+            db.tripTemplate.findMany.mockResolvedValue([]);
+            db.tripTemplate.count.mockResolvedValue(0);
+
+            await service.findAllTemplates({ destination: 'chefchaouen' });
+            expect(db.tripTemplate.findMany.mock.calls[0][0].where.destinationSlug).toBe('chefchaouen');
+
+            await expect(service.findAllTemplates({ destination: 'fes' }))
+                .rejects.toThrow(/configured destinations/i);
+        });
+
+        it('#675/#676 public detail exposes destination + area-only meeting point (no address, no maps link)', async () => {
+            db.tripTemplate.findFirst.mockResolvedValue({
+                ...publishableTrip,
+                status: 'ACTIVE',
+                destinationSlug: 'tangier',
+                agency: {
+                    id: 'agency-123',
+                    companyName: 'Atlas Adventures SARL',
+                    logo: null,
+                    verificationStatus: 'VERIFIED',
+                    bankDetails: null,
+                    bankDetailsStatus: 'VERIFIED',
+                    bankDetailsVerifiedAt: new Date(),
+                },
+            });
+
+            const result = await service.findOneTemplate('trip-123') as any;
+
+            expect(result.destinationSlug).toBe('tangier');
+            expect(result.meetingPoint).toEqual({ area: 'Tangier, Morocco', pickupAvailable: false });
+            expect(JSON.stringify(result.meetingPoint)).not.toContain('Place du 9 Avril');
         });
     });
 });

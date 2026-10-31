@@ -6,6 +6,7 @@ import { Card, CardContent } from '@ouiboo/ui';
 import { NORMAL_SUPPORT_RESPONSE_HOURS } from '@ouiboo/utils';
 import { useAuth } from './AuthContext';
 import { SupportBlock } from './SupportBlock';
+import { BetaOfferCard } from './BetaOfferCard';
 import { apiClient } from '@/lib/api-client';
 import { isSupportEmailConfigured, SUPPORT_EMAIL } from '@/lib/support';
 
@@ -31,7 +32,8 @@ const CATEGORIES = [
  * the same configuration source (apps/agency/src/lib/support.ts mirrors
  * the traveller lib: NEXT_PUBLIC_SUPPORT_EMAIL, hidden gracefully when
  * unconfigured, ≤48h normal lane, the agency's own active-trip
- * escalation role) — rendered via <SupportBlock /> — PLUS a working
+ * escalation role) — rendered via <BetaOfferCard />
+      <SupportBlock /> — PLUS a working
  * ticket form posting to POST /support/tickets with
  * requesterRole=AGENCY, prefilled from the signed-in agency user.
  */
@@ -94,6 +96,10 @@ export function AgencySupportPage() {
       </div>
 
       <SupportBlock />
+
+      {/* #677: the beta offer (verification SLA, assisted listing,
+          support split) also lives on the support surface. */}
+      <BetaOfferCard />
 
       <Card className="border border-border shadow-sm bg-card">
         <CardContent className="p-6 space-y-5">

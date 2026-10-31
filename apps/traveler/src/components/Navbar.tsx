@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
 import { useTranslation } from 'react-i18next';
 import { CurrencySelector } from './CurrencySelector';
+import { clearPwaCachesOnLogout } from './ServiceWorkerRegister';
 
 export function Navbar() {
   const { t } = useTranslation();
@@ -219,7 +220,7 @@ const [isOpen, setIsOpen] = useState(false);
         animate={{ y: 0 }}
         transition={{ duration: 0.5 }}
         className={cn(
-          "pointer-events-auto flex items-center justify-between transition-all duration-300 w-full px-6 lg:px-8 h-20",
+          "pointer-events-auto flex items-center justify-between transition-all duration-300 w-full px-4 sm:px-6 lg:px-6 xl:px-8 h-20",
           scrolled 
             ? "bg-card/80 backdrop-blur-md shadow-sm" 
             : "bg-transparent"
@@ -240,7 +241,7 @@ const [isOpen, setIsOpen] = useState(false);
             <BetaBadge />
         </Link>
 
-        <div className="hidden md:flex items-center gap-8 mx-6">
+        <div className="hidden lg:flex items-center gap-6 mx-4 xl:gap-8 xl:mx-6">
                         {mounted && navLinks.map((link) => (
                                 <Link 
                                         key={link.href}
@@ -251,7 +252,7 @@ const [isOpen, setIsOpen] = useState(false);
                                             {link.icon}
                                             <span>{link.name}</span>
                                             {link.href === '/wishlist' && wishlistCountData?.count > 0 && (
-                                                <span className="absolute -top-2 -right-3 inline-flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-[10px] font-bold">
+                                                <span className="absolute -top-2 -right-3 inline-flex items-center justify-center h-5 w-5 rounded-full bg-sunset-orange text-deep-blue text-[10px] font-bold">
                                                     {wishlistCountData.count}
                                                 </span>
                                             )}
@@ -261,12 +262,24 @@ const [isOpen, setIsOpen] = useState(false);
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:gap-4">
+            {/* #648: on mobile the bar used to carry every control in
+                one row until items clipped off the screen edge — the
+                theme toggle below sm, then login/sign-up at phone
+                widths (founder-witnessed in EN/FR/AR). The bar now
+                keeps only what must be one tap away at every width:
+                the theme toggle, sign-up and the avatar. Language and
+                currency selectors join the links in the mobile menu
+                below lg (the desktop cluster here is lg+ only —
+                #672 raised the switch from md: at 768-1013px the
+                desktop row is ~1014px wide and clipped Sign up off
+                real tablets, and desktop-mode phone browsers present
+                a ~800-980px layout width, so they now get this bar). */}
+            <div className="hidden lg:flex items-center gap-2">
                 <LanguageSwitcher />
                 <CurrencySelector />
-                <ThemeToggle />
             </div>
+            <ThemeToggle />
 
             {isAuthLoading ? (
                 <div className="flex items-center gap-4">
@@ -366,8 +379,8 @@ const [isOpen, setIsOpen] = useState(false);
                                     </Link>
                                 </div>
                                 <div className="p-1 border-t border-border">
-                                    <button 
-                                        onClick={logout}
+                                    <button
+                                        onClick={() => { clearPwaCachesOnLogout(); logout(); }}
                                         className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-danger hover:bg-danger/10 rounded-lg"
                                     >
                                         <LogOut className="w-4 h-4" /> {t('nav.logout')}
@@ -378,11 +391,15 @@ const [isOpen, setIsOpen] = useState(false);
                     </AnimatePresence>
                 </div>
             ) : (
-                <div className="flex items-center gap-4">
-                    <Link href="/login" className="text-sm font-semibold text-foreground hover:text-sunset-orange transition-colors">
+                <div className="flex items-center gap-2 sm:gap-4">
+                    {/* #648: login moves into the mobile menu below lg;
+                        sign-up — the primary CTA — stays visible in
+                        the bar at every width, sized down on phones so
+                        nothing clips. */}
+                    <Link href="/login" className="hidden lg:inline-flex text-sm font-semibold text-foreground hover:text-sunset-orange transition-colors">
                         {t('nav.login')}
                     </Link>
-                    <Button asChild className="rounded-md bg-sunset-orange-dark hover:bg-[#b03d11] text-white font-semibold text-sm px-5 py-2.5 h-auto border-none shadow-sm transition-transform hover:scale-105">
+                    <Button asChild className="rounded-md bg-sunset-orange-dark hover:bg-[#b03d11] text-white font-semibold text-sm px-3.5 sm:px-5 py-2.5 h-auto border-none shadow-sm transition-transform hover:scale-105">
               <Link href="/signup">{t('nav.joinNow')}</Link>
             </Button>
                 </div>
@@ -395,7 +412,7 @@ const [isOpen, setIsOpen] = useState(false);
                 aria-expanded={isOpen}
                 aria-controls="traveler-mobile-menu"
                 className={cn(
-                    "md:hidden w-10 h-10 rounded-xl flex items-center justify-center transition-all hit-slop",
+                    "lg:hidden w-10 h-10 rounded-xl flex items-center justify-center transition-all hit-slop",
                     isTransparent ? "bg-white/10 text-white" : "bg-muted text-foreground"
                 )}
             >
@@ -411,7 +428,7 @@ const [isOpen, setIsOpen] = useState(false);
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md md:hidden pointer-events-auto flex justify-end"
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md lg:hidden pointer-events-auto flex justify-end"
             onClick={() => setIsOpen(false)}
           >
 <motion.div
@@ -448,12 +465,20 @@ const [isOpen, setIsOpen] = useState(false);
                         <Link onClick={() => setIsOpen(false)} href="/wishlist" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
                             {t('nav.wishlist')} <Heart className="text-red-500" />
                             {wishlistCountData?.count > 0 && (
-                              <span className="ml-2 inline-flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-[12px] font-bold">{wishlistCountData.count}</span>
+                              <span className="ml-2 inline-flex items-center justify-center h-5 w-5 rounded-full bg-sunset-orange text-deep-blue text-[12px] font-bold">{wishlistCountData.count}</span>
                             )}
                         </Link>
                         <Link onClick={() => setIsOpen(false)} href="/support" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
                             {t('nav.support')} <LifeBuoy className="text-sunset-orange" />
                         </Link>
+               </div>
+
+               {/* #648: language + currency selectors live in the
+                   mobile menu (below md they leave the bar so the
+                   toggle, sign-up and avatar always fit). */}
+               <div className="flex items-center gap-3">
+                   <LanguageSwitcher />
+                   <CurrencySelector />
                </div>
 
                {!isAuthLoading && !user && (

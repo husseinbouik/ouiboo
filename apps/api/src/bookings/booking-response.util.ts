@@ -1,5 +1,6 @@
 import {
   type BookingDetails,
+  type PricingSelectionSnapshot,
   type BookingPaymentPlan,
   type BookingPaymentPlanStatusType,
   type BookingPaymentStatusType,
@@ -10,6 +11,7 @@ import {
   type SessionGroupStatusType,
   type SessionStatusType,
   type VerificationStatusType,
+  type PickupPoint,
 } from '@ouiboo/types';
 import { type Prisma } from '@ouiboo/database';
 import { type MoneyInput, toMoneyString } from '../common/money.util';
@@ -73,11 +75,25 @@ type BookingMapperInput = {
   refundStatus?: string | null;
   /** #417: cancellation scale snapshot stored on the booking (Json). */
   cancellationScale?: unknown;
+  // #695: pricing-selection snapshot (variant + add-ons breakdown).
+  pricingSelection?: unknown;
+  /** Batch F: private nature (#694), pay-later deadline (#696),
+   * pay-on-arrival (#697), pickup choice (#701). */
+  isPrivateSession?: boolean;
+  payLaterDeadline?: NullableDate;
+  payOnArrival?: boolean;
+  pickupPointId?: string | null;
+  pickupPointSnapshot?: unknown;
   /** #481: booking-terms version accepted at checkout (null if unrecorded). */
   /** #434: attendance recorded by the agency (null until recorded). */
   attendance?: string | null;
   attendanceRecordedAt?: NullableDate;
   attendanceRecordedBy?: string | null;
+  /** #693: traveller dispute of the recorded attendance. */
+  attendanceDisputedAt?: NullableDate;
+  attendanceDisputeReason?: string | null;
+  /** #689: Booking Pass QR check-in stamp (second attendance signal). */
+  passCheckInAt?: NullableDate;
   termsVersion?: string | null;
   /** #481: server timestamp of the terms acceptance (null if unrecorded). */
   termsAcceptedAt?: NullableDate;
@@ -149,6 +165,9 @@ type BookingMapperInput = {
        * present when the caller loaded the full template row. */
       translations?: unknown;
       startLocation: string;
+      /** #676: structured meeting point (Json) — full shape, exposed
+       * on booking responses only (public trip payloads are area-only). */
+      meetingPoint?: unknown;
       /** #417: stored cancellation bands (Json); legacy-snapshot fallback. */
       cancellationPolicy?: unknown;
       images: string[];
@@ -161,9 +180,47 @@ type BookingMapperInput = {
          * callers that never load it simply omit it. */
         emergencyContactName?: string | null;
         emergencyContactPhone?: string | null;
+        /** #688/#700: seller-of-record + verification-record facts,
+         * loaded by the booking include (`agency: true`); optional so
+         * callers that load a partial profile simply omit them. The
+         * licence facts are gated client-side by SellerIdentity, the
+         * same derivation the public profile endpoint applies. */
+        legalName?: string | null;
+        travelLicenceType?: string | null;
+        travelLicenceNumber?: string | null;
+        travelLicenceStatus?: string | null;
+        licenceExpiry?: NullableDate;
+        licenceIssuedAt?: NullableDate;
+        licenceIssuingAuthority?: string | null;
+        licenceVerifiedAt?: NullableDate;
+        insuranceStatus?: string | null;
+        insuranceInsurer?: string | null;
+        insuranceExpiry?: NullableDate;
+        insuranceVerifiedAt?: NullableDate;
+        businessAddress?: string | null;
+        businessPhone?: string | null;
+        rc?: string | null;
+        taxId?: string | null;
       } | null;
     };
   };
+};
+
+/**
+ * #676: normalize the stored meeting-point Json for a booking
+ * response. Deliberately local (no BadRequest path — a malformed
+ * legacy value degrades to null instead of failing the booking read).
+ */
+export const normalizeBookingMeetingPoint = (
+  raw: unknown,
+): { address: string | null; mapsUrl: string | null; pickupAvailable: boolean } | null => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const record = raw as Record<string, unknown>;
+  const address = typeof record.address === 'string' && record.address.trim() ? record.address.trim() : null;
+  const mapsUrl = typeof record.mapsUrl === 'string' && record.mapsUrl.trim() ? record.mapsUrl.trim() : null;
+  const pickupAvailable = record.pickupAvailable === true;
+  if (!address && !mapsUrl && !pickupAvailable) return null;
+  return { address, mapsUrl, pickupAvailable };
 };
 
 const toIsoString = (value: NullableDate) => {
@@ -265,6 +322,14 @@ export const mapBookingDetails = (
   cancellationScale: buildCancellationScaleSnapshot(
     booking.cancellationScale ?? booking.session?.template?.cancellationPolicy,
   ),
+  // #695: the booking's pricing selection, exactly as snapshotted.
+  pricingSelection: (booking.pricingSelection as PricingSelectionSnapshot | null | undefined) ?? null,
+  // Batch F: the booking's payment-shape facts, as snapshotted.
+  isPrivateSession: booking.isPrivateSession ?? false,
+  payLaterDeadline: toIsoString(booking.payLaterDeadline) ?? null,
+  payOnArrival: booking.payOnArrival ?? false,
+  pickupPointId: booking.pickupPointId ?? null,
+  pickupPointSnapshot: (booking.pickupPointSnapshot as unknown as PickupPoint | null | undefined) ?? null,
   // #481 + B9: the terms version this booking was made under + the
   // server acceptance timestamp + the checkout locale — the full
   // acceptance record. Null (never omitted) when not recorded, so
@@ -273,6 +338,9 @@ export const mapBookingDetails = (
   attendance: (booking.attendance as BookingAttendanceType | null | undefined) ?? null,
   attendanceRecordedAt: toIsoString(booking.attendanceRecordedAt) ?? null,
   attendanceRecordedBy: booking.attendanceRecordedBy ?? null,
+  attendanceDisputedAt: toIsoString(booking.attendanceDisputedAt) ?? null,
+  attendanceDisputeReason: booking.attendanceDisputeReason ?? null,
+  passCheckInAt: toIsoString(booking.passCheckInAt) ?? null,
   termsVersion: booking.termsVersion ?? null,
   termsAcceptedAt: toIsoString(booking.termsAcceptedAt) ?? null,
   locale: booking.locale ?? null,
@@ -359,11 +427,34 @@ export const mapBookingDetails = (
             ).title
           : booking.session.template.title,
       startLocation: booking.session.template.startLocation,
+      // #676: the booking view is where the exact meeting address and
+      // maps link appear — normalized from the stored structure, null
+      // when the trip carries none.
+      meetingPoint: normalizeBookingMeetingPoint(booking.session.template.meetingPoint),
       images: booking.session.template.images,
       imageAlts: booking.session.template.imageAlts,
       agency: {
         id: booking.session.template.agency?.id || booking.session.template.agencyId || '',
         companyName: booking.session.template.agency?.companyName || '',
+        // #688/#700: seller-of-record + verification facts ride the
+        // booking response (the booking view is the receipt surface —
+        // its seller block and Verification Record link read these).
+        legalName: booking.session.template.agency?.legalName ?? null,
+        travelLicenceType: booking.session.template.agency?.travelLicenceType ?? null,
+        travelLicenceNumber: booking.session.template.agency?.travelLicenceNumber ?? null,
+        travelLicenceStatus: booking.session.template.agency?.travelLicenceStatus ?? null,
+        licenceExpiry: toIsoString(booking.session.template.agency?.licenceExpiry) ?? null,
+        licenceIssuedAt: toIsoString(booking.session.template.agency?.licenceIssuedAt) ?? null,
+        licenceIssuingAuthority: booking.session.template.agency?.licenceIssuingAuthority ?? null,
+        licenceVerifiedAt: toIsoString(booking.session.template.agency?.licenceVerifiedAt) ?? null,
+        insuranceStatus: booking.session.template.agency?.insuranceStatus ?? null,
+        insuranceInsurer: booking.session.template.agency?.insuranceInsurer ?? null,
+        insuranceExpiry: toIsoString(booking.session.template.agency?.insuranceExpiry) ?? null,
+        insuranceVerifiedAt: toIsoString(booking.session.template.agency?.insuranceVerifiedAt) ?? null,
+        businessAddress: booking.session.template.agency?.businessAddress ?? null,
+        businessPhone: booking.session.template.agency?.businessPhone ?? null,
+        rc: booking.session.template.agency?.rc ?? null,
+        taxId: booking.session.template.agency?.taxId ?? null,
         // #419: expose the emergency contact on booking responses only —
         // the audience is the traveller holding this booking (departure
         // pack), never public trip pages (which use a different mapper).

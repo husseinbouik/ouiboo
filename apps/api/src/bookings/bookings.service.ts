@@ -1,4 +1,5 @@
-import { Injectable, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { createHash } from 'node:crypto';
 import { CURRENT_BOOKING_TERMS_VERSION, UserRole } from '@ouiboo/types';
 import { DatabaseService } from '../database/database.service';
@@ -6,19 +7,29 @@ import { CreateBookingDto, PaymentMethodEnum } from './dto/create-booking.dto';
 import { EmailService } from '../email/email.service';
 import { UploadService } from '../upload/upload.service';
 import { BookingPaymentPlanStatus, BookingPaymentStatus, ExternalPaymentStage, PaymentCustodian, PaymentLedgerSource, PaymentMethod, SessionGroupStatus } from '@ouiboo/database';
-import { BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT, mapBookingDetails } from './booking-response.util';
+import { BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT, mapBookingDetails, normalizeBookingMeetingPoint } from './booking-response.util';
 import { resolvePaymentProofDownloadUrl } from './payment-proof-url.util';
 import { Prisma } from '@ouiboo/database';
 import { decimalEqualsMoney, multiplyMoney, toMoneyDecimal, toMoneyString } from '../common/money.util';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
 import { isInsuranceVerified, isLicenceVerified } from '../common/agency-licence.util';
+import { isAgencySubscriptionValid } from '../common/agency-booking-eligibility.util';
 import { isCatalogCurrencyAllowed } from '../common/catalog-currency.util';
 import {
     buildCancellationScaleSnapshot,
 } from '../cancellation/cancellation.util';
+import { resolvePricingSelection, type PricingSelectionResult, type VariantForPricing } from '../trips/pricing-selection.util';
+import { MAX_GROUP_DEPOSIT_PERCENT } from '../staged-payments/staged-payments.util';
+import { payOnArrivalBookingError, resolvePayLaterDeadline, type PickupPoint } from '../trips/batch-f.util';
 
 const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
+
+// #689 (Council S6): Booking Pass token purpose — a pass token is a
+// bearer artefact for ONE booking, verified only inside an
+// authenticated agency session; it is never a public URL credential
+// for traveller data (contrast the upload file token, #391).
+export const BOOKING_PASS_TOKEN_PURPOSE = 'ouiboo-booking-pass';
 
 // The include shape create() builds its response from, shared with the
 // #494 idempotency replay lookup so a replayed response is built from
@@ -60,6 +71,14 @@ export function bookingIdempotencyPayloadHash(dto: CreateBookingDto): string {
         paymentMethod: dto.paymentMethod ?? null,
         termsVersion: dto.termsVersion ?? null,
         locale: dto.locale ?? null,
+        // #695: the pricing selection defines WHAT was booked too.
+        variantId: dto.variantId ?? null,
+        addOns: (dto.addOns ?? []).map((a) => ({ addOnId: a.addOnId, quantity: a.quantity ?? 1 })),
+        // Batch F: payment-shape elections + pickup choice are part of
+        // WHAT was booked (#694 private is session-derived, not client).
+        payLater: dto.payLater ?? null,
+        payOnArrival: dto.payOnArrival ?? null,
+        pickupPointId: dto.pickupPointId ?? null,
     });
     return createHash('sha256').update(canonical).digest('hex');
 }
@@ -128,6 +147,8 @@ function isIdempotencyUniqueViolation(error: unknown): boolean {
 
 @Injectable()
 export class BookingsService {
+    private passJwtService?: JwtService;
+
     constructor(
         private db: DatabaseService,
         private emailService: EmailService,
@@ -135,6 +156,23 @@ export class BookingsService {
         private externalPaymentsService: ExternalPaymentsService,
         private stagedPaymentsService: StagedPaymentsService,
     ) { }
+
+    /**
+     * #689: pass tokens are signed with the platform JWT secret (the
+     * same secret AuthModule requires at boot — no fallback secret is
+     * ever invented here). Constructed lazily so the service's existing
+     * constructor contract (and its unit specs) stay unchanged.
+     */
+    private getPassJwt(): JwtService {
+        if (!this.passJwtService) {
+            const secret = process.env.JWT_SECRET;
+            if (!secret) {
+                throw new Error('JWT_SECRET is required');
+            }
+            this.passJwtService = new JwtService({ secret });
+        }
+        return this.passJwtService;
+    }
 
     async create(travelerId: string, dto: CreateBookingDto, rawIdempotencyKey?: string) {
         // #494 (Council Session #2, B16): idempotent creation — one
@@ -200,11 +238,11 @@ export class BookingsService {
 
         const now = new Date();
         const agency = session.template.agency;
-        const subscriptionValid = agency.subscriptionStatus === 'ACTIVE'
-            ? !agency.subscriptionEndsAt || agency.subscriptionEndsAt > now
-            : agency.subscriptionStatus === 'TRIAL'
-                && !!agency.trialEndsAt
-                && agency.trialEndsAt > now;
+        // #728: the subscription leg of the shared booking-eligibility
+        // definition — public discovery filters on the same predicate
+        // (agency-booking-eligibility.util), so a trip the catalogue
+        // advertises can never dead-end here on eligibility grounds.
+        const subscriptionValid = isAgencySubscriptionValid(agency, now);
 
         if (session.template.status !== 'ACTIVE'
             || session.status !== 'OPEN'
@@ -242,8 +280,16 @@ export class BookingsService {
             throw new BadRequestException('This payment method is not available');
         }
 
+        // #694 (Council S6): a PRIVATE session is priced per-group and
+        // booked exclusively — the min-group staged branch (and its
+        // PENDING_MINIMUM state) NEVER applies to it.
+        const isPrivateSession = (session as any).sessionKind === 'PRIVATE';
+        if (isPrivateSession && dto.guestsCount > session.totalSeats) {
+            throw new BadRequestException('A private booking cannot exceed the departure size');
+        }
+
         // #369 staged payments: minimum-group trips collect a deposit first.
-        const staged = this.stagedPaymentsService.isStagedSession(session);
+        const staged = isPrivateSession ? false : this.stagedPaymentsService.isStagedSession(session);
         if (staged) {
             if (session.groupStatus === SessionGroupStatus.NOT_CONFIRMED) {
                 throw new BadRequestException('This trip was not confirmed because the minimum group size was not reached');
@@ -261,20 +307,110 @@ export class BookingsService {
             }
         }
 
+        // #695 (Council S6): resolve the traveller's pricing selection
+        // (variant + add-ons) from the agency's STORED prices — client
+        // input carries ids/quantities only. Rows must belong to the
+        // booked trip; anything else is rejected. The resolved total
+        // replaces the plain session-price total everywhere downstream
+        // (staged plan, deposit cap, cancellation snapshot, refunds).
+        let pricing: PricingSelectionResult | null = null;
+        if (dto.variantId || (dto.addOns?.length ?? 0) > 0) {
+            let variant: VariantForPricing | null = null;
+            if (dto.variantId) {
+                variant = await this.db.tripPricingVariant.findFirst({
+                    where: { id: dto.variantId, templateId: session.templateId },
+                });
+                if (!variant) {
+                    throw new BadRequestException('The selected pricing option is not available for this trip');
+                }
+            }
+            const addOnRows: Array<{ addOn: NonNullable<Awaited<ReturnType<typeof this.db.tripAddOn.findFirst>>>; quantity: number }> = [];
+            for (const selection of dto.addOns ?? []) {
+                const addOn = await this.db.tripAddOn.findFirst({
+                    where: { id: selection.addOnId, templateId: session.templateId },
+                });
+                if (!addOn) {
+                    throw new BadRequestException('A selected add-on is not available for this trip');
+                }
+                addOnRows.push({ addOn, quantity: selection.quantity ?? 1 });
+            }
+            pricing = resolvePricingSelection({
+                sessionPrice: session.price,
+                currency: session.currency || 'MAD',
+                guestsCount: dto.guestsCount,
+                variant,
+                addOns: addOnRows,
+            });
+        }
+
+        // Batch F payment-shape elections, validated against the
+        // session/template facts + the FINAL total (variant/add-ons
+        // included) before any seat moves.
+        const totalPreview = pricing
+            ? pricing.totalAmount
+            : isPrivateSession
+                ? session.price
+                : multiplyMoney(session.price, dto.guestsCount);
+        let payOnArrival = false;
+        if (dto.payOnArrival) {
+            const error = payOnArrivalBookingError({
+                payOnArrivalEnabled: (session.template as any).payOnArrivalEnabled ?? false,
+                durationDays: session.template.durationDays,
+                sessionMinBookings: session.minBookings ?? 1,
+                totalAmount: Number(totalPreview),
+            });
+            if (error) throw new BadRequestException(error);
+            payOnArrival = true;
+        }
+        let payLaterDeadline: Date | null = null;
+        if (dto.payLater) {
+            if (payOnArrival) {
+                throw new BadRequestException('Choose either pay-on-arrival or reserve-now-pay-later, not both');
+            }
+            payLaterDeadline = resolvePayLaterDeadline({
+                requested: true,
+                allowPayLater: (session as any).allowPayLater ?? false,
+                payLaterHoldHours: (session as any).payLaterHoldHours ?? null,
+                sessionStart: session.startDate,
+                now,
+            });
+            if (!payLaterDeadline) {
+                throw new BadRequestException('This session does not offer reserve-now-pay-later');
+            }
+        }
+        let pickupPointSnapshot: PickupPoint | null = null;
+        if (dto.pickupPointId) {
+            const points = (((session.template as any).pickupPoints ?? []) as PickupPoint[]);
+            const found = points.find((point) => point.id === dto.pickupPointId);
+            if (!found) {
+                throw new BadRequestException('The selected pickup point is not available for this trip');
+            }
+            pickupPointSnapshot = found;
+        }
+
         const runCreateTransaction = () => this.db.$transaction(async (tx) => {
 
             // 2. Atomic update to reserve seats (Concurrent Safe)
             // returning count helps know if it succeeded
+            // #694: a private booking takes the WHOLE departure — the
+            // claim requires every seat still free and consumes them all.
             const result = await tx.tripSession.updateMany({
-                where: {
-                    id: dto.sessionId,
-                    status: 'OPEN',
-                    startDate: { gt: now },
-                    availableSeats: { gte: dto.guestsCount }
-                },
+                where: isPrivateSession
+                    ? {
+                        id: dto.sessionId,
+                        status: 'OPEN',
+                        startDate: { gt: now },
+                        availableSeats: session.totalSeats,
+                    }
+                    : {
+                        id: dto.sessionId,
+                        status: 'OPEN',
+                        startDate: { gt: now },
+                        availableSeats: { gte: dto.guestsCount }
+                    },
                 data: {
                     availableSeats: {
-                        decrement: dto.guestsCount,
+                        decrement: isPrivateSession ? session.totalSeats : dto.guestsCount,
                     },
                 },
             });
@@ -317,7 +453,13 @@ export class BookingsService {
               ? paymentMethodMap[dto.paymentMethod]
               : PaymentMethod.MANUAL;
 
-            const totalAmount = multiplyMoney(sessionWithInfo.price, dto.guestsCount);
+            // #694: a private session's price is PER-GROUP — the total
+            // is the session price itself, never price × guests.
+            const totalAmount = pricing
+                ? pricing.totalAmount
+                : isPrivateSession
+                    ? sessionWithInfo.price
+                    : multiplyMoney(sessionWithInfo.price, dto.guestsCount);
 
             // #417 (Council P0-11): snapshot the trip's resolved
             // cancellation scale onto the booking, so later template
@@ -337,6 +479,18 @@ export class BookingsService {
                     travelerId,
                     guestsCount: dto.guestsCount,
                     totalAmount,
+                    // #695: immutable pricing-selection snapshot.
+                    pricingSelection: pricing ? (pricing.snapshot as unknown as Prisma.InputJsonValue) : undefined,
+                    // Batch F snapshots: private nature (#694), the
+                    // pay-later hold deadline (#696), pay-on-arrival
+                    // (#697) and the chosen pickup point (#701).
+                    isPrivateSession,
+                    payLaterDeadline,
+                    payOnArrival,
+                    pickupPointId: dto.pickupPointId ?? null,
+                    pickupPointSnapshot: pickupPointSnapshot
+                        ? (pickupPointSnapshot as unknown as Prisma.InputJsonValue)
+                        : undefined,
                     cancellationScale: cancellationScale as unknown as Prisma.InputJsonValue,
                     currency: sessionWithInfo.currency || 'MAD',
                     status: 'PENDING',
@@ -390,12 +544,20 @@ export class BookingsService {
             // #369: snapshot the staged payment plan (deposit/balance split,
             // minimum, deadline) for minimum-group sessions.
             if (staged) {
+                // #695: the deposit cap applies to the FINAL total
+                // (variant + add-ons included): a cheaper variant can
+                // never leave the per-seat deposit above 30% of what
+                // the traveller actually owes.
+                const depositCap = pricing
+                    ? totalAmount.mul(MAX_GROUP_DEPOSIT_PERCENT).div(100).toDecimalPlaces(2)
+                    : null;
                 const plan = await this.stagedPaymentsService.createPlanInTransaction(tx, {
                     bookingId: booking.id,
                     agencyId: session.template.agencyId,
                     guestsCount: dto.guestsCount,
                     totalAmount,
                     session,
+                    ...(depositCap ? { depositAmountCap: depositCap } : {}),
                 });
                 booking.paymentPlan = plan as typeof booking.paymentPlan;
             }
@@ -908,6 +1070,36 @@ export class BookingsService {
         return { booking, paymentProof, paymentProofId };
     }
 
+    /**
+     * #697 (Council S6): agency confirmation of a pay-on-arrival
+     * booking. Confirmation moves NO money — the traveller pays the
+     * agency on site; the booking simply becomes CONFIRMED with its
+     * payment still UNPAID (payOnArrival flag carries the terms).
+     */
+    async confirmPayOnArrival(bookingId: string, tenantId: string) {
+        const booking = await this.db.booking.findUnique({
+            where: { id: bookingId },
+            include: { session: { include: { template: true } } },
+        });
+        if (!booking) throw new BadRequestException('Booking not found');
+        const agency = await this.db.agencyProfile.findUnique({ where: { id: tenantId } });
+        if (!agency || booking.session.template.agencyId !== agency.id) {
+            throw new ForbiddenException('Forbidden');
+        }
+        if (!(booking as any).payOnArrival) {
+            throw new BadRequestException('This booking is not a pay-on-arrival booking');
+        }
+        if (booking.status !== 'PENDING' && booking.status !== 'AWAITING_VALIDATION') {
+            throw new BadRequestException('This booking can no longer be confirmed');
+        }
+        const updated = await this.db.booking.update({
+            where: { id: bookingId },
+            data: { status: 'CONFIRMED', confirmedAt: new Date() },
+            include: BOOKING_RESPONSE_INCLUDE,
+        });
+        return mapBookingDetails(updated as never);
+    }
+
     async verifyPayment(bookingId: string, tenantId: string, approved: boolean, rejectionReason?: string) {
         if (typeof approved !== 'boolean') {
             throw new BadRequestException('approved must be a boolean');
@@ -1213,6 +1405,231 @@ export class BookingsService {
                     targetType: 'Booking',
                     targetId: bookingId,
                     metadata: { attendance: outcome, agencyId: agency.id },
+                },
+            })
+            .catch((err: unknown) => console.error('Audit log failed', err));
+
+        return this.db.booking.findUniqueOrThrow({ where: { id: bookingId } });
+    }
+
+    /**
+     * #689 (Council S6): the Booking Pass. Issued only when the AGENCY
+     * has confirmed receipt of the deposit — i.e. a bank-confirmed
+     * ExternalPayment exists for the deposit (or full) stage, the same
+     * fact that settles the booking (#422). An accepted proof image
+     * alone never issues a pass: acceptance is not settlement.
+     *
+     * The pass is the receipt: seller legal name, MAD amounts, the
+     * exact meeting point (unlocked here, as on the booking view), and
+     * the signed QR token. It states — in the traveller UI's copy —
+     * that the payment was made to the agency and Ouiboo holds no
+     * funds; the payload itself never claims a platform guarantee.
+     */
+    async getBookingPass(bookingId: string, userId: string, role?: string) {
+        const booking = await this.db.booking.findUnique({
+            where: { id: bookingId },
+            include: {
+                session: { include: { template: { include: { agency: true } } } },
+                paymentPlan: true,
+                externalPayments: {
+                    select: { ...BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT },
+                },
+            },
+        });
+        if (!booking) throw new BadRequestException('Booking not found');
+
+        const agencyProfile = await this.db.agencyProfile.findUnique({ where: { userId } });
+        const isTraveler = booking.travelerId === userId;
+        const isAgencyOwner = Boolean(agencyProfile) && booking.session.template.agencyId === agencyProfile!.id;
+        const isAdmin = role === UserRole.Admin;
+        if (!isTraveler && !isAgencyOwner && !isAdmin) {
+            throw new ForbiddenException('Forbidden');
+        }
+
+        if (booking.status === 'CANCELLED' || booking.status === 'NO_SHOW') {
+            throw new BadRequestException('This booking is no longer valid, so no pass can be issued');
+        }
+
+        const confirmedPayments = (booking.externalPayments ?? []).filter(
+            (payment: any) => payment?.bankConfirmedAt,
+        );
+        if (!confirmedPayments.length) {
+            throw new BadRequestException(
+                'The Booking Pass is issued once the agency confirms receipt of your deposit',
+            );
+        }
+
+        const plan = booking.paymentPlan;
+        // Total the agency has bank-confirmed across stages (deposit,
+        // then balance) — money received by the AGENCY, never Ouiboo.
+        const depositConfirmedAmount = confirmedPayments
+            .reduce((sum: any, payment: any) => sum.plus(payment.confirmedAmount ?? 0), toMoneyDecimal(0 as never, 'amount'))
+            .toFixed(2);
+        const balanceAmount = plan
+            ? (plan.status === BookingPaymentPlanStatus.FULLY_PAID
+                ? '0.00'
+                : toMoneyString(plan.balanceAmount as never))
+            : '0.00';
+
+        // The token stays valid through the trip plus a check-in grace
+        // window; it is bound to this booking and this traveller, and it
+        // verifies ONLY inside an authenticated agency session.
+        const expiresAt = new Date(booking.session.endDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const expiresIn = Math.max(60, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
+        const token = await this.getPassJwt().signAsync(
+            { purpose: BOOKING_PASS_TOKEN_PURPOSE, bookingId: booking.id, travelerId: booking.travelerId },
+            { expiresIn },
+        );
+
+        const agency = booking.session.template.agency;
+        return {
+            bookingId: booking.id,
+            status: booking.status,
+            issuedAt: new Date().toISOString(),
+            token,
+            seller: {
+                agencyId: agency?.id ?? booking.session.template.agencyId,
+                legalName: agency?.legalName ?? null,
+                companyName: agency?.companyName ?? '',
+            },
+            tripTitle: booking.session.template.title,
+            startDate: booking.session.startDate.toISOString(),
+            endDate: booking.session.endDate.toISOString(),
+            guestsCount: booking.guestsCount,
+            currency: booking.currency,
+            totalAmount: toMoneyString(booking.totalAmount as never) ?? '0.00',
+            depositConfirmedAmount,
+            balanceAmount,
+            meetingPoint: normalizeBookingMeetingPoint(booking.session.template.meetingPoint),
+            attendance: booking.attendance ?? null,
+            passCheckInAt: booking.passCheckInAt ? booking.passCheckInAt.toISOString() : null,
+        };
+    }
+
+    /**
+     * #689 + #693: agency-authenticated pass verification. The caller
+     * is resolved from the agency JWT + tenant (controller guards);
+     * the token alone — an unauthenticated scan — verifies nothing and
+     * there is deliberately no public verify route. A successful scan
+     * at/after the trip start stamps `passCheckInAt`: the second,
+     * independent attendance signal next to the agency's own record.
+     * Verifying another agency's pass is refused, as is a pass for a
+     * cancelled booking.
+     */
+    async verifyBookingPass(token: string, tenantId: string, actorUserId: string) {
+        if (!token || typeof token !== 'string') {
+            throw new BadRequestException('A booking pass token is required');
+        }
+        let payload: { purpose?: unknown; bookingId?: unknown };
+        try {
+            payload = await this.getPassJwt().verifyAsync(token);
+        } catch {
+            throw new UnauthorizedException('Invalid or expired booking pass');
+        }
+        if (payload?.purpose !== BOOKING_PASS_TOKEN_PURPOSE || typeof payload?.bookingId !== 'string') {
+            throw new UnauthorizedException('Invalid booking pass');
+        }
+
+        const booking = await this.db.booking.findUnique({
+            where: { id: payload.bookingId },
+            include: { session: { include: { template: true } } },
+        });
+        if (!booking) throw new BadRequestException('Booking not found');
+
+        const agency = await this.db.agencyProfile.findUnique({ where: { id: tenantId } });
+        if (!agency || booking.session.template.agencyId !== agency.id) {
+            throw new ForbiddenException('This pass belongs to another agency');
+        }
+
+        if (booking.status === 'CANCELLED' || booking.status === 'NO_SHOW') {
+            return {
+                valid: false,
+                reason: 'BOOKING_NOT_ACTIVE',
+                bookingId: booking.id,
+                status: booking.status,
+            };
+        }
+
+        let checkInAt = booking.passCheckInAt ?? null;
+        if (!checkInAt && booking.session.startDate <= new Date()) {
+            const claimed = await this.db.booking.updateMany({
+                where: { id: booking.id, passCheckInAt: null },
+                data: { passCheckInAt: new Date() },
+            });
+            if (claimed.count === 1) {
+                checkInAt = new Date();
+                await this.db.auditLog
+                    .create({
+                        data: {
+                            actorId: actorUserId ?? null,
+                            action: 'BOOKING_PASS_CHECK_IN',
+                            targetType: 'Booking',
+                            targetId: booking.id,
+                            metadata: { agencyId: agency.id },
+                        },
+                    })
+                    .catch((err: unknown) => console.error('Audit log failed', err));
+            }
+        }
+
+        return {
+            valid: true,
+            bookingId: booking.id,
+            status: booking.status,
+            travelerName: booking.fullName ?? null,
+            guestsCount: booking.guestsCount,
+            tripTitle: booking.session.template.title,
+            startDate: booking.session.startDate.toISOString(),
+            endDate: booking.session.endDate.toISOString(),
+            attendance: booking.attendance ?? null,
+            passCheckInAt: checkInAt ? new Date(checkInAt).toISOString() : null,
+        };
+    }
+
+    /**
+     * #693 (Council S6): the traveller disputes the agency-recorded
+     * attendance. The dispute is stamped on the booking (reason +
+     * timestamp) and audited; the recorded outcome itself is NOT
+     * rewritten by the dispute — resolution happens under the
+     * published review-moderation rules (help surface), so neither
+     * party can silently flip the review-eligibility fact.
+     */
+    async disputeAttendance(bookingId: string, userId: string, reason: string) {
+        const trimmed = typeof reason === 'string' ? reason.trim() : '';
+        if (!trimmed) {
+            throw new BadRequestException('A reason is required to dispute the attendance record');
+        }
+        if (trimmed.length > 1000) {
+            throw new BadRequestException('The dispute reason is too long');
+        }
+        const booking = await this.db.booking.findUnique({ where: { id: bookingId } });
+        if (!booking) throw new BadRequestException('Booking not found');
+        if (booking.travelerId !== userId) {
+            throw new ForbiddenException('Forbidden');
+        }
+        if (!booking.attendance) {
+            throw new BadRequestException('No attendance has been recorded for this booking yet');
+        }
+        if (booking.attendanceDisputedAt) {
+            throw new ConflictException('This attendance record has already been disputed');
+        }
+
+        const claimed = await this.db.booking.updateMany({
+            where: { id: bookingId, attendanceDisputedAt: null },
+            data: { attendanceDisputedAt: new Date(), attendanceDisputeReason: trimmed },
+        });
+        if (claimed.count !== 1) {
+            throw new ConflictException('This attendance record has already been disputed');
+        }
+
+        await this.db.auditLog
+            .create({
+                data: {
+                    actorId: userId,
+                    action: 'BOOKING_ATTENDANCE_DISPUTED',
+                    targetType: 'Booking',
+                    targetId: bookingId,
+                    metadata: { attendance: booking.attendance, reason: trimmed },
                 },
             })
             .catch((err: unknown) => console.error('Audit log failed', err));

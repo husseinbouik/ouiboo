@@ -74,7 +74,7 @@
     },
     "feature2": {
       "title": "Know Who Sells Your Trip",
-      "description": "Licence number provided by the agency — not independently verified by Ouiboo."
+      "description": "Every agency's licence and insurance are checked by Ouiboo before it can publish. Its trip and agency pages show the licence status, expiry date and verification date, and the insurance verification date."
     },
     "feature3": {
       "title": "Save Time & Effort",
@@ -101,9 +101,48 @@
       "title": "Reach New Travelers",
       "description": "Present your trips to travelers actively looking for experiences like yours."
     },
+    "offerTitle": "The beta offer for agencies",
+    "offer1": {
+      "title": "Checked before listing",
+      "description": "Your travel licence and RC insurance are checked before any of your trips can be listed — the same gate for every agency."
+    },
+    "offer2": {
+      "title": "We build your first listings with you",
+      "description": "OuiBoo prepares your first listings together with you — and you approve every one before it goes live."
+    },
+    "offer3": {
+      "title": "We answer travellers’ platform questions",
+      "description": "OuiBoo handles platform and booking questions in French, Arabic and English at published hours. You keep trip logistics — and during a trip, travellers reach your emergency contact first."
+    },
     "cta": {
       "registerAgency": "Register Agency",
       "alreadyPartner": "Already a partner? Log in"
+    }
+  },
+  "modelFaq": {
+    "title": "How Ouiboo works",
+    "intro": "Ouiboo is the technology that connects you with travel agencies. Ouiboo does not sell trips, and you always pay the agency directly — Ouiboo never holds your money.",
+    "items": {
+      "whoSells": {
+        "question": "Who sells my trip?",
+        "answer": "The agency sells and organises your trip. Ouiboo provides the technology for finding, booking and managing it."
+      },
+      "payDirect": {
+        "question": "Who do I pay?",
+        "answer": "You pay the agency directly — never Ouiboo. Ouiboo never holds your money."
+      },
+      "stagedPayments": {
+        "question": "How do payments work?",
+        "answer": "For group trips, you pay a deposit of at most 30% directly to the agency. The balance is only requested after the group minimum is confirmed. If the minimum is not reached, the agency refunds your deposit."
+      },
+      "refunds": {
+        "question": "Who refunds me?",
+        "answer": "The agency that sold you the trip is responsible for refunds — it is the refund obligor. Ouiboo helps you follow the case and monitors the deadlines, but the refund itself is paid by the agency."
+      },
+      "verification": {
+        "question": "How are agencies checked?",
+        "answer": "Before an agency can publish trips, its travel licence and insurance are checked. Each agency and trip page shows the licence status, its expiry date and the date it was verified, and the date its insurance was verified."
+      }
     }
   },
   "principles": {
@@ -217,7 +256,8 @@
     "globalNavigationLabel": "Global",
     "openMainMenu": "Open main menu",
     "closeMenu": "Close menu",
-    "dashboardImageAlt": "Ouiboo Dashboard",
+    "heroTravelerAlt": "Ouiboo traveller app — Atlas Mountains trip page",
+    "heroAgencyAlt": "Ouiboo agency dashboard — bookings and payments overview",
     "travelerImageAlt": "Traveler enjoying a mountainous view",
     "agencyImageAlt": "Agency dashboard on a laptop"
   },
@@ -265,7 +305,495 @@
     "continueWithoutAnalytics": "Continue without analytics",
     "allowAnalytics": "Allow analytics"
   },
+  "guides": {
+    "bookingsNotOpen": "Bookings are not open yet.",
+    "waitlistCta": "Explore showcase trips",
+    "waitlistNote": "OuiBoo is running a closed beta — bookings are not open yet and no trips are sold from this page. See the showcase on the homepage for a look at the trips the founding agencies will publish.",
+    "faqTitle": "Travellers ask",
+    "highlightsTitle": "What to see",
+    "verificationLink": "How agency verification works on OuiBoo",
+    "footerGuides": "Northern Morocco guides",
+    "tangier": {
+      "name": "Tangier",
+      "title": "Tangier travel guide",
+      "description": "What to see and do in Tangier, Morocco — the medina, the Kasbah, Cap Spartel and the meeting of two seas. Bookings are not open yet; join the waitlist.",
+      "intro": "Tangier sits where the Mediterranean meets the Atlantic: a port city of whitewashed medina lanes, café terraces and sea views in every direction. This guide covers the places travellers ask about most, in roughly the order you might walk them.",
+      "highlights": [
+        {
+          "title": "The Kasbah and the medina",
+          "text": "Start at the Kasbah quarter for the views over the strait, then walk down through the medina lanes toward the Grand Socco — the square that joins the old town to the new."
+        },
+        {
+          "title": "Cap Spartel and the Caves of Hercules",
+          "text": "West of the city, the lighthouse at Cap Spartel marks the meeting of the two seas; the Caves of Hercules sit just below it on the Atlantic side."
+        },
+        {
+          "title": "Cafés and the corniche",
+          "text": "Tangier café culture is part of the visit: mint tea on a terrace, then a walk along the corniche as the light changes over the bay."
+        }
+      ],
+      "worldCup": {
+        "title": "Tangier and the 2030 World Cup",
+        "text": "Tangier is one of the Moroccan host cities for the 2030 FIFA World Cup, with matches planned at the Grand Stade de Tanger (Ibn Batouta Stadium). This page will grow as the tournament approaches — what to see between matches and how the city prepares. Join the waitlist for updates."
+      },
+      "faq": [
+        {
+          "q": "When is the best time to visit Tangier?",
+          "a": "Spring and autumn bring mild weather for walking the medina and the coast. Summer is warm and busy; winter is quieter and can be windy on the strait."
+        },
+        {
+          "q": "How do I get to Tangier?",
+          "a": "Tangier has an international airport (Ibn Battouta), a ferry port with links to Spain, and Al Boraq high-speed trains to Rabat and Casablanca from Tanger Ville station."
+        },
+        {
+          "q": "Can I book trips in Tangier on OuiBoo yet?",
+          "a": "Not yet. Bookings are not open while OuiBoo runs its closed beta. Join the waitlist and we will email you when bookings open."
+        }
+      ]
+    },
+    "tetouan": {
+      "name": "Tétouan",
+      "title": "Tétouan travel guide",
+      "description": "What to see and do in Tétouan, Morocco — the UNESCO-listed medina, the Ensanche and a centre for traditional crafts. Bookings are not open yet; join the waitlist.",
+      "intro": "Tétouan, between the Rif mountains and the Mediterranean, is known for its Andalusian heritage — its medina is a UNESCO World Heritage site — and for a slower pace than its larger neighbour, Tangier.",
+      "highlights": [
+        {
+          "title": "The medina (UNESCO)",
+          "text": "One of Morocco’s most complete medinas, shaped by Andalusian refugees from Spain: white lanes, small squares and artisan workshops — still a working town rather than a museum."
+        },
+        {
+          "title": "The Ensanche and Feddan square",
+          "text": "The Spanish-era new town next door: regular boulevards, the royal palace square (Feddan) and café terraces facing the mountains."
+        },
+        {
+          "title": "Artisans and markets",
+          "text": "Tétouan is a centre for traditional crafts — weaving, pottery and painting — with workshops concentrated around the medina gates."
+        }
+      ],
+      "faq": [
+        {
+          "q": "When is the best time to visit Tétouan?",
+          "a": "Spring and early autumn suit the medina lanes best. The nearby coast (Martil, M’diq) is busiest in summer."
+        },
+        {
+          "q": "How do I get to Tétouan?",
+          "a": "Tétouan is about an hour by road from Tangier. Buses and shared taxis link it with Tangier and Chefchaouen; the nearest airports are in Tangier and Tétouan itself."
+        },
+        {
+          "q": "Can I book trips in Tétouan on OuiBoo yet?",
+          "a": "Not yet. Bookings are not open while OuiBoo runs its closed beta. Join the waitlist and we will email you when bookings open."
+        }
+      ]
+    },
+    "chefchaouen": {
+      "name": "Chefchaouen",
+      "title": "Chefchaouen travel guide",
+      "description": "What to see and do in Chefchaouen, Morocco — the blue medina, Ras El Maa and the Rif mountains. Bookings are not open yet; join the waitlist.",
+      "intro": "Chefchaouen, in the Rif mountains, is the blue-washed mountain town travellers photograph from its kasbah and lanes — and also a working town of weavers, markets and trailheads into the Rif.",
+      "highlights": [
+        {
+          "title": "The blue medina",
+          "text": "The old town’s blue-washed lanes climb from Place Uta el-Hammam, the main square, with the kasbah and the Grand Mosque."
+        },
+        {
+          "title": "Ras El Maa and the Spanish Mosque",
+          "text": "Walk up to Ras El Maa, where the town’s water arrives, and continue to the Spanish Mosque on the hill for the classic view back over the blue town at sunset."
+        },
+        {
+          "title": "Into the Rif",
+          "text": "Chefchaouen is the usual base for Rif mountain walks; the waterfalls and pools of Akchour are the best-known day out, reached by shared taxi."
+        }
+      ],
+      "faq": [
+        {
+          "q": "Why is Chefchaouen blue?",
+          "a": "By most accounts the blue wash began in the town’s Jewish quarter in the 1930s, and residents kept repainting the lanes blue; the town itself now maintains the tradition."
+        },
+        {
+          "q": "How do I get to Chefchaouen?",
+          "a": "Chefchaouen has no train station or airport: most travellers arrive by bus or shared taxi from Tangier or Tétouan — roughly two hours from Tangier."
+        },
+        {
+          "q": "Can I book trips in Chefchaouen on OuiBoo yet?",
+          "a": "Not yet. Bookings are not open while OuiBoo runs its closed beta. Join the waitlist and we will email you when bookings open."
+        }
+      ]
+    },
+    "verification": {
+      "title": "How agency verification works",
+      "description": "The checks an agency passes before it can publish trips on OuiBoo: travel licence, civil-liability insurance and seller identity — and what verification does not claim.",
+      "intro": "OuiBoo is a technology platform: agencies sell their own trips, and travellers pay the agency directly. Before an agency can publish trips on OuiBoo, it passes a verification gate. This page explains what is checked — and what verification does not claim.",
+      "stepsTitle": "The checks",
+      "steps": [
+        {
+          "title": "Travel licence",
+          "text": "The agency submits its Law 11-16 travel licence (organiser-distributor — ODV — for agencies that organise trips). The licence number, issue date and issuing authority are recorded, and the licence document is checked against the issuing authority’s list where one is available."
+        },
+        {
+          "title": "Civil-liability insurance",
+          "text": "The agency’s RC (responsabilité civile) insurance certificate is recorded — insurer, policy number and validity dates — and must be in force for trips to publish."
+        },
+        {
+          "title": "Seller identity",
+          "text": "The agency’s legal name, registration and address are recorded, so the seller of record shown to travellers is the real business behind the listing."
+        },
+        {
+          "title": "Expiry is enforced",
+          "text": "When a licence or insurance policy expires or fails verification, the agency’s listings pause automatically — there is no grace period."
+        }
+      ],
+      "datedLine": "This page describes the verification gate as it runs on 30 October 2026. Verification states what was checked and when; it is not a guarantee of any trip’s outcome.",
+      "faq": [
+        {
+          "q": "Does verification mean OuiBoo guarantees my trip?",
+          "a": "No. OuiBoo provides the technology; the agency is the seller of the trip and is responsible for delivering it. Verification covers the licence, insurance and identity records described on this page."
+        },
+        {
+          "q": "Can I book a trip now?",
+          "a": "Not yet — bookings are not open during the closed beta. Join the waitlist to be told when they open."
+        }
+      ]
+    },
+    "layerB": {
+      "liveInventoryTitle": "Trips in {{city}}",
+      "tripCount": "{{count}} trip(s) from verified agencies",
+      "agencyCount": "{{count}} verified agency(ies)",
+      "reviewAggregate": "{{rating}} average from {{count}} verified reviews",
+      "reviewsCount": "{{count}} verified review(s)",
+      "viewTrip": "View trip",
+      "fromPrice": "From",
+      "categoryTitle": "{{category}} in {{city}}",
+      "backToCity": "All trips in {{city}}",
+      "categoryNames": {
+        "ADVENTURE": "Adventure",
+        "CULTURAL": "Culture",
+        "LUXURY": "Luxury",
+        "BUDGET": "Budget",
+        "NATURE": "Nature"
+      },
+      "freeCancellation": "Free cancellation up to {{days}} days before"
+    }
+  },
   "beta": {
     "explainer": "Closed beta — invited travellers only; you always pay the agency directly."
+  },
+  "hw": {
+    "nav": {
+      "guides": "Guides",
+      "faq": "FAQ",
+      "login": "Log in",
+      "signup": "Sign up"
+    },
+    "hero": {
+      "statusPill": "Closed beta · Showcase only — no bookings or payments on Ouiboo yet",
+      "titleA": "Morocco is yours",
+      "titleB": "to explore.",
+      "subline": "Trips run by Morocco's own agencies — each one checked before it appears here.",
+      "ctaSignup": "Sign up free",
+      "ctaExplore": "Explore showcase trips",
+      "agencyLink": "Are you an agency? Join the free beta",
+      "trustLine": "Every agency is checked before it appears here — licence, insurance, identity.",
+      "photoCredit": "Trip photo — Atlas Adventures SARL · Chefchaouen",
+      "heroAlt": "Panorama of Chefchaouen's blue-washed houses in the Rif Mountains"
+    },
+    "showcase": {
+      "eyebrow": "Showcase",
+      "title": "Real trips, from real agencies",
+      "intro": "A first look at the kind of trips the founding agencies will publish — checked documents, named organisers, no anonymous listings.",
+      "noteLead": "Showcase only.",
+      "note": "Bookings open with the founding beta cohort — no prices or dates are shown until they can actually be booked.",
+      "viewTrip": "View trip details",
+      "organiser": "Organiser",
+      "checkLine": "Licence checked 30 Oct 2026 · RC insurance valid to 31 Dec 2027",
+      "cards": {
+        "chefchaouen": {
+          "dest": "Chefchaouen · The Blue Pearl",
+          "title": "Blue Pearl Photography Tour",
+          "tags": [
+            "2 days · 1 night",
+            "Photography",
+            "Cultural"
+          ],
+          "city": "Chefchaouen",
+          "imgAlt": "Blue-painted courtyard in Chefchaouen's medina"
+        },
+        "merzouga": {
+          "dest": "Merzouga · Erg Chebbi",
+          "title": "Merzouga Camel Trek & Night in the Dunes",
+          "tags": [
+            "2 days · 1 night",
+            "Camel trek",
+            "Adventure"
+          ],
+          "city": "Merzouga",
+          "imgAlt": "Camel caravan crossing the Erg Chebbi dunes at Merzouga"
+        },
+        "atlas": {
+          "dest": "Imlil · High Atlas",
+          "title": "Atlas Mountains Trek: Imlil & Berber Villages",
+          "tags": [
+            "4 days · 3 nights",
+            "Mountain trek",
+            "Adventure"
+          ],
+          "city": "Imlil",
+          "imgAlt": "Green Imlil valley beneath the snow-capped High Atlas"
+        }
+      },
+      "guidesLabel": "Explore Morocco — start with our city guides:",
+      "guidesCta": "Explore the guides",
+      "verifyLink": "How we verify agencies"
+    },
+    "how": {
+      "eyebrow": "How it works",
+      "title": "Checked agencies. Direct payment. Clear rules.",
+      "intro": "Ouiboo is the technology between you and local agencies — never a middleman holding your money.",
+      "steps": {
+        "step1": {
+          "title": "Choose a trip from a checked agency",
+          "text": "Every trip belongs to a named agency whose tourism licence and insurance Ouiboo has checked — with the dates shown, never hidden."
+        },
+        "step2": {
+          "title": "Pay the agency directly",
+          "text": "Pay the agency directly — a deposit first, the rest when your group is confirmed. Ouiboo never holds your money."
+        },
+        "step3": {
+          "title": "Clear rules protect your deposit",
+          "text": "Every booking carries the agency's cancellation scale, agreed before you pay — and if the group minimum isn't met, your deposit comes back in full."
+        }
+      },
+      "panel": {
+        "title": "What Ouiboo checks",
+        "items": {
+          "licence": {
+            "label": "Tourism licence",
+            "text": "number, issuing authority (Ministère du Tourisme) and expiry verified against the document itself."
+          },
+          "insurance": {
+            "label": "RC insurance",
+            "text": "professional liability policy evidenced, named and in date."
+          },
+          "registration": {
+            "label": "Business registration",
+            "text": "trade register (RC) and tax ID on file before publishing."
+          }
+        },
+        "recordTitle": "Example record — Atlas Adventures SARL",
+        "recordLicenceLabel": "Tourism licence (ODV)",
+        "recordLicence": "checked 30 Oct 2026 · valid to 31 Dec 2028",
+        "recordInsuranceLabel": "RC insurance",
+        "recordInsurance": "policy evidenced · valid to 31 Dec 2027",
+        "recordNote": "The agency remains the organiser and the refund contact. Ouiboo provides the technology only — and shows its checks, with dates. Status is re-checked automatically; trips pause if a document lapses.",
+        "panelLink": "See the verification standard"
+      }
+    },
+    "agencies": {
+      "eyebrow": "For agencies · Founding beta",
+      "titleA": "Sell your trips on Ouiboo.",
+      "titleB": "Free during the beta.",
+      "lead": "We're inviting 3–5 verified agencies from across Morocco to found the marketplace with us — founder-led onboarding, no forms before a human conversation.",
+      "chips": [
+        "Free during the beta",
+        "Checked before listing",
+        "We help you list your first trips"
+      ],
+      "objections": {
+        "payDirect": {
+          "title": "You are paid directly",
+          "text": "Travellers pay your agency — deposit and balance. Money never passes through Ouiboo, and neither do we sit between you and your clients."
+        },
+        "brand": {
+          "title": "Your brand, your trips",
+          "text": "You stay the organiser and seller of record. Your agency's name is on every trip, every booking and every review."
+        },
+        "fees": {
+          "title": "No fee during the beta",
+          "text": "Afterwards, any fee is a published monthly invoice to your agency — agreed in writing first, never deducted from traveller payments."
+        },
+        "exclusive": {
+          "title": "Non-exclusive",
+          "text": "List on Ouiboo and anywhere else. Leave anytime — your trips, photos and content stay yours."
+        }
+      },
+      "cta": "Discover the agency offer",
+      "note": "3–5 founding places · agencies from across Morocco · we set up your first trips with you"
+    },
+    "faq": {
+      "eyebrow": "Transparency",
+      "title": "Straight answers",
+      "intro": "Who you pay, who refunds you, and what Ouiboo is — in plain words.",
+      "items": {
+        "whoPay": {
+          "q": "Who do I pay for a trip?",
+          "lead": "Always the agency, directly",
+          "rest": " — a deposit first (up to 30%), and the balance only once the trip's group minimum is confirmed. Ouiboo never holds traveller money, on any trip, ever."
+        },
+        "whoRefund": {
+          "q": "Who refunds me if plans change?",
+          "lead": "The agency",
+          "rest": " — it is the organiser of your trip. Every booking carries the agency's cancellation scale, shown before you pay, and Ouiboo runs a dispute path if something goes wrong."
+        },
+        "charges": {
+          "q": "What does Ouiboo charge?",
+          "lead": "The beta is free.",
+          "rest": " Later fees will be published before they ever apply — charged to agencies as a monthly invoice, never added on top of the price you pay."
+        },
+        "whenBook": {
+          "q": "When can I book?",
+          "lead": "Bookings open with the founding beta cohort.",
+          "rest": " Until then, this site is a showcase: real trips and real checks, shown honestly, with no bookings or payments taken."
+        }
+      }
+    },
+    "footer": {
+      "tagline": "Technology for Moroccan travel agencies. Travellers pay agencies directly — Ouiboo never holds your money.",
+      "colExplore": "Explore",
+      "guides": "City guides",
+      "colTrust": "Trust",
+      "verification": "Verification standard",
+      "payments": "How payments work",
+      "faq": "FAQ",
+      "colAgencies": "Agencies",
+      "joinBeta": "Join the free beta",
+      "agencyLogin": "Agency login",
+      "travellerLogin": "Traveller login",
+      "support": "Support",
+      "bottomLeft": "© {{year}} Ouiboo · Closed beta — showcase only",
+      "madeIn": "Made in Tangier, Morocco",
+      "copyright": "Copyright"
+    },
+    "guidesPage": {
+      "title": "Morocco city guides",
+      "intro": "What to see and do, city by city — written for anyone planning to explore Morocco.",
+      "readGuide": "Read the guide"
+    },
+    "agencesPage": {
+      "nav": {
+        "back": "Home"
+      },
+      "hero": {
+        "eyebrow": "For agencies · Founding beta",
+        "titleA": "Sell your trips on Ouiboo.",
+        "titleB": "You get paid directly.",
+        "titleC": "Free during the beta.",
+        "lead": "Ouiboo puts your trips in front of travellers; you stay the organiser and the seller, and travellers pay your agency directly. During the founding beta: no subscription, no fees.",
+        "founderRole": "Founder of Ouiboo · Tangier",
+        "founderLine": "I am personally recruiting the 3 to 5 founding agencies. You talk to the founder — not to a sales department.",
+        "ctaWhatsapp": "Talk to the founder on WhatsApp",
+        "ctaNote": "No form. A conversation first.",
+        "whatsappMessage": "Hello Hussein, I run a travel agency and I would like to talk about Ouiboo's free beta. (Agencies page)"
+      },
+      "steps": {
+        "eyebrow": "Getting started",
+        "title": "How it starts",
+        "intro": "Three simple steps — with a human at the other end from the very first one.",
+        "step1": {
+          "title": "A 15-minute conversation",
+          "text": "We talk about your trips and your questions, on WhatsApp or by phone. No form before that conversation."
+        },
+        "step2": {
+          "title": "You send three documents",
+          "text": "Your travel agency licence (ODV), your professional liability (RC) insurance and your trade-register registration. A WhatsApp photo is enough for each — and when the check is done, a dated record confirms it."
+        },
+        "step3": {
+          "title": "Your first trips, published together",
+          "text": "We prepare your first trips with you — photos, itinerary, prices — and you approve every word before publication. Nothing appears without your agreement."
+        },
+        "chip": "Checked before listing"
+      },
+      "money": {
+        "eyebrow": "The money",
+        "title": "You are paid directly — always",
+        "items": {
+          "direct": {
+            "title": "The traveller pays your agency",
+            "text": "A deposit (up to 30%) at booking, then the balance when the group minimum is confirmed. If the minimum is not reached, the deposit is refunded to the traveller in full."
+          },
+          "never": {
+            "title": "Ouiboo never touches travellers' money",
+            "text": "No payment ever passes through Ouiboo — not today, not later."
+          },
+          "beta": {
+            "title": "During the beta: 0 MAD",
+            "text": "No subscription, no fees, nothing withheld from your payments."
+          }
+        },
+        "guaranteeTitle": "After the beta, our written commitment",
+        "guarantee": "Any future fee will apply only through a published monthly invoice addressed to your agency, agreed in writing in advance, with notice and the right to leave before the first fee — and never deducted from traveller payments."
+      },
+      "proof": {
+        "eyebrow": "Proof",
+        "title": "What your travellers will see",
+        "intro": "Two examples — exactly what Ouiboo shows for an agency whose documents have been checked.",
+        "exampleChip": "Example",
+        "recordTitle": "Verification record — Atlas Adventures SARL",
+        "recordLicenceLabel": "Tourism licence (ODV)",
+        "recordLicence": "checked 30 Oct 2026 · valid to 31 Dec 2028",
+        "recordInsuranceLabel": "RC insurance",
+        "recordInsurance": "policy evidenced · valid to 31 Dec 2027",
+        "recordNote": "The same dated record is public on the agency's page and on every trip.",
+        "passTitle": "The Booking Pass",
+        "passText": "After a booking, the traveller receives a pass with a QR code: you scan it on the day of departure and attendance is confirmed.",
+        "storefrontTitle": "Your agency page",
+        "storefrontText": "Your name, your trips and your dated verification record — a public page that proves who you are."
+      },
+      "qa": {
+        "eyebrow": "Your questions",
+        "title": "Straight answers",
+        "items": {
+          "exclusive": {
+            "q": "Am I tied to Ouiboo exclusively?",
+            "a": "No. Publish on Ouiboo and everywhere else — your other channels are your business."
+          },
+          "leave": {
+            "q": "Can I leave whenever I want?",
+            "a": "Yes, at any time and free of charge. Your trips, photos and reviews stay yours."
+          },
+          "client": {
+            "q": "Does the client stay my client?",
+            "a": "Yes. Your contact details appear on every booking, travellers contact you directly, and your name is on every trip and every review."
+          },
+          "cancel": {
+            "q": "Who sets the cancellation rules?",
+            "a": "You do. Your cancellation scale is shown to the traveller before payment. If a dispute arises, a visible procedure applies — and you remain the organiser of the trip."
+          },
+          "provide": {
+            "q": "What do I need to provide?",
+            "a": "Three documents: your licence, your RC insurance and your registration. A WhatsApp photo of each is enough to start."
+          },
+          "golive": {
+            "q": "How long before I am live?",
+            "a": "Your documents are checked before anything goes live — that is the rule, for every agency. Then we prepare your first trips together and you approve them before publication."
+          },
+          "french": {
+            "q": "Is French enough?",
+            "a": "Yes. French is enough to publish your trips; Arabic and English are a plus, never a condition."
+          },
+          "computer": {
+            "q": "Do I need a computer?",
+            "a": "No. WhatsApp and a phone are enough to start — and for almost everything else."
+          }
+        }
+      },
+      "honesty": {
+        "eyebrow": "Transparency",
+        "title": "What the beta is — and what it is not yet",
+        "items": [
+          "Today, Ouiboo is a showcase: no booking and no payment is accepted yet.",
+          "Bookings will open with the founding agencies — not before.",
+          "Only 3 to 5 places at the start: every agency is accompanied personally.",
+          "During the beta, support is handled by the founder himself.",
+          "Founding agencies get a say in the product."
+        ],
+        "legal": "Why this caution? Ouiboo is completing its legal formalities — activity classification and data protection — before opening bookings. So the beta starts as a showcase, openly."
+      },
+      "final": {
+        "title": "Let's talk about your trips",
+        "text": "I personally reply to every agency that writes.",
+        "emailLabel": "Or by e-mail",
+        "signupQuiet": "Prefer to register directly? Create your agency account"
+      },
+      "stickyCta": "Chat on WhatsApp"
+    }
   }
 }

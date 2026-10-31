@@ -7,6 +7,7 @@ import {
 import { Prisma } from '@ouiboo/database';
 import { DatabaseService } from '../database/database.service';
 import { toMoneyDecimal, toMoneyString } from '../common/money.util';
+import { getBillingConfig } from '../common/billing-config';
 
 export interface IssuerLegalDetails {
     name: string | null;
@@ -164,13 +165,18 @@ export class InvoicesService {
 
         const rate = this.resolveCommissionRate(commissionRatePercent);
 
-        // Billable = paid bookings of this agency confirmed inside the period.
-        // The wallet ledger credits the full booking amount to the agency
-        // (travelers pay the agency directly), so the commission base is the
-        // booking total and the applied rate is snapshotted per line.
+        // Billable = bookings of this agency confirmed inside the period.
+        // Travellers pay the agency directly, so the service-fee base is
+        // the booking total and the applied rate is snapshotted per line.
+        // #698 (Council S6): by configuration (default ON) the per-booking
+        // service fee accrues ONLY on COMPLETED bookings — a paid booking
+        // that never completes (cancelled, no-show, refunded) never
+        // reaches an invoice.
+        const billingConfig = getBillingConfig();
         const bookings = await this.db.booking.findMany({
             where: {
                 paymentStatus: 'PAID',
+                ...(billingConfig.serviceFeeOnCompletedOnly ? { status: 'COMPLETED' as const } : {}),
                 confirmedAt: { gte: periodStart, lt: periodEnd },
                 session: { template: { agencyId } },
             },

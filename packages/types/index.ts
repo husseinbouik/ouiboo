@@ -192,6 +192,8 @@ export interface AgencyProfile {
     taxId?: string;
     legalRepresentative?: string;
     businessAddress?: string;
+    /** #700: public seller phone for the checkout seller block. */
+    businessPhone?: string;
     travelLicenceType?: TravelLicenceType;
     travelLicenceNumber?: string;
     travelLicenceStatus?: LicenceStatus;
@@ -256,6 +258,150 @@ export enum TripCategory {
     Nature = "NATURE",
 }
 
+/**
+ * #676 (Council S6): language-neutral itinerary facts. Meals and
+ * accommodation types are enums (never language maps); distance/drive
+ * time are numbers; the accommodation name is a proper noun.
+ */
+export enum ItineraryMeal {
+    Breakfast = "BREAKFAST",
+    Lunch = "LUNCH",
+    Dinner = "DINNER",
+}
+
+export type ItineraryMealType = ItineraryMeal;
+
+export enum AccommodationType {
+    Hotel = "HOTEL",
+    Riad = "RIAD",
+    Guesthouse = "GUESTHOUSE",
+    Camp = "CAMP",
+    Hostel = "HOSTEL",
+    Other = "OTHER",
+}
+
+export type AccommodationTypeType = AccommodationType;
+
+/**
+ * #701 (Council S6): agency-labelled accommodation tiers (itinerary
+ * phase 2), rendered with "or similar" honesty.
+ */
+export enum AccommodationTier {
+    Standard = "STANDARD",
+    Comfort = "COMFORT",
+    Premium = "PREMIUM",
+}
+
+export type AccommodationTierType = AccommodationTier;
+
+/** #694 (Council S6): session kind — shared per-person vs private per-group. */
+export enum SessionKind {
+    Shared = "SHARED",
+    Private = "PRIVATE",
+}
+
+export type SessionKindType = SessionKind;
+
+/** #701: one per-stop detail entry on an itinerary day. Name and
+ * admission note are language-keyed maps (ISO code -> text). */
+export interface ItineraryStop {
+    name: Record<string, string>;
+    durationMinutes?: number | null;
+    admissionIncluded?: boolean | null;
+    admissionNote?: Record<string, string> | null;
+}
+
+/** #686: one agency-authored FAQ entry — question/answer language-keyed. */
+export interface TripFaqEntry {
+    question: Record<string, string>;
+    answer: Record<string, string>;
+}
+
+/** #701: one agency-defined pickup point (proper nouns, not maps). */
+export interface PickupPoint {
+    id: string;
+    name: string;
+    address?: string | null;
+    mapsUrl?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+}
+
+/**
+ * #687: the one-line cancellation summary derived from a trip's
+ * structured scale under ONE standardised definition — the free tier
+ * is the highest 100%-refund band; `freeCancellation` is true exactly
+ * when that band starts at >= 1 day before the trip. The agency is
+ * always the refund obligor; Ouiboo never refunds.
+ */
+export interface CancellationSummary {
+    freeCancellation: boolean;
+    freeCancellationDays: number | null;
+    bestRefundPercent: number;
+}
+
+/**
+ * #676: the structured meeting point, stored on the trip template
+ * alongside startLocation (the departure city/area). Public
+ * pre-booking payloads expose the AREA ONLY (see PublicMeetingPoint);
+ * the exact address + maps link travel only on booking responses.
+ */
+export interface MeetingPoint {
+    address?: string | null;
+    mapsUrl?: string | null;
+    pickupAvailable: boolean;
+}
+
+/** #676: what pre-booking surfaces may show of a meeting point. */
+export interface PublicMeetingPoint {
+    area: string | null;
+    pickupAvailable: boolean;
+}
+
+/**
+ * #675 (Council S6): the destination taxonomy AS CONFIGURATION —
+ * exactly the 3 beta-cluster destinations. `slug` is the stored /
+ * queried value; `aliases` are the free-text startLocation spellings
+ * (EN/FR/AR + local variants) the API derivation and the backfill
+ * migration match against. Adding a destination later is a config
+ * change here plus translations — no schema change.
+ */
+export interface DestinationConfig {
+    slug: string;
+    aliases: string[];
+}
+
+/**
+ * #677 (Council S6) + #749 (Council S11): the beta agency offer pack AS
+ * CONFIGURATION — the published service promises every recruited agency
+ * sees, in one place: the licence+insurance verification promise, the
+ * assisted-listing offer (OuiBoo builds the first listings WITH the
+ * agency; the agency approves before publish), and the support-relief
+ * split (OuiBoo answers platform/booking questions in FR/AR/EN at the
+ * published support hours; the agency answers trip logistics; during
+ * an active trip the agency emergency contact is first call and
+ * OuiBoo is the escalation). Surfaces render these numbers from here
+ * so the promise can never drift per page.
+ *
+ * The verification promise is "checked before listing" with NO
+ * time-bound claim: the founder declined to underwrite a 48-hour SLA
+ * (2026-10-31, S11), so no verification-hours field exists here and
+ * none may be reintroduced without a fresh founder decision. The
+ * supportResponseHours below is a different, standing commitment —
+ * the adopted <=48h normal-support policy — and is unaffected.
+ */
+export const BETA_AGENCY_OFFER = {
+    supportResponseHours: 48,
+    assistedListing: true,
+    supportLanguages: ['fr', 'ar', 'en'],
+} as const;
+
+export const BETA_DESTINATIONS: readonly DestinationConfig[] = [
+    { slug: 'tangier', aliases: ['tangier', 'tanger', 'طنجة'] },
+    { slug: 'tetouan', aliases: ['tetouan', 'tétouan', 'tetuan', 'تطوان'] },
+    { slug: 'chefchaouen', aliases: ['chefchaouen', 'chaouen', 'شفشاون'] },
+] as const;
+
 export interface ItineraryDay {
     id: string;
     templateId: string;
@@ -263,6 +409,16 @@ export interface ItineraryDay {
     title?: string;
     description: string;
     activities: string[];
+    /** #676: language-neutral day facts (all optional). */
+    distanceKm?: number | null;
+    driveTimeMinutes?: number | null;
+    mealsIncluded?: ItineraryMeal[];
+    accommodationName?: string | null;
+    accommodationType?: AccommodationType | null;
+    /** #701: phase-2 depth — tier, per-stop detail, free-text notes. */
+    accommodationTier?: AccommodationTier | null;
+    stops?: ItineraryStop[] | null;
+    notes?: Record<string, string> | null;
 }
 
 /**
@@ -312,6 +468,62 @@ export interface CancellationScaleSnapshot extends CancellationScale {
     refundInitiationDays: number;
 }
 
+/** #695 (Council S6): agency-priced variant (option tier) on a trip. */
+export type PricingUnit = 'PER_PERSON' | 'PER_GROUP' | 'PER_VEHICLE';
+export type AddOnPricingUnit = 'PER_PERSON' | 'PER_BOOKING';
+
+export interface TripPricingVariant {
+    id: string;
+    templateId: string;
+    agencyId: string;
+    /** Language-keyed name map (ISO code -> label). */
+    name: Record<string, string>;
+    pricingUnit: PricingUnit;
+    unitSize: number;
+    price: string;
+    currency: string;
+    isActive: boolean;
+    sortOrder: number;
+}
+
+export interface TripAddOn {
+    id: string;
+    templateId: string;
+    agencyId: string;
+    name: Record<string, string>;
+    pricingUnit: AddOnPricingUnit;
+    price: string;
+    currency: string;
+    isActive: boolean;
+    sortOrder: number;
+}
+
+/** #695: the booking's immutable pricing-selection snapshot. */
+export interface PricingSelectionSnapshot {
+    variant: {
+        id: string;
+        name: Record<string, string> | null;
+        pricingUnit: PricingUnit;
+        unitSize: number;
+        unitPrice: string;
+        units: number;
+        amount: string;
+    } | null;
+    addOns: Array<{
+        id: string;
+        name: Record<string, string> | null;
+        pricingUnit: AddOnPricingUnit;
+        unitPrice: string;
+        quantity: number;
+        amount: string;
+    }>;
+    baseAmount: string;
+    addOnsTotal: string;
+    totalAmount: string;
+    currency: string;
+    guestsCount: number;
+}
+
 /**
  * TripTemplate represents the "Master" trip definition.
  */
@@ -322,6 +534,11 @@ export interface TripTemplate {
     description: string;
     category: TripCategory;
     startLocation: string;
+    /** #675: normalised destination slug (BETA_DESTINATIONS config). */
+    destinationSlug?: string | null;
+    /** #676: structured meeting point (full shape on agency/booking
+     * payloads; public trip payloads carry PublicMeetingPoint). */
+    meetingPoint?: MeetingPoint | PublicMeetingPoint | null;
     endLocation?: string;
     durationDays: number;
     durationNights: number;
@@ -335,6 +552,20 @@ export interface TripTemplate {
     cancellationPolicy?: CancellationScale | null;
     /** #417: the resolved scale (bands + floor) returned by GET /trips/:id. */
     cancellationScale?: CancellationScaleSnapshot;
+    /** #687: one-line cancellation summary (standardised definition). */
+    cancellationSummary?: CancellationSummary;
+    /** #686: capped agency-authored FAQ entries (language-keyed). */
+    faqs?: TripFaqEntry[] | null;
+    /** #686: FAQ entries generated server-side from structured data. */
+    generatedFaqs?: TripFaqEntry[];
+    /** #697: agency elected pay-on-arrival for this trip. */
+    payOnArrivalEnabled?: boolean;
+    /** #694: the trip offers a private per-group variant. */
+    privateTourEnabled?: boolean;
+    /** #701: agency-defined pickup points for booking-time selection. */
+    pickupPoints?: PickupPoint[] | null;
+    /** Agency legal name for obligor copy (present on list payloads too). */
+    agencyLegalName?: string | null;
     /**
      * #546: multilingual title + description, keyed by ISO language
      * code. `title`/`description` above are the FRENCH text (canonical);
@@ -369,6 +600,152 @@ export interface TripSession {
     confirmationDeadline?: string;
     /** #369: staged payments — minimum-group outcome for this session. */
     groupStatus?: SessionGroupStatus;
+    /** #694: SHARED (default) or PRIVATE (per-group exclusive). */
+    sessionKind?: SessionKind;
+    /** #696: reserve now, pay the agency before the hold deadline. */
+    allowPayLater?: boolean;
+    payLaterHoldHours?: number | null;
+}
+
+/**
+ * #684 (Council S6): custom-trip request (private RFQ) statuses and
+ * payloads. Agency-facing payloads are PSEUDONYMISED — they carry the
+ * publicRef and trip facts only; `traveler` appears solely on the
+ * accepted agency's view after acceptance.
+ */
+export enum CustomTripRequestStatus {
+    Pending = "PENDING",
+    Quoted = "QUOTED",
+    Accepted = "ACCEPTED",
+    Declined = "DECLINED",
+    Cancelled = "CANCELLED",
+    Expired = "EXPIRED",
+    Converted = "CONVERTED",
+}
+
+export type CustomTripRequestStatusType = CustomTripRequestStatus;
+
+export interface CustomTripOffer {
+    id: string;
+    requestId: string;
+    agencyId: string;
+    agency?: { id: string; companyName: string } | null;
+    quotedTotalAmount: string;
+    quotedCurrency: string;
+    quoteNote?: string | null;
+    cancellationScale?: CancellationScaleSnapshot | null;
+    status: string;
+    quotedAt: string;
+    acceptedAt?: string | null;
+}
+
+export interface CustomTripRequest {
+    id: string;
+    publicRef: string;
+    travelerId?: string;
+    title: string;
+    description?: string | null;
+    destinationSlug?: string | null;
+    startLocation?: string | null;
+    requestedStartDate: string;
+    requestedEndDate: string;
+    guestsCount: number;
+    budgetMaxMad?: string | null;
+    note?: string | null;
+    status: CustomTripRequestStatusType;
+    expiresAt: string;
+    acceptedOfferId?: string | null;
+    convertedTemplateId?: string | null;
+    offers?: CustomTripOffer[];
+    /** Present ONLY for the traveller themselves, or for the accepted
+     * agency after acceptance (#684 identity-reveal rule). */
+    traveler?: { email: string; name?: string | null } | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+/** #685: live destination inventory for the Layer B city pages. All
+ * counts are computed from live inventory at request time. */
+export interface DestinationInventory {
+    slug: string;
+    tripCount: number;
+    agencyCount: number;
+    reviewCount: number;
+    averageRating: number | null;
+    categories: Array<{ category: string; tripCount: number }>;
+    trips: DestinationInventoryTrip[];
+}
+
+/** #685 Layer B: one live trip inside a destination inventory payload. */
+export interface DestinationInventoryTrip {
+    id: string;
+    title: string;
+    category: string;
+    images?: string[];
+    startingPrice?: string | number | null;
+    currency: string;
+    cancellationSummary?: CancellationSummary | null;
+    sessions?: Array<{ price: string | number }>;
+    agency?: { companyName?: string | null } | null;
+}
+
+/**
+ * #682 (Council S6): firm-quote lifecycle for published trips — the
+ * traveller requests dates/party (PENDING), the agency replies with a
+ * firm MAD TTC total + its cancellation scale (QUOTED), the traveller
+ * accepts (ACCEPTED — quote, scale and acceptance timestamp are
+ * snapshotted immutably) or the flow ends (DECLINED/CANCELLED).
+ */
+export enum QuoteRequestStatus {
+    Pending = "PENDING",
+    Quoted = "QUOTED",
+    Accepted = "ACCEPTED",
+    Declined = "DECLINED",
+    Cancelled = "CANCELLED",
+}
+
+export type QuoteRequestStatusType = QuoteRequestStatus;
+
+/**
+ * #682: one firm-quote request and, once accepted, its immutable
+ * snapshot. Amounts are stringified decimals (house money convention);
+ * the total is the TOTAL for the requested dates/party in MAD TTC —
+ * never an indicative or per-person figure.
+ */
+export interface QuoteRequest {
+    id: string;
+    templateId: string;
+    agencyId: string;
+    travelerId: string;
+    requestedStartDate: string;
+    requestedEndDate: string;
+    guestsCount: number;
+    note?: string | null;
+    status: QuoteRequestStatusType;
+    quotedTotalAmount?: string | null;
+    quotedCurrency: string;
+    quoteNote?: string | null;
+    cancellationScale?: CancellationScaleSnapshot | null;
+    quotedAt?: string | null;
+    acceptedAt?: string | null;
+    acceptedSnapshot?: {
+        quotedTotalAmount: string;
+        quotedCurrency: string;
+        cancellationScale: CancellationScaleSnapshot | null;
+        quotedAt: string | null;
+        acceptedAt: string;
+        templateId: string;
+        agencyId: string;
+    } | null;
+    createdAt: string;
+    updatedAt: string;
+    template?: {
+        id: string;
+        title: string;
+        startLocation: string;
+        agency?: { id: string; companyName: string } | null;
+    } | null;
+    traveler?: { email: string; name?: string | null } | null;
 }
 
 export enum BookingStatus {
@@ -439,6 +816,11 @@ export interface Booking {
     attendance?: BookingAttendance | null;
     attendanceRecordedAt?: string | null;
     attendanceRecordedBy?: string | null;
+    /** #693: traveller dispute of the recorded attendance (stamp + reason). */
+    attendanceDisputedAt?: string | null;
+    attendanceDisputeReason?: string | null;
+    /** #689: Booking Pass QR check-in stamp (second attendance signal). */
+    passCheckInAt?: string | null;
 }
 
 export interface BookingTravelerSummary {
@@ -474,6 +856,14 @@ export interface BookingAgencySummary {
     licenceVerifiedAt?: string | null;
     insuranceStatus?: string | null;
     insuranceVerifiedAt?: string | null;
+    /** #688: RC insurer name + policy validity window (public record). */
+    insuranceInsurer?: string | null;
+    insuranceExpiry?: string | null;
+    /** #700: Law 31-08 Art. 29(2) seller block — address, phone, IF/RC. */
+    businessAddress?: string | null;
+    businessPhone?: string | null;
+    rc?: string | null;
+    taxId?: string | null;
 }
 
 export interface BookingTemplateSummary {
@@ -484,6 +874,10 @@ export interface BookingTemplateSummary {
     /** #332: alt text per image (index-aligned); may be absent. */
     imageAlts?: string[];
     startLocation: string;
+    /** #676: the FULL structured meeting point — booking responses are
+     * the one traveller surface allowed to carry the exact address and
+     * maps link (the traveller holding the booking is the audience). */
+    meetingPoint?: MeetingPoint | null;
     title: string;
 }
 
@@ -497,6 +891,18 @@ export interface BookingDetails extends Booking {
     paymentPlan?: BookingPaymentPlan | null;
     /** #417: cancellation scale snapshotted at booking creation (resolved from the template for legacy bookings). */
     cancellationScale?: CancellationScaleSnapshot;
+    /** #695: pricing-selection snapshot (variant + add-ons with agency
+     * prices at booking time and the reconciled breakdown). */
+    pricingSelection?: PricingSelectionSnapshot | null;
+    /** Batch F: #694 private session snapshot. */
+    isPrivateSession?: boolean;
+    /** Batch F: #696 pay-later hold deadline (ISO) or null. */
+    payLaterDeadline?: string | null;
+    /** Batch F: #697 pay-on-arrival flag. */
+    payOnArrival?: boolean;
+    /** Batch F: #701 chosen pickup point + its snapshot. */
+    pickupPointId?: string | null;
+    pickupPointSnapshot?: PickupPoint | null;
     /**
      * #481 + B9 (Council Session #2): the booking-terms version the
      * traveller accepted at checkout (see CURRENT_BOOKING_TERMS_VERSION)
@@ -517,6 +923,37 @@ export interface BookingDetails extends Booking {
     };
     session: BookingSessionSummary;
     traveler: BookingTravelerSummary;
+}
+
+/**
+ * #689 (Council S6): the Booking Pass — issued only once the AGENCY has
+ * confirmed receipt of the deposit in its own bank account. The pass is
+ * a receipt artefact: it states the payment was made to the named
+ * agency and that Ouiboo holds no funds. `token` is the signed QR
+ * payload; it resolves nothing on its own — verification requires an
+ * authenticated agency session (POST /bookings/pass/verify).
+ */
+export interface BookingPass {
+    bookingId: string;
+    status: string;
+    issuedAt: string;
+    token: string;
+    seller: {
+        agencyId: string;
+        legalName: string | null;
+        companyName: string;
+    };
+    tripTitle: string;
+    startDate: string;
+    endDate: string;
+    guestsCount: number;
+    currency: string;
+    totalAmount: DecimalString;
+    depositConfirmedAmount: DecimalString | null;
+    balanceAmount: DecimalString | null;
+    meetingPoint: { address: string | null; mapsUrl: string | null; pickupAvailable: boolean } | null;
+    attendance?: BookingAttendance | null;
+    passCheckInAt?: string | null;
 }
 
 export interface PaymentProof {
