@@ -253,4 +253,19 @@ describe('AdminLoginPage (#418)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'I saved them — continue' }));
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/'));
   });
+
+  // #730: mobile Lighthouse flagged target-size on this page — the
+  // password-visibility toggle was a bare 20x20 icon and the break-glass
+  // link a ~17px-tall text row. Both now carry the design system's 44px
+  // touch-target sizing (h-11/w-11 and min-h-[44px]).
+  it('gives the login touch targets the 44px design-system size (#730)', () => {
+    renderPage();
+    const toggle = screen.getByRole('button', { name: 'login.showPassword' });
+    expect(toggle.className).toContain('h-11');
+    expect(toggle.className).toContain('w-11');
+    const breakGlass = screen.getByRole('button', {
+      name: 'Lost your authenticator? Use a break-glass secret',
+    });
+    expect(breakGlass.className).toContain('min-h-[44px]');
+  });
 });

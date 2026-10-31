@@ -129,7 +129,7 @@ if (!isMounted) return <div className="min-h-screen bg-background" />;
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label htmlFor="password" className="text-sm font-medium text-muted-foreground">{t('login.password')}</label>
-                  <Link href={`/forgot-password?lang=${i18n.language}`} className="text-sm font-medium text-primary hover:text-primary/80 dark:text-accent dark:hover:text-accent/80">
+                  <Link href={`/forgot-password?lang=${i18n.language}`} className="inline-flex min-h-[44px] items-center text-sm font-medium text-primary hover:text-primary/80 dark:text-accent dark:hover:text-accent/80">
                     {t('login.forgotPassword')}
                   </Link>
                 </div>
@@ -145,7 +145,7 @@ if (!isMounted) return <div className="min-h-screen bg-background" />;
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute end-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
                     aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -178,7 +178,7 @@ if (!isMounted) return <div className="min-h-screen bg-background" />;
 
           <p className="text-center text-sm text-muted-foreground">
             {t('login.noAccount')}{' '}
-            <Link href={`/signup?lang=${i18n.language}`} className="font-semibold text-primary hover:text-primary/80 hover:underline dark:text-accent dark:hover:text-accent/80">
+            <Link href={`/signup?lang=${i18n.language}`} className="inline-flex min-h-[44px] items-center font-semibold text-primary hover:text-primary/80 hover:underline dark:text-accent dark:hover:text-accent/80">
               {t('login.signUpLink')}
             </Link>
           </p>

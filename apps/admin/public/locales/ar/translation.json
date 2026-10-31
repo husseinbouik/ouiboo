@@ -605,7 +605,10 @@
     "description": "مساحة إدارة خاصة لمنصة Ouiboo."
   },
   "common": {
-    "skipToContent": "تخطى إلى المحتوى"
+    "skipToContent": "تخطى إلى المحتوى",
+    "switchLanguage": "تبديل اللغة — الحالية: {{language}}",
+    "switchFrom": "التبديل من {{language}}",
+    "toggleTheme": "تبديل المظهر"
   },
   "pagination": {
     "showing": "عرض",

@@ -15,9 +15,9 @@
  */
 import { chromium } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
-import { parseTargetArgs, addSessionCookies, scrollThroughPage } from './a11y-common.mjs';
+import { parseTargetArgs, addSessionCookies, scrollThroughPage, mockUnauthenticated } from './a11y-common.mjs';
 
-const { baseUrl, pages, role } = parseTargetArgs();
+const { baseUrl, pages, role, mockUnauthenticated: forceUnauth } = parseTargetArgs();
 
 const browser = await chromium.launch();
 const context = await browser.newContext({
@@ -28,6 +28,7 @@ const context = await browser.newContext({
 });
 if (role) await addSessionCookies(context, baseUrl, role);
 const page = await context.newPage();
+if (forceUnauth) await mockUnauthenticated(page);
 
 let failures = 0;
 

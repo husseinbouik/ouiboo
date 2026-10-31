@@ -21,6 +21,25 @@ test.describe('agency launch flow', () => {
     await expect(page.getByText(/available balance/i)).toHaveCount(0);
   });
 
+  test('account menu entries land on implemented dashboard pages, never 404 (#724)', async ({ page }) => {
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
+
+    const menuTrigger = page.getByRole('button', { name: /atlas agency/i });
+    await expect(menuTrigger).toBeVisible();
+
+    const destinations: Array<{ item: RegExp; url: RegExp }> = [
+      { item: /^billing$/i, url: /\/dashboard\/settings\/billing$/ },
+      { item: /^profile$/i, url: /\/dashboard\/settings$/ },
+      { item: /^settings$/i, url: /\/dashboard\/settings$/ },
+    ];
+    for (const { item, url } of destinations) {
+      await menuTrigger.click();
+      await page.getByRole('menuitem', { name: item }).click();
+      await expect(page).toHaveURL(url);
+      await expect(page.getByText('Page not found', { exact: true })).toHaveCount(0);
+    }
+  });
+
   test('agency reviews proof in two steps — accepting is not settlement, bank confirmation settles', async ({ page }) => {
     await page.goto('/dashboard/bookings', { waitUntil: 'domcontentloaded' });
 
@@ -46,5 +65,45 @@ test.describe('agency launch flow', () => {
     await expect(confirmButton).toBeDisabled();
     await page.getByLabel(/bank reference/i).fill('TRX-E2E-001');
     await expect(confirmButton).toBeEnabled();
+  });
+});
+
+test.describe('agency login accessibility (mobile viewport)', () => {
+  // #730: no session here — the login form is the logged-out surface.
+  // The mock API answers /users/me unconditionally, so force the real
+  // production 401 (same pattern as .github/lighthouse/a11y-common.mjs)
+  // to keep the page from bouncing to the dashboard.
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/users/me', async (route) => {
+      const origin = route.request().headers()['origin'] || '*';
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        headers: {
+          'Access-Control-Allow-Origin': origin,
+          'Access-Control-Allow-Credentials': 'true',
+          'Access-Control-Allow-Headers': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+        },
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      });
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+  });
+
+  test('login touch targets meet the 44px design-system size (#730)', async ({ page }) => {
+    await page.goto('/login', { waitUntil: 'domcontentloaded' });
+
+    const forgot = page.getByRole('link', { name: /forgot password/i });
+    await expect(forgot).toBeVisible();
+    expect((await forgot.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+
+    const toggle = page.getByRole('button', { name: /show password/i });
+    const toggleBox = await toggle.boundingBox();
+    expect(toggleBox?.width).toBeGreaterThanOrEqual(44);
+    expect(toggleBox?.height).toBeGreaterThanOrEqual(44);
+
+    const signUp = page.getByRole('link', { name: /register your business/i });
+    expect((await signUp.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   });
 });
