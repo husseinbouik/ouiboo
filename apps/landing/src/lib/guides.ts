@@ -11,7 +11,7 @@ import { absoluteLandingUrl } from './site'
  * existing language maps (public/locales/{fr,ar,en}/translation.json,
  * namespace `guides`). HARD ship conditions, enforced by the census
  * test in this folder: NO trip cards, NO prices, NO counts, NO booking
- * CTAs — waitlist + "bookings not yet open" only — and copy audited
+ * CTAs — homepage showcase + "bookings not yet open" only — and copy audited
  * against #661 (no first/only/biggest claims; dated verification
  * statements only). These routes are deliberately INDEXABLE while the
  * rest of the landing stays behind the beta noindex gate: robots.ts,

@@ -20,7 +20,7 @@ import { LayerBInventorySection } from '../../../components/LayerBInventory'
  * guides. Server-rendered from the language maps; INDEXED on purpose
  * (Layer A) while the rest of the landing stays noindexed during the
  * beta. Layer A ship conditions: no trip cards, no prices, no counts,
- * no booking CTAs — waitlist + "bookings not yet open" only.
+ * no booking CTAs — homepage showcase + "bookings not yet open" only.
  *
  * #685 Layer B: BELOW the Layer A content, live inventory (trip
  * cards, prices, counts, review aggregates) renders from the
@@ -130,7 +130,7 @@ export default async function GuideCityPage({
         <section className="mt-12 rounded-3xl border border-border bg-card p-7 shadow-sm">
           <p className="leading-7 text-muted-foreground">{shared.waitlistNote}</p>
           <Link
-            href="/#waitlist"
+            href="/#showcase"
             className="mt-4 inline-block rounded-md bg-deep-blue px-6 py-3 text-base font-semibold text-white shadow-sm"
           >
             {shared.waitlistCta}
