@@ -11,11 +11,9 @@ export class CurrencyController {
   @Get('rates')
   async getExchangeRate(
     @Query('target') targetCurrency: string = 'USD',
-    @Query('force') forceRefresh: boolean = false,
   ) {
     const info = await this.currencyService.getExchangeRateInfo(
       targetCurrency,
-      forceRefresh,
     );
     return {
       baseCurrency: 'MAD',
