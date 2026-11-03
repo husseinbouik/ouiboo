@@ -87,7 +87,7 @@ export function CheckoutGuestForm({
                 )}
               >
                 <div>
-                  <p className="font-black">{formatSessionDates(session)}</p>
+                  <p className="font-black"><bdi dir="ltr">{formatSessionDates(session)}</bdi></p>
                   <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{t('checkout.seatsLeft', { count: session.availableSeats })}</p>
                 </div>
                 <div className="flex items-center gap-3">
