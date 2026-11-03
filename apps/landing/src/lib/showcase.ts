@@ -64,11 +64,20 @@ const SHOWCASE_STRINGS: Record<SupportedLanguage, ShowcaseStrings> = {
   ar: (ar as { hw: { showcase: ShowcaseStrings } }).hw.showcase,
 }
 
+function isPlaceholderUrl(u: string): boolean {
+  try {
+    const host = new URL(u).hostname.toLowerCase()
+    return host === 'example.com' || host.endsWith('.example.com')
+  } catch {
+    return true
+  }
+}
+
 function realImages(trip: PublicShowcaseTrip): string[] {
   if (!Array.isArray(trip.images)) return []
   return trip.images.filter(
     (u): u is string =>
-      typeof u === 'string' && u.startsWith('http') && !u.includes('example.com'),
+      typeof u === 'string' && u.startsWith('http') && !isPlaceholderUrl(u),
   )
 }
 
