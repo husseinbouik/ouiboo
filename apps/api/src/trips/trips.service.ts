@@ -1185,6 +1185,7 @@ export class TripsService {
             inclusions: dto.inclusions ?? existing.inclusions,
             exclusions: dto.exclusions ?? existing.exclusions,
             checklist: dto.checklist ?? existing.checklist,
+            faqs: normalizedFaqs === undefined ? (existing as { faqs?: unknown }).faqs : normalizedFaqs,
         };
         const mergedTranslations = translations
             ? buildTripTranslations(
@@ -1276,7 +1277,7 @@ export class TripsService {
             const touchesText =
                 dto.title !== undefined || dto.description !== undefined || translations !== undefined
                 || dto.inclusions !== undefined || dto.exclusions !== undefined
-                || dto.checklist !== undefined || itinerary !== undefined;
+                || dto.checklist !== undefined || itinerary !== undefined || faqs !== undefined;
             if (touchesText) {
                 const prohibited = findProhibitedCommercialTerms(collectTripTexts(postWriteTexts));
                 if (prohibited.length > 0) {
