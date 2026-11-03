@@ -649,6 +649,23 @@
     "previous": "السابق",
     "next": "التالي"
   },
+  "reviewForm": {
+    "ratingLabel": "قيّم تجربتك",
+    "ratingOption_zero": "{{count}} نجمة",
+    "ratingOption_one": "نجمة واحدة",
+    "ratingOption_two": "نجمتان",
+    "ratingOption_few": "{{count}} نجوم",
+    "ratingOption_many": "{{count}} نجمة",
+    "ratingOption_other": "{{count}} نجمة",
+    "commentLabel": "تقييمك (اختياري)",
+    "commentPlaceholder": "شارك تجربتك مع هذه الرحلة...",
+    "characterCount": "{{count}} / {{max}} حرفًا",
+    "ratingRequired": "يُرجى اختيار تقييم.",
+    "submitError": "تعذّر إرسال تقييمك. يُرجى المحاولة مرة أخرى.",
+    "success": "تم إرسال التقييم بنجاح.",
+    "submitting": "جارٍ الإرسال...",
+    "submit": "إرسال التقييم"
+  },
   "refunds": {
     "panelTitle": "استرداد",
     "defaultOrganiser": "المنظم",

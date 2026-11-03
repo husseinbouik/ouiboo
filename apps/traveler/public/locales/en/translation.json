@@ -649,6 +649,23 @@
     "previous": "Previous",
     "next": "Next"
   },
+  "reviewForm": {
+    "ratingLabel": "Rate your experience",
+    "ratingOption_zero": "{{count}} stars",
+    "ratingOption_one": "{{count}} star",
+    "ratingOption_two": "{{count}} stars",
+    "ratingOption_few": "{{count}} stars",
+    "ratingOption_many": "{{count}} stars",
+    "ratingOption_other": "{{count}} stars",
+    "commentLabel": "Your review (optional)",
+    "commentPlaceholder": "Share your experience with this trip...",
+    "characterCount": "{{count}} / {{max}} characters",
+    "ratingRequired": "Please select a rating.",
+    "submitError": "We could not submit your review. Please try again.",
+    "success": "Review submitted successfully.",
+    "submitting": "Submitting...",
+    "submit": "Submit review"
+  },
   "refunds": {
     "panelTitle": "Refund",
     "defaultOrganiser": "the organiser",
