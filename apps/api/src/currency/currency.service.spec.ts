@@ -106,6 +106,44 @@ describe('CurrencyService (#649)', () => {
     expect(warnSpy).toHaveBeenCalledTimes(1);
   });
 
+  it.each([
+    [{ result: 'success', base_code: 'USD', rates: PROVIDER_RATES }],
+    [{ result: 'success', base_code: 'MAD', rates: { ...PROVIDER_RATES, EUR: 0 } }],
+    [{ result: 'success', base_code: 'MAD', rates: { ...PROVIDER_RATES, EUR: -1 } }],
+  ])('rejects an invalid provider payload without caching it', async (payload) => {
+    global.fetch = jest.fn(async () => ({ ok: true, status: 200, json: async () => payload })) as unknown as typeof fetch;
+    const { service, prisma } = makeService();
+
+    await expect(service.getExchangeRateInfo('EUR')).resolves.toMatchObject({ source: 'fallback' });
+    expect(prisma.exchangeRate.upsert).not.toHaveBeenCalled();
+  });
+
+  it('coalesces concurrent cache misses for the same currency into one provider request', async () => {
+    let resolveFetch!: (value: any) => void;
+    global.fetch = jest.fn(() => new Promise((resolve) => { resolveFetch = resolve; })) as unknown as typeof fetch;
+    const { service, prisma } = makeService();
+
+    const first = service.getExchangeRateInfo('EUR');
+    const second = service.getExchangeRateInfo('EUR');
+    // Both callers must first clear their awaited cache lookups before the
+    // refresh (and its single provider fetch) is issued — flush the queue
+    // so both have converged on the in-flight refresh before asserting.
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    resolveFetch({ ok: true, status: 200, json: async () => ({ result: 'success', base_code: 'MAD', rates: PROVIDER_RATES }) });
+
+    await expect(Promise.all([first, second])).resolves.toEqual([
+      expect.objectContaining({ source: 'live' }),
+      expect.objectContaining({ source: 'live' }),
+    ]);
+    expect(prisma.exchangeRate.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects unsupported target currencies as a client error', async () => {
+    const { service } = makeService();
+    await expect(service.getExchangeRateInfo('XYZ')).rejects.toMatchObject({ status: 400 });
+  });
+
   it('reports a cache hit with its real age and does not call the provider', async () => {
     const fetchedAt = new Date(Date.now() - 3600 * 1000);
     global.fetch = mockFetchOk() as unknown as typeof fetch;

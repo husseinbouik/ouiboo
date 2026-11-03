@@ -463,10 +463,13 @@ const [isOpen, setIsOpen] = useState(false);
                             {t('nav.featured')} <Heart className="text-pink-500" />
                         </Link>
                         <Link onClick={() => setIsOpen(false)} href="/wishlist" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
-                            {t('nav.wishlist')} <Heart className="text-red-500" />
-                            {wishlistCountData?.count > 0 && (
-                              <span className="ml-2 inline-flex items-center justify-center h-5 w-5 rounded-full bg-sunset-orange text-deep-blue text-[12px] font-bold">{wishlistCountData.count}</span>
-                            )}
+                            {t('nav.wishlist')}
+                            <span className="ms-2 flex shrink-0 items-center gap-1.5">
+                              <Heart className="text-red-500" />
+                              {wishlistCountData?.count > 0 && (
+                                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-sunset-orange text-[12px] font-bold text-deep-blue">{wishlistCountData.count}</span>
+                              )}
+                            </span>
                         </Link>
                         <Link onClick={() => setIsOpen(false)} href="/support" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
                             {t('nav.support')} <LifeBuoy className="text-sunset-orange" />
