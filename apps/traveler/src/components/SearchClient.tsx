@@ -253,12 +253,17 @@ export default function SearchClient({
   };
 
   const activeFilterChips = useMemo(() => {
-    const chips: { label: string; onRemove: () => void }[] = [];
+    const chips: { label: React.ReactNode; accessibleLabel?: string; onRemove: () => void }[] = [];
     if (filters.destination) {
       chips.push({ label: t(`search.destinationNames.${filters.destination}`), onRemove: () => updateFilter("destination", "") });
     }
     if (filters.duration) {
-      chips.push({ label: t(`search.durationBuckets.${filters.duration}`), onRemove: () => updateFilter("duration", "") });
+      const label = t(`search.durationBuckets.${filters.duration}`);
+      chips.push({
+        label: <bdi dir="ltr">{label}</bdi>,
+        accessibleLabel: label,
+        onRemove: () => updateFilter("duration", ""),
+      });
     }
     if (filters.priceMin || filters.priceMax) {
       const min = filters.priceMin || "0";
@@ -338,7 +343,9 @@ export default function SearchClient({
                 filters.duration === bucket.key ? "bg-sunset-orange/10 text-sunset-orange-dark" : "bg-muted",
               )}
             >
-              {t(`search.durationBuckets.${bucket.key}`)}
+              {/* Numeric ranges must establish an LTR island inside the
+                  Arabic document; otherwise 2–3 is rendered as 3–2. */}
+              <bdi dir="ltr">{t(`search.durationBuckets.${bucket.key}`)}</bdi>
             </button>
           ))}
         </div>
@@ -497,7 +504,7 @@ export default function SearchClient({
               <div className="mb-4 flex flex-wrap gap-2">
                 {activeFilterChips.map((c, i) => (
                   <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                    <Badge className="px-3 py-1 flex items-center gap-2">{c.label} <button onClick={c.onRemove} aria-label={`Remove filter ${c.label}`}><X className="h-3 w-3" /></button></Badge>
+                    <Badge className="px-3 py-1 flex items-center gap-2">{c.label} <button onClick={c.onRemove} aria-label={`Remove filter ${c.accessibleLabel ?? (typeof c.label === 'string' ? c.label : '')}`}><X className="h-3 w-3" /></button></Badge>
                   </motion.div>
                 ))}
               </div>
