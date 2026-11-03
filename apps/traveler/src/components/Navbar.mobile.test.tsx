@@ -115,7 +115,8 @@ describe('Navbar mobile layout (#648) — signed out', () => {
     mockWishlistCount = { count: 3 };
     render(<Navbar />);
     fireEvent.click(screen.getByLabelText('nav.openMenu'));
-    const wishlist = screen.getByText('nav.wishlist').closest('a');
+    const dialog = screen.getByRole('dialog');
+    const wishlist = within(dialog).getByText('nav.wishlist').closest('a');
     const trailingControl = wishlist?.querySelector('span.ms-2');
     expect(trailingControl?.className).toContain('shrink-0');
     expect(trailingControl?.textContent).toContain('3');
