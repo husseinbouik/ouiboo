@@ -263,6 +263,33 @@ describe('SnapRail (#490)', () => {
         expect(viewport.scrollLeft).toBe(300);
     });
 
+    it('reports the real photo index when a viewer host clicks a slide (#657)', () => {
+        const onSlideClick = jest.fn();
+        const { container } = renderRail({ onSlideClick });
+        // A looped rail renders: clone(3), real(1), real(2), real(3),
+        // clone(1). The third DOM slide is therefore real photo 2,
+        // which must be reported as its logical zero-based index (1).
+        const slides = container.querySelectorAll('.snap-center');
+        fireEvent.click(slides[2]);
+        expect(onSlideClick).toHaveBeenCalledWith(1);
+        expect(onSlideClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('uses contain rendering for a full-screen viewer without changing the default card fit (#657)', () => {
+        const { container, rerender } = renderRail();
+        expect(container.querySelector('img')?.className).toContain('object-cover');
+
+        rerender(
+            <SnapRail
+                images={IMAGES}
+                captionFallback="Fallback title"
+                ariaLabel="Trip photos"
+                imageFit="contain"
+            />,
+        );
+        expect(container.querySelector('img')?.className).toContain('object-contain');
+    });
+
     describe('dragAdvanceOnRelease (#490 round 3 — wide-slide gallery)', () => {
         const drag = (vp: HTMLDivElement, id: number, from: number, to: number) => {
             act(() => { vp.dispatchEvent(pointer('pointerdown', { pointerType: 'mouse', pointerId: id, clientX: from })); });
