@@ -649,6 +649,20 @@
     "previous": "Précédent",
     "next": "Suivant"
   },
+  "wishlistPage": {
+    "title": "Ma liste d’envies",
+    "subtitle": "Vos voyages enregistrés",
+    "loading": "Chargement de votre liste d’envies...",
+    "signedOutTitle": "Connectez-vous pour accéder à votre liste d’envies",
+    "signedOutBody": "Enregistrez vos voyages favoris et retrouvez-les à tout moment depuis votre compte.",
+    "signIn": "Se connecter",
+    "explore": "Découvrir les voyages",
+    "emptyTitle": "Votre liste d’envies est vide",
+    "emptyBody": "Ajoutez des voyages à votre liste d’envies pour les retrouver ici.",
+    "previous": "Précédent",
+    "pageOf": "Page {{page}} sur {{total}}",
+    "next": "Suivant"
+  },
   "refunds": {
     "panelTitle": "Remboursement",
     "defaultOrganiser": "l'organisateur",

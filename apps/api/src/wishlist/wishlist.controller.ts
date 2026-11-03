@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Query,
+  Headers,
   UseGuards,
   Request,
   HttpCode,
@@ -12,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { WishlistService } from './wishlist.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { normalizeTripLocale } from '../trips/trip-translations.util';
 
 @Controller('users/wishlist')
 @UseGuards(JwtAuthGuard)
@@ -49,12 +51,15 @@ export class WishlistController {
   async getWishlist(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
+    @Query('locale') locale?: string,
+    @Headers('x-ouiboo-language') languageHeader?: string,
     @Request() req: any,
   ) {
     return this.wishlistService.getUserWishlist(
       req.user.id,
       parseInt(page),
       parseInt(limit),
+      normalizeTripLocale(locale) ?? normalizeTripLocale(languageHeader),
     );
   }
 
