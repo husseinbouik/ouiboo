@@ -73,6 +73,13 @@ describe('publish guardrails (#674 / #676)', () => {
             });
             expect(texts).toEqual(expect.arrayContaining(['Titre', 'Guide', 'Balade', 'عنوان', 'وصف اليوم']));
         });
+
+        it('collects agency FAQ questions and answers for the commercial-terms scan (#751)', () => {
+            const texts = collectTripTexts({
+                faqs: [{ question: { en: 'Can I cancel?' }, answer: { en: 'This fare is non-refundable' } }],
+            });
+            expect(findProhibitedCommercialTerms(texts)).toContain('non-refundable wording');
+        });
     });
 
     describe('commercial-terms publish gate (#674)', () => {

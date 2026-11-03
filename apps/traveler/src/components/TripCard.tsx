@@ -77,6 +77,10 @@ function futureLicenceExpiry(value?: string | null): Date | null {
 
 export function TripCard({ trip }: TripCardProps) {
   const { t, i18n } = useTranslation();
+  const categoryKey = trip.category?.toLowerCase();
+  const categoryLabel = categoryKey && ['adventure', 'cultural', 'luxury', 'budget', 'nature'].includes(categoryKey)
+    ? t(`categories.${categoryKey}`)
+    : t('tripCard.defaultCategory');
   const images = trip.images && trip.images.length > 0
     ? trip.images 
     : ['https://images.unsplash.com/photo-1489749798305-4fea3ae63d43'];
@@ -193,7 +197,7 @@ export function TripCard({ trip }: TripCardProps) {
 
         <div className="absolute top-3 start-3">
           <Badge className="bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none">
-            {trip.category || t('tripCard.defaultCategory')}
+            {categoryLabel}
           </Badge>
         </div>
 

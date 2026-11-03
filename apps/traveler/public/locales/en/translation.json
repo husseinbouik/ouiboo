@@ -454,6 +454,8 @@
   },
   "search": {
     "resultCount": "Showing {{count}} of {{total}}",
+    "metaTitle": "Explore trips — Ouiboo",
+    "metaDescription": "Search and filter handpicked travel experiences across Morocco and beyond.",
     "title": "Find your next Adventure",
     "placeholder": "Destination, activity or keyword",
     "searchButton": "Search",
@@ -649,19 +651,22 @@
     "previous": "Previous",
     "next": "Next"
   },
-  "wishlistPage": {
-    "title": "My wishlist",
-    "subtitle": "Your saved trips",
-    "loading": "Loading your wishlist...",
-    "signedOutTitle": "Sign in to access your wishlist",
-    "signedOutBody": "Save your favorite trips and come back to them any time from your account.",
-    "signIn": "Sign in",
-    "explore": "Explore trips",
-    "emptyTitle": "Your wishlist is empty",
-    "emptyBody": "Start adding trips to your wishlist to see them here.",
-    "previous": "Previous",
-    "pageOf": "Page {{page}} of {{total}}",
-    "next": "Next"
+  "reviewForm": {
+    "ratingLabel": "Rate your experience",
+    "ratingOption_zero": "{{count}} stars",
+    "ratingOption_one": "{{count}} star",
+    "ratingOption_two": "{{count}} stars",
+    "ratingOption_few": "{{count}} stars",
+    "ratingOption_many": "{{count}} stars",
+    "ratingOption_other": "{{count}} stars",
+    "commentLabel": "Your review (optional)",
+    "commentPlaceholder": "Share your experience with this trip...",
+    "characterCount": "{{count}} / {{max}} characters",
+    "ratingRequired": "Please select a rating.",
+    "submitError": "We could not submit your review. Please try again.",
+    "success": "Review submitted successfully.",
+    "submitting": "Submitting...",
+    "submit": "Submit review"
   },
   "refunds": {
     "panelTitle": "Refund",
@@ -869,7 +874,18 @@
   },
   "bookings": {
     "title": "My Bookings",
-    "subtitle": "Manage your past and upcoming trips."
+    "subtitle": "Manage your past and upcoming trips.",
+    "loading": "Loading your adventures...",
+    "signedOutTitle": "Sign in to view your bookings",
+    "signedOutBody": "Your trip confirmations, payment proof uploads, and review actions all live here once you are signed in.",
+    "signIn": "Sign in",
+    "explore": "Explore trips",
+    "actionRequired": "Action required",
+    "writeReview": "Write review",
+    "viewDetails": "View details",
+    "emptyTitle": "No bookings found",
+    "emptyBody": "Your upcoming adventures will appear here once you book them.",
+    "reviewModalBody": "Help other travelers by sharing your thoughts about this trip."
   },
   "quotes": {
     "title": "Request these dates",
@@ -1151,5 +1167,19 @@
     "quoteTotal": "Firm total (MAD, taxes included)",
     "quoteBy": "Quote from {{agency}}",
     "sent": "Request sent — reference {{ref}}"
+  },
+  "wishlistPage": {
+    "title": "My wishlist",
+    "subtitle": "Your saved trips",
+    "loading": "Loading your wishlist...",
+    "signedOutTitle": "Sign in to access your wishlist",
+    "signedOutBody": "Save your favorite trips and come back to them any time from your account.",
+    "signIn": "Sign in",
+    "explore": "Explore trips",
+    "emptyTitle": "Your wishlist is empty",
+    "emptyBody": "Start adding trips to your wishlist to see them here.",
+    "previous": "Previous",
+    "pageOf": "Page {{page}} of {{total}}",
+    "next": "Next"
   }
 }

@@ -454,6 +454,8 @@
   },
   "search": {
     "resultCount": "Affichage de {{count}} sur {{total}}",
+    "metaTitle": "Découvrir les voyages — Ouiboo",
+    "metaDescription": "Recherchez et filtrez des expériences de voyage sélectionnées au Maroc et au-delà.",
     "title": "Trouvez votre prochaine Aventure",
     "placeholder": "Destination, activité ou mot-clé",
     "searchButton": "Rechercher",
@@ -649,19 +651,22 @@
     "previous": "Précédent",
     "next": "Suivant"
   },
-  "wishlistPage": {
-    "title": "Ma liste d’envies",
-    "subtitle": "Vos voyages enregistrés",
-    "loading": "Chargement de votre liste d’envies...",
-    "signedOutTitle": "Connectez-vous pour accéder à votre liste d’envies",
-    "signedOutBody": "Enregistrez vos voyages favoris et retrouvez-les à tout moment depuis votre compte.",
-    "signIn": "Se connecter",
-    "explore": "Découvrir les voyages",
-    "emptyTitle": "Votre liste d’envies est vide",
-    "emptyBody": "Ajoutez des voyages à votre liste d’envies pour les retrouver ici.",
-    "previous": "Précédent",
-    "pageOf": "Page {{page}} sur {{total}}",
-    "next": "Suivant"
+  "reviewForm": {
+    "ratingLabel": "Évaluez votre expérience",
+    "ratingOption_zero": "{{count}} étoile",
+    "ratingOption_one": "{{count}} étoile",
+    "ratingOption_two": "{{count}} étoiles",
+    "ratingOption_few": "{{count}} étoiles",
+    "ratingOption_many": "{{count}} étoiles",
+    "ratingOption_other": "{{count}} étoiles",
+    "commentLabel": "Votre avis (facultatif)",
+    "commentPlaceholder": "Partagez votre expérience de ce voyage...",
+    "characterCount": "{{count}} / {{max}} caractères",
+    "ratingRequired": "Veuillez sélectionner une note.",
+    "submitError": "Nous n’avons pas pu envoyer votre avis. Veuillez réessayer.",
+    "success": "Avis envoyé avec succès.",
+    "submitting": "Envoi en cours...",
+    "submit": "Envoyer l’avis"
   },
   "refunds": {
     "panelTitle": "Remboursement",
@@ -869,7 +874,18 @@
   },
   "bookings": {
     "title": "Mes réservations",
-    "subtitle": "Gérez vos voyages passés et à venir."
+    "subtitle": "Gérez vos voyages passés et à venir.",
+    "loading": "Chargement de vos aventures...",
+    "signedOutTitle": "Connectez-vous pour voir vos réservations",
+    "signedOutBody": "Vos confirmations de voyage, téléversements de justificatifs et actions d’avis apparaîtront ici après votre connexion.",
+    "signIn": "Se connecter",
+    "explore": "Découvrir les voyages",
+    "actionRequired": "Action requise",
+    "writeReview": "Écrire un avis",
+    "viewDetails": "Voir les détails",
+    "emptyTitle": "Aucune réservation trouvée",
+    "emptyBody": "Vos prochaines aventures apparaîtront ici une fois votre réservation effectuée.",
+    "reviewModalBody": "Aidez d’autres voyageurs en partageant votre avis sur ce voyage."
   },
   "quotes": {
     "title": "Demander ces dates",
@@ -1151,5 +1167,19 @@
     "quoteTotal": "Total ferme (MAD, taxes incluses)",
     "quoteBy": "Devis de {{agency}}",
     "sent": "Demande envoyée — référence {{ref}}"
+  },
+  "wishlistPage": {
+    "title": "Ma liste d’envies",
+    "subtitle": "Vos voyages enregistrés",
+    "loading": "Chargement de votre liste d’envies...",
+    "signedOutTitle": "Connectez-vous pour accéder à votre liste d’envies",
+    "signedOutBody": "Enregistrez vos voyages favoris et retrouvez-les à tout moment depuis votre compte.",
+    "signIn": "Se connecter",
+    "explore": "Découvrir les voyages",
+    "emptyTitle": "Votre liste d’envies est vide",
+    "emptyBody": "Ajoutez des voyages à votre liste d’envies pour les retrouver ici.",
+    "previous": "Précédent",
+    "pageOf": "Page {{page}} sur {{total}}",
+    "next": "Suivant"
   }
 }

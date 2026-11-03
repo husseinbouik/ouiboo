@@ -81,7 +81,7 @@ export function CheckoutSummary({
         <div className="space-y-4 pt-6 border-t border-border/50">
           <div className="flex justify-between items-center text-sm">
             <span className="text-muted-foreground font-medium flex items-center gap-2"><Calendar className="h-4 w-4" /> {t('checkout.selectedDate')}</span>
-            <span className="font-black">{sessionDateLabel}</span>
+            <span className="font-black"><bdi dir="ltr">{sessionDateLabel}</bdi></span>
           </div>
           <div className="flex justify-between items-center text-sm">
             <span className="text-muted-foreground font-medium flex items-center gap-2"><Users className="h-4 w-4" /> {t('checkout.guestCount')}</span>

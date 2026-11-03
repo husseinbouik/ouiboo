@@ -7,11 +7,16 @@ import {
 } from '@/lib/search-facets';
 import { TripCategory, TripStatus } from '@ouiboo/types';
 import { getInitialLanguage } from '@ouiboo/i18n/server';
+import { getServerTranslations } from '@/lib/server-translations';
 
-export const metadata: Metadata = {
-  title: 'Explore trips — Ouiboo',
-  description: 'Search and filter handpicked travel experiences across Morocco and beyond.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getServerTranslations();
+  return {
+    title: t('search.metaTitle'),
+    description: t('search.metaDescription'),
+    alternates: { canonical: '/search' },
+  };
+}
 
 // SSR: the server reads searchParams, fetches the initial trip list, and
 // passes it to the client component. All filter/pagination/sort interactivity

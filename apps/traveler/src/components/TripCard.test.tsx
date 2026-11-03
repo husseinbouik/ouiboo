@@ -68,6 +68,12 @@ function makeTrip(agency: TripCardTrip['agency']): TripCardTrip {
 }
 
 describe('TripCard verification statement (#413, Council B10)', () => {
+    it('uses the translated category label instead of exposing the enum (#745)', () => {
+        render(<TripCard trip={{ ...makeTrip(null), category: 'ADVENTURE' }} />);
+        expect(screen.getByText('categories.adventure')).toBeTruthy();
+        expect(screen.queryByText('ADVENTURE')).toBeNull();
+    });
+
     it('shows the dated what+when statement when licence and insurance are verified', () => {
         render(
             <TripCard
