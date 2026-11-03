@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { MoneyInput, toMoneyDecimal, toMoneyString, toRateDecimal, toRateString } from '../common/money.util';
 
@@ -45,6 +45,10 @@ export class CurrencyService {
     AED: '0.37000000',
     TND: '0.31000000',
   };
+  /** Coalesce concurrent cache misses per target. This is deliberately
+   * process-local: it prevents a burst from stampeding one instance, while
+   * the persistent cache remains authoritative across instances. */
+  private readonly refreshes = new Map<string, Promise<ExchangeRateInfo>>();
 
   constructor(private prisma: DatabaseService) {}
 
@@ -63,7 +67,7 @@ export class CurrencyService {
     }
 
     if (!this.supportedCurrencies.includes(normalizedTarget)) {
-      throw new Error(`Currency ${normalizedTarget} not supported`);
+      throw new BadRequestException(`Currency ${normalizedTarget} not supported`);
     }
 
     // Check cache first. Only provider-fetched rates are ever
@@ -90,6 +94,21 @@ export class CurrencyService {
       }
     }
 
+    const inFlight = this.refreshes.get(normalizedTarget);
+    if (inFlight) return inFlight;
+
+    const refresh = this.fetchAndCache(normalizedTarget);
+    this.refreshes.set(normalizedTarget, refresh);
+    try {
+      return await refresh;
+    } finally {
+      if (this.refreshes.get(normalizedTarget) === refresh) {
+        this.refreshes.delete(normalizedTarget);
+      }
+    }
+  }
+
+  private async fetchAndCache(normalizedTarget: string): Promise<ExchangeRateInfo> {
     try {
       const rate = await this.fetchExchangeRate(normalizedTarget);
 
@@ -221,12 +240,18 @@ export class CurrencyService {
           `Exchange rate provider returned result=${data?.result ?? 'unknown'}`,
         );
       }
+      if (data?.base_code !== this.baseCurrency) {
+        throw new Error(`Exchange rate provider returned unexpected base ${data?.base_code ?? 'unknown'}`);
+      }
       const rate = data.rates?.[targetCurrency];
 
-      if (!rate) {
-        throw new Error(`Currency ${targetCurrency} not supported`);
+      const numericRate = typeof rate === 'number' ? rate : Number(rate);
+      // A provider response is untrusted input. Reject zero, negative,
+      // non-finite and wildly implausible values instead of persisting them.
+      if (!Number.isFinite(numericRate) || numericRate <= 0 || numericRate > 10_000) {
+        throw new Error(`Exchange rate provider returned invalid rate for ${targetCurrency}`);
       }
-      return toRateString(rate) || '1.00000000';
+      return toRateString(numericRate) || '1.00000000';
     } finally {
       clearTimeout(timeout);
     }
