@@ -112,6 +112,7 @@ export function collectTripTexts(trip: {
         description?: string | null;
         activities?: string[] | null;
     }> | null;
+    faqs?: unknown;
     translations?: unknown;
 }): string[] {
     const texts: string[] = [];
@@ -144,6 +145,9 @@ export function collectTripTexts(trip: {
         }
     };
     walk(trip.translations, 0);
+    // Agency-authored FAQs are public traveller-facing content too. They
+    // must not become a backdoor for free-text cancellation/payment terms.
+    walk(trip.faqs, 0);
     return texts;
 }
 
