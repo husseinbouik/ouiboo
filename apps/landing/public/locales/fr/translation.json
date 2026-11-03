@@ -505,6 +505,11 @@
       "viewTrip": "Voir le détail du voyage",
       "organiser": "Organisateur",
       "checkLine": "Licence vérifiée le 30 oct. 2026 · Assurance RC valable jusqu'au 31 déc. 2027",
+      "checkLineTemplate": "Licence vérifiée le {{checked}} · Assurance RC valable jusqu'au {{insurance}}",
+      "durationDay": "{{count}} jour",
+      "durationDays": "{{count}} jours",
+      "durationNight": "{{count}} nuit",
+      "durationNights": "{{count}} nuits",
       "cards": {
         "chefchaouen": {
           "dest": "Chefchaouen · La Perle Bleue",
