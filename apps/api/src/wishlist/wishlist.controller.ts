@@ -51,9 +51,9 @@ export class WishlistController {
   async getWishlist(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
+    @Request() req: any,
     @Query('locale') locale?: string,
     @Headers('x-ouiboo-language') languageHeader?: string,
-    @Request() req: any,
   ) {
     return this.wishlistService.getUserWishlist(
       req.user.id,
