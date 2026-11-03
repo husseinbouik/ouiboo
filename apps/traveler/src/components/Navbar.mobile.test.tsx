@@ -18,6 +18,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { Navbar } from './Navbar';
 
 let mockUser: any = null;
+let mockWishlistCount: { count: number } | undefined;
 
 jest.mock('next/navigation', () => ({
   usePathname: () => '/',
@@ -49,7 +50,7 @@ jest.mock('@ouiboo/ui', () => ({
 }));
 
 jest.mock('@tanstack/react-query', () => ({
-  useQuery: () => ({ data: undefined }),
+  useQuery: () => ({ data: mockWishlistCount }),
 }));
 
 jest.mock('@/lib/api-client', () => ({
@@ -74,6 +75,7 @@ jest.mock('framer-motion', () => ({
 
 beforeEach(() => {
   mockUser = null;
+  mockWishlistCount = undefined;
   window.matchMedia = jest.fn().mockImplementation((query: string) => ({
     matches: query.includes('hover'),
     media: query,
@@ -107,6 +109,16 @@ describe('Navbar mobile layout (#648) — signed out', () => {
     expect(within(dialog).getByText('nav.login')).not.toBeNull();
     expect(within(dialog).getByTestId('language-switcher')).not.toBeNull();
     expect(within(dialog).getByTestId('currency-selector')).not.toBeNull();
+  });
+
+  it('keeps the wishlist count attached to its icon so the link stays a two-column row at 360px (#662)', () => {
+    mockWishlistCount = { count: 3 };
+    render(<Navbar />);
+    fireEvent.click(screen.getByLabelText('nav.openMenu'));
+    const wishlist = screen.getByText('nav.wishlist').closest('a');
+    const trailingControl = wishlist?.querySelector('span.ms-2');
+    expect(trailingControl?.className).toContain('shrink-0');
+    expect(trailingControl?.textContent).toContain('3');
   });
 
   it('the selector cluster in the bar is desktop-only (hidden below lg)', () => {
