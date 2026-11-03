@@ -874,7 +874,18 @@
   },
   "bookings": {
     "title": "My Bookings",
-    "subtitle": "Manage your past and upcoming trips."
+    "subtitle": "Manage your past and upcoming trips.",
+    "loading": "Loading your adventures...",
+    "signedOutTitle": "Sign in to view your bookings",
+    "signedOutBody": "Your trip confirmations, payment proof uploads, and review actions all live here once you are signed in.",
+    "signIn": "Sign in",
+    "explore": "Explore trips",
+    "actionRequired": "Action required",
+    "writeReview": "Write review",
+    "viewDetails": "View details",
+    "emptyTitle": "No bookings found",
+    "emptyBody": "Your upcoming adventures will appear here once you book them.",
+    "reviewModalBody": "Help other travelers by sharing your thoughts about this trip."
   },
   "quotes": {
     "title": "Request these dates",
