@@ -454,6 +454,8 @@
   },
   "search": {
     "resultCount": "Showing {{count}} of {{total}}",
+    "metaTitle": "Explore trips — Ouiboo",
+    "metaDescription": "Search and filter handpicked travel experiences across Morocco and beyond.",
     "title": "Find your next Adventure",
     "placeholder": "Destination, activity or keyword",
     "searchButton": "Search",
