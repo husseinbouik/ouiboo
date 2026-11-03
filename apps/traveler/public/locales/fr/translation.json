@@ -649,6 +649,23 @@
     "previous": "Précédent",
     "next": "Suivant"
   },
+  "reviewForm": {
+    "ratingLabel": "Évaluez votre expérience",
+    "ratingOption_zero": "{{count}} étoile",
+    "ratingOption_one": "{{count}} étoile",
+    "ratingOption_two": "{{count}} étoiles",
+    "ratingOption_few": "{{count}} étoiles",
+    "ratingOption_many": "{{count}} étoiles",
+    "ratingOption_other": "{{count}} étoiles",
+    "commentLabel": "Votre avis (facultatif)",
+    "commentPlaceholder": "Partagez votre expérience de ce voyage...",
+    "characterCount": "{{count}} / {{max}} caractères",
+    "ratingRequired": "Veuillez sélectionner une note.",
+    "submitError": "Nous n’avons pas pu envoyer votre avis. Veuillez réessayer.",
+    "success": "Avis envoyé avec succès.",
+    "submitting": "Envoi en cours...",
+    "submit": "Envoyer l’avis"
+  },
   "refunds": {
     "panelTitle": "Remboursement",
     "defaultOrganiser": "l'organisateur",
