@@ -1185,7 +1185,6 @@ export class TripsService {
             inclusions: dto.inclusions ?? existing.inclusions,
             exclusions: dto.exclusions ?? existing.exclusions,
             checklist: dto.checklist ?? existing.checklist,
-            faqs: normalizedFaqs === undefined ? (existing as { faqs?: unknown }).faqs : normalizedFaqs,
         };
         const mergedTranslations = translations
             ? buildTripTranslations(
@@ -1249,6 +1248,10 @@ export class TripsService {
             inclusions: dto.inclusions ?? existing.inclusions,
             exclusions: dto.exclusions ?? existing.exclusions,
             checklist: dto.checklist ?? existing.checklist,
+            // #751: FAQs are a standalone Json column (inline language
+            // maps), NOT part of the canonical sections model — but the
+            // commercial-terms scan must still see their post-write state.
+            faqs: normalizedFaqs === undefined ? (existing as { faqs?: unknown }).faqs : normalizedFaqs,
         };
 
         // #371: a status change INTO Active is a publish transition and
