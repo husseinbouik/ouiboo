@@ -33,6 +33,11 @@ describe('CancellationScaleCard (#417)', () => {
         expect(screen.getByText(/MAD 100/)).toBeTruthy();
         expect(screen.getByText(/MAD 0/)).toBeTruthy();
         expect(screen.getByText('cancellation.paidByAgency')).toBeTruthy();
+
+        // A logical two-column grid prevents the Arabic threshold text
+        // from being squeezed one word per line beside the fixed amount.
+        const firstBandRow = screen.getAllByText('cancellation.bandAtLeast')[0].closest('li');
+        expect(firstBandRow?.className).toContain('grid-cols-[minmax(0,1fr)_auto]');
     });
 
     it('omits amounts when no base amount is known', () => {

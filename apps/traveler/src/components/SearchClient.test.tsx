@@ -194,6 +194,13 @@ describe('SearchClient URL-as-source-of-truth (#440)', () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 
+  it('isolates duration ranges so they do not reverse in an RTL document (#746)', () => {
+    render(<SearchClient initialFilters={initialFilters} initialResponse={null} />);
+    const duration = screen.getAllByText('search.durationBuckets.2-3')[0];
+    expect(duration.tagName).toBe('BDI');
+    expect(duration.getAttribute('dir')).toBe('ltr');
+  });
+
   it('debounces the text echo by 300ms and writes q via replace, preserving other filters', () => {
     jest.useFakeTimers();
     try {
