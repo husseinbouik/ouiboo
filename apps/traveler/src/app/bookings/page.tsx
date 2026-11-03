@@ -2,12 +2,11 @@
 
 import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
 import { BookingPaymentPlanStatus, BookingPaymentStatus, BookingStatus, VerificationStatus, type BookingDetails } from '@ouiboo/types';
 import { Button, Badge, Card, Pagination, Skeleton } from '@ouiboo/ui';
 import { BookingListSkeleton } from '@/components/Skeletons';
 import { cn } from '@ouiboo/ui/utils';
-import { toPaginatedList } from '@ouiboo/utils';
+import { formatCurrency, formatLocalDate, toPaginatedList } from '@ouiboo/utils';
 import { Calendar, MapPin, Loader2, Upload, Check, Trash2, Clock, Users, Star } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -92,6 +91,15 @@ function refundCaseCopy(refundCase: TravelerRefundCase, agencyName: string, t: T
         default:
             return t('refunds.case.unknown', { status: refundCase.status.replaceAll('_', ' ') });
     }
+}
+
+function paymentStatusTranslationKey(paymentStatus: BookingPaymentStatus, refundStatus?: string | null): string {
+    if (refundStatus === 'PROCESSED' && (paymentStatus === BookingPaymentStatus.Paid || paymentStatus === BookingPaymentStatus.PartiallyPaid)) return 'partiallyRefunded';
+    if (paymentStatus === BookingPaymentStatus.PartiallyPaid) return 'depositPaid';
+    if (paymentStatus === BookingPaymentStatus.Paid) return 'paid';
+    if (paymentStatus === BookingPaymentStatus.Refunded) return refundStatus === 'PROCESSED' ? 'refunded' : 'refundInProgress';
+    if (paymentStatus === BookingPaymentStatus.Failed) return 'failed';
+    return 'unpaid';
 }
 
 export default function MyBookingsPage() {
@@ -224,7 +232,7 @@ export default function MyBookingsPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-background font-sans text-foreground" role="status" aria-label="Loading your adventures...">
+            <div className="min-h-screen bg-background font-sans text-foreground" role="status" aria-label={t('bookings.loading')}>
                 <div className="max-w-5xl mx-auto px-6 pt-32 pb-20">
                     <div className="mb-12 space-y-3" aria-hidden="true">
                         <Skeleton className="h-12 w-64 max-w-full" />
@@ -232,7 +240,7 @@ export default function MyBookingsPage() {
                     </div>
                     <BookingListSkeleton count={3} />
                 </div>
-                <span className="sr-only">Loading your adventures...</span>
+                <span className="sr-only">{t('bookings.loading')}</span>
             </div>
         );
     }
@@ -245,16 +253,16 @@ export default function MyBookingsPage() {
                         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                             <Calendar className="h-8 w-8 text-muted-foreground" />
                         </div>
-                        <h3 className="text-xl font-bold text-foreground">Sign in to view your bookings</h3>
+                        <h3 className="text-xl font-bold text-foreground">{t('bookings.signedOutTitle')}</h3>
                         <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
-                            Your trip confirmations, payment proof uploads, and review actions all live here once you are signed in.
+                            {t('bookings.signedOutBody')}
                         </p>
                         <div className="mt-6 flex justify-center gap-3">
                             <Button asChild>
-              <Link href="/login">Sign In</Link>
+              <Link href="/login">{t('bookings.signIn')}</Link>
             </Button>
                             <Button asChild variant="outline">
-              <Link href="/search">Explore Trips</Link>
+              <Link href="/search">{t('bookings.explore')}</Link>
             </Button>
                         </div>
                     </div>
@@ -309,7 +317,7 @@ export default function MyBookingsPage() {
                                                     'px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl backdrop-blur-md border-none',
                                                     getTravelerBookingStatusTone(booking.status),
                                                 )}>
-                                                    {booking.status.replace('_', ' ')}
+                                                    {t(`bookingDetail.status.${booking.status}`)}
                                                 </Badge>
                                             </div>
                                         </div>
@@ -321,7 +329,7 @@ export default function MyBookingsPage() {
                                                     </Link>
                                                     {shouldShowUploadAction(booking.status, hasPaymentProof) && (
                                                         <div className="shrink-0 flex items-center gap-2 px-3 py-1 bg-amber-500/10 text-amber-500 rounded-lg text-[10px] font-black uppercase tracking-tighter animate-pulse">
-                                                            <Clock className="h-3 w-3" /> Action Required
+                                                            <Clock className="h-3 w-3" /> {t('bookings.actionRequired')}
                                                         </div>
                                                     )}
                                                 </div>
@@ -331,8 +339,8 @@ export default function MyBookingsPage() {
                                                             <Calendar className="h-4 w-4 text-sunset-orange" />
                                                         </div>
                                                         <div className="flex flex-col">
-                                                            <span className="text-[10px] text-muted-foreground font-bold uppercase">Date</span>
-                                                            <span className="text-sm font-semibold text-foreground">{format(new Date(booking.session.startDate), 'MMM dd, yyyy')}</span>
+                                                            <span className="text-[10px] text-muted-foreground font-bold uppercase">{t('bookingDetail.date')}</span>
+                                                            <span className="text-sm font-semibold text-foreground"><bdi>{formatLocalDate(booking.session.startDate, i18n.language)}</bdi></span>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-2.5">
@@ -340,7 +348,7 @@ export default function MyBookingsPage() {
                                                             <MapPin className="h-4 w-4 text-blue-500 dark:text-blue-400" />
                                                         </div>
                                                         <div className="flex flex-col">
-                                                            <span className="text-[10px] text-muted-foreground font-bold uppercase">Location</span>
+                                                            <span className="text-[10px] text-muted-foreground font-bold uppercase">{t('bookingDetail.location')}</span>
                                                             <span className="text-sm font-semibold text-foreground">{booking.session.template.startLocation}</span>
                                                         </div>
                                                     </div>
@@ -494,11 +502,11 @@ export default function MyBookingsPage() {
                                                 <div className="flex flex-wrap items-center gap-6">
                                                     <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground bg-muted/30 px-4 py-2 rounded-xl border border-border/50">
                                                         <Users className="h-4 w-4 text-sunset-orange" />
-                                                        <span className="text-foreground">{booking.guestsCount}</span> Guest(s)
+                                                        {t('bookingDetail.guests', { count: booking.guestsCount })}
                                                     </div>
                                                     <div className="text-left">
-                                                        <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-0.5">Total</p>
-                                                        <span className="text-2xl font-black text-foreground font-display tracking-tight">{booking.totalAmount} <span className="text-xs font-bold text-muted-foreground ml-1">MAD</span></span>
+                                                        <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-0.5">{t('bookingDetail.total')}</p>
+                                                        <span className="text-2xl font-black text-foreground font-display tracking-tight"><bdi>{formatCurrency(booking.totalAmount, booking.currency, i18n.language)}</bdi></span>
                                                     </div>
                                                 </div>
 
@@ -507,7 +515,7 @@ export default function MyBookingsPage() {
                                                         <label className="cursor-pointer">
                                                             <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, booking.id)} disabled={!!uploadingId} />
                                                             <Button disabled={!!uploadingId} className="h-12 px-8 bg-sunset-orange hover:bg-orange-600 border-none rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-orange-900/10 active:scale-95 transition-all">
-                                                                {uploadingId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4 mr-2" /> Upload Receipt</>}
+                                                                {uploadingId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4 mr-2" /> {t('bookingDetail.uploadReceipt')}</>}
                                                             </Button>
                                                         </label>
                                                     )}
@@ -517,19 +525,19 @@ export default function MyBookingsPage() {
                                                             onClick={() => setReviewModalOpen(booking.id)}
                                                             className="h-12 px-8 bg-deep-blue hover:bg-blue-900 rounded-xl text-xs font-black uppercase tracking-widest border-none"
                                                         >
-                                                            <Star className="h-4 w-4 mr-2" /> Write Review
+                                                            <Star className="h-4 w-4 mr-2" /> {t('bookings.writeReview')}
                                                         </Button>
                                                     )}
                                                     {booking.review && (
                                                         <Badge className="px-5 py-2.5 rounded-xl text-[10px] font-black bg-success/100/10 text-success border-0">
-                                                            Review Submitted
+                                                            {t('bookingDetail.reviewSubmitted')}
                                                         </Badge>
                                                     )}
                                                     <div className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border ${paymentStatus.className}`}>
-                                                        <Check className="h-4 w-4" /> {paymentStatus.label}
+                                                        <Check className="h-4 w-4" /> {t(`bookingDetail.paymentStatus.${paymentStatusTranslationKey(booking.paymentStatus, booking.refundStatus)}`)}
                                                     </div>
                                                     <div className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border ${proofStatus.className}`}>
-                                                        <Check className="h-4 w-4" /> {proofStatus.label}
+                                                        <Check className="h-4 w-4" /> {t(`bookingDetail.proofStatus.${booking.paymentProof?.status === VerificationStatus.Verified ? 'paymentConfirmed' : booking.paymentProof?.status === VerificationStatus.Rejected ? 'rejected' : booking.paymentProof?.status === VerificationStatus.Accepted ? 'acceptedPending' : booking.paymentProof ? 'receivedAwaiting' : 'notUploaded'}`)}
                                                     </div>
                                                     {showRetryPayment && (
                                                         <Button
@@ -538,7 +546,7 @@ export default function MyBookingsPage() {
                                                                 className="h-12 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest border-border/60"
                                                             >
                                                                 <Link href={retryHref}>
-                                                                Retry Payment
+                                                                {t('bookingDetail.retryPayment')}
                                                                 </Link>
                                                             </Button>
                                                     )}
@@ -548,7 +556,7 @@ export default function MyBookingsPage() {
                                                             className="h-12 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest border-border/60"
                                                         >
                                                             <Link href={`/booking/${booking.id}`}>
-                                                            View Details
+                                                            {t('bookings.viewDetails')}
                                                             </Link>
                                                         </Button>
                                                     <Button
@@ -556,7 +564,7 @@ export default function MyBookingsPage() {
                                                         className="h-12 w-12 rounded-xl hover:bg-muted text-muted-foreground border border-border/50"
                                                         onClick={() => handleCancel(booking.id)}
                                                         disabled={!canCancelTravelerBooking(booking.status) || cancellingId === booking.id}
-                                                        aria-label="Cancel booking"
+                                                        aria-label={t('bookingDetail.cancelBooking')}
                                                     >
                                                         {cancellingId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                                                     </Button>
@@ -566,12 +574,12 @@ export default function MyBookingsPage() {
                                                 <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3 text-xs font-semibold text-muted-foreground">
                                                     {booking.refundStatus && (
                                                         <p>
-                                                            Refund status: <span className="font-black text-foreground">{booking.refundStatus.replace('_', ' ')}</span>
+                                                            {t('bookingDetail.refundStatus')}: <span className="font-black text-foreground">{t(`bookingDetail.refundStatusValue.${booking.refundStatus}`)}</span>
                                                         </p>
                                                     )}
                                                     {booking.paymentProof?.rejectionReason && (
                                                         <p className="mt-1">
-                                                            Proof note: <span className="font-medium">{booking.paymentProof.rejectionReason}</span>
+                                                            {t('bookingDetail.paymentProofNote')}: <span className="font-medium">{booking.paymentProof.rejectionReason}</span>
                                                         </p>
                                                     )}
                                                 </div>
@@ -586,8 +594,8 @@ export default function MyBookingsPage() {
                             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Calendar className="h-8 w-8 text-muted-foreground" />
                             </div>
-                            <h3 className="text-xl font-bold text-foreground">No bookings found</h3>
-                            <p className="text-muted-foreground mt-2 max-w-sm mx-auto">Your upcoming adventures will appear here once you book them.</p>
+                            <h3 className="text-xl font-bold text-foreground">{t('bookings.emptyTitle')}</h3>
+                            <p className="text-muted-foreground mt-2 max-w-sm mx-auto">{t('bookings.emptyBody')}</p>
                         </div>
                     )}
                 </div>
@@ -603,8 +611,8 @@ export default function MyBookingsPage() {
                     <div className="bg-background rounded-t-3xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300">
                         <div className="space-y-6">
                             <div className="space-y-2">
-                                <h2 className="text-2xl font-bold text-foreground font-display">Share Your Experience</h2>
-                                <p className="text-muted-foreground">Help other travelers by sharing your thoughts about this trip</p>
+                                <h2 className="text-2xl font-bold text-foreground font-display">{t('bookingDetail.reviewShare')}</h2>
+                                <p className="text-muted-foreground">{t('bookings.reviewModalBody')}</p>
                             </div>
 
                             <ReviewForm
@@ -616,7 +624,7 @@ export default function MyBookingsPage() {
                     <button
                         onClick={() => setReviewModalOpen(null)}
                         className="fixed inset-0 -z-10"
-                        aria-label="Close dialog"
+                        aria-label={t('common.closeDialog')}
                     />
                 </div>
             )}

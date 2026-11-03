@@ -855,7 +855,18 @@
   },
   "bookings": {
     "title": "Mes réservations",
-    "subtitle": "Gérez vos voyages passés et à venir."
+    "subtitle": "Gérez vos voyages passés et à venir.",
+    "loading": "Chargement de vos aventures...",
+    "signedOutTitle": "Connectez-vous pour voir vos réservations",
+    "signedOutBody": "Vos confirmations de voyage, téléversements de justificatifs et actions d’avis apparaîtront ici après votre connexion.",
+    "signIn": "Se connecter",
+    "explore": "Découvrir les voyages",
+    "actionRequired": "Action requise",
+    "writeReview": "Écrire un avis",
+    "viewDetails": "Voir les détails",
+    "emptyTitle": "Aucune réservation trouvée",
+    "emptyBody": "Vos prochaines aventures apparaîtront ici une fois votre réservation effectuée.",
+    "reviewModalBody": "Aidez d’autres voyageurs en partageant votre avis sur ce voyage."
   },
   "quotes": {
     "title": "Demander ces dates",
