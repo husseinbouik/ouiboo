@@ -77,6 +77,19 @@ describe('traveller locale parity (#424)', () => {
         expect((ar as any).reviews.noReviewsYet).not.toBe((en as any).reviews.noReviewsYet);
     });
 
+    it('ships a complete, non-English traveller profile namespace (#743)', () => {
+        const keys = [
+            'signedOutTitle', 'title', 'personalInformation', 'fullName',
+            'accountRole', 'emailAddress', 'avatarUrl', 'save', 'displayCurrency',
+        ];
+        for (const key of keys) {
+            expect((fr as any).profilePage[key]).toBeDefined();
+            expect((ar as any).profilePage[key]).toBeDefined();
+            expect((fr as any).profilePage[key]).not.toBe((en as any).profilePage[key]);
+            expect((ar as any).profilePage[key]).not.toBe((en as any).profilePage[key]);
+        }
+    });
+
     it('isolates the interpolated Latin trip title in the AR share text and spells the brand Ouiboo in AR seller.poweredBy (#577)', () => {
         // U+2068 FIRST STRONG ISOLATE … U+2069 POP DIRECTIONAL ISOLATE
         // around {{title}} so a Latin title cannot scramble the RTL sentence.
