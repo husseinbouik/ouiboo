@@ -1248,6 +1248,10 @@ export class TripsService {
             inclusions: dto.inclusions ?? existing.inclusions,
             exclusions: dto.exclusions ?? existing.exclusions,
             checklist: dto.checklist ?? existing.checklist,
+            // #751: FAQs are a standalone Json column (inline language
+            // maps), NOT part of the canonical sections model — but the
+            // commercial-terms scan must still see their post-write state.
+            faqs: normalizedFaqs === undefined ? (existing as { faqs?: unknown }).faqs : normalizedFaqs,
         };
 
         // #371: a status change INTO Active is a publish transition and
@@ -1276,7 +1280,7 @@ export class TripsService {
             const touchesText =
                 dto.title !== undefined || dto.description !== undefined || translations !== undefined
                 || dto.inclusions !== undefined || dto.exclusions !== undefined
-                || dto.checklist !== undefined || itinerary !== undefined;
+                || dto.checklist !== undefined || itinerary !== undefined || faqs !== undefined;
             if (touchesText) {
                 const prohibited = findProhibitedCommercialTerms(collectTripTexts(postWriteTexts));
                 if (prohibited.length > 0) {

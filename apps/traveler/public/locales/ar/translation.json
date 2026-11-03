@@ -454,6 +454,8 @@
   },
   "search": {
     "resultCount": "عرض {{count}} من {{total}}",
+    "metaTitle": "استكشف الرحلات — Ouiboo",
+    "metaDescription": "ابحث عن تجارب سفر منتقاة في المغرب وخارجه وصَفِّها.",
     "title": "اعثر على مغامرتك القادمة",
     "placeholder": "الوجهة أو النشاط أو الكلمة المفتاحية",
     "searchButton": "بحث",
@@ -648,6 +650,23 @@
     "pageOf": "الصفحة {{page}} من {{total}}",
     "previous": "السابق",
     "next": "التالي"
+  },
+  "reviewForm": {
+    "ratingLabel": "قيّم تجربتك",
+    "ratingOption_zero": "{{count}} نجمة",
+    "ratingOption_one": "نجمة واحدة",
+    "ratingOption_two": "نجمتان",
+    "ratingOption_few": "{{count}} نجوم",
+    "ratingOption_many": "{{count}} نجمة",
+    "ratingOption_other": "{{count}} نجمة",
+    "commentLabel": "تقييمك (اختياري)",
+    "commentPlaceholder": "شارك تجربتك مع هذه الرحلة...",
+    "characterCount": "{{count}} / {{max}} حرفًا",
+    "ratingRequired": "يُرجى اختيار تقييم.",
+    "submitError": "تعذّر إرسال تقييمك. يُرجى المحاولة مرة أخرى.",
+    "success": "تم إرسال التقييم بنجاح.",
+    "submitting": "جارٍ الإرسال...",
+    "submit": "إرسال التقييم"
   },
   "refunds": {
     "panelTitle": "استرداد",
@@ -855,7 +874,18 @@
   },
   "bookings": {
     "title": "حجوزاتي",
-    "subtitle": "إدارة رحلاتك السابقة والقادمة."
+    "subtitle": "إدارة رحلاتك السابقة والقادمة.",
+    "loading": "جارٍ تحميل مغامراتك...",
+    "signedOutTitle": "سجّل الدخول لعرض حجوزاتك",
+    "signedOutBody": "تظهر هنا تأكيدات رحلاتك وعمليات رفع إثباتات الدفع وإجراءات التقييم بعد تسجيل الدخول.",
+    "signIn": "تسجيل الدخول",
+    "explore": "استكشف الرحلات",
+    "actionRequired": "إجراء مطلوب",
+    "writeReview": "اكتب تقييمًا",
+    "viewDetails": "عرض التفاصيل",
+    "emptyTitle": "لم يُعثر على حجوزات",
+    "emptyBody": "ستظهر مغامراتك القادمة هنا بعد إتمام الحجز.",
+    "reviewModalBody": "ساعد المسافرين الآخرين بمشاركة رأيك في هذه الرحلة."
   },
   "quotes": {
     "title": "اطلب هذه التواريخ",
@@ -1137,5 +1167,29 @@
     "quoteTotal": "المجموع الثابت (درهم، شامل الضرائب)",
     "quoteBy": "عرض من {{agency}}",
     "sent": "تم إرسال الطلب — المرجع {{ref}}"
+  },
+  "profilePage": {
+    "signedOutTitle": "سجّل الدخول لإدارة ملفك الشخصي",
+    "signedOutBody": "يحفظ ملفك الشخصي للمسافر الاسم والصورة الرمزية المستخدمين في الحجوزات والتقييمات وطلبات الدعم.",
+    "signIn": "تسجيل الدخول",
+    "createAccount": "إنشاء حساب",
+    "title": "ملفي الشخصي",
+    "subtitle": "حدّث المعلومات الأساسية التي يعتمد عليها المسافرون وفريق الدعم.",
+    "personalInformation": "المعلومات الشخصية",
+    "avatarFallback": "الصورة الرمزية للمسافر",
+    "profileFallback": "ملف المسافر",
+    "fullName": "الاسم الكامل",
+    "accountRole": "دور الحساب",
+    "travelerRole": "مسافر",
+    "emailAddress": "عنوان البريد الإلكتروني",
+    "avatarUrl": "رابط الصورة الرمزية",
+    "avatarPlaceholder": "https://...",
+    "avatarHelp": "اختياري. أضف رابط صورة مستضافة لتخصيص ملفك الشخصي كمُسافر.",
+    "updateSuccess": "تم تحديث الملف الشخصي بنجاح.",
+    "updateError": "يتعذر تحديث ملفك الشخصي الآن.",
+    "saving": "جارٍ الحفظ...",
+    "save": "حفظ الملف الشخصي",
+    "displayCurrency": "عملة العرض",
+    "displayCurrencyHelp": "تُعرض الأسعار بهذه العملة. وتُدفع الحجوزات دائمًا بعملة الرحلة نفسها."
   }
 }

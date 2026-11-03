@@ -67,9 +67,9 @@ export function CancellationScaleCard({ scale, baseAmount, currency, className }
           </p>
           <ul className="divide-y divide-border/60">
             {bands.map((band, index) => (
-              <li key={band.minDaysBeforeStart} className="flex items-center justify-between gap-4 py-2 text-sm">
-                <span className="text-muted-foreground">{bandLabel(index)}</span>
-                <span className="text-end font-bold text-foreground whitespace-nowrap">
+              <li key={band.minDaysBeforeStart} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 py-2 text-sm">
+                <span className="min-w-0 text-start text-muted-foreground">{bandLabel(index)}</span>
+                <span className="shrink-0 text-end font-bold text-foreground whitespace-nowrap">
                   {t('cancellation.refundPercent', { percent: band.refundPercent })}
                   {baseAmount != null && currency
                     ? ` · ${formatCurrency((Number(baseAmount) * band.refundPercent) / 100, currency, i18n.language)}`

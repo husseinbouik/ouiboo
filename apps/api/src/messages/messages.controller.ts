@@ -14,6 +14,7 @@ import {
 import { MessagesService } from './messages.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RateLimit, RateLimitGuard, RateLimitSensitive } from '../common/rate-limit.guard';
 
 @Controller('messages')
 @UseGuards(JwtAuthGuard)
@@ -25,6 +26,12 @@ export class MessagesController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(RateLimitGuard)
+  // Messaging can be used to solicit off-platform payment or to spam an
+  // agency.  Keep the limit distributed and fail closed when Redis is down;
+  // this is intentionally stricter than a best-effort process-local limit.
+  @RateLimit({ points: 20, windowMs: 60_000, keyPrefix: 'messages:send' })
+  @RateLimitSensitive()
   async sendMessage(
     @Body() dto: SendMessageDto,
     @Request() req: any,
