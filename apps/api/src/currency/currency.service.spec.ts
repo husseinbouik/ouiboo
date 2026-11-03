@@ -125,6 +125,10 @@ describe('CurrencyService (#649)', () => {
 
     const first = service.getExchangeRateInfo('EUR');
     const second = service.getExchangeRateInfo('EUR');
+    // Both callers must first clear their awaited cache lookups before the
+    // refresh (and its single provider fetch) is issued — flush the queue
+    // so both have converged on the in-flight refresh before asserting.
+    await new Promise((resolve) => setImmediate(resolve));
     expect(global.fetch).toHaveBeenCalledTimes(1);
     resolveFetch({ ok: true, status: 200, json: async () => ({ result: 'success', base_code: 'MAD', rates: PROVIDER_RATES }) });
 
