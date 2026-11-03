@@ -454,6 +454,8 @@
   },
   "search": {
     "resultCount": "عرض {{count}} من {{total}}",
+    "metaTitle": "استكشف الرحلات — Ouiboo",
+    "metaDescription": "ابحث عن تجارب سفر منتقاة في المغرب وخارجه وصَفِّها.",
     "title": "اعثر على مغامرتك القادمة",
     "placeholder": "الوجهة أو النشاط أو الكلمة المفتاحية",
     "searchButton": "بحث",

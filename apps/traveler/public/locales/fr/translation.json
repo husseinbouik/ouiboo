@@ -454,6 +454,8 @@
   },
   "search": {
     "resultCount": "Affichage de {{count}} sur {{total}}",
+    "metaTitle": "Découvrir les voyages — Ouiboo",
+    "metaDescription": "Recherchez et filtrez des expériences de voyage sélectionnées au Maroc et au-delà.",
     "title": "Trouvez votre prochaine Aventure",
     "placeholder": "Destination, activité ou mot-clé",
     "searchButton": "Rechercher",
