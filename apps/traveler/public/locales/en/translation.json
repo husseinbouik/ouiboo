@@ -58,7 +58,7 @@
   },
   "featured": {
     "title": "Featured Experiences",
-    "subtitle": "Hand-picked itineraries from our top rated local agencies.",
+    "subtitle": "Hand-picked itineraries from local agencies.",
     "viewAll": "View all trips",
     "from": "From",
     "emptyTitle": "No trips found",
@@ -422,7 +422,7 @@
   "featuredPage": {
     "badge": "Featured Collection",
     "title": "Handpicked Experiences",
-    "subtitle": "A launch-MVP shortlist of the strongest active trips across discovery, demand, and agency quality.",
+    "subtitle": "A launch shortlist of active trips across discovery, demand, and agency quality.",
     "browseAll": "Browse all trips",
     "emptyTitle": "Featured trips are being refreshed",
     "emptySubtitle": "Explore the full catalog while the team curates the next launch-ready list.",
@@ -1199,7 +1199,7 @@
   },
   "customTrip": {
     "title": "Request a custom trip",
-    "subtitle": "Describe the trip you want. Verified agencies in the area can reply with a firm quote — you only share your contact details with the agency you accept.",
+    "subtitle": "Describe the trip you want. Agencies in the area whose licence and insurance Ouiboo has checked can reply with a firm quote — you only share your contact details with the agency you accept.",
     "unavailable": "Custom trip requests are not available yet.",
     "tripTitle": "Trip title",
     "description": "What do you want to do?",

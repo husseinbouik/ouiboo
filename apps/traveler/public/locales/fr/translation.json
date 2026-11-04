@@ -58,7 +58,7 @@
   },
   "featured": {
     "title": "Expériences en vedette",
-    "subtitle": "Des itinéraires sélectionnés par nos meilleures agences locales.",
+    "subtitle": "Des itinéraires sélectionnés par des agences locales.",
     "viewAll": "Voir tous les voyages",
     "from": "À partir de",
     "emptyTitle": "Aucun voyage trouvé",
@@ -422,7 +422,7 @@
   "featuredPage": {
     "badge": "Collection en vedette",
     "title": "Expériences sélectionnées",
-    "subtitle": "Une sélection de lancement des voyages actifs les plus pertinents en termes de découverte, de demande et de qualité d'agence.",
+    "subtitle": "Une sélection de lancement de voyages actifs en termes de découverte, de demande et de qualité d'agence.",
     "browseAll": "Parcourir tous les voyages",
     "emptyTitle": "Les voyages en vedette sont en cours de renouvellement",
     "emptySubtitle": "Explorez tout le catalogue pendant que l'équipe prépare la prochaine sélection.",
@@ -1199,7 +1199,7 @@
   },
   "customTrip": {
     "title": "Demander un voyage sur mesure",
-    "subtitle": "Décrivez le voyage souhaité. Les agences vérifiées de la zone peuvent répondre avec un devis ferme — vos coordonnées ne sont partagées qu'avec l'agence que vous acceptez.",
+    "subtitle": "Décrivez le voyage souhaité. Les agences de la zone dont Ouiboo a vérifié la licence et l'assurance peuvent répondre avec un devis ferme — vos coordonnées ne sont partagées qu'avec l'agence que vous acceptez.",
     "unavailable": "Les demandes de voyage sur mesure ne sont pas encore disponibles.",
     "tripTitle": "Titre du voyage",
     "description": "Que voulez-vous faire ?",
