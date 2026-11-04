@@ -406,6 +406,8 @@ model User {
   moderatedReviews        Review[]                @relation("ReviewModerator")
   wishlist                Wishlist[]
   travelerConversations   Conversation[]          @relation("TravelerConversations")
+  agencyBlocks            AgencyBlock[]           @relation("TravelerAgencyBlocks")
+  conversationReports     ConversationReport[]    @relation("ConversationReporter")
   quoteRequests           QuoteRequest[]
   customTripRequests      CustomTripRequest[]
   notificationPreferences NotificationPreference?
@@ -483,6 +485,7 @@ model AgencyProfile {
   reviews            Review[]
   invoiceLineItems   InvoiceLineItem[]
   conversations      Conversation[]     @relation("AgencyConversations")
+  blockedByTravelers AgencyBlock[]        @relation("BlockedAgency")
   subscriptionStatus SubscriptionStatus @default(TRIAL)
   trialEndsAt        DateTime?
   subscriptionEndsAt DateTime?
@@ -1617,6 +1620,7 @@ model Conversation {
   agency        AgencyProfile @relation("AgencyConversations", fields: [agencyId], references: [id], onDelete: Cascade)
   lastMessageAt DateTime?
   messages      Message[]
+  reports       ConversationReport[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -1640,6 +1644,44 @@ model Message {
   @@index([senderId])
   @@index([conversationId, createdAt])
   @@index([conversationId, isRead])
+}
+
+// #729/#754 (Council S7-2): one-tap conversation reports. A report is a
+// moderation signal, not a punishment: it records WHO reported WHICH
+// conversation, a coarse reason category and an optional short note.
+// Message content is never copied here. Admin triage reads these rows
+// together with the audit trail.
+model ConversationReport {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  reporterId     String
+  reporter       User         @relation("ConversationReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reason         String
+  details        String?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@index([reporterId])
+  @@index([createdAt])
+}
+
+// #729/#754 (Council S7-2): a traveller's block of an agency. Effect
+// (enforced in MessagesService): the pair cannot START a new
+// conversation, and sends in an existing conversation are refused
+// unless the pair has a live booking — an existing booking
+// conversation stays usable for that booking. The agency is not
+// notified and no other traveller is affected.
+model AgencyBlock {
+  id         String        @id @default(cuid())
+  travelerId String
+  traveler   User          @relation("TravelerAgencyBlocks", fields: [travelerId], references: [id], onDelete: Cascade)
+  agencyId   String
+  agency     AgencyProfile @relation("BlockedAgency", fields: [agencyId], references: [id], onDelete: Cascade)
+  createdAt  DateTime      @default(now())
+
+  @@unique([travelerId, agencyId])
+  @@index([agencyId])
 }
 
 // Exchange Rates Cache
