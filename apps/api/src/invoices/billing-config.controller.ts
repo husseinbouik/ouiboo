@@ -34,6 +34,16 @@ export class BillingConfigController {
                 grandfatherMonths: config.betaCohortGrandfatherMonths,
                 grandfatherTier: 'PRO',
             },
+            // #426: fiscal configuration. The TVA rate is the council's
+            // working assumption pending written confirmation; the
+            // subscription price stays null until decided.
+            fiscal: {
+                trigger: config.serviceFeeTrigger,
+                vatRatePercent: config.vatRatePercent,
+                vatRateStatus: 'PENDING_WRITTEN_CONFIRMATION',
+                subscriptionMonthlyPriceHt: config.subscriptionMonthlyPriceHt,
+                creditNoteSeries: 'AV',
+            },
         };
     }
 }

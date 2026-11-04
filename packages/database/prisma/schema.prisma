@@ -1810,6 +1810,29 @@ model SupportTicket {
 
 enum InvoiceStatus {
   ISSUED
+  // #426 (Council P0-10): set when credit notes (avoirs) against this
+  // invoice cumulatively reverse its full HT total. Partially credited
+  // invoices stay ISSUED; the credited amount is derivable from the
+  // credit-note lines that reference the original lines' bookings.
+  CREDITED
+}
+
+// #426 (Council P0-10): fiscal document class. INVOICE is the monthly
+// platform-service-fee / subscription invoice (INV- series). CREDIT_NOTE
+// is the avoir that reverses fee amounts on refunds completed after the
+// original invoice was issued — it carries its OWN sequential series
+// (AV-), negative lines, and a link to the invoice it credits. Moroccan
+// practice corrects invoices by credit note, never by editing them.
+enum InvoiceDocumentType {
+  INVOICE
+  CREDIT_NOTE
+}
+
+// #426: what a line bills. SERVICE_FEE lines carry a booking and the
+// terminal-retained-value fee; SUBSCRIPTION lines carry no booking.
+enum InvoiceLineType {
+  SERVICE_FEE
+  SUBSCRIPTION
 }
 
 // #359: monthly commission invoices Ouiboo issues to each agency. Ouiboo is
@@ -1822,29 +1845,62 @@ enum InvoiceStatus {
 model Invoice {
   id             String        @id @default(cuid())
   number         String        @unique
+  // #426: document class — see InvoiceDocumentType. Defaults INVOICE so
+  // every pre-#426 row keeps its meaning.
+  documentType   InvoiceDocumentType @default(INVOICE)
   agencyId       String
   agency         AgencyProfile @relation(fields: [agencyId], references: [id])
   periodStart    DateTime
   periodEnd      DateTime
   currency       String        @default("MAD")
   commissionRate Decimal       @db.Decimal(5, 2)
+  // For INVOICE documents: the sum of the fee lines' retained bases
+  // (verified paid minus refunds completed — the Debate 5 base), i.e.
+  // the bookings' retained GMV the fee was computed on. For CREDIT_NOTE
+  // documents: the (negative) sum of the refunded amounts credited.
   subtotalAmount Decimal       @db.Decimal(18, 2)
+  // HT total of the document (sum of line amountHt). Kept equal to the
+  // historical meaning of totalAmount (the fee total) for INVOICE rows.
   totalAmount    Decimal       @db.Decimal(18, 2)
+  // #426: TVA snapshot. vatRate is the rate applied to every line of
+  // this document (percent); vatAmount is the summed line TVA;
+  // totalTtcAmount = totalAmount + vatAmount. The 20% default is the
+  // council's working assumption PENDING WRITTEN CONFIRMATION from the
+  // expert-comptable — it is configurable (OUIBOO_VAT_RATE_PERCENT),
+  // never a settled classification (see billing-config.ts).
+  vatRate        Decimal       @default(20) @db.Decimal(5, 2)
+  vatAmount      Decimal       @default(0) @db.Decimal(18, 2)
+  totalTtcAmount Decimal       @default(0) @db.Decimal(18, 2)
   status         InvoiceStatus @default(ISSUED)
   issuerName     String?
   issuerIce      String?
+  // #426: issuer Identifiant Fiscal (IF) — a required mention on a
+  // Moroccan fiscal invoice. Sourced from OUIBOO_LEGAL_IF at issuance,
+  // null until the company exists; never invented.
+  issuerIf       String?
   issuerRc       String?
   issuerAddress  String?       @db.Text
   agencyName     String
   agencyIce      String
+  // #426: CREDIT_NOTE documents only — the invoice this avoir credits.
+  creditNoteForId String?
+  creditNoteFor   Invoice?  @relation("CreditNoteFor", fields: [creditNoteForId], references: [id], onDelete: SetNull)
+  creditNotes     Invoice[] @relation("CreditNoteFor")
+  creditReason    String?
   lineItems      InvoiceLineItem[]
   issuedAt       DateTime      @default(now())
   createdAt      DateTime      @default(now())
+  // #426: invoice-generation idempotency key, set ONLY on INVOICE
+  // documents ("<agencyId>:<periodStartISO>"). Credit notes leave it
+  // null (Postgres unique allows many NULLs), which frees the old
+  // (agency, period) unique — that constraint could not represent two
+  // documents of different classes for the same agency and month.
+  periodKey      String?       @unique
 
   @@unique([id, agencyId])
-  @@unique([agencyId, periodStart, periodEnd])
   @@index([agencyId, issuedAt])
   @@index([issuedAt])
+  @@index([documentType, agencyId])
 }
 
 model InvoiceLineItem {
@@ -1856,25 +1912,53 @@ model InvoiceLineItem {
   agencyId         String
   agency           AgencyProfile @relation(fields: [agencyId], references: [id])
   invoice          Invoice @relation(fields: [invoiceId, agencyId], references: [id, agencyId], onDelete: Cascade)
-  bookingId        String
-  booking          Booking @relation(fields: [bookingId, agencyId], references: [id, agencyId])
+  // #426: nullable since SUBSCRIPTION lines (and only they) carry no
+  // booking. SERVICE_FEE lines — including credit-note reversal lines —
+  // always carry the booking they bill / credit.
+  bookingId        String?
+  booking          Booking? @relation(fields: [bookingId, agencyId], references: [id, agencyId])
+  // #426: credit-note lines record the RefundCase whose completion they
+  // reverse, which makes credit-note generation idempotent per case.
+  refundCaseId     String?
+  lineType         InvoiceLineType @default(SERVICE_FEE)
   description      String
   bookingDate      DateTime
+  // For SERVICE_FEE lines: the retained base (verified paid minus
+  // refunds completed) the fee is computed on — NOT the booking total.
+  // Negative on credit-note lines (the refunded amount). 0 for
+  // SUBSCRIPTION lines.
   grossAmount      Decimal @db.Decimal(18, 2)
   commissionRate   Decimal @db.Decimal(5, 2)
+  // For SERVICE_FEE lines: the fee HT (grossAmount x commissionRate).
+  // Negative on credit-note lines. 0 for SUBSCRIPTION lines (their HT
+  // lives in amountHt).
   commissionAmount Decimal @db.Decimal(18, 2)
+  // #426: per-line TVA breakdown. amountHt is the line's HT amount
+  // (fee HT, subscription HT, or the negative avoir HT); vatRate the
+  // applied percent; vatAmount = amountHt x vatRate (rounded per line);
+  // amountTtc = amountHt + vatAmount.
+  amountHt         Decimal @default(0) @db.Decimal(18, 2)
+  vatRate          Decimal @default(20) @db.Decimal(5, 2)
+  vatAmount        Decimal @default(0) @db.Decimal(18, 2)
+  amountTtc        Decimal @default(0) @db.Decimal(18, 2)
 
   @@index([agencyId])
   @@index([invoiceId])
   @@index([bookingId])
+  @@index([refundCaseId])
 }
 
 // #359: per-year sequence backing the sequential invoice numbers
 // (INV-<year>-<seq>). Incremented atomically inside the generation
 // transaction (INSERT ... ON CONFLICT DO UPDATE ... RETURNING).
 model InvoiceSequence {
-  year      Int @id
+  year      Int
+  // #426: one series per document class — invoices (INV-) and credit
+  // notes (AV-) number independently, as Moroccan practice requires.
+  kind      InvoiceDocumentType @default(INVOICE)
   lastValue Int @default(0)
+
+  @@id([year, kind])
 }
 
 model AgencyPaymentProfile {

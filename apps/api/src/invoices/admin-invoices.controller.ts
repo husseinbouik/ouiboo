@@ -44,6 +44,15 @@ export class AdminInvoicesController {
         );
     }
 
+    @Post('credit-notes')
+    @ApiOperation({
+        summary:
+            'Generate credit notes (avoirs, AV- series) reversing fees on refunds completed in the period (#426). Idempotent per refund case; invoices are never edited.',
+    })
+    generateCreditNotes(@Body() dto: GenerateInvoiceDto) {
+        return this.invoicesService.generateCreditNotesForPeriod(dto.agencyId, dto.year, dto.month);
+    }
+
     @Get(':id')
     @ApiOperation({ summary: 'Get one invoice with line items (#359)' })
     get(@Param('id') id: string) {

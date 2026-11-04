@@ -245,9 +245,11 @@ describe('Golden Path E2E: booking → payment → invoice → refund (#431)', (
 
         // ---- 3. Invoice: monthly platform service fee for the agency ----
         const confirmedAt = booking!.confirmedAt!;
-        // #698 (Council S6): the per-booking service fee accrues ONLY on
-        // COMPLETED bookings — while this booking is merely CONFIRMED
-        // (paid, trip not yet taken) the period has nothing billable.
+        // #426 (Council P0-10, Debate 5 rule; supersedes the #698
+        // completed-only narrowing): the fee accrues on a TERMINAL
+        // retained-value event — while this booking is merely CONFIRMED
+        // (paid, trip not yet taken) it has no terminal event and the
+        // period has nothing billable.
         await http()
             .post('/admin/invoices/generate')
             .set('Authorization', AUTH_ADMIN)
@@ -265,13 +267,17 @@ describe('Golden Path E2E: booking → payment → invoice → refund (#431)', (
             where: { id: bookingId },
             data: { status: 'COMPLETED' },
         });
+        // #426 (Council P0-10): monthly aggregation is by the month of
+        // the TERMINAL EVENT (here the session end date), not the
+        // confirmation month — generate for the session-end month.
+        const sessionRow = await db.tripSession.findUniqueOrThrow({ where: { id: session.id } });
         const invoiceRes = await http()
             .post('/admin/invoices/generate')
             .set('Authorization', AUTH_ADMIN)
             .send({
                 agencyId: agency.id,
-                year: confirmedAt.getUTCFullYear(),
-                month: confirmedAt.getUTCMonth() + 1,
+                year: sessionRow.endDate.getUTCFullYear(),
+                month: sessionRow.endDate.getUTCMonth() + 1,
                 commissionRatePercent: 10,
             })
             .expect(201);
