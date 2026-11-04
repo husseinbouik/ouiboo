@@ -567,6 +567,7 @@ export class TripsService {
                                 // verification stamps ride along.
                                 travelLicenceStatus: true,
                                 licenceVerifiedAt: true,
+                                licenceMinistryCheckedAt: true,
                                 insuranceStatus: true,
                                 insuranceVerifiedAt: true,
                                 // #569: the expiries feed the umbrella
@@ -743,6 +744,7 @@ export class TripsService {
                         // next to the seller identity — the licence check date
                         // and the RC insurance evidence date.
                         licenceVerifiedAt: true,
+                        licenceMinistryCheckedAt: true,
                         insuranceStatus: true,
                         insuranceVerifiedAt: true,
                         // #569: feeds the umbrella reconciliation below;
@@ -897,6 +899,7 @@ export class TripsService {
                         verificationStatus: true,
                         travelLicenceStatus: true,
                         licenceVerifiedAt: true,
+                        licenceMinistryCheckedAt: true,
                         licenceExpiry: true,
                         insuranceStatus: true,
                         insuranceVerifiedAt: true,

@@ -29,6 +29,7 @@ describe('AgencyPublicController (#371, #413)', () => {
         // PENDING_REVIEW, so both fixtures carry future expiries.
         licenceExpiry: new Date('2027-10-24T00:00:00.000Z'),
         licenceVerifiedAt: new Date('2026-10-24T00:00:00.000Z'),
+        licenceMinistryCheckedAt: new Date('2026-10-24T00:00:00.000Z'),
         insuranceStatus: 'VERIFIED',
         insuranceExpiry: new Date('2027-10-25T00:00:00.000Z'),
         insuranceVerifiedAt: new Date('2026-10-25T00:00:00.000Z'),
@@ -52,6 +53,33 @@ describe('AgencyPublicController (#371, #413)', () => {
         expect(result.licenceVerifiedAt).toEqual(new Date('2026-10-24T00:00:00.000Z'));
         expect(result.insuranceStatus).toBe('VERIFIED');
         expect(result.insuranceVerifiedAt).toEqual(new Date('2026-10-25T00:00:00.000Z'));
+    });
+
+    it('exposes the B10 dated-badge dates on the verification record (#627)', async () => {
+        const { controller, prisma } = makeController({ ...baseAgency });
+        const result = await controller.getPublicProfile('agency-1');
+        const select = (prisma.agencyProfile.findUnique.mock.calls[0][0] as any).select;
+        expect(select.licenceMinistryCheckedAt).toBe(true);
+        expect(result.licenceMinistryCheckedAt).toEqual(new Date('2026-10-24T00:00:00.000Z'));
+        expect(result.verificationRecord.licenceCheckedOn).toEqual(new Date('2026-10-24T00:00:00.000Z'));
+        expect(result.verificationRecord.insuranceEvidencedOn).toEqual(new Date('2026-10-25T00:00:00.000Z'));
+
+        // A record verified before the ministry stamp existed falls
+        // back to the verified-at stamp — still a real record date.
+        const { controller: legacy } = makeController({ ...baseAgency, licenceMinistryCheckedAt: null });
+        const legacyResult = await legacy.getPublicProfile('agency-1');
+        expect(legacyResult.verificationRecord.licenceCheckedOn).toEqual(new Date('2026-10-24T00:00:00.000Z'));
+
+        // Unverified: both badge dates are withheld.
+        const { controller: pending } = makeController({
+            ...baseAgency,
+            travelLicenceStatus: 'PENDING_REVIEW',
+            insuranceStatus: 'PENDING_REVIEW',
+        });
+        const pendingResult = await pending.getPublicProfile('agency-1');
+        expect(pendingResult.licenceMinistryCheckedAt).toBeNull();
+        expect(pendingResult.verificationRecord.licenceCheckedOn).toBeNull();
+        expect(pendingResult.verificationRecord.insuranceEvidencedOn).toBeNull();
     });
 
     it('exposes the licence type and issue data only while verified (B4)', async () => {

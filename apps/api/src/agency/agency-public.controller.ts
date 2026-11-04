@@ -37,6 +37,11 @@ export class AgencyPublicController {
                 // public profile — the licence check date and the RC
                 // insurance evidence date.
                 licenceVerifiedAt: true,
+                // #627 (Council S4): the Ministry-list check stamp — the
+                // B10 dated badge renders the licence date from THIS
+                // stamp (set only when the admin attested the
+                // ministryChecked step), never from a hard-coded date.
+                licenceMinistryCheckedAt: true,
                 insuranceStatus: true,
                 insuranceExpiry: true,
                 insuranceVerifiedAt: true,
@@ -132,6 +137,7 @@ export class AgencyPublicController {
             licenceIssuedAt: licenceVerified ? agency.licenceIssuedAt : null,
             licenceIssuingAuthority: licenceVerified ? agency.licenceIssuingAuthority : null,
             licenceVerifiedAt: licenceVerified ? agency.licenceVerifiedAt : null,
+            licenceMinistryCheckedAt: licenceVerified ? agency.licenceMinistryCheckedAt : null,
             insuranceStatus: effectiveInsurance,
             insuranceVerifiedAt: insuranceVerified ? agency.insuranceVerifiedAt : null,
             // #688: the checkable Public Verification Record. Insurer
@@ -156,6 +162,17 @@ export class AgencyPublicController {
                 insuranceExpiry: insuranceVerified ? agency.insuranceExpiry : null,
                 insuranceStatus: effectiveInsurance,
                 checkedOn: latestStamp(agency.licenceVerifiedAt, agency.insuranceVerifiedAt),
+                // #627: the B10 dated badge's two real dates, kept
+                // separate (the single checkedOn above is their max):
+                // the licence's Ministry-list check date (ministry
+                // stamp preferred, verified-at as the fallback for
+                // records verified before the stamp existed) and the
+                // RC insurance evidence date. Each renders only while
+                // its check is effectively VERIFIED.
+                licenceCheckedOn: licenceVerified
+                    ? (agency.licenceMinistryCheckedAt ?? agency.licenceVerifiedAt)
+                    : null,
+                insuranceEvidencedOn: insuranceVerified ? agency.insuranceVerifiedAt : null,
                 status: effectiveVerificationStatus(agency),
                 tripsPaused:
                     effectiveVerificationStatus(agency) !== 'VERIFIED' || Boolean(agency.verificationPausedAt),

@@ -886,6 +886,8 @@ export interface BookingAgencySummary {
     licenceIssuedAt?: string | null;
     licenceIssuingAuthority?: string | null;
     licenceVerifiedAt?: string | null;
+    /** #627: Ministry-list check stamp for the B10 dated badge. */
+    licenceMinistryCheckedAt?: string | null;
     insuranceStatus?: string | null;
     insuranceVerifiedAt?: string | null;
     /** #688: RC insurer name + policy validity window (public record). */

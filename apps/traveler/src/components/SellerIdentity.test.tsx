@@ -267,6 +267,15 @@ describe('getVerificationChecks (#413)', () => {
         expect(checks.insuranceEvidencedDate).toBeNull();
     });
 
+    it('prefers the Ministry-list check stamp over the verified-at stamp (#627)', () => {
+        const checks = getVerificationChecks({
+            travelLicenceStatus: 'VERIFIED',
+            licenceVerifiedAt: '2026-10-24T00:00:00.000Z',
+            licenceMinistryCheckedAt: '2026-10-23T00:00:00.000Z',
+        });
+        expect(checks.licenceCheckedDate?.toISOString()).toBe('2026-10-23T00:00:00.000Z');
+    });
+
     it('returns no licence date when the licence is not verified', () => {
         const checks = getVerificationChecks({
             travelLicenceStatus: 'PENDING_REVIEW',

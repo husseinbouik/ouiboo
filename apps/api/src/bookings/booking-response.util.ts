@@ -207,6 +207,7 @@ type BookingMapperInput = {
         licenceIssuedAt?: NullableDate;
         licenceIssuingAuthority?: string | null;
         licenceVerifiedAt?: NullableDate;
+        licenceMinistryCheckedAt?: NullableDate;
         insuranceStatus?: string | null;
         insuranceInsurer?: string | null;
         insuranceExpiry?: NullableDate;
@@ -473,6 +474,7 @@ export const mapBookingDetails = (
         licenceIssuedAt: toIsoString(booking.session.template.agency?.licenceIssuedAt) ?? null,
         licenceIssuingAuthority: booking.session.template.agency?.licenceIssuingAuthority ?? null,
         licenceVerifiedAt: toIsoString(booking.session.template.agency?.licenceVerifiedAt) ?? null,
+        licenceMinistryCheckedAt: toIsoString(booking.session.template.agency?.licenceMinistryCheckedAt) ?? null,
         insuranceStatus: booking.session.template.agency?.insuranceStatus ?? null,
         insuranceInsurer: booking.session.template.agency?.insuranceInsurer ?? null,
         insuranceExpiry: toIsoString(booking.session.template.agency?.insuranceExpiry) ?? null,

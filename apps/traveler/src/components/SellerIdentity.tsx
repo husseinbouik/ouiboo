@@ -30,6 +30,10 @@ export interface SellerAgencyInfo {
     licenceVerified?: boolean;
     /** #413 (Council B10): when the licence document was checked. */
     licenceVerifiedAt?: string | Date | null;
+    /** #627: when the licence document was checked against the
+     * Ministry list (the admin verification attestation stamp).
+     * Preferred over licenceVerifiedAt for the dated badge. */
+    licenceMinistryCheckedAt?: string | Date | null;
     insuranceStatus?: string | null;
     /** #413 (Council B10): when the RC insurance was evidenced. */
     insuranceVerifiedAt?: string | Date | null;
@@ -47,8 +51,12 @@ function toValidDate(value: string | Date | null | undefined): Date | null {
  * happened. No date, no claim.
  */
 export function getVerificationChecks(agency: SellerAgencyInfo, now: Date = new Date()) {
+    // #627: the badge date is the Ministry-list check stamp when the
+    // record carries one; records verified before that stamp existed
+    // fall back to the verified-at stamp. Either way it is a real
+    // date from the agency's record — never a hard-coded one.
     const licenceCheckedDate = isLicenceVerifiedForDisplay(agency, now)
-        ? toValidDate(agency.licenceVerifiedAt)
+        ? (toValidDate(agency.licenceMinistryCheckedAt) ?? toValidDate(agency.licenceVerifiedAt))
         : null;
     const insuranceEvidencedDate =
         agency.insuranceStatus === 'VERIFIED' ? toValidDate(agency.insuranceVerifiedAt) : null;

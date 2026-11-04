@@ -40,6 +40,7 @@ import { BookingPassCard } from '@/components/BookingPassCard';
 import { AttendanceCard } from '@/components/AttendanceCard';
 import { RefundCaseCard, type TravelerRefundCaseView } from '@/components/RefundCaseCard';
 import SellerBlock from '@/components/SellerBlock';
+import PlatformIdentity from '@/components/PlatformIdentity';
 import VerificationRecord from '@/components/VerificationRecord';
 import { useDisplayAmountConverter } from '@/lib/display-currency';
 import { localizeLocationSuffix } from '@/lib/localized-location';
@@ -381,6 +382,12 @@ export default function BookingDetailsPage() {
               {/* #700 (Council S6): the Art. 29(2) seller block repeated
                   on the durable booking confirmation. */}
               <SellerBlock agency={booking.session.template.agency} showRecordLink />
+
+              {/* #627 (Council S4): the platform identity block on the
+                  durable confirmation — who Ouiboo is, and how to
+                  reach it (support email / WhatsApp escalation /
+                  complaints path). */}
+              <PlatformIdentity />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="rounded-2xl border border-border/60 bg-muted/20 p-5">
