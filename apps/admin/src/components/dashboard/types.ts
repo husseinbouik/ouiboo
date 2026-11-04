@@ -285,6 +285,8 @@ export type AdminBetaMetrics = {
   generatedAt: string;
   searches: { total: number; zeroResult: number; zeroResultRate: number | null };
   bookings: { created: number; byStatus: Record<string, number>; completed: number };
+  /** #631(b): agency takings (GMV) vs Ouiboo revenue — never conflated. */
+  takings?: { agencyGmvMad: string; platformRevenueMad: string };
   refunds: {
     opened: number;
     byStatus: Record<string, number>;

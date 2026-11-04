@@ -27,6 +27,7 @@ function buildMock(overrides: Record<string, any> = {}) {
         // duplicates: one traveller booked the same session 3 times
         return [{ _count: { _all: 3 } }, { _count: { _all: 1 } }];
       }),
+      aggregate: jest.fn(async () => ({ _sum: { totalAmount: '4200.50' } })),
     },
     refundCase: {
       findMany: jest.fn(async () => [
@@ -61,6 +62,9 @@ describe('BetaMetricsService', () => {
     expect(m.searches).toEqual({ total: 50, zeroResult: 5, zeroResultRate: 10 });
     expect(m.bookings.created).toBe(40);
     expect(m.bookings.completed).toBe(20);
+    // #631(b): takings are agency GMV (traveller money to agencies);
+    // Ouiboo revenue in the free beta is exactly 0.
+    expect(m.takings).toEqual({ agencyGmvMad: '4200.50', platformRevenueMad: '0.00' });
     expect(m.bookings.byStatus).toEqual({ CONFIRMED: 10, COMPLETED: 20, PENDING: 10 });
 
     // 3 initiated, 2 within 7 days -> 66.7%
@@ -100,6 +104,7 @@ describe('BetaMetricsService', () => {
       booking: {
         count: jest.fn(async () => 0),
         groupBy: jest.fn(async () => []),
+        aggregate: jest.fn(async () => ({ _sum: { totalAmount: null } })),
       },
       refundCase: { findMany: jest.fn(async () => []), count: jest.fn(async () => 0) },
       externalPayment: { findMany: jest.fn(async () => []) },
