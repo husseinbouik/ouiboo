@@ -112,9 +112,41 @@ export default function CheckoutPage() {
     : isPrivateCheckout
       ? sessionPrice
       : sessionPrice * guestCount;
+  const promoScopeKeyForCampaign = `${selectedSessionId ?? ''}|${guestCount}|${pricingSelection.variantId ?? ''}|${JSON.stringify(pricingSelection.addOns)}`;
+
+  // #755: campaign/session pricing preview (no code) — fetched for the
+  // selected session/party/selection so the traveller sees the campaign
+  // price BEFORE booking; the booking recomputes it authoritatively.
+  const { data: campaignPreview } = useQuery<PromoPreview | null>({
+    queryKey: ['campaign-preview', promoScopeKeyForCampaign],
+    enabled: Boolean(selectedSessionId) && !appliedPromo,
+    queryFn: async () => {
+      try {
+        const response = await apiClient.post('/bookings/promo-preview', {
+          sessionId: selectedSessionId,
+          guestsCount: guestCount,
+          ...(pricingSelection.variantId ? { variantId: pricingSelection.variantId } : {}),
+          ...(Object.entries(pricingSelection.addOns).some(([, q]) => q > 0)
+            ? {
+                addOns: Object.entries(pricingSelection.addOns)
+                  .filter(([, q]) => q > 0)
+                  .map(([addOnId, quantity]) => ({ addOnId, quantity })),
+              }
+            : {}),
+        });
+        const data = response.data as PromoPreview;
+        return data.campaign ? data : null;
+      } catch {
+        return null;
+      }
+    },
+  });
+
   // #778: with an applied promo the displayed total is the preview's
   // discounted total (the booking recomputes it authoritatively).
-  const totalPrice = appliedPromo ? Number(appliedPromo.totalAmount) : undiscountedTotalPrice;
+  // #755: same for an applied campaign when no code is in play.
+  const effectivePreview = appliedPromo ?? campaignPreview ?? null;
+  const totalPrice = effectivePreview ? Number(effectivePreview.totalAmount) : undiscountedTotalPrice;
   // #369: staged sessions collect only the deposit at checkout; the
   // balance is requested after the trip is confirmed.
   // #694: private sessions never use the staged min-group display.
@@ -125,13 +157,13 @@ export default function CheckoutPage() {
   // #778: same cap on the DISCOUNTED total; the preview's staged split
   // (computed server-side with that cap) wins when present.
   const stagedAmounts = baseStagedAmounts
-    ? appliedPromo?.staged
+    ? effectivePreview?.staged
       ? {
-          depositDue: Number(appliedPromo.staged.depositAmount),
-          balanceDue: Number(appliedPromo.staged.balanceAmount),
+          depositDue: Number(effectivePreview.staged.depositAmount),
+          balanceDue: Number(effectivePreview.staged.balanceAmount),
           total: totalPrice,
         }
-      : pricingTotals?.hasSelection || appliedPromo
+      : pricingTotals?.hasSelection || effectivePreview
         ? {
             depositDue: Math.min(baseStagedAmounts.depositDue, Math.floor(totalPrice * 0.3 * 100) / 100),
             balanceDue: totalPrice - Math.min(baseStagedAmounts.depositDue, Math.floor(totalPrice * 0.3 * 100) / 100),
@@ -340,10 +372,15 @@ export default function CheckoutPage() {
               canSubmit={canSubmit}
               onSubmit={() => createBookingMutation.mutate()}
               stagedAmounts={stagedAmounts}
-              promoInfo={appliedPromo ? {
+              promoInfo={appliedPromo?.code ? {
                 code: appliedPromo.code,
                 discountAmount: Number(appliedPromo.discountAmount),
                 undiscountedTotal: Number(appliedPromo.undiscountedTotal),
+              } : null}
+              campaignInfo={effectivePreview?.campaign ? {
+                name: effectivePreview.campaign.name,
+                discountAmount: Number(effectivePreview.campaign.discountAmount),
+                undiscountedTotal: Number(effectivePreview.undiscountedTotal),
               } : null}
             />
           </div>

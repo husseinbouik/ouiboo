@@ -501,6 +501,22 @@ export interface TripAddOn {
 /** #778: the booking's immutable agency-funded promo snapshot.
  * totalAmount on the booking is the DISCOUNTED total; discountAmount
  * is what the agency funded. undiscountedTotal = discount + total. */
+/** #755: the booking's immutable campaign/session-pricing snapshot.
+ * baseTotal = campaignDiscountAmount + (promo discountAmount) +
+ * totalAmount on the booking. */
+export interface CampaignSnapshot {
+    ruleId: string;
+    name: string;
+    scope: 'SESSION' | 'TEMPLATE';
+    discountType: 'PERCENT' | 'FIXED_MAD';
+    discountValue: string;
+    stacksWithPromoCode: boolean;
+    baseTotal: string;
+    discountAmount: string;
+    totalAmount: string;
+    currency: string;
+}
+
 export interface PromoSnapshot {
     code: string;
     discountType: 'PERCENT' | 'FIXED_MAD';
@@ -915,6 +931,11 @@ export interface BookingDetails extends Booking {
     promoCode?: string | null;
     discountAmount?: string;
     promoSnapshot?: PromoSnapshot | null;
+    /** #755: campaign/session pricing applied at booking (rule id,
+     * funded discount amount, full snapshot); null/absent when none. */
+    priceRuleId?: string | null;
+    campaignDiscountAmount?: string;
+    campaignSnapshot?: CampaignSnapshot | null;
     /** Batch F: #694 private session snapshot. */
     isPrivateSession?: boolean;
     /** Batch F: #696 pay-later hold deadline (ISO) or null. */

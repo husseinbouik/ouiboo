@@ -73,11 +73,12 @@ export class PromoPreviewDto {
     @Max(1000)
     guestsCount!: number;
 
-    @ApiProperty({ example: 'SAVE10' })
+    @ApiProperty({ example: 'SAVE10', required: false, description: 'Optional — omit to preview campaign/session pricing (#755) alone' })
+    @IsOptional()
     @IsString()
     @IsNotEmpty()
     @MaxLength(64)
-    promoCode!: string;
+    promoCode?: string;
 
     @ApiProperty({ required: false, description: 'Selected pricing variant id (#695), so the preview prices the same total the booking will' })
     @IsOptional()

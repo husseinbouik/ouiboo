@@ -29,6 +29,7 @@ import { ExternalPaymentsModule } from './external-payments/external-payments.mo
 import { WishlistModule } from './wishlist/wishlist.module'
 import { QuoteRequestsModule } from './quote-requests/quote-requests.module'
 import { PromoCodesModule } from './promo-codes/promo-codes.module'
+import { PriceRulesModule } from './price-rules/price-rules.module'
 import { CustomTripsModule } from './custom-trips/custom-trips.module'
 
 @Module({
@@ -65,6 +66,7 @@ import { CustomTripsModule } from './custom-trips/custom-trips.module'
     MessagesModule,
     QuoteRequestsModule,
     PromoCodesModule,
+    PriceRulesModule,
     CustomTripsModule,
   ],
 })

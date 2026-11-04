@@ -22,6 +22,7 @@ import {
 } from '../cancellation/cancellation.util';
 import { resolvePricingSelection, type PricingSelectionResult, type VariantForPricing } from '../trips/pricing-selection.util';
 import { normalizePromoCode, resolvePromoDiscount, type PromoResolution } from '../promo-codes/promo-codes.util';
+import { resolvePriceRuleDiscount, selectPriceRule, type PriceRuleResolution, type SessionPriceRuleForBooking } from '../price-rules/price-rules.util';
 import { MAX_GROUP_DEPOSIT_PERCENT } from '../staged-payments/staged-payments.util';
 import { payOnArrivalBookingError, resolvePayLaterDeadline, type PickupPoint } from '../trips/batch-f.util';
 
@@ -223,6 +224,35 @@ export class BookingsService {
     }
 
     /**
+     * #755: resolve the winning campaign/session price rule for a
+     * session, or null. Campaigns are automatic, so EVERY failure mode
+     * (no delegate on a test double, no rule, window/cap/budget spent)
+     * resolves to null — a booking never fails because a campaign ended.
+     */
+    private async resolveCampaignForSession(
+        session: { id: string; templateId: string },
+        agencyId: string,
+        baseTotal: Prisma.Decimal,
+        currency: string,
+        now: Date,
+    ): Promise<PriceRuleResolution | null> {
+        const delegate = (this.db as unknown as { sessionPriceRule?: { findMany?: unknown } }).sessionPriceRule;
+        if (!delegate || typeof delegate.findMany !== 'function') return null;
+        const rows = await (delegate.findMany as (args: unknown) => Promise<SessionPriceRuleForBooking[]>)({
+            where: {
+                agencyId,
+                isActive: true,
+                OR: [{ sessionId: session.id }, { sessionId: null, templateId: session.templateId }],
+            },
+            orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+            take: 50,
+        });
+        const rule = selectPriceRule(rows ?? [], { agencyId, templateId: session.templateId, sessionId: session.id, now });
+        if (!rule) return null;
+        return resolvePriceRuleDiscount({ rule, baseTotal, currency });
+    }
+
+    /**
      * #778: read-only promo preview for checkout — validates the code
      * for the session's agency and prices the discount on the SAME
      * authoritative total create() will use (pricing selection
@@ -244,9 +274,6 @@ export class BookingsService {
             throw new BadRequestException('guestsCount must be a positive integer');
         }
         const promoCodeText = normalizePromoCode(dto.promoCode);
-        if (!promoCodeText) {
-            throw new BadRequestException('This promo code is not valid for this booking');
-        }
         const session = await this.db.tripSession.findUnique({
             where: { id: dto.sessionId },
             include: { template: { select: { agencyId: true } } },
@@ -255,47 +282,75 @@ export class BookingsService {
             throw new BadRequestException('Session not found');
         }
         const agencyId = session.template.agencyId;
-        const promoRow = await this.db.promoCode.findFirst({
-            where: { agencyId, code: promoCodeText },
-        });
-        if (!promoRow) {
-            throw new BadRequestException('This promo code is not valid for this booking');
-        }
         const isPrivateSession = (session as { sessionKind?: string }).sessionKind === 'PRIVATE';
         const pricing = await this.resolvePricingForSession(session, dto);
-        const undiscountedTotal = pricing
+        const baseTotal = pricing
             ? pricing.totalAmount
             : isPrivateSession
                 ? session.price
                 : multiplyMoney(session.price, dto.guestsCount);
-        const promo = resolvePromoDiscount({
-            promo: promoRow,
-            agencyId,
-            undiscountedTotal,
-            currency: session.currency || 'MAD',
-            now: new Date(),
-        });
+        const currency = session.currency || 'MAD';
+
+        // #755: campaign pricing prices the SAME totals create() will
+        // use, so the checkout disclosure can never drift from the
+        // booking. No code is required for a campaign to apply.
+        let campaign = await this.resolveCampaignForSession(session, agencyId, baseTotal, currency, new Date());
+
+        let promo: PromoResolution | null = null;
+        if (promoCodeText) {
+            const promoRow = await this.db.promoCode.findFirst({
+                where: { agencyId, code: promoCodeText },
+            });
+            if (!promoRow) {
+                throw new BadRequestException('This promo code is not valid for this booking');
+            }
+            if (campaign && !campaign.stacksWithPromoCode) {
+                // Stackability rule: the code wins, the rule is skipped.
+                campaign = null;
+            }
+            promo = resolvePromoDiscount({
+                promo: promoRow,
+                agencyId,
+                undiscountedTotal: campaign ? campaign.totalAmount : baseTotal,
+                currency,
+                now: new Date(),
+            });
+        }
+
+        const totalAmount = promo ? promo.totalAmount : campaign ? campaign.totalAmount : baseTotal;
         let staged: { depositAmount: string; balanceAmount: string } | null = null;
         if (!isPrivateSession && this.stagedPaymentsService.isStagedSession(session)) {
             // Mirror createPlanInTransaction with the #778 cap: the
-            // deposit never exceeds 30% of the discounted total.
+            // deposit never exceeds 30% of the final (discounted) total.
             const uncappedDeposit = multiplyMoney(session.deposit, dto.guestsCount);
-            const cap = promo.totalAmount.mul(MAX_GROUP_DEPOSIT_PERCENT).div(100).toDecimalPlaces(2);
+            const cap = totalAmount.mul(MAX_GROUP_DEPOSIT_PERCENT).div(100).toDecimalPlaces(2);
             const depositAmount = uncappedDeposit.greaterThan(cap) ? cap : uncappedDeposit;
             staged = {
                 depositAmount: depositAmount.toFixed(2),
-                balanceAmount: promo.totalAmount.sub(depositAmount).toDecimalPlaces(2).toFixed(2),
+                balanceAmount: totalAmount.sub(depositAmount).toDecimalPlaces(2).toFixed(2),
             };
         }
         return {
             valid: true,
-            code: promo.code,
-            discountType: promo.discountType,
-            discountValue: promo.discountValue,
-            currency: session.currency || 'MAD',
-            undiscountedTotal: promo.undiscountedTotal.toFixed(2),
-            discountAmount: promo.discountAmount.toFixed(2),
-            totalAmount: promo.totalAmount.toFixed(2),
+            code: promo ? promo.code : null,
+            discountType: promo ? promo.discountType : null,
+            discountValue: promo ? promo.discountValue : null,
+            currency,
+            undiscountedTotal: baseTotal.toFixed(2),
+            discountAmount: promo ? promo.discountAmount.toFixed(2) : '0.00',
+            campaign: campaign
+                ? {
+                      ruleId: campaign.ruleId,
+                      name: campaign.name,
+                      scope: campaign.scope,
+                      discountType: campaign.discountType,
+                      discountValue: campaign.discountValue,
+                      stacksWithPromoCode: campaign.stacksWithPromoCode,
+                      discountAmount: campaign.discountAmount.toFixed(2),
+                  }
+                : null,
+            campaignDiscountAmount: campaign ? campaign.discountAmount.toFixed(2) : '0.00',
+            totalAmount: totalAmount.toFixed(2),
             staged,
         };
     }
@@ -441,6 +496,29 @@ export class BookingsService {
         // (staged plan, deposit cap, cancellation snapshot, refunds).
         const pricing = await this.resolvePricingForSession(session, dto);
 
+        // The authoritative base total every discount prices from —
+        // the #695 pricing-selection total when a selection repriced
+        // the booking, else session price (per-group for PRIVATE).
+        const baseTotal = pricing
+            ? pricing.totalAmount
+            : isPrivateSession
+                ? session.price
+                : multiplyMoney(session.price, dto.guestsCount);
+
+        // #755: campaign/session pricing — an agency price rule that
+        // applies WITHOUT a code. Resolved before the promo so the
+        // stackability rule is decidable here: a non-stacking rule is
+        // skipped when a code is used; a stacking rule discounts first
+        // and the code prices the remainder. Campaign resolution never
+        // throws (an ended campaign just does not apply).
+        let campaign = await this.resolveCampaignForSession(
+            session,
+            session.template.agencyId,
+            baseTotal,
+            session.currency || 'MAD',
+            now,
+        );
+
         // #778 (Council S6 Phase 3): resolve an agency-funded promo
         // code against the SAME authoritative total the pricing
         // selection produced. This is the single discount computation
@@ -457,15 +535,13 @@ export class BookingsService {
             if (!promoRow) {
                 throw new BadRequestException('This promo code is not valid for this booking');
             }
-            const undiscountedTotal = pricing
-                ? pricing.totalAmount
-                : isPrivateSession
-                    ? session.price
-                    : multiplyMoney(session.price, dto.guestsCount);
+            if (campaign && !campaign.stacksWithPromoCode) {
+                campaign = null;
+            }
             promo = resolvePromoDiscount({
                 promo: promoRow,
                 agencyId: session.template.agencyId,
-                undiscountedTotal,
+                undiscountedTotal: campaign ? campaign.totalAmount : baseTotal,
                 currency: session.currency || 'MAD',
                 now,
             });
@@ -476,11 +552,9 @@ export class BookingsService {
         // and promo discount included) before any seat moves.
         const totalPreview = promo
             ? promo.totalAmount
-            : pricing
-                ? pricing.totalAmount
-                : isPrivateSession
-                    ? session.price
-                    : multiplyMoney(session.price, dto.guestsCount);
+            : campaign
+                ? campaign.totalAmount
+                : baseTotal;
         let payOnArrival = false;
         if (dto.payOnArrival) {
             const error = payOnArrivalBookingError({
@@ -591,11 +665,13 @@ export class BookingsService {
             // #695 pricing total is trusted from).
             const totalAmount = promo
                 ? promo.totalAmount
-                : pricing
-                    ? pricing.totalAmount
-                    : isPrivateSession
-                        ? sessionWithInfo.price
-                        : multiplyMoney(sessionWithInfo.price, dto.guestsCount);
+                : campaign
+                    ? campaign.totalAmount
+                    : pricing
+                        ? pricing.totalAmount
+                        : isPrivateSession
+                            ? sessionWithInfo.price
+                            : multiplyMoney(sessionWithInfo.price, dto.guestsCount);
 
             // #417 (Council P0-11): snapshot the trip's resolved
             // cancellation scale onto the booking, so later template
@@ -625,6 +701,12 @@ export class BookingsService {
                     promoCode: promo ? promo.code : null,
                     discountAmount: promo ? promo.discountAmount : new Prisma.Decimal(0),
                     promoSnapshot: promo ? (promo.snapshot as unknown as Prisma.InputJsonValue) : undefined,
+                    // #755: immutable campaign snapshot, same contract
+                    // as the promo snapshot — later rule edits or
+                    // deactivation never rewrite a booked campaign.
+                    priceRuleId: campaign ? campaign.ruleId : null,
+                    campaignDiscountAmount: campaign ? campaign.discountAmount : new Prisma.Decimal(0),
+                    campaignSnapshot: campaign ? (campaign.snapshot as unknown as Prisma.InputJsonValue) : undefined,
                     // Batch F snapshots: private nature (#694), the
                     // pay-later hold deadline (#696), pay-on-arrival
                     // (#697) and the chosen pickup point (#701).
@@ -706,6 +788,41 @@ export class BookingsService {
                 }
             }
 
+            // #755: claim the campaign application atomically inside
+            // the booking transaction — usage cap and budget ceiling
+            // are re-checked in the claim's WHERE, mirroring the #778
+            // promo claim. Losing the claim does NOT roll the booking
+            // back (campaigns are automatic; the traveller never asked
+            // for this discount) — but it must not silently keep a
+            // discount the campaign can no longer fund, so a lost claim
+            // is a hard failure BEFORE any money fact is written from
+            // the discounted total downstream (the plan is built after
+            // this point). The window/agency/scope were validated at
+            // resolution.
+            if (campaign) {
+                const ruleDelegate = (tx as unknown as { sessionPriceRule?: { updateMany?: unknown } }).sessionPriceRule;
+                if (ruleDelegate && typeof ruleDelegate.updateMany === 'function') {
+                    const claimed = await (ruleDelegate.updateMany as (args: unknown) => Promise<{ count: number }>)({
+                        where: {
+                            id: campaign.ruleId,
+                            agencyId: sessionWithInfo.template.agencyId,
+                            isActive: true,
+                            ...(campaign.maxUses != null ? { usedCount: { lt: campaign.maxUses } } : {}),
+                            ...(campaign.budgetClaimCeiling != null
+                                ? { discountGranted: { lte: campaign.budgetClaimCeiling } }
+                                : {}),
+                        },
+                        data: {
+                            usedCount: { increment: 1 },
+                            discountGranted: { increment: campaign.discountAmount },
+                        },
+                    });
+                    if (claimed.count === 0) {
+                        throw new BadRequestException('This booking could not be completed at the campaign price; please try again');
+                    }
+                }
+            }
+
             // #369: snapshot the staged payment plan (deposit/balance split,
             // minimum, deadline) for minimum-group sessions.
             if (staged) {
@@ -716,7 +833,7 @@ export class BookingsService {
                 // promo discounted the total — the cap is computed on
                 // the discounted total, so the deposit never exceeds
                 // 30% of what the traveller actually owes.
-                const depositCap = pricing || promo
+                const depositCap = pricing || promo || campaign
                     ? totalAmount.mul(MAX_GROUP_DEPOSIT_PERCENT).div(100).toDecimalPlaces(2)
                     : null;
                 const plan = await this.stagedPaymentsService.createPlanInTransaction(tx, {
