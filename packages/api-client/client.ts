@@ -275,6 +275,102 @@ export function createApiClient(explicitBaseUrl?: string) {
   return client
 }
 
+// ---------------------------------------------------------------------------
+// Shared refresh single-flight (#840).
+//
+// The single-flight used to be scoped PER attachBrowserAuth() call, but
+// every app builds >=2 browser clients in one page (packages/auth's
+// module-level defaultApiClient for the AuthProvider /users/me probe + the
+// app lib client for page queries, plus the lazy SDK client). On a full
+// page load the access token is memory-only (gone), so parallel bootstrap
+// calls 401 on several instances at once and each instance fired its OWN
+// POST /auth/refresh with the same cookie. The first refresh rotated the
+// token (201); the second presented the pre-rotation cookie, the server's
+// atomic single-use claim rejected it (401), and that instance cleared the
+// session + hard-redirected to /login — destroying the session the first
+// refresh had just restored (the hard-reload /login bounce; it blocked
+// #503's review-form witness 4/4 on /booking/{id}).
+//
+// The refresh promise therefore lives at module level, keyed by API base
+// URL: one in-flight refresh per page, shared by every client instance.
+// The server rotation itself is correct and is NOT given a grace window:
+// refresh tokens are stored hash-only, so a rotated token's successor
+// plaintext cannot be re-issued to a late caller without minting a second
+// live successor and weakening single-use semantics.
+// ---------------------------------------------------------------------------
+
+const inFlightRefreshes = new Map<string, Promise<string | null>>()
+
+async function performBrowserRefresh(
+  apiBaseUrl: string
+): Promise<string | null> {
+  if (typeof window === 'undefined') return null
+
+  const response = await axios.post(
+    `${apiBaseUrl}/auth/refresh`,
+    {},
+    { withCredentials: true },
+  )
+  const payload = isApiEnvelope(response.data)
+    ? response.data.data as { accessToken?: string }
+    : response.data as { accessToken?: string }
+  const { accessToken } = payload || {}
+
+  // setBrowserAccessToken assigns the in-memory token synchronously before
+  // its first await, so waiters observe the rotated token as soon as this
+  // refresh settles. Its BFF-session leg (#208) is awaited by the login
+  // flows, not by refresh: a BFF hiccup must not fail an otherwise
+  // successful API refresh, so a rejection there is contained here.
+  void setBrowserAccessToken(accessToken || null).catch(() => {})
+
+  return accessToken || null
+}
+
+function getSharedRefreshedToken(
+  apiBaseUrl: string
+): Promise<string | null> {
+  const inFlight = inFlightRefreshes.get(apiBaseUrl)
+  if (inFlight) return inFlight
+  const promise = performBrowserRefresh(apiBaseUrl).finally(() => {
+    if (inFlightRefreshes.get(apiBaseUrl) === promise) {
+      inFlightRefreshes.delete(apiBaseUrl)
+    }
+  })
+  inFlightRefreshes.set(apiBaseUrl, promise)
+  return promise
+}
+
+/**
+ * The access token a failed request actually carried, read back from its
+ * config headers (set by the request interceptor at dispatch time). Used
+ * to detect the mid-rotation case (#840): the request was dispatched with
+ * a token that a concurrent refresh has since replaced.
+ */
+function readCarriedAccessToken(config: unknown): string | null {
+  const headers = (
+    config as { headers?: Record<string, unknown> } | undefined
+  )?.headers
+  if (!headers || typeof headers !== 'object') return null
+  let raw: unknown
+  const getter = (headers as { get?: unknown }).get
+  if (typeof getter === 'function') {
+    try {
+      raw = (getter as (name: string) => unknown).call(
+        headers,
+        'Authorization'
+      )
+    } catch {
+      raw = undefined
+    }
+  }
+  if (typeof raw !== 'string' || !raw) {
+    raw = headers.Authorization ?? headers.authorization
+  }
+  if (typeof raw !== 'string') return null
+  const match = /^Bearer\s+(.+)$/i.exec(raw.trim())
+  return match ? match[1] : null
+}
+
 export function attachBrowserAuth(
   client: AxiosInstance,
   explicitBaseUrl?: string,
@@ -284,35 +380,7 @@ export function attachBrowserAuth(
     loginPath = DEFAULT_LOGIN_PATH,
   } = options
 
-  let refreshPromise: Promise<string | null> | null = null
   const apiBaseUrl = getApiBaseUrl(explicitBaseUrl)
-
-  const refreshAccessToken = async () => {
-    if (typeof window === 'undefined') return null
-
-    const response = await axios.post(
-      `${apiBaseUrl}/auth/refresh`,
-      {},
-      { withCredentials: true },
-    )
-    const payload = isApiEnvelope(response.data)
-      ? response.data.data as { accessToken?: string }
-      : response.data as { accessToken?: string }
-    const { accessToken } = payload || {}
-
-    setBrowserAccessToken(accessToken || null)
-
-    return accessToken || null
-  }
-
-  const getRefreshedToken = async () => {
-    if (!refreshPromise) {
-      refreshPromise = refreshAccessToken().finally(() => {
-        refreshPromise = null
-      })
-    }
-    return refreshPromise
-  }
 
   client.interceptors.request.use((config) => {
     if (browserAccessToken) {
@@ -345,6 +413,26 @@ export function attachBrowserAuth(
         !requestUrl.includes('/auth/refresh')
       ) {
         const hadAccessToken = Boolean(browserAccessToken)
+        const carriedToken = readCarriedAccessToken(originalRequest)
+
+        // #840 (ii) mid-rotation retry: this request was dispatched with
+        // a token that a concurrent refresh has since replaced (the
+        // in-memory token no longer matches the carried one). The 401 is
+        // about the stale token, not about the session — retry ONCE with
+        // the current token instead of refreshing again or logging out.
+        if (
+          !originalRequest._staleTokenRetry &&
+          browserAccessToken &&
+          browserAccessToken !== carriedToken
+        ) {
+          originalRequest._staleTokenRetry = true
+          originalRequest.headers = {
+            ...(originalRequest.headers || {}),
+            Authorization: `Bearer ${browserAccessToken}`,
+          }
+          return client(originalRequest)
+        }
+
         originalRequest._retry = true
 
         // #245: attempt the refresh only when a session can exist. With
@@ -352,9 +440,12 @@ export function attachBrowserAuth(
         // cannot be there either (the hint is written whenever a token
         // is stored), so the refresh would only add a second 401 to the
         // console of an anonymous visit.
+        // #840 (i): the refresh is the module-level single-flight shared
+        // by every client instance, so concurrent 401s across instances
+        // produce exactly one POST /auth/refresh.
         if (hadAccessToken || hasBrowserSessionHint()) {
           try {
-            const newToken = await getRefreshedToken()
+            const newToken = await getSharedRefreshedToken(apiBaseUrl)
             if (newToken) {
               originalRequest.headers = {
                 ...(originalRequest.headers || {}),
@@ -367,7 +458,13 @@ export function attachBrowserAuth(
           }
         }
 
-        if (typeof window !== 'undefined') {
+        // #840 (iii) teardown guard: clear + redirect only when session
+        // state is still present at teardown time. When the shared
+        // refresh is definitively rejected, the first waiter to reach
+        // this point tears the session down; concurrent waiters find no
+        // session state left and simply reject — the session is torn
+        // down exactly once, never once per waiting instance.
+        if (typeof window !== 'undefined' && hasPossibleBrowserSession()) {
           clearBrowserAccessToken()
           const isAnonymousProfileProbe =
             !hadAccessToken &&
