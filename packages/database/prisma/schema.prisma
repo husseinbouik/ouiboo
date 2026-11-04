@@ -1305,6 +1305,23 @@ model AuditLog {
   @@index([action, createdAt])
 }
 
+// #635 (Council S4, P2-7): DB-backed platform settings — the second,
+// independent enablement lock for gateway (card) payments. A row is
+// ABSENT by default, and absence means OFF: the gateway flow requires
+// BOTH the ENABLE_GATEWAY_PAYMENTS env flag AND the
+// `gateway.enablement` setting ('true') before it activates, so no
+// single env-flag flip can ever turn card payments on. Rows are only
+// written through the admin + MFA step-up endpoint
+// (GatewayEnablementService), which audit-logs every change.
+model PlatformSetting {
+  key            String   @id
+  value          String
+  updatedById    String?
+  updatedByEmail String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
 // #432 / B21 (Council Session #2): server-side, cookie-free record of
 // public catalog searches (GET /trips) — the beta's zero-result-rate
 // measurement. Deliberately identifier-free: NO traveller id, NO IP, NO

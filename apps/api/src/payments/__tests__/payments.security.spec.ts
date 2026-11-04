@@ -88,6 +88,11 @@ describe('PaymentsService - Security Tests', () => {
             auditLog: {
               create: jest.fn(),
             },
+            platformSetting: {
+              // #635: both-controls-ON baseline for the pre-existing
+              // gateway tests (env flag is set in beforeEach).
+              findUnique: jest.fn().mockResolvedValue({ key: 'gateway.enablement', value: 'true' }),
+            },
             tripSession: {
               findUnique: jest.fn(),
               update: jest.fn(),

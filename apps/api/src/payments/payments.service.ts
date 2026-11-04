@@ -8,6 +8,7 @@ import { PaymentVerificationResult } from './interfaces/payment-provider.interfa
 import { PaymentMethod, BookingStatus, BookingPaymentStatus, RefundStatus, PaymentCustodian, PaymentLedgerEntryType, PaymentLedgerSource } from '@ouiboo/database';
 import { MoneyInput, decimalEqualsMoney, multiplyMoney, toMoneyDecimal, toMoneyString } from '../common/money.util';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
+import { GATEWAY_ENABLEMENT_KEY } from './gateway-enablement.service';
 
 @Injectable()
 export class PaymentsService {
@@ -28,7 +29,7 @@ export class PaymentsService {
    * Security: Validates amount against booking session price to prevent underpayment tampering
    */
   async initiatePayment(dto: InitiatePaymentDto, requesterId?: string) {
-    this.ensureGatewayPaymentsEnabled();
+    await this.ensureGatewayPaymentsEnabled();
     // Verify booking exists and is in correct status
     const booking = await this.prisma.booking.findUnique({
       where: { id: dto.bookingId },
@@ -123,7 +124,7 @@ export class PaymentsService {
    * zero local rows can never confirm the booking.
    */
   async verifyPayment(dto: VerifyPaymentDto, requesterId?: string) {
-    this.ensureGatewayPaymentsEnabled();
+    await this.ensureGatewayPaymentsEnabled();
     const booking = await this.prisma.booking.findUnique({
       where: { id: dto.bookingId },
       include: {
@@ -263,7 +264,7 @@ export class PaymentsService {
    * of the same claim replay one provider operation.
    */
   async processRefund(dto: ProcessRefundDto) {
-    this.ensureGatewayPaymentsEnabled();
+    await this.ensureGatewayPaymentsEnabled();
     const booking = await this.prisma.booking.findUnique({
       where: { id: dto.bookingId },
       include: { paymentTransactions: true },
@@ -423,7 +424,7 @@ export class PaymentsService {
   }
 
   async refundBookingById(bookingId: string, amount?: MoneyInput) {
-    this.ensureGatewayPaymentsEnabled();
+    await this.ensureGatewayPaymentsEnabled();
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
       include: {
@@ -749,7 +750,7 @@ export class PaymentsService {
     payload: string,
     signature: string,
   ) {
-    this.ensureGatewayPaymentsEnabled();
+    await this.ensureGatewayPaymentsEnabled();
     this.logger.log(`Processing webhook from ${provider}`);
 
     const paymentProvider = this.paymentProviderFactory.getProvider(
@@ -1387,8 +1388,27 @@ export class PaymentsService {
     return booking;
   }
 
-  private ensureGatewayPaymentsEnabled() {
+  /**
+   * #635: gateway flows require BOTH independent controls — the
+   * ENABLE_GATEWAY_PAYMENTS env flag AND the DB-backed platform
+   * setting `gateway.enablement` (GatewayEnablementService; absent or
+   * unreadable = OFF, fail closed). A single env-flag flip can never
+   * activate card payments on its own.
+   */
+  private async ensureGatewayPaymentsEnabled() {
     if (process.env.ENABLE_GATEWAY_PAYMENTS !== 'true') {
+      throw new ServiceUnavailableException('Gateway payments are not enabled');
+    }
+    let settingEnabled = false;
+    try {
+      const row = await this.prisma.platformSetting.findUnique({
+        where: { key: GATEWAY_ENABLEMENT_KEY },
+      });
+      settingEnabled = row?.value === 'true';
+    } catch {
+      settingEnabled = false;
+    }
+    if (!settingEnabled) {
       throw new ServiceUnavailableException('Gateway payments are not enabled');
     }
   }
