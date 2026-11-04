@@ -188,6 +188,8 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
 
     async function clearWorld() {
         if (!db) return;
+        await db.conversationReport.deleteMany();
+        await db.agencyBlock.deleteMany();
         await db.message.deleteMany();
         await db.conversation.deleteMany();
         await db.refundEvidence.deleteMany();
@@ -920,6 +922,92 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
                 .set(auth(tokenT1))
                 .send({ recipientId: AGENCY_A, content: 'Scan at this link', attachmentUrl: 'https://external.example.com/scan.jpg' });
             expect(external.status).toBe(400);
+        });
+
+        it('forbids an agency cold-start with no booking or quote relationship (#754)', async () => {
+            // Agency B has no conversation, booking or quote with traveller 1.
+            const res = await request(app.getHttpServer())
+                .post('/messages')
+                .set(auth(tokenB))
+                .send({ recipientId: TRAVELER_1, content: 'Book direct with us instead' });
+            expect(res.status).toBe(403);
+        });
+
+        it('rejects an attachment owned by another agency (#629/#754 tenant binding)', async () => {
+            const res = await request(app.getHttpServer())
+                .post('/messages')
+                .set(auth(tokenT1))
+                .send({
+                    recipientId: AGENCY_A,
+                    content: 'Photo from another agency',
+                    attachmentUrl: 'https://cdn.ouiboo.test/trips/ct-agency-b/photo.png',
+                });
+            expect(res.status).toBe(400);
+            const flag = await db.auditLog.findFirst({
+                where: { action: 'MESSAGE_ATTACHMENT_BLOCKED', actorId: TRAVELER_1 },
+            });
+            expect(flag).toBeTruthy();
+            expect(JSON.stringify(flag?.metadata)).toContain('OTHER_TENANT');
+            expect(JSON.stringify(flag?.metadata)).not.toContain('ct-agency-b');
+        });
+
+        it('lets a participant report a conversation and refuses non-participants (#729)', async () => {
+            const byParticipant = await request(app.getHttpServer())
+                .post(`/messages/conversations/${CONVERSATION_ID}/report`)
+                .set(auth(tokenT1))
+                .send({ reason: 'OFF_PLATFORM_PAYMENT' });
+            expect(byParticipant.status).toBe(201);
+            const row = await db.conversationReport.findFirst({
+                where: { conversationId: CONVERSATION_ID, reporterId: TRAVELER_1 },
+            });
+            expect(row?.reason).toBe('OFF_PLATFORM_PAYMENT');
+
+            const byOutsider = await request(app.getHttpServer())
+                .post(`/messages/conversations/${CONVERSATION_ID}/report`)
+                .set(auth(tokenT2))
+                .send({ reason: 'SPAM' });
+            expect(byOutsider.status).toBe(403);
+        });
+
+        it('a traveller block freezes a non-booking pair but never a booking-linked one (#729/#754)', async () => {
+            // Traveller 2 has no booking with agency A: block, then both
+            // directions are refused (no conversation may start).
+            await request(app.getHttpServer())
+                .post('/messages/blocks')
+                .set(auth(tokenT2))
+                .send({ agencyId: AGENCY_A })
+                .expect(201);
+            const travelerSend = await request(app.getHttpServer())
+                .post('/messages')
+                .set(auth(tokenT2))
+                .send({ recipientId: AGENCY_A, content: 'hello' });
+            expect(travelerSend.status).toBe(403);
+            const agencySend = await request(app.getHttpServer())
+                .post('/messages')
+                .set(auth(tokenA))
+                .send({ recipientId: TRAVELER_2, content: 'hello' });
+            expect(agencySend.status).toBe(403);
+            await request(app.getHttpServer())
+                .delete(`/messages/blocks/${AGENCY_A}`)
+                .set(auth(tokenT2))
+                .expect(200);
+
+            // Traveller 1 HAS live bookings with agency A: the block
+            // must not strand the booking conversation.
+            await request(app.getHttpServer())
+                .post('/messages/blocks')
+                .set(auth(tokenT1))
+                .send({ agencyId: AGENCY_A })
+                .expect(201);
+            const bookingSend = await request(app.getHttpServer())
+                .post('/messages')
+                .set(auth(tokenT1))
+                .send({ recipientId: AGENCY_A, content: 'Where do we meet tomorrow?' });
+            expect(bookingSend.status).toBe(201);
+            await request(app.getHttpServer())
+                .delete(`/messages/blocks/${AGENCY_A}`)
+                .set(auth(tokenT1))
+                .expect(200);
         });
 
         it('admin can strip a message attachment; other roles cannot (#251/B23)', async () => {

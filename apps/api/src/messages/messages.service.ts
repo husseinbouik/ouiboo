@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, HttpException, HttpStatus } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { UploadService } from '../upload/upload.service';
@@ -55,8 +55,66 @@ export class MessagesService {
       throw new ForbiddenException('This account cannot start conversations');
     }
 
+    // #754 (Council S7-2): messaging eligibility is defined by the
+    // pair's lifecycle. A traveller may open a pre-booking inquiry with
+    // any agency (bounded by the rate limits below); once a booking or
+    // quote relationship exists the conversation is booking-linked.
+    // An AGENCY may never cold-start: without an existing conversation
+    // it needs a booking or quote relationship with the traveller —
+    // otherwise it is reply-only.
+    const existingConversation = await this.prisma.conversation.findUnique({
+      where: { travelerId_agencyId: { travelerId, agencyId } },
+      select: { id: true },
+    });
+    const pairBookings = await this.countPairBookings(travelerId, agencyId);
+
+    if (senderRole === UserRole.Agency && !existingConversation) {
+      const pairQuotes = await this.prisma.quoteRequest.count({
+        where: { travelerId, agencyId },
+      });
+      if (pairBookings === 0 && pairQuotes === 0) {
+        throw new ForbiddenException(
+          'Agencies can only message travellers they have a booking or quote relationship with',
+        );
+      }
+    }
+
+    // #729/#754: a traveller's block of the agency freezes the pair —
+    // no new conversation may start, and an existing conversation
+    // without a live booking accepts no further sends from either
+    // side. A booking-linked conversation stays usable for that
+    // booking (the block never strands an active trip).
+    const block = await this.prisma.agencyBlock.findUnique({
+      where: { travelerId_agencyId: { travelerId, agencyId } },
+      select: { id: true },
+    });
+    if (block && pairBookings === 0) {
+      throw new ForbiddenException(
+        'This conversation is blocked. Booking-linked conversations stay available from the booking page.',
+      );
+    }
+
     if (dto.attachmentUrl) {
-      this.assertMessageAttachmentAllowed(dto.attachmentUrl);
+      await this.assertMessageAttachmentAllowed(dto.attachmentUrl, agencyId, senderId, senderRole);
+    }
+
+    // #754: per-conversation burst cap, counted in the database (not
+    // process memory) on top of the distributed per-user limiter on
+    // POST /messages (#758). Returns a plain 429 problem response.
+    if (existingConversation) {
+      const recentSends = await this.prisma.message.count({
+        where: {
+          conversationId: existingConversation.id,
+          senderId,
+          createdAt: { gte: new Date(Date.now() - 10 * 60_000) },
+        },
+      });
+      if (recentSends >= 50) {
+        throw new HttpException(
+          'Rate limit exceeded. Please try again later.',
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
     }
 
     // #444 (Council P2-05): leakage detection. Contact exchange is by
@@ -68,8 +126,7 @@ export class MessagesService {
     // report (analytics/leakage-detection.service.ts).
     const contactExchangeCategories = detectContactExchange(dto.content);
     const isPreBookingExchange =
-      contactExchangeCategories.length > 0 &&
-      (await this.countPairBookings(travelerId, agencyId)) === 0;
+      contactExchangeCategories.length > 0 && pairBookings === 0;
 
     // Get or create conversation
     const conversation = await this.prisma.conversation.upsert({
@@ -226,11 +283,41 @@ export class MessagesService {
       },
     });
 
+    const [agency, traveler, block] = await Promise.all([
+      this.prisma.agencyProfile.findUnique({
+        where: { id: conversation.agencyId },
+        select: { id: true, companyName: true },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: conversation.travelerId },
+        select: { id: true, name: true },
+      }),
+      this.prisma.agencyBlock.findUnique({
+        where: {
+          travelerId_agencyId: {
+            travelerId: conversation.travelerId,
+            agencyId: conversation.agencyId,
+          },
+        },
+        select: { id: true },
+      }),
+    ]);
+
     return {
       messages,
       total,
       page: pagination.page,
       pages: Math.ceil(total / pagination.limit),
+      conversation: {
+        id: conversation.id,
+        travelerId: conversation.travelerId,
+        travelerName: traveler?.name ?? null,
+        agencyId: conversation.agencyId,
+        agencyName: agency?.companyName ?? null,
+        // #729: whether the TRAVELLER has blocked this agency (drives
+        // the block/unblock control + the frozen-conversation notice).
+        agencyBlocked: Boolean(block),
+      },
     };
   }
 
@@ -259,6 +346,8 @@ export class MessagesService {
             orderBy: { createdAt: 'desc' },
             take: 1,
           },
+          agency: { select: { id: true, companyName: true } },
+          traveler: { select: { id: true, name: true } },
         },
         orderBy: { lastMessageAt: 'desc' },
         skip,
@@ -267,8 +356,37 @@ export class MessagesService {
       this.prisma.conversation.count({ where }),
     ]);
 
+    // Per-conversation unread counts + (for traveller viewers) block
+    // flags, so both inboxes can render badges and frozen states
+    // without extra round-trips.
+    const enriched = await Promise.all(
+      conversations.map(async (conversation) => {
+        const [unreadCount, block] = await Promise.all([
+          this.prisma.message.count({
+            where: {
+              conversationId: conversation.id,
+              isRead: false,
+              senderId: { not: userId },
+            },
+          }),
+          agency
+            ? Promise.resolve(null)
+            : this.prisma.agencyBlock.findUnique({
+                where: {
+                  travelerId_agencyId: {
+                    travelerId: userId,
+                    agencyId: conversation.agencyId,
+                  },
+                },
+                select: { id: true },
+              }),
+        ]);
+        return { ...conversation, unreadCount, agencyBlocked: Boolean(block) };
+      }),
+    );
+
     return {
-      conversations,
+      conversations: enriched,
       total,
       page: pagination.page,
       pages: Math.ceil(total / pagination.limit),
@@ -385,24 +503,180 @@ export class MessagesService {
   }
 
   /**
-   * Message attachments (#251 — Council B23): an attachment must
-   * reference a file uploaded to Ouiboo, and it must never be a private
-   * upload. Private uploads are identity documents, payment proofs and
-   * refund evidence — exactly the document classes that must not enter
-   * the platform through chat. Public trip-asset uploads are the only
-   * legitimate attachment shape. (Detecting "this image is an ID
-   * document" is not reliable, so the beta rule is enforced at the
-   * storage-class boundary and paired with the in-app warning and the
-   * admin removal action below.)
+   * Message attachments (#251 — Council B23; #629/#754 completion):
+   * an attachment must reference a file uploaded to Ouiboo, it must
+   * never be a private upload, and it must belong to THIS
+   * conversation's agency (trips/{agencyId}/ keys only). Private
+   * uploads are identity documents, payment proofs and refund
+   * evidence — exactly the document classes that must not enter
+   * the platform through chat, and payment-proof-style images belong
+   * to the booking flow, never to messages. (Detecting "this image
+   * is an ID document" is not reliable, so the rule is enforced at
+   * the storage-class + tenant boundary, paired with the in-app
+   * no-ID-documents notice, a moderation flag on every blocked
+   * attempt, and the admin removal action below.)
    */
-  private assertMessageAttachmentAllowed(attachmentUrl: string): void {
+  private async assertMessageAttachmentAllowed(
+    attachmentUrl: string,
+    agencyId: string,
+    senderId: string,
+    senderRole: string,
+  ): Promise<void> {
     const key = this.uploadService.resolveStorageKey(attachmentUrl);
+    // #629/#754: classify the failure WITHOUT keeping the reference —
+    // the moderation flag records the class only (an external URL or a
+    // private key can itself carry personal data).
+    let failureClass: 'EXTERNAL_URL' | 'PRIVATE_DOCUMENT' | 'OTHER_TENANT' | null = null;
     if (!key) {
-      throw new BadRequestException('Attachment must reference a file uploaded to Ouiboo');
+      failureClass = 'EXTERNAL_URL';
+    } else if (key.startsWith(`${PRIVATE_FILE_PREFIX}/`)) {
+      failureClass = 'PRIVATE_DOCUMENT';
+    } else if (!key.startsWith(`trips/${agencyId}/`)) {
+      // Storage-bound AND tenant-bound: the only attachable uploads are
+      // the conversation agency's own catalogue uploads. Another
+      // agency's public asset is not this pair's to send.
+      failureClass = 'OTHER_TENANT';
     }
-    if (key.startsWith(`${PRIVATE_FILE_PREFIX}/`)) {
+    if (!failureClass) return;
+
+    await this.recordAttachmentBlocked(senderId, senderRole, failureClass);
+    if (failureClass === 'PRIVATE_DOCUMENT') {
       throw new BadRequestException('Private documents cannot be sent as message attachments');
     }
+    throw new BadRequestException('Attachment must reference a file uploaded to Ouiboo for this conversation');
+  }
+
+  /**
+   * #629: moderation flag for a blocked attachment attempt. Best-effort
+   * (a failed audit write must not mask the 400 the sender receives)
+   * and content-free: storage class + sender role only, never the URL,
+   * key, or file name — the attempt itself is the abuse signal the
+   * moderation queue investigates via the audit trail (#754).
+   */
+  private async recordAttachmentBlocked(
+    senderId: string,
+    senderRole: string,
+    storageClass: string,
+  ): Promise<void> {
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId: senderId,
+          action: 'MESSAGE_ATTACHMENT_BLOCKED',
+          targetType: 'MESSAGE',
+          metadata: { storageClass, senderRole },
+        },
+      });
+    } catch {
+      // The rejection stands either way; the flag is a signal.
+    }
+  }
+
+  /**
+   * #729/#754: one-tap report of a conversation by either participant.
+   * The report row is the moderation queue's input; an AuditLog row is
+   * written in the same transaction. Reason is a coarse category and
+   * details are the reporter's own words about the conversation —
+   * message content is never copied into either record.
+   */
+  async reportConversation(
+    conversationId: string,
+    reporterId: string,
+    dto: { reason: string; details?: string },
+  ) {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+    });
+    if (!conversation) {
+      throw new BadRequestException('Conversation not found');
+    }
+    await this.assertConversationParticipant(conversation, reporterId);
+
+    const report = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.conversationReport.create({
+        data: {
+          conversationId,
+          reporterId,
+          reason: dto.reason,
+          details: dto.details?.trim() ? dto.details.trim() : undefined,
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: reporterId,
+          action: 'CONVERSATION_REPORTED',
+          targetType: 'CONVERSATION',
+          targetId: conversationId,
+          metadata: { reason: dto.reason },
+        },
+      });
+      return created;
+    });
+
+    return { id: report.id, status: 'RECEIVED' as const };
+  }
+
+  /**
+   * #729/#754: traveller blocks an agency. Enforcement lives in
+   * sendMessage (no new conversations; non-booking conversations
+   * frozen; booking-linked conversations stay usable). Idempotent.
+   */
+  async blockAgency(travelerId: string, agencyId: string) {
+    const agency = await this.prisma.agencyProfile.findUnique({
+      where: { id: agencyId },
+      select: { id: true },
+    });
+    if (!agency) {
+      throw new BadRequestException('Agency not found');
+    }
+    await this.prisma.agencyBlock.upsert({
+      where: { travelerId_agencyId: { travelerId, agencyId } },
+      update: {},
+      create: { travelerId, agencyId },
+    });
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId: travelerId,
+          action: 'AGENCY_BLOCKED_BY_TRAVELER',
+          targetType: 'AGENCY',
+          targetId: agencyId,
+          metadata: {},
+        },
+      });
+    } catch {
+      // The block stands either way; the audit row is a signal.
+    }
+    return { blocked: true as const, agencyId };
+  }
+
+  /** Traveller lifts a block. Idempotent. */
+  async unblockAgency(travelerId: string, agencyId: string) {
+    await this.prisma.agencyBlock.deleteMany({ where: { travelerId, agencyId } });
+    return { blocked: false as const, agencyId };
+  }
+
+  /** The traveller's current blocks (drives the conversation UI). */
+  async listBlocks(travelerId: string) {
+    const blocks = await this.prisma.agencyBlock.findMany({
+      where: { travelerId },
+      include: { agency: { select: { id: true, companyName: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    return { blocks };
+  }
+
+  private async assertConversationParticipant(
+    conversation: { travelerId: string; agencyId: string },
+    userId: string,
+  ): Promise<void> {
+    if (userId === conversation.travelerId) return;
+    const agency = await this.prisma.agencyProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (agency?.id === conversation.agencyId) return;
+    throw new ForbiddenException('Not authorized to access this conversation');
   }
 
   /** Best-effort storage cleanup for a message attachment object. */
