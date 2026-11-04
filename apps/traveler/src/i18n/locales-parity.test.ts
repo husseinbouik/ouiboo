@@ -28,6 +28,69 @@ describe('traveller locale parity (#424)', () => {
         expect(keySet(ar).sort()).toEqual(enKeys);
     });
 
+    it('ships the full #729 messages key list in every locale (a uniform drop across all locales must fail)', () => {
+        // #729 regression pin (W12): PR #826 was built on a pre-#822 base
+        // and silently dropped all 28 messages.* chat-door keys plus
+        // nav.messages from en AND fr AND ar at once. The set-equality
+        // test above stayed green because the drop was uniform, so the
+        // full expected key list is pinned explicitly here — removing a
+        // key from every locale now fails CI.
+        const expectedMessagesKeys = [
+            'backToMessages',
+            'block',
+            'blockConfirm',
+            'blockedBadge',
+            'blockedNotice',
+            'browseTrips',
+            'composerPlaceholder',
+            'conversationWith',
+            'emptyBody',
+            'emptyThread',
+            'emptyTitle',
+            'exploreTrips',
+            'idDocumentWarning',
+            'keepOnOuibooWarning',
+            'messageAgency',
+            'noMessagesYet',
+            'report',
+            'reportBody',
+            'reportDetailsPlaceholder',
+            'reportDone',
+            'reportReasonHarassment',
+            'reportReasonIdDocumentRequest',
+            'reportReasonLabel',
+            'reportReasonOffPlatformPayment',
+            'reportReasonOther',
+            'reportReasonSpam',
+            'reportSubmit',
+            'reportTitle',
+            'send',
+            'sendFailed',
+            'sending',
+            'signIn',
+            'signInBody',
+            'signInTitle',
+            'startBody',
+            'startTitle',
+            'title',
+            'unblock',
+        ].sort();
+        for (const locale of [en, fr, ar]) {
+            const messages = (locale as Record<string, unknown>).messages as Record<string, unknown>;
+            expect(messages).toBeDefined();
+            expect(Object.keys(messages).sort()).toEqual(expectedMessagesKeys);
+            const nav = (locale as Record<string, unknown>).nav as Record<string, unknown>;
+            expect(typeof nav.messages).toBe('string');
+            expect((nav.messages as string).trim()).not.toBe('');
+        }
+        // The chat-door label itself, in the exact #822 wording.
+        expect((en as any).messages.messageAgency).toBe('Message the agency');
+        expect((fr as any).messages.messageAgency).toBe("Contacter l'agence");
+        expect((ar as any).messages.messageAgency).toBe('مراسلة الوكالة');
+        expect((en as any).nav.messages).toBe('Messages');
+        expect((ar as any).nav.messages).toBe('الرسائل');
+    });
+
     it('has a dedicated checkout namespace in every locale', () => {
         for (const locale of [en, fr, ar]) {
             const checkout = (locale as Record<string, unknown>).checkout as Record<string, unknown>;
