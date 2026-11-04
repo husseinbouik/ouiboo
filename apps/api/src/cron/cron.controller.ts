@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Headers,
+  Query,
   UnauthorizedException,
   Logger,
   HttpCode,
@@ -13,6 +14,7 @@ import { StagedPaymentsService } from '../staged-payments/staged-payments.servic
 import { RefundsService } from '../refunds/refunds.service';
 import { PaymentReconciliationService } from '../payment-providers/reconciliation.service';
 import { AgencyComplianceService } from '../agency/agency-compliance.service';
+import { RetentionService } from '../retention/retention.service';
 
 /**
  * Serverless-compatible cron endpoint (#216).
@@ -37,6 +39,7 @@ export class CronController {
     private readonly refundsService: RefundsService,
     private readonly paymentReconciliationService: PaymentReconciliationService,
     private readonly agencyComplianceService: AgencyComplianceService,
+    private readonly retentionService: RetentionService,
   ) {}
 
   private validateCronSecret(authorization?: string): void {
@@ -148,6 +151,54 @@ export class CronController {
       );
     }
     return { ranAt: new Date().toISOString(), results };
+  }
+
+  /**
+   * #438 (Council P1-12): retention purge for the categories whose
+   * periods the adopted retention schedule defines (see
+   * retention/retention-config.ts for the mapping and the
+   * counsel-held categories that are deliberately NOT purged).
+   *
+   * Scheduling follows the same external-pinger pattern as
+   * /cron/deadlines: the endpoint is CRON_SECRET-guarded and stateless;
+   * the cadence lives OUTSIDE the app — Vercel Cron entries in
+   * apps/api/vercel.json and the GitHub-Actions pinger modelled on
+   * .github/workflows/deadlines-hourly.yml (a weekly ping is ample for
+   * retention). No scheduler is created by this code; enabling the
+   * ping is an ops step recorded in docs/launch-ops/RETENTION.md.
+   *
+   * ?dryRun=true reports the counts that WOULD be purged and deletes
+   * nothing.
+   */
+  @Post('retention')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Run retention purges (Cron, #438)',
+    description:
+      'Purges audit logs (3y), search events (13mo), notification logs ' +
+      'and processed webhook inbox rows (90d), expired auth material, ' +
+      'messages + attachments (2y after last message), payment proofs ' +
+      'and refund evidence (2y after the dispute window closes). ' +
+      'Supports ?dryRun=true. Intended to be called by a scheduled ' +
+      'pinger, not by users.',
+  })
+  @ApiResponse({ status: 200, description: 'Retention run completed (structured counts)' })
+  @ApiResponse({ status: 401, description: 'Invalid or missing cron secret' })
+  async runRetention(
+    @Headers('authorization') authorization?: string,
+    @Query('dryRun') dryRun?: string,
+  ) {
+    this.validateCronSecret(authorization);
+    const report = await this.retentionService.runRetention({
+      dryRun: dryRun === 'true' || dryRun === '1',
+    });
+    const failed = Object.entries(report.categories)
+      .filter(([, result]) => result.failed)
+      .map(([name]) => name);
+    if (failed.length > 0) {
+      await this.emitCronAlert(`Retention category failure: ${failed.join(', ')}`, { failed });
+    }
+    return report;
   }
 
   /**
