@@ -1,5 +1,11 @@
 name: SonarCloud
 
+# ADVISORY workflow (#245): SonarCloud reporting is non-blocking and is
+# NOT a required branch-protection context. The continue-on-error steps
+# below are coverage/report preparation only. Enforced API coverage
+# lives in the coverage-floor gate — see docs/ci/coverage.md and
+# docs/ci/governance.md.
+
 on:
   push:
     branches: [staging, master]
