@@ -131,6 +131,33 @@ describe('traveller locale parity (#424)', () => {
         );
     });
 
+    it('ships the complete messages namespace in every locale (#729, W12 pin)', () => {
+        // PR #822 added these keys; PR #826's squash (built on a pre-#822
+        // base) dropped them from ALL three locales at once, so the
+        // key-union parity check above stayed green while the chat doors
+        // rendered raw keys and lost their mounts' labels. Pin the full
+        // list so a uniform drop fails CI.
+        const expected = [
+            'backToMessages', 'block', 'blockConfirm', 'blockedBadge', 'blockedNotice',
+            'browseTrips', 'composerPlaceholder', 'conversationWith', 'emptyBody',
+            'emptyThread', 'emptyTitle', 'exploreTrips', 'idDocumentWarning',
+            'keepOnOuibooWarning', 'messageAgency', 'noMessagesYet', 'report',
+            'reportBody', 'reportDetailsPlaceholder', 'reportDone',
+            'reportReasonHarassment', 'reportReasonIdDocumentRequest', 'reportReasonLabel',
+            'reportReasonOffPlatformPayment', 'reportReasonOther', 'reportReasonSpam',
+            'reportSubmit', 'reportTitle', 'send', 'sendFailed', 'sending', 'signIn',
+            'signInBody', 'signInTitle', 'startBody', 'startTitle', 'title', 'unblock',
+        ].sort();
+        for (const locale of [en, fr, ar]) {
+            expect(Object.keys((locale as any).messages).sort()).toEqual(expected);
+            expect(typeof (locale as any).nav.messages).toBe('string');
+            expect((locale as any).nav.messages.length).toBeGreaterThan(0);
+        }
+        // The chat-door label itself is actually translated, not copied.
+        expect((fr as any).messages.messageAgency).not.toBe((en as any).messages.messageAgency);
+        expect((ar as any).messages.messageAgency).not.toBe((en as any).messages.messageAgency);
+    });
+
     it('ships every Arabic plural category for the trip session labels (#567)', () => {
         // Intl.PluralRules for Arabic yields zero/one/two/few/many/other;
         // with only one/other shipped, counts of 2, 3-10 and 11-99 fell

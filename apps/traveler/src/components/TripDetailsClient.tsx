@@ -27,6 +27,7 @@ import { useAuth } from '@/components/AuthContext';
 import { ReviewList } from '@/components/ReviewList';
 import SellerIdentity from '@/components/SellerIdentity';
 import VerificationRecord from '@/components/VerificationRecord';
+import MessageAgencyButton from '@/components/MessageAgencyButton';
 import { TRAVELER_URL } from '@/lib/site';
 import { tripCoverViewTransitionName } from '@/lib/view-transition';
 import { SessionStatus, type CancellationScaleSnapshot, type SessionStatusType } from '@ouiboo/types';
@@ -497,6 +498,16 @@ export default function TripDetailsClient({
                     {/* #688 (Council S6): the checkable Public Verification
                         Record for this agency (metadata only). */}
                     <VerificationRecord agency={trip.agency} className="mt-4" />
+
+                    {/* #729 (Council S7-2): chat door — traveller-initiated
+                        contact with this agency, pre-booking inquiry or
+                        booking question, inside Ouiboo. (Restored in W12:
+                        PR #826's squash, built on a pre-#822 base, had
+                        silently dropped this mount and the messages.*
+                        locale keys — see the parity-test pin.) */}
+                    <div className="mt-4">
+                      <MessageAgencyButton agencyId={trip.agency?.id} agencyName={trip.agency?.companyName ?? trip.agency?.legalName} />
+                    </div>
 
                     {/* #676: meeting AREA only before booking — the
                         exact address + map link appear on the booking
