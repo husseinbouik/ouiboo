@@ -126,7 +126,6 @@ describe('CachedBookingPass (#847 — the booking page offline gate)', () => {
             JSON.stringify({
                 pass,
                 agencyBusinessPhone: '+212600000000',
-                agencyEmergencyContactPhone: null,
                 paymentPlanStatus: 'FULLY_PAID',
                 refundStatus: null,
             }),

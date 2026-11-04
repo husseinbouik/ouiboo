@@ -25,19 +25,21 @@ import { formatCurrency } from '@ouiboo/utils';
  * authenticated artefact the offline path serves.
  *
  * #847: the cached artefact is an entry that also carries the few
- * booking-level fields the render needs (agency contact phones,
+ * booking-level fields the render needs (agency business phone,
  * payment-plan status, refund status), so the pass can render from the
  * device alone — the booking page mounts CachedBookingPass when its
  * booking query cannot load (e.g. a cold offline reopen), instead of
- * stranding the traveller on the not-found card. Entries written before
- * #847 stored the bare pass JSON; those still read back (pass only).
+ * stranding the traveller on the not-found card. The agency EMERGENCY
+ * contact is deliberately NOT persisted (sensitive data does not belong
+ * in clear-text on-device storage); the live render still uses it.
+ * Entries written before #847 stored the bare pass JSON; those still
+ * read back (pass only).
  */
 const passCacheKey = (bookingId: string) => `ouiboo-booking-pass:${bookingId}`;
 
 interface CachedPassEntry {
   pass: BookingPass;
   agencyBusinessPhone?: string | null;
-  agencyEmergencyContactPhone?: string | null;
   paymentPlanStatus?: string | null;
   refundStatus?: string | null;
 }
@@ -254,7 +256,6 @@ export function BookingPassCard({ booking }: { booking: BookingDetails }) {
       const entry: CachedPassEntry = {
         pass: livePass,
         agencyBusinessPhone,
-        agencyEmergencyContactPhone,
         paymentPlanStatus,
         refundStatus,
       };
@@ -265,7 +266,7 @@ export function BookingPassCard({ booking }: { booking: BookingDetails }) {
         // Storage full/blocked: the live pass still renders.
       }
     }
-  }, [livePass, bookingId, agencyBusinessPhone, agencyEmergencyContactPhone, paymentPlanStatus, refundStatus]);
+  }, [livePass, bookingId, agencyBusinessPhone, paymentPlanStatus, refundStatus]);
 
   const pass = livePass ?? cachedEntry?.pass ?? null;
   const offline = !livePass && Boolean(cachedEntry?.pass);
@@ -326,7 +327,6 @@ export function CachedBookingPass({
       pass={entry.pass}
       offline
       agencyBusinessPhone={entry.agencyBusinessPhone}
-      agencyEmergencyContactPhone={entry.agencyEmergencyContactPhone}
       paymentPlanStatus={entry.paymentPlanStatus ?? null}
       refundStatus={entry.refundStatus ?? null}
     />
