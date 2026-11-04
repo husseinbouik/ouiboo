@@ -174,6 +174,7 @@ export default function TravelerSignupPage() {
                         <Input
                             id="name"
                             type="text"
+                            autoComplete="name"
                             placeholder={t('signup.namePlaceholder', 'Your full name')}
                             className="ps-12 h-14 bg-muted border-border rounded-2xl focus:bg-background focus:ring-2 focus:ring-sunset-orange/10 focus:border-sunset-orange transition-all font-medium text-foreground placeholder:text-muted-foreground"
                             {...register('name')}
@@ -191,6 +192,7 @@ export default function TravelerSignupPage() {
                         <Input
                             id="email"
                             type="email"
+                            autoComplete="username"
                             placeholder={t('signup.emailPlaceholder', 'hello@example.com')}
                             className="ps-12 h-14 bg-muted border-border rounded-2xl focus:bg-background focus:ring-2 focus:ring-sunset-orange/10 focus:border-sunset-orange transition-all font-medium text-foreground placeholder:text-muted-foreground"
                             {...register('email')}
@@ -225,6 +227,7 @@ export default function TravelerSignupPage() {
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
                     placeholder={t('signup.passwordPlaceholder', '********')}
                     className="ps-10 pe-12 h-12 bg-muted border-border focus:bg-background focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
                     {...register('password')}

@@ -100,7 +100,9 @@ export function AuthModal() {
                                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest ms-1">{t('authModal.email')}</label>
                                     <div className="relative">
                                         <Mail className="absolute start-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input 
+                                        <Input
+                                            type="email"
+                                            autoComplete="username"
                                             placeholder={t('authModal.emailPlaceholder')}
                                             className="ps-11 h-12 bg-muted/50 border-border rounded-xl focus:bg-background transition-all"
                                             {...register('email', { required: true })}
@@ -112,8 +114,9 @@ export function AuthModal() {
                                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest ms-1">{t('authModal.password')}</label>
                                     <div className="relative">
                                         <Lock className="absolute start-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input 
+                                        <Input
                                             type="password"
+                                            autoComplete="current-password"
                                             placeholder={t('authModal.passwordPlaceholder')}
                                             className="ps-11 h-12 bg-muted/50 border-border rounded-xl focus:bg-background transition-all"
                                             {...register('password', { required: true })}

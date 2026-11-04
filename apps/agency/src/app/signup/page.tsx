@@ -127,6 +127,7 @@ export default function AgencySignupPage() {
                   <Input
                     id="name"
                     type="text"
+                    autoComplete="organization"
                     placeholder={t('signup.agencyPlaceholder')}
                     className="ps-10 h-12 bg-muted border-border focus:bg-background transition-all duration-200"
                     {...register('name', { required: t('signup.nameRequired') })}
@@ -142,6 +143,7 @@ export default function AgencySignupPage() {
                   <Input
                     id="email"
                     type="email"
+                    autoComplete="username"
                     placeholder={t('signup.emailPlaceholder')}
                     className="ps-10 h-12 bg-muted border-border focus:bg-background transition-all duration-200"
                     {...register('email', { required: t('signup.emailRequired') })}
@@ -183,6 +185,7 @@ export default function AgencySignupPage() {
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
                     placeholder={t('signup.passwordPlaceholder')}
                     className="ps-10 pe-12 h-12 bg-muted border-border focus:bg-background transition-all duration-200"
                     {...register('password', { required: t('signup.passwordRequired'), minLength: { value: 8, message: t('signup.passwordMinLength') } })}
