@@ -37,7 +37,7 @@ import {
 import { ReviewForm } from '@/components/ReviewForm';
 import { useTranslation } from 'react-i18next';
 import { TripContactsCard } from '@/components/TripContactsCard';
-import { BookingPassCard } from '@/components/BookingPassCard';
+import { BookingPassCard, CachedBookingPass } from '@/components/BookingPassCard';
 import { AttendanceCard } from '@/components/AttendanceCard';
 import { RefundCaseCard, type TravelerRefundCaseView } from '@/components/RefundCaseCard';
 import SellerBlock from '@/components/SellerBlock';
@@ -210,15 +210,26 @@ export default function BookingDetailsPage() {
   }
 
   if (!booking) {
+    // #847: a failed load is not proof the booking is gone — offline,
+    // this query simply cannot answer. If the device holds the booking's
+    // pass artefact (#690), render the pass from it; the not-found card
+    // is only the fallback when no artefact exists.
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-6">
-        <Card className="max-w-xl w-full rounded-3xl p-8 text-center">
-          <h1 className="text-2xl font-black text-foreground">{t('bookingDetail.notFoundTitle')}</h1>
-          <p className="mt-3 text-muted-foreground">{t('bookingDetail.notFoundBody')}</p>
-          <Button asChild className="rounded-xl">
-              <Link href="/bookings">{t('bookingDetail.backToBookings')}</Link>
-            </Button>
-        </Card>
+      <div className="min-h-screen bg-background px-6 pt-28 pb-20">
+        <div className="max-w-5xl mx-auto">
+          <CachedBookingPass
+            bookingId={bookingId ?? ''}
+            fallback={
+              <Card className="max-w-xl w-full mx-auto rounded-3xl p-8 text-center">
+                <h1 className="text-2xl font-black text-foreground">{t('bookingDetail.notFoundTitle')}</h1>
+                <p className="mt-3 text-muted-foreground">{t('bookingDetail.notFoundBody')}</p>
+                <Button asChild className="rounded-xl">
+                  <Link href="/bookings">{t('bookingDetail.backToBookings')}</Link>
+                </Button>
+              </Card>
+            }
+          />
+        </div>
       </div>
     );
   }

@@ -458,8 +458,9 @@ describe('refresh-rotation race (#840)', () => {
     ]);
 
     expect(results.map((r) => r.status)).toEqual(['rejected', 'rejected']);
-    // The failed refresh itself was shared, not duplicated per instance.
-    expect(postSpy).toHaveBeenCalledTimes(1);
+    // The failed refresh is shared, not duplicated per instance: one
+    // initial attempt + the single #846 race retry, shared by both.
+    expect(postSpy).toHaveBeenCalledTimes(2);
     expect(hasBrowserSessionHint()).toBe(false);
     expect(hasPossibleBrowserSession()).toBe(false);
     // clearBrowserAccessToken fires exactly one BFF session DELETE; two
@@ -469,5 +470,124 @@ describe('refresh-rotation race (#840)', () => {
     );
     expect(deleteCalls).toHaveLength(1);
     expect(locationStub.href).toBe('/login');
+  });
+
+  it('(d) a refresh 401 from a lost cross-context race heals on the in-lock retry — no teardown (#846)', async () => {
+    await setBrowserAccessToken('token-old');
+    let refreshCalls = 0;
+    const postSpy = jest
+      .spyOn(axios, 'post')
+      .mockImplementation(async () => {
+        refreshCalls++;
+        if (refreshCalls === 1) {
+          // Another context rotated first; the server's atomic claim
+          // rejected the cookie value this attempt carried.
+          const error = new Error('Request failed with status code 401');
+          (error as { response?: unknown }).response = {
+            status: 401,
+            data: {},
+          };
+          throw error;
+        }
+        // The retry presents the cookie jar's current (rotated) value.
+        return { data: { accessToken: 'token-new' } } as never;
+      });
+
+    const client = createBrowserApiClient(BASE_URL);
+    client.defaults.adapter = async (
+      config: InternalAxiosRequestConfig,
+    ): Promise<AxiosResponse> => {
+      if (authOf(config) === 'Bearer token-new') return okResponse(config);
+      throw httpError(config, 401);
+    };
+
+    const res = await client.get('/users/me');
+
+    expect(res.status).toBe(200);
+    expect(postSpy).toHaveBeenCalledTimes(2);
+    // The session the other context restored is NOT torn down.
+    expect(locationStub.href).toBe('');
+    expect(hasBrowserSessionHint()).toBe(true);
+    expect(hasPossibleBrowserSession()).toBe(true);
+  });
+
+  it('(e) independent refresh domains (two tabs) serialize through the shared Web Lock — the server claim never sees a concurrent duplicate (#846)', async () => {
+    // A minimal LockManager: a promise-chain mutex, standing in for the
+    // browser's per-origin lock registry shared by every tab.
+    let chain: Promise<unknown> = Promise.resolve();
+    const lockManager = {
+      request: (_name: string, cb: () => Promise<string | null>) => {
+        const run = chain.then(cb, cb);
+        chain = run.then(
+          () => undefined,
+          () => undefined,
+        );
+        return run;
+      },
+    };
+    (global as any).navigator = { locks: lockManager };
+
+    // The fake server claim: only ONE refresh may be in flight; a
+    // concurrent second POST is rejected 401, like the atomic
+    // single-use claim. Each accepted POST mints the next token.
+    let inFlight = 0;
+    let overlaps = 0;
+    let minted = 0;
+    const postSpy = jest
+      .spyOn(axios, 'post')
+      .mockImplementation(async () => {
+        if (inFlight > 0) {
+          overlaps++;
+          const error = new Error('Request failed with status code 401');
+          (error as { response?: unknown }).response = {
+            status: 401,
+            data: {},
+          };
+          throw error;
+        }
+        inFlight++;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        inFlight--;
+        minted++;
+        return { data: { accessToken: `token-${minted}` } } as never;
+      });
+
+    try {
+      await setBrowserAccessToken('token-old');
+
+      // Two clients on DIFFERENT base URLs have independent in-page
+      // single-flights (separate inFlightRefreshes keys) — the same
+      // independence two tabs of one origin have. Only the Web Lock is
+      // shared between them.
+      const adapter = async (
+        config: InternalAxiosRequestConfig,
+      ): Promise<AxiosResponse> => {
+        const auth = authOf(config);
+        if (auth === 'Bearer token-1' || auth === 'Bearer token-2') {
+          return okResponse(config);
+        }
+        throw httpError(config, 401);
+      };
+      const clientA = createBrowserApiClient(BASE_URL);
+      clientA.defaults.adapter = adapter;
+      const clientB = createBrowserApiClient(`${BASE_URL}/other-domain`);
+      clientB.defaults.adapter = adapter;
+
+      const [resA, resB] = await Promise.all([
+        clientA.get('/users/me'),
+        clientB.get('/users/me'),
+      ]);
+
+      expect(resA.status).toBe(200);
+      expect(resB.status).toBe(200);
+      // Two refreshes happened (one per domain) but NEVER overlapped,
+      // so the claim never rejected one and no session was torn down.
+      expect(postSpy).toHaveBeenCalledTimes(2);
+      expect(overlaps).toBe(0);
+      expect(locationStub.href).toBe('');
+      expect(hasBrowserSessionHint()).toBe(true);
+    } finally {
+      delete (global as any).navigator;
+    }
   });
 });
