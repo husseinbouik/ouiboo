@@ -30,6 +30,16 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['lucide-react', 'framer-motion', 'date-fns', 'recharts'],
   },
   transpilePackages: ["@ouiboo/ui"],
+
+  // #771: showcase cards render the trips' own catalogue photos —
+  // stock-photo hosts used by listed trips and the media bucket that
+  // serves agency uploads. CSP img-src already allows https:.
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "*.backblazeb2.com" },
+    ],
+  },
   staticPageGenerationTimeout: 300,
 
   // Security headers (#192)

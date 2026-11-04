@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useTranslation } from 'react-i18next'
 import { Logo, BetaBadge } from '@ouiboo/ui'
 import { CookiePreferencesButton } from './AnalyticsConsent'
+import type { ShowcaseCardData } from '../lib/showcase'
 
 // #735 (founder-approved design, "The Honest Window" v7): the homepage is
 // rebuilt to the approved mockup — photography-led hero with the founder's
@@ -71,10 +72,14 @@ function Arrow() {
   )
 }
 
-// The three showcase cards are real catalogue trips (staging seed) of one
-// named agency; the dated check line printed on every card is that
-// agency's live verification record (licence checked 2026-10-30, RC
-// insurance valid to 2027-12-31 — see the agency public record, #688).
+// FALLBACK showcase cards (#771): rendered only when the live
+// distinct-agency selection (lib/showcase.ts) yields nothing — the
+// page never breaks. These are real catalogue trips of one named
+// agency; the dated check line printed on them is that agency's live
+// verification record (licence checked 2026-10-30, RC insurance valid
+// to 2027-12-31 — see the agency public record, #688). When the live
+// selection succeeds, each card instead carries its OWN agency's name
+// and its OWN record dates.
 const SHOWCASE = [
   {
     key: 'chefchaouen',
@@ -98,7 +103,11 @@ const SHOWCASE = [
 
 const AGENCY_NAME = 'Atlas Adventures SARL'
 
-export default function LandingPage() {
+export default function LandingPage({
+  showcaseCards,
+}: {
+  showcaseCards?: ShowcaseCardData[] | null
+}) {
   const { t, i18n } = useTranslation()
   const currentLang = i18n.language
   const isRTL = currentLang === 'ar'
@@ -110,6 +119,17 @@ export default function LandingPage() {
     document.documentElement.lang = currentLang
     document.documentElement.dir = isRTL ? 'rtl' : 'ltr'
   }, [currentLang, isRTL])
+
+  const fmtDate = (iso: string): string => {
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return ''
+    const locale = currentLang === 'ar' ? 'ar-MA' : currentLang === 'fr' ? 'fr-FR' : 'en-GB'
+    return new Intl.DateTimeFormat(locale, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }).format(d)
+  }
 
   const tagsFor = (key: string): string[] => {
     const tags = t(`hw.showcase.cards.${key}.tags`, { returnObjects: true })
@@ -280,7 +300,85 @@ export default function LandingPage() {
             </div>
 
             <div className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-6 px-6 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mx-0 lg:grid lg:grid-cols-3 lg:gap-[26px] lg:overflow-visible lg:px-0 lg:pb-0">
-              {SHOWCASE.map((card) => (
+              {showcaseCards?.length
+                ? showcaseCards.map((card) => {
+                    const content =
+                      card.content[(currentLang as 'fr' | 'ar' | 'en')] || card.content.fr
+                    return (
+                      <article
+                        key={card.tripId}
+                        className="flex w-[82vw] max-w-[340px] shrink-0 snap-start flex-col overflow-hidden rounded-[20px] shadow-[0_18px_40px_-18px_rgba(10,25,47,.25)] lg:w-auto lg:max-w-none"
+                        style={{ backgroundColor: 'var(--hw-card)' }}
+                      >
+                        <div className="relative aspect-[16/10] overflow-hidden">
+                          <Image
+                            src={card.img}
+                            alt={content.title}
+                            fill
+                            loading="lazy"
+                            sizes="(min-width: 1024px) 33vw, 100vw"
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="flex flex-1 flex-col gap-[9px] p-[22px_22px_20px]">
+                          <div className="text-xs font-bold uppercase tracking-[0.13em]" style={{ color: 'var(--hw-accent)' }}>
+                            {content.city}
+                          </div>
+                          <h3 className="text-[19.5px] font-bold leading-[1.3]" style={{ color: 'var(--hw-heading)' }}>
+                            {content.title}
+                          </h3>
+                          <div className="flex flex-wrap gap-2">
+                            {content.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="rounded-full border px-[10px] py-1 text-xs font-semibold"
+                                style={{ backgroundColor: 'var(--hw-sand)', borderColor: 'var(--hw-line)', color: 'var(--hw-ink)' }}
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="mt-1 flex items-center gap-[10px]">
+                            <span
+                              className="flex h-8 w-8 items-center justify-center rounded-full font-display text-xs font-bold text-white"
+                              style={{ backgroundColor: NAVY }}
+                              aria-hidden="true"
+                            >
+                              {card.initials}
+                            </span>
+                            <span>
+                              <span className="block text-[14.5px] font-semibold leading-tight" style={{ color: 'var(--hw-heading)' }}>
+                                {card.agencyName}
+                              </span>
+                              <span className="block text-[12.5px] leading-tight" style={{ color: 'var(--hw-muted)' }}>
+                                {t('hw.showcase.organiser')} · {content.city}
+                              </span>
+                            </span>
+                          </div>
+                          <div
+                            className="flex items-start gap-2 rounded-[11px] border p-[10px_12px] text-[12.8px] leading-[1.45]"
+                            style={{ backgroundColor: 'var(--hw-checkline)', borderColor: 'var(--hw-line)', color: 'var(--hw-muted)' }}
+                          >
+                            <ShieldCheck className="mt-[1px] h-4 w-4 shrink-0" />
+                            <span>
+                              {t('hw.showcase.checkLineTemplate', {
+                                checked: fmtDate(card.checkedOn),
+                                insurance: fmtDate(card.insuranceExpiry),
+                              })}
+                            </span>
+                          </div>
+                          <a
+                            href={`${travelerUrl}/trip/${card.tripId}?lang=${currentLang}`}
+                            className="mt-auto border-t pt-3 text-[14.5px] font-semibold"
+                            style={{ borderColor: 'var(--hw-divider)', color: 'var(--hw-heading)' }}
+                          >
+                            {t('hw.showcase.viewTrip')} <span style={{ color: 'var(--hw-accent)' }}><Arrow /></span>
+                          </a>
+                        </div>
+                      </article>
+                    )
+                  })
+                : SHOWCASE.map((card) => (
                 <article
                   key={card.key}
                   className="flex w-[82vw] max-w-[340px] shrink-0 snap-start flex-col overflow-hidden rounded-[20px] shadow-[0_18px_40px_-18px_rgba(10,25,47,.25)] lg:w-auto lg:max-w-none"
@@ -675,10 +773,19 @@ export default function LandingPage() {
           --hw-accent: #ff8c5a;
           --hw-chip: #ff6b35;
         }
+        /* #772: the expanded state stays calm — the item keeps its
+           neutral surface; orange survives only as the small accent of
+           a thin inline-start border and the icon's colour. */
+        .hw-faq {
+          border-inline-start: 3px solid transparent;
+        }
+        .hw-faq[open ] {
+          border-inline-start-color: var(--hw-accent);
+        }
         .hw-faq[open ] .hw-faq-plus {
-          background-color: ${ORANGE};
-          border-color: ${ORANGE};
-          color: #fff;
+          background-color: transparent;
+          border-color: var(--hw-accent);
+          color: var(--hw-accent);
           transform: rotate(45deg);
         }
         .hw-faq .hw-faq-plus {

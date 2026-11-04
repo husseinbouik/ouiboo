@@ -505,6 +505,11 @@
       "viewTrip": "View trip details",
       "organiser": "Organiser",
       "checkLine": "Licence checked 30 Oct 2026 · RC insurance valid to 31 Dec 2027",
+      "checkLineTemplate": "Licence checked {{checked}} · RC insurance valid to {{insurance}}",
+      "durationDay": "{{count}} day",
+      "durationDays": "{{count}} days",
+      "durationNight": "{{count}} night",
+      "durationNights": "{{count}} nights",
       "cards": {
         "chefchaouen": {
           "dest": "Chefchaouen · The Blue Pearl",

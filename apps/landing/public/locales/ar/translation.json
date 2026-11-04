@@ -505,6 +505,11 @@
       "viewTrip": "عرض تفاصيل الرحلة",
       "organiser": "المنظّم",
       "checkLine": "تم التحقق من الرخصة في 30 أكتوبر 2026 · تأمين المسؤولية المدنية ساري حتى 31 ديسمبر 2027",
+      "checkLineTemplate": "تم التحقق من الرخصة في {{checked}} · تأمين المسؤولية المدنية ساري حتى {{insurance}}",
+      "durationDay": "{{count}} يوم",
+      "durationDays": "{{count}} أيام",
+      "durationNight": "ليلة واحدة",
+      "durationNights": "{{count}} ليالٍ",
       "cards": {
         "chefchaouen": {
           "dest": "شفشاون · اللؤلؤة الزرقاء",
