@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Sheet, SheetContent, SheetTrigger, buttonVariants, LogoLockup, BetaBadge } from '@ouiboo/ui';
-import { Menu, LayoutDashboard, Map, BookOpen, Wallet, Receipt, Settings, LifeBuoy } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger, buttonVariants, Logo, BetaBadge } from '@ouiboo/ui';
+import { Menu, LayoutDashboard, Map, BookOpen, Wallet, Receipt, Settings, LifeBuoy, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@ouiboo/ui/utils';
@@ -18,6 +18,7 @@ export function AgencyMobileNav() {
     { name: t('sidebar.dashboard'), href: '/dashboard', icon: LayoutDashboard },
     { name: t('sidebar.myTrips'), href: '/dashboard/trips', icon: Map },
     { name: t('sidebar.bookings'), href: '/dashboard/bookings', icon: BookOpen },
+    { name: t('sidebar.crm'), href: '/dashboard/crm', icon: Users },
     { name: t('sidebar.wallet'), href: '/dashboard/wallet', icon: Wallet },
     { name: t('sidebar.billing'), href: '/dashboard/settings/billing', icon: Receipt },
     { name: t('sidebar.settings'), href: '/dashboard/settings', icon: Settings },
@@ -33,7 +34,8 @@ export function AgencyMobileNav() {
         <div className="flex flex-col h-full">
             <div className="p-6 border-b border-border">
                 <Link href="/dashboard" className="flex items-center gap-3" onClick={() => setOpen(false)}>
-                    <LogoLockup height={28} tone="auto" />
+                    <Logo size={32} />
+                    <span className="text-xl font-bold tracking-tight text-foreground">Ouiboo</span>
                     <BetaBadge />
                 </Link>
             </div>

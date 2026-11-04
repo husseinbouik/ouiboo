@@ -72,7 +72,8 @@
     "expandSidebar": "توسيع الشريط الجانبي",
     "collapseSidebar": "طي الشريط الجانبي",
     "refunds": "المبالغ المستردة",
-    "support": "الدعم"
+    "support": "الدعم",
+    "crm": "العملاء والمسار"
   },
   "login": {
     "title": "بوابة الوكالات",
@@ -631,6 +632,34 @@
     "trips": "الرحلات CSV",
     "reviews": "التقييمات CSV",
     "error": "فشل التصدير. حاول مرة أخرى."
+  },
+  "crm": {
+    "title": "العملاء ومسار الحجوزات",
+    "subtitle": "المسافرون والحجوزات الخاصة بك، من حجوزاتك فقط.",
+    "contactsTitle": "جهات اتصال المسافرين",
+    "contactsSubtitle": "مبنية من حجوزاتك — لا يتم جمع أي بيانات جديدة.",
+    "searchPlaceholder": "ابحث بالاسم أو البريد الإلكتروني أو الهاتف…",
+    "colTraveller": "المسافر",
+    "colContact": "الاتصال",
+    "colTrips": "الرحلات",
+    "colBookings": "الحجوزات",
+    "colLastBooking": "آخر حجز",
+    "colTotalBooked": "المجموع المحجوز",
+    "contactsEmpty": "لا توجد جهات اتصال بعد. يظهر المسافرون هنا بعد أول حجز لديهم معك.",
+    "contactsLoading": "جارٍ تحميل جهات الاتصال…",
+    "pipelineTitle": "مسار الحجوزات",
+    "pipelineSubtitle": "حجوزاتك حسب المرحلة. اختر مرحلة لعرض حجوزاتها.",
+    "allStages": "كل المراحل",
+    "totalBookedValue": "القيمة الإجمالية المحجوزة",
+    "refundCases": "حالات الاسترداد",
+    "refundCasesOpen": "{{count}} مفتوحة",
+    "stageBookingsTitle": "الحجوزات في هذه المرحلة",
+    "viewAllBookings": "فتح مدير الحجوزات",
+    "loading": "جارٍ التحميل…",
+    "error": "حدث خطأ ما. حاول مرة أخرى.",
+    "exportsTitle": "تصدير بياناتك",
+    "statusPendingMinimum": "بانتظار الحد الأدنى للمجموعة",
+    "statusNotConfirmed": "المجموعة غير مؤكدة"
   },
   "bookings": {
     "title": "مدير الحجوزات",
