@@ -11,6 +11,7 @@ import {
   LogOut,
   Calendar as CalendarIcon,
   Heart,
+  MessageCircle,
   LayoutDashboard,
   Compass,
   LifeBuoy,
@@ -375,6 +376,12 @@ const [isOpen, setIsOpen] = useState(false);
                                     </Link>
                                     <Link href="/bookings" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg">
                                         <CalendarIcon className="w-4 h-4" /> {t('nav.bookings')}
+                                    </Link>
+                                    {/* #729 (Council S7-2): the messages inbox
+                                        joins the account menu — the list was
+                                        previously reachable only by URL. */}
+                                    <Link href="/messages" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg">
+                                        <MessageCircle className="w-4 h-4" /> {t('nav.messages')}
                                     </Link>
                                 </div>
                                 <div className="p-1 border-t border-border">

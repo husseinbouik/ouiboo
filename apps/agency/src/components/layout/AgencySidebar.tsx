@@ -12,6 +12,7 @@ import {
   CreditCard,
   LayoutDashboard, Sparkles,
   LifeBuoy,
+  MessageSquare,
   LogOut,
   Map,
   PlusCircle,
@@ -49,6 +50,9 @@ export function AgencySidebar() {
     { name: t('sidebar.bookings'), href: '/dashboard/bookings', icon: Calendar },
     // #786: CRM-lite — traveller contacts + booking pipeline.
     { name: t('sidebar.crm'), href: '/dashboard/crm', icon: Users },
+    // #729 (Council S7-2): the agency messages inbox (reply side of
+    // traveller-initiated conversations).
+    { name: t('sidebar.messages'), href: '/dashboard/messages', icon: MessageSquare },
     { name: t('sidebar.quotes'), href: '/dashboard/quotes', icon: FileText },
     // #778: agency-funded promo codes (agency funds 100% of the discount).
     { name: t('sidebar.promoCodes'), href: '/dashboard/promo-codes', icon: TicketPercent },
