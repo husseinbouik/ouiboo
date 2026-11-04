@@ -89,14 +89,15 @@ type EmailLayoutOptions = {
 }
 
 /**
- * #570 (Council Session #3, P1-12): the pin mark in the email lockup.
- * Transactional mail previously rendered the wordmark alone, without the
- * pin that identifies Ouiboo everywhere else. This is the adopted pin
- * logo (packages/ui/Logo.tsx — navy tile, white O ring, sunset-orange
- * pin, navy centre dot) inlined as SVG, the only image form email
- * clients render without a hosted asset.
+ * #794: the final logo in the email header — the on-dark PRIMARY
+ * LOCKUP master (V1 Route-End symbol + W3 Destination Tittle wordmark,
+ * white ring/letters, sunset-orange arc/dot/tittle) inlined as SVG,
+ * the only image form email clients render without a hosted asset.
+ * It replaces the interim pin mark (#570) and the hand-typeset HTML
+ * wordmark; the header sits on navy, hence the on-dark colourway.
+ * The Latin wordmark is used in all locales, including Arabic.
  */
-export const EMAIL_PIN_LOGO_SVG = `<svg width="36" height="36" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ouiboo"><rect width="32" height="32" rx="8" fill="#0A192F"/><path d="M16 8C11.5817 8 8 11.5817 8 16C8 20.4183 11.5817 24 16 24C20.4183 24 24 20.4183 24 16C24 11.5817 20.4183 8 16 8ZM16 22C12.6863 22 10 19.3137 10 16C10 12.6863 12.6863 10 16 10C19.3137 10 22 12.6863 22 16C22 19.3137 19.3137 22 16 22Z" fill="white"/><path d="M16 21.6C15.3 19.9 13.1 17.4 13.1 13.8A2.9 2.9 0 1 1 18.9 13.8C18.9 17.4 16.7 19.9 16 21.6Z" fill="#FF6B35"/><circle cx="16" cy="13.8" r="1.5" fill="#0A192F"/></svg>`
+export const EMAIL_LOGO_SVG = `<svg width="128" height="36" viewBox="0 0 427 120" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ouiboo"><title>Ouiboo</title><g><path d="M 86.41 54.39 A 27.0 27.0 0 1 1 41.24 40.58" fill="none" stroke="#FFFFFF" stroke-width="16.0" stroke-linecap="butt"/><path d="M 44.13 38.16 A 27.0 27.0 0 0 1 68.34 34.32" fill="none" stroke="#FF6B35" stroke-width="16.0" stroke-linecap="butt"/><circle cx="80.68" cy="42.64" r="8.5" fill="#FF6B35"/></g><g transform="translate(144 0)"><circle cx="29.16" cy="67.58" r="19.51" fill="none" stroke="#FFFFFF" stroke-width="13.82"/><g transform="translate(58.33 94.0) scale(0.07420494699646643 -0.07420494699646643)"><path d="M613 558V0H442V76Q416 39 371.5 16.5Q327 -6 273 -6Q209 -6 160.0 22.5Q111 51 84.0 105.0Q57 159 57 232V558H227V255Q227 199 256.0 168.0Q285 137 334 137Q384 137 413.0 168.0Q442 199 442 255V558Z" fill="#FFFFFF"/></g><g transform="translate(108.34 94.0) scale(0.07420494699646643 -0.07420494699646643)"><path d="M46 708Q46 748 74.5 774.5Q103 801 148 801Q192 801 220.5 774.5Q249 748 249 708Q249 669 220.5 642.5Q192 616 148 616Q103 616 74.5 642.5Q46 669 46 708Z" fill="#FF6B35"/></g><g transform="translate(108.34 94.0) scale(0.07420494699646643 -0.07420494699646643)"><path d="M233 558V0H62V558Z" fill="#FFFFFF"/></g><g transform="translate(130.23 94.0) scale(0.07420494699646643 -0.07420494699646643)"><path d="M405 566Q474 566 530.0 531.0Q586 496 618.5 431.0Q651 366 651 280Q651 194 618.5 128.5Q586 63 530.0 27.5Q474 -8 405 -8Q346 -8 302.0 15.5Q258 39 233 78V0H62V740H233V479Q257 518 302.0 542.0Q347 566 405 566ZM354 417Q303 417 267.5 380.0Q232 343 232 279Q232 215 267.5 178.0Q303 141 354 141Q405 141 441.0 178.5Q477 216 477 280Q477 344 441.5 380.5Q406 417 354 417Z" fill="#FFFFFF"/></g><circle cx="204.25" cy="72.70" r="15.81" fill="none" stroke="#FFFFFF" stroke-width="10.98"/><circle cx="251.52" cy="72.70" r="15.81" fill="none" stroke="#FFFFFF" stroke-width="10.98"/></g></svg>`
 
 export function renderEmail({ title, preheader, content, footerHtml, locale }: EmailLayoutOptions): string {
   const year = new Date().getFullYear()
@@ -126,15 +127,8 @@ export function renderEmail({ title, preheader, content, footerHtml, locale }: E
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="ouiboo-card" style="max-width:600px;background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:22px;overflow:hidden;">
             <tr>
               <td class="ouiboo-header" style="padding:24px 32px;background:${BRAND.navy};">
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                  <tr>
-                    <td style="padding-right:12px;vertical-align:middle;">${EMAIL_PIN_LOGO_SVG}</td>
-                    <td style="vertical-align:middle;">
-                      <div style="color:${BRAND.white};font-size:24px;font-weight:900;letter-spacing:-0.03em;">Oui<span style="color:#FF8A4C;">boo</span></div>
-                      <div style="color:#C9D8E5;font-size:12px;margin-top:4px;letter-spacing:0.04em;">${escapeHtml(strings.layout.tagline)}</div>
-                    </td>
-                  </tr>
-                </table>
+                ${EMAIL_LOGO_SVG}
+                <div style="color:#C9D8E5;font-size:12px;margin-top:6px;letter-spacing:0.04em;">${escapeHtml(strings.layout.tagline)}</div>
               </td>
             </tr>
             <tr>

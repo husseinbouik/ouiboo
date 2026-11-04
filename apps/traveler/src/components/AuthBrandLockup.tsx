@@ -1,19 +1,18 @@
-import { BetaBadge, Logo } from '@ouiboo/ui';
+import { BetaBadge, LogoLockup } from '@ouiboo/ui';
 
 /**
  * Card-style brand lockup shared by the traveller auth screens (login,
- * signup, verify): the shared pin Logo + wordmark + BETA pill. Extracted
+ * signup, verify): the final LogoLockup (#794) + BETA pill. Extracted
  * so the three screens render one identical lockup instead of three
- * hand-copied blocks; the BetaBadge is part of the lockup for as long
- * as the beta lasts (see @ouiboo/ui BetaBadge for the off switch).
- * Session #3 P0-4 (#552): the mark is the shared Logo component — never
- * a hand-rolled, recoloured tile.
+ * hand-copied blocks; the BetaBadge stays a separate badge beside the
+ * lockup for as long as the beta lasts (see @ouiboo/ui BetaBadge for
+ * the off switch). The card is a themed surface (bg-card), so the
+ * lockup follows the theme (tone auto).
  */
 export function AuthBrandLockup() {
   return (
     <>
-      <Logo size={40} className="shadow-lg group-hover:scale-105 transition-transform rounded-xl" />
-      <span className="text-2xl font-bold text-deep-blue dark:text-foreground">Ouiboo</span>
+      <LogoLockup height={36} tone="auto" className="group-hover:scale-105 transition-transform" />
       <BetaBadge />
     </>
   );

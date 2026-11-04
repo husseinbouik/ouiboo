@@ -9,6 +9,7 @@ import {
   renderEmail,
   renderMarketingEmail,
   sanitizeEmailSubject,
+  EMAIL_LOGO_SVG,
 } from './email-template'
 
 describe('email template safety', () => {
@@ -65,16 +66,23 @@ describe('email template safety', () => {
     expect(text).not.toContain('<p')
   })
 
-  it('renders the pin mark in the header lockup (#570)', () => {
+  it('renders the final lockup in the header (#794)', () => {
     const html = renderEmail({
       title: 'Booking received',
       preheader: 'Your booking is in.',
       content: emailParagraph('Hello'),
     })
-    // The adopted pin logo: navy tile, white O ring, sunset-orange pin.
-    expect(html).toContain('<svg width="36" height="36" viewBox="0 0 32 32"')
+    // The on-dark primary lockup master: Route-End ring + route arc +
+    // destination dot, white letters on the navy header, orange tittle.
+    expect(html).toContain('<svg width="128" height="36" viewBox="0 0 427 120"')
+    expect(html).toContain('M 86.41 54.39 A 27.0 27.0 0 1 1 41.24 40.58')
+    expect(html).toContain('M 44.13 38.16 A 27.0 27.0 0 0 1 68.34 34.32')
+    expect(html).toContain('<circle cx="80.68" cy="42.64" r="8.5" fill="#FF6B35"/>')
+    expect(html).toContain('stroke="#FFFFFF"')
     expect(html).toContain('fill="#FF6B35"')
-    expect(html).toContain('fill="#0A192F"')
+    // The interim pin geometry is gone.
+    expect(html).not.toContain('M16 21.6')
+    expect(html).not.toContain('EMAIL_PIN_LOGO_SVG')
   })
 
   it('prevents header injection and masks recipient logs', () => {
@@ -129,7 +137,7 @@ describe('emailToPlainText hardening (#638)', () => {
     })
     const year = new Date().getFullYear()
     expect(emailToPlainText(html)).toBe(
-      `Your booking is in.\n\n                      Ouiboo\n\n                      Le voyage rendu personnel\n\n              Booking received\nHi Amina, your booking is ready & confirmed.\nAtlas Trek — 1 200 MAD\n\n          View booking\n\n                Ceci est un message de service de Ouiboo.\n&copy; ${year} Ouiboo. Tous droits réservés.`,
+      `Your booking is in.\n\n                Ouiboo\n                Le voyage rendu personnel\n\n              Booking received\nHi Amina, your booking is ready & confirmed.\nAtlas Trek — 1 200 MAD\n\n          View booking\n\n                Ceci est un message de service de Ouiboo.\n&copy; ${year} Ouiboo. Tous droits réservés.`,
     )
   })
 
@@ -144,7 +152,7 @@ describe('emailToPlainText hardening (#638)', () => {
     })
     const year = new Date().getFullYear()
     expect(emailToPlainText(html)).toBe(
-      `We launched\n\n                      Ouiboo\n\n                      Travel made personal\n\n              Hello!\n\n                You are receiving this email because you subscribed to Ouiboo updates.\nOuiboo, 12 Rue Example, Casablanca, Morocco\nUnsubscribe &middot; &copy; ${year} Ouiboo. All rights reserved.`,
+      `We launched\n\n                Ouiboo\n                Travel made personal\n\n              Hello!\n\n                You are receiving this email because you subscribed to Ouiboo updates.\nOuiboo, 12 Rue Example, Casablanca, Morocco\nUnsubscribe &middot; &copy; ${year} Ouiboo. All rights reserved.`,
     )
   })
 
@@ -164,5 +172,15 @@ describe('emailToPlainText hardening (#638)', () => {
   it('drops style and head contents entirely', () => {
     const html = '<html><head><title>Secret title</title><style>.x{color:red}</style></head><body><p>Visible</p><style>.y{}</style></body></html>'
     expect(emailToPlainText(html)).toBe('Visible')
+  })
+})
+
+describe('final email lockup export (#794)', () => {
+  it('EMAIL_LOGO_SVG is the on-dark primary lockup master', () => {
+    expect(EMAIL_LOGO_SVG).toContain('viewBox="0 0 427 120"')
+    expect(EMAIL_LOGO_SVG).toContain('width="128"')
+    expect(EMAIL_LOGO_SVG).toContain('height="36"')
+    expect(EMAIL_LOGO_SVG).toContain('M 44.13 38.16 A 27.0 27.0 0 0 1 68.34 34.32')
+    expect(EMAIL_LOGO_SVG).not.toContain('M16 21.6')
   })
 })
