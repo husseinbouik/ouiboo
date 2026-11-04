@@ -47,6 +47,7 @@ jest.mock('@ouiboo/ui', () => ({
   LanguageSwitcher: () => <div data-testid="language-switcher" />,
   BetaBadge: () => <span>BETA</span>,
   Logo: () => <span data-testid="logo" />,
+  LogoLockup: () => <span data-testid="logo" />,
 }));
 
 jest.mock('@tanstack/react-query', () => ({

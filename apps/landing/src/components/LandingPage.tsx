@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useTranslation } from 'react-i18next'
-import { Logo, BetaBadge } from '@ouiboo/ui'
+import { LogoLockup, BetaBadge } from '@ouiboo/ui'
 import { CookiePreferencesButton } from './AnalyticsConsent'
 import type { ShowcaseCardData } from '../lib/showcase'
 
@@ -148,8 +148,7 @@ export default function LandingPage({
       <header className="absolute inset-x-0 top-0 z-20 text-white">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-5">
           <a href="#top" className="flex items-center gap-2.5" aria-label="Ouiboo">
-            <Logo />
-            <span className="font-display text-[22px] font-extrabold tracking-tight">Ouiboo</span>
+            <LogoLockup height={30} tone="on-dark" />
             <BetaBadge />
           </a>
           <nav className="hidden items-center gap-[34px] text-[15px] font-medium min-[901px]:flex" aria-label={t('common.globalNavigationLabel')}>
@@ -657,8 +656,7 @@ export default function LandingPage({
           <div className="mb-12 grid grid-cols-2 gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
             <div className="max-lg:col-span-2">
               <a href="#top" className="flex items-center gap-2.5 text-white" aria-label="Ouiboo">
-                <Logo />
-                <span className="font-display text-[22px] font-extrabold tracking-tight">Ouiboo</span>
+                <LogoLockup height={30} tone="on-dark" />
                 <BetaBadge />
               </a>
               <p className="mt-[14px] max-w-[300px] text-[14.5px] leading-[1.6] text-white/[0.66]">{t('hw.footer.tagline')}</p>

@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
-import { Logo, BetaBadge } from '@ouiboo/ui'
+import { LogoLockup, BetaBadge } from '@ouiboo/ui'
 import { CookiePreferencesButton } from './AnalyticsConsent'
 
 // #749 (Council S11 §4 + founder decisions 2026-10-31): the dedicated
@@ -144,8 +144,7 @@ export default function AgencesPage() {
         <header className="relative z-20">
           <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-5">
             <Link href="/" className="flex items-center gap-2.5" aria-label="Ouiboo">
-              <Logo />
-              <span className="font-display text-[22px] font-extrabold tracking-tight">Ouiboo</span>
+              <LogoLockup height={30} tone="on-dark" />
               <BetaBadge />
             </Link>
             <div className="flex items-center gap-[18px]">
@@ -498,8 +497,7 @@ export default function AgencesPage() {
           <div className="flex flex-wrap items-start justify-between gap-8">
             <div>
               <Link href="/" className="flex items-center gap-2.5 text-white" aria-label="Ouiboo">
-                <Logo />
-                <span className="font-display text-[22px] font-extrabold tracking-tight">Ouiboo</span>
+                <LogoLockup height={30} tone="on-dark" />
                 <BetaBadge />
               </Link>
               <p className="mt-[14px] max-w-[300px] text-[14.5px] leading-[1.6] text-white/[0.66]">{t('hw.footer.tagline')}</p>

@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { Search, LogOut } from 'lucide-react';
-import { Card, CardContent, ThemeToggle, LanguageSwitcher, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, BetaBadge, Logo, CommandPalette, type CommandPaletteItem } from '@ouiboo/ui';
+import { Card, CardContent, ThemeToggle, LanguageSwitcher, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, BetaBadge, LogoLockup, CommandPalette, type CommandPaletteItem } from '@ouiboo/ui';
 import type { AdminTab } from './types';
 import FlagDiagnostics from './FlagDiagnostics';
 
@@ -61,11 +61,9 @@ export default function DashboardShell({
   {/* Sidebar - desktop only */}
   <aside className="hidden md:flex w-64 bg-deep-blue text-white p-6 space-y-8 flex-col">
      <div className="flex items-center gap-3 px-2">
-        {/* Session #3 P0-4 (#552): the admin shell previously showed an
-            empty orange square here — it gets the shared pin Logo like
-            every other app. */}
-        <Logo size={32} />
-        <span className="text-xl font-black tracking-tight">{t('dashboard.brand')}</span>
+        {/* #794: the final lockup on the fixed deep-blue sidebar —
+            the on-dark colourway (white ring/letters, orange arc). */}
+        <LogoLockup height={28} tone="on-dark" />
         <BetaBadge />
      </div>
      

@@ -9,7 +9,8 @@ export const contentType = 'image/png'
  * #563 traveller remainder (mirrors the landing renderer, PR #590):
  * palette colours only — deep blue #0A192F ground, sunset orange
  * #FF6B35 accents (the previous image used off-palette #FF8A4C and a
- * teal gradient stop) — the adopted pin mark (same geometry as
+ * teal gradient stop) — the final app-tile mark (#794: Route-End
+ * symbol on the navy tile, same geometry as the tile master in
  * packages/ui/Logo), and the ONE canonical tagline from SITE_COPY.
  * This static route renders the default (en) copy; the layout metadata
  * carries the locale-driven og:locale / title / description.
@@ -33,17 +34,13 @@ export default function OpenGraphImage() {
       >
         <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '960px' }}>
           <div style={{ alignItems: 'center', display: 'flex', gap: '20px' }}>
-            <svg width="84" height="84" viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="8" fill="#0A192F" stroke="#F7E1C3" strokeWidth="0.75" />
-              <path
-                d="M16 8C11.5817 8 8 11.5817 8 16C8 20.4183 11.5817 24 16 24C20.4183 24 24 20.4183 24 16C24 11.5817 20.4183 8 16 8ZM16 22C12.6863 22 10 19.3137 10 16C10 12.6863 12.6863 10 16 10C19.3137 10 22 12.6863 22 16C22 19.3137 19.3137 22 16 22Z"
-                fill="white"
-              />
-              <path
-                fill="#FF6B35"
-                d="M16 21.6C15.3 19.9 13.1 17.4 13.1 13.8A2.9 2.9 0 1 1 18.9 13.8C18.9 17.4 16.7 19.9 16 21.6Z"
-              />
-              <circle fill="#0A192F" cx="16" cy="13.8" r="1.5" />
+            <svg width="84" height="84" viewBox="0 0 120 120" fill="none">
+              <rect x="8" y="8" width="104" height="104" rx="27" fill="#0A192F" stroke="#F7E1C3" strokeWidth="2.5" />
+              <g transform="translate(10.8 10.8) scale(0.82)">
+                <path d="M 86.41 54.39 A 27.0 27.0 0 1 1 41.24 40.58" fill="none" stroke="#FFFFFF" strokeWidth="17" strokeLinecap="butt" />
+                <path d="M 44.13 38.16 A 27.0 27.0 0 0 1 68.34 34.32" fill="none" stroke="#FF6B35" strokeWidth="17" strokeLinecap="butt" />
+                <circle cx="80.68" cy="42.64" r="9.25" fill="#FF6B35" />
+              </g>
             </svg>
             <div style={{ color: '#FF6B35', display: 'flex', fontSize: 42, fontWeight: 800 }}>Ouiboo</div>
           </div>
