@@ -224,7 +224,7 @@
     }
   },
   "waitlist": {
-    "title": "Be the First to Experience Ouiboo",
+    "title": "Experience Ouiboo from launch",
     "subtitle": "Join our waitlist for early access and updates on our launch.",
     "paused": "Waitlist signups are paused while we prepare the closed beta. Please check back soon — no information is collected in the meantime.",
     "form": {
@@ -687,7 +687,7 @@
       "eyebrow": "For agencies · Founding beta",
       "titleA": "Sell your trips on Ouiboo.",
       "titleB": "Free during the beta.",
-      "lead": "We're inviting 3–5 verified agencies from across Morocco to found the marketplace with us — founder-led onboarding, no forms before a human conversation.",
+      "lead": "We're inviting 3–5 agencies from across Morocco to found the marketplace with us — each one checked before listing — founder-led onboarding, no forms before a human conversation.",
       "chips": [
         "Free during the beta",
         "Checked before listing",

@@ -224,7 +224,7 @@
     }
   },
   "waitlist": {
-    "title": "Soyez le Premier à Découvrir Ouiboo",
+    "title": "Découvrez Ouiboo dès son lancement",
     "subtitle": "Rejoignez notre liste d'attente pour un accès anticipé et des nouvelles du lancement.",
     "paused": "Les inscriptions à la liste d'attente sont en pause pendant la préparation de la bêta fermée. Revenez bientôt — aucune information n'est collectée en attendant.",
     "form": {
@@ -642,11 +642,11 @@
     },
     "how": {
       "eyebrow": "Comment ça marche",
-      "title": "Des agences vérifiées. Un paiement direct. Des règles claires.",
+      "title": "Des agences contrôlées. Un paiement direct. Des règles claires.",
       "intro": "Ouiboo est la technologie entre vous et les agences locales — jamais un intermédiaire qui garde votre argent.",
       "steps": {
         "step1": {
-          "title": "Choisissez un voyage d'une agence vérifiée",
+          "title": "Choisissez un voyage d'une agence contrôlée",
           "text": "Chaque voyage appartient à une agence nommée, dont Ouiboo a vérifié la licence de tourisme et l'assurance — avec les dates affichées, jamais cachées."
         },
         "step2": {
@@ -687,7 +687,7 @@
       "eyebrow": "Pour les agences · Bêta fondatrice",
       "titleA": "Vendez vos voyages sur Ouiboo.",
       "titleB": "Gratuit pendant la bêta.",
-      "lead": "Nous invitons 3 à 5 agences vérifiées, venues de tout le Maroc, à fonder la marketplace avec nous — un accompagnement personnel par le fondateur, aucun formulaire avant d'avoir parlé à un humain.",
+      "lead": "Nous invitons 3 à 5 agences, venues de tout le Maroc, à fonder la marketplace avec nous — chacune contrôlée avant mise en ligne — un accompagnement personnel par le fondateur, aucun formulaire avant d'avoir parlé à un humain.",
       "chips": [
         "Gratuit pendant la bêta",
         "Vérifiée avant mise en ligne",
