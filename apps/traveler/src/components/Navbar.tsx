@@ -26,7 +26,12 @@ import { CurrencySelector } from './CurrencySelector';
 import { clearPwaCachesOnLogout } from './ServiceWorkerRegister';
 
 export function Navbar() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // #663: the mobile drawer docks at inline-end — in RTL that is the
+  // LEFT edge (the overlay's flex justify-end follows the layout
+  // direction), so the panel must slide in from that same side
+  // instead of always entering from the physical right.
+  const drawerHiddenX = (typeof i18n.dir === 'function' ? i18n.dir() : 'ltr') === 'rtl' ? '-100%' : '100%';
   const { user, logout, isLoading: isAuthLoading } = useAuth();
   const mounted = useSyncExternalStore(
     () => () => undefined,
@@ -426,8 +431,9 @@ const [isOpen, setIsOpen] = useState(false);
             onClick={() => setIsOpen(false)}
           >
 <motion.div
-               initial={{ x: "100%" }}
+               initial={{ x: drawerHiddenX }}
                animate={{ x: 0 }}
+               exit={{ x: drawerHiddenX }}
                transition={{ type: "spring", damping: 25 }}
                id="traveler-mobile-menu"
                ref={mobileMenuRef}

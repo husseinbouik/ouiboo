@@ -134,6 +134,12 @@ export interface SnapRailProps {
   /** Per-slide style hook (e.g. the shared-element view-transition
    * name belongs on the active slide only). */
   slideStyle?: (index: number, isActive: boolean) => React.CSSProperties | undefined;
+  /** #656: trip-page rail only — slides become focusable buttons so a
+   * keyboard/switch user below lg can open the viewer (Enter/Space on
+   * a focused slide reports through onSlideClick). NEVER set on cards:
+   * the card rail sits inside a Link, where nested interactive
+   * elements would fight navigation. Clones never take focus. */
+  slideKeyboardOpen?: boolean;
 }
 
 const DRAG_CLICK_SUPPRESS_PX = 6;
@@ -162,6 +168,7 @@ export function SnapRail({
   imageFit = 'cover',
   onSlideClick,
   slideStyle,
+  slideKeyboardOpen = false,
 }: SnapRailProps) {
   const { t, i18n } = useTranslation();
   const railRef = useRef<HTMLDivElement | null>(null);
@@ -500,12 +507,33 @@ export function SnapRail({
         {Array.from({ length: extCount }, (_, pos) => {
           const logical = toReal(pos);
           const isClone = loop && (pos === 0 || pos === extCount - 1);
+          // #656: only the trip-page rail opts in, and only real
+          // slides take focus — a clone is a visual duplicate of a
+          // real slide that is itself focusable.
+          const keyboardOpenable = slideKeyboardOpen && !isClone && Boolean(onSlideClick);
           return (
             <div
               key={pos}
               aria-hidden={isClone || undefined}
+              role={keyboardOpenable ? 'button' : undefined}
+              tabIndex={keyboardOpenable ? 0 : undefined}
+              aria-label={keyboardOpenable ? t('tripCard.viewImage', { count: logical + 1 }) : undefined}
               onClick={onSlideClick ? () => onSlideClick(logical) : undefined}
-              className="relative h-full w-full shrink-0 snap-center snap-always"
+              onKeyDown={
+                keyboardOpenable
+                  ? (event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onSlideClick?.(logical);
+                      }
+                    }
+                  : undefined
+              }
+              className={cn(
+                'relative h-full w-full shrink-0 snap-center snap-always',
+                keyboardOpenable &&
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sunset-orange',
+              )}
             >
               <SafeImage
                 src={images[logical]}

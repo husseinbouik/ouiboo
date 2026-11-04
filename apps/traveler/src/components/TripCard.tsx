@@ -166,9 +166,13 @@ export function TripCard({ trip }: TripCardProps) {
         {/* #490 round 2: the card renders the SAME Snap Rail component
             as the trip-page gallery — native scroll-snap glide (touch
             swipe and mouse drag both advance it), counter + caption
-            always visible, 44px arrows that DISABLE at the ends with
-            NO loop. The old crossfade carousel looped its arrows,
-            showed dots only, and its drag/swipe advanced nothing.
+            always visible, 44px arrows. Round 5 (#490, founder
+            decision): the rail LOOPS seamlessly — the arrows never
+            disable and stepping past either end wraps to the other
+            end's photo. (This comment previously claimed the opposite
+            — corrected in the #663 polish pass.) The old crossfade
+            carousel showed dots only, and its drag/swipe advanced
+            nothing.
             #571: the overlays stay minimal — category badge, ONE
             availability badge, the wishlist button and the rail
             controls; the footer is the single price surface. */}

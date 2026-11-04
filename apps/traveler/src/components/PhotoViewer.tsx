@@ -51,6 +51,18 @@ export function PhotoViewer({
   const [activeIndex, setActiveIndex] = useState(() => clampIndex(initialIndex));
   const containerRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const filmstripRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  // #663: keep the active filmstrip thumbnail in view as the index
+  // changes (arrow keys, rail swipes, distant jumps). scrollIntoView
+  // with inline:'center' follows the layout direction, so in RTL the
+  // strip scrolls the correct way with no manual scrollLeft math.
+  useEffect(() => {
+    const el = filmstripRefs.current[activeIndex];
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [activeIndex]);
 
   const step = (dir: 1 | -1) => {
     if (imageCount <= 1) return;
@@ -114,7 +126,12 @@ export function PhotoViewer({
       aria-modal="true"
       aria-label={t('tripDetails.photosLabel')}
       data-testid="photo-viewer"
-      className="fixed inset-0 z-[110] flex flex-col bg-black/95 backdrop-blur-sm"
+      // #663: the served HTML declares viewport-fit=cover, so the
+      // chrome must respect the safe areas itself — otherwise the
+      // close button / filmstrip sit under the sensor housing or the
+      // home indicator on notched phones (notably in landscape).
+      // Logical properties keep the insets direction-correct in RTL.
+      className="fixed inset-0 z-[110] flex flex-col bg-black/95 backdrop-blur-sm pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] ps-[env(safe-area-inset-left)] pe-[env(safe-area-inset-right)]"
     >
       <div className="flex items-center justify-end p-3 sm:p-4">
         <button
@@ -155,6 +172,9 @@ export function PhotoViewer({
           {images.map((src, i) => (
             <button
               key={i}
+              ref={(el) => {
+                filmstripRefs.current[i] = el;
+              }}
               type="button"
               onClick={() => setActiveIndex(i)}
               aria-label={t('tripCard.viewImage', { count: i + 1 })}
