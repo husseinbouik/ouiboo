@@ -28,5 +28,8 @@ describe('CheckoutDisclaimer (#424)', () => {
         // The binding clause: French prevails in case of divergence.
         expect(screen.getByText(en.prevailingLanguage)).toBeTruthy();
         expect(en.prevailingLanguage).toContain('French');
+        // #726: no invented confirmation-timing SLA — the disclaimer
+        // must not promise how fast an agency confirms a transfer.
+        expect(en.disclaimerBody).not.toMatch(/business hours|2-4|usually takes/i);
     });
 });
