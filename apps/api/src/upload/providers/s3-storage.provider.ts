@@ -3,7 +3,7 @@ import { IStorageProvider } from '../interfaces/storage-provider.interface';
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, GetObjectCommandOutput } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import * as path from 'path';
-import { ALLOWED_MIME_TYPES, AllowedMimeType, MAX_UPLOAD_SIZE_BYTES } from '../upload.constants';
+import { ALLOWED_MIME_TYPES, AllowedMimeType, MAX_REVIEW_VIDEO_SIZE_BYTES, MAX_UPLOAD_SIZE_BYTES, REVIEW_VIDEO_MIME_TYPES } from '../upload.constants';
 
 @Injectable()
 export class S3StorageProvider implements IStorageProvider {
@@ -37,7 +37,10 @@ export class S3StorageProvider implements IStorageProvider {
             throw new BadRequestException('Invalid file type');
         }
 
-        if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+        // #783: review videos (mime-gated to the review-video intent by
+        // the controller) get the 50MB video cap; everything else 5MB.
+        const isVideo = (REVIEW_VIDEO_MIME_TYPES as readonly string[]).includes(file.mimetype);
+        if (file.size > (isVideo ? MAX_REVIEW_VIDEO_SIZE_BYTES : MAX_UPLOAD_SIZE_BYTES)) {
             throw new BadRequestException('File too large');
         }
 
@@ -111,6 +114,12 @@ export class S3StorageProvider implements IStorageProvider {
                 return 'image/gif';
             case '.pdf':
                 return 'application/pdf';
+            case '.mp4':
+                return 'video/mp4';
+            case '.webm':
+                return 'video/webm';
+            case '.mov':
+                return 'video/quicktime';
             default:
                 return 'application/octet-stream';
         }
@@ -146,6 +155,12 @@ export class S3StorageProvider implements IStorageProvider {
                 return '.gif';
             case 'application/pdf':
                 return '.pdf';
+            case 'video/mp4':
+                return '.mp4';
+            case 'video/webm':
+                return '.webm';
+            case 'video/quicktime':
+                return '.mov';
             default:
                 return '';
         }

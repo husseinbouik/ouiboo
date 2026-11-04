@@ -667,7 +667,8 @@
       "value": "Rapport qualité-prix",
       "accuracy": "Exactitude de la description"
     },
-    "photoAlt": "Photo d'un avis de voyageur"
+    "photoAlt": "Photo d'un avis de voyageur",
+    "videoAlt": "Vidéo d'un avis de voyageur"
   },
   "reviewForm": {
     "ratingLabel": "Évaluez votre expérience",
@@ -694,7 +695,11 @@
     "photosLabel": "Photos (facultatif)",
     "photosHint": "Ajoutez jusqu'à {{max}} photos de votre voyage. Elles n'apparaissent qu'une fois votre avis approuvé.",
     "photosTooMany": "Vous pouvez ajouter au maximum {{max}} photos.",
-    "photoRemove": "Retirer {{name}}"
+    "photoRemove": "Retirer {{name}}",
+    "videoLabel": "Vidéo (facultatif)",
+    "videoHint": "Ajoutez une courte vidéo de votre voyage (MP4, WebM ou MOV, jusqu'à 50 Mo). Elle n'apparaît qu'une fois votre avis approuvé.",
+    "videoTooLarge": "Cette vidéo est trop lourde — veuillez en choisir une de moins de 50 Mo.",
+    "videoRemove": "Retirer {{name}}"
   },
   "refunds": {
     "panelTitle": "Remboursement",

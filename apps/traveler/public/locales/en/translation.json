@@ -667,7 +667,8 @@
       "value": "Value for money",
       "accuracy": "Accuracy of description"
     },
-    "photoAlt": "Photo from a traveller review"
+    "photoAlt": "Photo from a traveller review",
+    "videoAlt": "Video from a traveller review"
   },
   "reviewForm": {
     "ratingLabel": "Rate your experience",
@@ -694,7 +695,11 @@
     "photosLabel": "Photos (optional)",
     "photosHint": "Add up to {{max}} photos from your trip. They appear only once your review is approved.",
     "photosTooMany": "You can add at most {{max}} photos.",
-    "photoRemove": "Remove {{name}}"
+    "photoRemove": "Remove {{name}}",
+    "videoLabel": "Video (optional)",
+    "videoHint": "Add one short video from your trip (MP4, WebM or MOV, up to 50MB). It appears only once your review is approved.",
+    "videoTooLarge": "That video is too large — please choose one under 50MB.",
+    "videoRemove": "Remove {{name}}"
   },
   "refunds": {
     "panelTitle": "Refund",

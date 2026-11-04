@@ -65,6 +65,19 @@ export class CreateReviewDto extends SubScoresDto {
   @ArrayMaxSize(MAX_REVIEW_PHOTOS)
   @IsString({ each: true })
   photoKeys?: string[];
+
+  /**
+   * #783: storage key of the ONE video the traveller already uploaded
+   * through the private `review-video` upload intent
+   * (`private/{travelerId}/review-videos/…`). Optional. The service
+   * re-validates ownership, shape and extension — a key the caller
+   * does not own, a public key, or a non-video key is rejected, never
+   * re-homed.
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  videoKey?: string;
 }
 
 export class ReviewResponseDto {
@@ -84,4 +97,16 @@ export class UpdateReviewDto extends SubScoresDto {
   @IsString()
   @MaxLength(500)
   comment?: string;
+
+  /**
+   * #783: replace or clear the review's video under the same edit
+   * rules as the rest of the review. Omit to keep the current video;
+   * send a new `review-video` upload key to replace it; send `null`
+   * to remove it. The service re-validates ownership/shape exactly
+   * like create.
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  videoKey?: string | null;
 }

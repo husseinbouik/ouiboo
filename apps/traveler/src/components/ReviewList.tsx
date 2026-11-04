@@ -32,6 +32,9 @@ interface Review {
   accuracyRating?: number | null;
   /** #776: API-relative, visibility-gated photo paths (VISIBLE reviews only). */
   photos?: string[];
+  /** #783: API-relative, visibility-gated video path (VISIBLE reviews
+   * with a video only); null/absent = no video. Never a storage key. */
+  video?: string | null;
   isVerifiedBooking: boolean;
   createdAt: string;
   traveler?: {
@@ -229,6 +232,19 @@ export function ReviewList({ tripId }: ReviewListProps) {
                     />
                   ))}
                 </div>
+              )}
+
+              {/* #783: traveller video — served by the API only while
+                  this review is VISIBLE; metadata preload keeps the
+                  page light until the traveller presses play */}
+              {review.video && (
+                <video
+                  src={`${API_BASE}${review.video}`}
+                  controls
+                  preload="metadata"
+                  aria-label={t('reviews.videoAlt')}
+                  className="w-full max-w-md rounded-xl border border-border/50 bg-black"
+                />
               )}
 
               {/* Comment */}
