@@ -72,7 +72,8 @@
     "expandSidebar": "Déplier la barre latérale",
     "collapseSidebar": "Replier la barre latérale",
     "refunds": "Remboursements",
-    "support": "Assistance"
+    "support": "Assistance",
+    "crm": "Clients et pipeline"
   },
   "login": {
     "title": "Portail agence",
@@ -629,6 +630,34 @@
     "trips": "Voyages CSV",
     "reviews": "Avis CSV",
     "error": "L'export a échoué. Veuillez réessayer."
+  },
+  "crm": {
+    "title": "Clients et pipeline",
+    "subtitle": "Vos voyageurs et réservations, à partir de vos propres réservations uniquement.",
+    "contactsTitle": "Contacts voyageurs",
+    "contactsSubtitle": "Construit à partir de vos réservations — aucune nouvelle donnée n'est collectée.",
+    "searchPlaceholder": "Rechercher par nom, e-mail ou téléphone…",
+    "colTraveller": "Voyageur",
+    "colContact": "Contact",
+    "colTrips": "Voyages",
+    "colBookings": "Réservations",
+    "colLastBooking": "Dernière réservation",
+    "colTotalBooked": "Total réservé",
+    "contactsEmpty": "Aucun contact pour le moment. Les voyageurs apparaissent ici après leur première réservation chez vous.",
+    "contactsLoading": "Chargement des contacts…",
+    "pipelineTitle": "Pipeline de réservations",
+    "pipelineSubtitle": "Vos réservations par étape. Sélectionnez une étape pour voir ses réservations.",
+    "allStages": "Toutes les étapes",
+    "totalBookedValue": "Valeur totale réservée",
+    "refundCases": "Dossiers de remboursement",
+    "refundCasesOpen": "{{count}} en cours",
+    "stageBookingsTitle": "Réservations à cette étape",
+    "viewAllBookings": "Ouvrir le gestionnaire de réservations",
+    "loading": "Chargement…",
+    "error": "Une erreur s'est produite. Veuillez réessayer.",
+    "exportsTitle": "Exporter vos données",
+    "statusPendingMinimum": "En attente du minimum de groupe",
+    "statusNotConfirmed": "Groupe non confirmé"
   },
   "bookings": {
     "title": "Gestion des réservations",

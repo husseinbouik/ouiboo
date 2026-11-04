@@ -72,7 +72,8 @@
     "expandSidebar": "Expand sidebar",
     "collapseSidebar": "Collapse sidebar",
     "refunds": "Refunds",
-    "support": "Support"
+    "support": "Support",
+    "crm": "Customers & Pipeline"
   },
   "login": {
     "title": "Agency Portal",
@@ -629,6 +630,34 @@
     "trips": "Trips CSV",
     "reviews": "Reviews CSV",
     "error": "The export failed. Please try again."
+  },
+  "crm": {
+    "title": "Customers & Pipeline",
+    "subtitle": "Your travellers and bookings, from your own bookings only.",
+    "contactsTitle": "Traveller contacts",
+    "contactsSubtitle": "Built from your bookings — no new data is collected.",
+    "searchPlaceholder": "Search by name, email or phone…",
+    "colTraveller": "Traveller",
+    "colContact": "Contact",
+    "colTrips": "Trips",
+    "colBookings": "Bookings",
+    "colLastBooking": "Last booking",
+    "colTotalBooked": "Total booked",
+    "contactsEmpty": "No contacts yet. Travellers appear here after their first booking with you.",
+    "contactsLoading": "Loading contacts…",
+    "pipelineTitle": "Booking pipeline",
+    "pipelineSubtitle": "Your bookings by stage. Select a stage to see its bookings.",
+    "allStages": "All stages",
+    "totalBookedValue": "Total booked value",
+    "refundCases": "Refund cases",
+    "refundCasesOpen": "{{count}} open",
+    "stageBookingsTitle": "Bookings in this stage",
+    "viewAllBookings": "Open booking manager",
+    "loading": "Loading…",
+    "error": "Something went wrong. Please try again.",
+    "exportsTitle": "Export your data",
+    "statusPendingMinimum": "Awaiting group minimum",
+    "statusNotConfirmed": "Group not confirmed"
   },
   "bookings": {
     "title": "Booking Manager",

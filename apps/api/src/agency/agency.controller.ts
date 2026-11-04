@@ -17,6 +17,15 @@ import { isBankDestinationVerified } from '../common/bank-details.util';
 import { Prisma } from '@ouiboo/database';
 import { derivePublicMediaUrl } from '../upload/media-url.util';
 import { bookingsToCsv, reviewsToCsv, tripsToCsv } from './agency-export.util';
+import {
+    aggregateCrmContacts,
+    aggregateCrmPipeline,
+    CRM_PIPELINE_STATUSES,
+} from './agency-crm.util';
+
+// #786: cap for the CRM contacts derivation — same generous bound as
+// the #780 exports; beta agencies are far below it.
+const CRM_MAX_BOOKINGS = 10000;
 
 // #780: a generous row cap keeps a self-serve export from becoming an
 // unbounded full-table scan; beta agencies are far below it.
@@ -215,17 +224,27 @@ export class AgencyController {
 
     @Get('bookings')
     @ApiOperation({ summary: 'Get agency bookings' })
-    async getBookings(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
+    async getBookings(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string, @Query('status') status?: string) {
         const agencyId = req.tenantId;
         const take = clampListLimit(limit);
         const currentPage = parsePage(page);
         const skip = (currentPage - 1) * take;
 
-        const bookingsWhere = {
+        // #786: optional pipeline-stage filter used by the CRM board.
+        // Validated against the booking status enum — an unknown value
+        // is a client error, never silently ignored.
+        if (status !== undefined && !(CRM_PIPELINE_STATUSES as readonly string[]).includes(status)) {
+            throw new BadRequestException(`Unknown booking status: ${status}`);
+        }
+
+        const bookingsWhere: any = {
             session: {
                 template: { agencyId }
             },
         };
+        if (status !== undefined) {
+            bookingsWhere.status = status;
+        }
 
         const [bookings, total] = await Promise.all([
             this.prisma.booking.findMany({
@@ -271,6 +290,99 @@ export class AgencyController {
             },
         };
     }
+    // #786 (Council S6 Phase 3, smallest useful slice): agency CRM —
+    // contacts + booking pipeline derived from the agency's OWN
+    // bookings. Tenant isolation is structural, exactly like the #780
+    // exports: every query is scoped by req.tenantId (stamped by
+    // TenantGuard from the authenticated principal) plus the row-level
+    // agencyId tenant stamp (#428). No agency id, and no traveller id,
+    // is ever accepted from the request, so there is no cross-agency
+    // or cross-traveller surface. No new personal data is collected:
+    // a contact is the traveller's bookings with this agency,
+    // aggregated. Amounts are display-only sums of booking totals —
+    // travellers pay the agency directly; Ouiboo holds no funds here.
+    @Get('crm/contacts')
+    @ApiOperation({ summary: 'List this agency\'s traveller contacts derived from its bookings (#786)' })
+    async getCrmContacts(
+        @Request() req,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+    ) {
+        const agencyId = req.tenantId;
+        const take = clampListLimit(limit);
+        const currentPage = parsePage(page);
+
+        const bookings = await this.prisma.booking.findMany({
+            where: { agencyId },
+            select: {
+                travelerId: true,
+                status: true,
+                totalAmount: true,
+                bookingDate: true,
+                fullName: true,
+                phoneNumber: true,
+                traveler: { select: { name: true, email: true } },
+                session: { select: { templateId: true } },
+            },
+            orderBy: { bookingDate: 'desc' },
+            take: CRM_MAX_BOOKINGS,
+        });
+
+        let contacts = aggregateCrmContacts(bookings as any);
+        const needle = search?.trim().toLowerCase();
+        if (needle) {
+            contacts = contacts.filter((contact) =>
+                [contact.name, contact.email, contact.phone]
+                    .filter(Boolean)
+                    .some((value) => value!.toLowerCase().includes(needle)),
+            );
+        }
+
+        const total = contacts.length;
+        const skip = (currentPage - 1) * take;
+        return {
+            data: contacts.slice(skip, skip + take),
+            pagination: {
+                total,
+                page: currentPage,
+                limit: take,
+                totalPages: Math.ceil(total / take),
+            },
+        };
+    }
+
+    @Get('crm/pipeline')
+    @ApiOperation({ summary: 'Get this agency\'s booking pipeline grouped by status (#786)' })
+    async getCrmPipeline(@Request() req) {
+        const agencyId = req.tenantId;
+
+        const [grouped, refundTotal, refundOpen] = await Promise.all([
+            this.prisma.booking.groupBy({
+                by: ['status'],
+                where: { agencyId },
+                _count: { _all: true },
+                _sum: { totalAmount: true },
+            }),
+            this.prisma.refundCase.count({ where: { agencyId } }),
+            this.prisma.refundCase.count({
+                where: {
+                    agencyId,
+                    status: { notIn: ['REFUND_COMPLETED', 'REFUND_REJECTED'] },
+                },
+            }),
+        ]);
+
+        return aggregateCrmPipeline(
+            grouped.map((row: any) => ({
+                status: row.status,
+                count: row._count?._all ?? 0,
+                totalAmount: row._sum?.totalAmount ?? null,
+            })),
+            { open: refundOpen, total: refundTotal },
+        );
+    }
+
     // #780 (Council S6 Phase 3): self-serve CSV export of the agency's OWN
     // data. Tenant isolation is structural: every query is scoped by
     // req.tenantId — the agency id stamped by TenantGuard from the

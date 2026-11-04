@@ -40,6 +40,7 @@ export function AgencyCommandPalette() {
       { label: t('sidebar.analytics'), href: '/dashboard/analytics' },
       { label: t('sidebar.myTrips'), href: '/dashboard/trips' },
       { label: t('sidebar.bookings'), href: '/dashboard/bookings' },
+      { label: t('sidebar.crm'), href: '/dashboard/crm' },
       { label: t('sidebar.reviews'), href: '/dashboard/reviews' },
       { label: t('sidebar.wallet'), href: '/dashboard/wallet' },
       { label: t('sidebar.refunds'), href: '/dashboard/refunds' },

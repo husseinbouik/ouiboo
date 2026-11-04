@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Star,
   TicketPercent,
+  Users,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -46,6 +47,8 @@ export function AgencySidebar() {
     { name: t('sidebar.analytics'), href: '/dashboard/analytics', icon: BarChart3 },
     { name: t('sidebar.myTrips'), href: '/dashboard/trips', icon: Map },
     { name: t('sidebar.bookings'), href: '/dashboard/bookings', icon: Calendar },
+    // #786: CRM-lite — traveller contacts + booking pipeline.
+    { name: t('sidebar.crm'), href: '/dashboard/crm', icon: Users },
     { name: t('sidebar.quotes'), href: '/dashboard/quotes', icon: FileText },
     // #778: agency-funded promo codes (agency funds 100% of the discount).
     { name: t('sidebar.promoCodes'), href: '/dashboard/promo-codes', icon: TicketPercent },
