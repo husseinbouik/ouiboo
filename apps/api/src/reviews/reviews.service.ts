@@ -75,6 +75,44 @@ export function reviewPhotoPath(tripId: string, reviewId: string, index: number)
   return `/trips/${tripId}/reviews/${reviewId}/photos/${index}`;
 }
 
+const REVIEW_VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov'];
+
+/**
+ * #783: validate the ONE video key a traveller attaches to a review.
+ * Mirrors validateReviewPhotoKeys exactly: the key is only acceptable
+ * when it is one of the caller's OWN private review-video uploads
+ * (`private/{travelerId}/review-videos/…`, minted by the `review-video`
+ * upload intent) with a video extension and safe path segments.
+ * `undefined`/`null` mean "no video" and resolve to null; anything
+ * else malformed — another traveller's key, a public trip-asset key,
+ * a review-photo key, a traversal attempt, a non-video extension —
+ * is rejected outright, never silently dropped or re-homed.
+ */
+export function validateReviewVideoKey(travelerId: string, videoKey?: string | null): string | null {
+  if (videoKey === undefined || videoKey === null) return null;
+  if (typeof videoKey !== 'string') {
+    throw new BadRequestException('Invalid review video key');
+  }
+  const key = videoKey.replace(/\\/g, '/').replace(/^\/+/, '');
+  const prefix = `private/${travelerId}/review-videos/`;
+  const segments = key.split('/').filter(Boolean);
+  const safe = segments.every((s) => s !== '.' && s !== '..' && /^[a-zA-Z0-9._-]+$/.test(s));
+  const lower = key.toLowerCase();
+  if (
+    !key.startsWith(prefix) ||
+    !safe ||
+    !REVIEW_VIDEO_EXTENSIONS.some((ext) => lower.endsWith(ext))
+  ) {
+    throw new BadRequestException('Invalid review video key');
+  }
+  return key;
+}
+
+/** API-relative path that serves a VISIBLE review's video (#783). */
+export function reviewVideoPath(tripId: string, reviewId: string): string {
+  return `/trips/${tripId}/reviews/${reviewId}/video`;
+}
+
 export type ReviewStatusValue = 'PENDING' | 'VISIBLE' | 'HIDDEN' | 'REMOVED';
 export type ReviewModerationAction = 'HIDE' | 'REMOVE' | 'RESTORE';
 
@@ -207,6 +245,9 @@ export class ReviewsService {
       accuracyRating: validateSubScore('accuracyRating', dto.accuracyRating),
     };
     const photoKeys = validateReviewPhotoKeys(travelerId, dto.photoKeys);
+    // #783: at most one video, the traveller's own private
+    // review-video upload (validated before any write).
+    const videoKey = validateReviewVideoKey(travelerId, dto.videoKey);
 
     // Create review
     const review = await this.prisma.review.create({
@@ -219,6 +260,7 @@ export class ReviewsService {
         tripTemplateId: booking.session.template.id,
         rating: dto.rating,
         ...subScores,
+        videoKey,
         comment: dto.comment,
         isVerifiedBooking: true,
         status: initialStatus,
@@ -279,7 +321,9 @@ export class ReviewsService {
       // them against the current public media base at read time.
       // #776: `photoKeys` (private storage keys) must never ride along
       // on a public payload — strip it defensively before spreading.
-      reviews: reviews.map(({ photoKeys: _strippedPhotoKeys, ...review }: any) => ({
+      // #783: same discipline for `videoKey` — strip the private key,
+      // expose only the visibility-gated path (or null).
+      reviews: reviews.map(({ photoKeys: _strippedPhotoKeys, videoKey: strippedVideoKey, ...review }: any) => ({
         ...review,
         // #776: expose photos as visibility-gated API paths, never as
         // storage keys or public URLs — the files stay in private
@@ -288,6 +332,9 @@ export class ReviewsService {
         photos: ((review as any).photos ?? []).map((_: unknown, index: number) =>
           reviewPhotoPath(tripId, review.id, index),
         ),
+        // #783: the video rides along ONLY on this VISIBLE-only list,
+        // as a gated path — never the storage key, never a public URL.
+        video: strippedVideoKey ? reviewVideoPath(tripId, review.id) : null,
         // #692: the agency reply is public ONLY while its moderation
         // status is VISIBLE — a PENDING/HIDDEN/REMOVED reply never
         // leaves the API as public text.
@@ -593,6 +640,14 @@ export class ReviewsService {
           dto.accuracyRating !== undefined
             ? validateSubScore('accuracyRating', dto.accuracyRating)
             : review.accuracyRating,
+        // #783: video is editable under the same #439 budget — omit
+        // to keep, a new own review-video key to replace, null to
+        // clear. An edited VISIBLE review returns to PENDING below,
+        // so a swapped-in video is moderated before it can be served.
+        videoKey:
+          dto.videoKey !== undefined
+            ? validateReviewVideoKey(travelerId, dto.videoKey)
+            : (review as any).videoKey ?? null,
         comment: dto.comment ?? review.comment,
         editCount: editCount + 1,
         ...((review.status ?? 'VISIBLE') === 'VISIBLE' ? { status: 'PENDING' as const } : {}),
@@ -730,7 +785,17 @@ export class ReviewsService {
     // Keep the trip's stored rating in sync with VISIBLE-only stats.
     await this.updateTripRating(review.tripTemplateId);
 
-    return { ...updated, photos: moderationPhotos, photoKeys: moderationPhotoKeys };
+    return {
+      ...updated,
+      photos: moderationPhotos,
+      photoKeys: moderationPhotoKeys,
+      // #783: the moderation result carries the video key + the
+      // review's (new) status too — a moderator RESTOREs a video
+      // review knowing a video is attached, and can fetch it through
+      // the admin signed-URL path before deciding.
+      videoKey: (updated as any).videoKey ?? null,
+      videoStatus: targetStatus,
+    };
   }
 
   /** #776: photo rows for a review, oldest first (display order). */
@@ -783,10 +848,39 @@ export class ReviewsService {
   }
 
   /**
+   * #783: resolve the storage key of a review's video — but ONLY
+   * while the review is VISIBLE, exactly like
+   * getVisibleReviewPhotoKey. A PENDING / HIDDEN / REMOVED review's
+   * video is indistinguishable from a missing one (404), so nothing
+   * about an unmoderated video leaks through this endpoint. The file
+   * itself stays in private storage; the controller streams it after
+   * this check.
+   */
+  async getVisibleReviewVideoKey(
+    tripId: string,
+    reviewId: string,
+  ): Promise<string> {
+    const review = await this.prisma.review.findUnique({
+      where: { id: reviewId },
+    });
+    if (
+      !review ||
+      review.tripTemplateId !== tripId ||
+      (review.status ?? 'VISIBLE') !== 'VISIBLE' ||
+      !(review as any).videoKey
+    ) {
+      throw new NotFoundException('Review video not found');
+    }
+    return (review as any).videoKey as string;
+  }
+
+  /**
    * #776: the admin moderation detail payload — the full review
    * (sub-scores included, as scalar columns) plus its photo keys, so a
    * moderator can inspect everything (photos via the signed-URL
    * endpoint, which already allows admins) before RESTORE/HIDE/REMOVE.
+   * #783: the payload also carries the video key and the review's
+   * moderation status, so a video is never RESTOREd blind either.
    */
   async getReviewForModeration(reviewId: string) {
     const review = await this.prisma.review.findUnique({
@@ -805,6 +899,8 @@ export class ReviewsService {
       ...review,
       photos,
       photoKeys: photos.map((photo: any) => photo.storageKey),
+      videoKey: (review as any).videoKey ?? null,
+      videoStatus: (review as any).status ?? 'VISIBLE',
     };
   }
 

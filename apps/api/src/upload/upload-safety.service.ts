@@ -6,7 +6,10 @@ import {
     BLOCKED_UPLOAD_SIGNATURES,
     MAX_IMAGE_PIXELS,
     MAX_PDF_PAGES,
+    MAX_REVIEW_VIDEO_SIZE_BYTES,
     MAX_UPLOAD_SIZE_BYTES,
+    REVIEW_VIDEO_MIME_TYPES,
+    ReviewVideoMimeType,
 } from './upload.constants';
 
 @Injectable()
@@ -17,7 +20,14 @@ export class UploadSafetyService {
         }
 
         if (!ALLOWED_MIME_TYPES.includes(file.mimetype as AllowedMimeType)) {
-            throw new BadRequestException('Invalid file type. Allowed: JPG, PNG, WEBP, GIF, PDF');
+            throw new BadRequestException('Invalid file type. Allowed: JPG, PNG, WEBP, GIF, PDF, MP4, WebM, MOV (review videos only)');
+        }
+
+        // #783: review videos follow their own branch — 50MB cap and
+        // container magic-byte checks, no image/PDF bomb heuristics.
+        if ((REVIEW_VIDEO_MIME_TYPES as readonly string[]).includes(file.mimetype)) {
+            this.validateVideo(file);
+            return;
         }
 
         if (file.size > MAX_UPLOAD_SIZE_BYTES) {
@@ -31,6 +41,39 @@ export class UploadSafetyService {
 
         this.rejectKnownUnsafePayloads(file.buffer, detectedMimeType);
         this.rejectDecompressionBombs(file.buffer, detectedMimeType);
+    }
+
+    /**
+     * #783: video validation. Declared type must match the container
+     * signature: MP4/MOV carry an `ftyp` box at offset 4 (the MOV
+     * `qt  ` brand distinguishes QuickTime from generic MP4), WebM
+     * starts with the EBML header. Anything else — including an image
+     * or executable relabelled as video — is rejected.
+     */
+    private validateVideo(file: Express.Multer.File): void {
+        if (file.size > MAX_REVIEW_VIDEO_SIZE_BYTES) {
+            throw new BadRequestException('Video too large. Max size: 50MB');
+        }
+        const detected = this.detectVideoMimeType(file.buffer);
+        if (detected !== file.mimetype) {
+            throw new BadRequestException('File content does not match the declared file type');
+        }
+        this.rejectKnownUnsafePayloads(file.buffer, detected);
+    }
+
+    private detectVideoMimeType(buffer: Buffer): ReviewVideoMimeType | null {
+        // WebM: EBML header 1A 45 DF A3.
+        if (this.startsWith(buffer, [0x1a, 0x45, 0xdf, 0xa3])) {
+            return 'video/webm';
+        }
+        // MP4 / MOV: box size (4 bytes) + 'ftyp' at offset 4; the major
+        // brand follows at offset 8 — QuickTime files carry 'qt  '.
+        if (buffer.length >= 12 && buffer.subarray(4, 8).toString('ascii') === 'ftyp') {
+            return buffer.subarray(8, 12).toString('ascii') === 'qt  '
+                ? 'video/quicktime'
+                : 'video/mp4';
+        }
+        return null;
     }
 
     private detectMimeType(buffer: Buffer): AllowedMimeType | null {

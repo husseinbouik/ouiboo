@@ -1358,6 +1358,14 @@ model Review {
   // are only ever served while this review is VISIBLE — the photo rows
   // share the review's moderation lifecycle.
   photos            ReviewPhoto[]
+  // #783: ONE optional traveller video attached to the review. The
+  // file lives in PRIVATE storage (upload intent `review-video`,
+  // #665 discipline) under `private/{userId}/review-videos/…` and is
+  // only ever served while this review is VISIBLE — the key shares
+  // the review's moderation lifecycle, exactly like the photo rows.
+  // Null = no video. A single nullable key (not a table): a review
+  // carries at most one video by design.
+  videoKey          String?
   comment           String?      @db.Text
   response          String?      @db.Text
   // #692 (Council S6): the agency reply flows through the SAME

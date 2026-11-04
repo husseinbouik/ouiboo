@@ -19,6 +19,12 @@ import { UPLOAD_INTENTS, type UploadIntent } from '../upload.constants';
  *   under `private/{userId}/review-photos/`, never servable via the media
  *   endpoint — served only while its review is VISIBLE (through the
  *   review photo endpoint) or to the owner/admin via signed URLs.
+ * - `review-video` (#783): private traveller video for a review (at most
+ *   one per review), stored under `private/{userId}/review-videos/`,
+ *   never servable via the media endpoint — served only while its
+ *   review is VISIBLE (through the review video endpoint) or to the
+ *   owner/admin via signed URLs. Video mime types (MP4/WebM/MOV) and
+ *   the 50MB cap are accepted ONLY for this intent.
  *
  * When the intent is omitted, it resolves by role: agencies default to
  * `trip-asset` (their catalogue work), everyone else to `avatar` (the
@@ -32,6 +38,6 @@ export class UploadFileDto {
         description: 'What the file is for. Identity documents are stored privately.',
     })
     @IsOptional()
-    @IsIn(UPLOAD_INTENTS, { message: 'intent must be trip-asset, identity-document, payment-proof, avatar or review-photo' })
+    @IsIn(UPLOAD_INTENTS, { message: 'intent must be trip-asset, identity-document, payment-proof, avatar, review-photo or review-video' })
     intent?: UploadIntent;
 }

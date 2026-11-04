@@ -5,12 +5,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { apiClient } from '@/lib/api-client';
 import { Button, Textarea } from '@ouiboo/ui';
-import { Star, Loader2, Check, AlertCircle, Camera, X } from 'lucide-react';
+import { Star, Loader2, Check, AlertCircle, Camera, Video, X } from 'lucide-react';
 import { REVIEW_SUB_SCORES, type ReviewSubScoreKey } from '@/lib/review-display';
 
 /** #776: mirrors MAX_REVIEW_PHOTOS on the API — each file also obeys
  * the API's 5MB upload cap. */
 const MAX_REVIEW_PHOTOS = 3;
+
+/** #783: mirrors the API's review-video rules — at most ONE video per
+ * review, MP4/WebM/MOV, 50MB cap enforced server-side. */
+const MAX_REVIEW_VIDEO_SIZE_BYTES = 50 * 1024 * 1024;
 
 type SubScoreState = Record<ReviewSubScoreKey, number>;
 
@@ -87,6 +91,7 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
     accuracy: 0,
   });
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [comment, setComment] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -97,6 +102,7 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
       comment?: string;
       subScores: SubScoreState;
       files: File[];
+      video: File | null;
     }) => {
       // #776: photos go FIRST through the private `review-photo`
       // upload intent; the review then references the returned
@@ -112,6 +118,21 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
         if (!key) throw new Error('Upload did not return a file key');
         photoKeys.push(key);
       }
+      // #783: the optional single video follows the same pattern
+      // through the private `review-video` intent — the upload
+      // returns `url: ""` (never public), and the review references
+      // the private key; the video is served only once the review
+      // is VISIBLE.
+      let videoKey: string | undefined;
+      if (data.video) {
+        const formData = new FormData();
+        formData.append('file', data.video);
+        formData.append('intent', 'review-video');
+        const uploadResponse = await apiClient.post('/upload', formData);
+        const key = (uploadResponse as { data?: { filename?: string } })?.data?.filename;
+        if (!key) throw new Error('Upload did not return a file key');
+        videoKey = key;
+      }
       const payload: Record<string, unknown> = {
         rating: data.rating,
         comment: data.comment,
@@ -121,6 +142,7 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
         if (value > 0) payload[field] = value;
       }
       if (photoKeys.length) payload.photoKeys = photoKeys;
+      if (videoKey) payload.videoKey = videoKey;
       await apiClient.post(`/bookings/${bookingId}/review`, payload);
     },
     onSuccess: () => {
@@ -129,6 +151,7 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
       setRating(0);
       setSubScores({ organisation: 0, guide: 0, value: 0, accuracy: 0 });
       setPhotoFiles([]);
+      setVideoFile(null);
       setComment('');
       setTimeout(() => {
         setSuccessMessage('');
@@ -153,7 +176,18 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
       comment: comment || undefined,
       subScores,
       files: photoFiles,
+      video: videoFile,
     });
+  };
+
+  const handleVideoSelection = (selected: FileList | null) => {
+    if (!selected || selected.length === 0) return;
+    const file = selected[0];
+    if (file.size > MAX_REVIEW_VIDEO_SIZE_BYTES) {
+      setErrorMessage(t('reviewForm.videoTooLarge'));
+      return;
+    }
+    setVideoFile(file);
   };
 
   const handlePhotoSelection = (selected: FileList | null) => {
@@ -273,6 +307,44 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
                 </li>
               ))}
             </ul>
+          )}
+        </div>
+
+        {/* #783: optional single video via the private upload intent —
+            same moderated end-to-end flow as photos: private at
+            upload, served only once the review is approved. */}
+        <div className="space-y-3">
+          <label htmlFor="review-video" className="text-sm font-bold text-foreground uppercase tracking-widest">
+            {t('reviewForm.videoLabel')}
+          </label>
+          <p className="text-xs text-muted-foreground">
+            {t('reviewForm.videoHint')}
+          </p>
+          <input
+            id="review-video"
+            type="file"
+            accept="video/mp4,video/webm,video/quicktime,.mov"
+            onChange={(e) => {
+              handleVideoSelection(e.target.files);
+              e.target.value = '';
+            }}
+            className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border file:border-border file:bg-background file:text-foreground file:font-medium"
+          />
+          {videoFile && (
+            <div className="flex items-center justify-between gap-3 text-sm text-foreground bg-muted/40 rounded-lg px-3 py-2">
+              <span className="flex items-center gap-2 truncate">
+                <Video className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">{videoFile.name}</span>
+              </span>
+              <button
+                type="button"
+                aria-label={t('reviewForm.videoRemove', { name: videoFile.name })}
+                onClick={() => setVideoFile(null)}
+                className="shrink-0 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-sunset-orange rounded-full"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           )}
         </div>
 
