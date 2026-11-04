@@ -11,16 +11,18 @@ import { useAuth } from '@/components/AuthContext';
 
 type Conversation = {
   id: string;
-  otherUser?: { name?: string; avatar?: string };
-  lastMessage?: { content?: string; createdAt?: string };
+  agencyId: string;
+  agency?: { id: string; companyName?: string } | null;
+  messages?: Array<{ content?: string; createdAt?: string }>;
   unreadCount?: number;
+  agencyBlocked?: boolean;
 };
 
 export default function MessagesPage() {
   const { t } = useTranslation();
   const { user, isLoading: isAuthLoading } = useAuth();
 
-  const { data, isLoading } = useQuery<{ items: Conversation[] }>({
+  const { data, isLoading } = useQuery<{ conversations: Conversation[] }>({
     queryKey: ['conversations'],
     queryFn: async () => {
       const res = await apiClient.get('/messages/conversations');
@@ -29,7 +31,7 @@ export default function MessagesPage() {
     enabled: Boolean(user),
   });
 
-  const conversations = data?.items || [];
+  const conversations = data?.conversations || [];
 
   // Show sign-in gate immediately for guests, don't wait for query (#139)
   if (!isAuthLoading && !user) {
@@ -70,7 +72,7 @@ export default function MessagesPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
-      <h1 className="text-3xl font-bold mb-8">Messages</h1>
+      <h1 className="text-3xl font-bold mb-8">{t('messages.title')}</h1>
       {/* #251/B23: ID documents and payment credentials must never be
           sent through chat — warn on the messaging surface itself. */}
       <div className="rounded-2xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 p-5 text-sm mb-8 flex gap-3" role="note">
@@ -96,20 +98,31 @@ export default function MessagesPage() {
       ) : (
         <div className="space-y-3">
           {conversations.map((c) => (
-            <div key={c.id} className="bg-card rounded-2xl border border-border p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center font-bold">
-                {(c.otherUser?.name || '?')[0]?.toUpperCase()}
+            <Link
+              key={c.id}
+              href={`/messages/${c.id}`}
+              className="bg-card rounded-2xl border border-border p-4 flex items-center gap-4 hover:bg-muted/50 transition-colors"
+            >
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center font-bold" aria-hidden="true">
+                {(c.agency?.companyName || '?')[0]?.toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold truncate">{c.otherUser?.name || 'Unknown'}</p>
-                <p className="text-sm text-muted-foreground truncate">{c.lastMessage?.content || 'No messages yet'}</p>
+                <p className="font-semibold truncate">{c.agency?.companyName || ''}</p>
+                <p className="text-sm text-muted-foreground truncate">
+                  {c.messages?.[0]?.content || t('messages.noMessagesYet')}
+                </p>
               </div>
+              {c.agencyBlocked && (
+                <span className="bg-muted text-muted-foreground text-xs font-bold rounded-full px-2 py-1">
+                  {t('messages.blockedBadge')}
+                </span>
+              )}
               {(c.unreadCount || 0) > 0 && (
                 <span className="bg-primary text-primary-foreground text-xs font-bold rounded-full px-2 py-1">
                   {c.unreadCount}
                 </span>
               )}
-            </div>
+            </Link>
           ))}
         </div>
       )}

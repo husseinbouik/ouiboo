@@ -21,6 +21,7 @@ import {
 import { apiClient } from '@/lib/api-client';
 import { CancellationScaleCard } from '@/components/CancellationScaleCard';
 import SellerIdentity from '@/components/SellerIdentity';
+import MessageAgencyButton from '@/components/MessageAgencyButton';
 import {
   canRetryTravelerPayment,
   canCancelTravelerBooking,
@@ -340,6 +341,15 @@ export default function BookingDetailsPage() {
               )}
 
               <SellerIdentity agency={booking.session.template.agency} />
+              {/* #729: contact path from the booking view — questions,
+                  payment problems and changes land in the pair
+                  conversation with this agency. */}
+              <div className="mt-4">
+                <MessageAgencyButton
+                  agencyId={booking.session.template.agency?.id}
+                  agencyName={booking.session.template.agency?.companyName}
+                />
+              </div>
 
               {/* #700 (Council S6): the Art. 29(2) seller block repeated
                   on the durable booking confirmation. */}

@@ -8,6 +8,7 @@ import SellerIdentity from '@/components/SellerIdentity';
 import VerificationRecord from '@/components/VerificationRecord';
 import SellerBlock from '@/components/SellerBlock';
 import AgencyStorefront, { type StorefrontData } from '@/components/AgencyStorefront';
+import MessageAgencyButton from '@/components/MessageAgencyButton';
 
 interface AgencyPublicProfile {
   id: string;
@@ -140,6 +141,10 @@ export default async function AgencyPage({ params }: { params: Promise<{ agencyI
             <VerificationRecord agency={agency} className="mt-6 w-full max-w-2xl text-left" />
             {/* #700: the Art. 29(2) seller block facts. */}
             <SellerBlock agency={agency} className="mt-4 w-full max-w-2xl text-left" />
+            {/* #729 (Council S7-2): chat door on the storefront. */}
+            <div className="mt-6">
+              <MessageAgencyButton agencyId={agency.id} agencyName={agency.companyName} />
+            </div>
             {/* #691 (Council S6): the shareable storefront — about,
                 languages, live counts, response time, review aggregate
                 (threshold rule), share link + QR. */}
