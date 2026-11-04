@@ -15,6 +15,10 @@ import { UPLOAD_INTENTS, type UploadIntent } from '../upload.constants';
  *   (Booking-bound proofs keep using POST /bookings/:id/payment-proof.)
  * - `avatar` (#665): public profile picture bound to the caller's own
  *   profile, stored under `avatars/{userId}/`.
+ * - `review-photo` (#776): private traveller photo for a review, stored
+ *   under `private/{userId}/review-photos/`, never servable via the media
+ *   endpoint — served only while its review is VISIBLE (through the
+ *   review photo endpoint) or to the owner/admin via signed URLs.
  *
  * When the intent is omitted, it resolves by role: agencies default to
  * `trip-asset` (their catalogue work), everyone else to `avatar` (the
@@ -28,6 +32,6 @@ export class UploadFileDto {
         description: 'What the file is for. Identity documents are stored privately.',
     })
     @IsOptional()
-    @IsIn(UPLOAD_INTENTS, { message: 'intent must be trip-asset, identity-document, payment-proof or avatar' })
+    @IsIn(UPLOAD_INTENTS, { message: 'intent must be trip-asset, identity-document, payment-proof, avatar or review-photo' })
     intent?: UploadIntent;
 }

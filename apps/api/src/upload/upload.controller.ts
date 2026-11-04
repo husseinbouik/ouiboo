@@ -49,7 +49,7 @@ export class UploadController {
                 },
                 intent: {
                     type: 'string',
-                    enum: ['trip-asset', 'identity-document', 'payment-proof', 'avatar'],
+                    enum: ['trip-asset', 'identity-document', 'payment-proof', 'avatar', 'review-photo'],
                     description: 'Upload intent. Omitted intent resolves by role (agency: trip-asset, others: avatar). Private intents never receive a public URL.',
                 },
             },
@@ -107,6 +107,10 @@ export class UploadController {
      *   servable; the `{userId}` segment keeps signed-URL ownership checks
      *   working exactly like identity documents)
      * - avatar: `avatars/{userId}/` (public, bound to the caller's profile)
+     * - review-photo (#776): `private/{userId}/review-photos/` (never
+     *   publicly servable; a photo is only ever served through the
+     *   review-visibility-gated endpoint once its review is VISIBLE, or
+     *   to the owner/admin through signed URLs)
      */
     private resolveFolder(intent: UploadIntent, user?: { userId?: string; agencyId?: string | null }): string {
         if (intent === 'identity-document') {
@@ -114,6 +118,9 @@ export class UploadController {
         }
         if (intent === 'payment-proof') {
             return `private/${user?.userId || 'anonymous'}/payment-proofs`;
+        }
+        if (intent === 'review-photo') {
+            return `private/${user?.userId || 'anonymous'}/review-photos`;
         }
         if (intent === 'avatar') {
             return `avatars/${user?.userId || 'anonymous'}`;

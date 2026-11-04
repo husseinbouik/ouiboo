@@ -1325,6 +1325,20 @@ model Review {
   tripTemplateId    String
   tripTemplate      TripTemplate @relation(fields: [tripTemplateId, agencyId], references: [id, agencyId], onDelete: Cascade)
   rating            Int // 1-5
+  // #776 (Council S6 Phase 3): review depth — four optional sub-scores
+  // (1-5) alongside the headline overall rating. Nullable so reviews
+  // written before sub-scores existed (and travellers who skip a
+  // sub-score) stay valid; per-trip averages are gated by the same
+  // minimum-count discipline as the overall average (#681).
+  organisationRating Int?
+  guideRating        Int?
+  valueRating        Int?
+  accuracyRating     Int?
+  // #776: traveller photos attached to the review. The files live in
+  // PRIVATE storage (upload intent `review-photo`, #665 discipline) and
+  // are only ever served while this review is VISIBLE — the photo rows
+  // share the review's moderation lifecycle.
+  photos            ReviewPhoto[]
   comment           String?      @db.Text
   response          String?      @db.Text
   // #692 (Council S6): the agency reply flows through the SAME
@@ -1356,6 +1370,21 @@ model Review {
   @@index([tripTemplateId, rating])
   @@index([tripTemplateId, status])
   @@index([moderatedById])
+}
+
+// #776 (Council S6 Phase 3): one private-storage photo attached to a
+// review. `storageKey` is the private upload key
+// (private/{travelerId}/review-photos/…) — never a public URL. The row
+// is meaningless without its review, so it cascades with it; visibility
+// is derived from the parent review's moderation status at read time.
+model ReviewPhoto {
+  id         String   @id @default(cuid())
+  reviewId   String
+  review     Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  storageKey String
+  createdAt  DateTime @default(now())
+
+  @@index([reviewId])
 }
 
 // #695 (Council S6): agency-priced variant on a trip (option tier).
