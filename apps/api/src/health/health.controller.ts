@@ -83,3 +83,6 @@ export class HealthController {
         }
     }
 }
+
+// THROWAWAY FIXTURE (#245 proof): intentional syntax error — do not merge.
+export const __mergeBlockFixture = ;
