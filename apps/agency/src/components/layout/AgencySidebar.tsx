@@ -26,7 +26,7 @@ import {
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
-import { BetaBadge, Logo } from '@ouiboo/ui';
+import { BetaBadge, Logo, LogoLockup } from '@ouiboo/ui';
 import { useAuth } from '../AuthContext';
 
 export function AgencySidebar() {
@@ -99,16 +99,15 @@ export function AgencySidebar() {
 
       <div className="flex h-16 items-center px-6 overflow-hidden shrink-0">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <Logo size={32} className="shadow-lg shadow-primary/20 rounded-lg" />
-          {!isCollapsed && (
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex items-center gap-2 text-xl font-bold text-foreground"
-            >
-              Ouiboo
+          {/* #794: expanded sidebar carries the final lockup; collapsed
+              it cannot fit, so the Route-End symbol stands alone. */}
+          {isCollapsed ? (
+            <Logo size={32} tone="auto" />
+          ) : (
+            <>
+              <LogoLockup height={28} tone="auto" />
               <BetaBadge />
-            </motion.span>
+            </>
           )}
         </Link>
       </div>
