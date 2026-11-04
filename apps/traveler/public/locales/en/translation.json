@@ -74,6 +74,17 @@
     "discoverTrips": "Discover trips"
   },
   "checkout": {
+    "promo": {
+      "label": "Promo code",
+      "placeholder": "Enter code",
+      "apply": "Apply",
+      "applying": "Applying…",
+      "remove": "Remove",
+      "applied": "Code {{code}} applied",
+      "discount": "Promo discount ({{code}})",
+      "fundedNote": "Discount funded by the agency",
+      "invalid": "This promo code is not valid for this booking"
+    },
     "title": "Checkout",
     "secureProcess": "Manual payment to the agency",
     "goBack": "Go back",

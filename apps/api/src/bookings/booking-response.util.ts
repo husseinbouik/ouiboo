@@ -1,6 +1,7 @@
 import {
   type BookingDetails,
   type PricingSelectionSnapshot,
+  type PromoSnapshot,
   type BookingPaymentPlan,
   type BookingPaymentPlanStatusType,
   type BookingPaymentStatusType,
@@ -77,6 +78,11 @@ type BookingMapperInput = {
   cancellationScale?: unknown;
   // #695: pricing-selection snapshot (variant + add-ons breakdown).
   pricingSelection?: unknown;
+  // #778: agency-funded promo snapshot fields.
+  promoCodeId?: string | null;
+  promoCode?: string | null;
+  discountAmount?: MoneyInput | null;
+  promoSnapshot?: unknown;
   /** Batch F: private nature (#694), pay-later deadline (#696),
    * pay-on-arrival (#697), pickup choice (#701). */
   isPrivateSession?: boolean;
@@ -324,6 +330,12 @@ export const mapBookingDetails = (
   ),
   // #695: the booking's pricing selection, exactly as snapshotted.
   pricingSelection: (booking.pricingSelection as PricingSelectionSnapshot | null | undefined) ?? null,
+  // #778: the booking's agency-funded promo, exactly as snapshotted
+  // (totalAmount above is the discounted total; discountAmount is
+  // what the agency funded — '0.00' when no code was used).
+  promoCode: booking.promoCode ?? null,
+  discountAmount: toMoneyString(booking.discountAmount) || '0.00',
+  promoSnapshot: (booking.promoSnapshot as PromoSnapshot | null | undefined) ?? null,
   // Batch F: the booking's payment-shape facts, as snapshotted.
   isPrivateSession: booking.isPrivateSession ?? false,
   payLaterDeadline: toIsoString(booking.payLaterDeadline) ?? null,

@@ -126,6 +126,22 @@ export type BookingResponse = {
   id: string;
 };
 
+/** #778: the API's promo preview (POST /bookings/promo-preview) — the
+ * server validates the agency-funded code and prices the discount on
+ * the authoritative total; the checkout renders these figures and the
+ * booking re-validates the code at creation. Amounts are MAD strings. */
+export type PromoPreview = {
+  valid: true;
+  code: string;
+  discountType: 'PERCENT' | 'FIXED_MAD';
+  discountValue: string;
+  currency: string;
+  undiscountedTotal: string;
+  discountAmount: string;
+  totalAmount: string;
+  staged: { depositAmount: string; balanceAmount: string } | null;
+};
+
 export const getErrorMessage = (error: unknown, fallback: string) => {
   if (error && typeof error === 'object' && 'response' in error) {
     const axiosError = error as AxiosError<ApiErrorResponse>;

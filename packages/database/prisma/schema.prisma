@@ -470,6 +470,7 @@ model AgencyProfile {
   templates          TripTemplate[]
   tripSessions       TripSession[]
   bookings           Booking[]
+  promoCodes         PromoCode[]
   quoteRequests      QuoteRequest[]
   customTripOffers   CustomTripOffer[]
   paymentTransactions PaymentTransaction[]
@@ -851,6 +852,19 @@ model Booking {
   // reconciled base/add-ons/total breakdown). Refunds and the staged
   // plan compute on totalAmount, which already includes the selection.
   pricingSelection            Json?
+  // #778: agency-funded promo applied at creation. totalAmount is the
+  // DISCOUNTED total; discountAmount is what the agency funded (>= 0,
+  // 0.00 when no code was used). promoCode is the snapshotted code text
+  // and promoSnapshot the full immutable record ({ code, discountType,
+  // discountValue, undiscountedTotal, discountAmount, totalAmount,
+  // currency }) — later code edits/deactivation never rewrite it.
+  // promoCodeId is the live row the redemption was counted against
+  // (SetNull if the agency later deletes the row; the snapshot stays).
+  promoCodeId                 String?
+  promoCodeRecord             PromoCode?  @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
+  promoCode                   String?
+  discountAmount              Decimal     @default(0) @db.Decimal(18, 2)
+  promoSnapshot               Json?
   // #694: the booked session was PRIVATE (per-group exclusive lock).
   // Snapshotted so a later session edit cannot rewrite the booking's
   // nature; private bookings never enter PENDING_MINIMUM.
@@ -1440,6 +1454,47 @@ enum PricingUnit {
 enum AddOnPricingUnit {
   PER_PERSON
   PER_BOOKING
+}
+
+// #778 (Council S6 Phase 3): how an agency-funded promo code discounts
+// the trip price. PERCENT = percent of the booking total; FIXED_MAD = a
+// flat MAD amount off the booking total (floor: the total never goes
+// below zero). The agency funds 100% of the discount — Ouiboo never
+// funds promotions and never holds traveller money.
+enum PromoDiscountType {
+  PERCENT
+  FIXED_MAD
+}
+
+// #778: an agency-owned promo code. Agency-scoped (never cross-agency,
+// never platform-funded): the code applies to direct bookings with the
+// OWNING agency only. Redemptions are counted atomically at booking
+// creation (usedCount increment inside the booking transaction, gated
+// on isActive + the usage cap), and the applied code + discount are
+// snapshotted onto the booking, so later edits/deactivation can never
+// rewrite a booking already made under the code.
+model PromoCode {
+  id            String            @id @default(cuid())
+  agencyId      String
+  agency        AgencyProfile     @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  // Stored normalised (trimmed, upper-case); unique per agency.
+  code          String
+  discountType  PromoDiscountType
+  // PERCENT: 0 < value <= 100. FIXED_MAD: value > 0 (MAD).
+  discountValue Decimal           @db.Decimal(18, 2)
+  // Optional validity window; null bound = open on that side.
+  startsAt      DateTime?
+  endsAt        DateTime?
+  // Optional redemption cap; null = unlimited while active/in window.
+  maxUses       Int?
+  usedCount     Int               @default(0)
+  isActive      Boolean           @default(true)
+  bookings      Booking[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@unique([agencyId, code])
+  @@index([agencyId, isActive])
 }
 
 // Wishlist

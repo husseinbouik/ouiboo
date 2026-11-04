@@ -20,6 +20,7 @@ import {
     buildCancellationScaleSnapshot,
 } from '../cancellation/cancellation.util';
 import { resolvePricingSelection, type PricingSelectionResult, type VariantForPricing } from '../trips/pricing-selection.util';
+import { normalizePromoCode, resolvePromoDiscount, type PromoResolution } from '../promo-codes/promo-codes.util';
 import { MAX_GROUP_DEPOSIT_PERCENT } from '../staged-payments/staged-payments.util';
 import { payOnArrivalBookingError, resolvePayLaterDeadline, type PickupPoint } from '../trips/batch-f.util';
 
@@ -79,6 +80,9 @@ export function bookingIdempotencyPayloadHash(dto: CreateBookingDto): string {
         payLater: dto.payLater ?? null,
         payOnArrival: dto.payOnArrival ?? null,
         pickupPointId: dto.pickupPointId ?? null,
+        // #778: the promo code defines WHAT was paid too — a replay
+        // swapping (or dropping) the code under the same key is a 409.
+        promoCode: normalizePromoCode(dto.promoCode) || null,
     });
     return createHash('sha256').update(canonical).digest('hex');
 }
@@ -172,6 +176,124 @@ export class BookingsService {
             this.passJwtService = new JwtService({ secret });
         }
         return this.passJwtService;
+    }
+
+    /**
+     * #695: resolve a pricing selection (variant + add-ons) from the
+     * agency's STORED prices for a session — shared by create() and the
+     * #778 promo preview so both price the identical total.
+     */
+    private async resolvePricingForSession(
+        session: { templateId: string; price: Prisma.Decimal; currency?: string | null },
+        dto: { guestsCount: number; variantId?: string; addOns?: Array<{ addOnId: string; quantity?: number }> },
+    ): Promise<PricingSelectionResult | null> {
+        if (!dto.variantId && (dto.addOns?.length ?? 0) === 0) {
+            return null;
+        }
+        let variant: VariantForPricing | null = null;
+        if (dto.variantId) {
+            variant = await this.db.tripPricingVariant.findFirst({
+                where: { id: dto.variantId, templateId: session.templateId },
+            });
+            if (!variant) {
+                throw new BadRequestException('The selected pricing option is not available for this trip');
+            }
+        }
+        const addOnRows: Array<{ addOn: NonNullable<Awaited<ReturnType<typeof this.db.tripAddOn.findFirst>>>; quantity: number }> = [];
+        for (const selection of dto.addOns ?? []) {
+            const addOn = await this.db.tripAddOn.findFirst({
+                where: { id: selection.addOnId, templateId: session.templateId },
+            });
+            if (!addOn) {
+                throw new BadRequestException('A selected add-on is not available for this trip');
+            }
+            addOnRows.push({ addOn, quantity: selection.quantity ?? 1 });
+        }
+        return resolvePricingSelection({
+            sessionPrice: session.price,
+            currency: session.currency || 'MAD',
+            guestsCount: dto.guestsCount,
+            variant,
+            addOns: addOnRows,
+        });
+    }
+
+    /**
+     * #778: read-only promo preview for checkout — validates the code
+     * for the session's agency and prices the discount on the SAME
+     * authoritative total create() will use (pricing selection
+     * included), plus the staged deposit/balance on the discounted
+     * total when the session is staged. Redeems nothing: usedCount is
+     * only claimed inside the booking transaction.
+     */
+    async previewPromo(dto: {
+        sessionId: string;
+        guestsCount: number;
+        promoCode?: string;
+        variantId?: string;
+        addOns?: Array<{ addOnId: string; quantity?: number }>;
+    }) {
+        if (!dto?.sessionId || typeof dto.sessionId !== 'string') {
+            throw new BadRequestException('sessionId is required');
+        }
+        if (!Number.isInteger(dto.guestsCount) || dto.guestsCount <= 0) {
+            throw new BadRequestException('guestsCount must be a positive integer');
+        }
+        const promoCodeText = normalizePromoCode(dto.promoCode);
+        if (!promoCodeText) {
+            throw new BadRequestException('This promo code is not valid for this booking');
+        }
+        const session = await this.db.tripSession.findUnique({
+            where: { id: dto.sessionId },
+            include: { template: { select: { agencyId: true } } },
+        });
+        if (!session) {
+            throw new BadRequestException('Session not found');
+        }
+        const agencyId = session.template.agencyId;
+        const promoRow = await this.db.promoCode.findFirst({
+            where: { agencyId, code: promoCodeText },
+        });
+        if (!promoRow) {
+            throw new BadRequestException('This promo code is not valid for this booking');
+        }
+        const isPrivateSession = (session as { sessionKind?: string }).sessionKind === 'PRIVATE';
+        const pricing = await this.resolvePricingForSession(session, dto);
+        const undiscountedTotal = pricing
+            ? pricing.totalAmount
+            : isPrivateSession
+                ? session.price
+                : multiplyMoney(session.price, dto.guestsCount);
+        const promo = resolvePromoDiscount({
+            promo: promoRow,
+            agencyId,
+            undiscountedTotal,
+            currency: session.currency || 'MAD',
+            now: new Date(),
+        });
+        let staged: { depositAmount: string; balanceAmount: string } | null = null;
+        if (!isPrivateSession && this.stagedPaymentsService.isStagedSession(session)) {
+            // Mirror createPlanInTransaction with the #778 cap: the
+            // deposit never exceeds 30% of the discounted total.
+            const uncappedDeposit = multiplyMoney(session.deposit, dto.guestsCount);
+            const cap = promo.totalAmount.mul(MAX_GROUP_DEPOSIT_PERCENT).div(100).toDecimalPlaces(2);
+            const depositAmount = uncappedDeposit.greaterThan(cap) ? cap : uncappedDeposit;
+            staged = {
+                depositAmount: depositAmount.toFixed(2),
+                balanceAmount: promo.totalAmount.sub(depositAmount).toDecimalPlaces(2).toFixed(2),
+            };
+        }
+        return {
+            valid: true,
+            code: promo.code,
+            discountType: promo.discountType,
+            discountValue: promo.discountValue,
+            currency: session.currency || 'MAD',
+            undiscountedTotal: promo.undiscountedTotal.toFixed(2),
+            discountAmount: promo.discountAmount.toFixed(2),
+            totalAmount: promo.totalAmount.toFixed(2),
+            staged,
+        };
     }
 
     async create(travelerId: string, dto: CreateBookingDto, rawIdempotencyKey?: string) {
@@ -313,44 +435,48 @@ export class BookingsService {
         // booked trip; anything else is rejected. The resolved total
         // replaces the plain session-price total everywhere downstream
         // (staged plan, deposit cap, cancellation snapshot, refunds).
-        let pricing: PricingSelectionResult | null = null;
-        if (dto.variantId || (dto.addOns?.length ?? 0) > 0) {
-            let variant: VariantForPricing | null = null;
-            if (dto.variantId) {
-                variant = await this.db.tripPricingVariant.findFirst({
-                    where: { id: dto.variantId, templateId: session.templateId },
-                });
-                if (!variant) {
-                    throw new BadRequestException('The selected pricing option is not available for this trip');
-                }
+        const pricing = await this.resolvePricingForSession(session, dto);
+
+        // #778 (Council S6 Phase 3): resolve an agency-funded promo
+        // code against the SAME authoritative total the pricing
+        // selection produced. This is the single discount computation
+        // point: Booking.totalAmount, the staged plan (deposit cap +
+        // balance), refunds (via verified payments of those amounts)
+        // and the #698 service-fee base (booking.totalAmount) all
+        // derive from the discounted total computed here.
+        let promo: PromoResolution | null = null;
+        const promoCodeText = normalizePromoCode(dto.promoCode);
+        if (promoCodeText) {
+            const promoRow = await this.db.promoCode.findFirst({
+                where: { agencyId: session.template.agencyId, code: promoCodeText },
+            });
+            if (!promoRow) {
+                throw new BadRequestException('This promo code is not valid for this booking');
             }
-            const addOnRows: Array<{ addOn: NonNullable<Awaited<ReturnType<typeof this.db.tripAddOn.findFirst>>>; quantity: number }> = [];
-            for (const selection of dto.addOns ?? []) {
-                const addOn = await this.db.tripAddOn.findFirst({
-                    where: { id: selection.addOnId, templateId: session.templateId },
-                });
-                if (!addOn) {
-                    throw new BadRequestException('A selected add-on is not available for this trip');
-                }
-                addOnRows.push({ addOn, quantity: selection.quantity ?? 1 });
-            }
-            pricing = resolvePricingSelection({
-                sessionPrice: session.price,
+            const undiscountedTotal = pricing
+                ? pricing.totalAmount
+                : isPrivateSession
+                    ? session.price
+                    : multiplyMoney(session.price, dto.guestsCount);
+            promo = resolvePromoDiscount({
+                promo: promoRow,
+                agencyId: session.template.agencyId,
+                undiscountedTotal,
                 currency: session.currency || 'MAD',
-                guestsCount: dto.guestsCount,
-                variant,
-                addOns: addOnRows,
+                now,
             });
         }
 
         // Batch F payment-shape elections, validated against the
         // session/template facts + the FINAL total (variant/add-ons
-        // included) before any seat moves.
-        const totalPreview = pricing
-            ? pricing.totalAmount
-            : isPrivateSession
-                ? session.price
-                : multiplyMoney(session.price, dto.guestsCount);
+        // and promo discount included) before any seat moves.
+        const totalPreview = promo
+            ? promo.totalAmount
+            : pricing
+                ? pricing.totalAmount
+                : isPrivateSession
+                    ? session.price
+                    : multiplyMoney(session.price, dto.guestsCount);
         let payOnArrival = false;
         if (dto.payOnArrival) {
             const error = payOnArrivalBookingError({
@@ -455,11 +581,17 @@ export class BookingsService {
 
             // #694: a private session's price is PER-GROUP — the total
             // is the session price itself, never price × guests.
-            const totalAmount = pricing
-                ? pricing.totalAmount
-                : isPrivateSession
-                    ? sessionWithInfo.price
-                    : multiplyMoney(sessionWithInfo.price, dto.guestsCount);
+            // #778: a resolved promo replaces that total with the
+            // discounted total computed at the single resolution point
+            // above (from the same pre-transaction session facts the
+            // #695 pricing total is trusted from).
+            const totalAmount = promo
+                ? promo.totalAmount
+                : pricing
+                    ? pricing.totalAmount
+                    : isPrivateSession
+                        ? sessionWithInfo.price
+                        : multiplyMoney(sessionWithInfo.price, dto.guestsCount);
 
             // #417 (Council P0-11): snapshot the trip's resolved
             // cancellation scale onto the booking, so later template
@@ -481,6 +613,14 @@ export class BookingsService {
                     totalAmount,
                     // #695: immutable pricing-selection snapshot.
                     pricingSelection: pricing ? (pricing.snapshot as unknown as Prisma.InputJsonValue) : undefined,
+                    // #778: immutable promo snapshot — the code, its
+                    // terms, and the reconciled undiscounted/discount/
+                    // discounted totals at booking time. totalAmount
+                    // above IS the discounted total.
+                    promoCodeId: promo ? promo.promoCodeId : null,
+                    promoCode: promo ? promo.code : null,
+                    discountAmount: promo ? promo.discountAmount : new Prisma.Decimal(0),
+                    promoSnapshot: promo ? (promo.snapshot as unknown as Prisma.InputJsonValue) : undefined,
                     // Batch F snapshots: private nature (#694), the
                     // pay-later hold deadline (#696), pay-on-arrival
                     // (#697) and the chosen pickup point (#701).
@@ -541,14 +681,38 @@ export class BookingsService {
                 },
             });
 
+            // #778: claim the promo redemption atomically inside the
+            // booking transaction — the conditional increment is the
+            // arbiter under concurrency (active + under the usage cap,
+            // re-checked here; window/agency were validated at
+            // resolution). Losing the race rolls the whole booking
+            // back: no seats move, no booking persists.
+            if (promo) {
+                const claimed = await tx.promoCode.updateMany({
+                    where: {
+                        id: promo.promoCodeId,
+                        agencyId: sessionWithInfo.template.agencyId,
+                        isActive: true,
+                        ...(promo.maxUses != null ? { usedCount: { lt: promo.maxUses } } : {}),
+                    },
+                    data: { usedCount: { increment: 1 } },
+                });
+                if (claimed.count === 0) {
+                    throw new BadRequestException('This promo code is not valid for this booking');
+                }
+            }
+
             // #369: snapshot the staged payment plan (deposit/balance split,
             // minimum, deadline) for minimum-group sessions.
             if (staged) {
                 // #695: the deposit cap applies to the FINAL total
                 // (variant + add-ons included): a cheaper variant can
                 // never leave the per-seat deposit above 30% of what
-                // the traveller actually owes.
-                const depositCap = pricing
+                // the traveller actually owes. #778: same rule when a
+                // promo discounted the total — the cap is computed on
+                // the discounted total, so the deposit never exceeds
+                // 30% of what the traveller actually owes.
+                const depositCap = pricing || promo
                     ? totalAmount.mul(MAX_GROUP_DEPOSIT_PERCENT).div(100).toDecimalPlaces(2)
                     : null;
                 const plan = await this.stagedPaymentsService.createPlanInTransaction(tx, {

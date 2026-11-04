@@ -498,6 +498,19 @@ export interface TripAddOn {
     sortOrder: number;
 }
 
+/** #778: the booking's immutable agency-funded promo snapshot.
+ * totalAmount on the booking is the DISCOUNTED total; discountAmount
+ * is what the agency funded. undiscountedTotal = discount + total. */
+export interface PromoSnapshot {
+    code: string;
+    discountType: 'PERCENT' | 'FIXED_MAD';
+    discountValue: string;
+    undiscountedTotal: string;
+    discountAmount: string;
+    totalAmount: string;
+    currency: string;
+}
+
 /** #695: the booking's immutable pricing-selection snapshot. */
 export interface PricingSelectionSnapshot {
     variant: {
@@ -894,6 +907,11 @@ export interface BookingDetails extends Booking {
     /** #695: pricing-selection snapshot (variant + add-ons with agency
      * prices at booking time and the reconciled breakdown). */
     pricingSelection?: PricingSelectionSnapshot | null;
+    /** #778: agency-funded promo applied at booking (code text,
+     * funded discount amount, full snapshot); null/absent when none. */
+    promoCode?: string | null;
+    discountAmount?: string;
+    promoSnapshot?: PromoSnapshot | null;
     /** Batch F: #694 private session snapshot. */
     isPrivateSession?: boolean;
     /** Batch F: #696 pay-later hold deadline (ISO) or null. */

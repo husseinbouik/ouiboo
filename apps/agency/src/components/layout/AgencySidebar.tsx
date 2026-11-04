@@ -20,6 +20,7 @@ import {
   Settings,
   ShieldCheck,
   Star,
+  TicketPercent,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -46,6 +47,8 @@ export function AgencySidebar() {
     { name: t('sidebar.myTrips'), href: '/dashboard/trips', icon: Map },
     { name: t('sidebar.bookings'), href: '/dashboard/bookings', icon: Calendar },
     { name: t('sidebar.quotes'), href: '/dashboard/quotes', icon: FileText },
+    // #778: agency-funded promo codes (agency funds 100% of the discount).
+    { name: t('sidebar.promoCodes'), href: '/dashboard/promo-codes', icon: TicketPercent },
     { name: t('batchF.customRequests'), href: '/dashboard/custom-requests', icon: Sparkles },
     { name: t('sidebar.reviews'), href: '/dashboard/reviews', icon: Star },
     { name: t('sidebar.wallet'), href: '/dashboard/wallet', icon: CreditCard },

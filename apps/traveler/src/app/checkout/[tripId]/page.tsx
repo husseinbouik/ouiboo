@@ -2,14 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthContext';
 import { type BookingDetails } from '@ouiboo/types';
 import { Card, CardContent } from '@ouiboo/ui';
 import { CheckoutSkeleton } from '@/components/Skeletons';
 import { useTranslation } from 'react-i18next';
-import { computePricingTotal, getStagedAmounts, isStagedSession, type CheckoutTrip, type PricingSelectionState } from '@/components/checkout/checkout-types';
+import { computePricingTotal, getStagedAmounts, isStagedSession, type CheckoutTrip, type PricingSelectionState, type PromoPreview } from '@/components/checkout/checkout-types';
+import { CheckoutPromoCode } from '@/components/checkout/CheckoutPromoCode';
 import { CheckoutPricingOptions } from '@/components/checkout/CheckoutPricingOptions';
 import { CheckoutHeader } from '@/components/checkout/CheckoutHeader';
 import { CheckoutGuestForm } from '@/components/checkout/CheckoutGuestForm';
@@ -43,6 +44,11 @@ export default function CheckoutPage() {
   // #695: variant + add-on selection (ids/quantities only; the API
   // recomputes all amounts from the agency's stored prices).
   const [pricingSelection, setPricingSelection] = useState<PricingSelectionState>({ variantId: null, addOns: {} });
+  // #778: applied agency-funded promo (the API preview priced it; the
+  // booking re-validates it). Changing the session/guests/selection
+  // clears it — the traveller re-applies against the new total.
+  const [appliedPromo, setAppliedPromo] = useState<PromoPreview | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
   const retryBookingId = searchParams.get('retryBooking');
   // Batch F elections from the trip page (#694/#696/#697/#701).
   const payLaterElection = searchParams.get('payLater') === '1';
@@ -101,11 +107,14 @@ export default function CheckoutPage() {
   const pricingTotals = trip ? computePricingTotal(trip, sessionPrice, guestCount, pricingSelection) : null;
   // #694: a private session's price is per-group — never × guests.
   const isPrivateCheckout = (selectedSession as { sessionKind?: string } | undefined)?.sessionKind === 'PRIVATE';
-  const totalPrice = pricingTotals?.hasSelection
+  const undiscountedTotalPrice = pricingTotals?.hasSelection
     ? pricingTotals.total
     : isPrivateCheckout
       ? sessionPrice
       : sessionPrice * guestCount;
+  // #778: with an applied promo the displayed total is the preview's
+  // discounted total (the booking recomputes it authoritatively).
+  const totalPrice = appliedPromo ? Number(appliedPromo.totalAmount) : undiscountedTotalPrice;
   // #369: staged sessions collect only the deposit at checkout; the
   // balance is requested after the trip is confirmed.
   // #694: private sessions never use the staged min-group display.
@@ -113,15 +122,63 @@ export default function CheckoutPage() {
   const baseStagedAmounts = stagedSession ? getStagedAmounts(stagedSession, guestCount) : null;
   // #695: the deposit cap (30%) applies to the FINAL total when a
   // pricing selection repriced the booking — same rule as the API.
+  // #778: same cap on the DISCOUNTED total; the preview's staged split
+  // (computed server-side with that cap) wins when present.
   const stagedAmounts = baseStagedAmounts
-    ? pricingTotals?.hasSelection
+    ? appliedPromo?.staged
       ? {
-          depositDue: Math.min(baseStagedAmounts.depositDue, Math.floor(totalPrice * 0.3 * 100) / 100),
-          balanceDue: totalPrice - Math.min(baseStagedAmounts.depositDue, Math.floor(totalPrice * 0.3 * 100) / 100),
+          depositDue: Number(appliedPromo.staged.depositAmount),
+          balanceDue: Number(appliedPromo.staged.balanceAmount),
           total: totalPrice,
         }
-      : baseStagedAmounts
+      : pricingTotals?.hasSelection || appliedPromo
+        ? {
+            depositDue: Math.min(baseStagedAmounts.depositDue, Math.floor(totalPrice * 0.3 * 100) / 100),
+            balanceDue: totalPrice - Math.min(baseStagedAmounts.depositDue, Math.floor(totalPrice * 0.3 * 100) / 100),
+            total: totalPrice,
+          }
+        : baseStagedAmounts
     : null;
+
+  // #778: a promo priced for one session/party/selection is meaningless
+  // for another — clear it whenever any of those change.
+  const promoScopeKey = `${selectedSessionId ?? ''}|${guestCount}|${pricingSelection.variantId ?? ''}|${JSON.stringify(pricingSelection.addOns)}`;
+  const [promoScopeSeen, setPromoScopeSeen] = useState(promoScopeKey);
+  if (promoScopeSeen !== promoScopeKey) {
+    setPromoScopeSeen(promoScopeKey);
+    setAppliedPromo(null);
+    setPromoError(null);
+  }
+
+  const promoPreviewMutation = useMutation<PromoPreview, Error, string>({
+    mutationFn: async (code: string) => {
+      if (!selectedSessionId) {
+        throw new Error(t('checkout.errors.sessionRequired'));
+      }
+      const response = await apiClient.post('/bookings/promo-preview', {
+        sessionId: selectedSessionId,
+        guestsCount: guestCount,
+        promoCode: code,
+        ...(pricingSelection.variantId ? { variantId: pricingSelection.variantId } : {}),
+        ...(Object.entries(pricingSelection.addOns).some(([, q]) => q > 0)
+          ? {
+              addOns: Object.entries(pricingSelection.addOns)
+                .filter(([, q]) => q > 0)
+                .map(([addOnId, quantity]) => ({ addOnId, quantity })),
+            }
+          : {}),
+      });
+      return response.data as PromoPreview;
+    },
+    onSuccess: (data) => {
+      setPromoError(null);
+      setAppliedPromo(data);
+    },
+    onError: () => {
+      setAppliedPromo(null);
+      setPromoError(t('checkout.promo.invalid'));
+    },
+  });
   const selectedCurrency = selectedSession?.currency;
   const bankDetails = trip?.agency?.bankDetails?.trim() ?? '';
   const hasBankDetails = bankDetails.length > 0;
@@ -143,6 +200,7 @@ export default function CheckoutPage() {
     payLater: payLaterElection,
     payOnArrival: payOnArrivalElection,
     pickupPointId: pickupFromQuery,
+    promoCode: appliedPromo?.code ?? null,
   });
 
   const clearProof = () => {
@@ -214,6 +272,13 @@ export default function CheckoutPage() {
                   onChange={setPricingSelection}
                   language={i18n.language}
                 />
+                <CheckoutPromoCode
+                  appliedPromo={appliedPromo}
+                  isApplying={promoPreviewMutation.isPending}
+                  error={promoError}
+                  onApply={(code) => promoPreviewMutation.mutate(code)}
+                  onRemove={() => { setAppliedPromo(null); setPromoError(null); }}
+                />
                 {payOnArrivalElection ? (
                   <div className="rounded-2xl border border-sky-200 bg-sky-50 dark:bg-sky-500/10 p-5 text-sm" data-testid="checkout-pay-on-arrival">
                     <p className="font-bold text-foreground">{t('batchF.payOnArrivalBadge')}</p>
@@ -275,6 +340,11 @@ export default function CheckoutPage() {
               canSubmit={canSubmit}
               onSubmit={() => createBookingMutation.mutate()}
               stagedAmounts={stagedAmounts}
+              promoInfo={appliedPromo ? {
+                code: appliedPromo.code,
+                discountAmount: Number(appliedPromo.discountAmount),
+                undiscountedTotal: Number(appliedPromo.undiscountedTotal),
+              } : null}
             />
           </div>
         </div>
