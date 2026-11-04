@@ -43,6 +43,8 @@ describe('AdminController agency verification (#415)', () => {
 
     const completeInsurance = {
         id: 'agency-1',
+        legalName: 'Atlas Adventures SARL',
+        companyName: 'Atlas Adventures',
         insuranceInsurer: 'AXA Assurance Maroc',
         insurancePolicyNumber: 'RC-2026-00421',
         insuranceInsuredName: 'Atlas Adventures SARL',
@@ -180,6 +182,75 @@ describe('AdminController agency verification (#415)', () => {
             expect(auditLogService.log).toHaveBeenCalledWith(expect.objectContaining({
                 action: 'AGENCY_INSURANCE_VERIFIED',
                 metadata: expect.objectContaining({ insurancePolicyNumber: 'RC-2026-00421' }),
+            }));
+        });
+
+        it('#628: verifies when the insured name matches the legal name (case/space-insensitive) and audits the match', async () => {
+            const { auditLogService, controller } = createController({
+                ...completeInsurance,
+                insuranceInsuredName: '  atlas   adventures SARL ',
+            });
+
+            await controller.verifyAgencyInsurance(req, 'agency-1', { status: 'VERIFIED' });
+
+            expect(auditLogService.log).toHaveBeenCalledWith(expect.objectContaining({
+                action: 'AGENCY_INSURANCE_VERIFIED',
+                metadata: expect.objectContaining({ insuredNameMatches: true, overrideReason: null }),
+            }));
+        });
+
+        it('#628: verifies when the insured name matches the trade name (companyName fallback)', async () => {
+            const { controller } = createController({
+                ...completeInsurance,
+                legalName: null,
+                insuranceInsuredName: 'Atlas Adventures',
+            });
+
+            await expect(controller.verifyAgencyInsurance(req, 'agency-1', { status: 'VERIFIED' }))
+                .resolves.toMatchObject({ insuranceStatus: 'VERIFIED' });
+        });
+
+        it('#628: blocks verification when the insured name matches neither legal nor trade name', async () => {
+            const { db, controller } = createController({
+                ...completeInsurance,
+                insuranceInsuredName: 'Someone Else SARL',
+            });
+
+            await expect(controller.verifyAgencyInsurance(req, 'agency-1', { status: 'VERIFIED' }))
+                .rejects.toThrow(/insured name does not match the agency legal name/i);
+            expect(db.agencyProfile.update).not.toHaveBeenCalled();
+        });
+
+        it('#628: a blank override reason does not unblock a mismatch', async () => {
+            const { controller } = createController({
+                ...completeInsurance,
+                insuranceInsuredName: 'Someone Else SARL',
+            });
+
+            await expect(controller.verifyAgencyInsurance(req, 'agency-1', { status: 'VERIFIED', overrideReason: '   ' }))
+                .rejects.toThrow(/insured name does not match/i);
+        });
+
+        it('#628: an audited override verifies despite a mismatch and records the reason', async () => {
+            const { db, auditLogService, controller } = createController({
+                ...completeInsurance,
+                insuranceInsuredName: 'Parent Group Holding SARL',
+            });
+
+            await controller.verifyAgencyInsurance(req, 'agency-1', {
+                status: 'VERIFIED',
+                overrideReason: 'Group RC policy held by the parent company; certificate sighted',
+            });
+
+            const update = db.agencyProfile.update.mock.calls[0][0];
+            expect(update.data.insuranceStatus).toBe('VERIFIED');
+            expect(auditLogService.log).toHaveBeenCalledWith(expect.objectContaining({
+                action: 'AGENCY_INSURANCE_VERIFIED',
+                metadata: expect.objectContaining({
+                    insuranceInsuredName: 'Parent Group Holding SARL',
+                    insuredNameMatches: false,
+                    overrideReason: 'Group RC policy held by the parent company; certificate sighted',
+                }),
             }));
         });
 
