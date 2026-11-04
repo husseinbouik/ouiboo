@@ -3,7 +3,7 @@ import { IStorageProvider } from '../interfaces/storage-provider.interface';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
-import { ALLOWED_MIME_TYPES, AllowedMimeType, MAX_UPLOAD_SIZE_BYTES } from '../upload.constants';
+import { ALLOWED_MIME_TYPES, AllowedMimeType, MAX_REVIEW_VIDEO_SIZE_BYTES, MAX_UPLOAD_SIZE_BYTES, REVIEW_VIDEO_MIME_TYPES } from '../upload.constants';
 
 @Injectable()
 export class LocalStorageProvider implements IStorageProvider {
@@ -27,11 +27,17 @@ export class LocalStorageProvider implements IStorageProvider {
 
     async upload(file: Express.Multer.File, folder: string): Promise<{ url: string; key: string }> {
         if (!this.allowedMimeTypes.includes(file.mimetype as AllowedMimeType)) {
-            throw new BadRequestException('Invalid file type. Allowed: JPG, PNG, WEBP, GIF, PDF');
+            throw new BadRequestException('Invalid file type. Allowed: JPG, PNG, WEBP, GIF, PDF, MP4, WebM, MOV (review videos only)');
         }
 
-        if (file.size > this.maxFileSize) {
-            throw new BadRequestException('File too large. Max size: 5MB');
+        // #783: review videos (mime-gated to the review-video intent by
+        // the controller) get the 50MB video cap; everything else 5MB.
+        const isVideo = (REVIEW_VIDEO_MIME_TYPES as readonly string[]).includes(file.mimetype);
+        const maxSize = isVideo ? MAX_REVIEW_VIDEO_SIZE_BYTES : this.maxFileSize;
+        if (file.size > maxSize) {
+            throw new BadRequestException(
+                isVideo ? 'Video too large. Max size: 50MB' : 'File too large. Max size: 5MB',
+            );
         }
 
         const extension = this.getExtensionForMimeType(file.mimetype);
@@ -96,6 +102,12 @@ export class LocalStorageProvider implements IStorageProvider {
                 return 'image/gif';
             case '.pdf':
                 return 'application/pdf';
+            case '.mp4':
+                return 'video/mp4';
+            case '.webm':
+                return 'video/webm';
+            case '.mov':
+                return 'video/quicktime';
             default:
                 return 'application/octet-stream';
         }
@@ -145,6 +157,12 @@ export class LocalStorageProvider implements IStorageProvider {
                 return '.gif';
             case 'application/pdf':
                 return '.pdf';
+            case 'video/mp4':
+                return '.mp4';
+            case 'video/webm':
+                return '.webm';
+            case 'video/quicktime':
+                return '.mov';
             default:
                 return '';
         }

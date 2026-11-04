@@ -1,12 +1,14 @@
 import type { Metadata } from 'next'
 import type { SupportedLanguage } from '@ouiboo/i18n/server'
 import {
+  AGENCES_COPY,
   LANDING_URL,
   OG_LOCALES,
   SITE_COPY,
   SITE_NAME,
   isLandingIndexable,
   landingOgImageUrl,
+  localizedAgencesUrl,
   localizedLandingUrl,
 } from './site'
 
@@ -65,5 +67,59 @@ export function buildLandingMetadata(locale: SupportedLanguage): Metadata {
       images: [landingOgImageUrl(locale)],
     },
     robots: indexable ? { index: true, follow: true } : { index: false, follow: false },
+  }
+}
+
+/**
+ * /agences metadata (#749, Council S11 §4 binding conditions): unlike
+ * the homepage — which follows the global beta indexing gate — the
+ * agency page is `index, follow` in all three locales from day one
+ * (it is the forwardable, findable artefact of the agency funnel).
+ * Canonical self-references per locale, hreflang en/fr/ar plus
+ * `x-default` -> FR, and the title is absolute (the S11 FR pattern
+ * carries its own closing segment, so the `%s | Ouiboo` template must
+ * not append a second suffix).
+ */
+export function buildAgencesMetadata(locale: SupportedLanguage): Metadata {
+  const copy = AGENCES_COPY[locale]
+  const ogLocale = SITE_COPY[locale].ogLocale
+  return {
+    metadataBase: new URL(LANDING_URL),
+    applicationName: SITE_NAME,
+    title: { absolute: copy.title },
+    description: copy.description,
+    alternates: {
+      canonical: localizedAgencesUrl(locale),
+      languages: {
+        en: localizedAgencesUrl('en'),
+        fr: localizedAgencesUrl('fr'),
+        ar: localizedAgencesUrl('ar'),
+        'x-default': localizedAgencesUrl('fr'),
+      },
+    },
+    openGraph: {
+      type: 'website',
+      siteName: SITE_NAME,
+      title: copy.title,
+      description: copy.description,
+      url: localizedAgencesUrl(locale),
+      locale: ogLocale,
+      alternateLocale: OG_LOCALES.filter((value) => value !== ogLocale),
+      images: [
+        {
+          url: landingOgImageUrl(locale),
+          width: 1200,
+          height: 630,
+          alt: copy.title,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: copy.title,
+      description: copy.description,
+      images: [landingOgImageUrl(locale)],
+    },
+    robots: { index: true, follow: true },
   }
 }

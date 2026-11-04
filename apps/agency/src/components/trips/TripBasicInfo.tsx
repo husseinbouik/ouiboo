@@ -112,6 +112,71 @@ export function TripBasicInfo({ t, form }: Props) {
               <Input {...register('endLocation')} placeholder={t('trips.create.endLocationPlaceholder')} title={t('trips.create.endLocationPlaceholder')} className="h-12 text-ellipsis" />
             </div>
           </div>
+          {/* #675: normalised destination from the beta-cluster
+              configuration. Empty = derived from the starting location
+              by the API on save. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2 min-w-0">
+              <label className="text-sm font-semibold text-foreground">{t('trips.create.destination')}</label>
+              <select
+                {...register('destinationSlug', {
+                  setValueAs: (value) => (value ? value : undefined),
+                })}
+                className="w-full h-12 px-4 bg-background border border-border rounded-xl text-sm focus:outline-none text-foreground"
+                data-testid="trip-destination-select"
+              >
+                <option value="">{t('trips.create.destinationAuto')}</option>
+                <option value="tangier">{t('trips.create.destinationNames.tangier')}</option>
+                <option value="tetouan">{t('trips.create.destinationNames.tetouan')}</option>
+                <option value="chefchaouen">{t('trips.create.destinationNames.chefchaouen')}</option>
+              </select>
+            </div>
+          </div>
+
+          {/* #676: structured meeting point. Travellers see the AREA
+              (starting location) before booking; the exact address and
+              maps link appear on the booking view only. Publishing
+              requires an address or pickup. */}
+          <div className="space-y-4 rounded-xl border border-border p-4">
+            <div>
+              <p className="text-sm font-semibold text-foreground">{t('trips.create.meetingPointTitle')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('trips.create.meetingPointSubtitle')}</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground">{t('trips.create.meetingAddress')}</label>
+                <Input
+                  {...register('meetingPoint.address', {
+                    setValueAs: (value) => (typeof value === 'string' && value.trim() ? value : undefined),
+                  })}
+                  placeholder={t('trips.create.meetingAddressPlaceholder')}
+                  className="h-12"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground">{t('trips.create.meetingMapsUrl')}</label>
+                <Input
+                  {...register('meetingPoint.mapsUrl', {
+                    setValueAs: (value) => (typeof value === 'string' && value.trim() ? value.trim() : undefined),
+                  })}
+                  placeholder={t('trips.create.meetingMapsUrlPlaceholder')}
+                  className="h-12"
+                  dir="ltr"
+                />
+                {(errors.meetingPoint as { mapsUrl?: { message?: string } } | undefined)?.mapsUrl?.message && (
+                  <p className="text-danger text-xs font-medium">{(errors.meetingPoint as { mapsUrl?: { message?: string } }).mapsUrl?.message}</p>
+                )}
+              </div>
+            </div>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" {...register('meetingPoint.pickupAvailable')} className="h-4 w-4 text-primary bg-background border-border focus:ring-primary" />
+              <span className="text-sm font-medium text-foreground">{t('trips.create.meetingPickup')}</span>
+            </label>
+            {(errors.meetingPoint as { message?: string } | undefined)?.message && (
+              <p className="text-danger text-xs font-medium">{(errors.meetingPoint as { message?: string }).message}</p>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground">{t('trips.create.days')}</label>

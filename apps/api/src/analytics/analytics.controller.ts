@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { BetaMetricsService } from './beta-metrics.service';
+import { FunnelMetricsService } from './funnel-metrics.service';
 import { LeakageDetectionService } from './leakage-detection.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -90,6 +91,7 @@ export class AdminAnalyticsController {
     private analyticsService: AnalyticsService,
     private betaMetricsService: BetaMetricsService,
     private leakageDetectionService: LeakageDetectionService,
+    private funnelMetricsService: FunnelMetricsService,
   ) {}
 
   /**
@@ -111,6 +113,24 @@ export class AdminAnalyticsController {
     @Query('to') to?: string,
   ) {
     return this.betaMetricsService.getBetaMetrics(
+      from ? new Date(from) : undefined,
+      to ? new Date(to) : undefined,
+    );
+  }
+
+  /**
+   * Traveller funnel readout (admin only) — #756. Aggregate server
+   * facts only (searches → bookings → proof → bank confirmation →
+   * confirmed/completed/cancelled + refund outcomes); the taxonomy and
+   * privacy contract live in docs/funnel-measurement.md. Optional
+   * `from`/`to` ISO dates; defaults to the last 30 days.
+   */
+  @Get('funnel')
+  async getFunnelMetrics(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.funnelMetricsService.getFunnelMetrics(
       from ? new Date(from) : undefined,
       to ? new Date(to) : undefined,
     );

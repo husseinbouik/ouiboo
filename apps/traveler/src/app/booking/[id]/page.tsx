@@ -21,6 +21,7 @@ import {
 import { apiClient } from '@/lib/api-client';
 import { CancellationScaleCard } from '@/components/CancellationScaleCard';
 import SellerIdentity from '@/components/SellerIdentity';
+import MessageAgencyButton from '@/components/MessageAgencyButton';
 import {
   canRetryTravelerPayment,
   canCancelTravelerBooking,
@@ -28,11 +29,56 @@ import {
   getTravelerPaymentStatusMeta,
   getTravelerProofStatus,
   shouldShowUploadAction,
+  shouldShowTripContacts,
   formatCurrency,
+  normalizeCurrency,
+  toPaginatedList,
 } from '@ouiboo/utils';
 import { ReviewForm } from '@/components/ReviewForm';
 import { useTranslation } from 'react-i18next';
 import { TripContactsCard } from '@/components/TripContactsCard';
+import { BookingPassCard } from '@/components/BookingPassCard';
+import { AttendanceCard } from '@/components/AttendanceCard';
+import { RefundCaseCard, type TravelerRefundCaseView } from '@/components/RefundCaseCard';
+import SellerBlock from '@/components/SellerBlock';
+import PlatformIdentity from '@/components/PlatformIdentity';
+import VerificationRecord from '@/components/VerificationRecord';
+import { useDisplayAmountConverter } from '@/lib/display-currency';
+import { localizeLocationSuffix } from '@/lib/localized-location';
+
+/**
+ * #663 (checkout item): the booking confirmation rendered the
+ * authoritative currency only, while checkout showed the traveller's
+ * display currency — an unexplained currency switch mid-journey. The
+ * total now dual-displays: the authoritative (charged) amount first,
+ * the display-currency figure beside it as a reference whenever the
+ * two differ. The booking's own currency stays the governing one.
+ */
+function BookingTotalWithDisplay({
+  amount,
+  currency,
+  language,
+}: {
+  amount: number | string;
+  currency?: string | null;
+  language: string;
+}) {
+  const convert = useDisplayAmountConverter(currency);
+  const numeric = Number(amount);
+  const authoritative = formatCurrency(numeric, currency, language);
+  const converted = convert(numeric);
+  if (!converted || converted.currency === normalizeCurrency(currency)) {
+    return <>{authoritative}</>;
+  }
+  return (
+    <>
+      {authoritative}{' '}
+      <span className="font-medium text-muted-foreground">
+        ({formatCurrency(converted.amount, converted.currency, language)})
+      </span>
+    </>
+  );
+}
 
 export default function BookingDetailsPage() {
   const { t, i18n } = useTranslation();
@@ -59,6 +105,25 @@ export default function BookingDetailsPage() {
       return response.data;
     },
   });
+
+  // #699 (Council S6): this booking's refund case, if any — rendered
+  // end-to-end by RefundCaseCard below (agency = obligor, Ouiboo =
+  // tracking). Same query key as the bookings list, so both surfaces
+  // share one fetch. The shared cache entry is the RAW paginated
+  // payload (the bookings list's shape): both surfaces must cache
+  // the same shape and normalize at read time. Caching an unwrapped
+  // array here instead made the list-cached object crash this page
+  // ("find is not a function") on the list -> detail navigation
+  // (Batch D witness fix).
+  const { data: rawRefundCases } = useQuery<unknown>({
+    enabled: Boolean(bookingId),
+    queryKey: ['my-refunds'],
+    queryFn: async () => {
+      const response = await apiClient.get('/refunds/mine', { params: { limit: 100 } });
+      return response.data;
+    },
+  });
+  const { data: myRefundCases } = toPaginatedList<TravelerRefundCaseView>(rawRefundCases);
 
   const uploadProofMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -202,8 +267,16 @@ export default function BookingDetailsPage() {
   const formatDate = (value: string) =>
     new Intl.DateTimeFormat(i18n.language || 'en', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value));
   const showUploadAction = shouldShowUploadAction(booking.status, Boolean(booking.paymentProof));
+  // #680: when the Emergency Card renders, the meeting point rides on
+  // it — the standalone block below remains only for booking states
+  // the card does not cover (cancelled / completed).
+  const showContactsCard = shouldShowTripContacts(booking.status);
   const showRetryPayment = canRetryTravelerPayment(booking);
   const canReviewBooking = booking.status === BookingStatus.Completed && !booking.review;
+  const refundCaseForBooking = myRefundCases?.find((refundCase) => refundCase.bookingId === booking.id);
+  const showAttendanceCard = Boolean(
+    booking.attendance || booking.passCheckInAt || booking.status === BookingStatus.Completed || booking.status === BookingStatus.NoShow,
+  );
   const retryHref = `/checkout/${booking.session.template.id}?session=${booking.session.id}&guests=${booking.guestsCount}&retryBooking=${booking.id}`;
 
   return (
@@ -260,7 +333,7 @@ export default function BookingDetailsPage() {
                     <div className="flex items-center gap-2 text-muted-foreground text-xs font-black uppercase tracking-widest">
                       <MapPin className="h-4 w-4 text-blue-500" /> {t('bookingDetail.location')}
                     </div>
-                    <p className="mt-3 text-sm font-semibold text-foreground">{booking.session.template.startLocation}</p>
+                    <p className="mt-3 text-sm font-semibold text-foreground">{localizeLocationSuffix(booking.session.template.startLocation, t('countries.morocco'))}</p>
                   </div>
                   <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
                     <div className="flex items-center gap-2 text-muted-foreground text-xs font-black uppercase tracking-widest">
@@ -276,7 +349,57 @@ export default function BookingDetailsPage() {
                   licence type + number, issue date, issuing authority,
                   and the #413 what+when checks. Legacy records missing
                   the issue data show the honest pending line. */}
+              {/* #676: the booking view is where the EXACT meeting
+                  point appears — address + map link (public trip
+                  pages show the area only), plus the pickup note. */}
+              {booking.session.template.meetingPoint && !showContactsCard && (
+                <div className="rounded-2xl border border-border/60 bg-muted/20 p-5" data-testid="booking-meeting-point">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    {t('bookingDetail.meetingPoint')}
+                  </p>
+                  <div className="mt-3 space-y-2 text-sm">
+                    {booking.session.template.meetingPoint.address && (
+                      <p className="font-semibold text-foreground">{booking.session.template.meetingPoint.address}</p>
+                    )}
+                    {booking.session.template.meetingPoint.pickupAvailable && (
+                      <p className="text-muted-foreground">{t('bookingDetail.meetingPickup')}</p>
+                    )}
+                    {booking.session.template.meetingPoint.mapsUrl && (
+                      <a
+                        href={booking.session.template.meetingPoint.mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 font-semibold text-sunset-orange hover:underline"
+                      >
+                        <MapPin className="h-4 w-4" /> {t('bookingDetail.viewOnMap')}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <SellerIdentity agency={booking.session.template.agency} />
+
+              {/* #729: contact path from the booking view — questions,
+                  payment problems and changes land in the pair
+                  conversation with this booking's agency. (Restored in
+                  W12 after PR #826's squash dropped it — see #729.) */}
+              <div className="mt-4">
+                <MessageAgencyButton
+                  agencyId={booking.session.template.agency?.id}
+                  agencyName={booking.session.template.agency?.companyName}
+                />
+              </div>
+
+              {/* #700 (Council S6): the Art. 29(2) seller block repeated
+                  on the durable booking confirmation. */}
+              <SellerBlock agency={booking.session.template.agency} showRecordLink />
+
+              {/* #627 (Council S4): the platform identity block on the
+                  durable confirmation — who Ouiboo is, and how to
+                  reach it (support email / WhatsApp escalation /
+                  complaints path). */}
+              <PlatformIdentity />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="rounded-2xl border border-border/60 bg-muted/20 p-5">
@@ -292,7 +415,7 @@ export default function BookingDetailsPage() {
                 <div className="rounded-2xl border border-border/60 bg-muted/20 p-5">
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('bookingDetail.paymentSnapshot')}</p>
                   <div className="mt-4 space-y-2 text-sm">
-                    <p><span className="font-black text-foreground">{t('bookingDetail.total')}:</span> {formatCurrency(booking.totalAmount, booking.currency, i18n.language)}</p>
+                    <p><span className="font-black text-foreground">{t('bookingDetail.total')}:</span> <BookingTotalWithDisplay amount={booking.totalAmount} currency={booking.currency} language={i18n.language} /></p>
                     <p><span className="font-black text-foreground">{t('bookingDetail.method')}:</span> {paymentMethodLabel}</p>
                     <p><span className="font-black text-foreground">{t('bookingDetail.proof')}:</span> {proofLabel}</p>
                     {booking.refundStatus && (
@@ -380,6 +503,21 @@ export default function BookingDetailsPage() {
             contact first, OuiBoo escalation during the trip, normal
             support (48h) for everything else. */}
         <TripContactsCard booking={booking} />
+
+        {/* #689 (Council S6): the Booking Pass — this page is the
+            receipt; the pass issues on the agency's bank confirmation
+            and unlocks the exact meeting point + QR check-in. */}
+        <BookingPassCard booking={booking} />
+
+        {/* #688: the agency's Public Verification Record, reachable
+            from the booking/receipt surface too. */}
+        <VerificationRecord agency={booking.session.template.agency} />
+
+        {/* #693: attendance transparency + dispute path. */}
+        {showAttendanceCard && <AttendanceCard booking={booking} />}
+
+        {/* #699: the traveller's end-to-end refund case view. */}
+        {refundCaseForBooking && <RefundCaseCard refundCase={refundCaseForBooking} />}
 
 
         {/* #417 (Council P0-11): the cancellation scale this booking was

@@ -233,6 +233,13 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 licenceVerified: true,
                 licenceIssuedAt: null,
                 licenceIssuingAuthority: null,
+                // #627/#700: the Art. 29(2) completion fields ride the
+                // same object — null on this fixture, so the email
+                // omits those lines rather than inventing them.
+                businessAddress: null,
+                businessPhone: null,
+                rc: null,
+                taxId: null,
             }
         );
 
@@ -839,6 +846,13 @@ describe('Booking Lifecycle E2E (booking-lifecycle.e2e-spec)', () => {
                 licenceVerified: true,
                 licenceIssuedAt: null,
                 licenceIssuingAuthority: null,
+                // #627/#700: the Art. 29(2) completion fields ride the
+                // same object — null on this fixture, so the email
+                // omits those lines rather than inventing them.
+                businessAddress: null,
+                businessPhone: null,
+                rc: null,
+                taxId: null,
             }
         );
 

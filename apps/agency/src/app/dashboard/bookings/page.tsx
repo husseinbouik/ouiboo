@@ -10,7 +10,6 @@ import {
 } from '@ouiboo/ui';
 import {
   Search,
-  Download,
   User,
   Calendar,
   Clock,
@@ -32,10 +31,13 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import Link from 'next/link';
 import { PaymentProofReviewModal } from '@/components/PaymentProofReviewModal';
+import { PassRedeemPanel } from '@/components/PassRedeemPanel';
 import { usePaymentProofReview } from '@/components/usePaymentProofReview';
 import { useAttendanceMarking } from '@/components/useAttendanceMarking';
+import { usePayOnArrivalConfirm } from '@/components/usePayOnArrivalConfirm';
 import { getAgencyBookingStatusMeta, getAgencyPaymentStatusMeta, getAgencyProofStatusLabel, formatCurrency, formatLocalDate, canMarkAttendance } from '@ouiboo/utils';
 import { Pagination } from '@ouiboo/ui';
+import { AgencyDataExport } from '@/components/AgencyDataExport';
 import { TableBodySkeleton } from '@/components/Skeletons';
 import { toPaginatedList } from '@ouiboo/utils';
 
@@ -67,6 +69,9 @@ export default function BookingsManager() {
 
   // #434: attendance recording (attended / no-show) per booking.
   const { markAttendance, isMarkingAttendance, attendanceError } = useAttendanceMarking();
+
+  // #697: pay-on-arrival confirmation (agency-committed, pay on site).
+  const { confirmPayOnArrival, isConfirmingPayOnArrival } = usePayOnArrivalConfirm();
 
   const bookings = result?.data ?? [];
   const bookingsPagination = result?.pagination ?? null;
@@ -128,14 +133,15 @@ export default function BookingsManager() {
           <p className="text-muted-foreground mt-1">{t('bookings.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" /> {t('bookings.exportGuestList')}
-          </Button>
+          <AgencyDataExport />
           <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2 border-none">
               <Link href="/dashboard/bookings/schedule"><Calendar className="h-4 w-4" /> {t('bookings.viewSchedule')}</Link>
             </Button>
         </div>
       </div>
+
+      {/* #753: Booking Pass verify + redeem surface. */}
+      <PassRedeemPanel />
 
       {/* Filters & Search */}
       <div className="flex flex-col md:flex-row gap-4 items-center bg-card p-4 rounded-xl shadow-sm border border-border transition-colors">
@@ -235,6 +241,20 @@ export default function BookingsManager() {
                       )}
                     </td>
                     <td className="px-6 py-5 text-end">
+                      {booking.payOnArrival && (booking.status === BookingStatus.Pending || booking.status === BookingStatus.AwaitingValidation) && (
+                        <div className="mb-2 flex flex-col items-end gap-1">
+                          <span className="text-[11px] font-bold text-foreground">{t('batchF.payOnArrivalBooking')}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isConfirmingPayOnArrival}
+                            onClick={() => confirmPayOnArrival(booking.id)}
+                            data-testid="confirm-pay-on-arrival"
+                          >
+                            {t('batchF.confirmPayOnArrival')}
+                          </Button>
+                        </div>
+                      )}
                       {canMarkAttendance(booking) && (
                         <div className="mb-2 flex justify-end gap-2">
                           <Button

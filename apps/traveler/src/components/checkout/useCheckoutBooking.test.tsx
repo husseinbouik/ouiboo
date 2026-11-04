@@ -102,6 +102,22 @@ describe('useCheckoutBooking (CIN removal)', () => {
         expect(pushMock).toHaveBeenCalledWith('/checkout/confirmation?bookingId=booking-1&proof=0');
     });
 
+    it('sends the applied promo code with the booking payload (#778)', async () => {
+        postMock.mockResolvedValue({ data: { id: 'booking-2' } });
+
+        const { result } = renderHook(
+            () => useCheckoutBooking({ ...baseOptions, promoCode: 'SAVE10' }),
+            { wrapper },
+        );
+        await act(async () => {
+            result.current.createBookingMutation.mutate();
+        });
+
+        await waitFor(() => expect(result.current.createBookingMutation.isSuccess).toBe(true));
+        const payload = postMock.mock.calls[0][1];
+        expect(payload.promoCode).toBe('SAVE10');
+    });
+
     it('rejects when the terms were not accepted, without calling the API (B9)', async () => {
         const { result } = renderHook(
             () => useCheckoutBooking({ ...baseOptions, termsAccepted: false }),

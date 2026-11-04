@@ -109,6 +109,25 @@ const en = {
     licence: 'Travel-agent licence: {{type}} {{number}}',
     issued: 'Issued on {{date}} by {{authority}}.',
     detailsPending: 'The licence issue details are being confirmed with the agency.',
+    // #627/#700: the rest of the Art. 29(2) list in the durable
+    // confirmation email — each line renders only when the agency's
+    // record carries the value.
+    address: 'Address: {{address}}',
+    phone: 'Phone: {{phone}}',
+    rc: 'Trade register (RC): {{rc}}',
+    taxId: 'Tax ID (IF): {{taxId}}',
+  },
+  // #627 (Council S4): the platform identity block for the durable
+  // confirmation — who Ouiboo is (a technology platform, never the
+  // seller) and how to reach it. Contact channels render only when
+  // configured; no address is ever hard-coded here.
+  platformIdentity: {
+    heading: 'About Ouiboo',
+    technology:
+      'Ouiboo is a technology platform. Your trip is organised and sold by the agency named above — Ouiboo never sells trips and never holds your money.',
+    support: 'Questions or a complaint? Email Ouiboo support at {{supportEmail}} or contact us from your booking in the app.',
+    supportNoEmail: 'Questions or a complaint? Contact Ouiboo support from your booking in the app.',
+    whatsapp: 'During an active trip, if the agency does not respond, escalate to Ouiboo on WhatsApp: {{phone}}.',
   },
   bookingCancellation: {
     heading: 'Cancellation terms for this booking',
@@ -242,7 +261,7 @@ const en = {
       'Amount to be refunded: {{amount}} {{currency}}. Your payment went directly to {{agencyName}}, so the refund comes from them too — OuiBoo never holds your money.',
     agencyFallback: 'the agency',
     dueStatus:
-      'The agency has until {{dueDate}} to complete your refund, and we chase it for you if it slips. You can follow the refund status any time in your bookings: {{url}}',
+      'The agency has until {{dueDate}} to initiate your refund, and we chase it for you if it slips. You can follow the refund status any time in your bookings: {{url}}',
     status: 'You can follow the refund status any time in your bookings: {{url}}',
     support:
       'Questions? Email OuiBoo support at {{supportEmail}} — we reply within 48 hours. If the refund deadline passes without your money arriving, contact the same address and we will escalate it with the agency.',
@@ -310,6 +329,18 @@ const fr: EmailStrings = {
     licence: 'Licence d’agent de voyages : {{type}} {{number}}',
     issued: 'Délivrée le {{date}} par {{authority}}.',
     detailsPending: 'Les détails de délivrance de la licence sont en cours de confirmation auprès de l’agence.',
+    address: 'Adresse : {{address}}',
+    phone: 'Téléphone : {{phone}}',
+    rc: 'Registre de commerce (RC) : {{rc}}',
+    taxId: 'Identifiant fiscal (IF) : {{taxId}}',
+  },
+  platformIdentity: {
+    heading: 'À propos d’Ouiboo',
+    technology:
+      'Ouiboo est une plateforme technologique. Votre voyage est organisé et vendu par l’agence nommée ci-dessus — Ouiboo ne vend jamais de voyages et ne détient jamais votre argent.',
+    support: 'Une question ou une réclamation ? Écrivez à l’assistance Ouiboo à {{supportEmail}} ou contactez-nous depuis votre réservation dans l’application.',
+    supportNoEmail: 'Une question ou une réclamation ? Contactez l’assistance Ouiboo depuis votre réservation dans l’application.',
+    whatsapp: 'Pendant un voyage en cours, si l’agence ne répond pas, faites remonter le problème à Ouiboo sur WhatsApp : {{phone}}.',
   },
   bookingCancellation: {
     heading: 'Conditions d’annulation de cette réservation',
@@ -439,7 +470,7 @@ const fr: EmailStrings = {
       "Montant à rembourser : {{amount}} {{currency}}. Votre paiement a été effectué directement à {{agencyName}}, le remboursement viendra donc également de sa part — OuiBoo ne détient jamais votre argent.",
     agencyFallback: "l'agence",
     dueStatus:
-      "L'agence a jusqu'au {{dueDate}} pour effectuer votre remboursement, et nous la relançons pour vous en cas de retard. Vous pouvez suivre l'état de votre remboursement à tout moment dans vos réservations : {{url}}",
+      "L'agence a jusqu'au {{dueDate}} pour initier votre remboursement, et nous la relançons pour vous en cas de retard. Vous pouvez suivre l'état de votre remboursement à tout moment dans vos réservations : {{url}}",
     status:
       "Vous pouvez suivre l'état de votre remboursement à tout moment dans vos réservations : {{url}}",
     support:
@@ -501,6 +532,18 @@ const ar: EmailStrings = {
     licence: 'رخصة وكيل الأسفار: {{type}} {{number}}',
     issued: 'صادرة بتاريخ {{date}} عن {{authority}}.',
     detailsPending: 'جارٍ تأكيد تفاصيل إصدار الرخصة مع الوكالة.',
+    address: 'العنوان: {{address}}',
+    phone: 'الهاتف: {{phone}}',
+    rc: 'السجل التجاري (RC): {{rc}}',
+    taxId: 'المعرف الضريبي (IF): {{taxId}}',
+  },
+  platformIdentity: {
+    heading: 'حول Ouiboo',
+    technology:
+      'Ouiboo منصة تقنية. رحلتك منظمة ومباعة من طرف الوكالة المذكورة أعلاه — لا تبيع Ouiboo الرحلات أبداً ولا تحتفظ بأموالك أبداً.',
+    support: 'أسئلة أو شكوى؟ راسل دعم Ouiboo على {{supportEmail}} أو تواصل معنا من حجزك في التطبيق.',
+    supportNoEmail: 'أسئلة أو شكوى؟ تواصل مع دعم Ouiboo من حجزك في التطبيق.',
+    whatsapp: 'أثناء رحلة جارية، إذا لم ترد الوكالة، صعّد الأمر إلى Ouiboo عبر واتساب: {{phone}}.',
   },
   bookingCancellation: {
     heading: 'شروط الإلغاء لهذا الحجز',
@@ -618,7 +661,7 @@ const ar: EmailStrings = {
       'المبلغ المسترد: {{amount}} {{currency}}. تم دفع مبلغك مباشرة إلى {{agencyName}}، لذا سيأتي الاسترداد منها أيضاً — لا تحتفظ OuiBoo بأموالك أبداً.',
     agencyFallback: 'الوكالة',
     dueStatus:
-      'أمام الوكالة مهلة حتى {{dueDate}} لإتمام استردادك، وسنتابع الأمر نيابة عنك إذا تأخر. يمكنك متابعة حالة الاسترداد في أي وقت من حجوزاتك: {{url}}',
+      'أمام الوكالة مهلة حتى {{dueDate}} لبدء استردادك، وسنتابع الأمر نيابة عنك إذا تأخر. يمكنك متابعة حالة الاسترداد في أي وقت من حجوزاتك: {{url}}',
     status: 'يمكنك متابعة حالة الاسترداد في أي وقت من حجوزاتك: {{url}}',
     support:
       'أسئلة؟ راسل دعم OuiBoo على {{supportEmail}} — نرد خلال 48 ساعة. إذا مر الموعد النهائي للاسترداد دون وصول أموالك، تواصل مع نفس العنوان وسنصعّد الأمر مع الوكالة.',

@@ -48,6 +48,9 @@ export function EditSessionModal({
       session.cancellationReason ?? '',
       session.minBookings ?? '',
       session.confirmationDeadline ?? '',
+      session.sessionKind ?? '',
+      session.allowPayLater ? 'paylater' : '',
+      session.payLaterHoldHours ?? '',
     ].join('|');
   }, [session]);
   const [draftState, setDraftState] = useState<{ key: string; value: Partial<AgencyTripSession> }>({
@@ -264,6 +267,51 @@ export function EditSessionModal({
                       <option value={SessionStatus.Full}>{t('editSession.statusFull')}</option>
                       <option value={SessionStatus.Cancelled}>{t('editSession.statusCancelled')}</option>
                     </select>
+                  </div>
+
+                  {/* Batch F: #694 session kind + #696 pay-later hold. */}
+                  <div className="space-y-3 rounded-xl border border-border p-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">{t('batchF.sessionKind')}</Label>
+                      <select
+                        value={formData.sessionKind || 'SHARED'}
+                        onChange={(e) => updateFormData({ ...formData, sessionKind: e.target.value as AgencyTripSession['sessionKind'] })}
+                        className="flex h-10 w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isLoading}
+                        data-testid="session-kind-select"
+                      >
+                        <option value="SHARED">{t('batchF.kindShared')}</option>
+                        <option value="PRIVATE">{t('batchF.kindPrivate')}</option>
+                      </select>
+                      {formData.sessionKind === 'PRIVATE' && (
+                        <p className="text-xs text-muted-foreground">{t('batchF.privateNote')}</p>
+                      )}
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.allowPayLater ?? false}
+                        onChange={(e) => updateFormData({ ...formData, allowPayLater: e.target.checked })}
+                        className="h-4 w-4 text-primary bg-background border-border focus:ring-primary"
+                        disabled={isLoading}
+                      />
+                      <span className="text-sm font-medium text-foreground">{t('batchF.allowPayLater')}</span>
+                    </label>
+                    {formData.allowPayLater && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">{t('batchF.payLaterHoldHours')}</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={336}
+                          value={formData.payLaterHoldHours ?? ''}
+                          onChange={(e) => updateFormData({ ...formData, payLaterHoldHours: parseInt(e.target.value) || undefined })}
+                          className="h-10"
+                          disabled={isLoading}
+                        />
+                        <p className="text-xs text-muted-foreground">{t('batchF.payLaterNote')}</p>
+                      </div>
+                    )}
                   </div>
 
                   {formData.status === SessionStatus.Cancelled && (

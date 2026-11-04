@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { BetaBadge, Logo } from '@ouiboo/ui';
+import { BetaBadge, LogoLockup } from '@ouiboo/ui';
 import { SUPPORT_EMAIL, supportMailto } from '@/lib/support';
 
 /**
@@ -22,10 +22,8 @@ export function Footer() {
     <footer className="bg-background border-t border-border py-10">
       <div className="mx-auto max-w-7xl px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex items-center gap-2">
-          {/* #552 round 3: footer lockup matches the navbar at 40px —
-              at 32px the pin read as a dot here too (witnessed). */}
-          <Logo size={40} />
-          <span className="font-bold text-xl text-deep-blue dark:text-foreground">Ouiboo</span>
+          {/* #794: final lockup, matching the navbar. */}
+          <LogoLockup height={30} tone="auto" />
           <BetaBadge />
         </div>
 

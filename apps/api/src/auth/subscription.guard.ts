@@ -1,6 +1,7 @@
 
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { getBillingConfig } from '../common/billing-config';
 
 @Injectable()
 export class SubscriptionGuard implements CanActivate {
@@ -16,10 +17,25 @@ export class SubscriptionGuard implements CanActivate {
 
         const agency = await this.db.agencyProfile.findUnique({
             where: { userId: user.userId },
-            select: { subscriptionStatus: true, trialEndsAt: true, subscriptionEndsAt: true, cancelAtPeriodEnd: true }
+            select: { subscriptionStatus: true, trialEndsAt: true, subscriptionEndsAt: true, cancelAtPeriodEnd: true, subscriptionTier: true, grandfatheredUntil: true }
         });
 
         if (!agency) return false;
+
+        // #698 (Council S6): billing configuration gates.
+        // (a) Beta-cohort grandfathering: inside the grandfathered
+        //     horizon the agency keeps full access regardless of the
+        //     subscription status/expiry bookkeeping.
+        // (b) The FREE tier is genuinely publishable: an agency on the
+        //     FREE tier passes this guard (no paywall on publishing)
+        //     while the config flag is on (default).
+        const billingConfig = getBillingConfig();
+        if (agency.grandfatheredUntil && agency.grandfatheredUntil > new Date()) {
+            return true;
+        }
+        if (billingConfig.freeTierPublishable && (agency.subscriptionTier ?? 'FREE') === 'FREE') {
+            return true;
+        }
 
         if (agency.subscriptionStatus === 'ACTIVE') {
             const now = new Date();

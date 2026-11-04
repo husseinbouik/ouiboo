@@ -61,6 +61,41 @@ test.describe('traveler launch flow', () => {
     await expect(page.getByText(/booking reference: booking-1/i)).toBeVisible();
   });
 
+  test('traveler homepage hero search navigates to the filtered search page', async ({ page }) => {
+    // #723: the hero is a real form — a configured destination submits
+    // as the destination facet, dates as dateFrom/dateTo, in exactly
+    // the params the search page consumes.
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+    await page.getByLabel(/where to/i).fill('Chefchaouen');
+    await page.getByLabel(/start date/i).fill('2027-05-10');
+    await page.getByLabel(/end date/i).fill('2027-05-12');
+    await page.getByRole('button', { name: /^search$/i }).click();
+
+    await page.waitForURL((url) => (
+      url.pathname === '/search'
+      && url.searchParams.get('destination') === 'chefchaouen'
+      && url.searchParams.get('dateFrom') === '2027-05-10'
+      && url.searchParams.get('dateTo') === '2027-05-12'
+    ));
+    await expect(page.getByRole('heading', { name: /find your next adventure/i })).toBeVisible();
+  });
+
+  test('traveler homepage hero search submits with Enter and stays unfiltered when empty', async ({ page }) => {
+    // #723: keyboard submission works, and an empty hero search goes
+    // to the plain (unfiltered) search page rather than dead-ending.
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+    await page.getByLabel(/where to/i).press('Enter');
+
+    await page.waitForURL((url) => (
+      url.pathname === '/search'
+      && !url.searchParams.get('destination')
+      && !url.searchParams.get('q')
+    ));
+    await expect(page.getByRole('heading', { name: /find your next adventure/i })).toBeVisible();
+  });
+
   test('traveler search uses the corrected discovery contract', async ({ page }) => {
     await page.goto('/search', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: /find your next adventure/i })).toBeVisible();

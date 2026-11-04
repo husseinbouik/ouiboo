@@ -40,7 +40,13 @@ type SettingsFormValues = {
   email: string;
   emergencyContactName: string;
   emergencyContactPhone: string;
+  businessPhone: string;
   name: string;
+  // #691: storefront — about per language + languages (comma separated).
+  aboutFr: string;
+  aboutAr: string;
+  aboutEn: string;
+  languagesCsv: string;
 };
 
 type SaveFeedback = { type: 'success' | 'error'; text: string } | null;
@@ -64,6 +70,13 @@ export default function SettingsPage() {
       // #419: trip emergency contact (departure pack on traveller bookings).
       emergencyContactName: user?.agencyProfile?.emergencyContactName || '',
       emergencyContactPhone: user?.agencyProfile?.emergencyContactPhone || '',
+      // #700 (Council S6): public seller phone for the checkout block.
+      businessPhone: user?.agencyProfile?.businessPhone || '',
+      // #691 (Council S6): storefront about + languages.
+      aboutFr: user?.agencyProfile?.aboutTranslations?.fr || '',
+      aboutAr: user?.agencyProfile?.aboutTranslations?.ar || '',
+      aboutEn: user?.agencyProfile?.aboutTranslations?.en || '',
+      languagesCsv: (user?.agencyProfile?.languages || []).join(', '),
     }
   });
 
@@ -90,7 +103,16 @@ export default function SettingsPage() {
           bankAccountHolderName: data.bankAccountHolderName,
           bankAttestationUrl: data.bankAttestationUrl,
           emergencyContactName: data.emergencyContactName,
-          emergencyContactPhone: data.emergencyContactPhone
+          emergencyContactPhone: data.emergencyContactPhone,
+          businessPhone: data.businessPhone,
+          // #691: storefront about (language-keyed; empty entries are
+          // dropped so a cleared language never renders blank) +
+          // languages the agency works in.
+          aboutTranslations: Object.fromEntries(
+            Object.entries({ fr: data.aboutFr.trim(), ar: data.aboutAr.trim(), en: data.aboutEn.trim() })
+              .filter(([, v]) => v.length > 0)
+          ),
+          languages: data.languagesCsv.split(',').map((v) => v.trim().toLowerCase()).filter(Boolean)
         }),
       ]);
       setFeedback({ type: 'success', text: t('settings.updateSuccess') });
@@ -178,6 +200,23 @@ export default function SettingsPage() {
                   <Label htmlFor="settings-bio">{t('settings.shortBio')}</Label>
                   <Textarea id="settings-bio" {...register('bio')} placeholder={t('settings.bioPlaceholder')} />
                 </div>
+                {/* #691: storefront about, one field per language. */}
+                <div className="space-y-2">
+                  <Label htmlFor="settings-about-fr">{t('settings.storefrontAboutFr')}</Label>
+                  <Textarea id="settings-about-fr" {...register('aboutFr')} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="settings-about-ar">{t('settings.storefrontAboutAr')}</Label>
+                  <Textarea id="settings-about-ar" {...register('aboutAr')} dir="rtl" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="settings-about-en">{t('settings.storefrontAboutEn')}</Label>
+                  <Textarea id="settings-about-en" {...register('aboutEn')} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="settings-languages">{t('settings.storefrontLanguages')}</Label>
+                  <Input id="settings-languages" {...register('languagesCsv')} placeholder="fr, ar, en" />
+                </div>
               </CardContent>
             </Card>
 
@@ -257,6 +296,16 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">{t('settings.emergencyHint')}</p>
+                <div className="space-y-2">
+                  <Label htmlFor="settings-business-phone">{t('settings.businessPhone')}</Label>
+                  <Input
+                    id="settings-business-phone"
+                    type="tel"
+                    {...register('businessPhone')}
+                    placeholder={t('settings.businessPhonePlaceholder')}
+                  />
+                  <p className="text-xs text-muted-foreground">{t('settings.businessPhoneHint')}</p>
+                </div>
               </CardContent>
             </Card>
 

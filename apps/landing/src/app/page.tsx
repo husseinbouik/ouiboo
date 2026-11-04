@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import LandingPage from '../components/LandingPage';
+import { fetchShowcaseCards } from '../lib/showcase';
 import { getInitialLanguage } from '@ouiboo/i18n/server';
 import { buildLandingMetadata } from '../lib/metadata';
 
@@ -15,6 +16,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildLandingMetadata(locale);
 }
 
-export default function Page() {
-  return <LandingPage />;
+export default async function Page() {
+  // #771: live showcase selection — up to 3 trips from distinct
+  // verified agencies, each with its own record dates; null falls
+  // back to the static cards inside LandingPage.
+  const showcaseCards = await fetchShowcaseCards();
+  return <LandingPage showcaseCards={showcaseCards} />;
 }

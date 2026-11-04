@@ -6,31 +6,84 @@ import { X } from 'lucide-react'
 import { cn } from './utils'
 import { Slot } from './Slot'
 
-const Sheet = ({ children, open, onOpenChange }: { 
+interface SheetContextValue {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+const SheetContext = React.createContext<SheetContextValue | null>(null)
+
+const useSheetContext = (component: string): SheetContextValue => {
+  const context = React.useContext(SheetContext)
+  if (!context) {
+    throw new Error(`${component} must be used within a Sheet`)
+  }
+  return context
+}
+
+const Sheet = ({ children, open: openProp, onOpenChange, defaultOpen = false }: {
   children: React.ReactNode,
   open?: boolean,
-  onOpenChange?: (open: boolean) => void
-}) => (
-  <div data-state={open ? 'open' : 'closed'} className={cn(open ? 'block' : 'hidden')}>
-    {children}
-  </div>
-)
+  onOpenChange?: (open: boolean) => void,
+  defaultOpen?: boolean
+}) => {
+  // Issue #804: open state is shared through context so SheetTrigger,
+  // SheetClose and SheetContent can actually reach it. The previous root
+  // wrapped every child — trigger included — in a `hidden` div while
+  // closed and never wired a click, so the sheet could never be opened.
+  const [internalOpen, setInternalOpen] = React.useState(defaultOpen)
+  const open = openProp ?? internalOpen
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      setInternalOpen(nextOpen)
+      onOpenChange?.(nextOpen)
+    },
+    [onOpenChange]
+  )
+  const value = React.useMemo(
+    () => ({ open, onOpenChange: handleOpenChange }),
+    [open, handleOpenChange]
+  )
+  return <SheetContext.Provider value={value}>{children}</SheetContext.Provider>
+}
 
 const SheetTrigger = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }
->(({ className, asChild = false, ...props }, ref) => {
+>(({ className, asChild = false, onClick, ...props }, ref) => {
+  const { onOpenChange } = useSheetContext('SheetTrigger')
   const Comp = asChild ? Slot : 'button'
-  return <Comp ref={ref} className={cn(className)} {...props} />
+  return (
+    <Comp
+      ref={ref}
+      className={cn(className)}
+      onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+        onClick?.(event)
+        onOpenChange(true)
+      }}
+      {...props}
+    />
+  )
 })
 SheetTrigger.displayName = 'SheetTrigger'
 
 const SheetClose = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }
->(({ className, asChild = false, ...props }, ref) => {
+>(({ className, asChild = false, onClick, ...props }, ref) => {
+  const { onOpenChange } = useSheetContext('SheetClose')
   const Comp = asChild ? Slot : 'button'
-  return <Comp ref={ref} className={cn(className)} {...props} />
+  return (
+    <Comp
+      ref={ref}
+      className={cn(className)}
+      onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+        onClick?.(event)
+        onOpenChange(false)
+      }}
+      {...props}
+    />
+  )
 })
 SheetClose.displayName = 'SheetClose'
 
@@ -70,11 +123,17 @@ const sheetVariants = cva(
 const SheetContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof sheetVariants> & { closeLabel?: string }
->(({ side = 'right', className, children, closeLabel = 'Close', ...props }, ref) => (
+>(({ side = 'right', className, children, closeLabel = 'Close', ...props }, ref) => {
+  const { open, onOpenChange } = useSheetContext('SheetContent')
+  if (!open) {
+    return null
+  }
+  return (
   <SheetPortal>
-    <SheetOverlay />
+    <SheetOverlay onClick={() => onOpenChange(false)} />
     <div
       ref={ref}
+      data-state="open"
       className={cn(sheetVariants({ side }), className)}
       {...props}
     >
@@ -85,7 +144,8 @@ const SheetContent = React.forwardRef<
       </SheetClose>
     </div>
   </SheetPortal>
-))
+  )
+})
 SheetContent.displayName = 'SheetContent'
 
 const SheetHeader = ({

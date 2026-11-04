@@ -5,9 +5,10 @@ import { BookingsController } from './bookings.controller';
 import { UploadModule } from '../upload/upload.module';
 import { ExternalPaymentsModule } from '../external-payments/external-payments.module';
 import { StagedPaymentsModule } from '../staged-payments/staged-payments.module';
+import { MessagingModule } from '../messaging/messaging.module';
 
 @Module({
-    imports: [UploadModule, ExternalPaymentsModule, StagedPaymentsModule],
+    imports: [UploadModule, ExternalPaymentsModule, StagedPaymentsModule, MessagingModule],
     controllers: [BookingsController],
     providers: [BookingsService, RebookingService],
 })

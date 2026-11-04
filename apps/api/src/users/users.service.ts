@@ -6,6 +6,7 @@ import { PRIVATE_FILE_PREFIX } from '../upload/upload.constants';
 import { UploadService } from '../upload/upload.service';
 import { derivePublicMediaUrl } from '../upload/media-url.util';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { generateReferralCode } from './referral-code';
 
 @Injectable()
 export class UsersService {
@@ -245,6 +246,37 @@ export class UsersService {
         });
     }
 
+    /**
+     * #777: zero-value referral — recognition only. Returns exactly the
+     * caller's personal referral code and how many accounts were
+     * attributed to them. No value field of any kind exists in this
+     * payload (no points / credits / discounts / cash / balances).
+     * Existing accounts created before referral codes existed are
+     * assigned one lazily here (the migration also backfills them).
+     */
+    async getReferrals(userId: string) {
+        const user = await this.db.user.findUnique({
+            where: { id: userId },
+            select: { referralCode: true },
+        });
+        if (!user) throw new NotFoundException('User not found');
+
+        let referralCode: string | null = user.referralCode ?? null;
+        if (!referralCode) {
+            referralCode = generateReferralCode();
+            await this.db.user.update({
+                where: { id: userId },
+                data: { referralCode },
+            });
+        }
+
+        const referralCount = await this.db.user.count({
+            where: { referredById: userId },
+        });
+
+        return { referralCode, referralCount };
+    }
+
     async getMe(userId: string) {
         return this.findOne(userId);
     }
@@ -283,8 +315,9 @@ export class UsersService {
      *  1. Every stored file the user uploaded is deleted from object
      *     storage: avatar, agency logo, travel-licence and insurance
      *     documents, bank attestation, payment proofs on their bookings,
-     *     attachments on messages they sent, and refund evidence they
-     *     recorded. References live in the database in mixed shapes (raw
+     *     attachments on messages they sent, refund evidence they
+     *     recorded, and the photos/video on reviews they authored
+     *     (#630). References live in the database in mixed shapes (raw
      *     storage keys and public URLs), so they are resolved through
      *     UploadService.resolveStorageKey and deduplicated first.
      *  2. The database tombstone scrubs every personal-data category.
@@ -327,7 +360,11 @@ export class UsersService {
             await tx.refundEvidence.updateMany({ where: { recordedBy: userId }, data: { proofUrl: null } });
             // Review ratings stay for aggregate integrity; the traveller's
             // own comment text is personal content and is removed.
-            await tx.review.updateMany({ where: { travelerId: userId }, data: { comment: null } });
+            // #630: the review's photo rows are deleted outright (their
+            // storage objects were deleted above; a row without its file
+            // is meaningless) and the video key is detached the same way.
+            await tx.reviewPhoto.deleteMany({ where: { review: { travelerId: userId } } });
+            await tx.review.updateMany({ where: { travelerId: userId }, data: { comment: null, videoKey: null } });
             // Live admin break-glass credentials minted by this account
             // must not survive it.
             await tx.breakGlassCredential.deleteMany({ where: { createdById: userId } });
@@ -343,7 +380,10 @@ export class UsersService {
                         // Licence + insurance verification dossiers: the
                         // document keys are detached (objects deleted
                         // above) and every verification stamp is cleared.
-                        travelLicenceType: null, travelLicenceNumber: null, travelLicenceStatus: 'NOT_SUBMITTED', licenceExpiry: null, licenceDocumentKey: null, licenceDocumentName: null, licenceVerifiedAt: null, licenceRejectionReason: null, licenceMinistryCheckedAt: null, licenceMinistryCheckedBy: null,
+                        // #630: the licence issue date / issuing authority
+                        // (B4 seller-block fields) are licence metadata
+                        // too and must not survive the tombstone either.
+                        travelLicenceType: null, travelLicenceNumber: null, travelLicenceStatus: 'NOT_SUBMITTED', licenceExpiry: null, licenceIssuedAt: null, licenceIssuingAuthority: null, licenceDocumentKey: null, licenceDocumentName: null, licenceVerifiedAt: null, licenceRejectionReason: null, licenceMinistryCheckedAt: null, licenceMinistryCheckedBy: null,
                         insuranceStatus: 'NOT_SUBMITTED', insurancePolicyNumber: null, insuranceInsuredName: null, insuranceValidFrom: null, insuranceExpiry: null, insuranceCoverageLimit: null, insuranceCertificateKey: null, insuranceVerifiedAt: null, insuranceRejectionReason: null,
                         // Bank destination: holder name and attestation are
                         // detached; the (already scrubbed) details revert
@@ -352,7 +392,7 @@ export class UsersService {
                     },
                 });
             }
-            await tx.user.update({ where: { id: userId }, data: { email: `${tombstone}@privacy.invalid`, name: null, avatar: null, password: tombstone, isEmailVerified: false, otp: null, otpExpiresAt: null, otpLastSentAt: null, passwordResetTokenHash: null, passwordResetExpiresAt: null, passwordResetSentAt: null, dateOfBirth: null, ageAttestedAt: null, mfaEnabled: false, mfaTotpSecret: null, mfaRecoveryCodeHashes: Prisma.JsonNull, mfaEnrolledAt: null } });
+            await tx.user.update({ where: { id: userId }, data: { email: `${tombstone}@privacy.invalid`, name: null, avatar: null, password: tombstone, isEmailVerified: false, otp: null, otpExpiresAt: null, otpLastSentAt: null, passwordResetTokenHash: null, passwordResetExpiresAt: null, passwordResetSentAt: null, dateOfBirth: null, ageAttestedAt: null, mfaEnabled: false, mfaTotpSecret: null, mfaRecoveryCodeHashes: Prisma.JsonNull, mfaEnrolledAt: null, referralCode: null, referredById: null } });
         });
     }
 
@@ -370,14 +410,25 @@ export class UsersService {
             user.agencyProfile?.insuranceCertificateKey,
         ];
 
-        const [proofs, sentMessages, evidence] = await Promise.all([
+        const [proofs, sentMessages, evidence, reviews] = await Promise.all([
             this.db.paymentProof.findMany({ where: { booking: { travelerId: userId } }, select: { imageUrl: true } }),
             this.db.message.findMany({ where: { senderId: userId, attachmentUrl: { not: null } }, select: { attachmentUrl: true } }),
             this.db.refundEvidence.findMany({ where: { recordedBy: userId, proofUrl: { not: null } }, select: { proofUrl: true } }),
+            // #630: review media (#776 photos, #783 video) postdates the
+            // #251 erasure pass and was missed by it — the traveller's
+            // own review photos/video are their uploads and must go too.
+            this.db.review.findMany({
+                where: { travelerId: userId },
+                select: { videoKey: true, photos: { select: { storageKey: true } } },
+            }),
         ]);
         proofs.forEach((proof: any) => references.push(proof.imageUrl));
         sentMessages.forEach((message: any) => references.push(message.attachmentUrl));
         evidence.forEach((row: any) => references.push(row.proofUrl));
+        reviews.forEach((review: any) => {
+            references.push(review.videoKey);
+            (review.photos ?? []).forEach((photo: any) => references.push(photo.storageKey));
+        });
 
         const keys = new Set<string>();
         for (const reference of references) {

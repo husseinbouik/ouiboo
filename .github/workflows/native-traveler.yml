@@ -1,0 +1,50 @@
+name: Native Traveler Shell
+
+# Issue #782: structural checks for the Capacitor traveller shell in
+# native/traveler. Deliberately SDK-free — no Android SDK, Xcode or
+# CocoaPods exists on these runners, so this proves the config, the
+# generated project structure, gradle-file sanity and that
+# `cap sync` output agrees with the source config. A real Gradle or
+# Xcode build is a founder-machine step (see native/traveler/README.md),
+# and this workflow does not claim one.
+
+on:
+  pull_request:
+    branches: [master, staging]
+    paths:
+      - 'native/traveler/**'
+      - '.github/workflows/native-traveler.yml'
+  push:
+    branches: [master, staging]
+    paths:
+      - 'native/traveler/**'
+      - '.github/workflows/native-traveler.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  native-traveler-shell:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: native/traveler
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: native/traveler/package-lock.json
+
+      - name: Install shell dependencies
+        run: npm ci
+
+      - name: Sync the Android platform (no Android SDK required)
+        run: npx cap sync android
+
+      - name: Validate the shell
+        run: npm test

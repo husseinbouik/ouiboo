@@ -7,6 +7,8 @@ import '../../lib/i18n';
 import { apiClient } from '@/lib/api-client';
 import { isSupportEmailConfigured, supportMailto } from '@/lib/support';
 import { NORMAL_SUPPORT_RESPONSE_HOURS } from '@ouiboo/utils';
+import { ModelExplainer } from '@/components/ModelExplainer';
+import PlatformIdentity from '@/components/PlatformIdentity';
 
 /**
  * #446 (Council P2-07): the help centre.
@@ -28,9 +30,16 @@ const FAQ_IDS = [
   'paymentRejected',
   'refundTiming',
   'refundStatus',
+  // #775 (Council S6): "Am I insured when I book?" — the agency's RC
+  // is not personal travel insurance; Ouiboo does not sell insurance.
+  'insuranceCoverage',
   'tripEmergency',
   'normalSupport',
   'complaint',
+  // #693 (Council S6): the published review-moderation rules and the
+  // attendance dispute path live here, in every language.
+  'attendanceDispute',
+  'reviewModeration',
 ] as const;
 
 const CATEGORIES = [
@@ -123,6 +132,10 @@ export default function HelpCentrePage() {
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
+
+        {/* #678 (Council S6): the model explainer + general FAQ, on the
+            help page as well as landing and checkout. */}
+        <ModelExplainer className="mt-12" />
 
         <section aria-label={t('help.faqTitle')} className="mt-10">
           <h2 className="text-2xl font-bold text-foreground">{t('help.faqTitle')}</h2>
@@ -223,6 +236,11 @@ export default function HelpCentrePage() {
             </form>
           )}
         </section>
+
+        {/* #627: the platform identity block — who Ouiboo is, the
+            support email / WhatsApp escalation, and the complaints
+            path (email + this in-app form). */}
+        <PlatformIdentity className="mt-12" />
 
         <p className="mt-10 text-sm text-muted-foreground">{t('support.safetyNote')}</p>
       </div>

@@ -96,6 +96,18 @@ describe('SnapRail (#490)', () => {
         expect(next().disabled).toBe(false);
     });
 
+    it('arrow clicks cancel their default action, so a surrounding host link never fires', () => {
+        renderRail();
+        // fireEvent returns false when a cancelable event's default
+        // was prevented — the contract that lets trip cards wrap the
+        // rail in a link to the trip page (founder decision
+        // 2026-10-29) while the arrows keep cycling photos in place.
+        expect(fireEvent.click(next())).toBe(false);
+        expect(counter().textContent).toBe('2 / 3');
+        expect(fireEvent.click(prev())).toBe(false);
+        expect(counter().textContent).toBe('1 / 3');
+    });
+
     it('arrows step one photo and wrap seamlessly past both ends', () => {
         const { viewport } = renderRail();
         fireEvent.click(next());
@@ -205,8 +217,77 @@ describe('SnapRail (#490)', () => {
         fireEvent.click(dot);
         expect(counter().textContent).toBe('3 / 3');
         expect(dot.getAttribute('aria-current')).toBe('true');
-        // Photo 3 rests at extended position 3 (one clone before it).
-        expect(viewport.scrollTo).toHaveBeenLastCalledWith({ left: 900, behavior: 'smooth' });
+        // #654: photo 3 rests at extended position 3 (one clone
+        // before it) — two positions away, so the jump lands
+        // INSTANTLY (direct scrollLeft assignment, no smooth
+        // scrollTo that would rewind through photo 2).
+        expect(viewport.scrollTo).not.toHaveBeenCalled();
+        expect(viewport.scrollLeft).toBe(900);
+    });
+
+    it('host-driven distant jumps land instantly; single steps keep the smooth glide (#654)', () => {
+        const rail = (ext?: number) => (
+            <SnapRail
+                images={IMAGES}
+                imageAlts={['First alt', 'Second alt', 'Third alt']}
+                captionFallback="Fallback title"
+                ariaLabel="Trip photos"
+                counterTestId="rail-counter"
+                externalIndex={ext}
+            />
+        );
+        const utils = render(rail(0));
+        const viewport = utils.container.querySelector('[role="group"]') as HTMLDivElement;
+        Object.defineProperty(viewport, 'clientWidth', { value: 300, configurable: true });
+        viewport.scrollTo = jest.fn();
+        viewport.scrollLeft = 300;
+        fireEvent.scroll(viewport);
+        // Filmstrip-style jump, photo 1 → photo 3: no smooth
+        // traversal of photo 2 — the rail is simply THERE.
+        utils.rerender(rail(2));
+        expect(counter().textContent).toBe('3 / 3');
+        expect(viewport.scrollTo).not.toHaveBeenCalled();
+        expect(viewport.scrollLeft).toBe(900);
+        // A single step back (photo 3 → photo 2) still glides.
+        utils.rerender(rail(1));
+        expect(counter().textContent).toBe('2 / 3');
+        expect(viewport.scrollTo).toHaveBeenLastCalledWith({ left: 600, behavior: 'smooth' });
+        // The viewer keyboard wrap (last photo → first) arrives as
+        // a distant jump too: instant, never a backwards rewind.
+        utils.rerender(rail(2));
+        expect(viewport.scrollLeft).toBe(900);
+        (viewport.scrollTo as jest.Mock).mockClear();
+        utils.rerender(rail(0));
+        expect(counter().textContent).toBe('1 / 3');
+        expect(viewport.scrollTo).not.toHaveBeenCalled();
+        expect(viewport.scrollLeft).toBe(300);
+    });
+
+    it('reports the real photo index when a viewer host clicks a slide (#657)', () => {
+        const onSlideClick = jest.fn();
+        const { container } = renderRail({ onSlideClick });
+        // A looped rail renders: clone(3), real(1), real(2), real(3),
+        // clone(1). The third DOM slide is therefore real photo 2,
+        // which must be reported as its logical zero-based index (1).
+        const slides = container.querySelectorAll('.snap-center');
+        fireEvent.click(slides[2]);
+        expect(onSlideClick).toHaveBeenCalledWith(1);
+        expect(onSlideClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('uses contain rendering for a full-screen viewer without changing the default card fit (#657)', () => {
+        const { container, rerender } = renderRail();
+        expect(container.querySelector('img')?.className).toContain('object-cover');
+
+        rerender(
+            <SnapRail
+                images={IMAGES}
+                captionFallback="Fallback title"
+                ariaLabel="Trip photos"
+                imageFit="contain"
+            />,
+        );
+        expect(container.querySelector('img')?.className).toContain('object-contain');
     });
 
     describe('dragAdvanceOnRelease (#490 round 3 — wide-slide gallery)', () => {
@@ -319,6 +400,30 @@ describe('SnapRail (#490)', () => {
             // native pan owns the gesture end to end.
             expect(vp.scrollLeft).toBe(1200);
             expect(vp.style.scrollSnapType).toBe('');
+        });
+    });
+
+    describe('keyboard-openable slides (#656 — trip-page rail only)', () => {
+        it('slides are focusable buttons and Enter/Space opens the tapped photo', () => {
+            const onSlideClick = jest.fn();
+            const { container } = renderRail({ slideKeyboardOpen: true, onSlideClick });
+            // The dot indicators share the viewImage label; the slide
+            // is the DIV carrying button semantics.
+            const slide = container.querySelector('div[role="button"][aria-label="View image 2"]') as HTMLElement;
+            expect(slide).not.toBeNull();
+            expect(slide.getAttribute('tabindex')).toBe('0');
+            slide.focus();
+            expect(document.activeElement).toBe(slide);
+            fireEvent.keyDown(slide, { key: 'Enter' });
+            expect(onSlideClick).toHaveBeenCalledWith(1);
+            fireEvent.keyDown(slide, { key: ' ' });
+            expect(onSlideClick).toHaveBeenCalledWith(1);
+            expect(onSlideClick).toHaveBeenCalledTimes(2);
+        });
+
+        it('without the flag (cards) slides stay non-interactive divs', () => {
+            const { container } = renderRail({ onSlideClick: jest.fn() });
+            expect(container.querySelectorAll('div[role="button"]')).toHaveLength(0);
         });
     });
 

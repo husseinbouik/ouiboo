@@ -1,4 +1,4 @@
-import { IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsArray, IsObject, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 // #419: international phone shape — leading '+' or digit, then digits
 // with common separators. Deliberately not country-specific (no +212
@@ -16,6 +16,18 @@ export class UpdateAgencyProfileDto {
   @IsString()
   @MaxLength(2000)
   bio?: string;
+
+  // #691 (Council S6): storefront about, language-keyed
+  // ({ "fr": "...", "ar": "...", "en": "..." } — data-driven keys).
+  @IsOptional()
+  @IsObject()
+  aboutTranslations?: Record<string, string>;
+
+  // #691: languages the agency works in (ISO codes).
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  languages?: string[];
 
   @IsOptional()
   @IsString()
@@ -66,6 +78,18 @@ export class UpdateAgencyProfileDto {
   @IsString()
   @MaxLength(300)
   businessAddress?: string;
+
+  // #700 (Council S6): public business phone for the Law 31-08
+  // Art. 29(2) seller block at checkout. Same reachable-number shape
+  // as the emergency contact; never a personal number by assumption —
+  // the agency supplies it as its public seller phone.
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  @Matches(EMERGENCY_CONTACT_PHONE_PATTERN, {
+    message: 'businessPhone must be a reachable phone number',
+  })
+  businessPhone?: string;
 
   // #419 (Council P0-16): trip emergency contact — shown to travellers
   // holding a booking (departure pack) as the FIRST call during an

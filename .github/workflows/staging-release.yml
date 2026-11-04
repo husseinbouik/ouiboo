@@ -1,0 +1,239 @@
+name: Staging Release
+
+# Single staging release controller (issues #639 + #502).
+#
+# Contract:
+#   1. A staging SHA is only "released" after the required push checks for
+#      that exact SHA are green: build (20.x), browser-e2e,
+#      Secret scanning (Gitleaks), SAST (Semgrep), SAST (CodeQL), CodeQL.
+#      (The remaining two branch-protection contexts — `review` and
+#      `smoke` — exist only on pull requests, so they gate the merge that
+#      produced this SHA, not the push itself.)
+#   2. This workflow is the SINGLE migration owner for staging (#639):
+#      it runs `prisma migrate deploy` against the staging Neon DB once,
+#      after the gate, and a migration failure fails the release loudly.
+#      There is deliberately NO seed step anywhere in this workflow —
+#      seeding never runs from the release path, so it can never touch
+#      the production database (prod project delicate-tree-54473957 is
+#      additionally hard-refused in the guard step below).
+#   3. It records a SHA attestation artifact naming the verified SHA, the
+#      checks that passed for it, and the migration outcome.
+#
+# Trigger design (why push + poll, not workflow_run): a workflow_run-
+# triggered workflow must live on the DEFAULT branch (master) to fire at
+# all — this controller lives on staging, so it triggers on `push` to
+# staging and the gate job polls the check-runs API for the pushed SHA
+# until every required check completes (45 min budget). workflow_run is
+# kept as a secondary trigger: it becomes active once this file reaches
+# master at a production promotion, and its invocations resolve instantly
+# because the gate finds the checks already complete. Manual dispatch
+# re-verifies + re-attests an arbitrary staging SHA (migrate deploy is
+# idempotent, so a re-run with no pending migrations is a no-op success).
+#
+# Known bypass (documented, not hidden — see
+# docs/launch-ops/STAGING_RELEASE_PATH.md): the staging apps still deploy
+# through Vercel git integration / coordinator-created deployments, which
+# are not yet bound to this attestation. Closing that bypass requires
+# moving staging deploys into this workflow (Vercel deploy step gated on
+# the attestation) and disabling git-integration auto-deploys.
+
+on:
+  push:
+    branches: [staging]
+  workflow_run:
+    workflows: [CI, Security Scan, Browser E2E]
+    branches: [staging]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Staging SHA to verify, migrate and attest'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  checks: read
+
+concurrency:
+  group: staging-release-${{ github.event.workflow_run.head_sha || github.sha || inputs.sha }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: Verify required checks for staging SHA
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'staging')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+      state: ${{ steps.verify.outputs.state }}
+    steps:
+      - name: Resolve target SHA
+        id: resolve
+        run: |
+          SHA="${{ github.event.workflow_run.head_sha || inputs.sha || github.sha }}"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Target staging SHA: $SHA"
+
+      - name: Poll required check runs for SHA until they complete
+        id: verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.resolve.outputs.sha }}
+        run: |
+          # Latest conclusion per required check name for this exact SHA.
+          # Polls (60s interval, 45 attempts) because on `push` the checks
+          # are still running when this workflow starts.
+          state="pending:"
+          for attempt in $(seq 1 45); do
+            json=$(gh api "repos/${{ github.repository }}/commits/$SHA/check-runs?per_page=100")
+            state=$(echo "$json" | python3 -c "
+          import json, sys
+          required = ['build (20.x)', 'browser-e2e', 'Secret scanning (Gitleaks)',
+                      'SAST (Semgrep)', 'SAST (CodeQL)', 'CodeQL']
+          runs = json.load(sys.stdin).get('check_runs', [])
+          latest = {}
+          for r in runs:
+              name = r['name']
+              if name not in latest or (r.get('started_at') or '') > (latest[name].get('started_at') or ''):
+                  latest[name] = r
+          missing, failed, pending = [], [], []
+          for name in required:
+              r = latest.get(name)
+              if r is None:
+                  missing.append(name)
+              elif r['status'] != 'completed':
+                  pending.append(name)
+              elif r['conclusion'] == 'success':
+                  pass
+              elif name == 'CodeQL' and r['conclusion'] == 'neutral':
+                  # Default-setup CodeQL reports 'neutral' on pushes where
+                  # it has nothing new to analyze. Accepted for that
+                  # context only — the SAST (CodeQL) workflow job above
+                  # remains success-only.
+                  pass
+              else:
+                  failed.append(name)
+          print('failed:' + ','.join(failed) if failed else
+                'pending:' + ','.join(missing + pending) if (missing or pending) else
+                'verified')
+          ")
+            echo "Attempt $attempt: gate state = $state"
+            case "$state" in
+              verified) break ;;
+              failed:*) break ;;
+              *) sleep 60 ;;
+            esac
+          done
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Staging release gate — $SHA"
+            echo ""
+            echo "Gate state: \`$state\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          case "$state" in
+            verified)
+              echo "All required push checks are green for $SHA." ;;
+            pending:*)
+              echo "::error::Release gate still pending after 45 minutes for $SHA (${state#pending:}). Release NOT attested; re-run this workflow manually once the checks complete."
+              exit 1 ;;
+            failed:*)
+              echo "::error::Required check(s) failed for $SHA: ${state#failed:}. Staging release is BLOCKED for this SHA."
+              exit 1 ;;
+          esac
+
+  migrate:
+    name: Apply staging migrations (single owner)
+    needs: gate
+    if: needs.gate.outputs.state == 'verified'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.gate.outputs.sha }}
+          fetch-depth: 0
+
+      - name: Confirm SHA is on staging (manual runs)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git fetch origin staging
+          if ! git merge-base --is-ancestor "${{ needs.gate.outputs.sha }}" origin/staging; then
+            echo "::error::SHA ${{ needs.gate.outputs.sha }} is not reachable from staging. Refusing to migrate."
+            exit 1
+          fi
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Guard the migration target (staging only, never prod, never seed)
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::STAGING_DATABASE_URL secret is not set. Refusing to migrate."
+            exit 1
+          fi
+          # Hard refuse the production Neon project (delicate-tree-54473957).
+          if echo "$DATABASE_URL" | grep -q "delicate-tree"; then
+            echo "::error::STAGING_DATABASE_URL points at the PRODUCTION Neon project. Hard refuse."
+            exit 1
+          fi
+          # Non-sensitive fingerprint so run logs can be compared across
+          # environments without ever printing the connection string.
+          host=$(echo "$DATABASE_URL" | sed -E 's#^[^@]*@([^/?]+).*#\1#')
+          fp=$(echo -n "$host" | sha256sum | cut -c1-12)
+          echo "Migration target host fingerprint: $fp (staging project: hidden-mountain-93789107)"
+          echo "No seed step exists in this workflow by design (#639)."
+
+      - name: Apply Prisma migrations to staging (fails the release loudly)
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: npm run db:migrate:deploy --workspace=packages/database
+
+  attest:
+    name: Record verified staging SHA
+    needs: [gate, migrate]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Write SHA attestation
+        env:
+          SHA: ${{ needs.gate.outputs.sha }}
+        run: |
+          cat > staging-release-attestation.json <<EOF
+          {
+            "sha": "$SHA",
+            "branch": "staging",
+            "verified_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "verified_by_workflow_run": "${{ github.run_id }}",
+            "trigger": "${{ github.event_name }}",
+            "required_checks_verified": [
+              "build (20.x)", "browser-e2e", "Secret scanning (Gitleaks)",
+              "SAST (Semgrep)", "SAST (CodeQL)", "CodeQL"
+            ],
+            "pr_only_contexts_gating_the_merge": ["review", "smoke"],
+            "migrations": "applied by this workflow (prisma migrate deploy, staging, single owner)",
+            "seed": "none — no seed step exists in the staging release path",
+            "known_bypass": "Staging apps still deploy via Vercel git integration / coordinator deployments, not yet bound to this attestation. See docs/launch-ops/STAGING_RELEASE_PATH.md."
+          }
+          EOF
+          cat staging-release-attestation.json >> "$GITHUB_STEP_SUMMARY"
+          cat staging-release-attestation.json
+
+      - name: Upload attestation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-release-${{ needs.gate.outputs.sha }}
+          path: staging-release-attestation.json
+          retention-days: 90

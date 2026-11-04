@@ -52,15 +52,20 @@ export function UserMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => router.push('/profile')}>
+        {/* #724: every entry must land on an implemented dashboard page.
+            There is no /profile, /wallet or /settings route — the real
+            equivalents are the dashboard settings pages (the settings
+            page's own first tab is the profile form, and billing has its
+            dedicated sub-page, matching the sidebar's label mapping). */}
+        <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
           <User className="ms-2 h-4 w-4" />
           <span>{t('userMenu.profile')}</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push('/wallet')}>
+        <DropdownMenuItem onClick={() => router.push('/dashboard/settings/billing')}>
           <CreditCard className="ms-2 h-4 w-4" />
           <span>{t('userMenu.billing')}</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push('/settings')}>
+        <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
           <Settings className="ms-2 h-4 w-4" />
           <span>{t('userMenu.settings')}</span>
         </DropdownMenuItem>

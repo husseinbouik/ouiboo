@@ -10,7 +10,9 @@ import {
 import { Button, EmptyState } from '@ouiboo/ui';
 import { motion, Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { BETA_DESTINATIONS } from '@ouiboo/types';
 import type { TripSession, TripTemplate, VerificationStatusType } from '@ouiboo/types';
+import { buildHeroSearchParams, isInvalidDateRange } from '@/lib/hero-search';
 
 const TripCard = dynamic(() => import('@/components/TripCard').then((m) => m.TripCard));
 
@@ -48,19 +50,40 @@ export default function HomeClient({ featuredTrips, featuredTripsFetchFailed = f
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchDate, setSearchDate] = useState('');
-  const dateInputRef = useRef<HTMLInputElement>(null);
+  const [searchDateFrom, setSearchDateFrom] = useState('');
+  const [searchDateTo, setSearchDateTo] = useState('');
+  const [dateError, setDateError] = useState('');
+  const dateFromInputRef = useRef<HTMLInputElement>(null);
+  const dateToInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSearch = () => {
-    const params = new URLSearchParams();
-    if (searchQuery.trim()) {
-      params.set('q', searchQuery.trim());
+  // #723: the hero search is a semantic form — destination text that
+  // names a configured beta destination (#675 taxonomy) submits as the
+  // `destination` facet the search page consumes; anything else submits
+  // as its free-text `q`. Dates submit as `dateFrom`/`dateTo`, the
+  // canonical names SearchClient parses. An inverted range stays on
+  // the page with an accessible validation message instead of sending
+  // a query the results page would silently mis-handle.
+  const handleSearch = (event?: React.FormEvent) => {
+    event?.preventDefault();
+    // Read dates from refs as fallback in case state hasn't synced (#120)
+    const dateFrom = searchDateFrom || dateFromInputRef.current?.value || '';
+    const dateTo = searchDateTo || dateToInputRef.current?.value || '';
+    if (isInvalidDateRange(dateFrom, dateTo)) {
+      setDateError(t('hero.dateRangeError'));
+      return;
     }
-    // Read date from ref as fallback in case state hasn't synced (#120)
-    const dateValue = searchDate || dateInputRef.current?.value || '';
-    if (dateValue) {
-      params.set('date', dateValue);
+    setDateError('');
+    // Localised destination names for the active language, so a value
+    // picked from the suggestions resolves in FR/AR/EN alike (the
+    // configured aliases already cover the other spellings).
+    const localizedNames: Record<string, string> = {};
+    for (const destination of BETA_DESTINATIONS) {
+      localizedNames[destination.slug] = t(`search.destinationNames.${destination.slug}`);
     }
+    const params = buildHeroSearchParams(
+      { query: searchQuery, dateFrom, dateTo },
+      localizedNames,
+    );
     const queryString = params.toString();
     router.push(`/search${queryString ? `?${queryString}` : ''}`);
   };
@@ -102,39 +125,73 @@ export default function HomeClient({ featuredTrips, featuredTripsFetchFailed = f
               {t('hero.subtitle', 'Connect with local experts to plan trips that are as unique as you are.')}
             </motion.p>
 
-            {/* Clean Search Bar */}
+            {/* Clean Search Bar — #723: a semantic form, so the button
+                AND Enter in any field submit the same search. The
+                destination suggestions are the #675 beta destinations
+                (localised names); picking or typing one submits the
+                `destination` facet, other text submits as `q`. */}
             <motion.div variants={fadeInUp} className="mt-10 mx-auto max-w-3xl">
-              <div className="bg-card p-2 rounded-2xl shadow-xl border border-border flex flex-col sm:flex-row gap-2">
-                <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
-                  <MapPin className="h-5 w-5 text-sunset-orange mr-3" />
-                  <input 
-                    type="text" 
-                    aria-label={t('hero.where')}
-                    placeholder={t('hero.where')}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                    className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
-                  />
+              <form onSubmit={handleSearch} noValidate>
+                <div className="bg-card p-2 rounded-2xl shadow-xl border border-border flex flex-col lg:flex-row gap-2">
+                  <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
+                    <MapPin className="h-5 w-5 text-sunset-orange me-3 shrink-0" />
+                    <input
+                      type="text"
+                      aria-label={t('hero.where')}
+                      placeholder={t('hero.where')}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      list="hero-destination-suggestions"
+                      autoComplete="off"
+                      className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
+                    />
+                    <datalist id="hero-destination-suggestions">
+                      {BETA_DESTINATIONS.map((destination) => (
+                        <option
+                          key={destination.slug}
+                          value={t(`search.destinationNames.${destination.slug}`)}
+                        />
+                      ))}
+                    </datalist>
+                  </div>
+                  <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
+                    <Calendar className="h-5 w-5 text-sunset-orange me-3 shrink-0" />
+                    <input
+                      type="date"
+                      ref={dateFromInputRef}
+                      aria-label={t('search.startDate')}
+                      value={searchDateFrom}
+                      onChange={(e) => { setSearchDateFrom(e.target.value); setDateError(''); }}
+                      aria-invalid={dateError ? true : undefined}
+                      aria-describedby={dateError ? 'hero-date-error' : undefined}
+                      className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
+                    />
+                  </div>
+                  <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
+                    <Calendar className="h-5 w-5 text-sunset-orange me-3 shrink-0" />
+                    <input
+                      type="date"
+                      ref={dateToInputRef}
+                      aria-label={t('search.endDate')}
+                      value={searchDateTo}
+                      onChange={(e) => { setSearchDateTo(e.target.value); setDateError(''); }}
+                      aria-invalid={dateError ? true : undefined}
+                      aria-describedby={dateError ? 'hero-date-error' : undefined}
+                      className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="h-14 lg:h-auto px-8 rounded-xl bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-orange-600 text-white font-semibold text-lg shadow-md transition-all">
+                    {t('hero.search', 'Search')}
+                  </Button>
                 </div>
-                <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
-                  <Calendar className="h-5 w-5 text-sunset-orange mr-3" />
-                  <input 
-                    type="date" 
-                    ref={dateInputRef}
-                    aria-label={t('hero.when')}
-                    placeholder={t('hero.when')}
-                    value={searchDate}
-                    onChange={(e) => setSearchDate(e.target.value)}
-                    className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
-                  />
-                </div>
-                <Button 
-                  onClick={handleSearch}
-                  className="h-14 sm:h-auto px-8 rounded-xl bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-orange-600 text-white font-semibold text-lg shadow-md transition-all">
-                  {t('hero.search', 'Search')}
-                </Button>
-              </div>
+                {dateError && (
+                  <p id="hero-date-error" role="alert" className="mt-3 text-sm font-medium text-danger">
+                    {dateError}
+                  </p>
+                )}
+              </form>
             </motion.div>
           </motion.div>
         </div>

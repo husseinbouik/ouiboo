@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../database/database.module';
 import { EmailModule } from '../email/email.module';
 import { PaymentsService } from './payments.service';
+import { GatewayEnablementService } from './gateway-enablement.service';
+import { GatewayEnablementController } from './gateway-enablement.controller';
 import { PaymentsController } from './payments.controller';
 import { CMIPaymentProvider } from './providers/cmi-payment.provider';
 import { StripePaymentProvider } from './providers/stripe-payment.provider';
@@ -10,17 +12,19 @@ import { PaymentProviderFactory } from './providers/payment-provider.factory';
 import { CommonModule } from '../common/common.module';
 import { AuthModule } from '../auth/auth.module';
 import { ExternalPaymentsModule } from '../external-payments/external-payments.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [CommonModule, DatabaseModule, EmailModule, AuthModule, ExternalPaymentsModule],
+  imports: [CommonModule, DatabaseModule, EmailModule, AuthModule, ExternalPaymentsModule, NotificationsModule],
   providers: [
     PaymentsService,
     CMIPaymentProvider,
     StripePaymentProvider,
     CashPlusPaymentProvider,
     PaymentProviderFactory,
+    GatewayEnablementService,
   ],
-  controllers: [PaymentsController],
-  exports: [PaymentsService],
+  controllers: [PaymentsController, GatewayEnablementController],
+  exports: [PaymentsService, GatewayEnablementService],
 })
 export class PaymentsModule {}

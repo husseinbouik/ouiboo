@@ -1,13 +1,15 @@
 'use client';
 
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import Image from 'next/image';
-import { Card, CardContent, Button, Badge } from '@ouiboo/ui';
+import { Card, CardContent, Button } from '@ouiboo/ui';
 import { MapPin, Calendar, Users, Banknote, CheckCircle2 } from 'lucide-react';
 import { formatCurrency, normalizeCurrency } from '@ouiboo/utils';
 import type { CheckoutTrip } from './checkout-types';
 import SellerIdentity from '../SellerIdentity';
+import SellerBlock from '../SellerBlock';
+import { ModelExplainer } from '../ModelExplainer';
 import { CancellationScaleCard } from '../CancellationScaleCard';
 import { useDisplayAmountConverter } from '@/lib/display-currency';
 
@@ -24,6 +26,12 @@ type CheckoutSummaryProps = {
   onSubmit: () => void;
   /** #369: staged amounts when the session is a minimum-group trip. */
   stagedAmounts?: { depositDue: number; balanceDue: number; total: number } | null;
+  /** #778: the applied agency-funded promo (server-priced preview).
+   * totalPrice is already the discounted total when this is set. */
+  promoInfo?: { code: string; discountAmount: number; undiscountedTotal: number } | null;
+  /** #755: an applied campaign/session price rule (server-priced
+   * preview). totalPrice is already the discounted total. */
+  campaignInfo?: { name: string; discountAmount: number; undiscountedTotal: number } | null;
 };
 
 export function CheckoutSummary({
@@ -38,6 +46,8 @@ export function CheckoutSummary({
   canSubmit,
   onSubmit,
   stagedAmounts,
+  promoInfo,
+  campaignInfo,
 }: CheckoutSummaryProps) {
   const { t } = useTranslation();
   // #619: render every amount in the traveller's display currency, like
@@ -47,14 +57,34 @@ export function CheckoutSummary({
   const convertAmount = useDisplayAmountConverter(selectedCurrency);
   const displayAmount = (amount: number): { amount: number; currency: string } =>
     convertAmount(amount) ?? { amount, currency: normalizeCurrency(selectedCurrency) };
-  const formatDisplayAmount = (amount: number): string => {
-    const converted = displayAmount(amount);
-    return formatCurrency(converted.amount, converted.currency, language);
-  };
   const totalDisplay = displayAmount(totalPrice);
   const showsConvertedCurrency =
     normalizeCurrency(selectedCurrency) !== '' &&
     totalDisplay.currency !== normalizeCurrency(selectedCurrency);
+  // #663 (checkout item): convert the TOTAL once and DERIVE the other
+  // lines from it in display currency. Converting each line
+  // independently let the displayed deposit + balance (or subtotal −
+  // discount) disagree with the displayed total by a cent. All lines
+  // below render from these rounded, mutually-consistent figures in
+  // totalDisplay.currency.
+  const roundMoney = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+  const totalRounded = roundMoney(totalDisplay.amount);
+  const formatTotalLine = (amount: number): string =>
+    formatCurrency(amount, totalDisplay.currency, language);
+  const subtotalRounded = promoInfo
+    ? roundMoney(displayAmount(promoInfo.undiscountedTotal).amount)
+    : campaignInfo
+      ? roundMoney(displayAmount(campaignInfo.undiscountedTotal).amount)
+      : totalRounded;
+  const discountRounded = promoInfo || campaignInfo ? roundMoney(subtotalRounded - totalRounded) : 0;
+  const campaignDiscountRounded = campaignInfo
+    ? roundMoney(displayAmount(campaignInfo.discountAmount).amount)
+    : 0;
+  // When a stacking campaign and a code combine, the promo line shows
+  // the remainder so the lines still sum to the total discount (#663).
+  const promoDiscountRounded = promoInfo ? roundMoney(discountRounded - campaignDiscountRounded) : 0;
+  const depositRounded = stagedAmounts ? roundMoney(displayAmount(stagedAmounts.depositDue).amount) : 0;
+  const balanceRounded = stagedAmounts ? roundMoney(totalRounded - depositRounded) : 0;
   return (
     <Card className="border-none shadow-2xl shadow-black/10 rounded-[3rem] overflow-hidden p-10 space-y-8 bg-card ring-1 ring-border/50">
       <div className="space-y-6">
@@ -69,13 +99,17 @@ export function CheckoutSummary({
             </div>
             {/* #371: seller of record + verified travel licence */}
             <SellerIdentity agency={trip.agency} className="pt-1 normal-case tracking-normal" />
+            {/* #700 (Council S6): the complete Law 31-08 Art. 29(2)
+                seller block at checkout, with the link to the agency's
+                Public Verification Record (#688). */}
+            <SellerBlock agency={trip.agency} className="pt-2 normal-case tracking-normal" showRecordLink />
           </div>
         </div>
 
         <div className="space-y-4 pt-6 border-t border-border/50">
           <div className="flex justify-between items-center text-sm">
             <span className="text-muted-foreground font-medium flex items-center gap-2"><Calendar className="h-4 w-4" /> {t('checkout.selectedDate')}</span>
-            <span className="font-black">{sessionDateLabel}</span>
+            <span className="font-black"><bdi dir="ltr">{sessionDateLabel}</bdi></span>
           </div>
           <div className="flex justify-between items-center text-sm">
             <span className="text-muted-foreground font-medium flex items-center gap-2"><Users className="h-4 w-4" /> {t('checkout.guestCount')}</span>
@@ -86,22 +120,35 @@ export function CheckoutSummary({
         <div className="space-y-4 pt-6 border-t border-border/50">
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground font-medium">{t('checkout.subtotal')}</span>
-            <span className="oui-numeric font-bold">{formatDisplayAmount(totalPrice)}</span>
+            <span className="oui-numeric font-bold">{formatTotalLine(subtotalRounded)}</span>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground font-medium">{t('checkout.serviceFee')}</span>
-            <Badge variant="outline" className="border-emerald-500/30 text-success-dark bg-success/10 font-black text-[8px] uppercase tracking-widest">{t('checkout.free')}</Badge>
-          </div>
+          {campaignInfo && campaignInfo.discountAmount > 0 && (
+            <div className="flex justify-between items-center" data-testid="checkout-campaign-discount">
+              <span className="font-medium text-emerald-600">{t('checkout.campaign.discount', { name: campaignInfo.name })}</span>
+              <span className="oui-numeric font-bold text-emerald-600">−{formatTotalLine(campaignDiscountRounded)}</span>
+            </div>
+          )}
+          {promoInfo && promoInfo.discountAmount > 0 && (
+            <div className="flex justify-between items-center" data-testid="checkout-promo-discount">
+              <span className="font-medium text-emerald-600">{t('checkout.promo.discount', { code: promoInfo.code })}</span>
+              <span className="oui-numeric font-bold text-emerald-600">−{formatTotalLine(promoDiscountRounded)}</span>
+            </div>
+          )}
+          {/* #726: NO traveller-facing service-fee line. The platform
+              service fee is charged to the AGENCY (invoiced monthly) —
+              a "Service fee: Free" row here was an invented
+              traveller-facing fee claim, so the summary shows no fee
+              line at all rather than a waived one. */}
           {stagedAmounts ? (
             <>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground font-medium">{t('checkout.balanceAfterConfirmation')}</span>
-                <span className="oui-numeric font-bold">{formatDisplayAmount(stagedAmounts.balanceDue)}</span>
+                <span className="oui-numeric font-bold">{formatTotalLine(balanceRounded)}</span>
               </div>
               <div className="flex justify-between items-end pt-4 border-t border-border/50">
                 <span className="text-lg font-black font-display tracking-tight text-foreground">{t('checkout.depositToPayNow')}</span>
                 <div className="text-end">
-                  <span className="oui-numeric text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatDisplayAmount(stagedAmounts.depositDue)}</span>
+                  <span className="oui-numeric text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatTotalLine(depositRounded)}</span>
                 </div>
               </div>
             </>
@@ -109,7 +156,7 @@ export function CheckoutSummary({
             <div className="flex justify-between items-end pt-4 border-t border-border/50">
               <span className="text-lg font-black font-display tracking-tight text-foreground">{t('checkout.totalToPay')}</span>
               <div className="text-end">
-                <span className="oui-numeric text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatDisplayAmount(totalPrice)}</span>
+                <span className="oui-numeric text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatTotalLine(totalRounded)}</span>
               </div>
             </div>
           )}
@@ -119,18 +166,25 @@ export function CheckoutSummary({
       {/* #417: the cancellation scale, repeated at checkout before payment. */}
       <CancellationScaleCard
         scale={trip.cancellationScale}
-        baseAmount={totalDisplay.amount}
+        baseAmount={totalRounded}
         currency={totalDisplay.currency}
       />
 
       {/* #619: when the amounts render in a different currency than the
-          session is charged in, say so — the conversion is display-only. */}
+          session is charged in, say so — the conversion is display-only.
+          #655: the note renders at 12px (was 10px) with the currency
+          codes bidi-isolated; the same note also sits adjacent to the
+          transfer instruction in CheckoutPayment. */}
       {showsConvertedCurrency && (
-        <p className="text-[10px] font-semibold text-muted-foreground text-center">
-          {t('checkout.displayCurrencyNote', {
-            display: totalDisplay.currency,
-            charged: normalizeCurrency(selectedCurrency),
-          })}
+        <p className="text-xs font-semibold text-muted-foreground text-center">
+          <Trans
+            i18nKey="checkout.displayCurrencyNote"
+            values={{
+              display: totalDisplay.currency,
+              charged: normalizeCurrency(selectedCurrency),
+            }}
+            components={{ display: <bdi />, charged: <bdi /> }}
+          />
         </p>
       )}
 
@@ -154,6 +208,11 @@ export function CheckoutSummary({
         <Banknote className="h-5 w-5" />
         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('checkout.directPaymentNote')}</span>
       </div>
+
+      {/* #678 (Council S6): the model explainer at the point of payment —
+          the agency is the seller and refund obligor; you pay the agency
+          directly; Ouiboo never holds your money. */}
+      <ModelExplainer compact />
     </Card>
   );
 }

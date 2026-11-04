@@ -6,11 +6,13 @@ import { usePathname } from 'next/navigation';
 import {
   BarChart3,
   Calendar,
+  FileText,
   ChevronLeft,
   ChevronRight,
   CreditCard,
-  LayoutDashboard,
+  LayoutDashboard, Sparkles,
   LifeBuoy,
+  MessageSquare,
   LogOut,
   Map,
   PlusCircle,
@@ -19,11 +21,13 @@ import {
   Settings,
   ShieldCheck,
   Star,
+  TicketPercent,
+  Users,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
-import { BetaBadge, Logo } from '@ouiboo/ui';
+import { BetaBadge, Logo, LogoLockup } from '@ouiboo/ui';
 import { useAuth } from '../AuthContext';
 
 export function AgencySidebar() {
@@ -44,6 +48,17 @@ export function AgencySidebar() {
     { name: t('sidebar.analytics'), href: '/dashboard/analytics', icon: BarChart3 },
     { name: t('sidebar.myTrips'), href: '/dashboard/trips', icon: Map },
     { name: t('sidebar.bookings'), href: '/dashboard/bookings', icon: Calendar },
+    // #786: CRM-lite — traveller contacts + booking pipeline.
+    { name: t('sidebar.crm'), href: '/dashboard/crm', icon: Users },
+    // #729 (Council S7-2): the agency messages inbox (reply side of
+    // traveller-initiated conversations).
+    { name: t('sidebar.messages'), href: '/dashboard/messages', icon: MessageSquare },
+    { name: t('sidebar.quotes'), href: '/dashboard/quotes', icon: FileText },
+    // #778: agency-funded promo codes (agency funds 100% of the discount).
+    { name: t('sidebar.promoCodes'), href: '/dashboard/promo-codes', icon: TicketPercent },
+    // #755: campaign/session pricing (automatic price rules, agency-funded).
+    { name: t('sidebar.priceRules'), href: '/dashboard/price-rules', icon: TicketPercent },
+    { name: t('batchF.customRequests'), href: '/dashboard/custom-requests', icon: Sparkles },
     { name: t('sidebar.reviews'), href: '/dashboard/reviews', icon: Star },
     { name: t('sidebar.wallet'), href: '/dashboard/wallet', icon: CreditCard },
     // #370: refund cases the agency must act on (SLA-tracked).
@@ -90,16 +105,15 @@ export function AgencySidebar() {
 
       <div className="flex h-16 items-center px-6 overflow-hidden shrink-0">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <Logo size={32} className="shadow-lg shadow-primary/20 rounded-lg" />
-          {!isCollapsed && (
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex items-center gap-2 text-xl font-bold text-foreground"
-            >
-              Ouiboo
+          {/* #794: expanded sidebar carries the final lockup; collapsed
+              it cannot fit, so the Route-End symbol stands alone. */}
+          {isCollapsed ? (
+            <Logo size={32} tone="auto" />
+          ) : (
+            <>
+              <LogoLockup height={28} tone="auto" />
               <BetaBadge />
-            </motion.span>
+            </>
           )}
         </Link>
       </div>

@@ -211,6 +211,42 @@ export function buildCancellationScaleSnapshot(raw: unknown): CancellationScaleS
     };
 }
 
+/**
+ * #687 (Council S6): the ONE standardised free-cancellation definition
+ * behind the one-line merchandising summary and the search filter.
+ * A trip offers "free cancellation" exactly when its scale's best
+ * (highest-threshold) 100%-refund band starts at least this many whole
+ * days before the trip starts. The indexed TripTemplate columns
+ * (freeCancellation / freeCancellationDays) are derived with this same
+ * function on every write, so card, hero, booking box and filter can
+ * never disagree.
+ */
+export const FREE_CANCELLATION_MIN_DAYS = 1;
+
+export interface CancellationSummary {
+    freeCancellation: boolean;
+    /** Threshold (days before start) of the free tier, when one exists. */
+    freeCancellationDays: number | null;
+    /** The best refund percent the scale offers (its top band). */
+    bestRefundPercent: number;
+}
+
+/** Derive the #687 summary from a resolved scale (or stored policy JSON). */
+export function summarizeCancellation(raw: unknown): CancellationSummary {
+    const scale = resolveCancellationScale(raw);
+    const sorted = sortCancellationBands(scale.bands);
+    const freeBand = sorted.find((band) => band.refundPercent === 100) ?? null;
+    const freeCancellationDays =
+        freeBand && freeBand.minDaysBeforeStart >= FREE_CANCELLATION_MIN_DAYS
+            ? freeBand.minDaysBeforeStart
+            : null;
+    return {
+        freeCancellation: freeCancellationDays !== null,
+        freeCancellationDays,
+        bestRefundPercent: sorted.reduce((max, band) => Math.max(max, band.refundPercent), 0),
+    };
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**

@@ -52,3 +52,23 @@ Complete these values and hand them to support/product:
 - Refund SLA shown to traveler: `________________`
 - Support email or WhatsApp contact: `________________`
 - Bank transfer instructions version approved: `Yes / No`
+
+## Gateway Enablement — Two-Control Rule (#635)
+
+Card (gateway) payments activate only when BOTH independent controls are ON:
+
+1. **Env flag** — `ENABLE_GATEWAY_PAYMENTS=true` in the API environment (deploy layer).
+2. **Platform setting** — the `PlatformSetting` row `gateway.enablement = 'true'` in the database (data layer). The row is absent by default, and absence means OFF.
+
+Either control alone is never enough: with only one ON, every gateway endpoint
+still refuses with `503 'Gateway payments are not enabled'`. The setting can be
+changed only through `POST /admin/payments/gateway-enablement` by an admin who
+completes an MFA (TOTP) step-up; every change writes an AuditLog row
+(`GATEWAY_ENABLEMENT_CHANGED`). Status is visible at
+`GET /admin/payments/gateway-enablement`.
+
+This code-level lock is one part of the card-payments enablement gate; the
+remaining items (Payments re-run of the negative-test set on a gateway-enabled
+build, the agency as merchant of record under its own contract with a
+BAM-authorised payment institution, and counsel sign-off under Law 103-12)
+stay tracked with the card-payments phase.

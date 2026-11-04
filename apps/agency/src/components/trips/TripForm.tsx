@@ -8,6 +8,7 @@ import type { CreateTripInput } from '@ouiboo/schemas';
 import type { TripWizardFormApi } from './useTripWizardForm';
 import { TripBasicInfo } from './TripBasicInfo';
 import { TripItinerary } from './TripItinerary';
+import { hasProhibitedCommercialTerms } from './commercial-terms';
 import { TripMediaUpload } from './TripMediaUpload';
 import { TripExtras } from './TripExtras';
 import { TripLivePreview } from './TripLivePreview';
@@ -58,7 +59,20 @@ export function TripForm({
     prevStep,
     nextStep,
     submissionError,
+    setSubmissionError,
   } = form;
+
+  // #674: editor validation mirroring the API publish gate — a trip
+  // being published may not state free-text cancellation/payment terms
+  // anywhere; the structured scale is the only cancellation text.
+  const guardedSubmit = (data: CreateTripInput) => {
+    if (data.status === 'ACTIVE' && hasProhibitedCommercialTerms(data)) {
+      setSubmissionError(t('trips.create.commercialTermsProhibited'));
+      return;
+    }
+    setSubmissionError('');
+    onSubmit(data);
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in slide-in-from-bottom duration-500 pb-12">
@@ -78,7 +92,7 @@ export function TripForm({
       </div>
 
       <form
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={handleSubmit(guardedSubmit)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
             e.preventDefault();

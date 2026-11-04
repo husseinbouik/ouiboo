@@ -34,6 +34,14 @@ export interface TripTranslationDay {
 export interface TripTranslationEntry {
     title?: string;
     description?: string;
+    /** #745: photo captions in this language (index-aligned with the
+     * trip's `images`, exactly like the canonical `imageAlts` column).
+     * Additive inside the existing Json map — no schema change. */
+    imageAlts?: string[];
+    /** #745: the start location in this language. The canonical
+     * `startLocation` column mirrors the canonical entry, exactly
+     * like `title`. Free text (a place name), resolved per locale. */
+    startLocation?: string;
     /** #584: itinerary days in this language (aligned by dayNumber). */
     itinerary?: TripTranslationDay[];
     /** #584: whole-list translations — a non-empty list wins wholesale. */
@@ -160,6 +168,12 @@ export function normalizeTripTranslations(input: unknown): TripTranslationsMap {
         const description = cleanText(rawEntry.description);
         if (title) entry.title = title;
         if (description) entry.description = description;
+        // #745: per-language photo captions + start location ride in
+        // the same entry, sanitized like every other field.
+        const imageAlts = cleanTextList(rawEntry.imageAlts);
+        const startLocation = cleanText(rawEntry.startLocation);
+        if (imageAlts) entry.imageAlts = imageAlts;
+        if (startLocation) entry.startLocation = startLocation;
         // #584 (phase 2): section content rides in the same entry.
         const itinerary = cleanTranslationDays(rawEntry.itinerary);
         const inclusions = cleanTextList(rawEntry.inclusions);
@@ -169,7 +183,7 @@ export function normalizeTripTranslations(input: unknown): TripTranslationsMap {
         if (inclusions) entry.inclusions = inclusions;
         if (exclusions) entry.exclusions = exclusions;
         if (checklist) entry.checklist = checklist;
-        if (entry.title || entry.description || entry.itinerary || entry.inclusions || entry.exclusions || entry.checklist) out[code] = entry;
+        if (entry.title || entry.description || entry.imageAlts || entry.startLocation || entry.itinerary || entry.inclusions || entry.exclusions || entry.checklist) out[code] = entry;
     }
     return out;
 }
@@ -182,7 +196,7 @@ export function normalizeTripTranslations(input: unknown): TripTranslationsMap {
  */
 export function buildTripTranslations(
     input: unknown,
-    french: { title?: string | null; description?: string | null } & TripCanonicalSections,
+    french: { title?: string | null; description?: string | null; imageAlts?: string[] | null; startLocation?: string | null } & TripCanonicalSections,
 ): TripTranslationsMap {
     const map = normalizeTripTranslations(input);
 
@@ -209,6 +223,14 @@ export function buildTripTranslations(
     const frDescription = cleanText(french.description);
     if (frTitle) frEntry.title = frTitle;
     if (frDescription) frEntry.description = frDescription;
+    // #745: the French entry also mirrors the canonical captions +
+    // start location. When the write carries neither, keep the stored
+    // canonical entry's values (the input map on update paths is the
+    // merged stored map) so a rebuild can never erase them.
+    const frImageAlts = cleanTextList(french.imageAlts) ?? cleanTextList(map[TRIP_CANONICAL_LOCALE]?.imageAlts);
+    const frStartLocation = cleanText(french.startLocation) ?? cleanText(map[TRIP_CANONICAL_LOCALE]?.startLocation);
+    if (frImageAlts) frEntry.imageAlts = frImageAlts;
+    if (frStartLocation) frEntry.startLocation = frStartLocation;
     // #584: the French entry also mirrors the canonical sections.
     if (canonicalDays.length > 0) {
         frEntry.itinerary = canonicalDays.map((day) => ({
@@ -303,6 +325,51 @@ export function resolveTripText(
         // there is no title at all.
         language: title.value !== '' ? title.language : description.language,
     };
+}
+
+/**
+ * #745: resolve the photo captions + start location for a locale,
+ * with the same fallback philosophy as resolveTripText (requested ->
+ * canonical map entry -> canonical columns -> any language). Captions
+ * resolve WHOLESALE (the first non-empty list wins — mixing languages
+ * inside one photo set would be worse than one consistent language);
+ * the location resolves as a single string. A field only comes back
+ * empty when NO language version of it exists.
+ */
+export function resolveTripMedia(
+    trip: {
+        imageAlts?: string[] | null;
+        startLocation?: string | null;
+        translations?: unknown;
+    },
+    locale?: string | null,
+): { imageAlts: string[]; startLocation: string } {
+    const map = normalizeTripTranslations(trip.translations);
+    const requested = normalizeTripLocale(locale);
+    const chain: Array<TripTranslationEntry | undefined> = [];
+    if (requested && requested !== TRIP_CANONICAL_LOCALE) chain.push(map[requested]);
+    chain.push(map[TRIP_CANONICAL_LOCALE]);
+    chain.push({
+        imageAlts: cleanTextList(trip.imageAlts) ?? undefined,
+        startLocation: cleanText(trip.startLocation),
+    });
+    for (const entry of Object.values(map)) chain.push(entry);
+
+    let imageAlts: string[] = [];
+    for (const entry of chain) {
+        if (entry?.imageAlts && entry.imageAlts.length > 0) {
+            imageAlts = entry.imageAlts;
+            break;
+        }
+    }
+    let startLocation = '';
+    for (const entry of chain) {
+        if (entry?.startLocation && entry.startLocation.trim() !== '') {
+            startLocation = entry.startLocation;
+            break;
+        }
+    }
+    return { imageAlts, startLocation };
 }
 
 /**
@@ -450,15 +517,25 @@ export function frenchSectionsMissing(
 export function localizeTripPayload<T extends {
     title?: string | null;
     description?: string | null;
+    imageAlts?: string[] | null;
+    startLocation?: string | null;
     translations?: unknown;
 } & TripCanonicalSections>(trip: T, locale?: string | null): T & { contentLanguage: string } {
     const resolved = resolveTripText(trip, locale);
+    // #745: captions + start location resolve per locale too — but,
+    // like the sections, only when the payload actually carries them.
+    const media = resolveTripMedia(trip, locale);
+    const withMedia = {
+        ...trip,
+        ...(trip.imageAlts !== undefined && trip.imageAlts !== null ? { imageAlts: media.imageAlts } : {}),
+        ...(trip.startLocation !== undefined && trip.startLocation !== null ? { startLocation: media.startLocation } : {}),
+    };
     // #584: sections resolve too — but only when the payload actually
     // carries them (list payloads don't select the itinerary relation;
     // their canonical lists still resolve through the map fallback).
     const sections = resolveTripSections(trip, locale);
     const withSections = {
-        ...trip,
+        ...withMedia,
         ...(trip.itinerary !== undefined && trip.itinerary !== null ? { itinerary: sections.itinerary } : {}),
         ...(trip.inclusions !== undefined ? { inclusions: sections.inclusions } : {}),
         ...(trip.exclusions !== undefined ? { exclusions: sections.exclusions } : {}),

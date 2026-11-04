@@ -63,14 +63,21 @@ export default function CreateTripPage() {
       return;
     }
 
-    // Clean up itinerary data to remove IDs and ensure proper types
+    // Clean up itinerary data to remove IDs and ensure proper types.
+    // Batch B (#676): the language-neutral slice rides along (empty
+    // values were already normalized to undefined by the editor).
     const cleanedData = {
       ...data,
       itinerary: data.itinerary?.map((day) => ({
         dayNumber: Number(day.dayNumber),
         title: day.title,
         description: day.description,
-        activities: Array.isArray(day.activities) ? day.activities : []
+        activities: Array.isArray(day.activities) ? day.activities : [],
+        distanceKm: day.distanceKm ?? undefined,
+        driveTimeMinutes: day.driveTimeMinutes ?? undefined,
+        mealsIncluded: day.mealsIncluded?.length ? day.mealsIncluded : undefined,
+        accommodationName: day.accommodationName ?? undefined,
+        accommodationType: day.accommodationType ?? undefined,
       }))
     };
 

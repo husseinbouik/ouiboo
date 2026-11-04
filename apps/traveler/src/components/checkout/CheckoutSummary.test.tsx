@@ -8,9 +8,41 @@ import mockEnTranslations from '../../../public/locales/en/translation.json';
 jest.mock('react-i18next', () => {
     // #424: resolve keys against the real English locale file so the
     // assertions below read the shipped copy, not raw key names.
+    const React = jest.requireActual('react');
     const lookup = (key: string): unknown =>
         key.split('.').reduce<any>((acc, part) => acc?.[part], mockEnTranslations);
     return {
+        // Minimal <Trans> (#655): resolve the key against the real
+        // locale file, interpolate {{values}}, and wrap <tag>…</tag>
+        // segments in the matching `components` entry — enough to
+        // render the bidi-isolated currency notes for real.
+        Trans: ({ i18nKey, values, components }: any) => {
+            const raw = lookup(i18nKey);
+            if (typeof raw !== 'string') return React.createElement(React.Fragment, null, i18nKey);
+            const interpolate = (s: string) => {
+                let out = s;
+                if (values) {
+                    for (const [name, replacement] of Object.entries(values)) {
+                        out = out.replaceAll(`{{${name}}}`, String(replacement));
+                    }
+                }
+                return out;
+            };
+            const parts: unknown[] = [];
+            const tagPattern = /<(\w+)>(.*?)<\/\1>/g;
+            let lastIndex = 0;
+            let match: RegExpExecArray | null;
+            let k = 0;
+            while ((match = tagPattern.exec(raw)) !== null) {
+                if (match.index > lastIndex) parts.push(interpolate(raw.slice(lastIndex, match.index)));
+                const component = components?.[match[1]];
+                const inner = interpolate(match[2]);
+                parts.push(component ? React.cloneElement(component, { key: k++ }, inner) : inner);
+                lastIndex = match.index + match[0].length;
+            }
+            if (lastIndex < raw.length) parts.push(interpolate(raw.slice(lastIndex)));
+            return React.createElement(React.Fragment, null, ...parts);
+        },
         useTranslation: () => ({
             t: (key: string, options?: Record<string, unknown>) => {
                 let value = lookup(key);
@@ -88,10 +120,29 @@ describe('CheckoutSummary (#424 localized totals)', () => {
         expect(screen.getByText(en.selectedDate)).toBeTruthy();
         expect(screen.getByText(en.guestCount)).toBeTruthy();
         expect(screen.getByText(en.subtotal)).toBeTruthy();
-        expect(screen.getByText(en.serviceFee)).toBeTruthy();
-        expect(screen.getByText(en.free)).toBeTruthy();
+        // #726: no traveller-facing service-fee claim — the platform
+        // service fee is charged to the agency, so the summary renders
+        // no fee line at all (the locale keys are gone entirely).
+        expect((en as Record<string, unknown>).serviceFee).toBeUndefined();
+        expect((en as Record<string, unknown>).free).toBeUndefined();
+        expect(screen.queryByText('Service Fee')).toBeNull();
         expect(screen.getByText(en.totalToPay)).toBeTruthy();
         expect(screen.getByText(en.directPaymentNote)).toBeTruthy();
+    });
+
+    it('renders the promo discount line and the discounted total (#778)', () => {
+        renderWithProviders(
+            <CheckoutSummary
+                {...baseProps}
+                totalPrice={1080}
+                promoInfo={{ code: 'SAVE10', discountAmount: 120, undiscountedTotal: 1200 }}
+            />,
+        );
+        // Subtotal stays the undiscounted figure; the discount line
+        // reconciles it to the discounted total that is charged.
+        expect(screen.getByTestId('checkout-promo-discount')).toBeTruthy();
+        expect(screen.getByText((en.promo as any).discount.replace('{{code}}', 'SAVE10'))).toBeTruthy();
+        expect(screen.getByText(en.totalToPay)).toBeTruthy();
     });
 
     it('renders the staged deposit framing instead of the full total', () => {
@@ -113,11 +164,35 @@ describe('CheckoutSummary display currency (#619)', () => {
         renderWithProviders(<CheckoutSummary {...baseProps} />);
         // 1200 MAD x 0.092 = EUR 110.40 — shown as subtotal AND total.
         expect(await screen.findAllByText(/110\.40/)).toHaveLength(2);
+        // #655: the note renders through <Trans> with the currency
+        // codes wrapped in <bdi>, so match the paragraph's full text
+        // (tags stripped from the shipped copy) instead of a single
+        // text node.
+        const expectedNote = en.displayCurrencyNote
+            .replace(/<\/?(?:display|charged)>/g, '')
+            .replace('{{display}}', 'EUR')
+            .replace('{{charged}}', 'MAD');
         expect(
-            screen.getByText(
-                en.displayCurrencyNote.replace('{{display}}', 'EUR').replace('{{charged}}', 'MAD'),
-            ),
+            screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === expectedNote),
         ).toBeTruthy();
+    });
+
+    it('#663: staged lines are derived from the converted total — deposit + balance reconcile to the cent', async () => {
+        mockUser = { id: 'u1', name: 'Sara', email: 's@x.io', role: 'TRAVELER', displayCurrency: 'EUR' };
+        // 11 MAD total at 0.092: total €1.01; deposit 3 MAD converts
+        // independently to €0.28 and balance 8 MAD to €0.74 — a cent
+        // MORE than the total. Derived lines must render balance as
+        // €0.73 (total − deposit) so the displayed figures reconcile.
+        renderWithProviders(
+            <CheckoutSummary
+                {...baseProps}
+                totalPrice={11}
+                stagedAmounts={{ depositDue: 3, balanceDue: 8, total: 11 }}
+            />,
+        );
+        expect(await screen.findByText(/0\.28/)).toBeTruthy();
+        expect(await screen.findByText(/0\.73/)).toBeTruthy();
+        expect(screen.queryByText(/0\.74/)).toBeNull();
     });
 
     it('falls back to the session currency when no rate is available', async () => {

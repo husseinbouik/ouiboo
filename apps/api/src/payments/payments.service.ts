@@ -1,12 +1,14 @@
-import { Injectable, BadRequestException, Logger, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger, Optional, ServiceUnavailableException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
+import { PushNotificationsService } from '../notifications/push-notifications.service';
 import { PaymentProviderFactory } from './providers/payment-provider.factory';
 import { InitiatePaymentDto, VerifyPaymentDto, ProcessRefundDto } from './dto/payment.dto';
 import { PaymentVerificationResult } from './interfaces/payment-provider.interface';
 import { PaymentMethod, BookingStatus, BookingPaymentStatus, RefundStatus, PaymentCustodian, PaymentLedgerEntryType, PaymentLedgerSource } from '@ouiboo/database';
 import { MoneyInput, decimalEqualsMoney, multiplyMoney, toMoneyDecimal, toMoneyString } from '../common/money.util';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
+import { GATEWAY_ENABLEMENT_KEY } from './gateway-enablement.service';
 
 @Injectable()
 export class PaymentsService {
@@ -17,6 +19,9 @@ export class PaymentsService {
     private paymentProviderFactory: PaymentProviderFactory,
     private emailService: EmailService,
     private externalPaymentsService: ExternalPaymentsService,
+    // #784: optional so existing manual constructions in specs keep
+    // working; the Nest module always supplies it.
+    @Optional() private pushNotifications?: PushNotificationsService,
   ) { }
 
   /**
@@ -24,7 +29,7 @@ export class PaymentsService {
    * Security: Validates amount against booking session price to prevent underpayment tampering
    */
   async initiatePayment(dto: InitiatePaymentDto, requesterId?: string) {
-    this.ensureGatewayPaymentsEnabled();
+    await this.ensureGatewayPaymentsEnabled();
     // Verify booking exists and is in correct status
     const booking = await this.prisma.booking.findUnique({
       where: { id: dto.bookingId },
@@ -119,7 +124,7 @@ export class PaymentsService {
    * zero local rows can never confirm the booking.
    */
   async verifyPayment(dto: VerifyPaymentDto, requesterId?: string) {
-    this.ensureGatewayPaymentsEnabled();
+    await this.ensureGatewayPaymentsEnabled();
     const booking = await this.prisma.booking.findUnique({
       where: { id: dto.bookingId },
       include: {
@@ -259,7 +264,7 @@ export class PaymentsService {
    * of the same claim replay one provider operation.
    */
   async processRefund(dto: ProcessRefundDto) {
-    this.ensureGatewayPaymentsEnabled();
+    await this.ensureGatewayPaymentsEnabled();
     const booking = await this.prisma.booking.findUnique({
       where: { id: dto.bookingId },
       include: { paymentTransactions: true },
@@ -419,7 +424,6 @@ export class PaymentsService {
   }
 
   async refundBookingById(bookingId: string, amount?: MoneyInput) {
-    this.ensureGatewayPaymentsEnabled();
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
       include: {
@@ -433,9 +437,20 @@ export class PaymentsService {
       throw new BadRequestException('Booking not found');
     }
 
+    // #733: the manual-payment check runs BEFORE the gateway-enabled
+    // gate. Manual (bank-transfer) bookings are the beta's only payment
+    // rail, so answering them with the gateway gate's 503 ("Gateway
+    // payments are not enabled") hid the actionable truth: a manual
+    // payment is refunded by the agency returning the transfer, tracked
+    // through a RefundCase (#370) with bank evidence — never through
+    // this gateway endpoint.
     if (booking.paymentMethod !== PaymentMethod.GATEWAY) {
-      throw new BadRequestException('Only gateway payments can be refunded automatically');
+      throw new BadRequestException(
+        'Manual (bank transfer) payments cannot be refunded through the gateway. Open a refund case for this booking instead: the agency returns the transfer directly and the refund is recorded with bank evidence.',
+      );
     }
+
+    await this.ensureGatewayPaymentsEnabled();
 
     if (booking.paymentStatus === BookingPaymentStatus.REFUNDED) {
       throw new BadRequestException('Booking has already been refunded');
@@ -745,7 +760,7 @@ export class PaymentsService {
     payload: string,
     signature: string,
   ) {
-    this.ensureGatewayPaymentsEnabled();
+    await this.ensureGatewayPaymentsEnabled();
     this.logger.log(`Processing webhook from ${provider}`);
 
     const paymentProvider = this.paymentProviderFactory.getProvider(
@@ -1361,12 +1376,49 @@ export class PaymentsService {
       },
     });
 
+    // #784: same event, push channel — preference-gated inside the
+    // push service, best-effort, never fails the confirmation.
+    if (this.pushNotifications) {
+      try {
+        await this.pushNotifications.sendToUser(
+          booking.travelerId,
+          'BOOKING_CONFIRMATION',
+          {
+            title: 'Booking confirmed',
+            body: `Your booking for ${booking.session.template.title} has been confirmed.`,
+            url: `/bookings/${booking.id}`,
+          },
+        );
+      } catch {
+        // Push is best-effort; the booking is already confirmed.
+      }
+    }
+
     this.logger.log(`Booking ${bookingId} transitioned to CONFIRMED state`);
     return booking;
   }
 
-  private ensureGatewayPaymentsEnabled() {
+  /**
+   * #635: gateway flows require BOTH independent controls — the
+   * ENABLE_GATEWAY_PAYMENTS env flag AND the DB-backed platform
+   * setting `gateway.enablement` (GatewayEnablementService; absent or
+   * unreadable = OFF, fail closed). A single env-flag flip can never
+   * activate card payments on its own.
+   */
+  private async ensureGatewayPaymentsEnabled() {
     if (process.env.ENABLE_GATEWAY_PAYMENTS !== 'true') {
+      throw new ServiceUnavailableException('Gateway payments are not enabled');
+    }
+    let settingEnabled = false;
+    try {
+      const row = await this.prisma.platformSetting.findUnique({
+        where: { key: GATEWAY_ENABLEMENT_KEY },
+      });
+      settingEnabled = row?.value === 'true';
+    } catch {
+      settingEnabled = false;
+    }
+    if (!settingEnabled) {
       throw new ServiceUnavailableException('Gateway payments are not enabled');
     }
   }

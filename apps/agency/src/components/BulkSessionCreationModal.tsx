@@ -17,6 +17,10 @@ interface BulkSessionInput {
   /** #369: staged-payment configuration (minimum-group trips). */
   minBookings?: number;
   confirmationDeadline?: string;
+  /** Batch F: #694 private sessions, #696 pay-later holds. */
+  sessionKind?: 'SHARED' | 'PRIVATE';
+  allowPayLater?: boolean;
+  payLaterHoldHours?: number;
 }
 
 interface BulkSessionCreationModalProps {
@@ -265,6 +269,47 @@ export function BulkSessionCreationModal({
                             </p>
                           </>
                         )}
+
+                        {/* Batch F: session kind + pay-later */}
+                        <div className="space-y-2">
+                          <Label htmlFor={`kind-${session.id}`} className="text-sm font-medium">
+                            {t('batchF.sessionKind')}
+                          </Label>
+                          <select
+                            id={`kind-${session.id}`}
+                            value={session.sessionKind || 'SHARED'}
+                            onChange={(e) => updateSession(session.id, 'sessionKind', e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground"
+                            disabled={isLoading}
+                          >
+                            <option value="SHARED">{t('batchF.kindShared')}</option>
+                            <option value="PRIVATE">{t('batchF.kindPrivate')}</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">{t('batchF.allowPayLater')}</Label>
+                          <div className="flex items-center gap-3 h-10">
+                            <input
+                              type="checkbox"
+                              checked={session.allowPayLater ?? false}
+                              onChange={(e) => updateSession(session.id, 'allowPayLater', e.target.checked)}
+                              className="h-4 w-4 text-primary bg-background border-border focus:ring-primary"
+                              disabled={isLoading}
+                            />
+                            {session.allowPayLater && (
+                              <Input
+                                type="number"
+                                min={1}
+                                max={336}
+                                value={session.payLaterHoldHours ?? ''}
+                                onChange={(e) => updateSession(session.id, 'payLaterHoldHours', parseInt(e.target.value) || undefined)}
+                                placeholder={t('batchF.payLaterHoldHours')}
+                                className="h-10"
+                                disabled={isLoading}
+                              />
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

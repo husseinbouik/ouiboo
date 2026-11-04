@@ -280,11 +280,41 @@ export type AdminOverviewCounts = {
 };
 
 /** #559: shape of GET /admin/analytics/beta-metrics (#432 service output). */
+/** #756: aggregate traveller-funnel readout (GET /admin/analytics/funnel). */
+export type AdminFunnelMetrics = {
+  window: { from: string; to: string };
+  generatedAt: string;
+  steps: {
+    searches: number;
+    searchesZeroResult: number;
+    bookingsCreated: number;
+    proofsSubmitted: number;
+    proofsPending: number;
+    bankConfirmedBookings: number;
+    confirmedBookings: number;
+    completedBookings: number;
+    cancelledBookings: number;
+  };
+  bookingsByStatus: Record<string, number>;
+  refunds: { total: number; byStatus: Record<string, number> };
+  conversions: {
+    zeroResultRatePercent: number | null;
+    bookingPerSearchPercent: number | null;
+    proofPerBookingPercent: number | null;
+    bankConfirmedPerProofPercent: number | null;
+    confirmedPerBookingPercent: number | null;
+    completedPerConfirmedPercent: number | null;
+    cancelledPerBookingPercent: number | null;
+  };
+};
+
 export type AdminBetaMetrics = {
   window: { from: string; to: string };
   generatedAt: string;
   searches: { total: number; zeroResult: number; zeroResultRate: number | null };
   bookings: { created: number; byStatus: Record<string, number>; completed: number };
+  /** #631(b): agency takings (GMV) vs Ouiboo revenue — never conflated. */
+  takings?: { agencyGmvMad: string; platformRevenueMad: string };
   refunds: {
     opened: number;
     byStatus: Record<string, number>;

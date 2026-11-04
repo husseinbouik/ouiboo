@@ -7,6 +7,7 @@ import { EmailService } from '../email/email.service';
 import { createHash, randomInt, randomUUID, timingSafeEqual } from 'crypto';
 import { UserRole } from '@ouiboo/types';
 import { RedisService } from '../common/redis.service';
+import { generateReferralCode, normalizeReferralCode } from '../users/referral-code';
 import { CURRENT_SUBSCRIPTION_TERMS_VERSION } from '../common/subscription-terms';
 import {
     MfaService,
@@ -57,6 +58,12 @@ const MFA_GATE_WINDOW_SECONDS = 15 * 60;
 const MFA_CHALLENGE_USED_PREFIX = 'mfa:challenge-used';
 const MFA_PENDING_SECRET_PREFIX = 'mfa:pending-secret';
 const MFA_PENDING_SECRET_TTL_SECONDS = 10 * 60;
+// #660: bounded retries for the recovery-code claim — a claim lost to a
+// concurrent burn re-reads and re-matches, so parallel submits of two
+// DIFFERENT codes both land, while the SAME code is simply gone on the
+// second read. Three attempts is far beyond any realistic contention
+// (each attempt burns at most one of ten codes).
+const MFA_RECOVERY_CLAIM_ATTEMPTS = 3;
 
 @Injectable()
 export class AuthService {
@@ -336,6 +343,32 @@ export class AuthService {
         }
     }
 
+    /**
+     * #660: atomically claim a challenge (SET NX) so exactly one submit
+     * can spend it. Returns false only when the key already existed —
+     * the challenge was already claimed/burned. On Redis unavailability
+     * this fails open (true), matching this section's outage posture:
+     * the recovery code's atomic DB claim still guarantees single-use,
+     * and a Redis outage must not lock the admin out of recovery.
+     */
+    private async claimChallenge(jti: string): Promise<boolean> {
+        try {
+            const redis = this.redisService.getClient();
+            if (!redis) return true;
+            const reply = await redis.set(
+                `${MFA_CHALLENGE_USED_PREFIX}:${jti}`,
+                '1',
+                'EX',
+                5 * 60,
+                'NX',
+            );
+            return reply !== null;
+        } catch (err) {
+            this.logger.warn(`mfa challenge claim failed (fail-open): ${(err as Error).message}`);
+            return true;
+        }
+    }
+
     // ---- Audit + alert helpers ----
 
     /**
@@ -425,6 +458,21 @@ export class AuthService {
             throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
         }
         await this.checkMfaGate(user.id);
+        // #738: claim the challenge atomically BEFORE verifying the
+        // code, mirroring the #660 recovery path. The old flow burned
+        // the challenge only after success (check-then-set via
+        // loadChallengeUser + burnChallenge), so two DIFFERENT valid
+        // codes — e.g. the current step and the adjacent step inside
+        // the ±1 window — submitted in parallel against ONE challenge
+        // could both complete verification: #642's step claim only
+        // serializes submits of the same step. SET NX is the atomic
+        // claim: exactly one submit proceeds past this point, and the
+        // challenge is spent even if the code does not verify —
+        // re-login for a fresh challenge is the safe cost.
+        if (!(await this.claimChallenge(jti))) {
+            await this.writeAdminAudit(user, 'ADMIN_LOGIN_FAILED', { stage: 'mfa-totp-challenge' });
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
         const secret = mfa.decryptSecret(user.mfaTotpSecret);
         const matchedStep = mfa.verifyTotpStep(secret, code);
         if (matchedStep === null) {
@@ -452,7 +500,8 @@ export class AuthService {
             await this.writeAdminAudit(user, 'ADMIN_LOGIN_FAILED', { stage: 'mfa-totp-replay' });
             throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
         }
-        await this.burnChallenge(jti);
+        // The challenge stays claimed (burned) from the claim above —
+        // no separate post-success burn is needed (#738).
         await this.clearMfaFailures(user.id);
         await this.writeAdminAudit(user, 'ADMIN_LOGIN_SUCCEEDED', { via: 'totp' });
         return this.login(user);
@@ -466,21 +515,61 @@ export class AuthService {
             throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
         }
         await this.checkMfaGate(user.id);
-        const hashes = Array.isArray(user.mfaRecoveryCodeHashes)
-            ? (user.mfaRecoveryCodeHashes as string[])
-            : [];
-        const matchIndex = await mfa.findMatchingCodeIndex(recoveryCode, hashes);
-        if (matchIndex < 0) {
+        // #660: claim the challenge atomically BEFORE matching. The old
+        // flow checked the burn flag inside loadChallengeUser and only
+        // set it after success (check-then-set), so two concurrent
+        // submits carrying the same challenge both passed the check.
+        // SET NX is the atomic claim: exactly one submit proceeds past
+        // this point, and the challenge is spent even if the code does
+        // not match — re-login for a fresh challenge is the safe cost.
+        if (!(await this.claimChallenge(jti))) {
+            await this.writeAdminAudit(user, 'ADMIN_LOGIN_FAILED', { stage: 'mfa-recovery-challenge' });
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
+        // #660: claim the matched code atomically, the break-glass way.
+        // The conditional updateMany is keyed on the exact hashes array
+        // the match was computed against, so a concurrent burn of ANY
+        // code on this account makes the claim fail instead of silently
+        // overwriting the other write — the old unconditional update
+        // could resurrect a spent code via lost update, or let one code
+        // mint two sessions. A lost claim re-reads and re-matches: the
+        // same code is then simply gone (generic 401 below), while a
+        // different code can still claim, so parallel submits of two
+        // distinct codes both burn exactly once.
+        let remaining: string[] | null = null;
+        for (let attempt = 0; attempt < MFA_RECOVERY_CLAIM_ATTEMPTS && remaining === null; attempt++) {
+            const current = attempt === 0
+                ? user
+                : await this.db.user.findUnique({ where: { id: user.id } });
+            if (!current) break;
+            const hashes = Array.isArray(current.mfaRecoveryCodeHashes)
+                ? (current.mfaRecoveryCodeHashes as string[])
+                : [];
+            const matchIndex = await mfa.findMatchingCodeIndex(recoveryCode, hashes);
+            if (matchIndex < 0) {
+                await this.recordMfaFailure(user.id);
+                await this.writeAdminAudit(user, 'ADMIN_LOGIN_FAILED', { stage: 'mfa-recovery' });
+                throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+            }
+            const candidate = hashes.filter((_, i) => i !== matchIndex);
+            const claimed = await this.db.user.updateMany({
+                where: {
+                    id: user.id,
+                    mfaRecoveryCodeHashes: { equals: hashes },
+                },
+                data: { mfaRecoveryCodeHashes: candidate },
+            });
+            if (claimed.count === 1) {
+                remaining = candidate;
+            }
+        }
+        if (remaining === null) {
+            // Every claim lost to concurrent writers — the code's fate
+            // was decided by a racing submit. Same generic 401.
             await this.recordMfaFailure(user.id);
             await this.writeAdminAudit(user, 'ADMIN_LOGIN_FAILED', { stage: 'mfa-recovery' });
             throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
         }
-        const remaining = hashes.filter((_, i) => i !== matchIndex);
-        await this.db.user.update({
-            where: { id: user.id },
-            data: { mfaRecoveryCodeHashes: remaining },
-        });
-        await this.burnChallenge(jti);
         await this.clearMfaFailures(user.id);
         await this.writeAdminAudit(user, 'ADMIN_MFA_RECOVERY_USED', {
             recoveryCodesRemaining: remaining.length,
@@ -809,6 +898,25 @@ export class AuthService {
             throw new HttpException('AGE_RESTRICTED', HttpStatus.BAD_REQUEST);
         }
 
+        // #777: resolve referral attribution before any write. A valid
+        // code links the new account to its referrer; an invalid or
+        // unknown code is ignored silently — signup never fails over it.
+        // Self-attribution is impossible: a code exists only once its
+        // owner's account has been created.
+        let referredById: string | null = null;
+        const referralCodeInput = normalizeReferralCode(dto.referralCode);
+        if (referralCodeInput && typeof this.db.user?.findUnique === 'function') {
+            try {
+                const referrer = await this.db.user.findUnique({
+                    where: { referralCode: referralCodeInput },
+                    select: { id: true },
+                });
+                referredById = referrer?.id ?? null;
+            } catch {
+                referredById = null;
+            }
+        }
+
         const hashedPassword = await bcrypt.hash(dto.password, 10);
         // Generate 6-digit OTP (100000 to 999999)
         const otp = this.generateOtp();
@@ -828,6 +936,8 @@ export class AuthService {
                         dateOfBirth,
                         ageAttestedAt: new Date(),
                         termsVersion: CURRENT_TERMS_VERSION,
+                        referralCode: generateReferralCode(),
+                        referredById,
                         otp: otpHash,
                         otpExpiresAt,
                         otpLastSentAt,

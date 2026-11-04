@@ -25,6 +25,7 @@ import { VerificationStatus, type TravelLicenceType } from '@ouiboo/types';
 import { PrivateDocumentUpload } from '@/components/PrivateDocumentUpload';
 import { VerificationPausedBanner } from '@/components/VerificationPausedBanner';
 import { SupportBlock } from '@/components/SupportBlock';
+import { BetaOfferCard } from '@/components/BetaOfferCard';
 import {
   activationBlockArtefactKey,
   effectiveInsuranceStatus,
@@ -322,6 +323,9 @@ export default function OnboardingPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
       <VerificationPausedBanner showCta={false} />
+      {/* #677 (Council S6): the beta offer pack — 48-working-hour
+          verification SLA, assisted listing, support-relief split. */}
+      <BetaOfferCard />
       {/* Session #3 P0-9 (#556): blocked on verification? Here's the way to OuiBoo. */}
       <SupportBlock />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

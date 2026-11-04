@@ -1,6 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
+import { MessagingService } from '../messaging/messaging.service';
+import { PushNotificationsService } from './push-notifications.service';
 import { NotificationType } from '@ouiboo/database';
 
 type NotificationMap = Record<string, string>;
@@ -20,6 +22,10 @@ export class NotificationJobsService {
   constructor(
     private prisma: DatabaseService,
     private emailService: EmailService,
+    // #785: optional — existing spec constructions (2 args) stay valid.
+    @Optional() private messagingService?: MessagingService,
+    // #784: optional — the Nest module always supplies it.
+    @Optional() private pushNotifications?: PushNotificationsService,
   ) {}
 
   /**
@@ -387,6 +393,21 @@ export class NotificationJobsService {
               `Booking ${booking.id} auto-cancelled due to non-payment`,
             );
           }
+
+          // #785: SMS/WhatsApp attempt on the same cancellation event
+          // (strict no-op unless flags on + phone + traveller opt-in).
+          if (this.messagingService) {
+            await this.messagingService.notifyEvent({
+              userId: booking.travelerId,
+              phone: booking.phoneNumber,
+              locale: booking.locale,
+              event: 'CANCELLATION',
+              variables: {
+                tripTitle: booking.session.template.title,
+                bookingId: booking.id,
+              },
+            });
+          }
         } catch (error) {
           this.logger.error(
             `Failed to auto-cancel booking ${booking.id}`,
@@ -473,5 +494,25 @@ export class NotificationJobsService {
         sentAt: new Date(),
       },
     });
+
+    // #784: push is a second channel for the same event, dispatched
+    // only after the notification record exists. The push service
+    // re-checks the channel + category preferences itself, so a user
+    // who opted into email only never receives push. Best-effort: a
+    // push failure must never fail the job that created the record.
+    if (this.pushNotifications) {
+      try {
+        await this.pushNotifications.sendToUser(userId, type, {
+          title: 'Ouiboo',
+          body: message,
+          url: '/notifications',
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Push dispatch failed for user ${userId} (${type})`,
+          error instanceof Error ? error.message : undefined,
+        );
+      }
+    }
   }
 }

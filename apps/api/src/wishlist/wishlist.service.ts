@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { localizeTripPayload, normalizeTripLocale } from '../trips/trip-translations.util';
 
 @Injectable()
 export class WishlistService {
@@ -67,7 +68,7 @@ export class WishlistService {
   /**
    * Get user's wishlist
    */
-  async getUserWishlist(userId: string, page: number = 1, limit: number = 20) {
+  async getUserWishlist(userId: string, page: number = 1, limit: number = 20, locale?: string | null) {
     const safePage = Number.isFinite(page) ? Math.max(1, Math.floor(page)) : 1;
     const safeLimit = Number.isFinite(limit) ? Math.min(50, Math.max(1, Math.floor(limit))) : 20;
     const skip = (safePage - 1) * safeLimit;
@@ -110,7 +111,10 @@ export class WishlistService {
     ]);
 
     return {
-      items: wishlists.map((wishlist) => wishlist.tripTemplate),
+      // Keep the raw translation map available but resolve the catalogue
+      // fields for the traveller's requested language, just like public
+      // discovery and rebooking suggestions do.
+      items: wishlists.map((wishlist) => localizeTripPayload(wishlist.tripTemplate, normalizeTripLocale(locale))),
       total,
       page: safePage,
       pages: Math.ceil(total / safeLimit),

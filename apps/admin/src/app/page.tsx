@@ -44,6 +44,7 @@ import type {
   AdminPendingGroup,
   AdminRefundCase,
   AdminBetaMetrics,
+  AdminFunnelMetrics,
   AdminOverviewCounts,
   ApiErrorResponse,
   FeedbackState,
@@ -61,6 +62,7 @@ import AuditTab from '@/components/dashboard/AuditTab';
 import InvoicesTab from '@/components/dashboard/InvoicesTab';
 import RefundsTab from '@/components/dashboard/RefundsTab';
 import BetaMetricsPanel from '@/components/dashboard/BetaMetricsPanel';
+import FunnelMetricsPanel from '@/components/dashboard/FunnelMetricsPanel';
 import { countRefundUrgency, filterRefundCasesByUrgency, type RefundUrgency } from '@/components/dashboard/refund-urgency';
 import SecurityTab from '@/components/dashboard/SecurityTab';
 import SupportTab from '@/components/dashboard/SupportTab';
@@ -162,6 +164,17 @@ export default function AdminDashboard() {
     queryKey: ['admin-beta-metrics'],
     queryFn: async () => {
       const response = await apiClient.get('/admin/analytics/beta-metrics');
+      return response.data;
+    },
+    staleTime: 60_000,
+  });
+
+  // #756: traveller-funnel readout — aggregate server facts next to
+  // the beta-metrics panel on the operator's landing tab.
+  const funnelMetricsQuery = useQuery<AdminFunnelMetrics>({
+    queryKey: ['admin-funnel-metrics'],
+    queryFn: async () => {
+      const response = await apiClient.get('/admin/analytics/funnel');
       return response.data;
     },
     staleTime: 60_000,
@@ -800,6 +813,13 @@ export default function AdminDashboard() {
             metrics={betaMetricsQuery.data ?? null}
             isLoading={betaMetricsQuery.isLoading}
             isError={betaMetricsQuery.isError}
+          />
+          {/* #756: traveller funnel panel (aggregate server facts). */}
+          <FunnelMetricsPanel
+            t={t}
+            metrics={funnelMetricsQuery.data ?? null}
+            isLoading={funnelMetricsQuery.isLoading}
+            isError={funnelMetricsQuery.isError}
           />
           </>
         )}

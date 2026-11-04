@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
 import { SUPPORT_EMAIL, isSupportEmailConfigured, supportMailto } from '@/lib/support';
 import { NORMAL_SUPPORT_RESPONSE_HOURS, REFUND_SLA_DAYS } from '@ouiboo/utils';
+import PlatformIdentity from '@/components/PlatformIdentity';
 
 /**
  * #419 (Council P0-16): the published support operation. Two lanes,
@@ -90,6 +91,10 @@ export default function TravelerSupportPage() {
             {t('support.helpCentre')}
           </Link>
         </div>
+
+        {/* #627: the platform identity block on the help/legal
+            surfaces too — who Ouiboo is and how to reach it. */}
+        <PlatformIdentity className="mt-10" />
 
         <p className="mt-8 text-sm text-muted-foreground">{t('support.safetyNote')}</p>
       </div>

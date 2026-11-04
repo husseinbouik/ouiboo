@@ -18,6 +18,7 @@ import { EmailModule } from './email/email.module'
 import { HealthModule } from './health/health.module'
 import { MessagesModule } from './messages/messages.module'
 import { NotificationsModule } from './notifications/notifications.module'
+import { MessagingModule } from './messaging/messaging.module'
 import { PaymentsModule } from './payments/payments.module'
 import { PaymentProvidersModule } from './payment-providers/payment-providers.module'
 import { ReviewsModule } from './reviews/reviews.module'
@@ -26,6 +27,10 @@ import { UploadModule } from './upload/upload.module'
 import { UsersModule } from './users/users.module'
 import { ExternalPaymentsModule } from './external-payments/external-payments.module'
 import { WishlistModule } from './wishlist/wishlist.module'
+import { QuoteRequestsModule } from './quote-requests/quote-requests.module'
+import { PromoCodesModule } from './promo-codes/promo-codes.module'
+import { PriceRulesModule } from './price-rules/price-rules.module'
+import { CustomTripsModule } from './custom-trips/custom-trips.module'
 
 @Module({
   imports: [
@@ -49,6 +54,7 @@ import { WishlistModule } from './wishlist/wishlist.module'
     PaymentsModule,
     PaymentProvidersModule,
     NotificationsModule,
+    MessagingModule,
     ReviewsModule,
     WishlistModule,
     AnalyticsModule,
@@ -58,6 +64,10 @@ import { WishlistModule } from './wishlist/wishlist.module'
     InvoicesModule,
     RefundsModule,
     MessagesModule,
+    QuoteRequestsModule,
+    PromoCodesModule,
+    PriceRulesModule,
+    CustomTripsModule,
   ],
 })
 export class AppModule {}

@@ -546,7 +546,29 @@
       "supportResponseRate": "Support first response within 48 hours",
       "supportTickets": "{{count}} support tickets opened",
       "supportTicketsDetail": "{{responded}} with a first response, {{within}} within 48 hours",
-      "supportAwaiting": "{{count}} open tickets awaiting a first response for over 48 hours"
+      "supportAwaiting": "{{count}} open tickets awaiting a first response for over 48 hours",
+      "agencyGmv": "Agency GMV / agency takings",
+      "agencyGmvDetail": "Traveller money paid to agencies on {{count}} completed bookings in this window. Not Ouiboo revenue.",
+      "ouibooRevenueFreeBeta": "Ouiboo revenue (free beta): 0 MAD",
+      "funnelSessionsNote": "Funnel counts are TripSessions created (sessions / supply), not traveller views."
+    },
+    "funnel": {
+      "title": "Traveller funnel",
+      "subtitle": "Aggregate server-side funnel facts from the #756 readout (last 30 days by default). Steps the server cannot observe are not estimated.",
+      "window": "Window: {{from}} – {{to}}",
+      "loading": "Loading funnel metrics…",
+      "error": "Funnel metrics are unavailable right now.",
+      "searches": "Searches",
+      "zeroResultRate": "Zero-result rate",
+      "bookingsCreated": "Bookings created",
+      "bookingPerSearch": "Booking per search",
+      "proofsSubmitted": "Proofs submitted",
+      "proofsPending": "Proofs pending review",
+      "bankConfirmed": "Bank-confirmed bookings",
+      "confirmed": "Bookings confirmed",
+      "completed": "Bookings completed",
+      "cancelled": "Bookings cancelled",
+      "refundCases": "Refund cases"
     },
     "diagnostics": {
       "title": "Build & flags",
@@ -605,7 +627,10 @@
     "description": "Private Ouiboo platform administration workspace."
   },
   "common": {
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "switchLanguage": "Switch language current is {{language}}",
+    "switchFrom": "Switch from {{language}}",
+    "toggleTheme": "Toggle theme"
   },
   "pagination": {
     "showing": "Showing",

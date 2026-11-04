@@ -77,6 +77,19 @@ describe('traveller locale parity (#424)', () => {
         expect((ar as any).reviews.noReviewsYet).not.toBe((en as any).reviews.noReviewsYet);
     });
 
+    it('ships a complete, non-English traveller profile namespace (#743)', () => {
+        const keys = [
+            'signedOutTitle', 'title', 'personalInformation', 'fullName',
+            'accountRole', 'emailAddress', 'avatarUrl', 'save', 'displayCurrency',
+        ];
+        for (const key of keys) {
+            expect((fr as any).profilePage[key]).toBeDefined();
+            expect((ar as any).profilePage[key]).toBeDefined();
+            expect((fr as any).profilePage[key]).not.toBe((en as any).profilePage[key]);
+            expect((ar as any).profilePage[key]).not.toBe((en as any).profilePage[key]);
+        }
+    });
+
     it('isolates the interpolated Latin trip title in the AR share text and spells the brand Ouiboo in AR seller.poweredBy (#577)', () => {
         // U+2068 FIRST STRONG ISOLATE … U+2069 POP DIRECTIONAL ISOLATE
         // around {{title}} so a Latin title cannot scramble the RTL sentence.
@@ -116,6 +129,33 @@ describe('traveller locale parity (#424)', () => {
         expect((ar as any).bookingDetail.paymentStatus.paid).not.toBe(
             (en as any).bookingDetail.paymentStatus.paid,
         );
+    });
+
+    it('ships the complete messages namespace in every locale (#729, W12 pin)', () => {
+        // PR #822 added these keys; PR #826's squash (built on a pre-#822
+        // base) dropped them from ALL three locales at once, so the
+        // key-union parity check above stayed green while the chat doors
+        // rendered raw keys and lost their mounts' labels. Pin the full
+        // list so a uniform drop fails CI.
+        const expected = [
+            'backToMessages', 'block', 'blockConfirm', 'blockedBadge', 'blockedNotice',
+            'browseTrips', 'composerPlaceholder', 'conversationWith', 'emptyBody',
+            'emptyThread', 'emptyTitle', 'exploreTrips', 'idDocumentWarning',
+            'keepOnOuibooWarning', 'messageAgency', 'noMessagesYet', 'report',
+            'reportBody', 'reportDetailsPlaceholder', 'reportDone',
+            'reportReasonHarassment', 'reportReasonIdDocumentRequest', 'reportReasonLabel',
+            'reportReasonOffPlatformPayment', 'reportReasonOther', 'reportReasonSpam',
+            'reportSubmit', 'reportTitle', 'send', 'sendFailed', 'sending', 'signIn',
+            'signInBody', 'signInTitle', 'startBody', 'startTitle', 'title', 'unblock',
+        ].sort();
+        for (const locale of [en, fr, ar]) {
+            expect(Object.keys((locale as any).messages).sort()).toEqual(expected);
+            expect(typeof (locale as any).nav.messages).toBe('string');
+            expect((locale as any).nav.messages.length).toBeGreaterThan(0);
+        }
+        // The chat-door label itself is actually translated, not copied.
+        expect((fr as any).messages.messageAgency).not.toBe((en as any).messages.messageAgency);
+        expect((ar as any).messages.messageAgency).not.toBe((en as any).messages.messageAgency);
     });
 
     it('ships every Arabic plural category for the trip session labels (#567)', () => {

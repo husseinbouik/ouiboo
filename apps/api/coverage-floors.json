@@ -1,0 +1,27 @@
+{
+  "_comment": "Per-module API coverage floors (#643). Aggregate coverage of each module directory in apps/api/src must stay at or above these numbers. Measured 2026-11-04 on staging e3e31473 (see docs/ci/coverage.md). RATCHET: these numbers may only move UP, in a deliberate PR that re-measures first.",
+  "payments": {
+    "lines": 48,
+    "statements": 48,
+    "branches": 43,
+    "functions": 50
+  },
+  "bookings": {
+    "lines": 82,
+    "statements": 81,
+    "branches": 75,
+    "functions": 69
+  },
+  "auth": {
+    "lines": 70,
+    "statements": 70,
+    "branches": 58,
+    "functions": 79
+  },
+  "messages": {
+    "lines": 74,
+    "statements": 73,
+    "branches": 64,
+    "functions": 52
+  }
+}

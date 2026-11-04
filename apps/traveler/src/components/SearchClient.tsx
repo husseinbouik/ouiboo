@@ -15,12 +15,23 @@ import { Button, Input, Badge, MobileFilterDrawer, TripCardSkeletonGrid } from "
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@ouiboo/ui/utils";
 import { TripCard } from "@/components/TripCard";
-import { TripCategory, TripStatus } from "@ouiboo/types";
+import { BETA_DESTINATIONS, TripCategory, TripStatus } from "@ouiboo/types";
 import { useTripsQuery, type TripsQueryParams } from "@ouiboo/api-client";
 import { useTranslation } from "react-i18next";
+import {
+  DURATION_BUCKETS,
+  durationBucketRange,
+  isDestinationSlugValue,
+  isDurationBucketKey,
+} from "@/lib/search-facets";
 
 type SearchFilters = {
   category: string;
+  /** #675: destination facet — a slug from BETA_DESTINATIONS, '' = any. */
+  destination: string;
+  /** #675: duration facet — a DURATION_BUCKETS key, '' = any. The
+   * field existed in this type for years but was never parsed from
+   * the URL, never serialized, and never sent to the API. */
   duration: string;
   priceMax: string;
   searchQuery: string;
@@ -28,6 +39,8 @@ type SearchFilters = {
   dateTo: string;
   priceMin: string;
   availabilityOnly: boolean;
+  /** #687: free-cancellation filter (standardised definition). */
+  freeCancellationOnly: boolean;
   ratingMin: number;
 };
 
@@ -51,15 +64,22 @@ export function parseFiltersFromSearchParams(searchParams: URLSearchParams): Sea
     ? normalizedCategory
     : rawCategory;
   const ratingRaw = Number(searchParams.get("ratingMin"));
+  // #675: destination + duration facets — parsed from the URL and
+  // validated against the configuration / bucket keys (anything else
+  // is ignored rather than sent to the API).
+  const rawDestination = searchParams.get("destination") ?? "";
+  const rawDuration = searchParams.get("duration") ?? "";
   return {
     category,
-    duration: "",
+    destination: isDestinationSlugValue(rawDestination) ? rawDestination : "",
+    duration: isDurationBucketKey(rawDuration) ? rawDuration : "",
     priceMax: searchParams.get("priceMax") ?? "",
     searchQuery: searchParams.get("q") ?? "",
     dateFrom: searchParams.get("date") || searchParams.get("dateFrom") || "",
     dateTo: searchParams.get("dateTo") ?? "",
     priceMin: searchParams.get("priceMin") ?? "",
     availabilityOnly: searchParams.get("available") === "true",
+    freeCancellationOnly: searchParams.get("freeCancellation") === "true",
     ratingMin: Number.isFinite(ratingRaw) && ratingRaw > 0 ? ratingRaw : 0,
   };
 }
@@ -69,11 +89,14 @@ export function buildSearchParams(filters: SearchFilters): URLSearchParams {
   const params = new URLSearchParams();
   if (filters.searchQuery) params.set("q", filters.searchQuery);
   if (filters.category) params.set("category", filters.category);
+  if (filters.destination) params.set("destination", filters.destination);
+  if (filters.duration) params.set("duration", filters.duration);
   if (filters.priceMin) params.set("priceMin", filters.priceMin);
   if (filters.priceMax) params.set("priceMax", filters.priceMax);
   if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
   if (filters.dateTo) params.set("dateTo", filters.dateTo);
   if (filters.availabilityOnly) params.set("available", "true");
+  if (filters.freeCancellationOnly) params.set("freeCancellation", "true");
   if (filters.ratingMin > 0) params.set("ratingMin", String(filters.ratingMin));
   return params;
 }
@@ -172,11 +195,20 @@ export default function SearchClient({
     };
     if (filters.searchQuery) params.q = filters.searchQuery;
     if (filters.category) params.category = filters.category;
+    // #675: destination facet end to end (API parses ?destination=).
+    if (filters.destination) params.destination = filters.destination;
+    // #675: duration facet — bucket key resolved to the API range.
+    const durationRange = filters.duration ? durationBucketRange(filters.duration) : null;
+    if (durationRange) {
+      params.durationMin = durationRange.min;
+      if (durationRange.max !== undefined) params.durationMax = durationRange.max;
+    }
     if (filters.priceMin) params.priceMin = Number(filters.priceMin);
     if (filters.priceMax) params.priceMax = Number(filters.priceMax);
     if (filters.dateFrom) params.startDateFrom = filters.dateFrom;
     if (filters.dateTo) params.startDateTo = filters.dateTo;
     if (filters.availabilityOnly) params.available = true;
+    if (filters.freeCancellationOnly) params.freeCancellation = true;
     if (filters.ratingMin > 0) params.ratingMin = filters.ratingMin;
     return params;
   }, [filters, sortBy, sortOrder, currentPage, i18n.language]);
@@ -192,11 +224,14 @@ export default function SearchClient({
     sortOrder === "desc" &&
     filters.searchQuery === initialFilters.searchQuery &&
     filters.category === initialFilters.category &&
+    filters.destination === initialFilters.destination &&
+    filters.duration === initialFilters.duration &&
     filters.priceMin === initialFilters.priceMin &&
     filters.priceMax === initialFilters.priceMax &&
     filters.dateFrom === initialFilters.dateFrom &&
     filters.dateTo === initialFilters.dateTo &&
     filters.availabilityOnly === initialFilters.availabilityOnly &&
+    filters.freeCancellationOnly === initialFilters.freeCancellationOnly &&
     filters.ratingMin === initialFilters.ratingMin;
 
   const { data: response, isLoading, error, isError } = useTripsQuery(queryParams, {
@@ -218,7 +253,18 @@ export default function SearchClient({
   };
 
   const activeFilterChips = useMemo(() => {
-    const chips: { label: string; onRemove: () => void }[] = [];
+    const chips: { label: React.ReactNode; accessibleLabel?: string; onRemove: () => void }[] = [];
+    if (filters.destination) {
+      chips.push({ label: t(`search.destinationNames.${filters.destination}`), onRemove: () => updateFilter("destination", "") });
+    }
+    if (filters.duration) {
+      const label = t(`search.durationBuckets.${filters.duration}`);
+      chips.push({
+        label: <bdi dir="ltr">{label}</bdi>,
+        accessibleLabel: label,
+        onRemove: () => updateFilter("duration", ""),
+      });
+    }
     if (filters.priceMin || filters.priceMax) {
       const min = filters.priceMin || "0";
       const max = filters.priceMax || "8";
@@ -230,9 +276,10 @@ export default function SearchClient({
       chips.push({ label: `Dates: ${from} - ${to}`, onRemove: () => updateFilters({ dateFrom: "", dateTo: "" }) });
     }
     if (filters.availabilityOnly) chips.push({ label: "Available Only", onRemove: () => updateFilter("availabilityOnly", false) });
+    if (filters.freeCancellationOnly) chips.push({ label: t('search.freeCancellation'), onRemove: () => updateFilter("freeCancellationOnly", false) });
     if (filters.ratingMin > 0) chips.push({ label: `Rating: ${filters.ratingMin}+`, onRemove: () => updateFilter("ratingMin", 0) });
     return chips;
-  }, [filters, updateFilter, updateFilters]);
+  }, [filters, updateFilter, updateFilters, t]);
 
   const renderCategoryGroup = () => (
       <div className="space-y-3">
@@ -250,6 +297,55 @@ export default function SearchClient({
               )}
             >
               {category.label}
+            </button>
+          ))}
+        </div>
+      </div>
+  );
+
+  // #675: destination facet — exactly the configured beta-cluster
+  // destinations; labels are localised names (proper nouns per locale).
+  const renderDestinationGroup = () => (
+      <div className="space-y-3">
+        <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.destination')}</p>
+        <div className="grid gap-2">
+          {BETA_DESTINATIONS.map((destination) => (
+            <button
+              key={destination.slug}
+              type="button"
+              onClick={() => updateFilter("destination", filters.destination === destination.slug ? "" : destination.slug)}
+              aria-pressed={filters.destination === destination.slug}
+              className={cn(
+                "px-3 py-2 rounded-lg text-sm text-left",
+                filters.destination === destination.slug ? "bg-sunset-orange/10 text-sunset-orange-dark" : "bg-muted",
+              )}
+            >
+              {t(`search.destinationNames.${destination.slug}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+  );
+
+  // #675: duration facet — day-count buckets resolved to API ranges.
+  const renderDurationGroup = () => (
+      <div className="space-y-3">
+        <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.duration')}</p>
+        <div className="grid gap-2">
+          {DURATION_BUCKETS.map((bucket) => (
+            <button
+              key={bucket.key}
+              type="button"
+              onClick={() => updateFilter("duration", filters.duration === bucket.key ? "" : bucket.key)}
+              aria-pressed={filters.duration === bucket.key}
+              className={cn(
+                "px-3 py-2 rounded-lg text-sm text-left",
+                filters.duration === bucket.key ? "bg-sunset-orange/10 text-sunset-orange-dark" : "bg-muted",
+              )}
+            >
+              {/* Numeric ranges must establish an LTR island inside the
+                  Arabic document; otherwise 2–3 is rendered as 3–2. */}
+              <bdi dir="ltr">{t(`search.durationBuckets.${bucket.key}`)}</bdi>
             </button>
           ))}
         </div>
@@ -278,6 +374,7 @@ export default function SearchClient({
       <div className="space-y-3">
         <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.availability')}</p>
         <button type="button" onClick={() => updateFilter("availabilityOnly", !filters.availabilityOnly)} aria-pressed={filters.availabilityOnly} className={cn("px-3 py-2 rounded-lg w-full", filters.availabilityOnly ? "bg-success/10 text-success" : "bg-muted")}>{t('search.availabilityOnly')}</button>
+        <button type="button" onClick={() => updateFilter("freeCancellationOnly", !filters.freeCancellationOnly)} aria-pressed={filters.freeCancellationOnly} className={cn("px-3 py-2 rounded-lg w-full mt-2", filters.freeCancellationOnly ? "bg-success/10 text-success" : "bg-muted")} data-testid="filter-free-cancellation">{t('search.freeCancellation')}</button>
       </div>
   );
 
@@ -301,6 +398,8 @@ export default function SearchClient({
   const renderFilterControls = () => (
     <div className="space-y-6">
       {renderCategoryGroup()}
+      {renderDestinationGroup()}
+      {renderDurationGroup()}
       {renderDatesGroup()}
       {renderPriceGroup()}
       {renderAvailabilityGroup()}
@@ -315,6 +414,8 @@ export default function SearchClient({
   const renderSidebarFilterControls = () => (
     <div className="space-y-6">
       {renderCategoryGroup()}
+      {renderDestinationGroup()}
+      {renderDurationGroup()}
       {renderSortGroup()}
       <div>
         <button
@@ -403,7 +504,7 @@ export default function SearchClient({
               <div className="mb-4 flex flex-wrap gap-2">
                 {activeFilterChips.map((c, i) => (
                   <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                    <Badge className="px-3 py-1 flex items-center gap-2">{c.label} <button onClick={c.onRemove} aria-label={`Remove filter ${c.label}`}><X className="h-3 w-3" /></button></Badge>
+                    <Badge className="px-3 py-1 flex items-center gap-2">{c.label} <button onClick={c.onRemove} aria-label={`Remove filter ${c.accessibleLabel ?? (typeof c.label === 'string' ? c.label : '')}`}><X className="h-3 w-3" /></button></Badge>
                   </motion.div>
                 ))}
               </div>

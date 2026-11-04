@@ -546,7 +546,29 @@
       "supportResponseRate": "الرد الأول من الدعم خلال 48 ساعة",
       "supportTickets": "{{count}} تذكرة دعم مفتوحة",
       "supportTicketsDetail": "{{responded}} تلقت ردًا أول، منها {{within}} خلال 48 ساعة",
-      "supportAwaiting": "{{count}} تذكرة مفتوحة تنتظر الرد الأول منذ أكثر من 48 ساعة"
+      "supportAwaiting": "{{count}} تذكرة مفتوحة تنتظر الرد الأول منذ أكثر من 48 ساعة",
+      "agencyGmv": "إجمالي مبيعات الوكالات / مداخيل الوكالات",
+      "agencyGmvDetail": "أموال المسافرين المدفوعة للوكالات مقابل {{count}} حجز مكتمل في هذه الفترة. ليست مداخيل Ouiboo.",
+      "ouibooRevenueFreeBeta": "مداخيل Ouiboo (النسخة التجريبية المجانية): 0 درهم",
+      "funnelSessionsNote": "خطوات القمع تعدّ جلسات الرحلات المنشأة (جلسات / عرض)، وليست مشاهدات المسافرين."
+    },
+    "funnel": {
+      "title": "مسار المسافر",
+      "subtitle": "حقائق مجمعة عن المسار من جهة الخادم من قراءة #756 (آخر 30 يومًا افتراضيًا). المراحل التي لا يستطيع الخادم ملاحظتها لا يتم تقديرها.",
+      "window": "النافذة: {{from}} – {{to}}",
+      "loading": "جارٍ تحميل مقاييس المسار…",
+      "error": "مقاييس المسار غير متاحة الآن.",
+      "searches": "عمليات البحث",
+      "zeroResultRate": "نسبة البحث بدون نتائج",
+      "bookingsCreated": "الحجوزات المنشأة",
+      "bookingPerSearch": "حجز لكل بحث",
+      "proofsSubmitted": "الإثباتات المرسلة",
+      "proofsPending": "إثباتات بانتظار المراجعة",
+      "bankConfirmed": "حجوزات مؤكدة بنكيًا",
+      "confirmed": "الحجوزات المؤكدة",
+      "completed": "الحجوزات المكتملة",
+      "cancelled": "الحجوزات الملغاة",
+      "refundCases": "ملفات الاسترداد"
     },
     "diagnostics": {
       "title": "البناء والعلامات",
@@ -605,7 +627,10 @@
     "description": "مساحة إدارة خاصة لمنصة Ouiboo."
   },
   "common": {
-    "skipToContent": "تخطى إلى المحتوى"
+    "skipToContent": "تخطى إلى المحتوى",
+    "switchLanguage": "تبديل اللغة — الحالية: {{language}}",
+    "switchFrom": "التبديل من {{language}}",
+    "toggleTheme": "تبديل المظهر"
   },
   "pagination": {
     "showing": "عرض",

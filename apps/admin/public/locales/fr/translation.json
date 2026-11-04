@@ -546,7 +546,29 @@
       "supportResponseRate": "Première réponse du support sous 48 heures",
       "supportTickets": "{{count}} tickets d'assistance ouverts",
       "supportTicketsDetail": "{{responded}} avec une première réponse, dont {{within}} sous 48 heures",
-      "supportAwaiting": "{{count}} tickets ouverts sans première réponse depuis plus de 48 heures"
+      "supportAwaiting": "{{count}} tickets ouverts sans première réponse depuis plus de 48 heures",
+      "agencyGmv": "GMV des agences / recettes des agences",
+      "agencyGmvDetail": "Argent des voyageurs payé aux agences pour {{count}} réservations terminées dans cette fenêtre. Ce n'est pas le revenu d'Ouiboo.",
+      "ouibooRevenueFreeBeta": "Revenus Ouiboo (bêta gratuite) : 0 MAD",
+      "funnelSessionsNote": "Les étapes de l’entonnoir comptent les TripSessions créées (sessions / offre), pas des vues de voyageurs."
+    },
+    "funnel": {
+      "title": "Parcours voyageur",
+      "subtitle": "Faits de parcours agrégés côté serveur, issus de la lecture #756 (30 derniers jours par défaut). Les étapes que le serveur ne peut pas observer ne sont pas estimées.",
+      "window": "Fenêtre : {{from}} – {{to}}",
+      "loading": "Chargement des métriques de parcours…",
+      "error": "Les métriques de parcours sont indisponibles pour le moment.",
+      "searches": "Recherches",
+      "zeroResultRate": "Taux de recherches sans résultat",
+      "bookingsCreated": "Réservations créées",
+      "bookingPerSearch": "Réservation par recherche",
+      "proofsSubmitted": "Preuves envoyées",
+      "proofsPending": "Preuves en attente de validation",
+      "bankConfirmed": "Réservations confirmées par la banque",
+      "confirmed": "Réservations confirmées",
+      "completed": "Réservations terminées",
+      "cancelled": "Réservations annulées",
+      "refundCases": "Dossiers de remboursement"
     },
     "diagnostics": {
       "title": "Build et drapeaux",
@@ -605,7 +627,10 @@
     "description": "Espace d'administration privé de la plateforme Ouiboo."
   },
   "common": {
-    "skipToContent": "Aller au contenu"
+    "skipToContent": "Aller au contenu",
+    "switchLanguage": "Changer de langue — actuelle : {{language}}",
+    "switchFrom": "Passer de {{language}}",
+    "toggleTheme": "Basculer le thème"
   },
   "pagination": {
     "showing": "Affichage",

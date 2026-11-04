@@ -9,6 +9,12 @@ import { Star, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
+import { REVIEW_SUB_SCORES } from '@/lib/review-display';
+
+/** Base the review-photo paths hang off (same base as the API client). */
+const API_BASE = (
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1'
+).replace(/\/+$/, '');
 
 interface ReviewListProps {
   tripId: string;
@@ -19,6 +25,16 @@ interface Review {
   rating: number;
   comment?: string;
   response?: string;
+  /** #776: optional sub-scores stored on the review (null = not scored). */
+  organisationRating?: number | null;
+  guideRating?: number | null;
+  valueRating?: number | null;
+  accuracyRating?: number | null;
+  /** #776: API-relative, visibility-gated photo paths (VISIBLE reviews only). */
+  photos?: string[];
+  /** #783: API-relative, visibility-gated video path (VISIBLE reviews
+   * with a video only); null/absent = no video. Never a storage key. */
+  video?: string | null;
   isVerifiedBooking: boolean;
   createdAt: string;
   traveler?: {
@@ -89,6 +105,9 @@ export function ReviewList({ tripId }: ReviewListProps) {
           <Star className="h-8 w-8 text-muted-foreground" />
         </div>
         <h3 className="text-lg font-bold text-foreground">{t('reviews.noReviewsYet')}</h3>
+        {/* #681 (Council S6): the zero state is proof of integrity, not
+            a prompt to seed — state the rule explicitly. */}
+        <p className="text-muted-foreground mt-2">{t('reviews.emptyIntegrity')}</p>
         <p className="text-muted-foreground mt-2">{t('reviews.beFirst')}</p>
       </div>
     );
@@ -170,6 +189,63 @@ export function ReviewList({ tripId }: ReviewListProps) {
                 </div>
                 <span className="font-bold text-foreground ml-2">{review.rating}.0</span>
               </div>
+
+              {/* #776: the review's own sub-scores (content of this
+                  visible review — aggregates live in the stats block
+                  under the #681 threshold discipline) */}
+              {REVIEW_SUB_SCORES.some(({ field }) => review[field]) && (
+                <div className="flex flex-wrap gap-x-6 gap-y-2">
+                  {REVIEW_SUB_SCORES.map(({ key, field }) =>
+                    review[field] ? (
+                      <span key={key} className="flex items-center gap-2 text-sm">
+                        <span className="text-muted-foreground">{t(`reviews.subScores.${key}`)}</span>
+                        <span className="flex gap-0.5" aria-label={`${review[field]} / 5`}>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`h-3.5 w-3.5 ${
+                                star <= (review[field] ?? 0)
+                                  ? 'fill-sunset-orange text-sunset-orange'
+                                  : 'text-muted-foreground/40'
+                              }`}
+                            />
+                          ))}
+                        </span>
+                      </span>
+                    ) : null,
+                  )}
+                </div>
+              )}
+
+              {/* #776: traveller photos — served by the API only
+                  while this review is VISIBLE */}
+              {review.photos && review.photos.length > 0 && (
+                <div className="flex flex-wrap gap-3">
+                  {review.photos.map((photoPath, photoIndex) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={photoPath}
+                      src={`${API_BASE}${photoPath}`}
+                      alt={t('reviews.photoAlt')}
+                      loading="lazy"
+                      className="h-24 w-24 rounded-xl object-cover border border-border/50"
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* #783: traveller video — served by the API only while
+                  this review is VISIBLE; metadata preload keeps the
+                  page light until the traveller presses play */}
+              {review.video && (
+                <video
+                  src={`${API_BASE}${review.video}`}
+                  controls
+                  preload="metadata"
+                  aria-label={t('reviews.videoAlt')}
+                  className="w-full max-w-md rounded-xl border border-border/50 bg-black"
+                />
+              )}
 
               {/* Comment */}
               {review.comment && (

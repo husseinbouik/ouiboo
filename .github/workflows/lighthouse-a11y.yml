@@ -146,6 +146,11 @@ jobs:
         run: |
           node .github/lighthouse/axe-check-mobile.mjs http://localhost:3001 "/,/search,/login,/signup,/trip/trip-1,/checkout/trip-1"
           node .github/lighthouse/axe-check-mobile.mjs http://localhost:3004 "/"
+          # #730: agency + admin login pages join the mobile scan (they
+          # were desktop-only when their touch-target / accessible-name
+          # failures slipped through).
+          node .github/lighthouse/axe-check-mobile.mjs http://localhost:3002 "/login"
+          node .github/lighthouse/axe-check-mobile.mjs http://localhost:3003 "/login" --mock-unauthenticated
 
       - name: Run keyboard navigation checks
         # #213: basic keyboard-navigation regression coverage (tab order,

@@ -5,6 +5,7 @@ import { StagedPaymentsModule } from '../staged-payments/staged-payments.module'
 import { RefundsModule } from '../refunds/refunds.module';
 import { PaymentProvidersModule } from '../payment-providers/payment-providers.module';
 import { AgencyModule } from '../agency/agency.module';
+import { RetentionModule } from '../retention/retention.module';
 import { CronController } from './cron.controller';
 
 /**
@@ -14,7 +15,7 @@ import { CronController } from './cron.controller';
  * on Vercel serverless functions.
  */
 @Module({
-  imports: [NotificationsModule, CurrencyModule, StagedPaymentsModule, RefundsModule, PaymentProvidersModule, AgencyModule],
+  imports: [NotificationsModule, CurrencyModule, StagedPaymentsModule, RefundsModule, PaymentProvidersModule, AgencyModule, RetentionModule],
   controllers: [CronController],
 })
 export class CronModule {}

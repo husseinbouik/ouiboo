@@ -14,6 +14,7 @@ const metrics: AdminBetaMetrics = {
   generatedAt: '2026-10-27T12:00:00.000Z',
   searches: { total: 100, zeroResult: 10, zeroResultRate: 10 },
   bookings: { created: 40, byStatus: {}, completed: 5 },
+  takings: { agencyGmvMad: '4200.50', platformRevenueMad: '0.00' },
   refunds: {
     opened: 3,
     byStatus: {},
@@ -74,6 +75,14 @@ describe('BetaMetricsPanel (#559)', () => {
     expect(screen.getByText('50%')).not.toBeNull();
     expect(screen.getByText(/supportTickets/)).not.toBeNull();
     expect(screen.queryByTestId('beta-metrics-not-derivable')).toBeNull();
+  });
+
+  it('labels takings as Agency GMV and Ouiboo revenue (free beta) as 0 MAD (#631)', () => {
+    render(<BetaMetricsPanel t={t} metrics={metrics} />);
+    expect(screen.getByText('dashboard.betaMetrics.agencyGmv')).not.toBeNull();
+    expect(screen.getByText(/4200.50 MAD/)).not.toBeNull();
+    expect(screen.getByText(/ouibooRevenueFreeBeta/)).not.toBeNull();
+    expect(screen.getByText(/funnelSessionsNote/)).not.toBeNull();
   });
 
   it('shows loading and error states without inventing numbers', () => {

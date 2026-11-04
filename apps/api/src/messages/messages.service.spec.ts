@@ -19,9 +19,27 @@ describe('MessagesService attachments (#251/B23)', () => {
             conversation: {
                 upsert: jest.fn().mockResolvedValue({ id: 'conv-1' }),
                 update: jest.fn().mockResolvedValue({}),
+                // #754: eligibility checks read the existing pair
+                // conversation first; default = none exists yet.
+                findUnique: jest.fn().mockResolvedValue(null),
+            },
+            // #754 lifecycle/block delegates: default pair has no
+            // bookings, no quotes and no block.
+            booking: { count: jest.fn().mockResolvedValue(0) },
+            quoteRequest: { count: jest.fn().mockResolvedValue(0) },
+            agencyBlock: {
+                findUnique: jest.fn().mockResolvedValue(null),
+                upsert: jest.fn().mockResolvedValue({ id: 'block-1' }),
+                deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+                findMany: jest.fn().mockResolvedValue([]),
+            },
+            conversationReport: {
+                create: jest.fn(async (args: any) => ({ id: 'report-1', ...args.data })),
             },
             message: {
                 create: jest.fn(async (args: any) => ({ id: 'msg-1', ...args.data })),
+                // #754 per-conversation burst cap counts recent sends.
+                count: jest.fn().mockResolvedValue(0),
                 findUnique: jest.fn(),
                 update: jest.fn(async (args: any) => ({ id: args.where.id, attachmentUrl: null })),
                 delete: jest.fn().mockResolvedValue({}),
@@ -212,9 +230,25 @@ describe('MessagesService contact-exchange detection (#444)', () => {
             conversation: {
                 upsert: jest.fn().mockResolvedValue({ id: 'conv-1' }),
                 update: jest.fn().mockResolvedValue({}),
+                // #754: eligibility checks read the existing pair
+                // conversation first; default = none exists yet.
+                findUnique: jest.fn().mockResolvedValue(null),
+            },
+            // #754 lifecycle/block delegates: default pair has no
+            // bookings, no quotes and no block.
+            quoteRequest: { count: jest.fn().mockResolvedValue(0) },
+            agencyBlock: {
+                findUnique: jest.fn().mockResolvedValue(null),
+                upsert: jest.fn().mockResolvedValue({ id: 'block-1' }),
+                deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+                findMany: jest.fn().mockResolvedValue([]),
+            },
+            conversationReport: {
+                create: jest.fn(async (args: any) => ({ id: 'report-1', ...args.data })),
             },
             message: {
                 create: jest.fn(async (args: any) => ({ id: 'msg-1', ...args.data })),
+                count: jest.fn().mockResolvedValue(0),
             },
             booking: { count: jest.fn().mockResolvedValue(pairBookings) },
             auditLog: { create: jest.fn().mockResolvedValue({}) },
@@ -259,6 +293,10 @@ describe('MessagesService contact-exchange detection (#444)', () => {
     it('flags an agency sending its RIB before any booking (the fee-capture leak)', async () => {
         const { db, service } = createService(0);
         db.user.findFirst.mockResolvedValue({ id: 'traveler-1' });
+        // #754 (S7-2): an agency cold-start is now forbidden, so the
+        // detection scenario is a REPLY inside the traveller-opened
+        // conversation — pre-booking detection still applies to it.
+        db.conversation.findUnique.mockResolvedValue({ id: 'conv-1' });
 
         const result: any = await service.sendMessage('agency-user-1', 'AGENCY', {
             recipientId: 'traveler-1',
@@ -297,8 +335,9 @@ describe('MessagesService contact-exchange detection (#444)', () => {
 
         expect(result.contactExchange).toBeUndefined();
         expect(db.auditLog.create).not.toHaveBeenCalled();
-        // No detection means the pair-booking lookup is never needed.
-        expect(db.booking.count).not.toHaveBeenCalled();
+        // (#754 note: the pair-booking lookup itself now always runs —
+        // it is the lifecycle-eligibility check — but an ordinary
+        // question still produces no flag and no audit row.)
     });
 
     it('still delivers the message when the audit write fails', async () => {

@@ -3,7 +3,7 @@
 import type { AxiosError } from 'axios';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, ThemeToggle, LanguageSwitcher, BetaBadge, Logo } from '@ouiboo/ui';
+import { Button, Input, ThemeToggle, LanguageSwitcher, BetaBadge, LogoLockup } from '@ouiboo/ui';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
 import { useMutation } from '@tanstack/react-query';
@@ -253,8 +253,7 @@ export default function AdminLoginPage() {
         <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.12),_transparent_60%)]" />
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           <div className="flex items-center gap-3">
-            <Logo size={40} />
-            <span className="text-2xl font-black tracking-tight">{t('login.brand')}</span>
+            <LogoLockup height={32} tone="on-dark" />
             <BetaBadge />
           </div>
           <div className="space-y-4 max-w-md">
@@ -321,7 +320,7 @@ export default function AdminLoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute end-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
                     aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -351,7 +350,7 @@ export default function AdminLoginPage() {
               <button
                 type="button"
                 onClick={() => { setError(null); setStep('breakglass'); }}
-                className="w-full text-center text-xs font-semibold text-muted-foreground hover:text-foreground"
+                className="inline-flex min-h-[44px] w-full items-center justify-center text-center text-xs font-semibold text-muted-foreground hover:text-foreground"
               >
                 <KeyRound className="inline h-4 w-4 me-1" />
                 {t('login.mfa.breakGlassLink', 'Lost your authenticator? Use a break-glass secret')}
@@ -407,12 +406,12 @@ export default function AdminLoginPage() {
                 {mfaMutation.isPending ? t('login.mfa.verifying', 'Verifying...') : t('login.mfa.verify', 'Verify')}
               </Button>
               <div className="flex items-center justify-between text-xs font-semibold">
-                <button type="button" onClick={() => setUseRecovery((prev) => !prev)} className="text-muted-foreground hover:text-foreground">
+                <button type="button" onClick={() => setUseRecovery((prev) => !prev)} className="inline-flex min-h-[44px] items-center text-muted-foreground hover:text-foreground">
                   {useRecovery
                     ? t('login.mfa.useAuthenticator', 'Use authenticator code')
                     : t('login.mfa.useRecovery', 'Use a recovery code')}
                 </button>
-                <button type="button" onClick={backToCredentials} className="text-muted-foreground hover:text-foreground">
+                <button type="button" onClick={backToCredentials} className="inline-flex min-h-[44px] items-center text-muted-foreground hover:text-foreground">
                   {t('login.mfa.back', 'Back to sign in')}
                 </button>
               </div>
@@ -481,7 +480,7 @@ export default function AdminLoginPage() {
                   >
                     {t('login.mfa.enrollConfirm', 'Confirm and continue')}
                   </Button>
-                  <button type="button" onClick={backToCredentials} className="w-full text-center text-xs font-semibold text-muted-foreground hover:text-foreground">
+                  <button type="button" onClick={backToCredentials} className="inline-flex min-h-[44px] w-full items-center justify-center text-center text-xs font-semibold text-muted-foreground hover:text-foreground">
                     {t('login.mfa.back', 'Back to sign in')}
                   </button>
                 </>
@@ -543,7 +542,7 @@ export default function AdminLoginPage() {
               >
                 {t('login.mfa.breakGlassSubmit', 'Sign in with break-glass secret')}
               </Button>
-              <button type="button" onClick={backToCredentials} className="w-full text-center text-xs font-semibold text-muted-foreground hover:text-foreground">
+              <button type="button" onClick={backToCredentials} className="inline-flex min-h-[44px] w-full items-center justify-center text-center text-xs font-semibold text-muted-foreground hover:text-foreground">
                 {t('login.mfa.back', 'Back to sign in')}
               </button>
             </form>

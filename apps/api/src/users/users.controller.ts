@@ -21,6 +21,14 @@ export class UsersController {
         return this.usersService.getMe(req.user.userId);
     }
 
+    @Get('me/referrals')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Get referral code and recognition count (zero-value referral)' })
+    getMyReferrals(@Request() req) {
+        return this.usersService.getReferrals(req.user.userId);
+    }
+
     @Patch('me')
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
