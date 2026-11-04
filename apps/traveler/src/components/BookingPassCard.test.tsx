@@ -4,7 +4,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BookingPassCard } from './BookingPassCard';
+import { BookingPassCard, CachedBookingPass } from './BookingPassCard';
 
 const mockGet = jest.fn();
 jest.mock('@/lib/api-client', () => ({
@@ -105,5 +105,53 @@ describe('BookingPassCard (#689)', () => {
         renderCard();
         await waitFor(() => expect(screen.getByTestId('booking-pass')).toBeTruthy());
         expect(screen.getByText('bookingPass.offlineCopy')).toBeTruthy();
+    });
+});
+
+describe('CachedBookingPass (#847 — the booking page offline gate)', () => {
+    beforeEach(() => {
+        mockGet.mockReset();
+        window.localStorage.clear();
+    });
+
+    function renderGate() {
+        return render(
+            <CachedBookingPass bookingId="booking-1" fallback={<div>not-found-fallback</div>} />,
+        );
+    }
+
+    it('renders the pass from the #847 cache entry — with the agency WhatsApp contact — without any booking object', async () => {
+        window.localStorage.setItem(
+            'ouiboo-booking-pass:booking-1',
+            JSON.stringify({
+                pass,
+                agencyBusinessPhone: '+212600000000',
+                agencyEmergencyContactPhone: null,
+                paymentPlanStatus: 'FULLY_PAID',
+                refundStatus: null,
+            }),
+        );
+        renderGate();
+        await waitFor(() => expect(screen.getByTestId('booking-pass')).toBeTruthy());
+        expect(screen.getByText('bookingPass.offlineCopy')).toBeTruthy();
+        expect(screen.getByTestId('booking-pass-meeting-point')).toBeTruthy();
+        const wa = screen.getByText('bookingPass.whatsappAgency').closest('a');
+        expect(wa?.getAttribute('href')).toContain('wa.me/212600000000');
+        expect(screen.queryByText('not-found-fallback')).toBeNull();
+        // The gate serves the artefact only — it never calls the API.
+        expect(mockGet).not.toHaveBeenCalled();
+    });
+
+    it('still reads a legacy (#690) bare-pass entry', async () => {
+        window.localStorage.setItem('ouiboo-booking-pass:booking-1', JSON.stringify(pass));
+        renderGate();
+        await waitFor(() => expect(screen.getByTestId('booking-pass')).toBeTruthy());
+        expect(screen.queryByText('not-found-fallback')).toBeNull();
+    });
+
+    it('renders the fallback when the device holds no artefact for the booking', async () => {
+        renderGate();
+        await waitFor(() => expect(screen.getByText('not-found-fallback')).toBeTruthy());
+        expect(screen.queryByTestId('booking-pass')).toBeNull();
     });
 });
