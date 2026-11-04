@@ -552,6 +552,24 @@
       "ouibooRevenueFreeBeta": "Revenus Ouiboo (bêta gratuite) : 0 MAD",
       "funnelSessionsNote": "Les étapes de l’entonnoir comptent les TripSessions créées (sessions / offre), pas des vues de voyageurs."
     },
+    "funnel": {
+      "title": "Parcours voyageur",
+      "subtitle": "Faits de parcours agrégés côté serveur, issus de la lecture #756 (30 derniers jours par défaut). Les étapes que le serveur ne peut pas observer ne sont pas estimées.",
+      "window": "Fenêtre : {{from}} – {{to}}",
+      "loading": "Chargement des métriques de parcours…",
+      "error": "Les métriques de parcours sont indisponibles pour le moment.",
+      "searches": "Recherches",
+      "zeroResultRate": "Taux de recherches sans résultat",
+      "bookingsCreated": "Réservations créées",
+      "bookingPerSearch": "Réservation par recherche",
+      "proofsSubmitted": "Preuves envoyées",
+      "proofsPending": "Preuves en attente de validation",
+      "bankConfirmed": "Réservations confirmées par la banque",
+      "confirmed": "Réservations confirmées",
+      "completed": "Réservations terminées",
+      "cancelled": "Réservations annulées",
+      "refundCases": "Dossiers de remboursement"
+    },
     "diagnostics": {
       "title": "Build et drapeaux",
       "build": "Build",

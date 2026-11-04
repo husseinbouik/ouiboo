@@ -552,6 +552,24 @@
       "ouibooRevenueFreeBeta": "Ouiboo revenue (free beta): 0 MAD",
       "funnelSessionsNote": "Funnel counts are TripSessions created (sessions / supply), not traveller views."
     },
+    "funnel": {
+      "title": "Traveller funnel",
+      "subtitle": "Aggregate server-side funnel facts from the #756 readout (last 30 days by default). Steps the server cannot observe are not estimated.",
+      "window": "Window: {{from}} – {{to}}",
+      "loading": "Loading funnel metrics…",
+      "error": "Funnel metrics are unavailable right now.",
+      "searches": "Searches",
+      "zeroResultRate": "Zero-result rate",
+      "bookingsCreated": "Bookings created",
+      "bookingPerSearch": "Booking per search",
+      "proofsSubmitted": "Proofs submitted",
+      "proofsPending": "Proofs pending review",
+      "bankConfirmed": "Bank-confirmed bookings",
+      "confirmed": "Bookings confirmed",
+      "completed": "Bookings completed",
+      "cancelled": "Bookings cancelled",
+      "refundCases": "Refund cases"
+    },
     "diagnostics": {
       "title": "Build & flags",
       "build": "Build",
