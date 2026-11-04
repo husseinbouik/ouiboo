@@ -706,6 +706,18 @@
       "regionLabel": "All destinations",
       "noSessions": "No sessions scheduled.",
       "monthlyLabel": "Month"
+    },
+    "passRedeem": {
+      "title": "Booking Pass redemption",
+      "hint": "Paste the code from the traveller’s Booking Pass QR to verify it, then redeem it once at the meeting point.",
+      "placeholder": "Booking Pass code",
+      "verify": "Verify",
+      "redeem": "Redeem",
+      "validFor": "Valid pass — {{traveler}} · {{trip}}",
+      "invalid": "This pass is not valid for this booking.",
+      "alreadyRedeemed": "This pass has already been redeemed — a pass can only be redeemed once.",
+      "redeemed": "Pass redeemed — attendance recorded and the redemption is in the audit log.",
+      "failed": "Something went wrong. Please try again."
     }
   },
   "dashboard": {

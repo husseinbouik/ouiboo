@@ -192,6 +192,16 @@ export function BookingPassCard({ booking }: { booking: BookingDetails }) {
           </div>
         )}
 
+        {pass.passRedeemedAt && (
+          <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400" data-testid="booking-pass-redeemed">
+            {t('bookingPass.redeemed', {
+              date: new Intl.DateTimeFormat(i18n.language || 'en', { dateStyle: 'medium', timeStyle: 'short' }).format(
+                new Date(pass.passRedeemedAt),
+              ),
+            })}
+          </p>
+        )}
+
         {pass.passCheckInAt && (
           <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
             {t('bookingPass.checkedIn', {

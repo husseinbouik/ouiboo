@@ -706,6 +706,18 @@
       "regionLabel": "Toutes les destinations",
       "noSessions": "Aucune session planifiée.",
       "monthlyLabel": "Mois"
+    },
+    "passRedeem": {
+      "title": "Utilisation du Booking Pass",
+      "hint": "Collez le code du QR du Booking Pass du voyageur pour le vérifier, puis utilisez-le une seule fois au point de rendez-vous.",
+      "placeholder": "Code du Booking Pass",
+      "verify": "Vérifier",
+      "redeem": "Utiliser",
+      "validFor": "Pass valide — {{traveler}} · {{trip}}",
+      "invalid": "Ce pass n’est pas valide pour cette réservation.",
+      "alreadyRedeemed": "Ce pass a déjà été utilisé — un pass ne peut être utilisé qu’une seule fois.",
+      "redeemed": "Pass utilisé — la présence est enregistrée et l’utilisation figure dans le journal d’audit.",
+      "failed": "Une erreur est survenue. Veuillez réessayer."
     }
   },
   "dashboard": {

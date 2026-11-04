@@ -834,6 +834,9 @@ export interface Booking {
     attendanceDisputeReason?: string | null;
     /** #689: Booking Pass QR check-in stamp (second attendance signal). */
     passCheckInAt?: string | null;
+    /** #753: auditable pass redemption stamps (null until redeemed). */
+    passRedeemedAt?: string | null;
+    passRedeemedBy?: string | null;
 }
 
 export interface BookingTravelerSummary {
@@ -972,6 +975,8 @@ export interface BookingPass {
     meetingPoint: { address: string | null; mapsUrl: string | null; pickupAvailable: boolean } | null;
     attendance?: BookingAttendance | null;
     passCheckInAt?: string | null;
+    /** #753: redemption state surfaced on the pass itself. */
+    passRedeemedAt?: string | null;
 }
 
 export interface PaymentProof {

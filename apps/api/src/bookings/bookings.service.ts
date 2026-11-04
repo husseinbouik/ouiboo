@@ -1690,7 +1690,40 @@ export class BookingsService {
             meetingPoint: normalizeBookingMeetingPoint(booking.session.template.meetingPoint),
             attendance: booking.attendance ?? null,
             passCheckInAt: booking.passCheckInAt ? booking.passCheckInAt.toISOString() : null,
+            passRedeemedAt: booking.passRedeemedAt ? booking.passRedeemedAt.toISOString() : null,
         };
+    }
+
+    /**
+     * #753: shared pass-token resolution for verify + redeem. Verifies
+     * the signed token, loads the booking, and enforces that the caller
+     * is the OWNING agency (tenant). Throws exactly like verify always
+     * has (401 tampered/expired, 403 cross-tenant) so neither action can
+     * be driven by an unauthenticated scan or another agency.
+     */
+    private async resolvePassForAgency(token: string, tenantId: string) {
+        if (!token || typeof token !== 'string') {
+            throw new BadRequestException('A booking pass token is required');
+        }
+        let payload: { purpose?: unknown; bookingId?: unknown };
+        try {
+            payload = await this.getPassJwt().verifyAsync(token);
+        } catch {
+            throw new UnauthorizedException('Invalid or expired booking pass');
+        }
+        if (payload?.purpose !== BOOKING_PASS_TOKEN_PURPOSE || typeof payload?.bookingId !== 'string') {
+            throw new UnauthorizedException('Invalid booking pass');
+        }
+        const booking = await this.db.booking.findUnique({
+            where: { id: payload.bookingId },
+            include: { session: { include: { template: true } } },
+        });
+        if (!booking) throw new BadRequestException('Booking not found');
+        const agency = await this.db.agencyProfile.findUnique({ where: { id: tenantId } });
+        if (!agency || booking.session.template.agencyId !== agency.id) {
+            throw new ForbiddenException('This pass belongs to another agency');
+        }
+        return { booking, agency };
     }
 
     /**
@@ -1770,6 +1803,96 @@ export class BookingsService {
             endDate: booking.session.endDate.toISOString(),
             attendance: booking.attendance ?? null,
             passCheckInAt: checkInAt ? new Date(checkInAt).toISOString() : null,
+            passRedeemedAt: booking.passRedeemedAt ? new Date(booking.passRedeemedAt).toISOString() : null,
+            alreadyRedeemed: Boolean(booking.passRedeemedAt),
+        };
+    }
+
+    /**
+     * #753: auditable pass REDEMPTION — the agency-side redeem action on
+     * the verification surface. Where verify (#689) only records the QR
+     * check-in signal, redeem is the fulfilment transition: it happens
+     * EXACTLY ONCE per booking.
+     *
+     * - Atomic claim: a single updateMany gated on passRedeemedAt:null
+     *   (+ the pre-claim status) stamps passRedeemedAt/passRedeemedBy;
+     *   a concurrent or repeat redemption loses the claim and is
+     *   REFUSED with 409 — the recorded redemption is never rewritten.
+     * - State transition: redemption implies check-in (passCheckInAt is
+     *   stamped when unset) and, when attendance has not been recorded
+     *   yet, records attendance = ATTENDED through the same fields
+     *   markAttendance uses and completes a CONFIRMED booking. An
+     *   attendance outcome the agency already recorded (e.g. NO_SHOW)
+     *   is never overwritten by a redemption.
+     * - Audit: one BOOKING_PASS_REDEEMED AuditLog row (actor, agency,
+     *   booking) is written by the claim winner only.
+     * - Cancelled / no-show bookings cannot be redeemed; redemption
+     *   before the trip start is refused (same rule as check-in).
+     */
+    async redeemBookingPass(token: string, tenantId: string, actorUserId: string) {
+        const { booking, agency } = await this.resolvePassForAgency(token, tenantId);
+
+        if (booking.passRedeemedAt) {
+            throw new ConflictException('This booking pass has already been redeemed');
+        }
+        if (booking.status === 'CANCELLED' || booking.status === 'NO_SHOW') {
+            throw new BadRequestException('This booking is no longer valid, so its pass cannot be redeemed');
+        }
+        if (booking.status !== 'CONFIRMED' && booking.status !== 'COMPLETED') {
+            throw new BadRequestException('Only a confirmed booking pass can be redeemed');
+        }
+        if (booking.session.startDate > new Date()) {
+            throw new BadRequestException('This booking pass cannot be redeemed before the trip starts');
+        }
+
+        const now = new Date();
+        const recordAttendance = !booking.attendance;
+        const claimed = await this.db.booking.updateMany({
+            where: { id: booking.id, passRedeemedAt: null, status: booking.status },
+            data: {
+                passRedeemedAt: now,
+                passRedeemedBy: actorUserId ?? null,
+                ...(booking.passCheckInAt ? {} : { passCheckInAt: now }),
+                ...(recordAttendance
+                    ? {
+                          attendance: 'ATTENDED',
+                          attendanceRecordedAt: now,
+                          attendanceRecordedBy: actorUserId ?? null,
+                          ...(booking.status === 'CONFIRMED' ? { status: 'COMPLETED' } : {}),
+                      }
+                    : {}),
+            },
+        });
+        if (claimed.count !== 1) {
+            // Lost a concurrent claim (or the status moved): the pass is
+            // redeemed exactly once — refuse instead of rewriting it.
+            throw new ConflictException('This booking pass has already been redeemed');
+        }
+
+        await this.db.auditLog
+            .create({
+                data: {
+                    actorId: actorUserId ?? null,
+                    action: 'BOOKING_PASS_REDEEMED',
+                    targetType: 'Booking',
+                    targetId: booking.id,
+                    metadata: { agencyId: agency.id, attendanceRecorded: recordAttendance },
+                },
+            })
+            .catch((err: unknown) => console.error('Audit log failed', err));
+
+        const updated = await this.db.booking.findUniqueOrThrow({ where: { id: booking.id } });
+        return {
+            redeemed: true,
+            bookingId: booking.id,
+            status: updated.status,
+            attendance: updated.attendance ?? null,
+            passCheckInAt: updated.passCheckInAt ? new Date(updated.passCheckInAt).toISOString() : null,
+            passRedeemedAt: updated.passRedeemedAt ? new Date(updated.passRedeemedAt).toISOString() : now.toISOString(),
+            passRedeemedBy: updated.passRedeemedBy ?? actorUserId ?? null,
+            travelerName: booking.fullName ?? null,
+            guestsCount: booking.guestsCount,
+            tripTitle: booking.session.template.title,
         };
     }
 

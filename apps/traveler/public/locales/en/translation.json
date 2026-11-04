@@ -1097,6 +1097,7 @@
     "pickupAvailable": "Pickup is available for this trip — confirm the details with the agency.",
     "viewOnMap": "View on map",
     "checkedIn": "Checked in by the agency on {{date}}",
+    "redeemed": "Redeemed by the agency on {{date}} — enjoy your trip!",
     "whatsappAgency": "Message the agency on WhatsApp",
     "whatsappNote": "State changes are shared through this contact — Ouiboo does not run the chat.",
     "whatsappGreeting": "Hello {{seller}}, I am writing about my booking on Ouiboo.",

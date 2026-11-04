@@ -31,6 +31,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import Link from 'next/link';
 import { PaymentProofReviewModal } from '@/components/PaymentProofReviewModal';
+import { PassRedeemPanel } from '@/components/PassRedeemPanel';
 import { usePaymentProofReview } from '@/components/usePaymentProofReview';
 import { useAttendanceMarking } from '@/components/useAttendanceMarking';
 import { usePayOnArrivalConfirm } from '@/components/usePayOnArrivalConfirm';
@@ -138,6 +139,9 @@ export default function BookingsManager() {
             </Button>
         </div>
       </div>
+
+      {/* #753: Booking Pass verify + redeem surface. */}
+      <PassRedeemPanel />
 
       {/* Filters & Search */}
       <div className="flex flex-col md:flex-row gap-4 items-center bg-card p-4 rounded-xl shadow-sm border border-border transition-colors">
