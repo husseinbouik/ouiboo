@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
+import PlatformIdentity from '@/components/PlatformIdentity';
 
 export default function TravelerTermsPage() {
   const { t, i18n } = useTranslation();
@@ -43,6 +44,10 @@ export default function TravelerTermsPage() {
             </div>
           ))}
         </div>
+
+        {/* #627: the platform identity block closes the legal page —
+            who Ouiboo is and how to reach it. */}
+        <PlatformIdentity className="mt-10" />
 
         <p className="mt-8 text-sm text-muted-foreground">
           {t('terms.copyrightReportPrompt', 'Believe content on Ouiboo infringes your copyright?')}{' '}

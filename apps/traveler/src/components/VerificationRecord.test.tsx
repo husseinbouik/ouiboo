@@ -82,6 +82,57 @@ describe('deriveVerificationRecord (#688)', () => {
     });
 });
 
+describe('deriveVerificationRecord B10 dated badge (#627)', () => {
+    it('derives the two badge dates from the record, ministry stamp preferred for the licence', () => {
+        const record = deriveVerificationRecord({
+            ...verifiedAgency,
+            licenceMinistryCheckedAt: '2026-10-23T00:00:00.000Z',
+        });
+        expect(record.licenceCheckedOn?.toISOString()).toBe('2026-10-23T00:00:00.000Z');
+        expect(record.insuranceEvidencedOn?.toISOString()).toBe('2026-10-25T00:00:00.000Z');
+    });
+
+    it('falls back to the verified-at stamp when no ministry stamp exists', () => {
+        const record = deriveVerificationRecord(verifiedAgency);
+        expect(record.licenceCheckedOn?.toISOString()).toBe('2026-10-24T00:00:00.000Z');
+    });
+
+    it('prefers the API record badge dates when present', () => {
+        const record = deriveVerificationRecord({
+            companyName: 'Atlas Adventures',
+            verificationRecord: {
+                legalName: 'Atlas Adventures SARL',
+                licenceStatus: 'VERIFIED',
+                insuranceStatus: 'VERIFIED',
+                licenceCheckedOn: '2026-10-23T00:00:00.000Z',
+                insuranceEvidencedOn: '2026-10-25T00:00:00.000Z',
+                status: 'VERIFIED',
+                tripsPaused: false,
+            },
+        });
+        expect(record.licenceCheckedOn?.toISOString()).toBe('2026-10-23T00:00:00.000Z');
+        expect(record.insuranceEvidencedOn?.toISOString()).toBe('2026-10-25T00:00:00.000Z');
+    });
+
+    it('withholds both badge dates when the checks have not passed', () => {
+        const record = deriveVerificationRecord({
+            ...verifiedAgency,
+            travelLicenceStatus: 'PENDING_REVIEW',
+            insuranceStatus: 'PENDING_REVIEW',
+            verificationStatus: 'PENDING',
+        });
+        expect(record.licenceCheckedOn).toBeNull();
+        expect(record.insuranceEvidencedOn).toBeNull();
+    });
+
+    it('renders the dated badge line with both parts', () => {
+        render(<VerificationRecord agency={verifiedAgency} />);
+        const badge = screen.getByTestId('verification-badge');
+        expect(badge.textContent).toContain('verificationRecord.licenceCheckedMinistry');
+        expect(badge.textContent).toContain('verificationRecord.insuranceEvidenced');
+    });
+});
+
 describe('VerificationRecord render (#688)', () => {
     it('shows the RC ≠ personal insurance disclosure when insurance is presented (#775)', () => {
         render(<VerificationRecord agency={verifiedAgency} />);

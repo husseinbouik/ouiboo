@@ -95,6 +95,37 @@ describe('EmailService booking seller block (B4)', () => {
     const html = await captureTravelerHtml(null)
     expect(html).not.toContain('Your seller')
   })
+
+  it('renders the full Art. 29(2) list when the record carries it (#627/#700)', async () => {
+    const html = await captureTravelerHtml({
+      ...completeSeller,
+      businessAddress: '1 Test Street, Casablanca',
+      businessPhone: '+212600000002',
+      rc: '654321',
+      taxId: '98765432',
+    })
+    expect(html).toContain('Address: 1 Test Street, Casablanca')
+    expect(html).toContain('Phone: +212600000002')
+    expect(html).toContain('Trade register (RC): 654321')
+    expect(html).toContain('Tax ID (IF): 98765432')
+  })
+
+  it('omits Art. 29(2) lines the record does not carry — never invents them (#627)', async () => {
+    const html = await captureTravelerHtml(completeSeller)
+    expect(html).not.toContain('Address:')
+    expect(html).not.toContain('Trade register (RC):')
+    expect(html).not.toContain('Tax ID (IF):')
+  })
+
+  it('renders the platform identity block in the traveller copy (#627)', async () => {
+    const html = await captureTravelerHtml(completeSeller)
+    expect(html).toContain('About Ouiboo')
+    expect(html).toContain('technology platform')
+    expect(html).toContain('never holds your money')
+    // No configured channel in the test env: the in-app contact line
+    // renders and no address is fabricated.
+    expect(html).toContain('from your booking in the app')
+  })
 })
 
 describe('EmailService delivery', () => {

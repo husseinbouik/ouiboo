@@ -38,6 +38,13 @@ export interface BookingSellerInfo {
   licenceVerified: boolean
   licenceIssuedAt?: Date | string | null
   licenceIssuingAuthority?: string | null
+  // #627/#700: the rest of the Law 31-08 Art. 29(2) list for the
+  // durable confirmation email — sourced from the agency's verified
+  // profile, rendered only when present (never invented).
+  businessAddress?: string | null
+  businessPhone?: string | null
+  rc?: string | null
+  taxId?: string | null
 }
 
 @Injectable()
@@ -299,6 +306,21 @@ export class EmailService {
     }
     const t = emailStrings(locale).bookingSeller
     const lines = [fillEmailCopy(t.soldBy, { name })]
+    // #627/#700: address / phone / RC / IF complete the Art. 29(2)
+    // seller block in the durable confirmation, matching the in-app
+    // SellerBlock. Absent values are omitted, never fabricated.
+    if (seller.businessAddress?.trim()) {
+      lines.push(fillEmailCopy(t.address, { address: seller.businessAddress.trim() }))
+    }
+    if (seller.businessPhone?.trim()) {
+      lines.push(fillEmailCopy(t.phone, { phone: seller.businessPhone.trim() }))
+    }
+    if (seller.rc?.trim()) {
+      lines.push(fillEmailCopy(t.rc, { rc: seller.rc.trim() }))
+    }
+    if (seller.taxId?.trim()) {
+      lines.push(fillEmailCopy(t.taxId, { taxId: seller.taxId.trim() }))
+    }
     if (seller.licenceVerified && seller.travelLicenceNumber?.trim()) {
       lines.push(fillEmailCopy(t.licence, {
         type: seller.travelLicenceType?.trim() ?? '',
@@ -315,6 +337,35 @@ export class EmailService {
       } else {
         lines.push(t.detailsPending)
       }
+    }
+    return `
+      ${emailHeading(t.heading)}
+      ${emailPanel(lines.map((line) => escapeHtml(line)).join('<br>'), 'neutral', locale)}`
+  }
+
+  /**
+   * #627 (Council S4): the platform identity block for the durable
+   * booking confirmation — Ouiboo's name, the technology-platform
+   * line (trips are sold by the named agency above), and the contact
+   * channels that are actually configured (support email /
+   * WhatsApp escalation from env; the in-app booking contact always).
+   * Channels that are not configured are omitted — the Session #3
+   * rule against publishing a dead address applies to email too.
+   * No postal complaints address is rendered: none exists on record
+   * yet (pending incorporation/siège — see #627 remainder).
+   */
+  private platformIdentityBlock(locale: EmailLocale): string {
+    const t = emailStrings(locale).platformIdentity
+    const supportEmail = process.env.SUPPORT_EMAIL?.trim()
+    const supportPhone = process.env.SUPPORT_PHONE?.trim()
+    const lines = [t.technology]
+    lines.push(
+      supportEmail
+        ? fillEmailCopy(t.support, { supportEmail })
+        : t.supportNoEmail,
+    )
+    if (supportPhone) {
+      lines.push(fillEmailCopy(t.whatsapp, { phone: supportPhone }))
     }
     return `
       ${emailHeading(t.heading)}
@@ -350,7 +401,7 @@ export class EmailService {
     const travelerContent = `
       ${emailHeading(t.heading)}
       ${emailParagraph(fillEmailCopy(t.body, { tripTitle }))}
-      ${emailPanel(`${escapeHtml(t.panelReference)} ${emailStrong(bookingId)}<br>${escapeHtml(t.panelNextStep)}`, 'neutral', resolved)}${this.bookingSellerBlock(seller, resolved)}${cancellationBlock}
+      ${emailPanel(`${escapeHtml(t.panelReference)} ${emailStrong(bookingId)}<br>${escapeHtml(t.panelNextStep)}`, 'neutral', resolved)}${this.bookingSellerBlock(seller, resolved)}${this.platformIdentityBlock(resolved)}${cancellationBlock}
       ${emailParagraph(emailStrings(resolved).prevailingLanguage)}`
     const agencyStrings = emailStrings().bookingNewAgency
     const agencyContent = `

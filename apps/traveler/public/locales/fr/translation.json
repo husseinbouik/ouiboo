@@ -558,7 +558,7 @@
     "licenceIssued": "Délivrée le {{date}} par {{authority}}",
     "licenceDetailsPending": "Les détails de délivrance de la licence sont en cours de confirmation auprès de l'agence.",
     "licenceNotConfirmed": "Détails de la licence non encore confirmés — renseignez-vous auprès de l'agence avant de payer.",
-    "licenceChecked": "Document de licence vérifié le {{date}}",
+    "licenceChecked": "Document de licence confronté à la liste du Ministère le {{date}}",
     "licenceValidUntil": "Licence valable jusqu'au {{date}}",
     "insuranceEvidenced": "Assurance RC justifiée le {{date}}",
     "poweredBy": "Propulsé par OuiBoo"
@@ -815,6 +815,14 @@
     "helpCentre": "Centre d'aide",
     "helpCentreBody": "Recherchez dans les questions fréquentes ou ouvrez un ticket d'assistance — votre ticket est enregistré et traité dans les délais de l'assistance normale."
   },
+  "platformIdentity": {
+    "title": "À propos d'Ouiboo",
+    "technology": "Ouiboo est une plateforme technologique. Les voyages sont organisés et vendus par l'agence nommée sur cette page — Ouiboo ne vend jamais de voyages et ne détient jamais votre argent.",
+    "support": "Assistance : {{email}}",
+    "whatsapp": "Escalade pendant un voyage en cours sur WhatsApp : {{phone}}",
+    "complaints": "Réclamations : écrivez à {{email}} avec votre référence de réservation, ou ouvrez une demande dans le centre d'aide.",
+    "complaintsNoEmail": "Réclamations : utilisez les contacts de votre page de réservation ou ouvrez une demande dans le centre d'aide, avec votre référence de réservation."
+  },
   "modelExplainer": {
     "title": "Comment fonctionne Ouiboo",
     "intro": "Ouiboo est la technologie qui vous met en relation avec des agences de voyage. Ouiboo ne vend pas de voyages, et vous payez toujours l'agence directement — Ouiboo ne détient jamais votre argent.",
@@ -1067,6 +1075,8 @@
     "insurer": "Assureur RC",
     "insuranceValidity": "Validité de l’assurance",
     "checkedOn": "Vérifié par Ouiboo le",
+    "licenceCheckedMinistry": "Document de licence confronté à la liste du Ministère le {{date}}",
+    "insuranceEvidenced": "Assurance RC justifiée le {{date}}",
     "statusLabel": "Statut",
     "statusVerified": "Vérifiée — voyages actifs",
     "statusNotVerified": "Non vérifiée actuellement — voyages en pause",

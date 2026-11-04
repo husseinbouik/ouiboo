@@ -8,6 +8,7 @@ import { apiClient } from '@/lib/api-client';
 import { isSupportEmailConfigured, supportMailto } from '@/lib/support';
 import { NORMAL_SUPPORT_RESPONSE_HOURS } from '@ouiboo/utils';
 import { ModelExplainer } from '@/components/ModelExplainer';
+import PlatformIdentity from '@/components/PlatformIdentity';
 
 /**
  * #446 (Council P2-07): the help centre.
@@ -235,6 +236,11 @@ export default function HelpCentrePage() {
             </form>
           )}
         </section>
+
+        {/* #627: the platform identity block — who Ouiboo is, the
+            support email / WhatsApp escalation, and the complaints
+            path (email + this in-app form). */}
+        <PlatformIdentity className="mt-12" />
 
         <p className="mt-10 text-sm text-muted-foreground">{t('support.safetyNote')}</p>
       </div>

@@ -874,6 +874,12 @@ export class BookingsService {
                             licenceVerified: isLicenceVerified(agency, now),
                             licenceIssuedAt: agency.licenceIssuedAt,
                             licenceIssuingAuthority: agency.licenceIssuingAuthority,
+                            // #627/#700: complete the Art. 29(2) block
+                            // in the durable confirmation email.
+                            businessAddress: agency.businessAddress,
+                            businessPhone: agency.businessPhone,
+                            rc: agency.rc,
+                            taxId: agency.taxId,
                         },
                     }
                     : null,

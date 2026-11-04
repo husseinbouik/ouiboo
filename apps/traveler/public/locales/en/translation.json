@@ -558,7 +558,7 @@
     "licenceIssued": "Issued on {{date}} by {{authority}}",
     "licenceDetailsPending": "Licence issue details are being confirmed with the agency.",
     "licenceNotConfirmed": "Licence details not yet confirmed — ask the agency before paying.",
-    "licenceChecked": "Licence document checked on {{date}}",
+    "licenceChecked": "Licence document checked against the Ministry list on {{date}}",
     "licenceValidUntil": "Licence valid until {{date}}",
     "insuranceEvidenced": "RC insurance evidenced on {{date}}",
     "poweredBy": "Powered by OuiBoo"
@@ -815,6 +815,14 @@
     "helpCentre": "Help centre",
     "helpCentreBody": "Search the frequently asked questions or open a support ticket — your ticket is recorded and answered on the normal support lane."
   },
+  "platformIdentity": {
+    "title": "About Ouiboo",
+    "technology": "Ouiboo is a technology platform. Trips are organised and sold by the agency named on this page — Ouiboo never sells trips and never holds your money.",
+    "support": "Support: {{email}}",
+    "whatsapp": "Active-trip escalation on WhatsApp: {{phone}}",
+    "complaints": "Complaints: email {{email}} with your booking reference, or open a request in the help centre.",
+    "complaintsNoEmail": "Complaints: use the contacts on your booking page or open a request in the help centre, with your booking reference."
+  },
   "modelExplainer": {
     "title": "How Ouiboo works",
     "intro": "Ouiboo is the technology that connects you with travel agencies. Ouiboo does not sell trips, and you always pay the agency directly — Ouiboo never holds your money.",
@@ -1067,6 +1075,8 @@
     "insurer": "RC insurer",
     "insuranceValidity": "Insurance validity",
     "checkedOn": "Checked by Ouiboo on",
+    "licenceCheckedMinistry": "Licence document checked against the Ministry list on {{date}}",
+    "insuranceEvidenced": "RC insurance evidenced on {{date}}",
     "statusLabel": "Status",
     "statusVerified": "Verified — trips active",
     "statusNotVerified": "Not currently verified — trips paused",

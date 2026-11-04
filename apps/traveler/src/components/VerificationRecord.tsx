@@ -35,6 +35,9 @@ export interface VerificationRecordAgency extends SellerAgencyInfo {
         insuranceExpiry?: string | null;
         insuranceStatus?: string | null;
         checkedOn?: string | null;
+        // #627: the B10 dated badge's two real dates, kept separate.
+        licenceCheckedOn?: string | null;
+        insuranceEvidencedOn?: string | null;
         status?: string | null;
         tripsPaused?: boolean;
     } | null;
@@ -61,6 +64,17 @@ export function deriveVerificationRecord(agency: VerificationRecordAgency, now: 
             insuranceExpiry: toValidDate(record.insuranceExpiry),
             insuranceStatus: record.insuranceStatus ?? null,
             checkedOn: toValidDate(record.checkedOn),
+            // #627 B10 badge: prefer the record's own dated fields;
+            // fall back to the flat agency stamps (ministry stamp
+            // first) so older payloads still render their real dates.
+            licenceCheckedOn:
+                toValidDate(record.licenceCheckedOn) ??
+                (record.licenceStatus === 'VERIFIED'
+                    ? (toValidDate(agency.licenceMinistryCheckedAt) ?? toValidDate(agency.licenceVerifiedAt))
+                    : null),
+            insuranceEvidencedOn:
+                toValidDate(record.insuranceEvidencedOn) ??
+                (record.insuranceStatus === 'VERIFIED' ? toValidDate(agency.insuranceVerifiedAt) : null),
             status: record.status ?? null,
             tripsPaused: Boolean(record.tripsPaused),
         };
@@ -70,6 +84,14 @@ export function deriveVerificationRecord(agency: VerificationRecordAgency, now: 
     const stamps = [toValidDate(agency.licenceVerifiedAt), toValidDate(agency.insuranceVerifiedAt)].filter(
         (d): d is Date => d !== null,
     );
+    // #627 B10 badge dates: the licence date is the Ministry-list
+    // check stamp when one exists (verified-at fallback), the
+    // insurance date is its evidence stamp — each only while its
+    // check stands verified.
+    const licenceCheckedOn = licenceVerified
+        ? (toValidDate(agency.licenceMinistryCheckedAt) ?? toValidDate(agency.licenceVerifiedAt))
+        : null;
+    const insuranceEvidencedOn = insuranceVerified ? toValidDate(agency.insuranceVerifiedAt) : null;
     const umbrella = agency.verificationStatus ?? (licenceVerified && insuranceVerified ? 'VERIFIED' : null);
     return {
         legalName: agency.legalName ?? agency.companyName ?? '',
@@ -83,6 +105,8 @@ export function deriveVerificationRecord(agency: VerificationRecordAgency, now: 
         insuranceExpiry: insuranceVerified ? toValidDate(agency.insuranceExpiry) : null,
         insuranceStatus: agency.insuranceStatus ?? null,
         checkedOn: stamps.length ? new Date(Math.max(...stamps.map((d) => d.getTime()))) : null,
+        licenceCheckedOn,
+        insuranceEvidencedOn,
         status: umbrella,
         tripsPaused: umbrella !== 'VERIFIED',
     };
@@ -161,6 +185,23 @@ export default function VerificationRecord({
                     </dd>
                 </div>
             </dl>
+            {/* #627 (Council S4): the B10 dated badge — what was
+                checked, when, from the record's real dates. Each part
+                renders only when its date exists; no date, no claim. */}
+            {record.licenceCheckedOn || record.insuranceEvidencedOn ? (
+                <p className="mt-3 text-xs font-semibold text-foreground" data-testid="verification-badge">
+                    {[
+                        record.licenceCheckedOn
+                            ? t('verificationRecord.licenceCheckedMinistry', { date: formatDate(record.licenceCheckedOn) })
+                            : null,
+                        record.insuranceEvidencedOn
+                            ? t('verificationRecord.insuranceEvidenced', { date: formatDate(record.insuranceEvidencedOn) })
+                            : null,
+                    ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                </p>
+            ) : null}
             {/* #775 (Council S6): the RC ≠ personal-travel-insurance
                 disclosure, shown wherever this record presents the
                 agency's insurance as checked — never implying a booking
