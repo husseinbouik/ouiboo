@@ -40,7 +40,7 @@ import { SnapRail } from '@/components/SnapRail';
 import { PhotoViewer } from '@/components/PhotoViewer';
 import { TripMosaic } from '@/components/TripMosaic';
 import { useDisplayAmountConverter } from '@/lib/display-currency';
-import { MIN_REVIEWS_FOR_RATING, ratingDisplayState } from '@/lib/review-display';
+import { MIN_REVIEWS_FOR_RATING, ratingDisplayState, REVIEW_SUB_SCORES, type ReviewSubScoreKey } from '@/lib/review-display';
 
 type TripDay = {
   dayNumber: number;
@@ -148,6 +148,10 @@ type ReviewStats = {
   averageRating?: number;
   totalReviews: number;
   distribution?: Record<number, number>;
+  /** #776: per-sub-score averages — null below the #681 threshold
+   * (the API gates them; the UI also only renders this in the
+   * 'rated' state). */
+  subScores?: Partial<Record<ReviewSubScoreKey, number | null>>;
 };
 
 export default function TripDetailsClient({
@@ -761,6 +765,41 @@ export default function TripDetailsClient({
                      <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{t('tripDetails.distribution')}</p>
                      <RatingDistribution distribution={reviewStats.distribution} totalReviews={reviewStats.totalReviews} />
                    </div>
+
+                   {/* #776: sub-score averages — this whole block only
+                       renders in the 'rated' state (#681 threshold),
+                       and the API additionally nulls the averages
+                       below it. */}
+                   {reviewStats.subScores && REVIEW_SUB_SCORES.some(({ key }) => reviewStats.subScores?.[key] != null) && (
+                     <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6 space-y-4 md:col-span-2" data-testid="review-subscores">
+                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                         {REVIEW_SUB_SCORES.map(({ key }) => {
+                           const value = reviewStats.subScores?.[key];
+                           if (value == null) return null;
+                           return (
+                             <div key={key} className="space-y-1">
+                               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t(`reviews.subScores.${key}`)}</p>
+                               <p className="flex items-center gap-2">
+                                 <span className="text-2xl font-black text-foreground font-display">{value.toFixed(1)}</span>
+                                 <span className="flex gap-0.5">
+                                   {[1, 2, 3, 4, 5].map((star) => (
+                                     <Star
+                                       key={star}
+                                       className={`h-3.5 w-3.5 ${
+                                         star <= Math.round(value)
+                                           ? 'fill-sunset-orange text-sunset-orange'
+                                           : 'text-muted-foreground/40'
+                                       }`}
+                                     />
+                                   ))}
+                                 </span>
+                               </p>
+                             </div>
+                           );
+                         })}
+                       </div>
+                     </div>
+                   )}
                  </div>
                )}
                

@@ -649,7 +649,14 @@
     "agencyResponse": "Agency Response",
     "pageOf": "Page {{page}} of {{total}}",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "subScores": {
+      "organisation": "Organisation",
+      "guide": "Guide",
+      "value": "Value for money",
+      "accuracy": "Accuracy of description"
+    },
+    "photoAlt": "Photo from a traveller review"
   },
   "reviewForm": {
     "ratingLabel": "Rate your experience",
@@ -666,7 +673,17 @@
     "submitError": "We could not submit your review. Please try again.",
     "success": "Review submitted successfully.",
     "submitting": "Submitting...",
-    "submit": "Submit review"
+    "submit": "Submit review",
+    "subScores": {
+      "organisation": "Organisation",
+      "guide": "Guide",
+      "value": "Value for money",
+      "accuracy": "Accuracy of description"
+    },
+    "photosLabel": "Photos (optional)",
+    "photosHint": "Add up to {{max}} photos from your trip. They appear only once your review is approved.",
+    "photosTooMany": "You can add at most {{max}} photos.",
+    "photoRemove": "Remove {{name}}"
   },
   "refunds": {
     "panelTitle": "Refund",

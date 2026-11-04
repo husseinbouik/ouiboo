@@ -649,7 +649,14 @@
     "agencyResponse": "Réponse de l'agence",
     "pageOf": "Page {{page}} sur {{total}}",
     "previous": "Précédent",
-    "next": "Suivant"
+    "next": "Suivant",
+    "subScores": {
+      "organisation": "Organisation",
+      "guide": "Guide",
+      "value": "Rapport qualité-prix",
+      "accuracy": "Exactitude de la description"
+    },
+    "photoAlt": "Photo d'un avis de voyageur"
   },
   "reviewForm": {
     "ratingLabel": "Évaluez votre expérience",
@@ -666,7 +673,17 @@
     "submitError": "Nous n’avons pas pu envoyer votre avis. Veuillez réessayer.",
     "success": "Avis envoyé avec succès.",
     "submitting": "Envoi en cours...",
-    "submit": "Envoyer l’avis"
+    "submit": "Envoyer l’avis",
+    "subScores": {
+      "organisation": "Organisation",
+      "guide": "Guide",
+      "value": "Rapport qualité-prix",
+      "accuracy": "Exactitude de la description"
+    },
+    "photosLabel": "Photos (facultatif)",
+    "photosHint": "Ajoutez jusqu'à {{max}} photos de votre voyage. Elles n'apparaissent qu'une fois votre avis approuvé.",
+    "photosTooMany": "Vous pouvez ajouter au maximum {{max}} photos.",
+    "photoRemove": "Retirer {{name}}"
   },
   "refunds": {
     "panelTitle": "Remboursement",

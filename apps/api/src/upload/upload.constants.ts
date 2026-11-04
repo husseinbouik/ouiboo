@@ -9,10 +9,14 @@ export const MAX_PDF_PAGES = 100;
 // proof is a private financial document, never a public trip asset.
 // `avatar` is the profile-bound public intent for non-agency callers:
 // the file is attached to the caller's own profile, nothing else.
-export const UPLOAD_INTENTS = ['trip-asset', 'identity-document', 'payment-proof', 'avatar'] as const;
+export const UPLOAD_INTENTS = ['trip-asset', 'identity-document', 'payment-proof', 'avatar', 'review-photo'] as const;
 
 /** Intents whose files are stored privately and never get a public URL. */
-export const PRIVATE_UPLOAD_INTENTS: readonly UploadIntent[] = ['identity-document', 'payment-proof'];
+export const PRIVATE_UPLOAD_INTENTS: readonly UploadIntent[] = ['identity-document', 'payment-proof', 'review-photo'];
+
+/** #776: a review carries at most this many traveller photos. Each file
+ * still obeys MAX_UPLOAD_SIZE_BYTES through the upload pipe. */
+export const MAX_REVIEW_PHOTOS = 3;
 export type UploadIntent = (typeof UPLOAD_INTENTS)[number];
 
 // Private files live under this key prefix and are never served publicly

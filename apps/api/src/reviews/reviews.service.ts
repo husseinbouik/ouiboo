@@ -1,7 +1,79 @@
-import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateReviewDto, UpdateReviewDto, ReviewResponseDto } from './dto/create-review.dto';
 import { derivePublicMediaUrl } from '../upload/media-url.util';
+import { MAX_REVIEW_PHOTOS } from '../upload/upload.constants';
+
+/** #681 (Council S6): averages are statistical claims — per-trip
+ * sub-score averages (#776) follow the same minimum-count discipline
+ * as the overall average: published only at/above this count, while
+ * the review COUNT itself is always published. */
+export const MIN_REVIEWS_FOR_RATING = 5;
+
+/** #776: the four sub-score fields, DTO name -> stats key. */
+export const REVIEW_SUB_SCORES = [
+  { field: 'organisationRating', key: 'organisation' },
+  { field: 'guideRating', key: 'guide' },
+  { field: 'valueRating', key: 'value' },
+  { field: 'accuracyRating', key: 'accuracy' },
+] as const;
+
+const REVIEW_PHOTO_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+
+/**
+ * #776: validate the photo keys a traveller attaches to a review.
+ * A key is only acceptable when it is one of the caller's OWN private
+ * review-photo uploads (`private/{travelerId}/review-photos/…`, minted
+ * by the `review-photo` upload intent) with an image extension and
+ * safe path segments. Anything else — another traveller's key, a
+ * public trip-asset key, a traversal attempt — is rejected outright,
+ * never silently dropped or re-homed (#665 discipline).
+ */
+export function validateReviewPhotoKeys(travelerId: string, photoKeys?: string[]): string[] {
+  if (photoKeys === undefined || photoKeys === null) return [];
+  if (!Array.isArray(photoKeys)) {
+    throw new BadRequestException('photoKeys must be an array of upload keys');
+  }
+  if (photoKeys.length > MAX_REVIEW_PHOTOS) {
+    throw new BadRequestException(`A review can carry at most ${MAX_REVIEW_PHOTOS} photos`);
+  }
+  const prefix = `private/${travelerId}/review-photos/`;
+  const seen = new Set<string>();
+  for (const raw of photoKeys) {
+    if (typeof raw !== 'string') {
+      throw new BadRequestException('Invalid review photo key');
+    }
+    const key = raw.replace(/\\/g, '/').replace(/^\/+/, '');
+    const segments = key.split('/').filter(Boolean);
+    const safe = segments.every((s) => s !== '.' && s !== '..' && /^[a-zA-Z0-9._-]+$/.test(s));
+    const lower = key.toLowerCase();
+    if (
+      !key.startsWith(prefix) ||
+      !safe ||
+      !REVIEW_PHOTO_IMAGE_EXTENSIONS.some((ext) => lower.endsWith(ext)) ||
+      seen.has(key)
+    ) {
+      throw new BadRequestException('Invalid review photo key');
+    }
+    seen.add(key);
+  }
+  return [...seen];
+}
+
+/** #776: validate an optional sub-score value (DTO enforces this at
+ * the edge too; the service never trusts the caller). */
+function validateSubScore(field: string, value: number | undefined): number | null {
+  if (value === undefined || value === null) return null;
+  if (!Number.isInteger(value) || value < 1 || value > 5) {
+    throw new BadRequestException(`${field} must be an integer between 1 and 5`);
+  }
+  return value;
+}
+
+/** API-relative path that serves a VISIBLE review's photo (#776). */
+export function reviewPhotoPath(tripId: string, reviewId: string, index: number): string {
+  return `/trips/${tripId}/reviews/${reviewId}/photos/${index}`;
+}
 
 export type ReviewStatusValue = 'PENDING' | 'VISIBLE' | 'HIDDEN' | 'REMOVED';
 export type ReviewModerationAction = 'HIDE' | 'REMOVE' | 'RESTORE';
@@ -126,6 +198,16 @@ export class ReviewsService {
     const initialStatus: ReviewStatusValue =
       priorReviewCount === 0 || isSelfBookingReview ? 'PENDING' : 'VISIBLE';
 
+    // #776: sub-scores are optional; photo keys must be the traveller's
+    // own private review-photo uploads (validated before any write).
+    const subScores = {
+      organisationRating: validateSubScore('organisationRating', dto.organisationRating),
+      guideRating: validateSubScore('guideRating', dto.guideRating),
+      valueRating: validateSubScore('valueRating', dto.valueRating),
+      accuracyRating: validateSubScore('accuracyRating', dto.accuracyRating),
+    };
+    const photoKeys = validateReviewPhotoKeys(travelerId, dto.photoKeys);
+
     // Create review
     const review = await this.prisma.review.create({
       data: {
@@ -136,10 +218,15 @@ export class ReviewsService {
         travelerId,
         tripTemplateId: booking.session.template.id,
         rating: dto.rating,
+        ...subScores,
         comment: dto.comment,
         isVerifiedBooking: true,
         status: initialStatus,
+        ...(photoKeys.length
+          ? { photos: { create: photoKeys.map((storageKey) => ({ storageKey })) } }
+          : {}),
       },
+      include: { photos: { orderBy: { createdAt: 'asc' } } },
     });
 
     // Only a publicly visible review moves the stored trip rating.
@@ -171,7 +258,13 @@ export class ReviewsService {
     const [reviews, total] = await Promise.all([
       this.prisma.review.findMany({
         where: { tripTemplateId: tripId, status: 'VISIBLE' },
-        include: { traveler: { select: { id: true, name: true, avatar: true } } },
+        include: {
+          traveler: { select: { id: true, name: true, avatar: true } },
+          // #776: photos ride along ONLY on this VISIBLE-only list, so a
+          // photo can never leak through the public payload before its
+          // review clears moderation.
+          photos: { select: { storageKey: true }, orderBy: { createdAt: 'asc' } },
+        },
         orderBy,
         skip,
         take: normalizedLimit,
@@ -184,8 +277,17 @@ export class ReviewsService {
     return {
       // #447: traveller avatars are stored file references — re-derive
       // them against the current public media base at read time.
-      reviews: reviews.map((review) => ({
+      // #776: `photoKeys` (private storage keys) must never ride along
+      // on a public payload — strip it defensively before spreading.
+      reviews: reviews.map(({ photoKeys: _strippedPhotoKeys, ...review }: any) => ({
         ...review,
+        // #776: expose photos as visibility-gated API paths, never as
+        // storage keys or public URLs — the files stay in private
+        // storage and are served by the photo endpoint only while
+        // this review is VISIBLE.
+        photos: ((review as any).photos ?? []).map((_: unknown, index: number) =>
+          reviewPhotoPath(tripId, review.id, index),
+        ),
         // #692: the agency reply is public ONLY while its moderation
         // status is VISIBLE — a PENDING/HIDDEN/REMOVED reply never
         // leaves the API as public text.
@@ -210,7 +312,13 @@ export class ReviewsService {
     const [aggregate, groupedRatings] = await Promise.all([
       this.prisma.review.aggregate({
         where,
-        _avg: { rating: true },
+        _avg: {
+          rating: true,
+          organisationRating: true,
+          guideRating: true,
+          valueRating: true,
+          accuracyRating: true,
+        },
         _count: { _all: true },
       }),
       this.prisma.review.groupBy({
@@ -226,10 +334,27 @@ export class ReviewsService {
       }
     }
 
+    const totalReviews = aggregate._count._all;
+    // #776 + #681: per-sub-score averages are published ONLY at/above
+    // the minimum-count threshold. Below it every average is null —
+    // but the count itself stays published, exactly like the overall
+    // rating discipline.
+    const aboveThreshold = totalReviews >= MIN_REVIEWS_FOR_RATING;
+    const subScores: Record<string, number | null> = {};
+    for (const { field, key } of REVIEW_SUB_SCORES) {
+      const avg = (aggregate._avg as any)?.[field];
+      subScores[key] =
+        aboveThreshold && typeof avg === 'number'
+          ? Math.round(avg * 10) / 10
+          : null;
+    }
+
     return {
       averageRating: Math.round((aggregate._avg.rating || 0) * 10) / 10,
-      totalReviews: aggregate._count._all,
+      totalReviews,
       distribution,
+      subScores,
+      minReviewsForRating: MIN_REVIEWS_FOR_RATING,
     };
   }
 
@@ -450,6 +575,24 @@ export class ReviewsService {
       where: { id: reviewId },
       data: {
         rating: dto.rating ?? review.rating,
+        // #776: sub-scores are editable under the same #439 budget;
+        // an omitted sub-score keeps its stored value.
+        organisationRating:
+          dto.organisationRating !== undefined
+            ? validateSubScore('organisationRating', dto.organisationRating)
+            : review.organisationRating,
+        guideRating:
+          dto.guideRating !== undefined
+            ? validateSubScore('guideRating', dto.guideRating)
+            : review.guideRating,
+        valueRating:
+          dto.valueRating !== undefined
+            ? validateSubScore('valueRating', dto.valueRating)
+            : review.valueRating,
+        accuracyRating:
+          dto.accuracyRating !== undefined
+            ? validateSubScore('accuracyRating', dto.accuracyRating)
+            : review.accuracyRating,
         comment: dto.comment ?? review.comment,
         editCount: editCount + 1,
         ...((review.status ?? 'VISIBLE') === 'VISIBLE' ? { status: 'PENDING' as const } : {}),
@@ -557,6 +700,14 @@ export class ReviewsService {
         moderationReason: trimmedReason,
       },
     });
+    // #776: moderators must not RESTORE blind — the moderation result
+    // carries the review's sub-scores (scalar columns, already on the
+    // row) and its photo keys, fetchable by an admin through the
+    // existing signed-URL endpoint.
+    const moderationPhotos = await this.listReviewPhotos(reviewId);
+    const moderationPhotoKeys = moderationPhotos.map(
+      (photo: any) => photo.storageKey,
+    );
 
     await this.prisma.auditLog
       .create({
@@ -579,7 +730,82 @@ export class ReviewsService {
     // Keep the trip's stored rating in sync with VISIBLE-only stats.
     await this.updateTripRating(review.tripTemplateId);
 
-    return updated;
+    return { ...updated, photos: moderationPhotos, photoKeys: moderationPhotoKeys };
+  }
+
+  /** #776: photo rows for a review, oldest first (display order). */
+  private async listReviewPhotos(reviewId: string): Promise<any[]> {
+    const reviewPhoto = (this.prisma as any).reviewPhoto;
+    if (!reviewPhoto?.findMany) return [];
+    try {
+      return await reviewPhoto.findMany({
+        where: { reviewId },
+        orderBy: { createdAt: 'asc' },
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * #776: resolve the storage key of one photo of a review — but ONLY
+   * while the review is VISIBLE. A PENDING / HIDDEN / REMOVED review's
+   * photos are indistinguishable from missing ones (404), so nothing
+   * about an unmoderated photo leaks through this endpoint. The file
+   * itself stays in private storage; the controller streams it after
+   * this check.
+   */
+  async getVisibleReviewPhotoKey(
+    tripId: string,
+    reviewId: string,
+    index: number,
+  ): Promise<string> {
+    if (!Number.isInteger(index) || index < 0) {
+      throw new NotFoundException('Review photo not found');
+    }
+    const review = await this.prisma.review.findUnique({
+      where: { id: reviewId },
+      include: { photos: { orderBy: { createdAt: 'asc' } } },
+    });
+    if (
+      !review ||
+      review.tripTemplateId !== tripId ||
+      (review.status ?? 'VISIBLE') !== 'VISIBLE'
+    ) {
+      throw new NotFoundException('Review photo not found');
+    }
+    const photos: any[] = (review as any).photos ?? (await this.listReviewPhotos(reviewId));
+    const photo = photos[index];
+    if (!photo?.storageKey) {
+      throw new NotFoundException('Review photo not found');
+    }
+    return photo.storageKey as string;
+  }
+
+  /**
+   * #776: the admin moderation detail payload — the full review
+   * (sub-scores included, as scalar columns) plus its photo keys, so a
+   * moderator can inspect everything (photos via the signed-URL
+   * endpoint, which already allows admins) before RESTORE/HIDE/REMOVE.
+   */
+  async getReviewForModeration(reviewId: string) {
+    const review = await this.prisma.review.findUnique({
+      where: { id: reviewId },
+      include: {
+        traveler: { select: { id: true, name: true, avatar: true } },
+        photos: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+    if (!review) {
+      throw new BadRequestException('Review not found');
+    }
+    const photos: any[] =
+      (review as any).photos ?? (await this.listReviewPhotos(reviewId));
+    return {
+      ...review,
+      photos,
+      photoKeys: photos.map((photo: any) => photo.storageKey),
+    };
   }
 
   /**

@@ -53,6 +53,14 @@ describe('UploadController intents (#665)', () => {
     expect(calls).toEqual([{ folder: 'private/traveler-1/payment-proofs' }]);
   });
 
+  it('stores a review photo privately under the caller review-photos segment (#776)', async () => {
+    const { controller, calls } = makeController();
+    await controller.uploadFile(file, { intent: 'review-photo' } as any, {
+      user: { userId: 'traveler-1', role: 'TRAVELER' },
+    });
+    expect(calls).toEqual([{ folder: 'private/traveler-1/review-photos' }]);
+  });
+
   it('keeps identity documents private and trip assets agency-scoped', async () => {
     const { controller, calls } = makeController();
     await controller.uploadFile(file, { intent: 'identity-document' } as any, {

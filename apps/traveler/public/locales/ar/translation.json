@@ -649,7 +649,14 @@
     "agencyResponse": "رد الوكالة",
     "pageOf": "الصفحة {{page}} من {{total}}",
     "previous": "السابق",
-    "next": "التالي"
+    "next": "التالي",
+    "subScores": {
+      "organisation": "التنظيم",
+      "guide": "المرشد",
+      "value": "القيمة مقابل المال",
+      "accuracy": "دقة الوصف"
+    },
+    "photoAlt": "صورة من تقييم مسافر"
   },
   "reviewForm": {
     "ratingLabel": "قيّم تجربتك",
@@ -666,7 +673,17 @@
     "submitError": "تعذّر إرسال تقييمك. يُرجى المحاولة مرة أخرى.",
     "success": "تم إرسال التقييم بنجاح.",
     "submitting": "جارٍ الإرسال...",
-    "submit": "إرسال التقييم"
+    "submit": "إرسال التقييم",
+    "subScores": {
+      "organisation": "التنظيم",
+      "guide": "المرشد",
+      "value": "القيمة مقابل المال",
+      "accuracy": "دقة الوصف"
+    },
+    "photosLabel": "صور (اختياري)",
+    "photosHint": "أضف حتى {{max}} صور من رحلتك. لا تظهر إلا بعد الموافقة على تقييمك.",
+    "photosTooMany": "يمكنك إضافة {{max}} صور كحد أقصى.",
+    "photoRemove": "إزالة {{name}}"
   },
   "refunds": {
     "panelTitle": "استرداد",

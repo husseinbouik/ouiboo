@@ -23,3 +23,27 @@ export function ratingDisplayState(reviewCount?: number | null): RatingDisplaySt
 export function shouldShowRating(reviewCount?: number | null): boolean {
     return ratingDisplayState(reviewCount) === 'rated';
 }
+
+/**
+ * #776 (Council S6 Phase 3): the four review sub-scores. `key` is the
+ * stats/locale key; `field` is the review column / DTO field. The
+ * overall rating stays the headline — sub-scores add depth only.
+ */
+export const REVIEW_SUB_SCORES = [
+    { key: 'organisation', field: 'organisationRating' },
+    { key: 'guide', field: 'guideRating' },
+    { key: 'value', field: 'valueRating' },
+    { key: 'accuracy', field: 'accuracyRating' },
+] as const;
+
+export type ReviewSubScoreKey = (typeof REVIEW_SUB_SCORES)[number]['key'];
+
+/**
+ * #776 + #681: sub-score AVERAGES obey the same threshold discipline
+ * as the overall average — hidden below MIN_REVIEWS_FOR_RATING,
+ * shown at/above it. (Individual scores on a visible review are part
+ * of that review's content, not an aggregate claim.)
+ */
+export function shouldShowSubScoreAverages(reviewCount?: number | null): boolean {
+    return shouldShowRating(reviewCount);
+}
