@@ -11,6 +11,7 @@ import { Calendar, MapPin, Loader2, Upload, Check, Trash2, Clock, Users, Star } 
 import Image from 'next/image';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
+import { localizeLocationSuffix } from '@/lib/localized-location';
 import { useAuth } from '@/components/AuthContext';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -349,7 +350,7 @@ export default function MyBookingsPage() {
                                                         </div>
                                                         <div className="flex flex-col">
                                                             <span className="text-[10px] text-muted-foreground font-bold uppercase">{t('bookingDetail.location')}</span>
-                                                            <span className="text-sm font-semibold text-foreground">{booking.session.template.startLocation}</span>
+                                                            <span className="text-sm font-semibold text-foreground">{localizeLocationSuffix(booking.session.template.startLocation, t('countries.morocco'))}</span>
                                                         </div>
                                                     </div>
                                                 </div>
