@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, Input, Button, Label } from '
 import { Mail, Palette, Save, Shield, User } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { CurrencySelector } from '@/components/CurrencySelector';
+import { ReferralBlock } from '@/components/ReferralBlock';
 import { useAuth } from '@/components/AuthContext';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
@@ -197,6 +198,8 @@ export default function ProfilePage() {
             </form>
           </CardContent>
         </Card>
+
+        <ReferralBlock />
 
         <Card className="border-none shadow-2xl shadow-deep-blue/5 dark:shadow-none dark:ring-1 dark:ring-border rounded-4xl overflow-hidden bg-card">
           <CardContent className="p-10 flex flex-wrap items-center justify-between gap-6">

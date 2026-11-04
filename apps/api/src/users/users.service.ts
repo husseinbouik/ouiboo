@@ -6,6 +6,7 @@ import { PRIVATE_FILE_PREFIX } from '../upload/upload.constants';
 import { UploadService } from '../upload/upload.service';
 import { derivePublicMediaUrl } from '../upload/media-url.util';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { generateReferralCode } from './referral-code';
 
 @Injectable()
 export class UsersService {
@@ -245,6 +246,37 @@ export class UsersService {
         });
     }
 
+    /**
+     * #777: zero-value referral — recognition only. Returns exactly the
+     * caller's personal referral code and how many accounts were
+     * attributed to them. No value field of any kind exists in this
+     * payload (no points / credits / discounts / cash / balances).
+     * Existing accounts created before referral codes existed are
+     * assigned one lazily here (the migration also backfills them).
+     */
+    async getReferrals(userId: string) {
+        const user = await this.db.user.findUnique({
+            where: { id: userId },
+            select: { referralCode: true },
+        });
+        if (!user) throw new NotFoundException('User not found');
+
+        let referralCode: string | null = user.referralCode ?? null;
+        if (!referralCode) {
+            referralCode = generateReferralCode();
+            await this.db.user.update({
+                where: { id: userId },
+                data: { referralCode },
+            });
+        }
+
+        const referralCount = await this.db.user.count({
+            where: { referredById: userId },
+        });
+
+        return { referralCode, referralCount };
+    }
+
     async getMe(userId: string) {
         return this.findOne(userId);
     }
@@ -352,7 +384,7 @@ export class UsersService {
                     },
                 });
             }
-            await tx.user.update({ where: { id: userId }, data: { email: `${tombstone}@privacy.invalid`, name: null, avatar: null, password: tombstone, isEmailVerified: false, otp: null, otpExpiresAt: null, otpLastSentAt: null, passwordResetTokenHash: null, passwordResetExpiresAt: null, passwordResetSentAt: null, dateOfBirth: null, ageAttestedAt: null, mfaEnabled: false, mfaTotpSecret: null, mfaRecoveryCodeHashes: Prisma.JsonNull, mfaEnrolledAt: null } });
+            await tx.user.update({ where: { id: userId }, data: { email: `${tombstone}@privacy.invalid`, name: null, avatar: null, password: tombstone, isEmailVerified: false, otp: null, otpExpiresAt: null, otpLastSentAt: null, passwordResetTokenHash: null, passwordResetExpiresAt: null, passwordResetSentAt: null, dateOfBirth: null, ageAttestedAt: null, mfaEnabled: false, mfaTotpSecret: null, mfaRecoveryCodeHashes: Prisma.JsonNull, mfaEnrolledAt: null, referralCode: null, referredById: null } });
         });
     }
 

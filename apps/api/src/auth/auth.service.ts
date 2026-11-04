@@ -7,6 +7,7 @@ import { EmailService } from '../email/email.service';
 import { createHash, randomInt, randomUUID, timingSafeEqual } from 'crypto';
 import { UserRole } from '@ouiboo/types';
 import { RedisService } from '../common/redis.service';
+import { generateReferralCode, normalizeReferralCode } from '../users/referral-code';
 import { CURRENT_SUBSCRIPTION_TERMS_VERSION } from '../common/subscription-terms';
 import {
     MfaService,
@@ -881,6 +882,25 @@ export class AuthService {
             throw new HttpException('AGE_RESTRICTED', HttpStatus.BAD_REQUEST);
         }
 
+        // #777: resolve referral attribution before any write. A valid
+        // code links the new account to its referrer; an invalid or
+        // unknown code is ignored silently — signup never fails over it.
+        // Self-attribution is impossible: a code exists only once its
+        // owner's account has been created.
+        let referredById: string | null = null;
+        const referralCodeInput = normalizeReferralCode(dto.referralCode);
+        if (referralCodeInput && typeof this.db.user?.findUnique === 'function') {
+            try {
+                const referrer = await this.db.user.findUnique({
+                    where: { referralCode: referralCodeInput },
+                    select: { id: true },
+                });
+                referredById = referrer?.id ?? null;
+            } catch {
+                referredById = null;
+            }
+        }
+
         const hashedPassword = await bcrypt.hash(dto.password, 10);
         // Generate 6-digit OTP (100000 to 999999)
         const otp = this.generateOtp();
@@ -900,6 +920,8 @@ export class AuthService {
                         dateOfBirth,
                         ageAttestedAt: new Date(),
                         termsVersion: CURRENT_TERMS_VERSION,
+                        referralCode: generateReferralCode(),
+                        referredById,
                         otp: otpHash,
                         otpExpiresAt,
                         otpLastSentAt,
