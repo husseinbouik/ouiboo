@@ -1,0 +1,94 @@
+name: API Coverage
+
+# Enforced API coverage floor with a ratchet (issue #643).
+#
+# The GLOBAL floor lives in apps/api/package.json `jest.coverageThreshold`;
+# the PER-MODULE floors for the critical modules (payments, bookings,
+# auth, messages) live in apps/api/coverage-floors.json and are enforced
+# by scripts/check-api-coverage-floors.mjs (jest glob thresholds apply
+# per file, not per directory, so they cannot express a module floor).
+# Both were measured from the real suite on 2026-11-04 — see
+# docs/ci/coverage.md. Either one failing turns this job red. The job is deliberately named
+# "API coverage floor" so the context can be added to branch
+# protection unchanged; until then it is a visible, non-advisory gate
+# (no continue-on-error anywhere in this workflow).
+#
+# SonarCloud coverage reporting stays advisory and separate
+# (sonarcloud.yml overrides thresholds to {} for reporting only).
+
+on:
+  pull_request:
+    branches: [staging, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-coverage-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api-coverage:
+    name: API coverage floor
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5433/ouiboo_test
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: test-jwt-secret-for-ci-only-32chars
+      JWT_REFRESH_SECRET: test-refresh-secret-for-ci-32chars
+      CORS_ORIGINS: https://agency.ci.example.com,https://traveler.ci.example.com
+      SMTP_HOST: smtp.example.com
+      SMTP_PORT: '587'
+      SMTP_USER: mailer@example.com
+      SMTP_PASS: ci-mail-auth-dummy
+      API_URL: https://api.ci.example.com/api/v1
+      STORAGE_PROVIDER: local
+      ENABLE_SWAGGER: 'false'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run API tests with coverage (fails below the floor)
+        working-directory: apps/api
+        # Absolute coverageDirectory: a relative one is resolved by jest
+        # against the project rootDir (apps/api/src), not this working dir.
+        run: >-
+          npx jest --coverage --runInBand
+          --coverageReporters=text --coverageReporters=json-summary
+          --coverageDirectory=${{ github.workspace }}/apps/api/coverage
+
+      - name: Enforce per-module coverage floors (payments, bookings, auth, messages)
+        run: node scripts/check-api-coverage-floors.mjs apps/api/coverage/coverage-summary.json apps/api/coverage-floors.json
+
+      - name: Publish coverage summary
+        if: always()
+        working-directory: apps/api
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          d = json.load(open('coverage/coverage-summary.json'))['total']
+          print('## API coverage (floor enforced by jest.coverageThreshold)')
+          print('')
+          for k in ('lines', 'statements', 'branches', 'functions'):
+              print(f"- {k}: {d[k]['pct']}%")
+          PY
+          fi
+
+      - name: Upload coverage summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-coverage-summary
+          path: apps/api/coverage/coverage-summary.json
+          if-no-files-found: ignore
