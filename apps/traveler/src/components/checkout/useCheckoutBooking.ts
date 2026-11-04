@@ -26,6 +26,9 @@ type UseCheckoutBookingOptions = {
   payLater?: boolean;
   payOnArrival?: boolean;
   pickupPointId?: string | null;
+  /** #778: the applied agency-funded promo code (validated by the
+   * preview; the API re-validates + reprices it at creation). */
+  promoCode?: string | null;
 };
 
 export function useCheckoutBooking({
@@ -42,6 +45,7 @@ export function useCheckoutBooking({
   payLater,
   payOnArrival,
   pickupPointId,
+  promoCode,
 }: UseCheckoutBookingOptions) {
   const router = useRouter();
   const { t, i18n } = useTranslation();
@@ -110,6 +114,10 @@ export function useCheckoutBooking({
                   .map(([addOnId, quantity]) => ({ addOnId, quantity })),
               }
             : {}),
+          // #778: agency-funded promo code — the API resolves the
+          // stored code for the session's agency and computes the
+          // discount from the authoritative total.
+          ...(promoCode ? { promoCode } : {}),
           // Batch F: payment-shape elections + pickup choice — the
           // API validates them against the session/template facts.
           ...(payLater ? { payLater: true } : {}),

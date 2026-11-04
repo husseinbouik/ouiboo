@@ -4,6 +4,7 @@ import { BookingsService } from './bookings.service';
 import { RebookingService } from './rebooking.service';
 import { normalizeTripLocale } from '../trips/trip-translations.util';
 import { ConfirmBankPaymentDto, CreateBookingDto, DisputeAttendanceDto, MarkAttendanceDto, VerifyBookingPassDto, VerifyManualPaymentDto } from './dto/create-booking.dto';
+import { PromoPreviewDto } from '../promo-codes/dto/promo-code.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
@@ -35,6 +36,16 @@ export class BookingsController {
         @Headers('idempotency-key') idempotencyKey?: string,
     ) {
         return this.bookingsService.create(req.user.userId, dto, idempotencyKey);
+    }
+
+    @Post('promo-preview')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RateLimitGuard)
+    @RateLimit({ points: 20, windowMs: 60_000, keyPrefix: 'bookings:promo-preview' })
+    @RateLimitSensitive()
+    @ApiOperation({ summary: 'Preview an agency-funded promo code against a session total (#778): validates the code and prices the discounted total; redeems nothing' })
+    previewPromo(@Body() dto: PromoPreviewDto) {
+        return this.bookingsService.previewPromo(dto);
     }
 
     @Get('my-bookings')

@@ -74,6 +74,17 @@
     "discoverTrips": "Découvrir les voyages"
   },
   "checkout": {
+    "promo": {
+      "label": "Code promo",
+      "placeholder": "Saisir le code",
+      "apply": "Appliquer",
+      "applying": "Application…",
+      "remove": "Retirer",
+      "applied": "Code {{code}} appliqué",
+      "discount": "Réduction promo ({{code}})",
+      "fundedNote": "Réduction financée par l'agence",
+      "invalid": "Ce code promo n'est pas valide pour cette réservation"
+    },
     "title": "Finaliser la réservation",
     "secureProcess": "Paiement manuel à l'agence",
     "goBack": "Retour",

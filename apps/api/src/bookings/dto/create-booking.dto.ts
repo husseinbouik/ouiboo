@@ -145,6 +145,18 @@ export class CreateBookingDto {
     @IsString()
     @MaxLength(64)
     pickupPointId?: string;
+
+    // #778 (Council S6 Phase 3): an agency-funded promo code. The
+    // client sends the code TEXT only — the server resolves the stored
+    // code for the booked session's agency, validates it (agency match,
+    // active, validity window, usage cap) and computes the discount
+    // from the booking's authoritative total. The agency funds 100%.
+    @ApiProperty({ required: false, example: 'SAVE10', description: 'Agency-funded promo code (#778)' })
+    @IsOptional()
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(64)
+    promoCode?: string;
 }
 
 /**

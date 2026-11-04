@@ -74,6 +74,17 @@
     "discoverTrips": "اكتشف الرحلات"
   },
   "checkout": {
+    "promo": {
+      "label": "رمز الخصم",
+      "placeholder": "أدخل الرمز",
+      "apply": "تطبيق",
+      "applying": "جارٍ التطبيق…",
+      "remove": "إزالة",
+      "applied": "تم تطبيق الرمز {{code}}",
+      "discount": "خصم الرمز ({{code}})",
+      "fundedNote": "خصم مموّل من الوكالة",
+      "invalid": "هذا الرمز غير صالح لهذا الحجز"
+    },
     "title": "إتمام الحجز",
     "secureProcess": "دفع يدوي إلى الوكالة",
     "goBack": "رجوع",

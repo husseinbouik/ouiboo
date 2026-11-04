@@ -7,6 +7,7 @@ import { UploadService } from '../upload/upload.service';
 import { EmailService } from '../email/email.service';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
+import { Prisma } from '@ouiboo/database';
 
 const mockBooking = {
     id: 'booking-123',
@@ -52,6 +53,10 @@ const mockDatabaseService = {
     },
     agencyProfile: {
         findUnique: jest.fn(),
+    },
+    promoCode: {
+        findFirst: jest.fn(),
+        updateMany: jest.fn(),
     },
     $transaction: jest.fn((cb) => cb(mockDatabaseService)),
 };
@@ -954,6 +959,226 @@ describe('BookingsService', () => {
             expect(confirmArgs.bankConfirmedBy).toBe('agency-user-1');
             // A deposit confirmation is not full payment: no email yet.
             expect(emailService.sendPaymentConfirmation).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('agency-funded promo codes (#778)', () => {
+        const createDto = {
+            sessionId: 'session-123',
+            guestsCount: 2,
+            fullName: 'Test Traveler',
+            phoneNumber: '+212600000000',
+            termsAccepted: true,
+            termsVersion: '1.0',
+            locale: 'en',
+        };
+        const promoSession = {
+            id: 'session-123',
+            status: 'OPEN',
+            startDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            price: 250,
+            deposit: 50,
+            minBookings: 4,
+            groupStatus: 'PENDING_MINIMUM',
+            confirmationDeadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+            templateId: 'template-1',
+            currency: 'MAD',
+            template: {
+                status: 'ACTIVE',
+                title: 'Atlas Escape',
+                agencyId: 'agency-123',
+                agency: {
+                    id: 'agency-123',
+                    userId: 'agency-user-123',
+                    verificationStatus: 'VERIFIED',
+                    travelLicenceStatus: 'VERIFIED',
+                    licenceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+                    insuranceStatus: 'VERIFIED',
+                    insuranceExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+                    subscriptionStatus: 'TRIAL',
+                    trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                    subscriptionEndsAt: null,
+                },
+            },
+        };
+        const percentRow = {
+            id: 'promo-1',
+            agencyId: 'agency-123',
+            code: 'SAVE10',
+            discountType: 'PERCENT',
+            discountValue: new Prisma.Decimal('10'),
+            startsAt: null,
+            endsAt: null,
+            maxUses: null,
+            usedCount: 0,
+            isActive: true,
+        };
+
+        const mockBookingCreateFromData = () => {
+            db.booking.create.mockImplementation(async (args: any) => ({
+                id: 'booking-new',
+                sessionId: 'session-123',
+                travelerId: 'user-123',
+                bookingDate: new Date(),
+                status: 'PENDING',
+                totalAmount: args.data.totalAmount,
+                promoCode: args.data.promoCode ?? null,
+                discountAmount: args.data.discountAmount ?? new Prisma.Decimal(0),
+                promoSnapshot: args.data.promoSnapshot ?? null,
+                currency: 'MAD',
+                guestsCount: 2,
+                paymentMethod: 'MANUAL',
+                paymentStatus: 'UNPAID',
+                paymentPlan: null,
+                traveler: { email: 'traveler@example.com', name: 'Test Traveler' },
+                session: {
+                    id: 'session-123',
+                    templateId: 'template-1',
+                    startDate: new Date(),
+                    endDate: new Date(),
+                    price: '250.00',
+                    totalSeats: 10,
+                    availableSeats: 8,
+                    status: 'OPEN',
+                    currency: 'MAD',
+                    template: {
+                        id: 'template-1',
+                        title: 'Atlas Escape',
+                        startLocation: 'Marrakech',
+                        images: [],
+                        agencyId: 'agency-123',
+                        agency: { id: 'agency-123', companyName: 'Atlas' },
+                    },
+                },
+            }));
+        };
+
+        const mockSuccessfulPromoCreate = () => {
+            db.tripSession.findUnique.mockResolvedValue(promoSession);
+            db.tripSession.updateMany.mockResolvedValue({ count: 1 });
+            db.booking.findFirst.mockResolvedValue(null);
+            db.user.findUnique.mockResolvedValue(null);
+            db.promoCode.updateMany.mockResolvedValue({ count: 1 });
+            mockBookingCreateFromData();
+        };
+
+        it('discounts the booking total, snapshots the promo, and claims the redemption in the transaction', async () => {
+            mockSuccessfulPromoCreate();
+            db.promoCode.findFirst.mockResolvedValue(percentRow);
+
+            const result: any = await service.create('user-123', { ...createDto, promoCode: 'save10' } as any);
+
+            const createData = db.booking.create.mock.calls[0][0].data;
+            // 2 x 250 = 500 undiscounted; 10% agency-funded discount = 50.
+            expect(createData.totalAmount.toFixed(2)).toBe('450.00');
+            expect(createData.discountAmount.toFixed(2)).toBe('50.00');
+            expect(createData.promoCode).toBe('SAVE10');
+            expect(createData.promoCodeId).toBe('promo-1');
+            expect(createData.promoSnapshot).toEqual(expect.objectContaining({
+                code: 'SAVE10',
+                discountType: 'PERCENT',
+                undiscountedTotal: '500.00',
+                discountAmount: '50.00',
+                totalAmount: '450.00',
+            }));
+            // Reconciliation: discount + charged total = original total.
+            expect(createData.discountAmount.add(createData.totalAmount).toFixed(2)).toBe('500.00');
+            expect(result.totalAmount).toBe('450.00');
+            expect(result.discountAmount).toBe('50.00');
+            expect(result.promoCode).toBe('SAVE10');
+            // Redemption claimed atomically (active + agency scoped).
+            expect(db.promoCode.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({ id: 'promo-1', agencyId: 'agency-123', isActive: true }),
+                data: { usedCount: { increment: 1 } },
+            }));
+        });
+
+        it('threads the discounted total + 30% deposit cap into the staged plan (fixed MAD)', async () => {
+            mockSuccessfulPromoCreate();
+            mockStagedPaymentsService.isStagedSession.mockReturnValue(true);
+            mockStagedPaymentsService.createPlanInTransaction.mockResolvedValue({ id: 'plan-1' });
+            db.promoCode.findFirst.mockResolvedValue({
+                ...percentRow,
+                code: 'FLAT200',
+                discountType: 'FIXED_MAD',
+                discountValue: new Prisma.Decimal('200'),
+                maxUses: 5,
+                usedCount: 2,
+            });
+
+            await service.create('user-123', { ...createDto, promoCode: 'FLAT200', paymentMethod: 'BANK_TRANSFER' } as any);
+
+            const planArgs = mockStagedPaymentsService.createPlanInTransaction.mock.calls[0][1];
+            // 500 - 200 = 300 discounted total; cap = 30% of 300 = 90.
+            expect(planArgs.totalAmount.toFixed(2)).toBe('300.00');
+            expect(planArgs.depositAmountCap.toFixed(2)).toBe('90.00');
+            // The cap condition rides the atomic claim while uses remain.
+            expect(db.promoCode.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({ usedCount: { lt: 5 } }),
+            }));
+        });
+
+        it('rejects an unknown code before any seat moves', async () => {
+            db.tripSession.findUnique.mockResolvedValue(promoSession);
+            db.promoCode.findFirst.mockResolvedValue(null);
+
+            await expect(service.create('user-123', { ...createDto, promoCode: 'NOPE' } as any))
+                .rejects.toThrow('This promo code is not valid for this booking');
+            expect(db.$transaction).not.toHaveBeenCalled();
+        });
+
+        it('rejects an exhausted code before any seat moves', async () => {
+            db.tripSession.findUnique.mockResolvedValue(promoSession);
+            db.promoCode.findFirst.mockResolvedValue({ ...percentRow, maxUses: 3, usedCount: 3 });
+
+            await expect(service.create('user-123', { ...createDto, promoCode: 'SAVE10' } as any))
+                .rejects.toThrow('This promo code is not valid for this booking');
+            expect(db.$transaction).not.toHaveBeenCalled();
+        });
+
+        it('rolls the booking back when the atomic redemption claim loses the race', async () => {
+            mockSuccessfulPromoCreate();
+            db.promoCode.findFirst.mockResolvedValue({ ...percentRow, maxUses: 1, usedCount: 0 });
+            db.promoCode.updateMany.mockResolvedValue({ count: 0 });
+
+            await expect(service.create('user-123', { ...createDto, promoCode: 'SAVE10' } as any))
+                .rejects.toThrow('This promo code is not valid for this booking');
+        });
+
+        it('previews the discounted total and the capped staged split without redeeming', async () => {
+            db.tripSession.findUnique.mockResolvedValue(promoSession);
+            mockStagedPaymentsService.isStagedSession.mockReturnValue(true);
+            db.promoCode.findFirst.mockResolvedValue({
+                ...percentRow,
+                code: 'FLAT200',
+                discountType: 'FIXED_MAD',
+                discountValue: new Prisma.Decimal('200'),
+            });
+
+            const preview: any = await service.previewPromo({
+                sessionId: 'session-123',
+                guestsCount: 2,
+                promoCode: 'flat200',
+            });
+
+            expect(preview.valid).toBe(true);
+            expect(preview.undiscountedTotal).toBe('500.00');
+            expect(preview.discountAmount).toBe('200.00');
+            expect(preview.totalAmount).toBe('300.00');
+            // Session deposit is 50/seat x 2 = 100, capped at 30% of 300.
+            expect(preview.staged).toEqual({ depositAmount: '90.00', balanceAmount: '210.00' });
+            expect(db.promoCode.updateMany).not.toHaveBeenCalled();
+        });
+
+        it('binds the promo code into the idempotency payload hash (case-insensitively)', () => {
+            const base = { ...createDto } as any;
+            const withPromo = bookingIdempotencyPayloadHash({ ...base, promoCode: 'save10' });
+            const samePromoOtherCase = bookingIdempotencyPayloadHash({ ...base, promoCode: 'SAVE10' });
+            const otherPromo = bookingIdempotencyPayloadHash({ ...base, promoCode: 'OTHER' });
+            const noPromo = bookingIdempotencyPayloadHash(base);
+            expect(withPromo).toBe(samePromoOtherCase);
+            expect(withPromo).not.toBe(otherPromo);
+            expect(withPromo).not.toBe(noPromo);
         });
     });
 

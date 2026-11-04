@@ -126,6 +126,21 @@ describe('CheckoutSummary (#424 localized totals)', () => {
         expect(screen.getByText(en.directPaymentNote)).toBeTruthy();
     });
 
+    it('renders the promo discount line and the discounted total (#778)', () => {
+        renderWithProviders(
+            <CheckoutSummary
+                {...baseProps}
+                totalPrice={1080}
+                promoInfo={{ code: 'SAVE10', discountAmount: 120, undiscountedTotal: 1200 }}
+            />,
+        );
+        // Subtotal stays the undiscounted figure; the discount line
+        // reconciles it to the discounted total that is charged.
+        expect(screen.getByTestId('checkout-promo-discount')).toBeTruthy();
+        expect(screen.getByText((en.promo as any).discount.replace('{{code}}', 'SAVE10'))).toBeTruthy();
+        expect(screen.getByText(en.totalToPay)).toBeTruthy();
+    });
+
     it('renders the staged deposit framing instead of the full total', () => {
         renderWithProviders(
             <CheckoutSummary

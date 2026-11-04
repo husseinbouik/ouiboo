@@ -26,6 +26,9 @@ type CheckoutSummaryProps = {
   onSubmit: () => void;
   /** #369: staged amounts when the session is a minimum-group trip. */
   stagedAmounts?: { depositDue: number; balanceDue: number; total: number } | null;
+  /** #778: the applied agency-funded promo (server-priced preview).
+   * totalPrice is already the discounted total when this is set. */
+  promoInfo?: { code: string; discountAmount: number; undiscountedTotal: number } | null;
 };
 
 export function CheckoutSummary({
@@ -40,6 +43,7 @@ export function CheckoutSummary({
   canSubmit,
   onSubmit,
   stagedAmounts,
+  promoInfo,
 }: CheckoutSummaryProps) {
   const { t } = useTranslation();
   // #619: render every amount in the traveller's display currency, like
@@ -92,8 +96,14 @@ export function CheckoutSummary({
         <div className="space-y-4 pt-6 border-t border-border/50">
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground font-medium">{t('checkout.subtotal')}</span>
-            <span className="oui-numeric font-bold">{formatDisplayAmount(totalPrice)}</span>
+            <span className="oui-numeric font-bold">{formatDisplayAmount(promoInfo ? promoInfo.undiscountedTotal : totalPrice)}</span>
           </div>
+          {promoInfo && promoInfo.discountAmount > 0 && (
+            <div className="flex justify-between items-center" data-testid="checkout-promo-discount">
+              <span className="font-medium text-emerald-600">{t('checkout.promo.discount', { code: promoInfo.code })}</span>
+              <span className="oui-numeric font-bold text-emerald-600">−{formatDisplayAmount(promoInfo.discountAmount)}</span>
+            </div>
+          )}
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground font-medium">{t('checkout.serviceFee')}</span>
             <Badge variant="outline" className="border-emerald-500/30 text-success-dark bg-success/10 font-black text-[8px] uppercase tracking-widest">{t('checkout.free')}</Badge>
