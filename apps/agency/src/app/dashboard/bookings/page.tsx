@@ -10,7 +10,6 @@ import {
 } from '@ouiboo/ui';
 import {
   Search,
-  Download,
   User,
   Calendar,
   Clock,
@@ -37,6 +36,7 @@ import { useAttendanceMarking } from '@/components/useAttendanceMarking';
 import { usePayOnArrivalConfirm } from '@/components/usePayOnArrivalConfirm';
 import { getAgencyBookingStatusMeta, getAgencyPaymentStatusMeta, getAgencyProofStatusLabel, formatCurrency, formatLocalDate, canMarkAttendance } from '@ouiboo/utils';
 import { Pagination } from '@ouiboo/ui';
+import { AgencyDataExport } from '@/components/AgencyDataExport';
 import { TableBodySkeleton } from '@/components/Skeletons';
 import { toPaginatedList } from '@ouiboo/utils';
 
@@ -132,9 +132,7 @@ export default function BookingsManager() {
           <p className="text-muted-foreground mt-1">{t('bookings.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" /> {t('bookings.exportGuestList')}
-          </Button>
+          <AgencyDataExport />
           <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2 border-none">
               <Link href="/dashboard/bookings/schedule"><Calendar className="h-4 w-4" /> {t('bookings.viewSchedule')}</Link>
             </Button>

@@ -595,6 +595,13 @@
       "CANCELLED": "Annulé par le voyageur"
     }
   },
+  "exportData": {
+    "title": "Exporter mes données (CSV)",
+    "bookings": "Réservations CSV",
+    "trips": "Voyages CSV",
+    "reviews": "Avis CSV",
+    "error": "L'export a échoué. Veuillez réessayer."
+  },
   "bookings": {
     "title": "Gestion des réservations",
     "subtitle": "Suivez vos clients et l'état de leurs réservations.",
