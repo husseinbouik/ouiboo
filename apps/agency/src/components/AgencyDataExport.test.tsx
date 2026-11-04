@@ -81,6 +81,6 @@ describe('AgencyDataExport (#780)', () => {
 
     await user.click(screen.getByRole('button', { name: /exportData\.reviews/ }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('exportData.error');
+    expect((await screen.findByRole('alert')).textContent).toContain('exportData.error');
   });
 });
