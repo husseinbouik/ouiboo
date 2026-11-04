@@ -540,7 +540,7 @@ export class AdminController {
     async verifyAgencyInsurance(
         @Request() req,
         @Param('id') id: string,
-        @Body() body: { status?: 'VERIFIED' | 'REJECTED'; reason?: string },
+        @Body() body: { status?: 'VERIFIED' | 'REJECTED'; reason?: string; overrideReason?: string },
     ) {
         const status = body?.status;
         if (!status || !['VERIFIED', 'REJECTED'].includes(status)) {
@@ -555,6 +555,8 @@ export class AdminController {
                 insuranceInsuredName: true,
                 insuranceExpiry: true,
                 insuranceCertificateKey: true,
+                legalName: true,
+                companyName: true,
             },
         });
         if (!agency) {
@@ -583,6 +585,29 @@ export class AdminController {
                 throw new BadRequestException('RC insurance has already expired; ask the agency to renew it before verification');
             }
         }
+        // #628 (Council S4, B18 part (i)): the RC policy must cover the
+        // agency itself — the insured name on the certificate must match
+        // the agency legal name (legalName, falling back to the trade
+        // name), mirroring the #421 bank-holder comparison. A mismatch
+        // blocks verification unless the admin records an override
+        // reason — group policies and trade-name cover exist, silent
+        // passes do not. The decision (match or override) is written to
+        // the audit log either way.
+        let insuredNameMatches: boolean | null = null;
+        let insuranceOverrideReason: string | null = null;
+        if (status === 'VERIFIED') {
+            const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim();
+            const insured = normalize(agency.insuranceInsuredName || '');
+            insuredNameMatches = [agency.legalName, agency.companyName]
+                .filter((name): name is string => !!name && name.trim().length > 0)
+                .some((name) => normalize(name) === insured);
+            insuranceOverrideReason = body.overrideReason?.trim() || null;
+            if (!insuredNameMatches && !insuranceOverrideReason) {
+                throw new BadRequestException(
+                    'Insured name does not match the agency legal name; record an override reason to verify anyway',
+                );
+            }
+        }
         const updated = await this.db.agencyProfile.update({
             where: { id },
             data: {
@@ -601,6 +626,11 @@ export class AdminController {
                 status,
                 insurancePolicyNumber: agency.insurancePolicyNumber,
                 insuranceCertificateKey: agency.insuranceCertificateKey,
+                ...(status === 'VERIFIED' ? {
+                    insuranceInsuredName: agency.insuranceInsuredName,
+                    insuredNameMatches,
+                    overrideReason: insuranceOverrideReason,
+                } : {}),
             },
         }).catch((err) => console.error('Audit log failed', err));
         return updated;

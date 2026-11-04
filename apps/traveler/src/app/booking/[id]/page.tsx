@@ -30,6 +30,7 @@ import {
   shouldShowUploadAction,
   shouldShowTripContacts,
   formatCurrency,
+  normalizeCurrency,
   toPaginatedList,
 } from '@ouiboo/utils';
 import { ReviewForm } from '@/components/ReviewForm';
@@ -40,6 +41,42 @@ import { AttendanceCard } from '@/components/AttendanceCard';
 import { RefundCaseCard, type TravelerRefundCaseView } from '@/components/RefundCaseCard';
 import SellerBlock from '@/components/SellerBlock';
 import VerificationRecord from '@/components/VerificationRecord';
+import { useDisplayAmountConverter } from '@/lib/display-currency';
+import { localizeLocationSuffix } from '@/lib/localized-location';
+
+/**
+ * #663 (checkout item): the booking confirmation rendered the
+ * authoritative currency only, while checkout showed the traveller's
+ * display currency — an unexplained currency switch mid-journey. The
+ * total now dual-displays: the authoritative (charged) amount first,
+ * the display-currency figure beside it as a reference whenever the
+ * two differ. The booking's own currency stays the governing one.
+ */
+function BookingTotalWithDisplay({
+  amount,
+  currency,
+  language,
+}: {
+  amount: number | string;
+  currency?: string | null;
+  language: string;
+}) {
+  const convert = useDisplayAmountConverter(currency);
+  const numeric = Number(amount);
+  const authoritative = formatCurrency(numeric, currency, language);
+  const converted = convert(numeric);
+  if (!converted || converted.currency === normalizeCurrency(currency)) {
+    return <>{authoritative}</>;
+  }
+  return (
+    <>
+      {authoritative}{' '}
+      <span className="font-medium text-muted-foreground">
+        ({formatCurrency(converted.amount, converted.currency, language)})
+      </span>
+    </>
+  );
+}
 
 export default function BookingDetailsPage() {
   const { t, i18n } = useTranslation();
@@ -294,7 +331,7 @@ export default function BookingDetailsPage() {
                     <div className="flex items-center gap-2 text-muted-foreground text-xs font-black uppercase tracking-widest">
                       <MapPin className="h-4 w-4 text-blue-500" /> {t('bookingDetail.location')}
                     </div>
-                    <p className="mt-3 text-sm font-semibold text-foreground">{booking.session.template.startLocation}</p>
+                    <p className="mt-3 text-sm font-semibold text-foreground">{localizeLocationSuffix(booking.session.template.startLocation, t('countries.morocco'))}</p>
                   </div>
                   <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
                     <div className="flex items-center gap-2 text-muted-foreground text-xs font-black uppercase tracking-widest">
@@ -359,7 +396,7 @@ export default function BookingDetailsPage() {
                 <div className="rounded-2xl border border-border/60 bg-muted/20 p-5">
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('bookingDetail.paymentSnapshot')}</p>
                   <div className="mt-4 space-y-2 text-sm">
-                    <p><span className="font-black text-foreground">{t('bookingDetail.total')}:</span> {formatCurrency(booking.totalAmount, booking.currency, i18n.language)}</p>
+                    <p><span className="font-black text-foreground">{t('bookingDetail.total')}:</span> <BookingTotalWithDisplay amount={booking.totalAmount} currency={booking.currency} language={i18n.language} /></p>
                     <p><span className="font-black text-foreground">{t('bookingDetail.method')}:</span> {paymentMethodLabel}</p>
                     <p><span className="font-black text-foreground">{t('bookingDetail.proof')}:</span> {proofLabel}</p>
                     {booking.refundStatus && (

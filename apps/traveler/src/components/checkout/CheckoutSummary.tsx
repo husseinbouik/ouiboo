@@ -3,7 +3,7 @@
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import Image from 'next/image';
-import { Card, CardContent, Button, Badge } from '@ouiboo/ui';
+import { Card, CardContent, Button } from '@ouiboo/ui';
 import { MapPin, Calendar, Users, Banknote, CheckCircle2 } from 'lucide-react';
 import { formatCurrency, normalizeCurrency } from '@ouiboo/utils';
 import type { CheckoutTrip } from './checkout-types';
@@ -53,14 +53,26 @@ export function CheckoutSummary({
   const convertAmount = useDisplayAmountConverter(selectedCurrency);
   const displayAmount = (amount: number): { amount: number; currency: string } =>
     convertAmount(amount) ?? { amount, currency: normalizeCurrency(selectedCurrency) };
-  const formatDisplayAmount = (amount: number): string => {
-    const converted = displayAmount(amount);
-    return formatCurrency(converted.amount, converted.currency, language);
-  };
   const totalDisplay = displayAmount(totalPrice);
   const showsConvertedCurrency =
     normalizeCurrency(selectedCurrency) !== '' &&
     totalDisplay.currency !== normalizeCurrency(selectedCurrency);
+  // #663 (checkout item): convert the TOTAL once and DERIVE the other
+  // lines from it in display currency. Converting each line
+  // independently let the displayed deposit + balance (or subtotal −
+  // discount) disagree with the displayed total by a cent. All lines
+  // below render from these rounded, mutually-consistent figures in
+  // totalDisplay.currency.
+  const roundMoney = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+  const totalRounded = roundMoney(totalDisplay.amount);
+  const formatTotalLine = (amount: number): string =>
+    formatCurrency(amount, totalDisplay.currency, language);
+  const subtotalRounded = promoInfo
+    ? roundMoney(displayAmount(promoInfo.undiscountedTotal).amount)
+    : totalRounded;
+  const discountRounded = promoInfo ? roundMoney(subtotalRounded - totalRounded) : 0;
+  const depositRounded = stagedAmounts ? roundMoney(displayAmount(stagedAmounts.depositDue).amount) : 0;
+  const balanceRounded = stagedAmounts ? roundMoney(totalRounded - depositRounded) : 0;
   return (
     <Card className="border-none shadow-2xl shadow-black/10 rounded-[3rem] overflow-hidden p-10 space-y-8 bg-card ring-1 ring-border/50">
       <div className="space-y-6">
@@ -96,28 +108,29 @@ export function CheckoutSummary({
         <div className="space-y-4 pt-6 border-t border-border/50">
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground font-medium">{t('checkout.subtotal')}</span>
-            <span className="oui-numeric font-bold">{formatDisplayAmount(promoInfo ? promoInfo.undiscountedTotal : totalPrice)}</span>
+            <span className="oui-numeric font-bold">{formatTotalLine(subtotalRounded)}</span>
           </div>
           {promoInfo && promoInfo.discountAmount > 0 && (
             <div className="flex justify-between items-center" data-testid="checkout-promo-discount">
               <span className="font-medium text-emerald-600">{t('checkout.promo.discount', { code: promoInfo.code })}</span>
-              <span className="oui-numeric font-bold text-emerald-600">−{formatDisplayAmount(promoInfo.discountAmount)}</span>
+              <span className="oui-numeric font-bold text-emerald-600">−{formatTotalLine(discountRounded)}</span>
             </div>
           )}
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground font-medium">{t('checkout.serviceFee')}</span>
-            <Badge variant="outline" className="border-emerald-500/30 text-success-dark bg-success/10 font-black text-[8px] uppercase tracking-widest">{t('checkout.free')}</Badge>
-          </div>
+          {/* #726: NO traveller-facing service-fee line. The platform
+              service fee is charged to the AGENCY (invoiced monthly) —
+              a "Service fee: Free" row here was an invented
+              traveller-facing fee claim, so the summary shows no fee
+              line at all rather than a waived one. */}
           {stagedAmounts ? (
             <>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground font-medium">{t('checkout.balanceAfterConfirmation')}</span>
-                <span className="oui-numeric font-bold">{formatDisplayAmount(stagedAmounts.balanceDue)}</span>
+                <span className="oui-numeric font-bold">{formatTotalLine(balanceRounded)}</span>
               </div>
               <div className="flex justify-between items-end pt-4 border-t border-border/50">
                 <span className="text-lg font-black font-display tracking-tight text-foreground">{t('checkout.depositToPayNow')}</span>
                 <div className="text-end">
-                  <span className="oui-numeric text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatDisplayAmount(stagedAmounts.depositDue)}</span>
+                  <span className="oui-numeric text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatTotalLine(depositRounded)}</span>
                 </div>
               </div>
             </>
@@ -125,7 +138,7 @@ export function CheckoutSummary({
             <div className="flex justify-between items-end pt-4 border-t border-border/50">
               <span className="text-lg font-black font-display tracking-tight text-foreground">{t('checkout.totalToPay')}</span>
               <div className="text-end">
-                <span className="oui-numeric text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatDisplayAmount(totalPrice)}</span>
+                <span className="oui-numeric text-3xl font-black font-display text-primary tracking-tighter leading-none block">{formatTotalLine(totalRounded)}</span>
               </div>
             </div>
           )}
@@ -135,7 +148,7 @@ export function CheckoutSummary({
       {/* #417: the cancellation scale, repeated at checkout before payment. */}
       <CancellationScaleCard
         scale={trip.cancellationScale}
-        baseAmount={totalDisplay.amount}
+        baseAmount={totalRounded}
         currency={totalDisplay.currency}
       />
 

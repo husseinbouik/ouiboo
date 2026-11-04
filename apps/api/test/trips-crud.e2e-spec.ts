@@ -1026,10 +1026,14 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
         expect(res.body.translations).toEqual({
             // #584: the fr entry also mirrors the canonical sections
             // (here: inclusions) alongside title + description.
+            // #745: it also mirrors the canonical startLocation (the
+            // create above sent 'Marrakech'); no imageAlts were sent,
+            // so no captions mirror exists.
             fr: {
                 title: 'Aventure dans le désert',
                 description: 'Une aventure complète dans le désert marocain',
                 inclusions: ['Transport'],
+                startLocation: 'Marrakech',
             },
             ar: { title: 'مغامرة في الصحراء', description: 'مغامرة كاملة في الصحراء المغربية' },
             en: { title: 'Desert Adventure', description: 'A complete adventure in the Moroccan desert' },
@@ -1046,20 +1050,35 @@ describe('Trips CRUD E2E (trips-crud.e2e-spec)', () => {
             status: 'ACTIVE',
             title: 'Titre français',
             description: 'Description française complète',
+            // #745: canonical captions + location on the columns, with
+            // Arabic versions inside the translations map.
+            imageAlts: ['Légende française'],
+            startLocation: 'Merzouga, Maroc',
             translations: {
                 fr: { title: 'Titre français', description: 'Description française complète' },
-                ar: { title: 'العنوان بالعربية', description: 'الوصف بالعربية' },
+                ar: {
+                    title: 'العنوان بالعربية',
+                    description: 'الوصف بالعربية',
+                    imageAlts: ['تعليق بالعربية'],
+                    startLocation: 'مرزوكة، المغرب',
+                },
             },
         });
 
         const ar = await request(app.getHttpServer()).get(`/trips/${template.id}?locale=ar`).expect(200);
         expect(ar.body.title).toBe('العنوان بالعربية');
         expect(ar.body.description).toBe('الوصف بالعربية');
+        // #745: captions + location resolve into the requested locale too.
+        expect(ar.body.imageAlts).toEqual(['تعليق بالعربية']);
+        expect(ar.body.startLocation).toBe('مرزوكة، المغرب');
 
         // English has no entry -> French (never empty).
         const en = await request(app.getHttpServer()).get(`/trips/${template.id}?locale=en`).expect(200);
         expect(en.body.title).toBe('Titre français');
         expect(en.body.description).toBe('Description française complète');
+        // #745: same fallback for captions + location (canonical columns).
+        expect(en.body.imageAlts).toEqual(['Légende française']);
+        expect(en.body.startLocation).toBe('Merzouga, Maroc');
 
         // No locale at all -> the pre-#546 payload (French columns).
         const plain = await request(app.getHttpServer()).get(`/trips/${template.id}`).expect(200);

@@ -458,6 +458,21 @@ export class AuthService {
             throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
         }
         await this.checkMfaGate(user.id);
+        // #738: claim the challenge atomically BEFORE verifying the
+        // code, mirroring the #660 recovery path. The old flow burned
+        // the challenge only after success (check-then-set via
+        // loadChallengeUser + burnChallenge), so two DIFFERENT valid
+        // codes — e.g. the current step and the adjacent step inside
+        // the ±1 window — submitted in parallel against ONE challenge
+        // could both complete verification: #642's step claim only
+        // serializes submits of the same step. SET NX is the atomic
+        // claim: exactly one submit proceeds past this point, and the
+        // challenge is spent even if the code does not verify —
+        // re-login for a fresh challenge is the safe cost.
+        if (!(await this.claimChallenge(jti))) {
+            await this.writeAdminAudit(user, 'ADMIN_LOGIN_FAILED', { stage: 'mfa-totp-challenge' });
+            throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
+        }
         const secret = mfa.decryptSecret(user.mfaTotpSecret);
         const matchedStep = mfa.verifyTotpStep(secret, code);
         if (matchedStep === null) {
@@ -485,7 +500,8 @@ export class AuthService {
             await this.writeAdminAudit(user, 'ADMIN_LOGIN_FAILED', { stage: 'mfa-totp-replay' });
             throw new UnauthorizedException(UNAUTHORIZED_MESSAGE);
         }
-        await this.burnChallenge(jti);
+        // The challenge stays claimed (burned) from the claim above —
+        // no separate post-success burn is needed (#738).
         await this.clearMfaFailures(user.id);
         await this.writeAdminAudit(user, 'ADMIN_LOGIN_SUCCEEDED', { via: 'totp' });
         return this.login(user);

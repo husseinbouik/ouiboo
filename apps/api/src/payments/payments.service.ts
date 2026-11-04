@@ -424,7 +424,6 @@ export class PaymentsService {
   }
 
   async refundBookingById(bookingId: string, amount?: MoneyInput) {
-    await this.ensureGatewayPaymentsEnabled();
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
       include: {
@@ -438,9 +437,20 @@ export class PaymentsService {
       throw new BadRequestException('Booking not found');
     }
 
+    // #733: the manual-payment check runs BEFORE the gateway-enabled
+    // gate. Manual (bank-transfer) bookings are the beta's only payment
+    // rail, so answering them with the gateway gate's 503 ("Gateway
+    // payments are not enabled") hid the actionable truth: a manual
+    // payment is refunded by the agency returning the transfer, tracked
+    // through a RefundCase (#370) with bank evidence — never through
+    // this gateway endpoint.
     if (booking.paymentMethod !== PaymentMethod.GATEWAY) {
-      throw new BadRequestException('Only gateway payments can be refunded automatically');
+      throw new BadRequestException(
+        'Manual (bank transfer) payments cannot be refunded through the gateway. Open a refund case for this booking instead: the agency returns the transfer directly and the refund is recorded with bank evidence.',
+      );
     }
+
+    await this.ensureGatewayPaymentsEnabled();
 
     if (booking.paymentStatus === BookingPaymentStatus.REFUNDED) {
       throw new BadRequestException('Booking has already been refunded');

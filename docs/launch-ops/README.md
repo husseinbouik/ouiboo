@@ -27,6 +27,9 @@ Use these documents in order:
 13. [Beta Metrics — Interim Definitions](./BETA_METRICS.md)
 14. [Beta Ops Checklist](./BETA_OPS_CHECKLIST.md)
 15. [Incident Card](./INCIDENT_CARD.md)
+16. [Agency Onboarding Runbook + B18 Checklist Pack](./AGENCY_ONBOARDING_RUNBOOK.md)
+17. [Agency Demo Script](./AGENCY_DEMO_SCRIPT.md)
+18. [Agency Objection / FAQ Sheet](./AGENCY_OBJECTION_FAQ.md)
 
 Expected owners:
 

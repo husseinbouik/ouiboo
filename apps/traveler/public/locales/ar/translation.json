@@ -1,4 +1,7 @@
 {
+  "countries": {
+    "morocco": "المغرب"
+  },
   "share": {
     "button": "مشاركة",
     "text": "اكتشف هذه الرحلة على Ouiboo: ⁨{{title}}⁩",
@@ -136,8 +139,6 @@
     "statusBankBody": "لا يُؤكد دفعك إلا عندما تؤكد الوكالة التحويل في حسابها البنكي — قبول إثباتك وحده لا يعد تسوية.",
     "selectedDate": "التاريخ المحدد",
     "subtotal": "المجموع الفرعي",
-    "serviceFee": "رسوم الخدمة",
-    "free": "مجاني",
     "balanceAfterConfirmation": "الرصيد المستحق بعد تأكيد الرحلة",
     "depositToPayNow": "العربون الواجب دفعه الآن",
     "totalToPay": "المجموع الواجب دفعه",
@@ -147,7 +148,7 @@
     "displayCurrencyNote": "يُعرض بـ<display>{{display}}</display> للاطّلاع فقط — ستدفع بـ<charged>{{charged}}</charged>.",
     "depositReferenceOnly": "للاطّلاع فقط، يعادل ذلك حوالي <amount>{{amount}}</amount>.",
     "disclaimerTitle": "تنبيه مهم",
-    "disclaimerBody": "رفع إثبات الدفع لا يكمل دفعتك. يبقى حجزك قيد الانتظار حتى تؤكد الوكالة التحويل في حسابها البنكي — قبول صورة الإثبات وحدها لا يعد تسوية. يستغرق هذا عادة من ساعتين إلى 4 ساعات عمل.",
+    "disclaimerBody": "رفع إثبات الدفع لا يكمل دفعتك. يبقى حجزك قيد الانتظار حتى تؤكد الوكالة التحويل في حسابها البنكي — قبول صورة الإثبات وحدها لا يعد تسوية.",
     "prevailingLanguage": "في حال وجود أي تعارض بين النسخ اللغوية لهذه الشروط، تسود النسخة الفرنسية.",
     "termsAccept": "أوافق على شروط الحجز (الإصدار {{version}})",
     "termsReadLink": "قراءة الشروط",
@@ -577,6 +578,7 @@
     "exploreOtherTrips": "استكشف رحلات أخرى",
     "backToCatalog": "العودة إلى الكتالوج",
     "photosLabel": "صور الرحلة",
+    "viewPhotos": "عرض الصور",
     "viewMoreImages_one": "عرض صورة إضافية واحدة",
     "viewMoreImages_other": "عرض {{count}} صور إضافية",
     "newTrip": "جديد",

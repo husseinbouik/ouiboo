@@ -11,6 +11,7 @@ import { AlertCircle, CheckCircle2, Loader2, Landmark, Clock, UploadCloud } from
 import { cn } from '@ouiboo/ui/utils';
 import { BookingStatus, type BookingDetails } from '@ouiboo/types';
 import SellerIdentity from '@/components/SellerIdentity';
+import MessageAgencyButton from '@/components/MessageAgencyButton';
 
 type VerifyPaymentResult = {
   status: 'success' | 'failure' | 'pending';
@@ -159,6 +160,17 @@ export default function CheckoutConfirmationPage() {
                   block the durable booking page and the email carry. */}
               {booking?.session?.template?.agency && (
                 <SellerIdentity agency={booking.session.template.agency} className="text-left" />
+              )}
+              {/* #729: payment-problem contact path — from the
+                  confirmation (pending / proof / gateway states) into
+                  the pair conversation with the booking's agency. */}
+              {booking?.session?.template?.agency && (
+                <div className="flex justify-center">
+                  <MessageAgencyButton
+                    agencyId={booking.session.template.agency.id}
+                    agencyName={booking.session.template.agency.companyName}
+                  />
+                </div>
               )}
             </div>
 

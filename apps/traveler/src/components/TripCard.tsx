@@ -12,6 +12,7 @@ import { SessionStatus, type SessionStatusType, type VerificationStatusType } fr
 import { WishlistButton } from './WishlistButton';
 import { SnapRail } from './SnapRail';
 import { useDisplayPrice } from '@/lib/display-currency';
+import { localizeLocationSuffix } from '@/lib/localized-location';
 import { tripCoverViewTransitionName } from '@/lib/view-transition';
 import { ratingDisplayState } from '@/lib/review-display';
 import { CancellationOneLiner } from './CancellationOneLiner';
@@ -77,6 +78,12 @@ function futureLicenceExpiry(value?: string | null): Date | null {
 
 export function TripCard({ trip }: TripCardProps) {
   const { t, i18n } = useTranslation();
+  // #745 (remainder): the API resolves a translated startLocation
+  // when the trip's translations map carries one; for the remaining
+  // single-language strings the country suffix localizes here.
+  const displayLocation = trip.startLocation
+    ? localizeLocationSuffix(trip.startLocation, t('countries.morocco'))
+    : trip.startLocation;
   const categoryKey = trip.category?.toLowerCase();
   const categoryLabel = categoryKey && ['adventure', 'cultural', 'luxury', 'budget', 'nature'].includes(categoryKey)
     ? t(`categories.${categoryKey}`)
@@ -166,9 +173,13 @@ export function TripCard({ trip }: TripCardProps) {
         {/* #490 round 2: the card renders the SAME Snap Rail component
             as the trip-page gallery — native scroll-snap glide (touch
             swipe and mouse drag both advance it), counter + caption
-            always visible, 44px arrows that DISABLE at the ends with
-            NO loop. The old crossfade carousel looped its arrows,
-            showed dots only, and its drag/swipe advanced nothing.
+            always visible, 44px arrows. Round 5 (#490, founder
+            decision): the rail LOOPS seamlessly — the arrows never
+            disable and stepping past either end wraps to the other
+            end's photo. (This comment previously claimed the opposite
+            — corrected in the #663 polish pass.) The old crossfade
+            carousel showed dots only, and its drag/swipe advanced
+            nothing.
             #571: the overlays stay minimal — category badge, ONE
             availability badge, the wishlist button and the rail
             controls; the footer is the single price surface. */}
@@ -183,7 +194,7 @@ export function TripCard({ trip }: TripCardProps) {
             images={images}
             imageAlts={trip.imageAlts}
             imageBlurDataURLs={trip.imageBlurDataURLs}
-            captionFallback={trip.startLocation ? `${trip.title} · ${trip.startLocation}` : trip.title}
+            captionFallback={displayLocation ? `${trip.title} · ${displayLocation}` : trip.title}
             ariaLabel={t('tripDetails.photosLabel')}
             rootClassName="h-full"
             viewportClassName="h-full"
@@ -259,7 +270,7 @@ export function TripCard({ trip }: TripCardProps) {
           ) : null}
           
           <div className="flex items-center gap-3 text-muted-foreground text-xs font-medium">
-            <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {trip.startLocation}</span>
+            <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {displayLocation}</span>
             <span>•</span>
             <span className="flex items-center gap-1"><Zap className="h-3.5 w-3.5" /> {trip.durationDays ? t('tripCard.days', { count: trip.durationDays }) : ''}</span>
           </div>

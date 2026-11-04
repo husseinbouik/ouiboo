@@ -60,7 +60,8 @@ describe('UsersService', () => {
             paymentProof: { findMany: jest.fn().mockResolvedValue([]), updateMany: jest.fn() },
             message: { findMany: jest.fn().mockResolvedValue([]), updateMany: jest.fn() },
             refundEvidence: { findMany: jest.fn().mockResolvedValue([]), updateMany: jest.fn() },
-            review: { updateMany: jest.fn() },
+            review: { findMany: jest.fn().mockResolvedValue([]), updateMany: jest.fn() },
+            reviewPhoto: { deleteMany: jest.fn() },
             breakGlassCredential: { deleteMany: jest.fn() },
             tripTemplate: { updateMany: jest.fn() },
             $transaction: jest.fn(async (callback) => callback(db)),
@@ -178,7 +179,20 @@ describe('UsersService', () => {
                     ]),
                     updateMany: jest.fn(),
                 },
-                review: { updateMany: jest.fn() },
+                review: {
+                    findMany: jest.fn().mockResolvedValue([
+                        {
+                            videoKey: 'private/user-1/review-videos/clip.mp4',
+                            photos: [
+                                { storageKey: 'private/user-1/review-photos/a.jpg' },
+                                { storageKey: 'private/user-1/review-photos/b.jpg' },
+                            ],
+                        },
+                        { videoKey: null, photos: [] },
+                    ]),
+                    updateMany: jest.fn(),
+                },
+                reviewPhoto: { deleteMany: jest.fn() },
                 breakGlassCredential: { deleteMany: jest.fn() },
                 tripTemplate: { updateMany: jest.fn() },
                 $transaction: jest.fn(async (callback) => callback(db)),
@@ -201,8 +215,12 @@ describe('UsersService', () => {
                 'private/payment-proofs/booking-1/proof.png',
                 'trips/agency-1/chat.png',
                 'private/user-9/evidence.pdf',
+                // #630: review media authored by the deleting user.
+                'private/user-1/review-photos/a.jpg',
+                'private/user-1/review-photos/b.jpg',
+                'private/user-1/review-videos/clip.mp4',
             ]));
-            expect(requested).toHaveLength(8);
+            expect(requested).toHaveLength(11);
         });
 
         it('scrubs every personal-data category in the database tombstone', async () => {
@@ -229,6 +247,8 @@ describe('UsersService', () => {
                     emergencyContactPhone: null,
                     travelLicenceNumber: null,
                     travelLicenceStatus: 'NOT_SUBMITTED',
+                    licenceIssuedAt: null,
+                    licenceIssuingAuthority: null,
                     licenceDocumentKey: null,
                     licenceDocumentName: null,
                     licenceMinistryCheckedAt: null,
@@ -261,7 +281,12 @@ describe('UsersService', () => {
             });
             expect(db.review.updateMany).toHaveBeenCalledWith({
                 where: { travelerId: 'user-1' },
-                data: { comment: null },
+                data: { comment: null, videoKey: null },
+            });
+            // #630: review photo rows are deleted outright (their objects
+            // were deleted from storage above).
+            expect(db.reviewPhoto.deleteMany).toHaveBeenCalledWith({
+                where: { review: { travelerId: 'user-1' } },
             });
             expect(db.breakGlassCredential.deleteMany).toHaveBeenCalledWith({
                 where: { createdById: 'user-1' },

@@ -13,6 +13,9 @@
  *   with a conditional updateMany keyed on the exact hashes array, so
  *   parallel submits can neither double-spend one code nor resurrect
  *   another via lost update;
+ * - #738: the TOTP path claims its challenge atomically (SET NX)
+ *   before verifying, like the recovery path — two different valid
+ *   codes on one challenge in parallel succeed exactly once;
  * - break-glass is a SEPARATE one-time credential: password + secret,
  *   atomic claim, audit-before-tokens (ADMIN_BREAK_GLASS_USED), alert
  *   fan-out, and uniform 401s on every failure mode;
@@ -449,6 +452,63 @@ describe('AuthService admin MFA + break-glass (#418)', () => {
             .rejects.toBeInstanceOf(UnauthorizedException);
         // …and the correct code itself was NOT burned by any of this.
         expect(admin.mfaRecoveryCodeHashes).toHaveLength(10);
+    });
+
+    describe('atomic TOTP challenge claim (#738)', () => {
+        it('parallel submits with two DIFFERENT valid codes (adjacent steps) on ONE challenge succeed exactly once', async () => {
+            const { service, admin } = makeService();
+            const { secret } = await enrollAdmin(service);
+
+            const begin: any = await service.beginLogin(admin);
+            const codeNow = totpCodeForStep(secret, 0);
+            const codeNext = totpCodeForStep(secret, 1);
+            expect(codeNext).not.toBe(codeNow);
+
+            const results = await Promise.allSettled([
+                service.verifyMfa(begin.challengeToken, codeNow),
+                service.verifyMfa(begin.challengeToken, codeNext),
+            ]);
+            const fulfilled = results.filter((r) => r.status === 'fulfilled');
+            const rejected = results.filter((r) => r.status === 'rejected');
+            expect(fulfilled).toHaveLength(1);
+            expect(rejected).toHaveLength(1);
+            expect((rejected[0] as PromiseRejectedResult).reason).toBeInstanceOf(UnauthorizedException);
+            expect((fulfilled[0] as PromiseFulfilledResult<any>).value.accessToken).toBeTruthy();
+        });
+
+        it('parallel submits of the SAME code on ONE challenge succeed exactly once', async () => {
+            const { service, admin } = makeService();
+            const { secret } = await enrollAdmin(service);
+
+            const begin: any = await service.beginLogin(admin);
+            const code = totpCodeForStep(secret, 0);
+            const results = await Promise.allSettled([
+                service.verifyMfa(begin.challengeToken, code),
+                service.verifyMfa(begin.challengeToken, code),
+            ]);
+            expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+            expect(results.filter((r) => r.status === 'rejected')).toHaveLength(1);
+        });
+
+        it('a failed code still spends the challenge (claim before verification)', async () => {
+            const { service, admin } = makeService();
+            const { secret } = await enrollAdmin(service);
+
+            const begin: any = await service.beginLogin(admin);
+            const good = totpCodeForStep(secret, 0);
+            const wrong = good === '000000' ? '111111' : '000000';
+            await expect(service.verifyMfa(begin.challengeToken, wrong))
+                .rejects.toBeInstanceOf(UnauthorizedException);
+            // The challenge was claimed by the failed attempt: the
+            // correct code cannot reuse it; a fresh login is needed.
+            await expect(service.verifyMfa(begin.challengeToken, good))
+                .rejects.toBeInstanceOf(UnauthorizedException);
+
+            // The correct code itself was NOT consumed by any of this.
+            const begin2: any = await service.beginLogin(admin);
+            const tokens = await service.verifyMfa(begin2.challengeToken, good);
+            expect(tokens.accessToken).toBeTruthy();
+        });
     });
 
     it('leaves non-admin login untouched', async () => {

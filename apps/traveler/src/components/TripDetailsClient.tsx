@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -15,7 +15,8 @@ import {
   Star,
   X,
   Zap,
-  ClipboardList
+  ClipboardList,
+  Images
 } from 'lucide-react';
 import { Button, Badge, TripDetailSkeleton, ShareTripButton, SafeImage } from '@ouiboo/ui';
 import Link from 'next/link';
@@ -40,6 +41,7 @@ import { SnapRail } from '@/components/SnapRail';
 import { PhotoViewer } from '@/components/PhotoViewer';
 import { TripMosaic } from '@/components/TripMosaic';
 import { useDisplayAmountConverter } from '@/lib/display-currency';
+import { localizeLocationSuffix } from '@/lib/localized-location';
 import { MIN_REVIEWS_FOR_RATING, ratingDisplayState, REVIEW_SUB_SCORES, type ReviewSubScoreKey } from '@/lib/review-display';
 
 type TripDay = {
@@ -177,6 +179,25 @@ export default function TripDetailsClient({
   // #623: full-screen photo viewer — opened at the tapped photo from
   // either gallery surface (mobile rail or desktop mosaic).
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  // #656: the rail's active photo, mirrored so the visible "View
+  // photos" control below the rail can open the viewer at the photo
+  // the traveller is currently looking at.
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  // #663: mount ONE gallery surface, not both. The rail (below lg)
+  // and the mosaic (lg+) were both mounted with CSS visibility, so
+  // every gallery image loaded twice across the breakpoint and both
+  // surfaces claimed the same viewTransitionName. The breakpoint is
+  // tracked live via matchMedia (the Navbar's pattern); first paint
+  // renders the rail and desktop swaps in on mount.
+  const [isDesktopGallery, setIsDesktopGallery] = useState(false);
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const query = window.matchMedia('(min-width: 1024px)');
+    const update = () => setIsDesktopGallery(query.matches);
+    update();
+    query.addEventListener?.('change', update);
+    return () => query.removeEventListener?.('change', update);
+  }, []);
 
   // Content-language audit (2026-10-27, #546): the server fetch sends
   // no locale, so the ISR payload is canonical French. It previously
@@ -328,37 +349,60 @@ export default function TripDetailsClient({
             the mosaic below replaces the rail entirely. #623:
             tapping a photo on either surface opens the full-screen
             viewer at that photo. */}
-        <div className="-mx-4 sm:-mx-6 lg:hidden">
-          <SnapRail
-            dragAdvanceOnRelease
-            testId="trip-gallery-snap-rail"
-            counterTestId="trip-gallery-counter"
-            images={galleryImages}
-            imageAlts={trip.imageAlts}
-            imageBlurDataURLs={trip.imageBlurDataURLs}
-            captionFallback={trip.title}
-            ariaLabel={t('tripDetails.photosLabel')}
-            rootClassName="mb-8 sm:mb-12 overflow-hidden border-y border-border/50 shadow-2xl shadow-black/5 dark:shadow-black/20"
-            viewportClassName="h-[280px] sm:h-[400px]"
-            sizes="100vw"
-            onSlideClick={(idx) => setViewerIndex(idx)}
-            slideStyle={(idx, isActive) =>
-              isActive ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined
-            }
-          />
-        </div>
-
-        {/* #624: desktop mosaic (1 large + up to 4 small). */}
-        <div className="mb-12 hidden lg:block">
-          <TripMosaic
-            images={galleryImages}
-            imageAlts={trip.imageAlts}
-            imageBlurDataURLs={trip.imageBlurDataURLs}
-            captionFallback={trip.title}
-            onPhotoClick={(idx) => setViewerIndex(idx)}
-            coverStyle={{ viewTransitionName: tripCoverViewTransitionName(trip.id) }}
-          />
-        </div>
+        {/* #663: exactly ONE of the two surfaces mounts (see
+            isDesktopGallery above) — no double-loaded images, and
+            only the mounted surface claims the shared
+            viewTransitionName. */}
+        {isDesktopGallery ? (
+          /* #624: desktop mosaic (1 large + up to 4 small). */
+          <div className="mb-12">
+            <TripMosaic
+              images={galleryImages}
+              imageAlts={trip.imageAlts}
+              imageBlurDataURLs={trip.imageBlurDataURLs}
+              captionFallback={trip.title}
+              onPhotoClick={(idx) => setViewerIndex(idx)}
+              coverStyle={{ viewTransitionName: tripCoverViewTransitionName(trip.id) }}
+            />
+          </div>
+        ) : (
+          <div className="-mx-4 mb-8 sm:-mx-6 sm:mb-12">
+            <SnapRail
+              dragAdvanceOnRelease
+              slideKeyboardOpen
+              testId="trip-gallery-snap-rail"
+              counterTestId="trip-gallery-counter"
+              images={galleryImages}
+              imageAlts={trip.imageAlts}
+              imageBlurDataURLs={trip.imageBlurDataURLs}
+              captionFallback={trip.title}
+              ariaLabel={t('tripDetails.photosLabel')}
+              rootClassName="overflow-hidden border-y border-border/50 shadow-2xl shadow-black/5 dark:shadow-black/20"
+              viewportClassName="h-[280px] sm:h-[400px]"
+              sizes="100vw"
+              onSlideClick={(idx) => setViewerIndex(idx)}
+              onActiveChange={setGalleryIndex}
+              slideStyle={(idx, isActive) =>
+                isActive ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined
+              }
+            />
+            {/* #656: a visible, always-tabbable control under the
+                rail opening the viewer at the active photo — the
+                keyboard/switch path below lg, alongside the
+                focusable slides themselves. The viewer returns focus
+                here on close (its focus-restoration contract). */}
+            <div className="mt-3 flex justify-end px-4 sm:px-6">
+              <button
+                type="button"
+                onClick={() => setViewerIndex(galleryIndex)}
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-bold text-foreground shadow-sm transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sunset-orange"
+              >
+                <Images className="h-4 w-4" />
+                {t('tripDetails.viewPhotos')}
+              </button>
+            </div>
+          </div>
+        )}
 
         {viewerIndex !== null ? (
           <PhotoViewer
@@ -383,7 +427,8 @@ export default function TripDetailsClient({
                         <span className="text-border mx-1">|</span>
                         <div className="flex items-center text-sm font-semibold text-muted-foreground">
                             <MapPin className="h-4 w-4 me-1.5 text-sunset-orange" />
-                            {trip.startLocation}
+                            {/* #745: suffix localization for single-language locations (the API resolves full translations when stored). */}
+                            {localizeLocationSuffix(trip.startLocation, t('countries.morocco'))}
                         </div>
                     </div>
                     <h1 className="text-4xl md:text-6xl font-black text-foreground leading-[1.1] font-display tracking-tight mb-6">

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
 import { PaymentsService } from '../payments.service';
 import { DatabaseService } from '../../database/database.service';
 import { EmailService } from '../../email/email.service';
@@ -1005,6 +1005,63 @@ describe('PaymentsService - Security Tests', () => {
       );
       expect(updateSpy).not.toHaveBeenCalled();
       expect(externalPaymentsService.recordRefund).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('refundBookingById - #733 manual bookings get an actionable 400, never the gateway 503', () => {
+    afterEach(() => {
+      process.env.ENABLE_GATEWAY_PAYMENTS = 'true';
+    });
+
+    it('manual paid booking with gateway payments DISABLED returns the refund-case guidance (400), not 503', async () => {
+      process.env.ENABLE_GATEWAY_PAYMENTS = 'false';
+      jest.spyOn(prismaService.booking, 'findUnique').mockResolvedValue({
+        ...mockBooking,
+        status: BookingStatus.CONFIRMED,
+        paymentMethod: PaymentMethod.MANUAL,
+        paymentStatus: BookingPaymentStatus.PAID,
+        paymentTransactions: [],
+      } as any);
+
+      const error = await service.refundBookingById('booking-123').catch((e) => e);
+      expect(error).toBeInstanceOf(BadRequestException);
+      expect(error).not.toBeInstanceOf(ServiceUnavailableException);
+      expect(error.message).toMatch(/refund case/i);
+    });
+
+    it('manual booking is answered the same way when gateway payments are enabled', async () => {
+      jest.spyOn(prismaService.booking, 'findUnique').mockResolvedValue({
+        ...mockBooking,
+        status: BookingStatus.CANCELLED,
+        paymentMethod: PaymentMethod.MANUAL,
+        paymentStatus: BookingPaymentStatus.UNPAID,
+        paymentTransactions: [],
+      } as any);
+
+      await expect(service.refundBookingById('booking-123'))
+        .rejects.toThrow(/Manual \(bank transfer\) payments cannot be refunded through the gateway/);
+    });
+
+    it('gateway bookings still hit the gateway-enabled gate (503) when the rail is off', async () => {
+      process.env.ENABLE_GATEWAY_PAYMENTS = 'false';
+      jest.spyOn(prismaService.booking, 'findUnique').mockResolvedValue({
+        ...mockBooking,
+        status: BookingStatus.CONFIRMED,
+        paymentMethod: PaymentMethod.GATEWAY,
+        paymentStatus: BookingPaymentStatus.PAID,
+        paymentTransactions: [],
+      } as any);
+
+      await expect(service.refundBookingById('booking-123'))
+        .rejects.toBeInstanceOf(ServiceUnavailableException);
+    });
+
+    it('an unknown booking is a plain 400, whatever the payment rail', async () => {
+      process.env.ENABLE_GATEWAY_PAYMENTS = 'false';
+      jest.spyOn(prismaService.booking, 'findUnique').mockResolvedValue(null as any);
+
+      await expect(service.refundBookingById('missing'))
+        .rejects.toThrow('Booking not found');
     });
   });
 

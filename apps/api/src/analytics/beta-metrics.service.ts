@@ -103,6 +103,7 @@ export class BetaMetricsService {
       agenciesCurrentlyPaused,
       interventionCount,
       duplicateGroups,
+      completedTakings,
     ] = await Promise.all([
       this.prisma.searchEvent.count({ where: { createdAt: window } }),
       this.prisma.searchEvent.count({ where: { createdAt: window, resultCount: 0 } }),
@@ -132,6 +133,12 @@ export class BetaMetricsService {
         by: ['travelerId', 'sessionId'],
         where: { createdAt: window, status: { notIn: ['CANCELLED', 'REJECTED'] } },
         _count: { _all: true },
+      }),
+      // #631(b): agency takings (GMV) over the same window cohort as
+      // bookings.completed — traveller money paid to agencies.
+      this.prisma.booking.aggregate({
+        where: { status: 'COMPLETED', createdAt: window },
+        _sum: { totalAmount: true },
       }),
     ]);
 
@@ -207,6 +214,15 @@ export class BetaMetricsService {
         created: bookingsCreated,
         byStatus,
         completed: bookingsCompleted,
+      },
+      takings: {
+        // #631(b): labelled "Agency GMV / agency takings" on the admin
+        // readout — never "revenue". Ouiboo revenue is the platform
+        // service fee actually earned; the beta is free (fee capture
+        // inactive, #426), so it is exactly 0, stated not derived.
+        agencyGmvMad:
+          (completedTakings as { _sum?: { totalAmount?: unknown } } | undefined)?._sum?.totalAmount?.toString() ?? '0',
+        platformRevenueMad: '0.00',
       },
       refunds: {
         opened: refundCohort.length,

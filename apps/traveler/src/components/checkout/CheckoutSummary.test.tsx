@@ -120,8 +120,12 @@ describe('CheckoutSummary (#424 localized totals)', () => {
         expect(screen.getByText(en.selectedDate)).toBeTruthy();
         expect(screen.getByText(en.guestCount)).toBeTruthy();
         expect(screen.getByText(en.subtotal)).toBeTruthy();
-        expect(screen.getByText(en.serviceFee)).toBeTruthy();
-        expect(screen.getByText(en.free)).toBeTruthy();
+        // #726: no traveller-facing service-fee claim — the platform
+        // service fee is charged to the agency, so the summary renders
+        // no fee line at all (the locale keys are gone entirely).
+        expect((en as Record<string, unknown>).serviceFee).toBeUndefined();
+        expect((en as Record<string, unknown>).free).toBeUndefined();
+        expect(screen.queryByText('Service Fee')).toBeNull();
         expect(screen.getByText(en.totalToPay)).toBeTruthy();
         expect(screen.getByText(en.directPaymentNote)).toBeTruthy();
     });
@@ -171,6 +175,24 @@ describe('CheckoutSummary display currency (#619)', () => {
         expect(
             screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === expectedNote),
         ).toBeTruthy();
+    });
+
+    it('#663: staged lines are derived from the converted total — deposit + balance reconcile to the cent', async () => {
+        mockUser = { id: 'u1', name: 'Sara', email: 's@x.io', role: 'TRAVELER', displayCurrency: 'EUR' };
+        // 11 MAD total at 0.092: total €1.01; deposit 3 MAD converts
+        // independently to €0.28 and balance 8 MAD to €0.74 — a cent
+        // MORE than the total. Derived lines must render balance as
+        // €0.73 (total − deposit) so the displayed figures reconcile.
+        renderWithProviders(
+            <CheckoutSummary
+                {...baseProps}
+                totalPrice={11}
+                stagedAmounts={{ depositDue: 3, balanceDue: 8, total: 11 }}
+            />,
+        );
+        expect(await screen.findByText(/0\.28/)).toBeTruthy();
+        expect(await screen.findByText(/0\.73/)).toBeTruthy();
+        expect(screen.queryByText(/0\.74/)).toBeNull();
     });
 
     it('falls back to the session currency when no rate is available', async () => {

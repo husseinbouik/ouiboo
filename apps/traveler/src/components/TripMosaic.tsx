@@ -46,6 +46,11 @@ export function TripMosaic({
   const { t } = useTranslation();
   const shown = images.slice(0, 5);
   const count = shown.length;
+  // #663: photos past the fifth live in the viewer — say so on the
+  // last cell instead of silently capping at slice(0, 5) with only a
+  // hover-dim as the cue (the rail always shows its counter; the
+  // mosaic showed nothing).
+  const hiddenCount = images.length - count;
 
   const cellSpan = (i: number): string => {
     if (count === 1) return 'col-span-4 row-span-2';
@@ -62,28 +67,44 @@ export function TripMosaic({
       data-testid="trip-gallery-mosaic"
       className="grid h-[520px] grid-cols-4 grid-rows-2 gap-2 overflow-hidden rounded-3xl"
     >
-      {shown.map((src, i) => (
-        <button
-          key={i}
-          type="button"
-          onClick={() => onPhotoClick(i)}
-          aria-label={t('tripCard.viewImage', { count: i + 1 })}
-          className={cn(
-            'group relative block h-full w-full overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sunset-orange',
-            cellSpan(i),
-          )}
-        >
-          <SafeImage
-            src={src}
-            alt={imageAlts?.[i]?.trim() || captionFallback}
-            fill
-            sizes={i === 0 ? '(min-width: 1024px) 50vw, 100vw' : '(min-width: 1024px) 25vw, 50vw'}
-            className="h-full w-full object-cover transition duration-300 group-hover:brightness-[0.85]"
-            blurDataURL={imageBlurDataURLs?.[i] ?? undefined}
-            style={i === 0 ? coverStyle : undefined}
-          />
-        </button>
-      ))}
+      {shown.map((src, i) => {
+        const isLastCell = i === count - 1;
+        const showMoreBadge = isLastCell && hiddenCount > 0;
+        return (
+          <button
+            key={i}
+            type="button"
+            onClick={() => onPhotoClick(i)}
+            aria-label={
+              showMoreBadge
+                ? `${t('tripCard.viewImage', { count: i + 1 })} — ${t('tripDetails.viewMoreImages', { count: hiddenCount })}`
+                : t('tripCard.viewImage', { count: i + 1 })
+            }
+            className={cn(
+              'group relative block h-full w-full overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sunset-orange',
+              cellSpan(i),
+            )}
+          >
+            <SafeImage
+              src={src}
+              alt={imageAlts?.[i]?.trim() || captionFallback}
+              fill
+              sizes={i === 0 ? '(min-width: 1024px) 50vw, 100vw' : '(min-width: 1024px) 25vw, 50vw'}
+              className="h-full w-full object-cover transition duration-300 group-hover:brightness-[0.85]"
+              blurDataURL={imageBlurDataURLs?.[i] ?? undefined}
+              style={i === 0 ? coverStyle : undefined}
+            />
+            {showMoreBadge ? (
+              <span
+                data-testid="trip-mosaic-more-photos"
+                className="pointer-events-none absolute bottom-3 end-3 rounded-full bg-black/60 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md"
+              >
+                {`+${hiddenCount} · ${t('tripDetails.morePhotos')}`}
+              </span>
+            ) : null}
+          </button>
+        );
+      })}
     </div>
   );
 }
