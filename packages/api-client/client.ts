@@ -68,7 +68,19 @@ export interface BrowserAuthOptions {
   loginPath?: string
 }
 
+// Session generation (#837): bumped every time a NEW access token is
+// stored (login / verify / successful refresh). The 401 teardown path
+// records the generation it tore down, so the several interceptors that
+// were waiting on the same failed refresh do not each repeat the
+// clear + redirect — the first one tears the session down, the rest
+// just reject. A later sign-in bumps the generation and re-arms it.
+let sessionGeneration = 0
+let tornDownGeneration = -1
+
 export async function setBrowserAccessToken(token: string | null): Promise<void> {
+  if (token) {
+    sessionGeneration += 1
+  }
   browserAccessToken = token
   if (typeof window !== 'undefined') {
     if (token) {
@@ -275,6 +287,70 @@ export function createApiClient(explicitBaseUrl?: string) {
   return client
 }
 
+// Shared refresh single-flight (#837). The refresh token ROTATES on
+// every use (server-side single-use with an atomic claim), and every
+// app builds several browser clients in one page — @ouiboo/auth's
+// module-level default client (the AuthProvider /users/me probe), the
+// app's own lib/api-client (page queries), the lazy SDK client. A
+// per-instance single-flight let two instances fire POST /auth/refresh
+// concurrently with the same cookie after a reload: the first rotated
+// (201), the second presented the pre-rotation cookie (401), and its
+// interceptor destroyed the session the first refresh had just
+// restored — the full-load /login bounce on /booking/{id}. The
+// in-flight promise therefore lives at module scope, keyed by API base
+// URL: every client instance in the page awaits ONE refresh.
+const sharedRefreshPromises = new Map<string, Promise<string | null>>()
+
+async function performSharedRefresh(
+  apiBaseUrl: string
+): Promise<string | null> {
+  if (typeof window === 'undefined') return null
+
+  const response = await axios.post(
+    `${apiBaseUrl}/auth/refresh`,
+    {},
+    { withCredentials: true },
+  )
+  const payload = isApiEnvelope(response.data)
+    ? response.data.data as { accessToken?: string }
+    : response.data as { accessToken?: string }
+  const { accessToken } = payload || {}
+
+  setBrowserAccessToken(accessToken || null)
+
+  return accessToken || null
+}
+
+function getSharedRefreshedToken(
+  apiBaseUrl: string
+): Promise<string | null> {
+  let inFlight = sharedRefreshPromises.get(apiBaseUrl)
+  if (!inFlight) {
+    inFlight = performSharedRefresh(apiBaseUrl).finally(() => {
+      if (sharedRefreshPromises.get(apiBaseUrl) === inFlight) {
+        sharedRefreshPromises.delete(apiBaseUrl)
+      }
+    })
+    sharedRefreshPromises.set(apiBaseUrl, inFlight)
+  }
+  return inFlight
+}
+
+function readAuthorizationHeader(headers: unknown): string | null {
+  if (!headers || typeof headers !== 'object') return null
+  const candidate = headers as {
+    get?: (name: string) => unknown
+    Authorization?: unknown
+    authorization?: unknown
+  }
+  if (typeof candidate.get === 'function') {
+    const value = candidate.get('Authorization')
+    return typeof value === 'string' ? value : null
+  }
+  const value = candidate.Authorization ?? candidate.authorization
+  return typeof value === 'string' ? value : null
+}
+
 export function attachBrowserAuth(
   client: AxiosInstance,
   explicitBaseUrl?: string,
@@ -284,35 +360,7 @@ export function attachBrowserAuth(
     loginPath = DEFAULT_LOGIN_PATH,
   } = options
 
-  let refreshPromise: Promise<string | null> | null = null
   const apiBaseUrl = getApiBaseUrl(explicitBaseUrl)
-
-  const refreshAccessToken = async () => {
-    if (typeof window === 'undefined') return null
-
-    const response = await axios.post(
-      `${apiBaseUrl}/auth/refresh`,
-      {},
-      { withCredentials: true },
-    )
-    const payload = isApiEnvelope(response.data)
-      ? response.data.data as { accessToken?: string }
-      : response.data as { accessToken?: string }
-    const { accessToken } = payload || {}
-
-    setBrowserAccessToken(accessToken || null)
-
-    return accessToken || null
-  }
-
-  const getRefreshedToken = async () => {
-    if (!refreshPromise) {
-      refreshPromise = refreshAccessToken().finally(() => {
-        refreshPromise = null
-      })
-    }
-    return refreshPromise
-  }
 
   client.interceptors.request.use((config) => {
     if (browserAccessToken) {
@@ -347,6 +395,22 @@ export function attachBrowserAuth(
         const hadAccessToken = Boolean(browserAccessToken)
         originalRequest._retry = true
 
+        // #837 (mid-rotation retry): this request was sent with a token
+        // that is no longer the current one — a refresh completed on
+        // another client instance while it was in flight, so its 401 is
+        // the rotation's fallout, not a dead session. Retry once with
+        // the CURRENT token: no second refresh, no logout.
+        if (browserAccessToken) {
+          const carried = readAuthorizationHeader(originalRequest.headers)
+          if (carried !== `Bearer ${browserAccessToken}`) {
+            originalRequest.headers = {
+              ...(originalRequest.headers || {}),
+              Authorization: `Bearer ${browserAccessToken}`,
+            }
+            return client(originalRequest)
+          }
+        }
+
         // #245: attempt the refresh only when a session can exist. With
         // no in-memory token and no session hint, the refresh cookie
         // cannot be there either (the hint is written whenever a token
@@ -354,7 +418,7 @@ export function attachBrowserAuth(
         // console of an anonymous visit.
         if (hadAccessToken || hasBrowserSessionHint()) {
           try {
-            const newToken = await getRefreshedToken()
+            const newToken = await getSharedRefreshedToken(apiBaseUrl)
             if (newToken) {
               originalRequest.headers = {
                 ...(originalRequest.headers || {}),
@@ -368,15 +432,34 @@ export function attachBrowserAuth(
         }
 
         if (typeof window !== 'undefined') {
-          clearBrowserAccessToken()
           const isAnonymousProfileProbe =
             !hadAccessToken &&
             requestUrl.includes('/users/me')
           // Don't redirect when the 401 came from the login endpoint itself —
           // the login form needs to receive the error to display it (#54, #55, #56)
           const isLoginAttempt = requestUrl.includes('/auth/login')
-          if (!isAnonymousProfileProbe && !isLoginAttempt) {
-            window.location.href = loginPath
+          // #837 (teardown guard): logout happens only when the shared
+          // refresh itself was definitively rejected, and only ONCE per
+          // session generation — every concurrent waiter on that same
+          // failed refresh reaches this block, but the first handler
+          // has already torn the session down, so the rest just reject.
+          // (A data call that 401s mid-rotation never reaches here: it
+          // was retried with the current token above, or shared the
+          // in-flight refresh.)
+          if (tornDownGeneration === sessionGeneration) {
+            // Already torn down by a concurrent handler for this
+            // session — nothing left to clear or redirect.
+          } else if (hadAccessToken || hasBrowserSessionHint()) {
+            tornDownGeneration = sessionGeneration
+            clearBrowserAccessToken()
+            if (!isAnonymousProfileProbe && !isLoginAttempt) {
+              window.location.href = loginPath
+            }
+          } else {
+            clearBrowserAccessToken()
+            if (!isAnonymousProfileProbe && !isLoginAttempt) {
+              window.location.href = loginPath
+            }
           }
         }
       }
