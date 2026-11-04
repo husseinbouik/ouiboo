@@ -88,6 +88,10 @@
       "fundedNote": "Réduction financée par l'agence",
       "invalid": "Ce code promo n'est pas valide pour cette réservation"
     },
+    "campaign": {
+      "discount": "Prix campagne ({{name}})",
+      "fundedNote": "Réduction de campagne financée par l’agence"
+    },
     "title": "Finaliser la réservation",
     "secureProcess": "Paiement manuel à l'agence",
     "goBack": "Retour",

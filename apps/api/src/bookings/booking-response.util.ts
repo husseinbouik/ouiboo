@@ -2,6 +2,7 @@ import {
   type BookingDetails,
   type PricingSelectionSnapshot,
   type PromoSnapshot,
+  type CampaignSnapshot,
   type BookingPaymentPlan,
   type BookingPaymentPlanStatusType,
   type BookingPaymentStatusType,
@@ -83,6 +84,10 @@ type BookingMapperInput = {
   promoCode?: string | null;
   discountAmount?: MoneyInput | null;
   promoSnapshot?: unknown;
+  // #755: campaign/session pricing snapshot fields.
+  priceRuleId?: string | null;
+  campaignDiscountAmount?: MoneyInput | null;
+  campaignSnapshot?: unknown;
   /** Batch F: private nature (#694), pay-later deadline (#696),
    * pay-on-arrival (#697), pickup choice (#701). */
   isPrivateSession?: boolean;
@@ -339,6 +344,10 @@ export const mapBookingDetails = (
   promoCode: booking.promoCode ?? null,
   discountAmount: toMoneyString(booking.discountAmount) || '0.00',
   promoSnapshot: (booking.promoSnapshot as PromoSnapshot | null | undefined) ?? null,
+  // #755: the booking's campaign pricing, exactly as snapshotted.
+  priceRuleId: booking.priceRuleId ?? null,
+  campaignDiscountAmount: toMoneyString(booking.campaignDiscountAmount) || '0.00',
+  campaignSnapshot: (booking.campaignSnapshot as CampaignSnapshot | null | undefined) ?? null,
   // Batch F: the booking's payment-shape facts, as snapshotted.
   isPrivateSession: booking.isPrivateSession ?? false,
   payLaterDeadline: toIsoString(booking.payLaterDeadline) ?? null,

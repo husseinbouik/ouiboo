@@ -132,12 +132,24 @@ export type BookingResponse = {
  * booking re-validates the code at creation. Amounts are MAD strings. */
 export type PromoPreview = {
   valid: true;
-  code: string;
-  discountType: 'PERCENT' | 'FIXED_MAD';
-  discountValue: string;
+  code: string | null;
+  discountType: 'PERCENT' | 'FIXED_MAD' | null;
+  discountValue: string | null;
   currency: string;
   undiscountedTotal: string;
   discountAmount: string;
+  /** #755: campaign/session pricing priced into this preview (null
+   * when no rule applies, or when a non-stacking code displaced it). */
+  campaign: {
+    ruleId: string;
+    name: string;
+    scope: 'SESSION' | 'TEMPLATE';
+    discountType: 'PERCENT' | 'FIXED_MAD';
+    discountValue: string;
+    stacksWithPromoCode: boolean;
+    discountAmount: string;
+  } | null;
+  campaignDiscountAmount: string;
   totalAmount: string;
   staged: { depositAmount: string; balanceAmount: string } | null;
 };

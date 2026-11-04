@@ -29,6 +29,9 @@ type CheckoutSummaryProps = {
   /** #778: the applied agency-funded promo (server-priced preview).
    * totalPrice is already the discounted total when this is set. */
   promoInfo?: { code: string; discountAmount: number; undiscountedTotal: number } | null;
+  /** #755: an applied campaign/session price rule (server-priced
+   * preview). totalPrice is already the discounted total. */
+  campaignInfo?: { name: string; discountAmount: number; undiscountedTotal: number } | null;
 };
 
 export function CheckoutSummary({
@@ -44,6 +47,7 @@ export function CheckoutSummary({
   onSubmit,
   stagedAmounts,
   promoInfo,
+  campaignInfo,
 }: CheckoutSummaryProps) {
   const { t } = useTranslation();
   // #619: render every amount in the traveller's display currency, like
@@ -69,8 +73,16 @@ export function CheckoutSummary({
     formatCurrency(amount, totalDisplay.currency, language);
   const subtotalRounded = promoInfo
     ? roundMoney(displayAmount(promoInfo.undiscountedTotal).amount)
-    : totalRounded;
-  const discountRounded = promoInfo ? roundMoney(subtotalRounded - totalRounded) : 0;
+    : campaignInfo
+      ? roundMoney(displayAmount(campaignInfo.undiscountedTotal).amount)
+      : totalRounded;
+  const discountRounded = promoInfo || campaignInfo ? roundMoney(subtotalRounded - totalRounded) : 0;
+  const campaignDiscountRounded = campaignInfo
+    ? roundMoney(displayAmount(campaignInfo.discountAmount).amount)
+    : 0;
+  // When a stacking campaign and a code combine, the promo line shows
+  // the remainder so the lines still sum to the total discount (#663).
+  const promoDiscountRounded = promoInfo ? roundMoney(discountRounded - campaignDiscountRounded) : 0;
   const depositRounded = stagedAmounts ? roundMoney(displayAmount(stagedAmounts.depositDue).amount) : 0;
   const balanceRounded = stagedAmounts ? roundMoney(totalRounded - depositRounded) : 0;
   return (
@@ -110,10 +122,16 @@ export function CheckoutSummary({
             <span className="text-muted-foreground font-medium">{t('checkout.subtotal')}</span>
             <span className="oui-numeric font-bold">{formatTotalLine(subtotalRounded)}</span>
           </div>
+          {campaignInfo && campaignInfo.discountAmount > 0 && (
+            <div className="flex justify-between items-center" data-testid="checkout-campaign-discount">
+              <span className="font-medium text-emerald-600">{t('checkout.campaign.discount', { name: campaignInfo.name })}</span>
+              <span className="oui-numeric font-bold text-emerald-600">−{formatTotalLine(campaignDiscountRounded)}</span>
+            </div>
+          )}
           {promoInfo && promoInfo.discountAmount > 0 && (
             <div className="flex justify-between items-center" data-testid="checkout-promo-discount">
               <span className="font-medium text-emerald-600">{t('checkout.promo.discount', { code: promoInfo.code })}</span>
-              <span className="oui-numeric font-bold text-emerald-600">−{formatTotalLine(discountRounded)}</span>
+              <span className="oui-numeric font-bold text-emerald-600">−{formatTotalLine(promoDiscountRounded)}</span>
             </div>
           )}
           {/* #726: NO traveller-facing service-fee line. The platform
