@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
+import { MessagingService } from '../messaging/messaging.service';
 import { NotificationType } from '@ouiboo/database';
 
 type NotificationMap = Record<string, string>;
@@ -20,6 +21,8 @@ export class NotificationJobsService {
   constructor(
     private prisma: DatabaseService,
     private emailService: EmailService,
+    // #785: optional — existing spec constructions (2 args) stay valid.
+    @Optional() private messagingService?: MessagingService,
   ) {}
 
   /**
@@ -386,6 +389,21 @@ export class NotificationJobsService {
               booking.traveler.email,
               `Booking ${booking.id} auto-cancelled due to non-payment`,
             );
+          }
+
+          // #785: SMS/WhatsApp attempt on the same cancellation event
+          // (strict no-op unless flags on + phone + traveller opt-in).
+          if (this.messagingService) {
+            await this.messagingService.notifyEvent({
+              userId: booking.travelerId,
+              phone: booking.phoneNumber,
+              locale: booking.locale,
+              event: 'CANCELLATION',
+              variables: {
+                tripTitle: booking.session.template.title,
+                bookingId: booking.id,
+              },
+            });
           }
         } catch (error) {
           this.logger.error(

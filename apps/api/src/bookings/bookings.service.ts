@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, BadRequestException, ConflictException, ForbiddenException, UnauthorizedException, Optional } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { createHash } from 'node:crypto';
 import { CURRENT_BOOKING_TERMS_VERSION, UserRole } from '@ouiboo/types';
@@ -12,6 +12,7 @@ import { resolvePaymentProofDownloadUrl } from './payment-proof-url.util';
 import { Prisma } from '@ouiboo/database';
 import { decimalEqualsMoney, multiplyMoney, toMoneyDecimal, toMoneyString } from '../common/money.util';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
+import { MessagingService } from '../messaging/messaging.service';
 import { StagedPaymentsService } from '../staged-payments/staged-payments.service';
 import { isInsuranceVerified, isLicenceVerified } from '../common/agency-licence.util';
 import { isAgencySubscriptionValid } from '../common/agency-booking-eligibility.util';
@@ -159,6 +160,9 @@ export class BookingsService {
         private uploadService: UploadService,
         private externalPaymentsService: ExternalPaymentsService,
         private stagedPaymentsService: StagedPaymentsService,
+        // #785: optional so existing unit-spec constructions (5 args)
+        // stay valid; Nest injects it via BookingsModule in the app.
+        @Optional() private messagingService?: MessagingService,
     ) { }
 
     /**
@@ -735,6 +739,8 @@ export class BookingsService {
                     ? {
                         travelerEmail: traveler.email,
                         agencyEmail: agencyUser.email,
+                        travelerId: booking.travelerId,
+                        travelerPhone: booking.phoneNumber,
                         bookingId: booking.id,
                         tripTitle: sessionWithInfo.template.title,
                         locale: booking.locale,
@@ -799,6 +805,23 @@ export class BookingsService {
                 );
             } catch (error) {
                 console.error('Failed to send booking notification email', error);
+            }
+
+            // #785: SMS/WhatsApp attempt on the same event. The
+            // messaging service is a strict no-op unless its flags are
+            // on, the booking carries a phone, and the traveller opted
+            // in — and it never throws into the booking flow.
+            if (this.messagingService) {
+                await this.messagingService.notifyEvent({
+                    userId: notification.travelerId,
+                    phone: notification.travelerPhone,
+                    locale: notification.locale,
+                    event: 'BOOKING_CONFIRMATION',
+                    variables: {
+                        tripTitle: notification.tripTitle,
+                        bookingId: notification.bookingId,
+                    },
+                });
             }
         }
 

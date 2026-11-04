@@ -18,6 +18,7 @@ import { EmailModule } from './email/email.module'
 import { HealthModule } from './health/health.module'
 import { MessagesModule } from './messages/messages.module'
 import { NotificationsModule } from './notifications/notifications.module'
+import { MessagingModule } from './messaging/messaging.module'
 import { PaymentsModule } from './payments/payments.module'
 import { PaymentProvidersModule } from './payment-providers/payment-providers.module'
 import { ReviewsModule } from './reviews/reviews.module'
@@ -52,6 +53,7 @@ import { CustomTripsModule } from './custom-trips/custom-trips.module'
     PaymentsModule,
     PaymentProvidersModule,
     NotificationsModule,
+    MessagingModule,
     ReviewsModule,
     WishlistModule,
     AnalyticsModule,
