@@ -43,6 +43,10 @@ const mockDatabaseService = {
     paymentProof: {
         upsert: jest.fn(),
         updateMany: jest.fn(),
+        findUnique: jest.fn(),
+    },
+    bookingPaymentPlan: {
+        updateMany: jest.fn(),
     },
     externalPayment: {
         findFirst: jest.fn(),
@@ -1594,6 +1598,174 @@ describe('BookingsService', () => {
                 confirmedAmount: 780,
                 bankReference: 'TRX-1',
             })).rejects.toThrow(ForbiddenException);
+        });
+    });
+
+    describe('#733: proof approval → settlement → cancel/refund workflow (live-repro regression)', () => {
+        // A small stateful fake honouring the conditional-claim
+        // semantics the services rely on, so the issue's 6-step staging
+        // workflow can be replayed end to end:
+        //   1. BANK_TRANSFER booking created (AWAITING_VALIDATION after
+        //      proof upload), 2. proof uploaded (PENDING),
+        //   3. agency approves via verifyPayment, 4. state after
+        //      approval, 5. traveller cancel attempt, 6. settlement +
+        //      refund routing.
+        const state = {
+            proofStatus: 'PENDING',
+            bookingStatus: 'AWAITING_VALIDATION',
+            paymentStatus: 'UNPAID',
+        };
+
+        const bookingRow = () => ({
+            id: 'booking-123',
+            travelerId: 'user-123',
+            status: state.bookingStatus,
+            paymentStatus: state.paymentStatus,
+            totalAmount: 780,
+            currency: 'MAD',
+            guestsCount: 2,
+            sessionId: 'session-123',
+            paymentProofId: 'proof-1',
+            paymentProof: { id: 'proof-1', status: state.proofStatus },
+            paymentPlan: null,
+            session: { id: 'session-123', template: { agencyId: 'agency-123', title: 'Atlas Escape' } },
+            traveler: { email: 'traveler@example.com' },
+        });
+
+        beforeEach(() => {
+            state.proofStatus = 'PENDING';
+            state.bookingStatus = 'AWAITING_VALIDATION';
+            state.paymentStatus = 'UNPAID';
+
+            db.agencyProfile.findUnique.mockResolvedValue({ id: 'agency-123' });
+            db.booking.findUnique.mockImplementation(async () => bookingRow());
+            db.booking.findUniqueOrThrow.mockImplementation(async () => bookingRow());
+            // Conditional claims: check-and-set with no await in between,
+            // like the real conditional UPDATE.
+            db.paymentProof.updateMany.mockImplementation(async ({ where, data }: any) => {
+                if (where.status !== state.proofStatus) return { count: 0 };
+                state.proofStatus = data.status;
+                return { count: 1 };
+            });
+            db.paymentProof.findUnique.mockImplementation(async () => ({ id: 'proof-1', status: state.proofStatus }));
+            db.booking.updateMany.mockImplementation(async ({ where, data }: any) => {
+                const required = Array.isArray(where.status?.in) ? where.status.in : [where.status];
+                if (where.status && !required.includes(state.bookingStatus)) return { count: 0 };
+                if (data.status) state.bookingStatus = data.status;
+                if (data.paymentStatus) state.paymentStatus = data.paymentStatus;
+                return { count: 1 };
+            });
+            db.tripSession.update.mockResolvedValue({});
+            (mockEmailService.sendPaymentConfirmation as jest.Mock).mockResolvedValue(undefined);
+        });
+
+        it('replays the 6-step workflow: approve → cancel blocked → bank-confirm settles atomically → cancel blocked → retries safe', async () => {
+            // Steps 1–2 are the initial state (booking + uploaded proof).
+
+            // Step 3: agency approves the proof.
+            await service.verifyPayment('booking-123', 'agency-123', true);
+            // Step 4 (per the documented #422 machine): the proof is
+            // ACCEPTED; settlement has NOT happened yet — but the booking
+            // must no longer be freely cancellable (the repro's defect).
+            expect(state.proofStatus).toBe('ACCEPTED');
+            expect(state.bookingStatus).toBe('AWAITING_VALIDATION');
+            expect(state.paymentStatus).toBe('UNPAID');
+
+            // Retry of the approval is a safe no-op failure, not a
+            // second transition.
+            await expect(service.verifyPayment('booking-123', 'agency-123', true))
+                .rejects.toThrow('already been reviewed');
+            expect(state.proofStatus).toBe('ACCEPTED');
+
+            // Step 5 (repro): cancelling after approval must NOT succeed
+            // and must not erase the accepted state.
+            await expect(service.cancelBooking('booking-123', 'user-123'))
+                .rejects.toThrow(/accepted by the agency/);
+            expect(state.bookingStatus).toBe('AWAITING_VALIDATION');
+            expect(state.proofStatus).toBe('ACCEPTED');
+
+            // Settlement: bank confirmation moves proof, booking,
+            // paymentStatus, ledger and email as one workflow.
+            const settled: any = await service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: 780,
+                bankReference: 'TRX-2026-000123',
+            });
+            expect(state.proofStatus).toBe('VERIFIED');
+            expect(state.bookingStatus).toBe('CONFIRMED');
+            expect(state.paymentStatus).toBe('PAID');
+            expect(settled.status).toBe('CONFIRMED');
+            expect(settled.paymentStatus).toBe('PAID');
+            expect(mockExternalPaymentsService.recordPaymentVerifiedInTransaction).toHaveBeenCalledTimes(1);
+            expect(mockEmailService.sendPaymentConfirmation).toHaveBeenCalledTimes(1);
+
+            // A duplicate/concurrent settlement retry cannot settle twice.
+            await expect(service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: 780,
+                bankReference: 'TRX-2026-000123',
+            })).rejects.toThrow('must be accepted before bank confirmation');
+            expect(mockExternalPaymentsService.recordPaymentVerifiedInTransaction).toHaveBeenCalledTimes(1);
+
+            // A confirmed/paid booking is not traveller-cancellable —
+            // it goes through the refund/cancellation workflow.
+            await expect(service.cancelBooking('booking-123', 'user-123'))
+                .rejects.toThrow('Booking cannot be cancelled');
+            expect(state.bookingStatus).toBe('CONFIRMED');
+        });
+
+        it('two parallel proof approvals succeed exactly once', async () => {
+            const results = await Promise.allSettled([
+                service.verifyPayment('booking-123', 'agency-123', true),
+                service.verifyPayment('booking-123', 'agency-123', true),
+            ]);
+            expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+            expect(results.filter((r) => r.status === 'rejected')).toHaveLength(1);
+            expect(state.proofStatus).toBe('ACCEPTED');
+        });
+
+        it('two parallel bank confirmations settle exactly once', async () => {
+            state.proofStatus = 'ACCEPTED';
+            const results = await Promise.allSettled([
+                service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', { confirmedAmount: 780, bankReference: 'TRX-1' }),
+                service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', { confirmedAmount: 780, bankReference: 'TRX-1' }),
+            ]);
+            expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+            expect(results.filter((r) => r.status === 'rejected')).toHaveLength(1);
+            expect(mockExternalPaymentsService.recordPaymentVerifiedInTransaction).toHaveBeenCalledTimes(1);
+            expect(state.bookingStatus).toBe('CONFIRMED');
+            expect(state.paymentStatus).toBe('PAID');
+        });
+
+        it('a booking whose proof is still PENDING stays freely cancellable', async () => {
+            const cancelled: any = await service.cancelBooking('booking-123', 'user-123');
+            expect(state.bookingStatus).toBe('CANCELLED');
+            expect(cancelled.status).toBe('CANCELLED');
+        });
+
+        it('settlement is atomic: a ledger failure inside the transaction leaves proof and booking untouched', async () => {
+            state.proofStatus = 'ACCEPTED';
+            // Emulate Prisma transaction semantics for this test: run the
+            // callback against a snapshot and roll back on throw — the
+            // service must do ALL its writes inside the one callback and
+            // propagate the failure.
+            (db.$transaction as jest.Mock).mockImplementationOnce(async (cb: any) => {
+                const snapshot = { ...state };
+                try {
+                    return await cb(db);
+                } catch (err) {
+                    Object.assign(state, snapshot);
+                    throw err;
+                }
+            });
+            mockExternalPaymentsService.recordPaymentVerifiedInTransaction.mockRejectedValueOnce(new Error('ledger write failed'));
+
+            await expect(service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: 780,
+                bankReference: 'TRX-1',
+            })).rejects.toThrow('ledger write failed');
+            expect(state.proofStatus).toBe('ACCEPTED');
+            expect(state.bookingStatus).toBe('AWAITING_VALIDATION');
+            expect(state.paymentStatus).toBe('UNPAID');
+            expect(mockEmailService.sendPaymentConfirmation).not.toHaveBeenCalled();
         });
     });
 

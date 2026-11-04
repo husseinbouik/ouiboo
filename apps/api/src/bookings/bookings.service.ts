@@ -1827,7 +1827,7 @@ export class BookingsService {
     async cancelBooking(bookingId: string, travelerId: string) {
         const booking = await this.db.booking.findUnique({
             where: { id: bookingId },
-            include: { session: true }
+            include: { session: true, paymentProof: { select: { status: true } } }
         });
 
         if (!booking) {
@@ -1845,7 +1845,37 @@ export class BookingsService {
             throw new BadRequestException('Booking cannot be cancelled');
         }
 
+        // #733: once the agency has ACCEPTED the traveller's payment
+        // proof (or bank-confirmed it, VERIFIED), the traveller's money
+        // is with the agency — a plain traveller cancel would silently
+        // erase that accepted state (the live staging repro: approve →
+        // cancel succeeded → booking CANCELLED with paymentStatus
+        // UNPAID, and the refund attempt then had nothing to act on).
+        // From proof acceptance on, cancellation runs through the
+        // refund/cancellation workflow, never this endpoint.
+        const proofBlocksCancel = (status?: string | null) =>
+            status === 'ACCEPTED' || status === 'VERIFIED';
+        if (proofBlocksCancel(booking.paymentProof?.status)) {
+            throw new BadRequestException(
+                'Your payment proof has been accepted by the agency, so this booking can no longer be cancelled directly. Please contact the agency or use the refund/cancellation workflow so the payment can be returned.',
+            );
+        }
+
         return this.db.$transaction(async (tx) => {
+            // #733: re-check the proof inside the transaction — an agency
+            // approval landing between the read above and this claim
+            // must win over the cancel, not be erased by it.
+            if (booking.paymentProofId) {
+                const proof = await tx.paymentProof.findUnique({
+                    where: { id: booking.paymentProofId },
+                    select: { status: true },
+                });
+                if (proofBlocksCancel(proof?.status)) {
+                    throw new BadRequestException(
+                        'Your payment proof has been accepted by the agency, so this booking can no longer be cancelled directly. Please contact the agency or use the refund/cancellation workflow so the payment can be returned.',
+                    );
+                }
+            }
             const cancelled = await tx.booking.updateMany({
                 where: {
                     id: bookingId,
