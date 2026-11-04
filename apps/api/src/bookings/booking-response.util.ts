@@ -100,6 +100,9 @@ type BookingMapperInput = {
   attendanceDisputeReason?: string | null;
   /** #689: Booking Pass QR check-in stamp (second attendance signal). */
   passCheckInAt?: NullableDate;
+  /** #753: auditable pass redemption stamps. */
+  passRedeemedAt?: NullableDate;
+  passRedeemedBy?: string | null;
   termsVersion?: string | null;
   /** #481: server timestamp of the terms acceptance (null if unrecorded). */
   termsAcceptedAt?: NullableDate;
@@ -353,6 +356,8 @@ export const mapBookingDetails = (
   attendanceDisputedAt: toIsoString(booking.attendanceDisputedAt) ?? null,
   attendanceDisputeReason: booking.attendanceDisputeReason ?? null,
   passCheckInAt: toIsoString(booking.passCheckInAt) ?? null,
+  passRedeemedAt: toIsoString(booking.passRedeemedAt) ?? null,
+  passRedeemedBy: booking.passRedeemedBy ?? null,
   termsVersion: booking.termsVersion ?? null,
   termsAcceptedAt: toIsoString(booking.termsAcceptedAt) ?? null,
   locale: booking.locale ?? null,

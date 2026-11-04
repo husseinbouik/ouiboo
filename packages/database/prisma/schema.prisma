@@ -849,6 +849,13 @@ model Booking {
   attendanceDisputedAt        DateTime?
   attendanceDisputeReason     String?
   passCheckInAt               DateTime?
+  // #753: auditable pass redemption — the agency-side redeem action on
+  // the Booking Pass. Stamped exactly once (atomic claim on
+  // passRedeemedAt:null); a second redemption is refused. passRedeemedBy
+  // is the agency user id that redeemed; the AuditLog row
+  // (BOOKING_PASS_REDEEMED) carries actor + agency + booking.
+  passRedeemedAt              DateTime?
+  passRedeemedBy              String?
   // #417 (Council P0-11): snapshot of the trip's resolved cancellation
   // scale ({ version, bands, floorRefundPercent, refundInitiationDays })
   // taken at booking creation. Later template edits can never rewrite

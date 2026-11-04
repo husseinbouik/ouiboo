@@ -257,6 +257,20 @@ export class BookingsController {
         return this.bookingsService.verifyBookingPass(dto.token, req.tenantId, req.user.userId ?? req.user.id);
     }
 
+    @Post('pass/redeem')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, RateLimitGuard)
+    @Roles(UserRole.Agency)
+    @RateLimit({ points: 30, windowMs: 60_000, keyPrefix: 'bookings:pass-redeem' })
+    @RateLimitSensitive()
+    @ApiOperation({ summary: 'Redeem a Booking Pass token exactly once (agency-authenticated, #753) — stamps the auditable redemption, records check-in/attendance and completes the booking; a second redemption is refused with 409' })
+    redeemBookingPass(
+        @Request() req,
+        @Body() dto: VerifyBookingPassDto,
+    ) {
+        return this.bookingsService.redeemBookingPass(dto.token, req.tenantId, req.user.userId ?? req.user.id);
+    }
+
     @Post(':id/attendance-dispute')
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard, RateLimitGuard)
