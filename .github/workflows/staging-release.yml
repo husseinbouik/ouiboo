@@ -19,20 +19,27 @@ name: Staging Release
 #   3. It records a SHA attestation artifact naming the verified SHA, the
 #      checks that passed for it, and the migration outcome.
 #
+# Trigger design (why push + poll, not workflow_run): a workflow_run-
+# triggered workflow must live on the DEFAULT branch (master) to fire at
+# all — this controller lives on staging, so it triggers on `push` to
+# staging and the gate job polls the check-runs API for the pushed SHA
+# until every required check completes (45 min budget). workflow_run is
+# kept as a secondary trigger: it becomes active once this file reaches
+# master at a production promotion, and its invocations resolve instantly
+# because the gate finds the checks already complete. Manual dispatch
+# re-verifies + re-attests an arbitrary staging SHA (migrate deploy is
+# idempotent, so a re-run with no pending migrations is a no-op success).
+#
 # Known bypass (documented, not hidden — see
 # docs/launch-ops/STAGING_RELEASE_PATH.md): the staging apps still deploy
 # through Vercel git integration / coordinator-created deployments, which
 # are not yet bound to this attestation. Closing that bypass requires
 # moving staging deploys into this workflow (Vercel deploy step gated on
 # the attestation) and disabling git-integration auto-deploys.
-#
-# Triggers: workflow_run fires once per upstream workflow, so early
-# invocations see the gate as "pending" and exit neutrally with a summary;
-# the invocation that observes every required check green performs the
-# migration + attestation. A required check that FAILED for the SHA fails
-# this workflow loudly instead.
 
 on:
+  push:
+    branches: [staging]
   workflow_run:
     workflows: [CI, Security Scan, Browser E2E]
     branches: [staging]
@@ -49,18 +56,18 @@ permissions:
   checks: read
 
 concurrency:
-  group: staging-release-${{ github.event.workflow_run.head_sha || inputs.sha }}
+  group: staging-release-${{ github.event.workflow_run.head_sha || github.sha || inputs.sha }}
   cancel-in-progress: false
 
 jobs:
   gate:
     name: Verify required checks for staging SHA
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      github.event_name != 'workflow_run' ||
       (github.event.workflow_run.event == 'push' &&
        github.event.workflow_run.head_branch == 'staging')
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 55
     outputs:
       sha: ${{ steps.resolve.outputs.sha }}
       state: ${{ steps.verify.outputs.state }}
@@ -68,19 +75,23 @@ jobs:
       - name: Resolve target SHA
         id: resolve
         run: |
-          SHA="${{ github.event.workflow_run.head_sha || inputs.sha }}"
+          SHA="${{ github.event.workflow_run.head_sha || inputs.sha || github.sha }}"
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           echo "Target staging SHA: $SHA"
 
-      - name: Verify required check runs for SHA
+      - name: Poll required check runs for SHA until they complete
         id: verify
         env:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ steps.resolve.outputs.sha }}
         run: |
           # Latest conclusion per required check name for this exact SHA.
-          json=$(gh api "repos/${{ github.repository }}/commits/$SHA/check-runs?per_page=100")
-          state=$(echo "$json" | python3 -c "
+          # Polls (60s interval, 45 attempts) because on `push` the checks
+          # are still running when this workflow starts.
+          state="pending:"
+          for attempt in $(seq 1 45); do
+            json=$(gh api "repos/${{ github.repository }}/commits/$SHA/check-runs?per_page=100")
+            state=$(echo "$json" | python3 -c "
           import json, sys
           required = ['build (20.x)', 'browser-e2e', 'Secret scanning (Gitleaks)',
                       'SAST (Semgrep)', 'SAST (CodeQL)', 'CodeQL']
@@ -103,6 +114,13 @@ jobs:
                 'pending:' + ','.join(missing + pending) if (missing or pending) else
                 'verified')
           ")
+            echo "Attempt $attempt: gate state = $state"
+            case "$state" in
+              verified) break ;;
+              failed:*) break ;;
+              *) sleep 60 ;;
+            esac
+          done
           echo "state=$state" >> "$GITHUB_OUTPUT"
           {
             echo "## Staging release gate — $SHA"
@@ -113,7 +131,8 @@ jobs:
             verified)
               echo "All required push checks are green for $SHA." ;;
             pending:*)
-              echo "::notice::Release gate pending for $SHA (${state#pending:}). A later workflow_run invocation re-checks." ;;
+              echo "::error::Release gate still pending after 45 minutes for $SHA (${state#pending:}). Release NOT attested; re-run this workflow manually once the checks complete."
+              exit 1 ;;
             failed:*)
               echo "::error::Required check(s) failed for $SHA: ${state#failed:}. Staging release is BLOCKED for this SHA."
               exit 1 ;;
