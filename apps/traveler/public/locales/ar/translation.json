@@ -45,7 +45,9 @@
     "mobileMenu": "قائمة التنقل",
     "closeMenu": "إغلاق قائمة التنقل",
     "displayCurrency": "عملة العرض",
-    "messages": "الرسائل"
+    "messages": "الرسائل",
+    "notifications": "الإشعارات",
+    "notificationsUnread": "{{count}} إشعارات غير مقروءة"
   },
   "hero": {
     "tagline": "اكتشف ما هو غير متوقع",

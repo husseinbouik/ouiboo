@@ -45,7 +45,9 @@
     "mobileMenu": "Menu de navigation",
     "closeMenu": "Fermer le menu de navigation",
     "displayCurrency": "Devise d'affichage",
-    "messages": "Messages"
+    "messages": "Messages",
+    "notifications": "Notifications",
+    "notificationsUnread": "{{count}} notifications non lues"
   },
   "hero": {
     "tagline": "Découvrez l'inattendu",

@@ -12,6 +12,7 @@ import {
   Calendar as CalendarIcon,
   Heart,
   MessageCircle,
+  Bell,
   LayoutDashboard,
   Compass,
   LifeBuoy,
@@ -205,6 +206,21 @@ const [isOpen, setIsOpen] = useState(false);
         staleTime: 1000 * 60, // 1 minute
     });
 
+    // #849: unread notifications count for the header bell badge.
+    // Same shape and cadence as the wishlist count above (an
+    // authenticated { count } endpoint, 1-minute staleTime); the
+    // badge hides at zero.
+    const { data: unreadNotificationsData } = useQuery({
+        queryKey: ['notifications-unread-count'],
+        queryFn: async () => {
+            const res = await apiClient.get('/notifications/unread-count');
+            return res.data;
+        },
+        enabled: !!user,
+        staleTime: 1000 * 60, // 1 minute
+    });
+    const unreadNotifications = unreadNotificationsData?.count ?? 0;
+
     const navLinks = [
         { name: t('nav.explore'), href: '/search', icon: <Compass className="w-4 h-4" /> },
         { name: t('nav.featured'), href: '/trips/featured', icon: <Zap className="w-4 h-4" /> },
@@ -280,6 +296,30 @@ const [isOpen, setIsOpen] = useState(false);
                 <CurrencySelector />
             </div>
             <ThemeToggle />
+
+            {/* #849: the notifications bell — the primary entry point
+                to /notifications at every width (previously the page
+                was reachable only by typing its URL). Signed-in only:
+                notifications are personal and the badge count is an
+                authenticated query. 44px hit target; the badge uses
+                logical (end) positioning so it mirrors correctly in
+                RTL, and follows the wishlist badge's calm styling. */}
+            {user && (
+                <Link
+                    href="/notifications"
+                    aria-label={unreadNotifications > 0
+                        ? t('nav.notificationsUnread', { count: unreadNotifications })
+                        : t('nav.notifications')}
+                    className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted/50"
+                >
+                    <Bell className="h-5 w-5" />
+                    {unreadNotifications > 0 && (
+                        <span aria-hidden="true" className="absolute end-0.5 top-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-sunset-orange px-1 text-[10px] font-bold text-deep-blue">
+                            {unreadNotifications}
+                        </span>
+                    )}
+                </Link>
+            )}
 
             {isAuthLoading ? (
                 <div className="flex items-center gap-4">
@@ -383,6 +423,15 @@ const [isOpen, setIsOpen] = useState(false);
                                     <Link href="/messages" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg">
                                         <MessageCircle className="w-4 h-4" /> {t('nav.messages')}
                                     </Link>
+                                    {/* #849: notifications also lives in the
+                                        account menu (the bell is the primary
+                                        entry point; this is the menu path). */}
+                                    <Link href="/notifications" className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-foreground hover:bg-muted rounded-lg">
+                                        <Bell className="w-4 h-4" /> {t('nav.notifications')}
+                                        {unreadNotifications > 0 && (
+                                            <span className="ms-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-sunset-orange px-1 text-[10px] font-bold text-deep-blue">{unreadNotifications}</span>
+                                        )}
+                                    </Link>
                                 </div>
                                 <div className="p-1 border-t border-border">
                                     <button
@@ -479,6 +528,17 @@ const [isOpen, setIsOpen] = useState(false);
                         </Link>
                         <Link onClick={() => setIsOpen(false)} href="/support" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
                             {t('nav.support')} <LifeBuoy className="text-sunset-orange" />
+                        </Link>
+                        {/* #849: notifications joins the drawer too
+                            (guests land on the page's sign-in gate). */}
+                        <Link onClick={() => setIsOpen(false)} href="/notifications" className="flex items-center justify-between text-2xl font-black border-b border-border pb-4">
+                            {t('nav.notifications')}
+                            <span className="ms-2 flex shrink-0 items-center gap-1.5">
+                              <Bell className="text-sunset-orange" />
+                              {unreadNotifications > 0 && (
+                                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-sunset-orange px-1 text-[12px] font-bold text-deep-blue">{unreadNotifications}</span>
+                              )}
+                            </span>
                         </Link>
                </div>
 
