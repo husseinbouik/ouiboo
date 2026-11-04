@@ -35,6 +35,14 @@ describe('CronController deadlines (#433)', () => {
       },
       paymentReconciliationService: { runReconciliation: jest.fn(async () => undefined) },
       agencyComplianceService: { sweepExpiredLicencesAndInsurance: jest.fn(async () => undefined) },
+      retentionService: {
+        runRetention: jest.fn(async () => ({
+          dryRun: false,
+          ranAt: new Date().toISOString(),
+          categories: {},
+          totals: { matched: 0, deleted: 0, storageDeleted: 0, storageFailed: 0 },
+        })),
+      },
     };
     controller = new CronController(
       services.notificationJobs,
@@ -43,6 +51,7 @@ describe('CronController deadlines (#433)', () => {
       services.refundsService,
       services.paymentReconciliationService,
       services.agencyComplianceService,
+      services.retentionService,
     );
     fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue(new Response(null, { status: 200 }) as any);
   });
@@ -101,5 +110,35 @@ describe('CronController deadlines (#433)', () => {
     expect(res.results.refundDueCaseSync).toBe('ok');
     expect(res.results.refundOverdueSweep).toBe('ok');
     expect(res.results.exchangeRateRefresh).toBe('ok');
+  });
+});
+
+describe('CronController retention (#438)', () => {
+  it('rejects an invalid cron secret and honours dryRun', async () => {
+    const secret = 'test-cron-secret';
+    process.env.CRON_SECRET = secret;
+    const retentionService = {
+      runRetention: jest.fn(async (opts: { dryRun?: boolean }) => ({
+        dryRun: opts.dryRun === true,
+        ranAt: new Date().toISOString(),
+        categories: {},
+        totals: { matched: 0, deleted: 0, storageDeleted: 0, storageFailed: 0 },
+      })),
+    };
+    const { CronController: ControllerCtor } = await import('./cron.controller');
+    const controller = new ControllerCtor(
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      retentionService as never,
+    );
+    await expect(controller.runRetention('Bearer wrong')).rejects.toBeInstanceOf(UnauthorizedException);
+    const report = await controller.runRetention(`Bearer ${secret}`, 'true');
+    expect(report.dryRun).toBe(true);
+    expect(retentionService.runRetention).toHaveBeenCalledWith({ dryRun: true });
+    delete process.env.CRON_SECRET;
   });
 });
