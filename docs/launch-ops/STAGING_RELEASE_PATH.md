@@ -24,7 +24,13 @@ canonical description of how a commit becomes a staging release.
      release loudly; a gate still pending after the budget fails the
      run without attesting (re-run manually once checks complete).
      (`review` and `smoke` are PR-only contexts — they gated the merge
-     in step 1.)
+     in step 1.) One nuance: the default-setup `CodeQL` context is
+     accepted on `neutral` as well as `success` — on pushes it reports
+     `neutral` when it has nothing new to analyze; the workflow
+     `SAST (CodeQL)` job remains success-only. A *cancelled* check
+     (e.g. superseded by a newer merge's runs) counts as not-verified:
+     that SHA is simply never attested, and the settled head can be
+     attested via manual dispatch.
    - **Migrate** — runs `prisma migrate deploy` against the staging Neon
      DB (`STAGING_DATABASE_URL` Actions secret; staging project
      `hidden-mountain-93789107`). This workflow is the **single migration

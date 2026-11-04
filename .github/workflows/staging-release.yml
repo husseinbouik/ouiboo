@@ -108,7 +108,15 @@ jobs:
                   missing.append(name)
               elif r['status'] != 'completed':
                   pending.append(name)
-              elif r['conclusion'] != 'success':
+              elif r['conclusion'] == 'success':
+                  pass
+              elif name == 'CodeQL' and r['conclusion'] == 'neutral':
+                  # Default-setup CodeQL reports 'neutral' on pushes where
+                  # it has nothing new to analyze. Accepted for that
+                  # context only — the SAST (CodeQL) workflow job above
+                  # remains success-only.
+                  pass
+              else:
                   failed.append(name)
           print('failed:' + ','.join(failed) if failed else
                 'pending:' + ','.join(missing + pending) if (missing or pending) else
