@@ -106,11 +106,15 @@ describe('Spain → Tangier origin page (#779)', () => {
                 ...origin.sections.flatMap((s) => (s.links ?? []).map((l) => l.href)),
                 ...origin.entry.links.map((l) => l.href),
             ];
-            // Ferry operators + the official Tangier Med port site.
-            expect(hrefs.some((h) => h.includes('balearia.com'))).toBe(true);
-            expect(hrefs.some((h) => h.includes('aml-ferry.com'))).toBe(true);
-            expect(hrefs.some((h) => h.includes('dfds.com'))).toBe(true);
-            expect(hrefs.some((h) => h.includes('tangermedport.com'))).toBe(true);
+            // Ferry operators + the official Tangier Med port site —
+            // matched on the parsed hostname, never a raw substring.
+            const hosts = hrefs.map((h) => new URL(h).hostname);
+            const hasHost = (domain: string) =>
+                hosts.some((host) => host === domain || host.endsWith(`.${domain}`));
+            expect(hasHost('balearia.com')).toBe(true);
+            expect(hasHost('aml-ferry.com')).toBe(true);
+            expect(hasHost('dfds.com')).toBe(true);
+            expect(hasHost('tangermedport.com')).toBe(true);
             // Entry section points at the official Accès Maroc portal.
             expect(origin.entry.links.map((l) => l.href)).toEqual(['https://www.acces-maroc.ma']);
             for (const href of hrefs) expect(href.startsWith('https://')).toBe(true);
