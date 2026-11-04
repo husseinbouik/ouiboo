@@ -126,6 +126,7 @@ export default function TravelerResetPasswordPage() {
                     <Input
                       id="password"
                       type="password"
+                      autoComplete="new-password"
                       placeholder={t('resetPassword.passwordPlaceholder', 'Enter a new password')}
                       className="pl-10 h-12 bg-muted border-border focus:bg-background focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
                       {...register('password')}
@@ -140,6 +141,7 @@ export default function TravelerResetPasswordPage() {
                     <Input
                       id="confirmPassword"
                       type="password"
+                      autoComplete="new-password"
                       placeholder={t('resetPassword.confirmPasswordPlaceholder', 'Re-enter the new password')}
                       className="pl-10 h-12 bg-muted border-border focus:bg-background focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
                       {...register('confirmPassword')}

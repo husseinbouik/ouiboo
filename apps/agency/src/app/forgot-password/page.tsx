@@ -80,6 +80,7 @@ return (
                     <Input
                       id="email"
                       type="email"
+                      autoComplete="username"
                       placeholder={t('forgotPassword.emailPlaceholder')}
                       className="ps-10 h-12 bg-muted border-border focus:bg-background focus:border-primary focus:ring-primary transition-all duration-200"
                       {...register('email')}

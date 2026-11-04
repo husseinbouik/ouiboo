@@ -102,6 +102,7 @@ return (
                     <Input
                       id="password"
                       type="password"
+                      autoComplete="new-password"
                       placeholder={t('resetPassword.passwordPlaceholder')}
                       className="ps-10 h-12 bg-muted border-border focus:bg-background focus:border-primary focus:ring-primary transition-all duration-200"
                       {...register('password')}
@@ -116,6 +117,7 @@ return (
                     <Input
                       id="confirmPassword"
                       type="password"
+                      autoComplete="new-password"
                       placeholder={t('resetPassword.confirmPasswordPlaceholder')}
                       className="ps-10 h-12 bg-muted border-border focus:bg-background focus:border-primary focus:ring-primary transition-all duration-200"
                       {...register('confirmPassword')}
