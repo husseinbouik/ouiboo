@@ -419,6 +419,97 @@
         }
       ]
     },
+    "spainTangier": {
+      "title": "D’Espagne à Tanger : guide d’arrivée",
+      "description": "Comment rejoindre Tanger depuis l’Espagne — les ferrys Algeciras–Tanger Med et Tarifa–Tanger Ville, les vols courts et les bases de l’entrée au Maroc. Les réservations ne sont pas encore ouvertes sur OuiBoo.",
+      "intro": "L’Espagne fait face à Tanger de l’autre côté du détroit de Gibraltar, et la traversée est courte : en ferry depuis Algeciras ou Tarifa, ou par un vol court vers l’aéroport Tanger Ibn Battouta. Cette page rassemble l’essentiel pratique — sans horaires affichés ni promesses : les compagnies publient leurs propres traversées, et leurs sites font foi.",
+      "sections": [
+        {
+          "title": "Ferry Algeciras → Tanger Med",
+          "text": "Le port d’Algeciras, en Andalousie, est relié à Tanger Med, le port de passagers situé à l’est de Tanger. Cette route sert les voyageurs motorisés comme les passagers à pied, avec des traversées réparties sur la journée selon la saison. Un point compte : Tanger Med n’est pas en ville. À l’arrivée, il reste à rejoindre Tanger — en taxi, en bus ou en voiture de location — et ce trajet routier fait partie du voyage à prévoir. Les compagnies qui desservent la route publient leurs horaires et leurs conditions sur leurs sites officiels.",
+          "links": [
+            {
+              "label": "Baleària — Algeciras ↔ Tanger Med",
+              "href": "https://www.balearia.com/en/routes-timetables/ferry-algeciras-tangiermed"
+            },
+            {
+              "label": "DFDS — Algeciras ↔ Tanger Med",
+              "href": "https://www.dfds.com/en-gb/passenger-ferries/ferry-crossings/spain-morocco/algeciras-tanger-med"
+            },
+            {
+              "label": "Africa Morocco Link (AML)",
+              "href": "https://www.aml-ferry.com"
+            },
+            {
+              "label": "Tanger Med — site officiel du port",
+              "href": "https://www.tangermedport.com/en/"
+            }
+          ]
+        },
+        {
+          "title": "Ferry Tarifa → Tanger Ville",
+          "text": "Depuis le port de Tarifa, à l’ouest d’Algeciras, des ferries rapides rejoignent Tanger Ville — le port en pleine ville, au pied de la médina. Pour un voyageur à pied qui vise le centre de Tanger, l’arrivée se fait en ville même : la gare de Tanger Ville et les taxis sont à proximité, et la Kasbah se rejoint à pied. Les traversées dépendent de l’état de la mer dans le détroit et peuvent être retardées ou annulées par mauvais temps : vérifiez le statut de votre départ auprès de la compagnie le jour même.",
+          "links": [
+            {
+              "label": "Baleària — Tarifa ↔ Tanger Ville",
+              "href": "https://www.balearia.com/en"
+            },
+            {
+              "label": "Africa Morocco Link (AML)",
+              "href": "https://www.aml-ferry.com"
+            }
+          ]
+        },
+        {
+          "title": "Vols courts Espagne → Tanger",
+          "text": "L’aéroport Tanger Ibn Battouta accueille des vols directs depuis plusieurs villes espagnoles selon la saison, opérés par des compagnies régulières et à bas coût. Les programmes changent d’une saison à l’autre : consultez les sites des compagnies et de l’aéroport pour les liaisons du moment. Depuis l’aéroport, le centre de Tanger se rejoint en taxi ou en navette — prévoyez ce transfert dans votre arrivée."
+        }
+      ],
+      "entry": {
+        "title": "Entrée au Maroc : les bases",
+        "text": "Au moment où cette page est rédigée (novembre 2026), les citoyens de l’Union européenne entrent en général au Maroc sans visa pour un séjour touristique, sur présentation d’un passeport en cours de validité ; les voyageurs d’autres nationalités peuvent relever de l’e-visa ou d’un visa consulaire. Ces règles relèvent des autorités marocaines et peuvent évoluer : ce texte est une information générale, pas un conseil juridique, et rien sur cette page ne garantit une admission. Vérifiez votre situation sur le portail officiel Accès Maroc ou auprès d’un consulat du Maroc avant de partir.",
+        "links": [
+          {
+            "label": "Accès Maroc — portail officiel (visas et autorisations)",
+            "href": "https://www.acces-maroc.ma"
+          }
+        ],
+        "datedLine": "Informations relevées en novembre 2026 — à reconfirmer sur les sources officielles avant chaque départ."
+      },
+      "cluster": {
+        "title": "Pourquoi Tanger, puis le reste du cluster",
+        "text": "Tanger sert de base pour découvrir le Nord : la médina et la Kasbah, le cap Spartel et la corniche sont couverts par notre guide de la ville. Depuis Tanger, Tétouan — médina inscrite au patrimoine mondial de l’UNESCO et héritage andalou — et Chefchaouen, la ville de montagne lavée de bleu dans le Rif, se visitent en excursions à la journée ou en étapes d’un même séjour. Chaque ville a son guide OuiBoo, dans le même esprit pratique.",
+        "links": [
+          {
+            "label": "Guide de Tétouan",
+            "href": "/guides/tetouan"
+          },
+          {
+            "label": "Guide de Chefchaouen",
+            "href": "/guides/chefchaouen"
+          }
+        ]
+      },
+      "how": {
+        "title": "Comment OuiBoo fonctionne ici",
+        "text": "OuiBoo est une plateforme technologique : les agences locales vendent leurs propres voyages, et les voyageurs paient l’agence directement — OuiBoo ne détient jamais les fonds des voyageurs. Avant de pouvoir publier, chaque agence passe une porte de vérification — licence de voyage, assurance responsabilité civile, identité du vendeur — expliquée sur notre page dédiée. Pendant la bêta fermée, les réservations ne sont pas ouvertes : cette page est un guide, pas une boutique."
+      },
+      "tangierGuideLink": "Lire le guide de Tanger",
+      "faq": [
+        {
+          "q": "Quel ferry choisir entre Algeciras et Tarifa ?",
+          "a": "Cela dépend de l’arrivée que vous visez : Tanger Med, à l’est de la ville, convient aux voyageurs motorisés et aux traversées réparties sur la journée ; Tanger Ville vous dépose en centre-ville, ce qui est pratique à pied. Dans les deux cas, les traversées du jour se vérifient auprès de la compagnie."
+        },
+        {
+          "q": "Ai-je besoin d’un visa pour entrer au Maroc depuis l’Espagne ?",
+          "a": "Les citoyens de l’Union européenne voyagent en général sans visa pour un séjour touristique, avec un passeport en cours de validité (situation relevée en novembre 2026). Les autres nationalités vérifient leur cas sur le portail officiel Accès Maroc ou auprès d’un consulat. Cette réponse est une information générale, pas un conseil juridique."
+        },
+        {
+          "q": "Puis-je déjà réserver des voyages à Tanger sur OuiBoo ?",
+          "a": "Pas encore. OuiBoo fonctionne en bêta fermée et les réservations ne sont pas ouvertes. Découvrez la vitrine sur la page d’accueil et rejoignez la liste d’attente pour être prévenu à l’ouverture."
+        }
+      ]
+    },
     "verification": {
       "title": "Comment fonctionne la vérification des agences",
       "description": "Les contrôles qu’une agence passe avant de pouvoir publier des voyages sur OuiBoo : licence de voyage, assurance responsabilité civile et identité du vendeur — et ce que la vérification ne prétend pas.",

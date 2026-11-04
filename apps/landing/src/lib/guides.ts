@@ -24,9 +24,20 @@ export type GuideCitySlug = (typeof GUIDE_CITY_SLUGS)[number]
 export const VERIFICATION_PATH = '/verification'
 export const guidePath = (slug: GuideCitySlug): string => `/guides/${slug}`
 
+/**
+ * #779 (Council S6 Tier 3): the ONE origin-market page — Spain →
+ * Tangier — in the same Layer A pattern. It lives under /guides/ and
+ * is registered here so sitemap.ts + robots.ts index it exactly like
+ * the city guides. It is NOT a city: no GuideCity entry, no Layer B
+ * inventory cell — purely non-transactional arrival content that
+ * links to the Tangier city guide.
+ */
+export const ORIGIN_SPAIN_TANGIER_PATH = '/guides/spain-to-tangier'
+
 /** Every route Layer A indexes — sitemap + robots share this list. */
 export const GUIDE_PATHS: readonly string[] = [
   ...GUIDE_CITY_SLUGS.map(guidePath),
+  ORIGIN_SPAIN_TANGIER_PATH,
   VERIFICATION_PATH,
 ]
 
@@ -50,6 +61,27 @@ export interface VerificationContent {
   datedLine: string
   faq: GuideFaqItem[]
 }
+export interface GuideLink { label: string; href: string }
+export interface OriginSection { title: string; text: string; links?: GuideLink[] }
+export interface OriginLinkedSection extends OriginSection { links: GuideLink[] }
+export interface OriginEntry extends OriginLinkedSection { datedLine: string }
+/**
+ * #779: Spain → Tangier origin content. Volatile facts are NEVER
+ * stated (no schedules, no fares, no crossing-time promises) — the
+ * sections describe the routes and link out to operators/official
+ * sources; entry wording is dated general information, not advice.
+ */
+export interface SpainTangierGuide {
+  title: string
+  description: string
+  intro: string
+  sections: OriginSection[]
+  entry: OriginEntry
+  cluster: OriginLinkedSection
+  how: OriginSection
+  tangierGuideLink: string
+  faq: GuideFaqItem[]
+}
 export interface GuidesContent {
   bookingsNotOpen: string
   waitlistCta: string
@@ -61,6 +93,7 @@ export interface GuidesContent {
   tangier: GuideCity
   tetouan: GuideCity
   chefchaouen: GuideCity
+  spainTangier: SpainTangierGuide
   verification: VerificationContent
 }
 

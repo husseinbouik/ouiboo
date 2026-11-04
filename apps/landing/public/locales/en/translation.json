@@ -419,6 +419,97 @@
         }
       ]
     },
+    "spainTangier": {
+      "title": "Spain to Tangier: an arrival guide",
+      "description": "How to reach Tangier from Spain — the Algeciras–Tangier Med and Tarifa–Tangier Ville ferries, short-haul flights and the basics of entering Morocco. Bookings are not open on OuiBoo yet.",
+      "intro": "Spain faces Tangier across the Strait of Gibraltar, and the crossing is a short one: by ferry from Algeciras or Tarifa, or on a short flight into Tangier Ibn Battouta Airport. This page gathers the practical essentials — with no timetables posted and no promises: operators publish their own sailings, and their sites are the reference.",
+      "sections": [
+        {
+          "title": "Ferry: Algeciras → Tangier Med",
+          "text": "The port of Algeciras in Andalusia is linked to Tangier Med, the passenger port east of Tangier. The route carries drivers and foot passengers alike, with sailings spread across the day depending on the season. One point matters: Tangier Med is not in the city. On arrival you still have to reach Tangier — by taxi, bus or rental car — and that road leg is part of the journey to plan for. The companies serving the route publish their schedules and conditions on their official sites.",
+          "links": [
+            {
+              "label": "Baleària — Algeciras ↔ Tangier Med",
+              "href": "https://www.balearia.com/en/routes-timetables/ferry-algeciras-tangiermed"
+            },
+            {
+              "label": "DFDS — Algeciras ↔ Tangier Med",
+              "href": "https://www.dfds.com/en-gb/passenger-ferries/ferry-crossings/spain-morocco/algeciras-tanger-med"
+            },
+            {
+              "label": "Africa Morocco Link (AML)",
+              "href": "https://www.aml-ferry.com"
+            },
+            {
+              "label": "Tangier Med — official port site",
+              "href": "https://www.tangermedport.com/en/"
+            }
+          ]
+        },
+        {
+          "title": "Ferry: Tarifa → Tangier Ville",
+          "text": "From the port of Tarifa, west of Algeciras, fast ferries cross to Tangier Ville — the city-centre port at the foot of the medina. For a foot passenger heading for central Tangier, you step off into the city itself: Tangier Ville station and taxis are close by, and the Kasbah is a walk away. Sailings depend on sea conditions in the Strait and can be delayed or cancelled in rough weather: check the status of your departure with the operator on the day.",
+          "links": [
+            {
+              "label": "Baleària — Tarifa ↔ Tangier Ville",
+              "href": "https://www.balearia.com/en"
+            },
+            {
+              "label": "Africa Morocco Link (AML)",
+              "href": "https://www.aml-ferry.com"
+            }
+          ]
+        },
+        {
+          "title": "Short-haul flights: Spain → Tangier",
+          "text": "Tangier Ibn Battouta Airport receives direct flights from several Spanish cities depending on the season, run by scheduled and low-cost airlines. Programmes change from season to season: check airline and airport sites for the routes running when you travel. From the airport, central Tangier is reached by taxi or shuttle — plan that transfer into your arrival."
+        }
+      ],
+      "entry": {
+        "title": "Entering Morocco: the basics",
+        "text": "As this page is written (November 2026), citizens of the European Union generally enter Morocco without a visa for a tourist stay, on presentation of a valid passport; travellers of other nationalities may fall under the e-visa or a consular visa. These rules belong to the Moroccan authorities and can change: this text is general information, not legal advice, and nothing on this page guarantees admission. Check your situation on the official Accès Maroc portal or with a Moroccan consulate before you travel.",
+        "links": [
+          {
+            "label": "Accès Maroc — official portal (visas and authorisations)",
+            "href": "https://www.acces-maroc.ma"
+          }
+        ],
+        "datedLine": "Information noted in November 2026 — reconfirm with official sources before every departure."
+      },
+      "cluster": {
+        "title": "Why Tangier, then the wider cluster",
+        "text": "Tangier works as a base for the North: the medina and the Kasbah, Cape Spartel and the corniche are covered by our city guide. From Tangier, Tétouan — a UNESCO-listed medina with an Andalusian heritage — and Chefchaouen, the blue-washed mountain town in the Rif, work as day trips or as stops on the same stay. Each city has its own OuiBoo guide, in the same practical spirit.",
+        "links": [
+          {
+            "label": "Tétouan guide",
+            "href": "/guides/tetouan"
+          },
+          {
+            "label": "Chefchaouen guide",
+            "href": "/guides/chefchaouen"
+          }
+        ]
+      },
+      "how": {
+        "title": "How OuiBoo works here",
+        "text": "OuiBoo is a technology platform: local agencies sell their own trips, and travellers pay the agency directly — OuiBoo never holds traveller funds. Before an agency can publish, it passes a verification gate — travel licence, civil-liability insurance, seller identity — explained on our dedicated page. During the closed beta, bookings are not open: this page is a guide, not a shop."
+      },
+      "tangierGuideLink": "Read the Tangier city guide",
+      "faq": [
+        {
+          "q": "Which ferry should I choose, Algeciras or Tarifa?",
+          "a": "It depends on the arrival you are aiming for: Tangier Med, east of the city, suits drivers and sailings spread across the day; Tangier Ville drops you in the city centre, which is practical on foot. Either way, check the day’s sailings with the operator."
+        },
+        {
+          "q": "Do I need a visa to enter Morocco from Spain?",
+          "a": "European Union citizens generally travel without a visa for a tourist stay, on a valid passport (position noted in November 2026). Other nationalities should check their case on the official Accès Maroc portal or with a consulate. This answer is general information, not legal advice."
+        },
+        {
+          "q": "Can I book Tangier trips on OuiBoo already?",
+          "a": "Not yet. OuiBoo is running a closed beta and bookings are not open. Browse the homepage showcase and join the waitlist to hear when bookings open."
+        }
+      ]
+    },
     "verification": {
       "title": "How agency verification works",
       "description": "The checks an agency passes before it can publish trips on OuiBoo: travel licence, civil-liability insurance and seller identity — and what verification does not claim.",
