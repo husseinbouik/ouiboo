@@ -291,3 +291,183 @@ describe('anonymous session probing (#245)', () => {
     expect(fresh!.hasBrowserSessionHint()).toBe(false);
   });
 });
+
+describe('refresh-rotation race (#840)', () => {
+  // Same browser stand-ins as the #245 suite above.
+  const storage = new Map<string, string>();
+  const localStorageStub = {
+    getItem: (key: string) => (storage.has(key) ? storage.get(key)! : null),
+    setItem: (key: string, value: string) => {
+      storage.set(key, value);
+    },
+    removeItem: (key: string) => {
+      storage.delete(key);
+    },
+    clear: () => storage.clear(),
+  };
+  const locationStub = { href: '' };
+  const fetchMock = jest.fn();
+
+  const authOf = (config: InternalAxiosRequestConfig): unknown => {
+    const headers = config.headers as unknown as {
+      get?: (name: string) => unknown;
+      Authorization?: unknown;
+      authorization?: unknown;
+    };
+    return headers?.get?.('Authorization') ??
+      headers?.Authorization ??
+      headers?.authorization;
+  };
+
+  beforeEach(() => {
+    storage.clear();
+    locationStub.href = '';
+    (global as any).window = {
+      localStorage: localStorageStub,
+      location: locationStub,
+    };
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue({ ok: true, status: 200 });
+    global.fetch = fetchMock as unknown as typeof fetch;
+  });
+
+  afterEach(async () => {
+    await setBrowserAccessToken(null);
+    clearBrowserAccessToken();
+    jest.restoreAllMocks();
+    delete (global as any).window;
+  });
+
+  it('(a) concurrent 401s across TWO client instances share exactly one refresh and both retry to 200', async () => {
+    await setBrowserAccessToken('token-old');
+    const postSpy = jest
+      .spyOn(axios, 'post')
+      .mockImplementation(async () => {
+        // Hold the refresh open so both instances' 401 handlers overlap
+        // on the same in-flight refresh.
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return { data: { accessToken: 'token-new' } } as never;
+      });
+
+    const makeAdapter = (counter: { n: number }) =>
+      async (
+        config: InternalAxiosRequestConfig,
+      ): Promise<AxiosResponse> => {
+        counter.n++;
+        if (authOf(config) === 'Bearer token-new') return okResponse(config);
+        throw httpError(config, 401);
+      };
+
+    const calls1 = { n: 0 };
+    const calls2 = { n: 0 };
+    const client1 = createBrowserApiClient(BASE_URL);
+    client1.defaults.adapter = makeAdapter(calls1);
+    const client2 = createBrowserApiClient(BASE_URL);
+    client2.defaults.adapter = makeAdapter(calls2);
+
+    const [res1, res2] = await Promise.all([
+      client1.get('/users/me'),
+      client2.get('/users/me'),
+    ]);
+
+    expect(res1.status).toBe(200);
+    expect(res2.status).toBe(200);
+    // Exactly ONE refresh for both instances, despite the rotation race.
+    expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(String(postSpy.mock.calls[0][0])).toContain('/auth/refresh');
+    // Each request: one 401 attempt + one successful retry.
+    expect(calls1.n).toBe(2);
+    expect(calls2.n).toBe(2);
+    // Session survives: no teardown, no bounce to /login.
+    expect(locationStub.href).toBe('');
+    expect(hasBrowserSessionHint()).toBe(true);
+  });
+
+  it('(b) stale-token 401 after a completed refresh retries with the current token — no second refresh, no logout', async () => {
+    await setBrowserAccessToken('token-old');
+    const postSpy = jest
+      .spyOn(axios, 'post')
+      .mockResolvedValue({ data: { accessToken: 'token-new' } } as never);
+
+    let slowCalls = 0;
+    const client = createBrowserApiClient(BASE_URL);
+    client.defaults.adapter = async (
+      config: InternalAxiosRequestConfig,
+    ): Promise<AxiosResponse> => {
+      if (String(config.url).includes('/slow')) {
+        slowCalls++;
+        if (slowCalls === 1) {
+          // Dispatched with token-old; the server answers only after a
+          // concurrent refresh has already rotated the session — the
+          // classic mid-rotation 401.
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          throw httpError(config, 401);
+        }
+        return okResponse(config);
+      }
+      // /fast: 401 until it carries the rotated token, then 200.
+      if (authOf(config) === 'Bearer token-new') return okResponse(config);
+      throw httpError(config, 401);
+    };
+
+    const slowPromise = client.get('/slow');
+    const fastPromise = client.get('/fast');
+    const [slowRes, fastRes] = await Promise.all([slowPromise, fastPromise]);
+
+    expect(fastRes.status).toBe(200);
+    expect(slowRes.status).toBe(200);
+    expect(slowCalls).toBe(2);
+    // Only the fast request's refresh happened; the slow request's stale
+    // 401 was healed by retrying with the current token.
+    expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(locationStub.href).toBe('');
+    expect(hasBrowserSessionHint()).toBe(true);
+  });
+
+  it('(c) definitively revoked refresh: all callers reject, hint cleared, session torn down exactly once', async () => {
+    await setBrowserAccessToken('token-old');
+    expect(hasBrowserSessionHint()).toBe(true);
+    // Ignore the BFF session-establish call made by the setup above.
+    fetchMock.mockClear();
+
+    const postSpy = jest
+      .spyOn(axios, 'post')
+      .mockImplementation(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        const error = new Error('Request failed with status code 401');
+        (error as { response?: unknown }).response = {
+          status: 401,
+          data: {},
+        };
+        throw error;
+      });
+
+    const adapter = async (
+      config: InternalAxiosRequestConfig,
+    ): Promise<AxiosResponse> => {
+      throw httpError(config, 401);
+    };
+    const client1 = createBrowserApiClient(BASE_URL);
+    client1.defaults.adapter = adapter;
+    const client2 = createBrowserApiClient(BASE_URL);
+    client2.defaults.adapter = adapter;
+
+    const results = await Promise.allSettled([
+      client1.get('/users/me'),
+      client2.get('/bookings'),
+    ]);
+
+    expect(results.map((r) => r.status)).toEqual(['rejected', 'rejected']);
+    // The failed refresh itself was shared, not duplicated per instance.
+    expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(hasBrowserSessionHint()).toBe(false);
+    expect(hasPossibleBrowserSession()).toBe(false);
+    // clearBrowserAccessToken fires exactly one BFF session DELETE; two
+    // waiting instances must not tear the session down twice.
+    const deleteCalls = fetchMock.mock.calls.filter(
+      (call) => (call[1] as { method?: string } | undefined)?.method === 'DELETE',
+    );
+    expect(deleteCalls).toHaveLength(1);
+    expect(locationStub.href).toBe('/login');
+  });
+});
