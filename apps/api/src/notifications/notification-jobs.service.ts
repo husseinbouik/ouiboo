@@ -2,6 +2,7 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
 import { MessagingService } from '../messaging/messaging.service';
+import { PushNotificationsService } from './push-notifications.service';
 import { NotificationType } from '@ouiboo/database';
 
 type NotificationMap = Record<string, string>;
@@ -23,6 +24,8 @@ export class NotificationJobsService {
     private emailService: EmailService,
     // #785: optional — existing spec constructions (2 args) stay valid.
     @Optional() private messagingService?: MessagingService,
+    // #784: optional — the Nest module always supplies it.
+    @Optional() private pushNotifications?: PushNotificationsService,
   ) {}
 
   /**
@@ -491,5 +494,25 @@ export class NotificationJobsService {
         sentAt: new Date(),
       },
     });
+
+    // #784: push is a second channel for the same event, dispatched
+    // only after the notification record exists. The push service
+    // re-checks the channel + category preferences itself, so a user
+    // who opted into email only never receives push. Best-effort: a
+    // push failure must never fail the job that created the record.
+    if (this.pushNotifications) {
+      try {
+        await this.pushNotifications.sendToUser(userId, type, {
+          title: 'Ouiboo',
+          body: message,
+          url: '/notifications',
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Push dispatch failed for user ${userId} (${type})`,
+          error instanceof Error ? error.message : undefined,
+        );
+      }
+    }
   }
 }

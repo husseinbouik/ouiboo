@@ -1,5 +1,6 @@
-import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, NotFoundException, Optional } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { PushNotificationsService } from '../notifications/push-notifications.service';
 import { CreateReviewDto, UpdateReviewDto, ReviewResponseDto } from './dto/create-review.dto';
 import { derivePublicMediaUrl } from '../upload/media-url.util';
 import { MAX_REVIEW_PHOTOS } from '../upload/upload.constants';
@@ -155,7 +156,12 @@ function normalizeModerationAction(
 
 @Injectable()
 export class ReviewsService {
-  constructor(private prisma: DatabaseService) {}
+  constructor(
+    private prisma: DatabaseService,
+    // #784: optional so existing manual constructions in specs keep
+    // working; the Nest module always supplies it.
+    @Optional() private pushNotifications?: PushNotificationsService,
+  ) {}
 
   /**
    * Create a review for a completed booking
@@ -568,6 +574,21 @@ export class ReviewsService {
           },
         })
         .catch((err: unknown) => console.error('Reply notification log failed', err));
+
+      // #784: same event, push channel — preference-gated inside the
+      // push service (REVIEW_RESPONSE rides on reviewRequest),
+      // best-effort, never fails moderation.
+      if (this.pushNotifications) {
+        try {
+          await this.pushNotifications.sendToUser(review.travelerId, 'REVIEW_RESPONSE', {
+            title: 'The agency replied to your review',
+            body: `${review.agency?.companyName ?? 'The agency'} replied to your review of "${review.tripTemplate?.title ?? 'your trip'}"`,
+            url: '/notifications',
+          });
+        } catch {
+          // Push is best-effort; moderation already succeeded.
+        }
+      }
     }
 
     return updated;

@@ -8,6 +8,7 @@ import { Button, EmptyState } from '@ouiboo/ui';
 import { Bell } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/components/AuthContext';
+import { PushNotificationToggle } from '@/components/PushNotificationToggle';
 
 type Notification = {
   id: string;
@@ -73,6 +74,7 @@ export default function NotificationsPage() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
       <h1 className="text-3xl font-bold mb-8">Notifications</h1>
+      <PushNotificationToggle />
       {notifications.length === 0 ? (
         <EmptyState
           icon={<Bell className="h-6 w-6" />}

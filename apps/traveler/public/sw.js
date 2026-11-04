@@ -14,7 +14,7 @@
  * - Static assets (/_next/static, /locales, icons, manifest):
  *   stale-while-revalidate.
  */
-const SW_VERSION = 'ouiboo-sw-v1';
+const SW_VERSION = 'ouiboo-sw-v2';
 const STATIC_CACHE = `${SW_VERSION}-static`;
 const PAGE_CACHE = `${SW_VERSION}-pages`;
 
@@ -81,6 +81,54 @@ self.addEventListener('fetch', (event) => {
       })(),
     );
   }
+});
+
+// #784: web push. The API sends a JSON payload { title, body, url }
+// after the same preference checks that gate email — the worker only
+// renders it. Payloads are never cached or persisted.
+self.addEventListener('push', (event) => {
+  let payload = {};
+  if (event.data) {
+    try {
+      payload = event.data.json() || {};
+    } catch {
+      payload = { body: event.data.text() };
+    }
+  }
+  const title = typeof payload.title === 'string' && payload.title ? payload.title : 'Ouiboo';
+  const options = {
+    body: typeof payload.body === 'string' ? payload.body : '',
+    icon: '/icon.png',
+    badge: '/icon.png',
+    data: {
+      url: typeof payload.url === 'string' && payload.url ? payload.url : '/notifications',
+    },
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target =
+    (event.notification.data && event.notification.data.url) || '/notifications';
+  event.waitUntil(
+    (async () => {
+      const targetUrl = new URL(target, self.location.origin).href;
+      const windows = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+      for (const client of windows) {
+        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+          if ('navigate' in client) {
+            await client.navigate(targetUrl).catch(() => undefined);
+          }
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(targetUrl);
+    })(),
+  );
 });
 
 // Logout / account switch: the app posts { type: 'ouiboo:clear-caches' }

@@ -1,6 +1,7 @@
-import { Injectable, BadRequestException, Logger, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger, Optional, ServiceUnavailableException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
+import { PushNotificationsService } from '../notifications/push-notifications.service';
 import { PaymentProviderFactory } from './providers/payment-provider.factory';
 import { InitiatePaymentDto, VerifyPaymentDto, ProcessRefundDto } from './dto/payment.dto';
 import { PaymentVerificationResult } from './interfaces/payment-provider.interface';
@@ -17,6 +18,9 @@ export class PaymentsService {
     private paymentProviderFactory: PaymentProviderFactory,
     private emailService: EmailService,
     private externalPaymentsService: ExternalPaymentsService,
+    // #784: optional so existing manual constructions in specs keep
+    // working; the Nest module always supplies it.
+    @Optional() private pushNotifications?: PushNotificationsService,
   ) { }
 
   /**
@@ -1360,6 +1364,24 @@ export class PaymentsService {
         sentAt: new Date(),
       },
     });
+
+    // #784: same event, push channel — preference-gated inside the
+    // push service, best-effort, never fails the confirmation.
+    if (this.pushNotifications) {
+      try {
+        await this.pushNotifications.sendToUser(
+          booking.travelerId,
+          'BOOKING_CONFIRMATION',
+          {
+            title: 'Booking confirmed',
+            body: `Your booking for ${booking.session.template.title} has been confirmed.`,
+            url: `/bookings/${booking.id}`,
+          },
+        );
+      } catch {
+        // Push is best-effort; the booking is already confirmed.
+      }
+    }
 
     this.logger.log(`Booking ${bookingId} transitioned to CONFIRMED state`);
     return booking;

@@ -409,6 +409,7 @@ model User {
   quoteRequests           QuoteRequest[]
   customTripRequests      CustomTripRequest[]
   notificationPreferences NotificationPreference?
+  pushSubscriptions       PushSubscription[]
   displayCurrency         String                  @default("MAD")
   // #777: zero-value referral — attribution + recognition only.
   referralCode            String?                 @unique
@@ -1535,8 +1536,32 @@ model NotificationPreference {
   reviewRequest       Boolean  @default(true)
   smsNotifications    Boolean  @default(false)
   emailNotifications  Boolean  @default(true)
+  // #784: web push is an opt-in channel on top of the per-category
+  // switches above — a category must be on AND this channel must be on
+  // before any push is attempted. Subscriptions alone do not enable it:
+  // subscribing flips this on, unsubscribing the last device does not
+  // flip it off (the user turns the channel off explicitly).
+  pushNotifications   Boolean  @default(false)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+}
+
+// #784 (Council S6 Phase 3): one row per browser/device push endpoint a
+// user has subscribed. The endpoint is globally unique: re-subscribing
+// the same browser rebinds the row to the current user. Rows are pruned
+// when the push service answers 404/410 (subscription gone).
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 // Notification Log

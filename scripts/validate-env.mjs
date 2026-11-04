@@ -64,6 +64,12 @@ const envSchema = z.object({
   WORKER_HEARTBEAT_INTERVAL_MS: optionalValue(z.coerce.number().int().positive()),
   WORKER_HEARTBEAT_MAX_AGE_MS: optionalValue(z.coerce.number().int().positive()),
 
+  // Web push (#784): optional — when unset, push delivery no-ops and
+  // the traveller opt-in reports push as unavailable.
+  VAPID_PUBLIC_KEY: optionalValue(z.string().min(1)),
+  VAPID_PRIVATE_KEY: optionalValue(z.string().min(1)),
+  VAPID_SUBJECT: optionalValue(z.string().min(1)),
+
   // Landing waitlist
   GMAIL_EMAIL: optionalValue(z.string().email()),
   GMAIL_APP_PASSWORD: optionalValue(z.string().min(1)),
