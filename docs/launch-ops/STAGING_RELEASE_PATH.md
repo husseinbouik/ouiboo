@@ -11,16 +11,20 @@ canonical description of how a commit becomes a staging release.
    `CodeQL`, `smoke`.
 2. **Merge to `staging`** produces the candidate SHA.
 3. **`Staging Release` workflow** (`.github/workflows/staging-release.yml`)
-   is the single release controller for that SHA. Triggered by
-   `workflow_run` after CI / Security Scan / Browser E2E complete for a
-   push to `staging`, it:
-   - **Gate** — verifies, via the check-runs API, that the required push
-     checks for that *exact* SHA all succeeded (`build (20.x)`,
+   is the single release controller for that SHA. It triggers on `push`
+   to `staging` (a `workflow_run`-triggered workflow would have to live
+   on the default branch, `master`, to fire at all; `workflow_run` is
+   kept as a secondary trigger that activates once this file reaches
+   `master`, and manual dispatch can re-verify any staging SHA). It:
+   - **Gate** — polls the check-runs API (60s interval, 45-minute
+     budget) until the required push checks for that *exact* SHA
+     complete, and verifies they all succeeded (`build (20.x)`,
      `browser-e2e`, `Secret scanning (Gitleaks)`, `SAST (Semgrep)`,
      `SAST (CodeQL)`, `CodeQL`). A failed required check blocks the
-     release loudly; a still-pending gate exits neutrally and is
-     re-evaluated by the next `workflow_run` invocation. (`review` and
-     `smoke` are PR-only contexts — they gated the merge in step 1.)
+     release loudly; a gate still pending after the budget fails the
+     run without attesting (re-run manually once checks complete).
+     (`review` and `smoke` are PR-only contexts — they gated the merge
+     in step 1.)
    - **Migrate** — runs `prisma migrate deploy` against the staging Neon
      DB (`STAGING_DATABASE_URL` Actions secret; staging project
      `hidden-mountain-93789107`). This workflow is the **single migration
