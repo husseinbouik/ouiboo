@@ -297,7 +297,7 @@
     "sectionFourTitle": "Support",
     "sectionFourBody": "We are here to help via email.",
     "sectionSixTitle": "Support and emergencies",
-    "sectionSixBody": "OuiBoo provides support by email and replies to normal requests within 48 hours. During an active trip, the agency organising your trip is your first contact for on-the-day problems; its emergency contact is shown on your booking. If the agency does not respond during the trip period, OuiBoo support will escalate with the agency on your behalf. OuiBoo does not operate a 24/7 hotline. When a refund is due, the agency must complete it within 7 days of the refund case opening; OuiBoo monitors the deadline and chases overdue refunds.",
+    "sectionSixBody": "OuiBoo provides support by email and replies to normal requests within 48 hours. During an active trip, the agency organising your trip is your first contact for on-the-day problems; its emergency contact is shown on your booking. If the agency does not respond during the trip period, OuiBoo support will escalate with the agency on your behalf. OuiBoo does not operate a 24/7 hotline. When a refund is due, the agency must initiate it within 7 days of the refund case opening; OuiBoo monitors the deadline and chases overdue refunds.",
     "sectionSevenTitle": "Cancellation and refunds",
     "sectionSevenBody": "Every trip shows its cancellation scale before you pay, and the same scale is repeated in your booking confirmation. If the agency cancels your trip, or a trip cannot run because its minimum group was not reached, you are refunded 100% of what you paid and the refund must be initiated within 7 days. If you cancel, your refund follows the trip's scale: the earlier you cancel before the trip starts, the higher the percentage refunded. Refunds are paid by the agency you booked with — Ouiboo is a technology platform and never holds your money."
   },
@@ -799,7 +799,7 @@
     "emergencyTitle": "Emergencies during your trip",
     "emergencyBody": "While your trip is running: first call your agency's emergency contact — you'll find it on your booking page. If they don't respond, email OuiBoo support and we will escalate with the agency during your trip period. Outside trip dates, everything goes through normal support.",
     "refundsTitle": "Refunds",
-    "refundsBody": "When a refund is owed, the agency has {{days}} days to complete it and OuiBoo chases it if it slips. You'll get an email as soon as a refund case is opened for you, and you can follow its status in your bookings.",
+    "refundsBody": "When a refund is owed, the agency has {{days}} days to initiate it and OuiBoo chases it if it slips. You'll get an email as soon as a refund case is opened for you, and you can follow its status in your bookings.",
     "complaintsTitle": "Complaints",
     "complaintsBody": "To complain about a trip, an agency, or OuiBoo itself, email {{email}} with the subject \"Complaint\" and your booking reference. Complaints are answered on the normal support timeline.",
     "safetyNote": "If anyone is in danger or needs urgent medical help, contact local emergency services first — then your agency.",
