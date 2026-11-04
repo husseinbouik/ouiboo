@@ -56,6 +56,8 @@ export function AgencySidebar() {
     { name: t('sidebar.quotes'), href: '/dashboard/quotes', icon: FileText },
     // #778: agency-funded promo codes (agency funds 100% of the discount).
     { name: t('sidebar.promoCodes'), href: '/dashboard/promo-codes', icon: TicketPercent },
+    // #755: campaign/session pricing (automatic price rules, agency-funded).
+    { name: t('sidebar.priceRules'), href: '/dashboard/price-rules', icon: TicketPercent },
     { name: t('batchF.customRequests'), href: '/dashboard/custom-requests', icon: Sparkles },
     { name: t('sidebar.reviews'), href: '/dashboard/reviews', icon: Star },
     { name: t('sidebar.wallet'), href: '/dashboard/wallet', icon: CreditCard },

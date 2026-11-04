@@ -88,6 +88,10 @@
       "fundedNote": "Discount funded by the agency",
       "invalid": "This promo code is not valid for this booking"
     },
+    "campaign": {
+      "discount": "Campaign price ({{name}})",
+      "fundedNote": "Campaign discount funded by the agency"
+    },
     "title": "Checkout",
     "secureProcess": "Manual payment to the agency",
     "goBack": "Go back",

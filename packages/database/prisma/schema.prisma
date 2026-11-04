@@ -479,6 +479,7 @@ model AgencyProfile {
   tripSessions       TripSession[]
   bookings           Booking[]
   promoCodes         PromoCode[]
+  sessionPriceRules  SessionPriceRule[]
   quoteRequests      QuoteRequest[]
   customTripOffers   CustomTripOffer[]
   paymentTransactions PaymentTransaction[]
@@ -881,6 +882,17 @@ model Booking {
   promoCode                   String?
   discountAmount              Decimal     @default(0) @db.Decimal(18, 2)
   promoSnapshot               Json?
+  // #755: campaign/session pricing — an agency price rule applied to
+  // the session WITHOUT a code. campaignDiscountAmount is what the
+  // rule granted (>= 0); campaignSnapshot is the immutable record
+  // ({ ruleId, name, scope, discountType, discountValue, baseTotal,
+  // discountAmount, totalAmount, stacksWithPromoCode, currency }).
+  // totalAmount already reflects BOTH discounts; reconciliation:
+  // baseTotal = campaignDiscountAmount + discountAmount + totalAmount.
+  priceRuleId                 String?
+  priceRuleRecord             SessionPriceRule? @relation(fields: [priceRuleId], references: [id], onDelete: SetNull)
+  campaignDiscountAmount      Decimal     @default(0) @db.Decimal(18, 2)
+  campaignSnapshot            Json?
   // #694: the booked session was PRIVATE (per-group exclusive lock).
   // Snapshotted so a later session edit cannot rewrite the booking's
   // nature; private bookings never enter PENDING_MINIMUM.
@@ -1536,6 +1548,42 @@ model PromoCode {
 
   @@unique([agencyId, code])
   @@index([agencyId, isActive])
+}
+
+// #755: campaign/session pricing — an agency-owned price rule applied
+// automatically to bookings of a trip template (templateId set,
+// sessionId null) or of one specific session (sessionId set), with NO
+// code for the traveller to enter. The agency funds 100% of the
+// discount, exactly like its promo codes (#778). Eligibility window +
+// usage cap (maxUses) + optional budget cap (budgetCap, tracked by
+// discountGranted) bound the campaign; stacksWithPromoCode (default
+// false) decides whether it combines with a promo code on the same
+// booking. Application is snapshotted onto the booking; deactivating
+// or editing a rule never rewrites a booked snapshot.
+model SessionPriceRule {
+  id                  String            @id @default(cuid())
+  agencyId            String
+  agency              AgencyProfile     @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  templateId          String?
+  sessionId           String?
+  name                String
+  discountType        PromoDiscountType
+  discountValue       Decimal           @db.Decimal(18, 2)
+  startsAt            DateTime?
+  endsAt              DateTime?
+  maxUses             Int?
+  usedCount           Int               @default(0)
+  budgetCap           Decimal?          @db.Decimal(18, 2)
+  discountGranted     Decimal           @default(0) @db.Decimal(18, 2)
+  stacksWithPromoCode Boolean           @default(false)
+  isActive            Boolean           @default(true)
+  bookings            Booking[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@index([agencyId, isActive])
+  @@index([agencyId, sessionId])
+  @@index([agencyId, templateId])
 }
 
 // Wishlist
