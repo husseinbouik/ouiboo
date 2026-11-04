@@ -47,6 +47,7 @@ describe('HelpCentrePage (#446)', () => {
     render(<HelpCentrePage />);
     expect(screen.getByText('help.title')).not.toBeNull();
     expect(screen.getByText('help.faq.bookingConfirmation.question')).not.toBeNull();
+    expect(screen.getByText('help.faq.insuranceCoverage.question')).not.toBeNull();
     expect(screen.getByText('help.form.title')).not.toBeNull();
     expect(screen.getByLabelText(/help\.form\.subject/)).not.toBeNull();
   });

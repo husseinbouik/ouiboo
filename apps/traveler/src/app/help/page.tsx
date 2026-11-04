@@ -29,6 +29,9 @@ const FAQ_IDS = [
   'paymentRejected',
   'refundTiming',
   'refundStatus',
+  // #775 (Council S6): "Am I insured when I book?" — the agency's RC
+  // is not personal travel insurance; Ouiboo does not sell insurance.
+  'insuranceCoverage',
   'tripEmergency',
   'normalSupport',
   'complaint',
