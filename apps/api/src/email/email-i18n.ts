@@ -242,7 +242,7 @@ const en = {
       'Amount to be refunded: {{amount}} {{currency}}. Your payment went directly to {{agencyName}}, so the refund comes from them too — OuiBoo never holds your money.',
     agencyFallback: 'the agency',
     dueStatus:
-      'The agency has until {{dueDate}} to complete your refund, and we chase it for you if it slips. You can follow the refund status any time in your bookings: {{url}}',
+      'The agency has until {{dueDate}} to initiate your refund, and we chase it for you if it slips. You can follow the refund status any time in your bookings: {{url}}',
     status: 'You can follow the refund status any time in your bookings: {{url}}',
     support:
       'Questions? Email OuiBoo support at {{supportEmail}} — we reply within 48 hours. If the refund deadline passes without your money arriving, contact the same address and we will escalate it with the agency.',
@@ -439,7 +439,7 @@ const fr: EmailStrings = {
       "Montant à rembourser : {{amount}} {{currency}}. Votre paiement a été effectué directement à {{agencyName}}, le remboursement viendra donc également de sa part — OuiBoo ne détient jamais votre argent.",
     agencyFallback: "l'agence",
     dueStatus:
-      "L'agence a jusqu'au {{dueDate}} pour effectuer votre remboursement, et nous la relançons pour vous en cas de retard. Vous pouvez suivre l'état de votre remboursement à tout moment dans vos réservations : {{url}}",
+      "L'agence a jusqu'au {{dueDate}} pour initier votre remboursement, et nous la relançons pour vous en cas de retard. Vous pouvez suivre l'état de votre remboursement à tout moment dans vos réservations : {{url}}",
     status:
       "Vous pouvez suivre l'état de votre remboursement à tout moment dans vos réservations : {{url}}",
     support:
@@ -618,7 +618,7 @@ const ar: EmailStrings = {
       'المبلغ المسترد: {{amount}} {{currency}}. تم دفع مبلغك مباشرة إلى {{agencyName}}، لذا سيأتي الاسترداد منها أيضاً — لا تحتفظ OuiBoo بأموالك أبداً.',
     agencyFallback: 'الوكالة',
     dueStatus:
-      'أمام الوكالة مهلة حتى {{dueDate}} لإتمام استردادك، وسنتابع الأمر نيابة عنك إذا تأخر. يمكنك متابعة حالة الاسترداد في أي وقت من حجوزاتك: {{url}}',
+      'أمام الوكالة مهلة حتى {{dueDate}} لبدء استردادك، وسنتابع الأمر نيابة عنك إذا تأخر. يمكنك متابعة حالة الاسترداد في أي وقت من حجوزاتك: {{url}}',
     status: 'يمكنك متابعة حالة الاسترداد في أي وقت من حجوزاتك: {{url}}',
     support:
       'أسئلة؟ راسل دعم OuiBoo على {{supportEmail}} — نرد خلال 48 ساعة. إذا مر الموعد النهائي للاسترداد دون وصول أموالك، تواصل مع نفس العنوان وسنصعّد الأمر مع الوكالة.',
