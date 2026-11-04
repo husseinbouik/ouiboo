@@ -297,13 +297,13 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
 
     async function seedWorld() {
         await db.tripTemplate.create({
-            data: tripTemplateFixture({ id: TEMPLATE_A, agencyId: AGENCY_A, title: 'Atlas Trek — Agency A', status: 'ACTIVE' } as any),
+            data: tripTemplateFixture({ id: TEMPLATE_A, agencyId: AGENCY_A, title: 'Atlas Trek — Agency A', status: 'ACTIVE', destinationSlug: 'tangier' } as any),
         });
         await db.tripTemplate.create({
             data: tripTemplateFixture({ id: TEMPLATE_A_DRAFT, agencyId: AGENCY_A, title: 'Unpublished Draft — Agency A', status: 'DRAFT' } as any),
         });
         await db.tripTemplate.create({
-            data: tripTemplateFixture({ id: TEMPLATE_B, agencyId: AGENCY_B, title: 'Coastal Ride — Agency B', status: 'ACTIVE' } as any),
+            data: tripTemplateFixture({ id: TEMPLATE_B, agencyId: AGENCY_B, title: 'Coastal Ride — Agency B', status: 'ACTIVE', destinationSlug: 'tetouan' } as any),
         });
 
         const sessionData = (id: string, templateId: string, agencyId: string, availableSeats: number) => ({
@@ -1016,30 +1016,31 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
         });
 
         it('custom-trip requests: an unmatched agency gets 404 by id and an empty read surface; the matched agency reads pseudonymised', async () => {
+            // Matching is seeded: agency A's ACTIVE template carries
+            // destinationSlug 'tangier' (the request's cluster), agency
+            // B's carries 'tetouan' — so A is matched, B is not.
+            // Per-request timeouts: a stalled request must fail THIS
+            // test fast instead of hanging the suite.
             process.env.CUSTOM_TRIP_REQUESTS_ENABLED = 'true';
             try {
-                // Match agency A only: its ACTIVE template carries the
-                // request’s destination slug; agency B’s does not.
-                await db.tripTemplate.update({ where: { id: TEMPLATE_A }, data: { destinationSlug: 'tangier' } as any });
-
-                const byB = await request(app.getHttpServer).get(`/custom-trips/requests/agency/${CUSTOM_REQUEST_A}`).set(auth(tokenB));
+                const byB = await request(app.getHttpServer()).get(`/custom-trips/requests/agency/${CUSTOM_REQUEST_A}`).set(auth(tokenB)).timeout(15000);
                 expect(byB.status).toBe(404);
                 expect(bodyText(byB)).not.toContain(CUSTOM_REQUEST_REF);
 
-                const listB = await request(app.getHttpServer()).get('/custom-trips/requests/agency').set(auth(tokenB)).expect(200);
+                const listB = await request(app.getHttpServer()).get('/custom-trips/requests/agency').set(auth(tokenB)).timeout(15000).expect(200);
                 expect(bodyText(listB)).not.toContain(CUSTOM_REQUEST_A);
                 expect(bodyText(listB)).not.toContain(CUSTOM_REQUEST_REF);
 
-                const byA = await request(app.getHttpServer()).get(`/custom-trips/requests/agency/${CUSTOM_REQUEST_A}`).set(auth(tokenA)).expect(200);
+                const byA = await request(app.getHttpServer()).get(`/custom-trips/requests/agency/${CUSTOM_REQUEST_A}`).set(auth(tokenA)).timeout(15000).expect(200);
                 expect(bodyText(byA)).toContain(CUSTOM_REQUEST_REF);
-                // Pseudonymised: the traveller’s identity never rides
+                // Pseudonymised: the traveller's identity never rides
                 // the agency read surface before acceptance.
                 expect(bodyText(byA)).not.toContain('ct-traveler-1@ouiboo.test');
                 expect(bodyText(byA)).not.toContain('Cross Tenant Traveler One');
             } finally {
                 delete process.env.CUSTOM_TRIP_REQUESTS_ENABLED;
             }
-        });
+    });
     });
 
     // ------------------------------------------------------------------
