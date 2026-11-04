@@ -40,6 +40,17 @@ There is no `tenants` module in `apps/api` — tenancy isolation lives in
 `database/` (93.07% lines) and `agency/` (83.78% lines), both above the
 global floor, so no separate per-module floor was set for them.
 
+**Gating-environment re-measurement (CI, PR #824):** Actions checks out
+the PR *merge* tree, which by then included concurrently merged staging
+work — a 112th suite (`messages/messages.safety.spec.ts`) and its module
+changes. In that tree every number above reproduced exactly except
+`messages`, which measured lines 74.80 / statements 73.90 / branches
+64.71 / **functions 52.50**. The `messages` functions floor is therefore
+set from the gating-environment measurement (52), not the local one
+(53.57) — floors are always set from the environment that enforces them.
+Global in the same CI run: lines 68.77 / statements 67.99 / branches
+63.69 / functions 63.66 — above the global floors below.
+
 ## Floors in force (floor of the measured values)
 
 | Scope | Lines | Statements | Branches | Functions |
@@ -48,7 +59,7 @@ global floor, so no separate per-module floor was set for them.
 | payments | 48 | 48 | 42 | 50 |
 | bookings | 80 | 79 | 75 | 66 |
 | auth | 71 | 71 | 58 | 80 |
-| messages | 71 | 70 | 60 | 53 |
+| messages | 71 | 70 | 60 | 52 |
 
 These replace the older, never-enforced global placeholder
 (50 branches / 60 elsewhere) that no CI job actually applied.
