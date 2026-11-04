@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getInitialLanguage } from '@ouiboo/i18n/server'
 import type { SupportedLanguage } from '@ouiboo/i18n/server'
-import { GUIDE_CITY_SLUGS, VERIFICATION_PATH, guideCity, guidePath, guidesContent } from '../../lib/guides'
+import { GUIDE_CITY_SLUGS, ORIGIN_SPAIN_TANGIER_PATH, VERIFICATION_PATH, guideCity, guidePath, guidesContent } from '../../lib/guides'
 import { absoluteLandingUrl } from '../../lib/site'
 import en from '../../../public/locales/en/translation.json'
 import fr from '../../../public/locales/fr/translation.json'
@@ -72,6 +72,22 @@ export default async function GuidesIndexPage() {
               </div>
             )
           })}
+        </section>
+
+        {/* #779: the Spain → Tangier origin page is listed with the
+            city guides — same Layer A discipline, arrival content
+            rather than a destination guide. */}
+        <section className="mt-6">
+          <div className="rounded-3xl border border-border bg-card p-7 shadow-sm">
+            <h2 className="text-2xl font-bold">{shared.spainTangier.title}</h2>
+            <p className="mt-2 leading-7 text-muted-foreground">{shared.spainTangier.description}</p>
+            <Link
+              href={ORIGIN_SPAIN_TANGIER_PATH}
+              className="mt-4 inline-block font-semibold text-orange-700 hover:underline"
+            >
+              {copy.readGuide} <span aria-hidden="true" className="inline-block rtl:-scale-x-100">→</span>
+            </Link>
+          </div>
         </section>
 
         <p className="mt-12">

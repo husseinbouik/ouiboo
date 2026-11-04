@@ -1,4 +1,4 @@
-import { GUIDE_CITY_SLUGS, GUIDE_PATHS, buildFaqJsonLd, buildTouristTripJsonLd, guideCity, guidesContent } from './guides';
+import { GUIDE_CITY_SLUGS, GUIDE_PATHS, ORIGIN_SPAIN_TANGIER_PATH, buildFaqJsonLd, buildTouristTripJsonLd, guideCity, guidesContent } from './guides';
 import { layerBContent } from './inventory';
 
 /**
@@ -26,7 +26,7 @@ function allStrings(value: unknown): string[] {
 describe('Northern Cluster Layer A (#683)', () => {
     it('exposes exactly the three city guides plus the verification explainer', () => {
         expect(GUIDE_CITY_SLUGS).toEqual(['tangier', 'tetouan', 'chefchaouen']);
-        expect(GUIDE_PATHS).toEqual(['/guides/tangier', '/guides/tetouan', '/guides/chefchaouen', '/verification']);
+        expect(GUIDE_PATHS).toEqual(['/guides/tangier', '/guides/tetouan', '/guides/chefchaouen', ORIGIN_SPAIN_TANGIER_PATH, '/verification']);
     });
 
     it('builds valid FAQPage + TouristTrip JSON-LD from the rendered content', () => {
@@ -78,6 +78,71 @@ describe('Northern Cluster Layer A (#683)', () => {
             expect(guidesContent(locale).tangier.worldCup).toBeDefined();
             expect(guidesContent(locale).verification.steps).toHaveLength(4);
             expect(guidesContent(locale).verification.datedLine).toMatch(/2026/);
+        }
+    });
+});
+
+
+describe('Spain → Tangier origin page (#779)', () => {
+    it('is registered at one guides-system path, in every locale', () => {
+        expect(ORIGIN_SPAIN_TANGIER_PATH).toBe('/guides/spain-to-tangier');
+        expect(GUIDE_PATHS).toContain(ORIGIN_SPAIN_TANGIER_PATH);
+        for (const locale of LOCALES) {
+            const origin = guidesContent(locale).spainTangier;
+            expect(origin.title.length).toBeGreaterThan(5);
+            expect(origin.intro.length).toBeGreaterThan(40);
+            // Transport sections: Algeciras ferry, Tarifa ferry, flights.
+            expect(origin.sections).toHaveLength(3);
+            expect(origin.faq).toHaveLength(3);
+            const faq = buildFaqJsonLd(origin.faq);
+            expect(faq.mainEntity).toHaveLength(3);
+        }
+    });
+
+    it('links out to operators and official sources instead of stating volatile facts', () => {
+        for (const locale of LOCALES) {
+            const origin = guidesContent(locale).spainTangier;
+            const hrefs = [
+                ...origin.sections.flatMap((s) => (s.links ?? []).map((l) => l.href)),
+                ...origin.entry.links.map((l) => l.href),
+            ];
+            // Ferry operators + the official Tangier Med port site —
+            // matched on the parsed hostname, never a raw substring.
+            const hosts = hrefs.map((h) => new URL(h).hostname);
+            const hasHost = (domain: string) =>
+                hosts.some((host) => host === domain || host.endsWith(`.${domain}`));
+            expect(hasHost('balearia.com')).toBe(true);
+            expect(hasHost('aml-ferry.com')).toBe(true);
+            expect(hasHost('dfds.com')).toBe(true);
+            expect(hasHost('tangermedport.com')).toBe(true);
+            // Entry section points at the official Accès Maroc portal.
+            expect(origin.entry.links.map((l) => l.href)).toEqual(['https://www.acces-maroc.ma']);
+            for (const href of hrefs) expect(href.startsWith('https://')).toBe(true);
+            // No crossing-time or schedule promises in the copy itself:
+            // durations and clock times never appear in origin strings.
+            const strings = allStrings(origin);
+            for (const text of strings) {
+                expect({ locale, text, match: /\b\d+\s?(min|minutes|hours|heures|دقيقة|دقائق|ساعة)\b/i.test(text) }).toEqual(
+                    expect.objectContaining({ match: false }),
+                );
+            }
+        }
+    });
+
+    it('entry basics are dated and framed as general information', () => {
+        for (const locale of LOCALES) {
+            const entry = guidesContent(locale).spainTangier.entry;
+            expect(entry.datedLine).toMatch(/2026/);
+            expect(entry.text).toMatch(/2026/);
+        }
+    });
+
+    it('ties into the Tangier city guide and the onward cluster guides', () => {
+        for (const locale of LOCALES) {
+            const origin = guidesContent(locale).spainTangier;
+            expect(origin.tangierGuideLink.length).toBeGreaterThan(3);
+            expect(origin.cluster.links.map((l) => l.href)).toEqual(['/guides/tetouan', '/guides/chefchaouen']);
+            expect(origin.how.text.length).toBeGreaterThan(40);
         }
     });
 });
