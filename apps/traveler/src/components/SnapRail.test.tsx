@@ -403,6 +403,30 @@ describe('SnapRail (#490)', () => {
         });
     });
 
+    describe('keyboard-openable slides (#656 — trip-page rail only)', () => {
+        it('slides are focusable buttons and Enter/Space opens the tapped photo', () => {
+            const onSlideClick = jest.fn();
+            const { container } = renderRail({ slideKeyboardOpen: true, onSlideClick });
+            // The dot indicators share the viewImage label; the slide
+            // is the DIV carrying button semantics.
+            const slide = container.querySelector('div[role="button"][aria-label="View image 2"]') as HTMLElement;
+            expect(slide).not.toBeNull();
+            expect(slide.getAttribute('tabindex')).toBe('0');
+            slide.focus();
+            expect(document.activeElement).toBe(slide);
+            fireEvent.keyDown(slide, { key: 'Enter' });
+            expect(onSlideClick).toHaveBeenCalledWith(1);
+            fireEvent.keyDown(slide, { key: ' ' });
+            expect(onSlideClick).toHaveBeenCalledWith(1);
+            expect(onSlideClick).toHaveBeenCalledTimes(2);
+        });
+
+        it('without the flag (cards) slides stay non-interactive divs', () => {
+            const { container } = renderRail({ onSlideClick: jest.fn() });
+            expect(container.querySelectorAll('div[role="button"]')).toHaveLength(0);
+        });
+    });
+
     describe('loop wrap by drag (#490 round 5)', () => {
         it('a native drag settle onto the first photo’s clone reports photo 1 and repositions to the real copy', () => {
             const { viewport } = renderRail();

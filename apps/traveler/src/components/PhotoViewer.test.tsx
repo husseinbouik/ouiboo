@@ -43,6 +43,13 @@ beforeAll(() => {
   // jsdom does not implement element scrollTo; the rail calls it on
   // the jump path (its state updates land regardless).
   (window.HTMLElement.prototype as any).scrollTo = jest.fn();
+  // #663: the filmstrip follow effect calls scrollIntoView on the
+  // active thumbnail; jsdom does not implement it.
+  (window.HTMLElement.prototype as any).scrollIntoView = jest.fn();
+});
+
+beforeEach(() => {
+  ((window.HTMLElement.prototype as any).scrollIntoView as jest.Mock).mockClear();
 });
 
 describe('PhotoViewer (#623)', () => {
@@ -84,6 +91,35 @@ describe('PhotoViewer (#623)', () => {
     expect(document.activeElement).toBe(screen.getByLabelText('common.closeDialog'));
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('#663: the filmstrip scrolls the active thumbnail into view on index change', () => {
+    render(
+      <PhotoViewer images={IMAGES} captionFallback="Atlas trek" initialIndex={0} onClose={jest.fn()} />,
+    );
+    const scrollIntoView = (window.HTMLElement.prototype as any).scrollIntoView as jest.Mock;
+    // Opening scrolls the initially-active thumbnail into view.
+    expect(scrollIntoView).toHaveBeenCalled();
+    scrollIntoView.mockClear();
+    // Stepping with the keyboard moves the active thumb; the strip follows.
+    fireEvent.keyDown(document, { key: 'ArrowRight' });
+    expect(screen.getByTestId('photo-viewer-counter').textContent).toBe('2 / 3');
+    expect(scrollIntoView).toHaveBeenCalledWith(
+      expect.objectContaining({ inline: 'center', block: 'nearest' }),
+    );
+    const activeThumb = screen.getByLabelText('View image 2');
+    expect(scrollIntoView.mock.instances).toContain(activeThumb);
+  });
+
+  it('#663: the viewer chrome carries safe-area insets', () => {
+    render(
+      <PhotoViewer images={IMAGES} captionFallback="Atlas trek" initialIndex={0} onClose={jest.fn()} />,
+    );
+    const viewer = screen.getByTestId('photo-viewer');
+    expect(viewer.className).toContain('pt-[env(safe-area-inset-top)]');
+    expect(viewer.className).toContain('pb-[env(safe-area-inset-bottom)]');
+    expect(viewer.className).toContain('ps-[env(safe-area-inset-left)]');
+    expect(viewer.className).toContain('pe-[env(safe-area-inset-right)]');
   });
 
   it('locks body scroll while open and restores it on unmount', () => {

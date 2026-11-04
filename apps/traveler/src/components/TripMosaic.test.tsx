@@ -15,6 +15,8 @@ jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, options?: any) => {
       if (key === 'tripCard.viewImage') return `View image ${options?.count}`;
+      if (key === 'tripDetails.viewMoreImages') return `View ${options?.count} more images`;
+      if (key === 'tripDetails.morePhotos') return 'More photos';
       return key;
     },
     i18n: { language: 'en', dir: () => 'ltr' },
@@ -46,7 +48,21 @@ describe('TripMosaic (#624)', () => {
       <TripMosaic images={[...FIVE, 'https://cdn.example.com/f.jpg']} captionFallback="Atlas trek" onPhotoClick={jest.fn()} />,
     );
     expect(screen.queryByLabelText('View image 6')).toBeNull();
-    expect(screen.getByLabelText('View image 5')).not.toBeNull();
+    expect(screen.getByLabelText('View image 5 — View 1 more images')).not.toBeNull();
+  });
+
+  it('#663: the last cell carries a "+N · More photos" affordance for the hidden photos', () => {
+    const seven = [...FIVE, 'https://cdn.example.com/f.jpg', 'https://cdn.example.com/g.jpg'];
+    render(<TripMosaic images={seven} captionFallback="Atlas trek" onPhotoClick={jest.fn()} />);
+    const badge = screen.getByTestId('trip-mosaic-more-photos');
+    expect(badge.textContent).toContain('+2');
+    expect(badge.textContent).toContain('More photos');
+    // No badge when nothing is hidden.
+  });
+
+  it('#663: no "+N" badge when five or fewer photos exist', () => {
+    render(<TripMosaic images={FIVE} captionFallback="Atlas trek" onPhotoClick={jest.fn()} />);
+    expect(screen.queryByTestId('trip-mosaic-more-photos')).toBeNull();
   });
 
   it('degrades cleanly with fewer photos', () => {
