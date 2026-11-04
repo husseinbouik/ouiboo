@@ -12,6 +12,7 @@ jest.mock('@/lib/api-client', () => ({
 }));
 
 jest.mock('@ouiboo/utils', () => ({
+    ...jest.requireActual('@ouiboo/utils'),
     copyShareLink: jest.fn(async () => true),
 }));
 
