@@ -546,7 +546,11 @@
       "supportResponseRate": "Première réponse du support sous 48 heures",
       "supportTickets": "{{count}} tickets d'assistance ouverts",
       "supportTicketsDetail": "{{responded}} avec une première réponse, dont {{within}} sous 48 heures",
-      "supportAwaiting": "{{count}} tickets ouverts sans première réponse depuis plus de 48 heures"
+      "supportAwaiting": "{{count}} tickets ouverts sans première réponse depuis plus de 48 heures",
+      "agencyGmv": "GMV des agences / recettes des agences",
+      "agencyGmvDetail": "Argent des voyageurs payé aux agences pour {{count}} réservations terminées dans cette fenêtre. Ce n'est pas le revenu d'Ouiboo.",
+      "ouibooRevenueFreeBeta": "Revenus Ouiboo (bêta gratuite) : 0 MAD",
+      "funnelSessionsNote": "Les étapes de l’entonnoir comptent les TripSessions créées (sessions / offre), pas des vues de voyageurs."
     },
     "diagnostics": {
       "title": "Build et drapeaux",

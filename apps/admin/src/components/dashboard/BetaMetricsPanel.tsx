@@ -144,6 +144,21 @@ export default function BetaMetricsPanel({ t, metrics, isLoading = false, isErro
             )}
           </div>
 
+          {/* #631(b): money definitions on the founder readout — agency
+              takings are labelled Agency GMV, never "revenue"; Ouiboo
+              revenue in the free beta is explicitly 0 MAD. */}
+          {showMetrics.takings && (
+            <Card className="border-none shadow-sm rounded-2xl">
+              <CardContent className="p-5 space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t('dashboard.betaMetrics.agencyGmv')}</p>
+                <p className="text-2xl font-black text-foreground">{showMetrics.takings.agencyGmvMad} MAD</p>
+                <p className="text-xs text-muted-foreground">{t('dashboard.betaMetrics.agencyGmvDetail', { count: showMetrics.bookings.completed })}</p>
+                <p className="text-sm font-bold text-foreground">{t('dashboard.betaMetrics.ouibooRevenueFreeBeta')}</p>
+                <p className="text-xs text-muted-foreground">{t('dashboard.betaMetrics.funnelSessionsNote')}</p>
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="border-none shadow-sm rounded-2xl">
             <CardContent className="p-5 space-y-3">
               <h3 className="text-sm font-bold text-foreground">{t('dashboard.betaMetrics.exitCriteria')}</h3>

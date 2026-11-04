@@ -546,7 +546,11 @@
       "supportResponseRate": "الرد الأول من الدعم خلال 48 ساعة",
       "supportTickets": "{{count}} تذكرة دعم مفتوحة",
       "supportTicketsDetail": "{{responded}} تلقت ردًا أول، منها {{within}} خلال 48 ساعة",
-      "supportAwaiting": "{{count}} تذكرة مفتوحة تنتظر الرد الأول منذ أكثر من 48 ساعة"
+      "supportAwaiting": "{{count}} تذكرة مفتوحة تنتظر الرد الأول منذ أكثر من 48 ساعة",
+      "agencyGmv": "إجمالي مبيعات الوكالات / مداخيل الوكالات",
+      "agencyGmvDetail": "أموال المسافرين المدفوعة للوكالات مقابل {{count}} حجز مكتمل في هذه الفترة. ليست مداخيل Ouiboo.",
+      "ouibooRevenueFreeBeta": "مداخيل Ouiboo (النسخة التجريبية المجانية): 0 درهم",
+      "funnelSessionsNote": "خطوات القمع تعدّ جلسات الرحلات المنشأة (جلسات / عرض)، وليست مشاهدات المسافرين."
     },
     "diagnostics": {
       "title": "البناء والعلامات",
