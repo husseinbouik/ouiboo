@@ -16,15 +16,17 @@ const TEST_SECRET = ['unit', 'test', 'signing', 'key'].join('-');
 describe('UploadService.resolveStorageKey / deleteFile (#251/B23)', () => {
     const jwt = new JwtService({ secret: TEST_SECRET });
     const deleteObject = jest.fn();
+    const readObject = jest.fn();
     let service: UploadService;
 
     beforeEach(async () => {
         jest.clearAllMocks();
         deleteObject.mockResolvedValue(undefined);
+        readObject.mockResolvedValue({ data: Buffer.from('x'), contentType: 'image/png' });
         service = new UploadService({ validate: jest.fn() } as unknown as UploadSafetyService, jwt);
         // Wait out the real provider init, then substitute the storage stub.
         await (service as unknown as { initialization: Promise<void> }).initialization;
-        (service as unknown as { storageProvider: unknown }).storageProvider = { delete: deleteObject };
+        (service as unknown as { storageProvider: unknown }).storageProvider = { delete: deleteObject, read: readObject };
     });
 
     it.each([
@@ -33,6 +35,9 @@ describe('UploadService.resolveStorageKey / deleteFile (#251/B23)', () => {
         ['S3 public-url form', 'https://cdn.ouiboo.test/trips/agency-1/photo.png', 'trips/agency-1/photo.png'],
         ['S3 virtual-hosted form', 'https://ouiboo.s3.eu-west-3.amazonaws.com/private/user-1/rc.pdf', 'private/user-1/rc.pdf'],
         ['local media URL form', 'http://localhost:3010/api/v1/media/trips/agency-1/photo.png', 'trips/agency-1/photo.png'],
+        ['raw avatars key (#630)', 'avatars/user-1/avatar.png', 'avatars/user-1/avatar.png'],
+        ['avatars local media URL form (#630)', 'http://localhost:3010/api/v1/media/avatars/user-1/avatar.png', 'avatars/user-1/avatar.png'],
+        ['avatars S3 public-url form (#630)', 'https://cdn.ouiboo.test/avatars/user-1/avatar.png', 'avatars/user-1/avatar.png'],
         ['query string is ignored', 'https://cdn.ouiboo.test/trips/agency-1/photo.png?v=2', 'trips/agency-1/photo.png'],
     ])('resolves %s', (_label, reference, expected) => {
         expect(service.resolveStorageKey(reference)).toBe(expected);
@@ -45,7 +50,7 @@ describe('UploadService.resolveStorageKey / deleteFile (#251/B23)', () => {
         ['external URL', 'https://evil.example.com/id-scan.jpg'],
         ['API download URL (carries no key)', 'https://api.ouiboo.test/api/v1/bookings/booking-1/payment-proof/file'],
         ['path traversal attempt', 'trips/../../etc/passwd'],
-        ['unrelated path', 'https://cdn.ouiboo.test/avatars/user-1.png'],
+        ['unrelated path', 'https://cdn.ouiboo.test/images/user-1.png'],
     ])('does not resolve %s', (_label, reference) => {
         expect(service.resolveStorageKey(reference as string)).toBeNull();
     });
@@ -60,6 +65,22 @@ describe('UploadService.resolveStorageKey / deleteFile (#251/B23)', () => {
             service.deleteFileByReference('https://cdn.ouiboo.test/trips/agency-1/photo.png'),
         ).resolves.toBe(true);
         expect(deleteObject).toHaveBeenCalledWith('trips/agency-1/photo.png');
+    });
+
+    it('deleteFileByReference deletes an avatar object behind a media URL (#630)', async () => {
+        await expect(
+            service.deleteFileByReference('http://localhost:3010/api/v1/media/avatars/user-1/avatar.png'),
+        ).resolves.toBe(true);
+        expect(deleteObject).toHaveBeenCalledWith('avatars/user-1/avatar.png');
+    });
+
+    it.each([
+        ['empty key', ''],
+        ['whitespace-only key', '   '],
+        ['missing key', undefined],
+    ])('readFile rejects a %s with 404 instead of asking the provider (#630)', async (_label, key) => {
+        await expect(service.readFile(key as string)).rejects.toThrow('File not found');
+        expect(readObject).not.toHaveBeenCalled();
     });
 
     it('deleteFileByReference is a no-op for non-platform references', async () => {

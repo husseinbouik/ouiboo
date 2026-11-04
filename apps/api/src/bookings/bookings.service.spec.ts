@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BookingsService, bookingIdempotencyPayloadHash } from './bookings.service';
 import { DatabaseService } from '../database/database.service';
-import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { UploadService } from '../upload/upload.service';
 import { EmailService } from '../email/email.service';
@@ -650,6 +650,17 @@ describe('BookingsService', () => {
 
         it('rejects a user who is not owner, agency, or admin', async () => {
             await expect(service.getPaymentProofFile('booking-123', 'user-999')).rejects.toThrow('Unauthorized');
+        });
+
+        it('404s a detached proof (imageUrl emptied by erasure, #630) instead of reading an empty key', async () => {
+            db.booking.findUnique.mockResolvedValue({
+                ...proofBooking,
+                paymentProof: { imageUrl: '' },
+            });
+
+            await expect(service.getPaymentProofFile('booking-123', 'user-123', 'TRAVELER'))
+                .rejects.toThrow(NotFoundException);
+            expect(uploadService.readFile).not.toHaveBeenCalled();
         });
     });
 

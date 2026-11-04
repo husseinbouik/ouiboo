@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, ConflictException, ForbiddenException, UnauthorizedException, Optional } from '@nestjs/common';
+import { Injectable, BadRequestException, ConflictException, ForbiddenException, NotFoundException, UnauthorizedException, Optional } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { createHash } from 'node:crypto';
 import { CURRENT_BOOKING_TERMS_VERSION, UserRole } from '@ouiboo/types';
@@ -1319,7 +1319,15 @@ export class BookingsService {
         // UploadService.readFile, which resolves the stored (server-generated)
         // key through the provider's canonicalized, containment-checked path
         // handling.
-        const { data, contentType } = await this.uploadService.readFile(booking.paymentProof.imageUrl);
+        // #630: erasure detaches a proof by emptying imageUrl. An empty
+        // key must 404 here — passing '' to storage returns a
+        // bucket-listing document with HTTP 200.
+        const proofKey = booking.paymentProof.imageUrl;
+        if (!proofKey?.trim()) {
+            throw new NotFoundException('Payment proof not found');
+        }
+
+        const { data, contentType } = await this.uploadService.readFile(proofKey);
         return { buffer: data, contentType };
     }
 

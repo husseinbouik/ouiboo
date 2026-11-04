@@ -55,6 +55,12 @@ export class UploadService {
     }
 
     async readFile(key: string) {
+        // #630: an empty key must never reach the provider — the S3
+        // backend answers a read of '' with a bucket-listing document
+        // and HTTP 200 instead of an error.
+        if (!key?.trim()) {
+            throw new NotFoundException('File not found');
+        }
         const provider = await this.getStorageProvider();
         return provider.read(key);
     }
@@ -146,8 +152,10 @@ export class UploadService {
      * `{origin}/api/v1/media/{key}`). API download URLs
      * (`{origin}/api/v1/bookings/{id}/payment-proof/file`) carry no key
      * and resolve to null, as do external URLs. Every platform key starts
-     * with one of the two root folders, so the key is recovered from the
+     * with one of the root folders, so the key is recovered from the
      * first matching path segment and re-validated as a safe key.
+     * (#630: `avatars/` holds user avatars and agency logos — refs under
+     * it must resolve too, or account erasure silently skips them.)
      */
     resolveStorageKey(reference: string | null | undefined): string | null {
         if (!reference) {
@@ -161,7 +169,7 @@ export class UploadService {
             // Keep the raw value; the safe-key check below rejects garbage.
         }
         const normalized = decoded.replace(/\\/g, '/');
-        for (const root of [`${PRIVATE_FILE_PREFIX}/`, 'trips/']) {
+        for (const root of [`${PRIVATE_FILE_PREFIX}/`, 'trips/', 'avatars/']) {
             const nestedAt = normalized.indexOf(`/${root}`);
             const candidate = nestedAt >= 0
                 ? normalized.slice(nestedAt + 1)
