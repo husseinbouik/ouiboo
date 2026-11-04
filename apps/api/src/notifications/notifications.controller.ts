@@ -50,6 +50,41 @@ export class NotificationsController {
     return { count };
   }
 
+  // #852: the traveller notifications page loads its list from the
+  // controller root and reads { items }. The data has always existed —
+  // it was only exposed at /notifications/history in the email-log
+  // shape, so the page rendered its empty state for every user.
+  // Delegate to the same history query (same rows, ordering and
+  // pagination) and reshape to the page contract: title ← subject,
+  // type ← notificationType, createdAt ← sentAt. NotificationLog has
+  // no read state (statuses are SENT/FAILED/BOUNCED and the unread
+  // count treats SENT as unread), so read is false — the list and the
+  // #849 bell badge then agree.
+  @Get()
+  @ApiOperation({ summary: 'List current user notifications' })
+  async listNotifications(
+    @Request() req: any,
+    @Query('limit') limit?: string,
+    @Query('page') page?: string,
+  ) {
+    const { data, pagination } = await this.notificationsService.getNotificationHistory(
+      req.user.id,
+      limit ? Number(limit) : 50,
+      page ? Number(page) : 1,
+    );
+    return {
+      items: data.map((log: any) => ({
+        id: log.id,
+        title: log.subject ?? undefined,
+        message: log.message,
+        type: log.notificationType,
+        read: false,
+        createdAt: log.sentAt,
+      })),
+      pagination,
+    };
+  }
+
   @Get('history')
   @ApiOperation({ summary: 'Get current user notification history' })
   getHistory(@Request() req: any, @Query('limit') limit?: string, @Query('page') page?: string) {
