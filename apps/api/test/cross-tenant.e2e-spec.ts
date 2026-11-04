@@ -17,6 +17,8 @@ import { UploadModule } from '../src/upload/upload.module';
 import { MessagesModule } from '../src/messages/messages.module';
 import { InvoicesModule } from '../src/invoices/invoices.module';
 import { PaymentProvidersModule } from '../src/payment-providers/payment-providers.module';
+import { QuoteRequestsModule } from '../src/quote-requests/quote-requests.module';
+import { CustomTripsModule } from '../src/custom-trips/custom-trips.module';
 import { AdminModule } from '../src/admin/admin.module';
 import { UsersModule } from '../src/users/users.module';
 import { UserRole } from '@ouiboo/types';
@@ -48,6 +50,10 @@ jest.setTimeout(120_000);
  * to the database at all — the 'structural tenant isolation' block at
  * the bottom proves the DB itself rejects mismatched rows even when
  * application code (or a future bug) attempts them.
+ *
+ * #634 adds the findUnique-closure block: negative READ tests for the
+ * guarded point lookups the inventory enumerates (quote requests,
+ * payment attempts, booking pass, custom-trip requests).
  *
  * Intentional exceptions, asserted as such below:
  * - The public trip catalogue (GET /trips/:id) serves ACTIVE trips of
@@ -89,6 +95,12 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
     const CONVERSATION_ID = 'ct-conversation-1';
     const MESSAGE_ID = 'ct-message-1';
     const MERCHANT_A = 'CT-MERCH-A-001';
+    // #634 fixtures: quote request, payment attempt and custom-trip
+    // request owned by agency A / traveller 1.
+    const QUOTE_REQUEST_A = 'ct-quote-request-a';
+    const ATTEMPT_A = 'ct-attempt-a';
+    const CUSTOM_REQUEST_A = 'ct-custom-request-a';
+    const CUSTOM_REQUEST_REF = 'CTR-CT634A';
     // B22(e) export-scoping fixture: a retained-ledger payment record
     // on agency A's proof booking. The legacy custody tables this
     // block used before #429 (Wallet / WalletTransaction /
@@ -141,6 +153,8 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
                 MessagesModule,
                 InvoicesModule,
                 PaymentProvidersModule,
+                QuoteRequestsModule,
+                CustomTripsModule,
                 AdminModule,
                 UsersModule,
             ],
@@ -188,6 +202,9 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
 
     async function clearWorld() {
         if (!db) return;
+        await db.quoteRequest.deleteMany();
+        await db.customTripOffer.deleteMany();
+        await db.customTripRequest.deleteMany();
         await db.message.deleteMany();
         await db.conversation.deleteMany();
         await db.refundEvidence.deleteMany();
@@ -413,6 +430,54 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
                 externalMerchantId: MERCHANT_A,
                 onboardingStatus: 'CONNECTED',
                 paymentEnabled: true,
+            } as any,
+        });
+
+        // #634: a payment attempt on agency A's paid booking (profile
+        // above), a quote request addressed to agency A on its ACTIVE
+        // template, and a custom-trip request from traveller 1 naming
+        // the tangier cluster (matched to A only once its template
+        // carries that destinationSlug — set inside the test).
+        await db.paymentAttempt.create({
+            data: {
+                id: ATTEMPT_A,
+                bookingId: BOOKING_PAID,
+                agencyId: AGENCY_A,
+                paymentProfileId: 'ct-payment-profile-a',
+                stage: 'FULL',
+                amount: 1200,
+                currency: 'MAD',
+                provider: 'manual',
+                providerPaymentId: 'ct-manual-attempt-a',
+                idempotencyKey: 'ct-attempt-a-key',
+                status: 'PENDING',
+            } as any,
+        });
+        await db.quoteRequest.create({
+            data: {
+                id: QUOTE_REQUEST_A,
+                templateId: TEMPLATE_A,
+                agencyId: AGENCY_A,
+                travelerId: TRAVELER_1,
+                requestedStartDate: new Date('2027-07-10T00:00:00.000Z'),
+                requestedEndDate: new Date('2027-07-12T00:00:00.000Z'),
+                guestsCount: 2,
+                note: 'Cross-tenant quote probe',
+                status: 'PENDING',
+            } as any,
+        });
+        await db.customTripRequest.create({
+            data: {
+                id: CUSTOM_REQUEST_A,
+                publicRef: CUSTOM_REQUEST_REF,
+                travelerId: TRAVELER_1,
+                title: 'Cross-tenant custom probe',
+                destinationSlug: 'tangier',
+                requestedStartDate: new Date('2027-08-01T00:00:00.000Z'),
+                requestedEndDate: new Date('2027-08-03T00:00:00.000Z'),
+                guestsCount: 2,
+                status: 'PENDING',
+                expiresAt: new Date('2027-09-01T00:00:00.000Z'),
             } as any,
         });
 
@@ -867,6 +932,111 @@ describe('Cross-tenant isolation E2E (cross-tenant.e2e-spec)', () => {
             expect(bodyText(foreign)).not.toContain(MERCHANT_A);
 
             await request(app.getHttpServer()).get('/agency/payment-profile').set(auth(tokenT1)).expect(403);
+        });
+    });
+
+    // ------------------------------------------------------------------
+    // #634 findUnique closure — negative cross-tenant READs on the
+    // surfaces the inventory (docs/security/findunique-inventory.md)
+    // names as guarded point lookups: quote requests (loadOwned),
+    // payment attempts (assertCanView), the booking pass
+    // (getBookingPass) and custom-trip requests (destination match).
+    // Removing any of those guards turns the matching test red.
+    // ------------------------------------------------------------------
+    describe('findUnique closure (#634)', () => {
+        it('quote requests: a foreign agency/traveller never sees another tenant’s request, and the point-lookup guard denies a foreign quote', async () => {
+            const listB = await request(app.getHttpServer()).get('/quote-requests/agency').set(auth(tokenB)).expect(200);
+            expect(bodyText(listB)).not.toContain(QUOTE_REQUEST_A);
+
+            const listA = await request(app.getHttpServer()).get('/quote-requests/agency').set(auth(tokenA)).expect(200);
+            expect(bodyText(listA)).toContain(QUOTE_REQUEST_A);
+
+            const mineT2 = await request(app.getHttpServer()).get('/quote-requests/mine').set(auth(tokenT2)).expect(200);
+            expect(bodyText(mineT2)).not.toContain(QUOTE_REQUEST_A);
+
+            const mineT1 = await request(app.getHttpServer()).get('/quote-requests/mine').set(auth(tokenT1)).expect(200);
+            expect(bodyText(mineT1)).toContain(QUOTE_REQUEST_A);
+
+            // The findUnique guard itself (loadOwned + agencyId compare):
+            // agency B quoting agency A's request by id is denied and
+            // changes nothing.
+            const quote = await request(app.getHttpServer())
+                .patch(`/quote-requests/${QUOTE_REQUEST_A}/quote`)
+                .set(auth(tokenB))
+                .send({ totalAmount: '1000.00' });
+            expect(quote.status).toBe(403);
+            const after = await db.quoteRequest.findUnique({ where: { id: QUOTE_REQUEST_A } });
+            expect(after?.status).toBe('PENDING');
+            expect(after?.quotedTotalAmount).toBeNull();
+        });
+
+        it('payment attempts: status and per-booking payment reads deny foreign traveller and foreign agency', async () => {
+            const byT2 = await request(app.getHttpServer()).get(`/payment-attempts/${ATTEMPT_A}/status`).set(auth(tokenT2));
+            expect(byT2.status).toBe(403);
+            expect(bodyText(byT2)).not.toContain(ATTEMPT_A);
+
+            const byB = await request(app.getHttpServer()).get(`/payment-attempts/${ATTEMPT_A}/status`).set(auth(tokenB));
+            expect(byB.status).toBe(403);
+
+            const listByT2 = await request(app.getHttpServer()).get(`/bookings/${BOOKING_PAID}/payments`).set(auth(tokenT2));
+            expect(listByT2.status).toBe(403);
+            expect(bodyText(listByT2)).not.toContain(ATTEMPT_A);
+
+            const listByB = await request(app.getHttpServer()).get(`/bookings/${BOOKING_PAID}/payments`).set(auth(tokenB));
+            expect(listByB.status).toBe(403);
+
+            // Positive controls: the booking’s traveller and the owning
+            // agency tenant can read the attempt.
+            const byT1 = await request(app.getHttpServer()).get(`/payment-attempts/${ATTEMPT_A}/status`).set(auth(tokenT1)).expect(200);
+            expect(bodyText(byT1)).toContain(ATTEMPT_A);
+
+            await request(app.getHttpServer()).get(`/payment-attempts/${ATTEMPT_A}/status`).set(auth(tokenA)).expect(200);
+
+            const listByT1 = await request(app.getHttpServer()).get(`/bookings/${BOOKING_PAID}/payments`).set(auth(tokenT1)).expect(200);
+            expect(bodyText(listByT1)).toContain(ATTEMPT_A);
+        });
+
+        it('booking pass: foreign agency and foreign traveller are denied at the ownership gate', async () => {
+            const byB = await request(app.getHttpServer()).get(`/bookings/${BOOKING_PAID}/pass`).set(auth(tokenB));
+            expect(byB.status).toBe(403);
+
+            const byT2 = await request(app.getHttpServer()).get(`/bookings/${BOOKING_PAID}/pass`).set(auth(tokenT2));
+            expect(byT2.status).toBe(403);
+
+            // Positive control: the owning traveller passes the ownership
+            // gate and is stopped only by the issuance gate (no
+            // bank-confirmed payment on this booking yet) — a 400, not a
+            // 403, and no pass token leaks.
+            const byT1 = await request(app.getHttpServer()).get(`/bookings/${BOOKING_PAID}/pass`).set(auth(tokenT1));
+            expect(byT1.status).toBe(400);
+            expect(bodyText(byT1)).toContain('issued once the agency confirms');
+            expect(bodyText(byT1)).not.toContain('token');
+        });
+
+        it('custom-trip requests: an unmatched agency gets 404 by id and an empty read surface; the matched agency reads pseudonymised', async () => {
+            process.env.CUSTOM_TRIP_REQUESTS_ENABLED = 'true';
+            try {
+                // Match agency A only: its ACTIVE template carries the
+                // request’s destination slug; agency B’s does not.
+                await db.tripTemplate.update({ where: { id: TEMPLATE_A }, data: { destinationSlug: 'tangier' } as any });
+
+                const byB = await request(app.getHttpServer).get(`/custom-trips/requests/agency/${CUSTOM_REQUEST_A}`).set(auth(tokenB));
+                expect(byB.status).toBe(404);
+                expect(bodyText(byB)).not.toContain(CUSTOM_REQUEST_REF);
+
+                const listB = await request(app.getHttpServer()).get('/custom-trips/requests/agency').set(auth(tokenB)).expect(200);
+                expect(bodyText(listB)).not.toContain(CUSTOM_REQUEST_A);
+                expect(bodyText(listB)).not.toContain(CUSTOM_REQUEST_REF);
+
+                const byA = await request(app.getHttpServer()).get(`/custom-trips/requests/agency/${CUSTOM_REQUEST_A}`).set(auth(tokenA)).expect(200);
+                expect(bodyText(byA)).toContain(CUSTOM_REQUEST_REF);
+                // Pseudonymised: the traveller’s identity never rides
+                // the agency read surface before acceptance.
+                expect(bodyText(byA)).not.toContain('ct-traveler-1@ouiboo.test');
+                expect(bodyText(byA)).not.toContain('Cross Tenant Traveler One');
+            } finally {
+                delete process.env.CUSTOM_TRIP_REQUESTS_ENABLED;
+            }
         });
     });
 
