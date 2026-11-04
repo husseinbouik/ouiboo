@@ -28,6 +28,24 @@ export interface BillingConfig {
     betaCohortGrandfatherMonths: number;
     /** Booking statuses the per-booking service fee accrues on. */
     serviceFeeBookingStatuses: string[];
+    /**
+     * #426 (Council P0-10): TVA rate percent applied to the platform
+     * service fee and the subscription. 20% is the council's working
+     * assumption PENDING WRITTEN CONFIRMATION from the expert-comptable
+     * (no source classifies a marketplace fee expressly) — configurable
+     * via OUIBOO_VAT_RATE_PERCENT, never hard-coded at call sites.
+     */
+    vatRatePercent: number;
+    /**
+     * #426: monthly subscription price HT in MAD, or null when no price
+     * has been decided/configured. Null = the subscription invoicing
+     * path exists but charges nothing (the price is undecided, exactly
+     * as the council recorded); set OUIBOO_SUBSCRIPTION_PRICE_HT_MAD
+     * when the first paid month is priced.
+     */
+    subscriptionMonthlyPriceHt: number | null;
+    /** #426: the fee trigger rule in force (Debate 5 terminal retained-value). */
+    serviceFeeTrigger: 'TERMINAL_RETAINED_VALUE';
 }
 
 function envBool(name: string, fallback: boolean, env: NodeJS.ProcessEnv = process.env): boolean {
@@ -50,6 +68,21 @@ export function getBillingConfig(env: NodeJS.ProcessEnv = process.env): BillingC
         // With it explicitly off, the legacy rule returns (any PAID
         // booking) — kept representable, never the default.
         serviceFeeBookingStatuses: serviceFeeOnCompletedOnly ? ['COMPLETED'] : [],
+        vatRatePercent: (() => {
+            const raw = Number(env.OUIBOO_VAT_RATE_PERCENT);
+            return Number.isFinite(raw) && raw >= 0 && raw <= 100 ? raw : 20;
+        })(),
+        subscriptionMonthlyPriceHt: (() => {
+            const raw = Number(env.OUIBOO_SUBSCRIPTION_PRICE_HT_MAD);
+            return Number.isFinite(raw) && raw > 0 ? raw : null;
+        })(),
+        // #426 supersedes the #698 completed-only trigger with the
+        // Debate 5 rule: fee on a terminal retained-value event
+        // (completion / charge-retaining traveller cancellation /
+        // traveller no-show), base = verified paid minus refunds
+        // completed. serviceFeeOnCompletedOnly above stays readable for
+        // the #698 witness surface; InvoicesService no longer reads it.
+        serviceFeeTrigger: 'TERMINAL_RETAINED_VALUE',
     };
 }
 

@@ -19,3 +19,20 @@ describe('billing-config (#698)', () => {
         expect(isBillableBookingStatus('CONFIRMED', c)).toBe(true);
     });
 });
+
+describe('billing-config fiscal fields (#426)', () => {
+    it('TVA defaults to the 20% working assumption and subscription price to undecided (null)', () => {
+        const c = getBillingConfig({});
+        expect(c.vatRatePercent).toBe(20);
+        expect(c.subscriptionMonthlyPriceHt).toBeNull();
+        expect(c.serviceFeeTrigger).toBe('TERMINAL_RETAINED_VALUE');
+    });
+    it('TVA and subscription price are configurable, invalid values fall back', () => {
+        const c = getBillingConfig({ OUIBOO_VAT_RATE_PERCENT: '10', OUIBOO_SUBSCRIPTION_PRICE_HT_MAD: '299' } as any);
+        expect(c.vatRatePercent).toBe(10);
+        expect(c.subscriptionMonthlyPriceHt).toBe(299);
+        const bad = getBillingConfig({ OUIBOO_VAT_RATE_PERCENT: '250', OUIBOO_SUBSCRIPTION_PRICE_HT_MAD: '-5' } as any);
+        expect(bad.vatRatePercent).toBe(20);
+        expect(bad.subscriptionMonthlyPriceHt).toBeNull();
+    });
+});

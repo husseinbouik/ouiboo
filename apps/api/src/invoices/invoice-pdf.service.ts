@@ -71,11 +71,17 @@ export class InvoicePdfService {
             doc.font('Helvetica-Bold').fontSize(18).text(issuerName, { align: 'left' });
             doc.font('Helvetica').fontSize(10);
             if (invoice.issuerIce) doc.text(`ICE: ${invoice.issuerIce}`);
+            // #426: the issuer Identifiant Fiscal (IF) — a required
+            // mention on a Moroccan fiscal invoice.
+            if (invoice.issuerIf) doc.text(`IF: ${invoice.issuerIf}`);
             if (invoice.issuerRc) doc.text(`RC: ${invoice.issuerRc}`);
             if (invoice.issuerAddress) doc.text(invoice.issuerAddress);
 
             doc.moveDown();
-            doc.font('Helvetica-Bold').fontSize(16).text('Platform Service Fee Invoice');
+            // #426: credit notes (avoirs) render as their own document class.
+            doc.font('Helvetica-Bold').fontSize(16).text(
+                invoice.documentType === 'CREDIT_NOTE' ? 'Credit Note (Avoir)' : 'Platform Service Fee Invoice',
+            );
             doc.font('Helvetica').fontSize(11);
             doc.text(`Invoice number: ${invoice.number}`);
             doc.text(`Issued: ${formatDate(invoice.issuedAt)}`);
@@ -92,8 +98,12 @@ export class InvoicePdfService {
             doc.font('Helvetica-Bold').fontSize(12).text('Platform service fee details');
             doc.font('Helvetica').fontSize(10);
             doc.text(
-                `Platform service fee on paid bookings collected by the agency during the period. ` +
-                `Rate applied: ${invoice.commissionRate}% of the booking total.`,
+                invoice.documentType === 'CREDIT_NOTE'
+                    ? `Credit note reversing platform service fees on refunds completed during the period. ` +
+                      `Rate applied: ${invoice.commissionRate}% of the refunded amounts, plus TVA.`
+                    : `Platform service fee on the amounts definitively retained by the agency for bookings ` +
+                      `reaching a terminal event during the period (verified paid minus refunds completed). ` +
+                      `Rate applied: ${invoice.commissionRate}% of the retained amount.`,
             );
 
             doc.moveDown(0.5);
@@ -127,9 +137,17 @@ export class InvoicePdfService {
 
             doc.moveDown();
             doc.font('Helvetica').fontSize(11);
-            doc.text(`Gross bookings total: ${invoice.subtotalAmount} ${invoice.currency}`, { align: 'right' });
+            // #426: HT / TVA / TTC breakdown. The TVA rate is the
+            // council's working assumption pending written confirmation
+            // from the expert-comptable.
+            doc.text(`Retained bookings total: ${invoice.subtotalAmount} ${invoice.currency}`, { align: 'right' });
+            doc.text(`Total HT: ${invoice.totalAmount} ${invoice.currency}`, { align: 'right' });
+            doc.text(`TVA (${invoice.vatRate}%): ${invoice.vatAmount} ${invoice.currency}`, { align: 'right' });
             doc.font('Helvetica-Bold').fontSize(12);
-            doc.text(`Platform service fee due: ${invoice.totalAmount} ${invoice.currency}`, { align: 'right' });
+            doc.text(
+                `${invoice.documentType === 'CREDIT_NOTE' ? 'Credit note total TTC' : 'Platform service fee due TTC'}: ${invoice.totalTtcAmount} ${invoice.currency}`,
+                { align: 'right' },
+            );
 
             doc.moveDown(2);
             doc.font('Helvetica').fontSize(9).fillColor('#666666');
