@@ -534,7 +534,17 @@
     "exploreTrips": "Explore Trips",
     "emptyTitle": "You're all caught up",
     "emptyBody": "No new notifications.",
-    "title": "Notifications"
+    "title": "Notifications",
+    "push": {
+      "title": "Push notifications",
+      "enable": "Enable push",
+      "disable": "Disable push",
+      "subscribedBody": "This browser will receive push notifications for your bookings and trips.",
+      "unsubscribedBody": "Get booking and trip updates on this device, even when Ouiboo is closed.",
+      "deniedBody": "Push notifications are blocked in your browser settings. Allow notifications for this site to enable them.",
+      "unsupportedBody": "This browser does not support push notifications.",
+      "unavailableBody": "Push notifications are not available right now. Please try again later."
+    }
   },
   "seller": {
     "organisedAndSoldBy": "Organised and sold by {{name}}",

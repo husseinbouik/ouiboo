@@ -28,6 +28,12 @@ export class NotificationPreferenceDto {
   @IsOptional()
   @IsBoolean()
   emailNotifications?: boolean;
+
+  // #784: web push channel switch (opt-in; subscribing turns it on,
+  // the user can turn it off here without losing subscriptions).
+  @IsOptional()
+  @IsBoolean()
+  pushNotifications?: boolean;
 }
 
 export class SendNotificationDto {

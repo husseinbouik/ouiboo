@@ -534,7 +534,17 @@
     "exploreTrips": "Explorer les voyages",
     "emptyTitle": "Vous êtes à jour",
     "emptyBody": "Aucune nouvelle notification.",
-    "title": "Notifications"
+    "title": "Notifications",
+    "push": {
+      "title": "Notifications push",
+      "enable": "Activer les notifications push",
+      "disable": "Désactiver les notifications push",
+      "subscribedBody": "Ce navigateur recevra des notifications push pour vos réservations et vos voyages.",
+      "unsubscribedBody": "Recevez les mises à jour de vos réservations et voyages sur cet appareil, même lorsque Ouiboo est fermé.",
+      "deniedBody": "Les notifications push sont bloquées dans les réglages de votre navigateur. Autorisez les notifications pour ce site pour les activer.",
+      "unsupportedBody": "Ce navigateur ne prend pas en charge les notifications push.",
+      "unavailableBody": "Les notifications push ne sont pas disponibles pour le moment. Veuillez réessayer plus tard."
+    }
   },
   "seller": {
     "organisedAndSoldBy": "Organisé et vendu par {{name}}",

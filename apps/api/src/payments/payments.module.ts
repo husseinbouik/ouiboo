@@ -10,9 +10,10 @@ import { PaymentProviderFactory } from './providers/payment-provider.factory';
 import { CommonModule } from '../common/common.module';
 import { AuthModule } from '../auth/auth.module';
 import { ExternalPaymentsModule } from '../external-payments/external-payments.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [CommonModule, DatabaseModule, EmailModule, AuthModule, ExternalPaymentsModule],
+  imports: [CommonModule, DatabaseModule, EmailModule, AuthModule, ExternalPaymentsModule, NotificationsModule],
   providers: [
     PaymentsService,
     CMIPaymentProvider,

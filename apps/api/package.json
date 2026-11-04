@@ -63,13 +63,15 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "socket.io": "^4.8.3",
-    "stripe": "^14.0.0"
+    "stripe": "^14.0.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.24",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
     "@types/bcrypt": "^6.0.0",
+    "@types/web-push": "^3.6.4",
     "@types/compression": "^1.7.5",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
