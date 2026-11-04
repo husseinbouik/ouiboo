@@ -21,7 +21,6 @@ import {
 import { apiClient } from '@/lib/api-client';
 import { CancellationScaleCard } from '@/components/CancellationScaleCard';
 import SellerIdentity from '@/components/SellerIdentity';
-import MessageAgencyButton from '@/components/MessageAgencyButton';
 import {
   canRetryTravelerPayment,
   canCancelTravelerBooking,
@@ -43,6 +42,7 @@ import { RefundCaseCard, type TravelerRefundCaseView } from '@/components/Refund
 import SellerBlock from '@/components/SellerBlock';
 import VerificationRecord from '@/components/VerificationRecord';
 import { useDisplayAmountConverter } from '@/lib/display-currency';
+import { localizeLocationSuffix } from '@/lib/localized-location';
 
 /**
  * #663 (checkout item): the booking confirmation rendered the
@@ -331,7 +331,7 @@ export default function BookingDetailsPage() {
                     <div className="flex items-center gap-2 text-muted-foreground text-xs font-black uppercase tracking-widest">
                       <MapPin className="h-4 w-4 text-blue-500" /> {t('bookingDetail.location')}
                     </div>
-                    <p className="mt-3 text-sm font-semibold text-foreground">{booking.session.template.startLocation}</p>
+                    <p className="mt-3 text-sm font-semibold text-foreground">{localizeLocationSuffix(booking.session.template.startLocation, t('countries.morocco'))}</p>
                   </div>
                   <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
                     <div className="flex items-center gap-2 text-muted-foreground text-xs font-black uppercase tracking-widest">
@@ -377,15 +377,6 @@ export default function BookingDetailsPage() {
               )}
 
               <SellerIdentity agency={booking.session.template.agency} />
-              {/* #729: contact path from the booking view — questions,
-                  payment problems and changes land in the pair
-                  conversation with this agency. */}
-              <div className="mt-4">
-                <MessageAgencyButton
-                  agencyId={booking.session.template.agency?.id}
-                  agencyName={booking.session.template.agency?.companyName}
-                />
-              </div>
 
               {/* #700 (Council S6): the Art. 29(2) seller block repeated
                   on the durable booking confirmation. */}

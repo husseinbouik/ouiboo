@@ -27,7 +27,6 @@ import { useAuth } from '@/components/AuthContext';
 import { ReviewList } from '@/components/ReviewList';
 import SellerIdentity from '@/components/SellerIdentity';
 import VerificationRecord from '@/components/VerificationRecord';
-import MessageAgencyButton from '@/components/MessageAgencyButton';
 import { TRAVELER_URL } from '@/lib/site';
 import { tripCoverViewTransitionName } from '@/lib/view-transition';
 import { SessionStatus, type CancellationScaleSnapshot, type SessionStatusType } from '@ouiboo/types';
@@ -42,6 +41,7 @@ import { SnapRail } from '@/components/SnapRail';
 import { PhotoViewer } from '@/components/PhotoViewer';
 import { TripMosaic } from '@/components/TripMosaic';
 import { useDisplayAmountConverter } from '@/lib/display-currency';
+import { localizeLocationSuffix } from '@/lib/localized-location';
 import { MIN_REVIEWS_FOR_RATING, ratingDisplayState, REVIEW_SUB_SCORES, type ReviewSubScoreKey } from '@/lib/review-display';
 
 type TripDay = {
@@ -427,7 +427,8 @@ export default function TripDetailsClient({
                         <span className="text-border mx-1">|</span>
                         <div className="flex items-center text-sm font-semibold text-muted-foreground">
                             <MapPin className="h-4 w-4 me-1.5 text-sunset-orange" />
-                            {trip.startLocation}
+                            {/* #745: suffix localization for single-language locations (the API resolves full translations when stored). */}
+                            {localizeLocationSuffix(trip.startLocation, t('countries.morocco'))}
                         </div>
                     </div>
                     <h1 className="text-4xl md:text-6xl font-black text-foreground leading-[1.1] font-display tracking-tight mb-6">
@@ -496,13 +497,6 @@ export default function TripDetailsClient({
                     {/* #688 (Council S6): the checkable Public Verification
                         Record for this agency (metadata only). */}
                     <VerificationRecord agency={trip.agency} className="mt-4" />
-
-                    {/* #729 (Council S7-2): chat door — traveller-initiated
-                        contact with this agency, pre-booking inquiry or
-                        booking question, inside Ouiboo. */}
-                    <div className="mt-4">
-                      <MessageAgencyButton agencyId={trip.agency?.id} agencyName={trip.agency?.companyName ?? trip.agency?.legalName} />
-                    </div>
 
                     {/* #676: meeting AREA only before booking — the
                         exact address + map link appear on the booking

@@ -310,6 +310,10 @@ export class TripsService {
             translations: buildTripTranslations(translations, {
                 title: dto.title,
                 description: dto.description,
+                // #745: canonical captions + location mirror into the
+                // map's canonical entry the same way.
+                imageAlts: this.normalizeImageAlts(imageAlts, dto.images),
+                startLocation: dto.startLocation,
                 // #584: canonical sections mirror into the map's `fr`
                 // entry; other languages' days align by dayNumber.
                 itinerary,
@@ -1186,15 +1190,23 @@ export class TripsService {
             exclusions: dto.exclusions ?? existing.exclusions,
             checklist: dto.checklist ?? existing.checklist,
         };
+        // #745: post-write canonical captions + location for the map's
+        // canonical mirror (dto wins, else the stored columns).
+        const frenchMedia = {
+            imageAlts: imageAlts !== undefined
+                ? this.normalizeImageAlts(imageAlts, dto.images ?? existing.images)
+                : existing.imageAlts,
+            startLocation: dto.startLocation ?? existing.startLocation,
+        };
         const mergedTranslations = translations
             ? buildTripTranslations(
                 { ...normalizeTripTranslations(existing.translations), ...normalizeTripTranslations(translations) },
-                { title: nextTitle, description: nextDescription, ...frenchSections },
+                { title: nextTitle, description: nextDescription, ...frenchSections, ...frenchMedia },
             )
             : undefined;
         const effectiveTranslations = mergedTranslations
             ?? (dto.title !== undefined || dto.description !== undefined
-                ? buildTripTranslations(existing.translations, { title: nextTitle, description: nextDescription, ...frenchSections })
+                ? buildTripTranslations(existing.translations, { title: nextTitle, description: nextDescription, ...frenchSections, ...frenchMedia })
                 : undefined);
 
         // Batch B (#675/#676): post-write destination + meeting point.

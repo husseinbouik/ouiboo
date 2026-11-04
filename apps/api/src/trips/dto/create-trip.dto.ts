@@ -238,6 +238,21 @@ export class TripTranslationEntryDto {
     @MaxLength(10000)
     description?: string;
 
+    // #745: photo captions + start location in this language, riding
+    // the same translations entry (sanitized in trip-translations.util;
+    // the canonical entry mirrors the imageAlts / startLocation columns).
+    @ApiProperty({ required: false, type: [String] })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    imageAlts?: string[];
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsString()
+    @MaxLength(300)
+    startLocation?: string;
+
     // #584 (phase 2): section content in this language — itinerary days
     // (aligned to the canonical days by dayNumber; positional entries
     // are stamped at the write boundary) and whole-list translations.

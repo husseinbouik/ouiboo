@@ -2,8 +2,10 @@ import {
     buildTripTranslations,
     frenchSectionsMissing,
     hasCompleteFrenchText,
+    localizeTripPayload,
     normalizeTripLocale,
     normalizeTripTranslations,
+    resolveTripMedia,
     resolveTripSections,
     resolveTripText,
     stripSeedMarker,
@@ -251,5 +253,89 @@ describe('trip-translations.util phase 2 (#584)', () => {
             translations: { ar: { itinerary: [{ dayNumber: 1, title: 'الوصول' }] } },
         };
         expect(frenchSectionsMissing(complete)).toEqual([]);
+    });
+
+    describe('media + location localization (#745)', () => {
+        const trip = {
+            imageAlts: ['Caravane de chameaux au coucher du soleil', 'Dunes et sommets rocheux'],
+            startLocation: 'Merzouga, Maroc',
+            translations: {
+                fr: {
+                    imageAlts: ['Caravane de chameaux au coucher du soleil', 'Dunes et sommets rocheux'],
+                    startLocation: 'Merzouga, Maroc',
+                },
+                ar: {
+                    imageAlts: ['قافلة جمال عند غروب الشمس', 'كثبان وقمم صخرية'],
+                    startLocation: 'مرزوكة، المغرب',
+                },
+                en: {
+                    imageAlts: ['Camel caravan at sunset', 'Dunes and rocky peaks'],
+                    startLocation: 'Merzouga, Morocco',
+                },
+            },
+        };
+
+        it('normalize keeps per-language captions + location and drops garbage', () => {
+            const map = normalizeTripTranslations({
+                ar: { imageAlts: ['  وصف  ', ''], startLocation: ' مرزوكة ', title: 42 },
+                xx: 'garbage',
+            });
+            expect(map.ar.imageAlts).toEqual(['وصف']);
+            expect(map.ar.startLocation).toBe('مرزوكة');
+        });
+
+        it('build mirrors the canonical columns into the fr entry and preserves them on rebuild', () => {
+            const built = buildTripTranslations(trip.translations, {
+                title: 'Désert de Merzouga',
+                description: 'Deux jours dans les dunes.',
+                imageAlts: trip.imageAlts,
+                startLocation: trip.startLocation,
+            });
+            expect(built.fr.imageAlts).toEqual(trip.imageAlts);
+            expect(built.fr.startLocation).toBe('Merzouga, Maroc');
+            expect(built.ar.imageAlts).toEqual(trip.translations.ar.imageAlts);
+            // A rebuild that carries no media values must not erase them.
+            const rebuilt = buildTripTranslations(built, { title: 'Désert de Merzouga', description: 'Deux jours dans les dunes.' });
+            expect(rebuilt.fr.imageAlts).toEqual(trip.imageAlts);
+            expect(rebuilt.fr.startLocation).toBe('Merzouga, Maroc');
+        });
+
+        it('resolves captions + location per locale with canonical fallback', () => {
+            expect(resolveTripMedia(trip, 'ar')).toEqual({
+                imageAlts: trip.translations.ar.imageAlts,
+                startLocation: 'مرزوكة، المغرب',
+            });
+            expect(resolveTripMedia(trip, 'en').startLocation).toBe('Merzouga, Morocco');
+            // Unknown locale -> canonical (French) entry.
+            expect(resolveTripMedia(trip, 'de')).toEqual({
+                imageAlts: trip.imageAlts,
+                startLocation: 'Merzouga, Maroc',
+            });
+            // Partial entry (location only) still resolves captions from French.
+            const partial = {
+                imageAlts: trip.imageAlts,
+                startLocation: trip.startLocation,
+                translations: { ar: { startLocation: 'مرزوكة، المغرب' } },
+            };
+            expect(resolveTripMedia(partial, 'ar')).toEqual({
+                imageAlts: trip.imageAlts,
+                startLocation: 'مرزوكة، المغرب',
+            });
+            // Legacy trip without a map renders its columns in every locale.
+            expect(resolveTripMedia({ imageAlts: trip.imageAlts, startLocation: trip.startLocation, translations: null }, 'ar')).toEqual({
+                imageAlts: trip.imageAlts,
+                startLocation: 'Merzouga, Maroc',
+            });
+        });
+
+        it('localizeTripPayload swaps captions + location only when the payload carries them', () => {
+            const payload = { title: 'Désert', description: 'Dunes.', ...trip };
+            const localized = localizeTripPayload(payload, 'ar');
+            expect(localized.imageAlts).toEqual(trip.translations.ar.imageAlts);
+            expect(localized.startLocation).toBe('مرزوكة، المغرب');
+            const bare = localizeTripPayload({ title: 'Désert', description: 'Dunes.', translations: trip.translations }, 'ar') as Record<string, unknown>;
+            expect(bare.imageAlts).toBeUndefined();
+            expect(bare.startLocation).toBeUndefined();
+        });
     });
 });
