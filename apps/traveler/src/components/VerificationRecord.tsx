@@ -161,6 +161,15 @@ export default function VerificationRecord({
                     </dd>
                 </div>
             </dl>
+            {/* #775 (Council S6): the RC ≠ personal-travel-insurance
+                disclosure, shown wherever this record presents the
+                agency's insurance as checked — never implying a booking
+                is covered by the agency's RC. */}
+            {record.insurer || record.insuranceValidFrom || record.insuranceExpiry ? (
+                <p className="mt-3 text-xs text-muted-foreground" data-testid="insurance-disclosure">
+                    {t('verificationRecord.insuranceDisclosure')}
+                </p>
+            ) : null}
             <p className="mt-3 text-xs text-muted-foreground">{t('verificationRecord.documentsNote')}</p>
             <p className="mt-1 text-xs text-muted-foreground">{t('verificationRecord.lapseNote')}</p>
         </section>

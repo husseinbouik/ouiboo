@@ -83,6 +83,21 @@ describe('deriveVerificationRecord (#688)', () => {
 });
 
 describe('VerificationRecord render (#688)', () => {
+    it('shows the RC ≠ personal insurance disclosure when insurance is presented (#775)', () => {
+        render(<VerificationRecord agency={verifiedAgency} />);
+        expect(screen.getByTestId('insurance-disclosure')).toBeTruthy();
+        expect(screen.getByText('verificationRecord.insuranceDisclosure')).toBeTruthy();
+    });
+
+    it('withholds the insurance disclosure when no insurance is presented (#775)', () => {
+        render(
+            <VerificationRecord
+                agency={{ ...verifiedAgency, insuranceStatus: 'PENDING_REVIEW', insuranceInsurer: null, insuranceExpiry: null }}
+            />,
+        );
+        expect(screen.queryByTestId('insurance-disclosure')).toBeNull();
+    });
+
     it('renders the checkable fields and never any document reference', () => {
         render(<VerificationRecord agency={verifiedAgency} />);
         expect(screen.getByTestId('verification-record')).toBeTruthy();

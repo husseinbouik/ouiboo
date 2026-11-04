@@ -819,6 +819,10 @@
         "answer": "Vous recevez un e-mail dès qu'un dossier de remboursement est ouvert pour vous, et vous pouvez suivre son état à tout moment dans vos réservations.",
         "question": "Comment suivre mon remboursement ?"
       },
+      "insuranceCoverage": {
+        "answer": "Non, pas à titre personnel. L’assurance contrôlée par Ouiboo est l’assurance responsabilité civile professionnelle (RC) de l’agence : elle couvre la responsabilité de l’agence en tant qu’organisatrice du voyage. Ce n’est pas une assurance voyage personnelle — vos frais médicaux, l’annulation de votre voyage et vos effets personnels restent de votre responsabilité. Ouiboo ne vend pas d’assurance.",
+        "question": "Suis-je assuré(e) lorsque je réserve ?"
+      },
       "refundTiming": {
         "answer": "Les remboursements sont payés directement par l'agence — Ouiboo ne détient jamais votre argent. L'agence dispose de 7 jours pour initier votre remboursement dès l'ouverture d'un dossier de remboursement, et Ouiboo la relance en cas de retard.",
         "question": "Combien de temps prend un remboursement ?"
@@ -1018,7 +1022,8 @@
     "statusVerified": "Vérifiée — voyages actifs",
     "statusNotVerified": "Non vérifiée actuellement — voyages en pause",
     "documentsNote": "Ouiboo a contrôlé les documents de licence et d’assurance à la date ci-dessus. Les documents eux-mêmes restent privés — seule cette fiche est publique.",
-    "lapseNote": "Si la licence ou l’assurance expire, cette fiche cesse d’apparaître comme vérifiée et les voyages de l’agence sont automatiquement mis en pause."
+    "lapseNote": "Si la licence ou l’assurance expire, cette fiche cesse d’apparaître comme vérifiée et les voyages de l’agence sont automatiquement mis en pause.",
+    "insuranceDisclosure": "Précision sur l’assurance : l’assurance responsabilité civile professionnelle (RC) de l’agence couvre la responsabilité de l’agence en tant qu’organisatrice du voyage. Ce n’est pas une assurance voyage personnelle : elle ne couvre pas vos frais médicaux, l’annulation de votre voyage ni vos effets personnels. Ouiboo ne vend pas d’assurance."
   },
   "sellerBlock": {
     "title": "Vendeur (l’agence que vous payez)",

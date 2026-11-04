@@ -819,6 +819,10 @@
         "answer": "You receive an email as soon as a refund case is opened for you, and you can follow its status any time in your bookings.",
         "question": "How can I follow my refund?"
       },
+      "insuranceCoverage": {
+        "answer": "No, not personally. The insurance Ouiboo checks is the agency's professional liability (RC) insurance: it covers the agency's own liability as the organiser of the trip. It is not personal travel insurance — your medical costs, trip cancellation and belongings remain your own responsibility. Ouiboo does not sell insurance.",
+        "question": "Am I insured when I book?"
+      },
       "refundTiming": {
         "answer": "Refunds are paid by the agency directly — Ouiboo never holds your money. The agency has 7 days to initiate your refund once a refund case is opened, and Ouiboo chases it if it slips.",
         "question": "How long does a refund take?"
@@ -1018,7 +1022,8 @@
     "statusVerified": "Verified — trips active",
     "statusNotVerified": "Not currently verified — trips paused",
     "documentsNote": "Ouiboo checked the licence and insurance documents on the date above. The documents themselves stay private — only this record is public.",
-    "lapseNote": "If the licence or insurance lapses, this record stops showing as verified and the agency’s trips are paused automatically."
+    "lapseNote": "If the licence or insurance lapses, this record stops showing as verified and the agency’s trips are paused automatically.",
+    "insuranceDisclosure": "A note on insurance: the agency's professional liability (RC) insurance covers the agency's own liability as the organiser of the trip. It is not personal travel insurance: it does not cover your medical costs, the cancellation of your trip or your belongings. Ouiboo does not sell insurance."
   },
   "sellerBlock": {
     "title": "Seller (the agency you pay)",
