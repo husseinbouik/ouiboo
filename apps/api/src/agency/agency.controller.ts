@@ -1,4 +1,5 @@
-import { Controller, Get, UseGuards, Request, Patch, Body, Post, Query, Param, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request, Patch, Body, Post, Query, Param, Res, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -15,6 +16,20 @@ import { getAgencyActivationBlock } from '../common/agency-licence.util';
 import { isBankDestinationVerified } from '../common/bank-details.util';
 import { Prisma } from '@ouiboo/database';
 import { derivePublicMediaUrl } from '../upload/media-url.util';
+import { bookingsToCsv, reviewsToCsv, tripsToCsv } from './agency-export.util';
+
+// #780: a generous row cap keeps a self-serve export from becoming an
+// unbounded full-table scan; beta agencies are far below it.
+const EXPORT_MAX_ROWS = 10000;
+
+const sendCsv = (res: Response, filename: string, csv: string) => {
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    return res.send(csv);
+};
+
+const exportFilename = (kind: string) =>
+    `ouiboo-${kind}-${new Date().toISOString().slice(0, 10)}.csv`;
 
 const clampListLimit = (value?: string, fallback = 50, max = 200) => {
     const parsed = Number(value);
@@ -256,6 +271,89 @@ export class AgencyController {
             },
         };
     }
+    // #780 (Council S6 Phase 3): self-serve CSV export of the agency's OWN
+    // data. Tenant isolation is structural: every query is scoped by
+    // req.tenantId — the agency id stamped by TenantGuard from the
+    // authenticated principal — plus the row-level agencyId tenant stamp
+    // (#428). No agency id is ever accepted from the request.
+    @Get('exports/bookings')
+    @ApiOperation({ summary: 'Export this agency\'s bookings as CSV (#780)' })
+    async exportBookings(@Request() req, @Res() res: Response) {
+        const agencyId = req.tenantId;
+        const bookings = await this.prisma.booking.findMany({
+            where: { agencyId },
+            include: {
+                session: {
+                    include: {
+                        template: { select: { title: true } },
+                    },
+                },
+                traveler: {
+                    select: {
+                        name: true,
+                        email: true,
+                    },
+                },
+                paymentPlan: {
+                    select: {
+                        depositAmount: true,
+                        balanceAmount: true,
+                    },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: EXPORT_MAX_ROWS,
+        });
+        return sendCsv(res, exportFilename('bookings'), bookingsToCsv(bookings as any));
+    }
+
+    @Get('exports/trips')
+    @ApiOperation({ summary: 'Export this agency\'s trips as CSV (#780)' })
+    async exportTrips(@Request() req, @Res() res: Response) {
+        const agencyId = req.tenantId;
+        const trips = await this.prisma.tripTemplate.findMany({
+            where: { agencyId },
+            include: {
+                _count: { select: { sessions: true } },
+                sessions: {
+                    select: { price: true },
+                    orderBy: { startDate: 'asc' },
+                    take: 1,
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: EXPORT_MAX_ROWS,
+        });
+        return sendCsv(res, exportFilename('trips'), tripsToCsv(trips as any));
+    }
+
+    @Get('exports/reviews')
+    @ApiOperation({ summary: 'Export this agency\'s reviews as CSV (#780)' })
+    async exportReviews(@Request() req, @Res() res: Response) {
+        const agencyId = req.tenantId;
+        // Unlike the on-screen list (VISIBLE only), the export is the
+        // agency's own record of every review it received, so all
+        // moderation states are included and labelled in the CSV.
+        const reviews = await this.prisma.review.findMany({
+            where: { agencyId },
+            include: {
+                traveler: {
+                    select: {
+                        name: true,
+                    },
+                },
+                tripTemplate: {
+                    select: {
+                        title: true,
+                    },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: EXPORT_MAX_ROWS,
+        });
+        return sendCsv(res, exportFilename('reviews'), reviewsToCsv(reviews as any));
+    }
+
     @Get('payments/overview')
     @ApiOperation({ summary: 'Get agency payments overview (external payment facts, no OuiBoo balance)' })
     async getPaymentsOverview(@Request() req) {

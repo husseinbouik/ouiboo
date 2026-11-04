@@ -595,6 +595,13 @@
       "CANCELLED": "Cancelled by the traveller"
     }
   },
+  "exportData": {
+    "title": "Export my data (CSV)",
+    "bookings": "Bookings CSV",
+    "trips": "Trips CSV",
+    "reviews": "Reviews CSV",
+    "error": "The export failed. Please try again."
+  },
   "bookings": {
     "title": "Booking Manager",
     "subtitle": "Monitor your guests and track booking statuses.",
