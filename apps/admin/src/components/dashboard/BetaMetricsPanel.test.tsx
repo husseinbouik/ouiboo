@@ -79,7 +79,7 @@ describe('BetaMetricsPanel (#559)', () => {
 
   it('labels takings as Agency GMV and Ouiboo revenue (free beta) as 0 MAD (#631)', () => {
     render(<BetaMetricsPanel t={t} metrics={metrics} />);
-    expect(screen.getByText(/agencyGmv/)).not.toBeNull();
+    expect(screen.getByText('dashboard.betaMetrics.agencyGmv')).not.toBeNull();
     expect(screen.getByText(/4200.50 MAD/)).not.toBeNull();
     expect(screen.getByText(/ouibooRevenueFreeBeta/)).not.toBeNull();
     expect(screen.getByText(/funnelSessionsNote/)).not.toBeNull();
