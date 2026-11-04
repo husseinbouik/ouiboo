@@ -14,6 +14,7 @@ import {
   convertViaMadRates,
   DisplayCurrencyProvider,
   DISPLAY_CURRENCY_STORAGE_KEY,
+  parseRatePayload,
   useDisplayAmountConverter,
   useDisplayCurrency,
   useDisplayPrice,
@@ -199,6 +200,41 @@ describe('useDisplayAmountConverter (#615: numeric conversion for derived amount
   });
 });
 
+describe('parseRatePayload (#659: FX provenance from /currency/rates)', () => {
+  it('keeps rate + source + age from a live payload', () => {
+    expect(
+      parseRatePayload({ rate: '0.09200000', source: 'live', fetchedAt: '2026-11-04T10:00:00.000Z', ageSeconds: 0 }),
+    ).toEqual({ rate: 0.092, source: 'live', fetchedAt: '2026-11-04T10:00:00.000Z', ageSeconds: 0 });
+  });
+
+  it('keeps the fallback marker (and its null age) from a fallback payload', () => {
+    expect(parseRatePayload({ rate: '0.09000000', source: 'fallback', fetchedAt: null, ageSeconds: null })).toEqual({
+      rate: 0.09,
+      source: 'fallback',
+      fetchedAt: null,
+      ageSeconds: null,
+    });
+  });
+
+  it('keeps a cache payload with its real age', () => {
+    const info = parseRatePayload({ rate: 0.092, source: 'cache', fetchedAt: '2026-11-03T10:00:00.000Z', ageSeconds: 3600 });
+    expect(info.source).toBe('cache');
+    expect(info.ageSeconds).toBe(3600);
+    expect(info.rate).toBeCloseTo(0.092);
+  });
+
+  it('treats a bare number as a rate with no provenance, and garbage as no rate', () => {
+    expect(parseRatePayload(0.092)).toEqual({ rate: 0.092, source: null, fetchedAt: null, ageSeconds: null });
+    expect(parseRatePayload({ rate: 'nope', source: 'martian' })).toEqual({
+      rate: null,
+      source: null,
+      fetchedAt: null,
+      ageSeconds: null,
+    });
+    expect(parseRatePayload(undefined).rate).toBeNull();
+  });
+});
+
 describe('useDisplayPrice conversion (React-Query cached rates)', () => {
   it('renders a MAD price in EUR when the rate is cached', () => {
     mockUser = { id: 'u1', name: 'Sara', email: 's@x.io', role: 'TRAVELER', displayCurrency: 'EUR' };
@@ -226,5 +262,92 @@ describe('useDisplayPrice conversion (React-Query cached rates)', () => {
     const price = screen.getByTestId('price').textContent ?? '';
     expect(price).toContain('MAD');
     expect(price).toContain('1,000');
+  });
+
+  it('#659: converts when the rate source is live', () => {
+    mockUser = { id: 'u1', name: 'Sara', email: 's@x.io', role: 'TRAVELER', displayCurrency: 'EUR' };
+    mockQueryData = {
+      '["currency","rate","EUR"]': { rate: 0.092, source: 'live', fetchedAt: '2026-11-04T10:00:00.000Z', ageSeconds: 0 },
+    };
+    render(
+      <DisplayCurrencyProvider>
+        <Probe amount={1000} currency="MAD" />
+      </DisplayCurrencyProvider>,
+    );
+    const price = screen.getByTestId('price').textContent ?? '';
+    expect(price).toContain('92');
+    expect(price).toContain('€');
+  });
+
+  it('#659: converts when the rate source is cache (a real provider rate in its window)', () => {
+    mockUser = { id: 'u1', name: 'Sara', email: 's@x.io', role: 'TRAVELER', displayCurrency: 'EUR' };
+    mockQueryData = {
+      '["currency","rate","EUR"]': { rate: 0.092, source: 'cache', fetchedAt: '2026-11-03T10:00:00.000Z', ageSeconds: 3600 },
+    };
+    render(
+      <DisplayCurrencyProvider>
+        <Probe amount={1000} currency="MAD" />
+      </DisplayCurrencyProvider>,
+    );
+    const price = screen.getByTestId('price').textContent ?? '';
+    expect(price).toContain('€');
+    expect(price).not.toContain('1,000');
+  });
+
+  it('#659: SUPPRESSES conversion on a fallback rate — the price renders in MAD, unconverted', () => {
+    mockUser = { id: 'u1', name: 'Sara', email: 's@x.io', role: 'TRAVELER', displayCurrency: 'EUR' };
+    mockQueryData = {
+      '["currency","rate","EUR"]': { rate: 0.09, source: 'fallback', fetchedAt: null, ageSeconds: null },
+    };
+    render(
+      <DisplayCurrencyProvider>
+        <Probe amount={1000} currency="MAD" />
+      </DisplayCurrencyProvider>,
+    );
+    const price = screen.getByTestId('price').textContent ?? '';
+    expect(price).toContain('MAD');
+    expect(price).toContain('1,000');
+    expect(price).not.toContain('€');
+  });
+});
+
+describe('#659: useDisplayAmountConverter suppresses conversion on fallback', () => {
+  function ConverterProbe({ amount, from }: { amount: number; from: string }) {
+    const convert = useDisplayAmountConverter(from);
+    const converted = convert(amount);
+    return (
+      <div>
+        <span data-testid="converted-amount">{converted?.amount}</span>
+        <span data-testid="converted-currency">{converted?.currency}</span>
+      </div>
+    );
+  }
+
+  it('returns the authoritative amount/currency when the display rate is a fallback', () => {
+    mockUser = { id: 'u1', name: 'Sara', email: 's@x.io', role: 'TRAVELER', displayCurrency: 'EUR' };
+    mockQueryData = {
+      '["currency","rate","EUR"]': { rate: 0.09, source: 'fallback', fetchedAt: null, ageSeconds: null },
+    };
+    render(
+      <DisplayCurrencyProvider>
+        <ConverterProbe amount={2200} from="MAD" />
+      </DisplayCurrencyProvider>,
+    );
+    expect(screen.getByTestId('converted-amount').textContent).toBe('2200');
+    expect(screen.getByTestId('converted-currency').textContent).toBe('MAD');
+  });
+
+  it('still converts numerically when the display rate is live', () => {
+    mockUser = { id: 'u1', name: 'Sara', email: 's@x.io', role: 'TRAVELER', displayCurrency: 'EUR' };
+    mockQueryData = {
+      '["currency","rate","EUR"]': { rate: 0.092, source: 'live', fetchedAt: '2026-11-04T10:00:00.000Z', ageSeconds: 0 },
+    };
+    render(
+      <DisplayCurrencyProvider>
+        <ConverterProbe amount={2200} from="MAD" />
+      </DisplayCurrencyProvider>,
+    );
+    expect(Number(screen.getByTestId('converted-amount').textContent)).toBeCloseTo(202.4);
+    expect(screen.getByTestId('converted-currency').textContent).toBe('EUR');
   });
 });

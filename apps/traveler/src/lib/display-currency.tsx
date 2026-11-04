@@ -146,21 +146,99 @@ export function convertViaMadRates(
   return (amount * displayRate) / fromRate;
 }
 
-function useMadRate(currency: string): number | null {
+/**
+ * #659 (Council S5): the rates API (#649) reports WHERE each rate came
+ * from — `source` ('live' | 'cache' | 'fallback' | 'base'), plus
+ * `fetchedAt` / `ageSeconds`. The UI previously consumed only `rate`,
+ * so a static fallback constant rendered identically to a fresh live
+ * rate on cards, trip pages and checkout.
+ *
+ * Chosen behaviour (one, applied everywhere through this module): on
+ * `source === 'fallback'` conversion is SUPPRESSED — amounts render in
+ * their authoritative currency, exactly the existing no-rate behaviour.
+ * A fallback rate never produces a converted figure. 'cache' rates are
+ * real provider rates inside the server's 24h window and still convert.
+ */
+export type DisplayRateSource = 'live' | 'cache' | 'fallback' | 'base';
+
+export interface MadRateInfo {
+  rate: number | null;
+  source: DisplayRateSource | null;
+  fetchedAt: string | null;
+  ageSeconds: number | null;
+}
+
+const RATE_SOURCES: readonly string[] = ['live', 'cache', 'fallback', 'base'];
+
+/**
+ * Normalize a /currency/rates payload (or a bare rate, the shape older
+ * cached/test data carries) into MadRateInfo. A bare number has no
+ * provenance, so its source stays null — only an explicit 'fallback'
+ * source suppresses conversion.
+ */
+export function parseRatePayload(data: unknown): MadRateInfo {
+  if (typeof data === 'number') {
+    return {
+      rate: Number.isFinite(data) && data > 0 ? data : null,
+      source: null,
+      fetchedAt: null,
+      ageSeconds: null,
+    };
+  }
+  if (!data || typeof data !== 'object') {
+    return { rate: null, source: null, fetchedAt: null, ageSeconds: null };
+  }
+  const payload = data as { rate?: unknown; source?: unknown; fetchedAt?: unknown; ageSeconds?: unknown };
+  const rate = Number(payload.rate);
+  return {
+    rate: Number.isFinite(rate) && rate > 0 ? rate : null,
+    source:
+      typeof payload.source === 'string' && RATE_SOURCES.includes(payload.source)
+        ? (payload.source as DisplayRateSource)
+        : null,
+    fetchedAt: typeof payload.fetchedAt === 'string' ? payload.fetchedAt : null,
+    ageSeconds:
+      typeof payload.ageSeconds === 'number' && Number.isFinite(payload.ageSeconds)
+        ? payload.ageSeconds
+        : null,
+  };
+}
+
+function useMadRateInfo(currency: string): MadRateInfo {
   const normalized = normalizeCurrency(currency);
   const { data } = useQuery({
     queryKey: ['currency', 'rate', normalized],
     queryFn: async () => {
       const response = await apiClient.get('/currency/rates', { params: { target: normalized } });
-      const rate = Number((response.data as { rate?: unknown })?.rate);
-      return Number.isFinite(rate) && rate > 0 ? rate : null;
+      return parseRatePayload(response.data);
     },
     enabled: normalized !== BASE_CURRENCY,
     staleTime: 60 * 60 * 1000,
     retry: 1,
   });
-  if (normalized === BASE_CURRENCY) return 1;
-  return data ?? null;
+  if (normalized === BASE_CURRENCY) {
+    return { rate: 1, source: 'base', fetchedAt: null, ageSeconds: null };
+  }
+  if (data === undefined || data === null) {
+    return { rate: null, source: null, fetchedAt: null, ageSeconds: null };
+  }
+  // React Query returns the queryFn result; test doubles may seed the
+  // bare-rate shape, so normalize whatever arrived.
+  return parseRatePayload(data as unknown);
+}
+
+/**
+ * #659: public read of a currency's rate provenance (source +
+ * fetchedAt + ageSeconds) for surfaces that need to explain or gate on
+ * it. Conversion hooks below already gate on it.
+ */
+export function useRateInfo(currency: string): MadRateInfo {
+  return useMadRateInfo(currency);
+}
+
+/** True when either side of a conversion rests on a fallback rate. */
+function conversionUsesFallback(fromInfo: MadRateInfo, displayInfo: MadRateInfo): boolean {
+  return fromInfo.source === 'fallback' || displayInfo.source === 'fallback';
 }
 
 /**
@@ -175,8 +253,8 @@ function useMadRate(currency: string): number | null {
 export function useDisplayAmountConverter(fromCurrency?: string | null) {
   const { displayCurrency } = useDisplayCurrency();
   const from = normalizeCurrency(fromCurrency);
-  const fromRate = useMadRate(from);
-  const displayRate = useMadRate(displayCurrency);
+  const fromInfo = useMadRateInfo(from);
+  const displayInfo = useMadRateInfo(displayCurrency);
 
   return useCallback(
     (amount: number | string | null | undefined): { amount: number; currency: string } | null => {
@@ -184,15 +262,20 @@ export function useDisplayAmountConverter(fromCurrency?: string | null) {
       const numeric = Number(amount);
       if (!Number.isFinite(numeric)) return null;
       if (from === displayCurrency) return { amount: numeric, currency: from };
+      // #659: a fallback rate on either side suppresses conversion —
+      // the authoritative amount/currency is returned untouched.
+      if (conversionUsesFallback(fromInfo, displayInfo)) {
+        return { amount: numeric, currency: from };
+      }
       const converted = convertViaMadRates(numeric, from, displayCurrency, {
-        [from]: fromRate,
-        [displayCurrency]: displayRate,
+        [from]: fromInfo.rate,
+        [displayCurrency]: displayInfo.rate,
       });
       return converted === null
         ? { amount: numeric, currency: from }
         : { amount: converted, currency: displayCurrency };
     },
-    [from, displayCurrency, fromRate, displayRate],
+    [from, displayCurrency, fromInfo, displayInfo],
   );
 }
 
@@ -209,16 +292,22 @@ export function useDisplayPrice(
 ): string | null {
   const { displayCurrency } = useDisplayCurrency();
   const from = normalizeCurrency(fromCurrency);
-  const fromRate = useMadRate(from);
-  const displayRate = useMadRate(displayCurrency);
+  const fromInfo = useMadRateInfo(from);
+  const displayInfo = useMadRateInfo(displayCurrency);
 
   if (amount === null || amount === undefined) return null;
   const numeric = Number(amount);
   if (!Number.isFinite(numeric)) return null;
   if (from === displayCurrency) return formatCurrency(numeric, from, locale);
+  // #659: a fallback rate on either side suppresses conversion — the
+  // price renders in its authoritative currency, never as an unmarked
+  // fallback conversion.
+  if (conversionUsesFallback(fromInfo, displayInfo)) {
+    return formatCurrency(numeric, from, locale);
+  }
   const converted = convertViaMadRates(numeric, from, displayCurrency, {
-    [from]: fromRate,
-    [displayCurrency]: displayRate,
+    [from]: fromInfo.rate,
+    [displayCurrency]: displayInfo.rate,
   });
   if (converted === null) return formatCurrency(numeric, from, locale);
   return formatCurrency(converted, displayCurrency, locale);
