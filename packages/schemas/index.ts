@@ -388,6 +388,8 @@ export const RegisterSchema = z.object({
     password: z.string().min(8, "Password must be at least 8 characters"),
     dateOfBirth: z.string().min(1, "Date of birth is required"),
     role: z.enum([UserRole.Agency, UserRole.Traveler]),
+    // #777: optional referral attribution (recognition only).
+    referralCode: z.string().min(1).max(64).optional(),
 });
 
 export const ForgotPasswordSchema = z.object({

@@ -1210,5 +1210,13 @@
     "previous": "Précédent",
     "pageOf": "Page {{page}} sur {{total}}",
     "next": "Suivant"
+  },
+  "referral": {
+    "title": "Invitez des voyageurs",
+    "description": "Partagez votre lien personnel — quand quelqu'un rejoint Ouiboo grâce à lui, il apparaît dans votre compteur ici. Juste de la reconnaissance, et tous nos remerciements.",
+    "yourLink": "Votre lien de parrainage",
+    "introduced": "Vous avez fait découvrir Ouiboo à {{count}} voyageurs",
+    "introducedOne": "Vous avez fait découvrir Ouiboo à 1 voyageur",
+    "thankYouZero": "Merci de faire connaître Ouiboo — partagez votre lien pour présenter votre premier voyageur."
   }
 }

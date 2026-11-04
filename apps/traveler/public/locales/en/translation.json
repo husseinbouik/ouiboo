@@ -1210,5 +1210,13 @@
     "previous": "Previous",
     "pageOf": "Page {{page}} of {{total}}",
     "next": "Next"
+  },
+  "referral": {
+    "title": "Invite travellers",
+    "description": "Share your personal link — when someone joins Ouiboo through it, they show up in your count here. Just recognition, and our thanks.",
+    "yourLink": "Your referral link",
+    "introduced": "You've introduced {{count}} travellers to Ouiboo",
+    "introducedOne": "You've introduced 1 traveller to Ouiboo",
+    "thankYouZero": "Thank you for spreading the word — share your link to introduce your first traveller."
   }
 }

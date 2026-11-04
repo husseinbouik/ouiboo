@@ -39,6 +39,15 @@ export class RegisterDto {
     @ApiProperty({ example: '1995-04-12' })
     @IsDateString()
     dateOfBirth!: string;
+
+    // #777: optional referral attribution. A valid code links the new
+    // account to its referrer; an invalid code is ignored by the service
+    // and never fails signup. Recognition only — no value is attached.
+    @ApiProperty({ example: 'OUI-ABCDEFGHJK', required: false })
+    @IsOptional()
+    @IsString()
+    @MaxLength(64)
+    referralCode?: string;
 }
 
 export class RefreshTokenDto {

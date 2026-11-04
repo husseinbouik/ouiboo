@@ -410,6 +410,11 @@ model User {
   customTripRequests      CustomTripRequest[]
   notificationPreferences NotificationPreference?
   displayCurrency         String                  @default("MAD")
+  // #777: zero-value referral — attribution + recognition only.
+  referralCode            String?                 @unique
+  referredById            String?
+  referredBy              User?                   @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals               User[]                  @relation("UserReferrals")
   dateOfBirth             DateTime?
   ageAttestedAt           DateTime?
   termsVersion            String?

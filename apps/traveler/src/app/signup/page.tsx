@@ -91,6 +91,20 @@ export default function TravelerSignupPage() {
   );
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  // #777: referral attribution — a ?ref= code is kept (URL first, then
+  // the stored copy) so it survives the form until registration. The
+  // code is a public share label, not a credential.
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get('ref')?.trim();
+    if (fromUrl) {
+      window.localStorage.setItem('ouiboo-referral-code', fromUrl);
+      setReferralCode(fromUrl);
+      return;
+    }
+    setReferralCode(window.localStorage.getItem('ouiboo-referral-code'));
+  }, []);
 
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
@@ -102,6 +116,7 @@ export default function TravelerSignupPage() {
       return response.data;
     },
     onSuccess: (data) => {
+      window.localStorage.removeItem('ouiboo-referral-code');
       router.push(`/verify?email=${encodeURIComponent(data.email)}`);
     },
     onError: (err: ApiError) => {
@@ -117,6 +132,7 @@ export default function TravelerSignupPage() {
       password: data.password,
       dateOfBirth: data.dateOfBirth,
       role: UserRole.Traveler,
+      referralCode: referralCode || undefined,
     });
   };
 
