@@ -1191,5 +1191,19 @@
     "save": "Save profile",
     "displayCurrency": "Display currency",
     "displayCurrencyHelp": "Prices are shown in this currency. Bookings are always charged in the trip’s own currency."
+  },
+  "wishlistPage": {
+    "title": "My wishlist",
+    "subtitle": "Your saved trips",
+    "loading": "Loading your wishlist...",
+    "signedOutTitle": "Sign in to access your wishlist",
+    "signedOutBody": "Save your favorite trips and come back to them any time from your account.",
+    "signIn": "Sign in",
+    "explore": "Explore trips",
+    "emptyTitle": "Your wishlist is empty",
+    "emptyBody": "Start adding trips to your wishlist to see them here.",
+    "previous": "Previous",
+    "pageOf": "Page {{page}} of {{total}}",
+    "next": "Next"
   }
 }
