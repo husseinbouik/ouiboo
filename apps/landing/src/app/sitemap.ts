@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { absoluteLandingUrl, isLandingIndexable } from '../lib/site'
 import { GUIDE_CITY_SLUGS, GUIDE_PATHS } from '../lib/guides'
+import { BLOG_PATHS } from '../lib/blog'
 import { fetchDestinationInventory, liveCategoryPaths } from '../lib/inventory'
 
 // #564: URLs come from the resolved public origin in lib/site (the
@@ -35,11 +36,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: 'monthly',
     priority: 0.9,
   }]
-  if (!isLandingIndexable()) return [...agencesEntry, ...guideEntries]
+  // #781: the blog is editorial Layer A content — indexable by
+  // design like the guides, so its routes are listed in both gate
+  // states (index + every post, from BLOG_PATHS in lib/blog).
+  const blogEntries: MetadataRoute.Sitemap = BLOG_PATHS.map((path) => ({
+    url: absoluteLandingUrl(path),
+    lastModified: new Date(),
+    changeFrequency: 'monthly',
+    priority: 0.7,
+  }))
+  if (!isLandingIndexable()) return [...agencesEntry, ...guideEntries, ...blogEntries]
   return [{
     url: absoluteLandingUrl('/'),
     lastModified: new Date(),
     changeFrequency: 'weekly',
     priority: 1,
-  }, ...agencesEntry, ...guideEntries]
+  }, ...agencesEntry, ...guideEntries, ...blogEntries]
 }
