@@ -60,10 +60,12 @@ jobs:
 
       - name: Run API tests with coverage (fails below the floor)
         working-directory: apps/api
+        # Absolute coverageDirectory: a relative one is resolved by jest
+        # against the project rootDir (apps/api/src), not this working dir.
         run: >-
           npx jest --coverage --runInBand
           --coverageReporters=text --coverageReporters=json-summary
-          --coverageDirectory=coverage
+          --coverageDirectory=${{ github.workspace }}/apps/api/coverage
 
       - name: Enforce per-module coverage floors (payments, bookings, auth, messages)
         run: node scripts/check-api-coverage-floors.mjs apps/api/coverage/coverage-summary.json apps/api/coverage-floors.json
