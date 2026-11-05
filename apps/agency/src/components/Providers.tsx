@@ -6,6 +6,7 @@ import { MotionConfig } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ThemeProvider } from 'next-themes';
+import { ToastProvider } from '@ouiboo/ui';
 import { AuthProvider } from './AuthContext';
 import '@/lib/i18n';
 
@@ -33,7 +34,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
                 <MotionConfig reducedMotion="user">
                     <AuthProvider>
-                        {children}
+                        {/* #867: shared toast host (same as traveller) —
+                            without it, saves had no visible confirmation. */}
+                        <ToastProvider>
+                            {children}
+                        </ToastProvider>
                     </AuthProvider>
                 </MotionConfig>
             </ThemeProvider>
