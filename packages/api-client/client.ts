@@ -439,10 +439,16 @@ async function requestRotatedAccessToken(
 
   // setBrowserAccessToken assigns the in-memory token synchronously before
   // its first await, so waiters observe the rotated token as soon as this
-  // refresh settles. Its BFF-session leg (#208) is awaited by the login
-  // flows, not by refresh: a BFF hiccup must not fail an otherwise
-  // successful API refresh, so a rejection there is contained here.
-  void setBrowserAccessToken(accessToken || null).catch(() => {})
+  // refresh settles. Its BFF-session leg (#208) must SETTLE before this
+  // refresh resolves (#873): the auth probe reports a restored user the
+  // moment its /users/me retry succeeds, and a login page bounces that
+  // user straight at the proxy gate — if the gate cookie is still in
+  // flight, the proxy's 307 is consumed as the navigation result and the
+  // restored session is stranded on /login with no retry. The rejection
+  // stays contained (a BFF hiccup must not fail an otherwise successful
+  // API refresh); it just can no longer finish after the refresh's
+  // consumers have already moved on.
+  await setBrowserAccessToken(accessToken || null).catch(() => {})
 
   return accessToken || null
 }

@@ -674,3 +674,97 @@ describe('refresh-rotation race (#840)', () => {
     }
   });
 });
+
+describe('refresh settles the BFF session before resolving (#873)', () => {
+  // Same browser stand-ins as the #840 suite.
+  const storage = new Map<string, string>();
+  const localStorageStub = {
+    getItem: (key: string) => (storage.has(key) ? storage.get(key)! : null),
+    setItem: (key: string, value: string) => {
+      storage.set(key, value);
+    },
+    removeItem: (key: string) => {
+      storage.delete(key);
+    },
+    clear: () => storage.clear(),
+  };
+  const locationStub = { href: '' };
+  const fetchMock = jest.fn();
+
+  const authOf = (config: InternalAxiosRequestConfig): unknown => {
+    const headers = config.headers as unknown as {
+      get?: (name: string) => unknown;
+      Authorization?: unknown;
+      authorization?: unknown;
+    };
+    return headers?.get?.('Authorization') ??
+      headers?.Authorization ??
+      headers?.authorization;
+  };
+
+  beforeEach(() => {
+    storage.clear();
+    locationStub.href = '';
+    (global as any).window = {
+      localStorage: localStorageStub,
+      location: locationStub,
+    };
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue({ ok: true, status: 200 });
+    global.fetch = fetchMock as unknown as typeof fetch;
+  });
+
+  afterEach(async () => {
+    await setBrowserAccessToken(null);
+    clearBrowserAccessToken();
+    jest.restoreAllMocks();
+    delete (global as any).window;
+  });
+
+  it('a request healed by a refresh completes only after the BFF session POST has settled', async () => {
+    await setBrowserAccessToken('token-old');
+    jest
+      .spyOn(axios, 'post')
+      .mockResolvedValue({ data: { accessToken: 'token-new' } } as never);
+
+    // Hold the BFF session POST (the fetch behind establishAppSession)
+    // open until released: the rotated token exists, the gate cookie
+    // does not — yet.
+    let releaseSession!: () => void;
+    const sessionGate = new Promise<void>((resolve) => {
+      releaseSession = resolve;
+    });
+    fetchMock.mockReset();
+    fetchMock.mockImplementation(async () => {
+      await sessionGate;
+      return { ok: true, status: 200 };
+    });
+
+    const client = createBrowserApiClient(BASE_URL);
+    client.defaults.adapter = async (
+      config: InternalAxiosRequestConfig,
+    ): Promise<AxiosResponse> => {
+      if (authOf(config) === 'Bearer token-new') return okResponse(config);
+      throw httpError(config, 401);
+    };
+
+    let settled = false;
+    const pending = client.get('/users/me').then((res) => {
+      settled = true;
+      return res;
+    });
+
+    // Give the refresh + retry chain every chance to run ahead of the
+    // BFF leg. Before #873 the refresh resolved fire-and-forget and
+    // this request completed while the session POST was still open.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(settled).toBe(false);
+
+    releaseSession();
+    const res = await pending;
+    expect(res.status).toBe(200);
+    expect(settled).toBe(true);
+    expect(hasBrowserSessionHint()).toBe(true);
+    expect(locationStub.href).toBe('');
+  });
+});
