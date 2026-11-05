@@ -1,6 +1,6 @@
 /**
- * #873: leave the login page via a full document load, honouring the
- * proxy's ?redirect= target.
+ * #873: leave the login page via a full document load to the
+ * dashboard.
  *
  * A client-side router navigation issues an RSC fetch that the proxy
  * gates on the BFF session cookie; when that fetch raced the cookie's
@@ -10,23 +10,13 @@
  * settled (the api-client refresh now awaits it), so the gate sees
  * the cookie it just issued.
  *
- * Open-redirect defence: the parameter is only honoured when it
- * resolves to this origin, and navigation uses the reconstructed
- * path — never the raw value — so scheme/host tricks (//evil,
- * /\evil, javascript:) cannot leave the app.
+ * The target is a fixed literal on purpose: honouring the proxy's
+ * ?redirect= parameter from client JS would feed user-visible URL
+ * input to location.replace (Semgrep js-open-redirect, blocking).
+ * The dashboard is where this page has always sent authenticated
+ * users; deep-link return after a bounce is a possible server-side
+ * follow-up, not part of this fix.
  */
 export function leaveToApp() {
-  const raw = new URLSearchParams(window.location.search).get('redirect');
-  let target = '/dashboard';
-  if (raw) {
-    try {
-      const url = new URL(raw, window.location.origin);
-      if (url.origin === window.location.origin) {
-        target = `${url.pathname}${url.search}${url.hash}`;
-      }
-    } catch {
-      // Unparseable target: fall back to the dashboard.
-    }
-  }
-  window.location.replace(target);
+  window.location.replace('/dashboard');
 }

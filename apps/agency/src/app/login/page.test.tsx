@@ -90,8 +90,8 @@ jest.mock('@ouiboo/api-client', () => {
 
 jest.mock('../../lib/i18n', () => ({}));
 
-// #873: successful exits leave via leaveToApp (a full document load
-// honouring ?redirect=), not the router.
+// #873: successful exits leave via leaveToApp (a full document
+// load), not the router.
 jest.mock('@/lib/leave-to-app', () => {
   const leaveToApp = jest.fn();
   (globalThis as Record<string, unknown>).__leaveToAppMock = leaveToApp;
