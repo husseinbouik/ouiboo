@@ -18,6 +18,9 @@ import { BadgeCheck, ShieldAlert } from 'lucide-react';
 export interface SellerAgencyInfo {
     companyName?: string | null;
     legalName?: string | null;
+    /** #859: agency logo (public URL, derived by the API from the
+     * stored AgencyProfile.logo) — rendered beside the seller name. */
+    logo?: string | null;
     /** B4: licence type (ODV/DV) — part of the seller block. */
     travelLicenceType?: string | null;
     travelLicenceNumber?: string | null;
@@ -129,6 +132,7 @@ export default function SellerIdentity({
     if (!name) {
         return null;
     }
+    const logoUrl = agency.logo?.trim() || null;
 
     // #413 (Council B10): explicit what+when — only the checks that passed,
     // each with the actual date from the agency's verification record.
@@ -163,6 +167,15 @@ export default function SellerIdentity({
     return (
         <div className={`text-sm text-muted-foreground ${className}`} data-testid="seller-identity">
             <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                {logoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                        src={logoUrl}
+                        alt=""
+                        loading="lazy"
+                        className="h-9 w-9 shrink-0 rounded-lg border border-border bg-white object-contain"
+                    />
+                )}
                 <span>
                     {t('seller.organisedAndSoldBy', { name, defaultValue: `Organised and sold by ${name}` })}
                 </span>

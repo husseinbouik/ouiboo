@@ -22,7 +22,9 @@ import {
   Sun,
   Moon,
   Save,
-  Lock
+  Lock,
+  Loader2,
+  Upload
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { BankDetailsStatus } from '@ouiboo/types';
@@ -90,6 +92,40 @@ export default function SettingsPage() {
   const bankDetailsStatus = user?.agencyProfile?.bankDetailsStatus || BankDetailsStatus.Unverified;
   const bankStatusMeta = getBankDetailsStatusMeta(bankDetailsStatus);
 
+  // #859: agency logo. The AgencyProfile.logo column and the whole
+  // traveller-side rendering chain (public profile, trip seller block)
+  // already existed — the settings UI simply never exposed the field,
+  // so no agency could ever set one. Upload goes through the shared
+  // pipeline with intent 'trip-asset' (public asset treatment, the
+  // same as trip photos). logoUrl state: null = untouched (the save
+  // payload omits logo), a URL = new logo, '' = removed.
+  const [logoUrl, setLogoUrl] = React.useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = React.useState(false);
+  const [logoUploadError, setLogoUploadError] = React.useState<string | null>(null);
+  const logoFileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const displayedLogo = (logoUrl ?? user?.agencyProfile?.logo ?? '').trim();
+
+  const onLogoFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setLogoUploadError(null);
+    setIsUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('intent', 'trip-asset');
+      const response = await apiClient.post('/upload', formData);
+      const url = (response.data as { url?: string } | undefined)?.url;
+      if (!url) throw new Error('Upload response did not include a URL');
+      setLogoUrl(url);
+    } catch {
+      setLogoUploadError(t('settings.agencyLogoUploadError'));
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
   const onSubmit = async (data: SettingsFormValues) => {
     try {
       setIsSaving(true);
@@ -98,6 +134,8 @@ export default function SettingsPage() {
         apiClient.patch('/users/me', { name: data.name }),
         apiClient.patch('/agency/profile', {
           companyName: data.companyName,
+          // #859: only sent when the logo was changed in this session.
+          ...(logoUrl !== null ? { logo: logoUrl } : {}),
           bio: data.bio,
           bankDetails: data.bankDetails,
           bankAccountHolderName: data.bankAccountHolderName,
@@ -195,6 +233,63 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="settings-company">{t('settings.agencyName')}</Label>
                   <Input id="settings-company" {...register('companyName')} />
+                </div>
+                {/* #859: agency logo upload (AgencyProfile.logo). */}
+                <div className="space-y-2">
+                  <Label htmlFor="settings-logo-file">{t('settings.agencyLogo')}</Label>
+                  <div className="flex items-center gap-4">
+                    {displayedLogo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={displayedLogo}
+                        alt=""
+                        className="h-14 w-14 shrink-0 rounded-xl border border-border bg-white object-contain"
+                      />
+                    ) : (
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-dashed border-border px-1 text-center text-[10px] text-muted-foreground">
+                        {t('settings.agencyLogoNone')}
+                      </div>
+                    )}
+                    <input
+                      ref={logoFileInputRef}
+                      id="settings-logo-file"
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="hidden"
+                      onChange={onLogoFileChange}
+                    />
+                    <div className="flex flex-col items-start gap-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={isUploadingLogo}
+                        onClick={() => logoFileInputRef.current?.click()}
+                      >
+                        {isUploadingLogo ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                        {isUploadingLogo ? t('settings.agencyLogoUploading') : t('settings.agencyLogoUpload')}
+                      </Button>
+                      {displayedLogo && (
+                        <button
+                          type="button"
+                          className="text-xs text-muted-foreground underline"
+                          onClick={() => {
+                            setLogoUrl('');
+                            setLogoUploadError(null);
+                          }}
+                        >
+                          {t('settings.agencyLogoRemove')}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t('settings.agencyLogoHelp')}</p>
+                  {logoUploadError && (
+                    <p role="alert" className="text-sm font-semibold text-rose-600">{logoUploadError}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="settings-bio">{t('settings.shortBio')}</Label>
