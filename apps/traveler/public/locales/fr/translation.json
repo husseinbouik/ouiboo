@@ -970,6 +970,8 @@
     "loading": "Chargement de vos aventures...",
     "signedOutTitle": "Connectez-vous pour voir vos réservations",
     "signedOutBody": "Vos confirmations de voyage, téléversements de justificatifs et actions d’avis apparaîtront ici après votre connexion.",
+    "savedPassesTitle": "Pass enregistrés sur cet appareil",
+    "savedPassesBody": "Vous êtes hors ligne, vos réservations ne peuvent pas être actualisées — ces pass ont été enregistrés sur cet appareil et restent valables au point de rendez-vous.",
     "signIn": "Se connecter",
     "explore": "Découvrir les voyages",
     "actionRequired": "Action requise",

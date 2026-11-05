@@ -4,7 +4,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BookingPassCard, CachedBookingPass } from './BookingPassCard';
+import { BookingPassCard, CachedBookingPass, listCachedPassBookingIds } from './BookingPassCard';
 
 const mockGet = jest.fn();
 jest.mock('@/lib/api-client', () => ({
@@ -69,6 +69,24 @@ function renderCard() {
         </QueryClientProvider>,
     );
 }
+
+describe('listCachedPassBookingIds (#864)', () => {
+    beforeEach(() => {
+        window.localStorage.clear();
+    });
+
+    it('returns the booking ids of saved pass artefacts only', () => {
+        window.localStorage.setItem('ouiboo-booking-pass:booking-1', '{}');
+        window.localStorage.setItem('ouiboo-booking-pass:booking-2', '{}');
+        window.localStorage.setItem('ouiboo.session.hint', '1');
+        window.localStorage.setItem('unrelated', 'x');
+        expect(listCachedPassBookingIds().sort()).toEqual(['booking-1', 'booking-2']);
+    });
+
+    it('returns an empty list when nothing is saved', () => {
+        expect(listCachedPassBookingIds()).toEqual([]);
+    });
+});
 
 describe('BookingPassCard (#689)', () => {
     beforeEach(() => {

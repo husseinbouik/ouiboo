@@ -970,6 +970,8 @@
     "loading": "Loading your adventures...",
     "signedOutTitle": "Sign in to view your bookings",
     "signedOutBody": "Your trip confirmations, payment proof uploads, and review actions all live here once you are signed in.",
+    "savedPassesTitle": "Saved passes on this device",
+    "savedPassesBody": "You're offline, so your bookings can't be refreshed — these passes were saved on this device and stay valid at the meeting point.",
     "signIn": "Sign in",
     "explore": "Explore trips",
     "actionRequired": "Action required",

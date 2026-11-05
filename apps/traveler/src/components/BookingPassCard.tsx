@@ -44,6 +44,27 @@ interface CachedPassEntry {
   refundStatus?: string | null;
 }
 
+/**
+ * #864: the booking ids this device holds a saved pass artefact for.
+ * The bookings list renders them as its offline fallback when the live
+ * bookings query cannot load — the pass is the artefact a traveller
+ * actually needs at a meeting point with no signal.
+ */
+export function listCachedPassBookingIds(): string[] {
+  try {
+    const ids: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (key && key.startsWith('ouiboo-booking-pass:')) {
+        ids.push(key.slice('ouiboo-booking-pass:'.length));
+      }
+    }
+    return ids;
+  } catch {
+    return [];
+  }
+}
+
 function readCachedPassEntry(bookingId: string): CachedPassEntry | null {
   try {
     const raw = window.localStorage.getItem(passCacheKey(bookingId));
