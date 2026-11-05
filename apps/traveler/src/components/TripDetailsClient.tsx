@@ -108,6 +108,8 @@ type TripDetails = {
     id?: string;
     companyName?: string | null;
     legalName?: string | null;
+    /** #859: agency logo (public URL from GET /trips/:id) for SellerIdentity. */
+    logo?: string | null;
     travelLicenceNumber?: string | null;
     travelLicenceStatus?: string | null;
     licenceExpiry?: string | null;
