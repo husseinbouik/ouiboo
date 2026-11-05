@@ -94,6 +94,19 @@ export function getAuthErrorMessage(
     }
   }
 
+  // 5xx (#857): never surface the raw server detail — it is unlocalized
+  // server text and can carry internals. Every app shows the same
+  // localized "our end" message for the whole 5xx class instead. (The
+  // JWT_NOT_CONFIGURED code already maps to this same message.)
+  const status = (response as { status?: unknown })?.status;
+  if (typeof status === 'number' && status >= 500) {
+    return {
+      key: 'serverError',
+      fallback: t('auth.errors.serverError', 'Something went wrong on our end. Please try again later.'),
+      code,
+    };
+  }
+
   if (code && ERROR_MAP[code]) {
     const mapped = ERROR_MAP[code];
     return {
