@@ -45,7 +45,9 @@
     "mobileMenu": "Navigation menu",
     "closeMenu": "Close navigation menu",
     "displayCurrency": "Display currency",
-    "messages": "Messages"
+    "messages": "Messages",
+    "notifications": "Notifications",
+    "notificationsUnread": "{{count}} unread notifications"
   },
   "hero": {
     "tagline": "Discover the Uncharted",

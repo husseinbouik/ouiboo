@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { BadgeCheck, MapPin, MessageCircle, QrCode } from 'lucide-react';
@@ -23,53 +23,61 @@ import { formatCurrency } from '@ouiboo/utils';
  * (localStorage) so it renders offline at the meeting point; the
  * cached copy is replaced on every successful load and is the only
  * authenticated artefact the offline path serves.
+ *
+ * #847: the cached artefact is an entry that also carries the few
+ * booking-level fields the render needs (agency business phone,
+ * payment-plan status, refund status), so the pass can render from the
+ * device alone — the booking page mounts CachedBookingPass when its
+ * booking query cannot load (e.g. a cold offline reopen), instead of
+ * stranding the traveller on the not-found card. The agency EMERGENCY
+ * contact is deliberately NOT persisted (sensitive data does not belong
+ * in clear-text on-device storage); the live render still uses it.
+ * Entries written before #847 stored the bare pass JSON; those still
+ * read back (pass only).
  */
 const passCacheKey = (bookingId: string) => `ouiboo-booking-pass:${bookingId}`;
 
-function readCachedPass(bookingId: string): BookingPass | null {
+interface CachedPassEntry {
+  pass: BookingPass;
+  agencyBusinessPhone?: string | null;
+  paymentPlanStatus?: string | null;
+  refundStatus?: string | null;
+}
+
+function readCachedPassEntry(bookingId: string): CachedPassEntry | null {
   try {
     const raw = window.localStorage.getItem(passCacheKey(bookingId));
-    return raw ? (JSON.parse(raw) as BookingPass) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedPassEntry | BookingPass;
+    if (parsed && typeof parsed === 'object' && 'pass' in parsed && parsed.pass) {
+      return parsed as CachedPassEntry;
+    }
+    // Legacy (#690) entry: the stored value IS the pass.
+    return { pass: parsed as BookingPass };
   } catch {
     return null;
   }
 }
 
-export function BookingPassCard({ booking }: { booking: BookingDetails }) {
+interface BookingPassViewProps {
+  pass: BookingPass;
+  offline: boolean;
+  agencyBusinessPhone?: string | null;
+  agencyEmergencyContactPhone?: string | null;
+  paymentPlanStatus?: string | null;
+  refundStatus?: string | null;
+}
+
+function BookingPassView({
+  pass,
+  offline,
+  agencyBusinessPhone,
+  agencyEmergencyContactPhone,
+  paymentPlanStatus,
+  refundStatus,
+}: BookingPassViewProps) {
   const { t, i18n } = useTranslation();
-  const bookingId = booking.id;
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const [cachedPass, setCachedPass] = useState<BookingPass | null>(null);
-
-  useEffect(() => {
-    setCachedPass(readCachedPass(bookingId));
-  }, [bookingId]);
-
-  const { data: livePass } = useQuery<BookingPass | null>({
-    queryKey: ['booking-pass', bookingId],
-    queryFn: async () => {
-      try {
-        const response = await apiClient.get(`/bookings/${bookingId}/pass`);
-        return response.data as BookingPass;
-      } catch {
-        return null;
-      }
-    },
-  });
-
-  useEffect(() => {
-    if (livePass) {
-      setCachedPass(livePass);
-      try {
-        window.localStorage.setItem(passCacheKey(bookingId), JSON.stringify(livePass));
-      } catch {
-        // Storage full/blocked: the live pass still renders.
-      }
-    }
-  }, [livePass, bookingId]);
-
-  const pass = livePass ?? cachedPass;
-  const offline = !livePass && Boolean(cachedPass);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,26 +98,12 @@ export function BookingPassCard({ booking }: { booking: BookingDetails }) {
     };
   }, [pass?.token]);
 
-  if (!pass) {
-    return (
-      <Card className="rounded-3xl border border-border shadow-sm bg-card" data-testid="booking-pass-pending">
-        <div className="p-8 space-y-2">
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-            <QrCode className="h-4 w-4 text-sunset-orange" /> {t('bookingPass.title')}
-          </p>
-          <p className="text-sm text-muted-foreground">{t('bookingPass.pending')}</p>
-        </div>
-      </Card>
-    );
-  }
-
-  const agency = booking.session.template.agency;
   const sellerName = pass.seller.legalName || pass.seller.companyName;
-  const contactPhone = agency.businessPhone || agency.emergencyContactPhone;
+  const contactPhone = agencyBusinessPhone || agencyEmergencyContactPhone;
   const whatsappHref = agencyWhatsAppHref(contactPhone, t('bookingPass.whatsappGreeting', { seller: sellerName }));
-  const planStatus = booking.paymentPlan?.status;
+  const planStatus = paymentPlanStatus;
   const stateKey =
-    booking.refundStatus || planStatus === 'REFUND_DUE'
+    refundStatus || planStatus === 'REFUND_DUE'
       ? 'refundDue'
       : planStatus === 'BALANCE_DUE'
         ? 'balanceDue'
@@ -227,5 +221,114 @@ export function BookingPassCard({ booking }: { booking: BookingDetails }) {
         )}
       </div>
     </Card>
+  );
+}
+
+export function BookingPassCard({ booking }: { booking: BookingDetails }) {
+  const { t } = useTranslation();
+  const bookingId = booking.id;
+  const [cachedEntry, setCachedEntry] = useState<CachedPassEntry | null>(null);
+
+  const agency = booking.session.template.agency;
+  const agencyBusinessPhone = agency.businessPhone ?? null;
+  const agencyEmergencyContactPhone = agency.emergencyContactPhone ?? null;
+  const paymentPlanStatus = booking.paymentPlan?.status ?? null;
+  const refundStatus = booking.refundStatus ?? null;
+
+  useEffect(() => {
+    setCachedEntry(readCachedPassEntry(bookingId));
+  }, [bookingId]);
+
+  const { data: livePass } = useQuery<BookingPass | null>({
+    queryKey: ['booking-pass', bookingId],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get(`/bookings/${bookingId}/pass`);
+        return response.data as BookingPass;
+      } catch {
+        return null;
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (livePass) {
+      const entry: CachedPassEntry = {
+        pass: livePass,
+        agencyBusinessPhone,
+        paymentPlanStatus,
+        refundStatus,
+      };
+      setCachedEntry(entry);
+      try {
+        window.localStorage.setItem(passCacheKey(bookingId), JSON.stringify(entry));
+      } catch {
+        // Storage full/blocked: the live pass still renders.
+      }
+    }
+  }, [livePass, bookingId, agencyBusinessPhone, paymentPlanStatus, refundStatus]);
+
+  const pass = livePass ?? cachedEntry?.pass ?? null;
+  const offline = !livePass && Boolean(cachedEntry?.pass);
+
+  if (!pass) {
+    return (
+      <Card className="rounded-3xl border border-border shadow-sm bg-card" data-testid="booking-pass-pending">
+        <div className="p-8 space-y-2">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+            <QrCode className="h-4 w-4 text-sunset-orange" /> {t('bookingPass.title')}
+          </p>
+          <p className="text-sm text-muted-foreground">{t('bookingPass.pending')}</p>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <BookingPassView
+      pass={pass}
+      offline={offline}
+      agencyBusinessPhone={agencyBusinessPhone}
+      agencyEmergencyContactPhone={agencyEmergencyContactPhone}
+      paymentPlanStatus={paymentPlanStatus}
+      refundStatus={refundStatus}
+    />
+  );
+}
+
+/**
+ * #847: the offline gate for the booking page. When the booking itself
+ * cannot be loaded (cold offline reopen, request failure), the page
+ * renders this instead of jumping straight to "not found": if the
+ * device holds a pass artefact for the booking, the traveller gets
+ * their pass — QR, meeting point, agency contact — from the artefact.
+ * Only when no artefact exists does the fallback (the not-found card)
+ * show. Renders nothing for the one frame before the artefact read
+ * settles, so a saved pass never flashes "not found" first.
+ */
+export function CachedBookingPass({
+  bookingId,
+  fallback = null,
+}: {
+  bookingId: string;
+  fallback?: ReactNode;
+}) {
+  const [entry, setEntry] = useState<CachedPassEntry | null | undefined>(undefined);
+
+  useEffect(() => {
+    setEntry(readCachedPassEntry(bookingId));
+  }, [bookingId]);
+
+  if (entry === undefined) return null;
+  if (!entry) return <>{fallback}</>;
+
+  return (
+    <BookingPassView
+      pass={entry.pass}
+      offline
+      agencyBusinessPhone={entry.agencyBusinessPhone}
+      paymentPlanStatus={entry.paymentPlanStatus ?? null}
+      refundStatus={entry.refundStatus ?? null}
+    />
   );
 }

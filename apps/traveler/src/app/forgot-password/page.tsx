@@ -104,6 +104,7 @@ export default function TravelerForgotPasswordPage() {
                     <Input
                       id="email"
                       type="email"
+                      autoComplete="username"
                       placeholder={t('forgotPassword.emailPlaceholder')}
                       className="pl-10 h-12 bg-muted border-border focus:bg-background focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
                       {...register('email')}

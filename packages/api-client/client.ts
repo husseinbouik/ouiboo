@@ -301,11 +301,53 @@ export function createApiClient(explicitBaseUrl?: string) {
 
 const inFlightRefreshes = new Map<string, Promise<string | null>>()
 
-async function performBrowserRefresh(
+// ---------------------------------------------------------------------------
+// Cross-context refresh coordination (#846).
+//
+// The single-flight above is module state: it dedupes refreshes inside ONE
+// JS context (one tab). It cannot see other tabs/windows of the same
+// origin — and a browser restart restores them all at once. Reproduced on
+// staging (founder's phone, #690 test): two tabs restoring concurrently
+// each fired their own POST /auth/refresh carrying the same single-use
+// cookie; one rotated (201), the other was rejected by the server's atomic
+// claim (401), and the loser's teardown deleted the SHARED session hint +
+// BFF cookie — so every later load presented as logged out even though
+// the refresh cookie was still valid.
+//
+// Two defences, neither of which touches the server rotation:
+// 1. Web Locks serialize the refresh across every context of the origin,
+//    so compliant contexts never present the cookie concurrently. A
+//    waiting context's request, when its turn comes, sends the cookie
+//    jar's CURRENT value (the browser never snapshots cookie values), so
+//    it presents the rotated successor and succeeds.
+// 2. If a refresh is still rejected with 401 (a context that could not
+//    take the lock — older bundle, locks unavailable — raced us), retry
+//    the POST exactly once after a short delay, inside the lock: by then
+//    the winner's Set-Cookie has landed, so the retry presents the
+//    current cookie. Nothing is replayed and no grace window is asked of
+//    the server; a genuinely revoked session fails the retry as well and
+//    the caller tears down exactly as before.
+// ---------------------------------------------------------------------------
+
+const REFRESH_LOCK_NAME = 'ouiboo:auth-refresh'
+const REFRESH_RACE_RETRY_DELAY_MS = 400
+
+type LockManagerLike = {
+  request: (
+    name: string,
+    callback: () => Promise<string | null>
+  ) => Promise<string | null>
+}
+
+function getWebLocks(): LockManagerLike | null {
+  if (typeof navigator === 'undefined') return null
+  const locks = (navigator as Navigator & { locks?: LockManagerLike }).locks
+  return locks && typeof locks.request === 'function' ? locks : null
+}
+
+async function requestRotatedAccessToken(
   apiBaseUrl: string
 ): Promise<string | null> {
-  if (typeof window === 'undefined') return null
-
   const response = await axios.post(
     `${apiBaseUrl}/auth/refresh`,
     {},
@@ -324,6 +366,38 @@ async function performBrowserRefresh(
   void setBrowserAccessToken(accessToken || null).catch(() => {})
 
   return accessToken || null
+}
+
+async function performRefreshAttempt(
+  apiBaseUrl: string
+): Promise<string | null> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await requestRotatedAccessToken(apiBaseUrl)
+    } catch (error) {
+      const status = (
+        error as { response?: { status?: number } } | null
+      )?.response?.status
+      if (status !== 401 || attempt >= 1) throw error
+      await new Promise((resolve) =>
+        setTimeout(resolve, REFRESH_RACE_RETRY_DELAY_MS)
+      )
+    }
+  }
+}
+
+async function performBrowserRefresh(
+  apiBaseUrl: string
+): Promise<string | null> {
+  if (typeof window === 'undefined') return null
+
+  const locks = getWebLocks()
+  if (locks) {
+    return locks.request(REFRESH_LOCK_NAME, () =>
+      performRefreshAttempt(apiBaseUrl)
+    )
+  }
+  return performRefreshAttempt(apiBaseUrl)
 }
 
 function getSharedRefreshedToken(

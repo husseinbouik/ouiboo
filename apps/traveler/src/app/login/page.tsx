@@ -122,9 +122,10 @@ export default function TravelerLoginPage() {
                         <div className="absolute start-4 top-1/2 -translate-y-1/2 text-foreground group-focus-within:text-sunset-orange transition-colors">
                             <Mail className="h-5 w-5" />
                         </div>
-                        <Input 
-                            id="email" 
-                            type="email" 
+                        <Input
+                            id="email"
+                            type="email"
+                            autoComplete="username"
                             placeholder={t('login.emailPlaceholder', 'hello@example.com')}
                             className="ps-12 h-14 bg-muted border-border rounded-2xl focus:bg-background focus:ring-2 focus:ring-sunset-orange/10 focus:border-sunset-orange transition-all font-medium text-foreground placeholder:text-muted-foreground"
                             {...register('email')}
@@ -142,9 +143,10 @@ export default function TravelerLoginPage() {
                 </div>
                 <div className="relative">
                   <Lock className="absolute start-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input 
-                    id="password" 
+                  <Input
+                    id="password"
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
                     placeholder={t('login.passwordPlaceholder', '********')}
                     className="ps-10 pe-12 h-12 bg-muted border-border focus:bg-background focus:border-sunset-orange focus:ring-sunset-orange transition-all duration-200"
                     {...register('password')}

@@ -118,6 +118,7 @@ if (!isMounted) return <div className="min-h-screen bg-background" />;
                   <Input
                     id="email"
                     type="email"
+                    autoComplete="username"
                     placeholder={t('login.emailPlaceholder')}
                     className="ps-10 h-12 bg-muted border-border focus:bg-background focus:border-primary focus:ring-primary transition-all duration-200"
                     {...register('email', { required: t('login.emailRequired') })}
@@ -138,6 +139,7 @@ if (!isMounted) return <div className="min-h-screen bg-background" />;
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
                     placeholder={t('login.passwordPlaceholder')}
                     className="ps-10 pe-12 h-12 bg-muted border-border focus:bg-background focus:border-primary focus:ring-primary transition-all duration-200"
                     {...register('password', { required: t('login.passwordRequired') })}
