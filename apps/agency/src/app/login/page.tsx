@@ -11,6 +11,7 @@ import { ArrowRight, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
 import { apiClient } from '@/lib/api-client';
+import { leaveToApp } from '@/lib/leave-to-app';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { type LoginInput } from '@ouiboo/schemas';
@@ -27,6 +28,7 @@ type ApiError = {
     } | string;
   };
 };
+
 
 export default function AgencyLoginPage() {
   const { t, i18n } = useTranslation();
@@ -48,9 +50,9 @@ export default function AgencyLoginPage() {
   // Bounce authenticated users to the dashboard
   useEffect(() => {
     if (!isLoading && user) {
-      router.replace('/dashboard');
+      leaveToApp();
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading]);
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginInput) => {
@@ -84,7 +86,7 @@ export default function AgencyLoginPage() {
         return;
       }
       await refetch();
-      router.push('/dashboard');
+      leaveToApp();
     },
     onError: (err: ApiError) => {
       console.error('Login failed:', err);

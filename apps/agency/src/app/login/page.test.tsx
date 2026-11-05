@@ -90,6 +90,16 @@ jest.mock('@ouiboo/api-client', () => {
 
 jest.mock('../../lib/i18n', () => ({}));
 
+// #873: successful exits leave via leaveToApp (a full document load
+// honouring ?redirect=), not the router.
+jest.mock('@/lib/leave-to-app', () => {
+  const leaveToApp = jest.fn();
+  (globalThis as Record<string, unknown>).__leaveToAppMock = leaveToApp;
+  return { leaveToApp };
+});
+const leaveToAppMock = () =>
+  (globalThis as Record<string, unknown>).__leaveToAppMock as jest.Mock;
+
 const postMock = () => (globalThis as Record<string, unknown>).__postMock as jest.Mock;
 const setTokenMock = () =>
   (globalThis as Record<string, unknown>).__setTokenMock as jest.Mock;
@@ -153,6 +163,7 @@ describe('AgencyLoginPage wrong-account feedback (#857)', () => {
     expect(await screen.findByText('login.wrongAccount')).toBeTruthy();
     expect(setTokenMock()).not.toHaveBeenCalled();
     expect(routerMock().push).not.toHaveBeenCalledWith('/dashboard');
+    expect(leaveToAppMock()).not.toHaveBeenCalled();
   });
 
   it('shows the admin message and establishes no session for an MFA admin payload', async () => {
@@ -183,7 +194,8 @@ describe('AgencyLoginPage wrong-account feedback (#857)', () => {
 
     await submitLogin(container, 'g@example.test', 'secret');
 
-    await waitFor(() => expect(routerMock().push).toHaveBeenCalledWith('/dashboard'));
+    await waitFor(() => expect(leaveToAppMock()).toHaveBeenCalled());
+    expect(routerMock().push).not.toHaveBeenCalledWith('/dashboard');
     expect(setTokenMock()).toHaveBeenCalledWith('tok');
     expect(screen.queryByText('login.wrongAccount')).toBeNull();
   });
