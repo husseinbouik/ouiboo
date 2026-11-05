@@ -80,7 +80,7 @@ describe('traveller locale parity (#424)', () => {
     it('ships a complete, non-English traveller profile namespace (#743)', () => {
         const keys = [
             'signedOutTitle', 'title', 'personalInformation', 'fullName',
-            'accountRole', 'emailAddress', 'avatarUrl', 'save', 'displayCurrency',
+            'accountRole', 'emailAddress', 'avatarPhoto', 'save', 'displayCurrency',
         ];
         for (const key of keys) {
             expect((fr as any).profilePage[key]).toBeDefined();
