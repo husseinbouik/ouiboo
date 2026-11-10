@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AxiosInstance } from 'axios';
-import { clearBrowserSession, createBrowserApiClient, hasPossibleBrowserSession } from '@ouiboo/api-client';
+import { clearBrowserSession, createBrowserApiClient, hasBrowserSessionHint, hasPossibleBrowserSession, persistLastKnownProfile, readLastKnownProfile } from '@ouiboo/api-client';
 
 const defaultApiClient = createBrowserApiClient(
     process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1',
@@ -64,8 +64,31 @@ export function createAuthContext<TUser extends AuthBaseUser>(options: AuthConte
                 }
                 try {
                     const response = await apiClient.get('/users/me');
-                    return response.data as TUser;
-                } catch {
+                    const profile = response.data as TUser;
+                    // #864: remember the verified profile (display
+                    // fields only, never token material) so a later
+                    // load that cannot reach the API can still render
+                    // the signed-in shell instead of a sign-in wall.
+                    persistLastKnownProfile(profile);
+                    return profile;
+                } catch (error) {
+                    // #864: failing to VERIFY a session is not the same
+                    // as being signed out. The session is definitively
+                    // dead only when the API answered AND the api-client
+                    // teardown consumed the session hint (a refresh the
+                    // server rejected). A network failure — no response
+                    // at all (offline), or a 401 whose refresh failed
+                    // without an answer (#863) — leaves the hint in
+                    // place: fall back to the last verified profile and
+                    // let data queries fail soft. On reconnect the
+                    // query refetches and the live profile replaces
+                    // the persisted one.
+                    const answered = Boolean(
+                        (error as { response?: unknown } | null)?.response,
+                    );
+                    if (!answered || hasBrowserSessionHint()) {
+                        return readLastKnownProfile<TUser>();
+                    }
                     return null;
                 }
             },

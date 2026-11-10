@@ -64,6 +64,79 @@ export function hasPossibleBrowserSession(): boolean {
   return Boolean(browserAccessToken) || hasBrowserSessionHint()
 }
 
+// Last-known profile (#864). The hint above records THAT a session may
+// exist; this records WHO it was last verified to be — display fields
+// only (id/name/email/role/avatar/displayCurrency), never any token or
+// credential material, under the same storage rule as the hint. It is
+// written on every successful GET /users/me (packages/auth) and removed
+// on exactly the paths that remove the hint (sign-out, session
+// teardown), so the two never disagree about whether a session exists.
+// Its purpose: a load that cannot VERIFY the session (offline, a
+// network-failed refresh) renders the signed-in shell from the last
+// verified profile instead of collapsing to a sign-in wall — the
+// session itself still lives and dies by the refresh cookie + API.
+export const BROWSER_SESSION_PROFILE_KEY = 'ouiboo.session.profile'
+
+export interface LastKnownProfile {
+  id: string
+  name?: string
+  email: string
+  role?: string
+  avatar?: string
+  displayCurrency?: string
+  [key: string]: unknown
+}
+
+export function persistLastKnownProfile(profile: unknown): void {
+  if (typeof window === 'undefined') return
+  if (!profile || typeof profile !== 'object') return
+  const p = profile as Record<string, unknown>
+  if (typeof p.id !== 'string' || typeof p.email !== 'string') return
+  try {
+    window.localStorage.setItem(
+      BROWSER_SESSION_PROFILE_KEY,
+      JSON.stringify({
+        id: p.id,
+        name: p.name,
+        email: p.email,
+        role: p.role,
+        avatar: p.avatar,
+        displayCurrency: p.displayCurrency,
+      })
+    )
+  } catch {
+    // Storage unavailable: the profile is a degradation aid, never a
+    // requirement — verification proceeds exactly as before.
+  }
+}
+
+export function readLastKnownProfile<T = LastKnownProfile>(): T | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = window.localStorage.getItem(BROWSER_SESSION_PROFILE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as LastKnownProfile | null
+    if (
+      !parsed ||
+      typeof parsed.id !== 'string' ||
+      typeof parsed.email !== 'string'
+    ) {
+      return null
+    }
+    return parsed as T
+  } catch {
+    return null
+  }
+}
+
+function removeLastKnownProfile(): void {
+  try {
+    window.localStorage.removeItem(BROWSER_SESSION_PROFILE_KEY)
+  } catch {
+    // See persistLastKnownProfile.
+  }
+}
+
 export interface BrowserAuthOptions {
   loginPath?: string
 }
@@ -75,6 +148,7 @@ export async function setBrowserAccessToken(token: string | null): Promise<void>
       writeBrowserSessionHint()
     } else {
       removeBrowserSessionHint()
+      removeLastKnownProfile()
     }
   }
   // Establish the BFF app session (#208) so the Next.js proxy can validate
@@ -92,6 +166,7 @@ export function clearBrowserAccessToken() {
   browserAccessToken = null
   if (typeof window !== 'undefined') {
     removeBrowserSessionHint()
+    removeLastKnownProfile()
   }
   // Clear the BFF app session (#208). Fire-and-forget.
   if (typeof window !== 'undefined') {
@@ -113,6 +188,7 @@ export async function clearBrowserSession(): Promise<void> {
   browserAccessToken = null
   if (typeof window === 'undefined') return
   removeBrowserSessionHint()
+  removeLastKnownProfile()
   try {
     await clearAppSession()
   } catch {
@@ -351,7 +427,10 @@ async function requestRotatedAccessToken(
   const response = await axios.post(
     `${apiBaseUrl}/auth/refresh`,
     {},
-    { withCredentials: true },
+    // #863: bound the refresh like every other call (#318) — the bare
+    // axios default has NO timeout, so a black-hole connection used to
+    // hang the restore (and every page waiting on it) forever.
+    { withCredentials: true, timeout: API_REQUEST_TIMEOUT_MS },
   )
   const payload = isApiEnvelope(response.data)
     ? response.data.data as { accessToken?: string }
@@ -360,10 +439,16 @@ async function requestRotatedAccessToken(
 
   // setBrowserAccessToken assigns the in-memory token synchronously before
   // its first await, so waiters observe the rotated token as soon as this
-  // refresh settles. Its BFF-session leg (#208) is awaited by the login
-  // flows, not by refresh: a BFF hiccup must not fail an otherwise
-  // successful API refresh, so a rejection there is contained here.
-  void setBrowserAccessToken(accessToken || null).catch(() => {})
+  // refresh settles. Its BFF-session leg (#208) must SETTLE before this
+  // refresh resolves (#873): the auth probe reports a restored user the
+  // moment its /users/me retry succeeds, and a login page bounces that
+  // user straight at the proxy gate — if the gate cookie is still in
+  // flight, the proxy's 307 is consumed as the navigation result and the
+  // restored session is stranded on /login with no retry. The rejection
+  // stays contained (a BFF hiccup must not fail an otherwise successful
+  // API refresh); it just can no longer finish after the refresh's
+  // consumers have already moved on.
+  await setBrowserAccessToken(accessToken || null).catch(() => {})
 
   return accessToken || null
 }
@@ -375,12 +460,27 @@ async function performRefreshAttempt(
     try {
       return await requestRotatedAccessToken(apiBaseUrl)
     } catch (error) {
-      const status = (
+      const response = (
         error as { response?: { status?: number } } | null
-      )?.response?.status
-      if (status !== 401 || attempt >= 1) throw error
+      )?.response
+      const status = response?.status
+      // #863: the single in-lock retry covers BOTH transient classes —
+      // the #846 401 race (the winner's Set-Cookie lands during the
+      // wait) and a network failure with no answer at all (connection
+      // reset/timeout while the API cold-wakes or a mobile connection
+      // blips). A definitive non-401 answer is never retried, and
+      // nothing is retried twice.
+      const isNetworkFailure = !response
+      if (attempt >= 1 || (status !== 401 && !isNetworkFailure)) {
+        throw error
+      }
       await new Promise((resolve) =>
-        setTimeout(resolve, REFRESH_RACE_RETRY_DELAY_MS)
+        setTimeout(
+          resolve,
+          isNetworkFailure
+            ? SESSION_RETRY_DELAY_MS
+            : REFRESH_RACE_RETRY_DELAY_MS
+        )
       )
     }
   }
@@ -518,6 +618,7 @@ export function attachBrowserAuth(
         // by every client instance, so concurrent 401s across instances
         // produce exactly one POST /auth/refresh.
         if (hadAccessToken || hasBrowserSessionHint()) {
+          let refreshError: unknown = null
           try {
             const newToken = await getSharedRefreshedToken(apiBaseUrl)
             if (newToken) {
@@ -527,8 +628,24 @@ export function attachBrowserAuth(
               }
               return client(originalRequest)
             }
-          } catch {
-            // Continue to the logout path when refresh fails.
+          } catch (error) {
+            refreshError = error
+          }
+          // #863: a refresh that failed WITHOUT an answer (network
+          // reset/timeout) says nothing about whether the session is
+          // valid — yet falling through to teardown deleted the
+          // session hint AND the BFF cookie, turning one transient
+          // failure into a logged-out state on every later load
+          // (founder report 2026-11-05: fresh loads demanded login
+          // while the in-SPA session was still alive). Only a
+          // definitive rejection — a refresh the server ANSWERED
+          // (e.g. 401, handled above after its race retry), or a
+          // tokenless success — continues to the teardown below.
+          if (
+            refreshError &&
+            !(refreshError as { response?: unknown }).response
+          ) {
+            return Promise.reject(error)
           }
         }
 

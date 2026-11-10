@@ -193,6 +193,27 @@ describe('SellerIdentity (#371)', () => {
         expect(container.firstChild).toBeNull();
     });
 
+    it('renders the agency logo beside the seller name when one is set (#859)', () => {
+        const { container } = render(
+            <SellerIdentity
+                agency={{
+                    companyName: 'Atlas Adventures',
+                    logo: 'https://files.example.com/trips/agency-1/logo.png',
+                }}
+            />,
+        );
+        const img = container.querySelector('img');
+        expect(img).not.toBeNull();
+        expect(img?.getAttribute('src')).toBe('https://files.example.com/trips/agency-1/logo.png');
+    });
+
+    it('renders no logo image when the agency has none (#859)', () => {
+        const { container } = render(
+            <SellerIdentity agency={{ companyName: 'Atlas Adventures', logo: null }} />,
+        );
+        expect(container.querySelector('img')).toBeNull();
+    });
+
     it('renders the what+when checks line with the actual verification dates (#413)', () => {
         const licenceDate = new Date('2026-10-24T00:00:00.000Z');
         const insuranceDate = new Date('2026-10-25T00:00:00.000Z');

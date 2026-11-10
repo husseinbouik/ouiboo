@@ -11,10 +11,14 @@
  * - Navigations: network first, falling back to the cached app shell
  *   pages the visitor already loaded (so a loaded booking page still
  *   opens offline and its on-device pass artefact can render).
+ *   Only 200 responses are cached (#864): the proxy 307s signed-out
+ *   visits to /login, and caching that redirect meant a later offline
+ *   load of the same route replayed the 307 and walled a signed-in
+ *   user out. A redirect is never a usable offline shell.
  * - Static assets (/_next/static, /locales, icons, manifest):
  *   stale-while-revalidate.
  */
-const SW_VERSION = 'ouiboo-sw-v2';
+const SW_VERSION = 'ouiboo-sw-v3';
 const STATIC_CACHE = `${SW_VERSION}-static`;
 const PAGE_CACHE = `${SW_VERSION}-pages`;
 
@@ -51,8 +55,15 @@ self.addEventListener('fetch', (event) => {
       (async () => {
         try {
           const response = await fetch(request);
-          const cache = await caches.open(PAGE_CACHE);
-          cache.put(request, response.clone());
+          // #864: cache only a 200 document. Navigation requests carry
+          // redirect:'manual', so a proxy 307 arrives here as an
+          // opaqueredirect — cache.put would store it and the offline
+          // fallback would replay the sign-in redirect for a signed-in
+          // user. Non-200s are returned, never stored.
+          if (response.status === 200) {
+            const cache = await caches.open(PAGE_CACHE);
+            cache.put(request, response.clone());
+          }
           return response;
         } catch {
           const cached = await caches.match(request, { ignoreSearch: true });
@@ -73,7 +84,11 @@ self.addEventListener('fetch', (event) => {
         const cached = await cache.match(request);
         const network = fetch(request)
           .then((response) => {
-            cache.put(request, response.clone());
+            // Same rule as navigations (#864): only a 200 is stored,
+            // so a 404/redirect can never poison the static cache.
+            if (response.ok) {
+              cache.put(request, response.clone());
+            }
             return response;
           })
           .catch(() => cached);

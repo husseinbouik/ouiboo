@@ -11,6 +11,7 @@ import { ArrowRight, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
 import { apiClient } from '@/lib/api-client';
+import { leaveToApp } from '@/lib/leave-to-app';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { type LoginInput } from '@ouiboo/schemas';
@@ -27,6 +28,7 @@ type ApiError = {
     } | string;
   };
 };
+
 
 export default function AgencyLoginPage() {
   const { t, i18n } = useTranslation();
@@ -48,9 +50,9 @@ export default function AgencyLoginPage() {
   // Bounce authenticated users to the dashboard
   useEffect(() => {
     if (!isLoading && user) {
-      router.replace('/dashboard');
+      leaveToApp();
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading]);
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginInput) => {
@@ -58,14 +60,33 @@ export default function AgencyLoginPage() {
       return response.data;
     },
     onSuccess: async (data) => {
+      // #857: a *valid* login for the wrong kind of account used to
+      // proceed exactly like a success — the session was established,
+      // the router pushed to /dashboard, and the proxy bounced straight
+      // back to /login with no message anywhere (the founder's "no
+      // error message, nothing" report). Gate on the login response
+      // itself: anything that is not an agency session stops here with
+      // a clear, localized explanation and never establishes a session.
+      if (!data?.accessToken) {
+        setError(
+          data?.mfaRequired || data?.mfaEnrollmentRequired
+            ? t('login.adminAccount')
+            : t('login.sessionFailed'),
+        );
+        return;
+      }
+      if (data?.user?.role !== 'AGENCY') {
+        setError(t('login.wrongAccount'));
+        return;
+      }
       try {
         await setBrowserAccessToken(data.accessToken);
       } catch {
-        setError('Failed to establish session. Please try again.');
+        setError(t('login.sessionFailed'));
         return;
       }
       await refetch();
-      router.push('/dashboard');
+      leaveToApp();
     },
     onError: (err: ApiError) => {
       console.error('Login failed:', err);
@@ -86,6 +107,20 @@ export default function AgencyLoginPage() {
       password: data.password,
     });
   };
+
+  // #857: a cold API can keep the mutation pending for tens of seconds
+  // (20s timeout + one no-response retry, then the BFF session call).
+  // The button label alone reads as "nothing is happening" — surface a
+  // "still connecting" hint once the wait is clearly abnormal.
+  const [showSlowHint, setShowSlowHint] = useState(false);
+  useEffect(() => {
+    if (!loginMutation.isPending) {
+      setShowSlowHint(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowSlowHint(true), 8000);
+    return () => clearTimeout(timer);
+  }, [loginMutation.isPending]);
 
 if (!isMounted) return <div className="min-h-screen bg-background" />;
 
@@ -175,6 +210,12 @@ if (!isMounted) return <div className="min-h-screen bg-background" />;
               {loginMutation.isPending ? t('login.loggingIn') : t('login.signIn')}
               {!loginMutation.isPending && <ArrowRight className="ms-2 h-5 w-5 inline" />}
             </Button>
+
+            {loginMutation.isPending && showSlowHint && (
+              <p role="status" className="text-center text-sm text-muted-foreground">
+                {t('login.stillConnecting')}
+              </p>
+            )}
 
           </form>
 

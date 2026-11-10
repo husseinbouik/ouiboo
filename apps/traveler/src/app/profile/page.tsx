@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Card, CardContent, CardHeader, CardTitle, Input, Button, Label } from '@ouiboo/ui';
-import { Mail, Palette, Save, Shield, User } from 'lucide-react';
+import { Loader2, Mail, Save, Shield, Upload, User } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { CurrencySelector } from '@/components/CurrencySelector';
 import { ReferralBlock } from '@/components/ReferralBlock';
@@ -30,7 +30,7 @@ export default function ProfilePage() {
   const { t } = useTranslation();
   const { user, refetch } = useAuth();
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const { register, handleSubmit, reset, formState: { isDirty } } = useForm<ProfileFormValues>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { isDirty } } = useForm<ProfileFormValues>({
     defaultValues: {
       name: user?.name || '',
       avatar: user?.avatar || '',
@@ -43,6 +43,37 @@ export default function ProfilePage() {
       avatar: user?.avatar || '',
     });
   }, [reset, user?.avatar, user?.name]);
+
+  // #858: direct avatar upload through the shared upload pipeline
+  // (intent 'avatar' → public avatars/{userId}/ folder, see #843).
+  // The uploaded public URL lands in the same `avatar` form field the
+  // URL input used to fill, so the stored value and every surface that
+  // renders it (profile header, navbar, reviews) are unchanged.
+  const avatarFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarUploadError, setAvatarUploadError] = useState<string | null>(null);
+  const avatarValue = watch('avatar');
+
+  const onAvatarFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setAvatarUploadError(null);
+    setIsUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('intent', 'avatar');
+      const response = await apiClient.post('/upload', formData);
+      const url = (response.data as { url?: string } | undefined)?.url;
+      if (!url) throw new Error('Upload response did not include a URL');
+      setValue('avatar', url, { shouldDirty: true });
+    } catch {
+      setAvatarUploadError(t('profilePage.avatarUploadError'));
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
 
   const updateProfileMutation = useMutation<UpdateProfileResponse, Error, UpdateProfilePayload>({
     mutationFn: async (payload) => {
@@ -118,11 +149,11 @@ export default function ProfilePage() {
           <CardContent className="p-10 space-y-8">
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 rounded-full bg-deep-blue text-white flex items-center justify-center text-2xl font-black overflow-hidden">
-                {user.avatar ? (
+                {avatarValue ? (
                   <div
                     aria-label={user.name || t('profilePage.avatarFallback')}
                     className="h-full w-full bg-cover bg-center"
-                    style={{ backgroundImage: `url("${user.avatar}")` }}
+                    style={{ backgroundImage: `url("${avatarValue}")` }}
                   />
                 ) : (
                   user.name?.[0]?.toUpperCase() || <User className="h-6 w-6" />
@@ -166,17 +197,36 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-3">
-                <Label htmlFor="profile-avatar" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ms-1">{t('profilePage.avatarUrl')}</Label>
-                <div className="relative group">
-                  <Palette className="absolute start-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground transition-colors" />
-                  <Input
-                    id="profile-avatar"
-                    {...register('avatar')}
-                    placeholder={t('profilePage.avatarPlaceholder')}
-                    className="h-14 ps-12 bg-muted/50 dark:bg-card border-none rounded-2xl font-bold"
-                  />
+                <Label htmlFor="profile-avatar-file" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ms-1">{t('profilePage.avatarPhoto')}</Label>
+                <input
+                  ref={avatarFileInputRef}
+                  id="profile-avatar-file"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  className="hidden"
+                  onChange={onAvatarFileChange}
+                />
+                <input type="hidden" {...register('avatar')} />
+                <div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isUploadingAvatar}
+                    onClick={() => avatarFileInputRef.current?.click()}
+                    className="h-14 rounded-2xl font-bold px-6"
+                  >
+                    {isUploadingAvatar ? (
+                      <Loader2 className="h-5 w-5 me-2 animate-spin" />
+                    ) : (
+                      <Upload className="h-5 w-5 me-2" />
+                    )}
+                    {isUploadingAvatar ? t('profilePage.avatarUploading') : t('profilePage.avatarUpload')}
+                  </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">{t('profilePage.avatarHelp')}</p>
+                {avatarUploadError && (
+                  <p role="alert" className="text-sm font-semibold text-rose-600">{avatarUploadError}</p>
+                )}
               </div>
 
               {feedback && (

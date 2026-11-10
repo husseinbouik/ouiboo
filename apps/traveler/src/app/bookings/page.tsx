@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BookingPaymentPlanStatus, BookingPaymentStatus, BookingStatus, VerificationStatus, type BookingDetails } from '@ouiboo/types';
 import { Button, Badge, Card, Pagination, Skeleton } from '@ouiboo/ui';
@@ -20,6 +20,7 @@ import { RebookingSuggestions, type RebookingSuggestionItem } from '@/components
 import { MyQuoteRequests } from '@/components/MyQuoteRequests';
 import { MyCustomTripRequests } from '@/components/MyCustomTripRequests';
 import { TravelerRefundActions } from '@/components/TravelerRefundActions';
+import { CachedBookingPass, listCachedPassBookingIds } from '@/components/BookingPassCard';
 import {
     canRetryTravelerPayment,
     canCancelTravelerBooking,
@@ -103,6 +104,49 @@ function paymentStatusTranslationKey(paymentStatus: BookingPaymentStatus, refund
     return 'unpaid';
 }
 
+/**
+ * #864: offline fallback for the bookings list, in the same shape as
+ * CachedBookingPass: when the live bookings query cannot load (cold
+ * offline reopen, network failure), the device may still hold saved
+ * pass artefacts (#690/#847) — render those instead of the empty
+ * state, because the pass is what the traveller actually needs at
+ * the meeting point. The empty state is the fallback when no
+ * artefact exists; renders nothing for the frame before the
+ * artefact read settles, so saved passes never flash "empty" first.
+ */
+function SavedPassesOffline({ loadFailed, fallback }: { loadFailed: boolean; fallback: React.ReactNode }) {
+    const { t } = useTranslation();
+    const [ids, setIds] = useState<string[] | null>(null);
+
+    useEffect(() => {
+        if (loadFailed) {
+            setIds(listCachedPassBookingIds());
+        }
+    }, [loadFailed]);
+
+    if (!loadFailed) {
+        return <>{fallback}</>;
+    }
+    if (ids === null) {
+        return null;
+    }
+    if (ids.length === 0) {
+        return <>{fallback}</>;
+    }
+
+    return (
+        <section className="space-y-4">
+            <div>
+                <h2 className="text-2xl font-black text-foreground">{t('bookings.savedPassesTitle')}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">{t('bookings.savedPassesBody')}</p>
+            </div>
+            {ids.map((bookingId) => (
+                <CachedBookingPass key={bookingId} bookingId={bookingId} />
+            ))}
+        </section>
+    );
+}
+
 export default function MyBookingsPage() {
     const { user } = useAuth();
     const { t, i18n } = useTranslation();
@@ -113,7 +157,7 @@ export default function MyBookingsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const BOOKINGS_PAGE_LIMIT = 5;
 
-    const { data: rawBookings, isLoading } = useQuery<unknown>({
+    const { data: rawBookings, isLoading, isError: bookingsLoadFailed } = useQuery<unknown>({
         queryKey: ['my-bookings', currentPage],
         queryFn: async () => {
             const response = await apiClient.get('/bookings/my-bookings', {
@@ -591,13 +635,18 @@ export default function MyBookingsPage() {
                             );
                         })
                     ) : (
-<div className="text-center py-20 bg-card/70 rounded-3xl border border-dashed border-border">
-                            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Calendar className="h-8 w-8 text-muted-foreground" />
-                            </div>
-                            <h3 className="text-xl font-bold text-foreground">{t('bookings.emptyTitle')}</h3>
-                            <p className="text-muted-foreground mt-2 max-w-sm mx-auto">{t('bookings.emptyBody')}</p>
-                        </div>
+                        <SavedPassesOffline
+                            loadFailed={bookingsLoadFailed}
+                            fallback={
+                                <div className="text-center py-20 bg-card/70 rounded-3xl border border-dashed border-border">
+                                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Calendar className="h-8 w-8 text-muted-foreground" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-foreground">{t('bookings.emptyTitle')}</h3>
+                                    <p className="text-muted-foreground mt-2 max-w-sm mx-auto">{t('bookings.emptyBody')}</p>
+                                </div>
+                            }
+                        />
                     )}
                 </div>
                 <Pagination pagination={bookingsPagination} onPageChange={setCurrentPage} className="mt-8" />

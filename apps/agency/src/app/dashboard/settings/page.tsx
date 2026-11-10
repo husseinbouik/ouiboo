@@ -12,7 +12,8 @@ import {
   Button,
   Input,
   Label,
-  Textarea
+  Textarea,
+  useToast
 } from '@ouiboo/ui';
 import {
   User,
@@ -22,7 +23,11 @@ import {
   Sun,
   Moon,
   Save,
-  Lock
+  Lock,
+  Loader2,
+  Upload,
+  Replace,
+  Trash2
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 import { BankDetailsStatus } from '@ouiboo/types';
@@ -49,12 +54,11 @@ type SettingsFormValues = {
   languagesCsv: string;
 };
 
-type SaveFeedback = { type: 'success' | 'error'; text: string } | null;
-
 export default function SettingsPage() {
   const { user, refetch } = useAuth();
   const { theme, setTheme } = useTheme();
   const { t, i18n } = useTranslation();
+  const { toast } = useToast();
 
   const { register, handleSubmit, reset } = useForm<SettingsFormValues>({
     defaultValues: {
@@ -81,7 +85,6 @@ export default function SettingsPage() {
   });
 
   const [isSaving, setIsSaving] = React.useState(false);
-  const [feedback, setFeedback] = React.useState<SaveFeedback>(null);
 
   // #421 (Council P0-19): bank details are a reviewed payment destination,
   // not live-on-save free text. Surface the review state honestly: a fresh
@@ -90,14 +93,86 @@ export default function SettingsPage() {
   const bankDetailsStatus = user?.agencyProfile?.bankDetailsStatus || BankDetailsStatus.Unverified;
   const bankStatusMeta = getBankDetailsStatusMeta(bankDetailsStatus);
 
+  // #859: agency logo. The AgencyProfile.logo column and the whole
+  // traveller-side rendering chain (public profile, trip seller block)
+  // already existed — the settings UI simply never exposed the field,
+  // so no agency could ever set one. Upload goes through the shared
+  // pipeline with intent 'trip-asset' (public asset treatment, the
+  // same as trip photos).
+  // #868: the logo persists IMMEDIATELY on upload/remove (PATCH
+  // /agency/profile) with a toast — it no longer silently stages until
+  // the form's Save button is pressed. logoUrl state is now only the
+  // retry path: null = untouched (the save payload omits logo); a URL
+  // or '' = a change whose immediate persist failed, re-sent on save.
+  const [logoUrl, setLogoUrl] = React.useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = React.useState(false);
+  const [isRemovingLogo, setIsRemovingLogo] = React.useState(false);
+  const [logoUploadError, setLogoUploadError] = React.useState<string | null>(null);
+  const logoFileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const displayedLogo = (logoUrl ?? user?.agencyProfile?.logo ?? '').trim();
+  const logoBusy = isUploadingLogo || isRemovingLogo;
+
+  const onLogoFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setLogoUploadError(null);
+    setIsUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('intent', 'trip-asset');
+      const response = await apiClient.post('/upload', formData);
+      const url = (response.data as { url?: string } | undefined)?.url;
+      if (!url) throw new Error('Upload response did not include a URL');
+      // Stage first so the preview updates at once; the immediate
+      // persist below then makes it durable. If the persist fails, the
+      // staged value stays and the form save re-sends it.
+      setLogoUrl(url);
+      try {
+        await apiClient.patch('/agency/profile', { logo: url });
+        setLogoUrl(null);
+        refetch();
+        toast({ title: t('settings.agencyLogoSaved'), variant: 'success' });
+      } catch {
+        setLogoUploadError(t('settings.updateError'));
+        toast({ title: t('settings.updateError'), variant: 'error' });
+      }
+    } catch {
+      setLogoUploadError(t('settings.agencyLogoUploadError'));
+      toast({ title: t('settings.agencyLogoUploadError'), variant: 'error' });
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const onRemoveLogo = async () => {
+    setLogoUploadError(null);
+    // Stage the removal (form-save retry path), then persist at once.
+    setLogoUrl('');
+    setIsRemovingLogo(true);
+    try {
+      await apiClient.patch('/agency/profile', { logo: '' });
+      setLogoUrl(null);
+      refetch();
+      toast({ title: t('settings.agencyLogoRemoved'), variant: 'success' });
+    } catch {
+      toast({ title: t('settings.updateError'), variant: 'error' });
+    } finally {
+      setIsRemovingLogo(false);
+    }
+  };
+
   const onSubmit = async (data: SettingsFormValues) => {
     try {
       setIsSaving(true);
-      setFeedback(null);
       await Promise.all([
         apiClient.patch('/users/me', { name: data.name }),
         apiClient.patch('/agency/profile', {
           companyName: data.companyName,
+          // #868: only a staged logo change is sent (immediate persist
+          // on upload/remove normally clears it before save).
+          ...(logoUrl !== null ? { logo: logoUrl } : {}),
           bio: data.bio,
           bankDetails: data.bankDetails,
           bankAccountHolderName: data.bankAccountHolderName,
@@ -115,7 +190,11 @@ export default function SettingsPage() {
           languages: data.languagesCsv.split(',').map((v) => v.trim().toLowerCase()).filter(Boolean)
         }),
       ]);
-      setFeedback({ type: 'success', text: t('settings.updateSuccess') });
+      // #867: confirm with a toast — the old banner rendered at the
+      // top of this long page, out of view of the Save button.
+      toast({ title: t('settings.updateSuccess'), variant: 'success' });
+      // A staged logo change (immediate persist had failed) is now saved.
+      setLogoUrl(null);
       reset(data);
       // #421: the profile now carries the new bank-destination review
       // status (PENDING_REVIEW after a submission) — refresh it so the
@@ -123,10 +202,20 @@ export default function SettingsPage() {
       refetch();
     } catch (error) {
       console.error('Failed to update settings:', error);
-      setFeedback({ type: 'error', text: t('settings.updateError') });
+      toast({ title: t('settings.updateError'), variant: 'error' });
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // #868: the logo action reads Upload / Replace by state, never both.
+  let logoButtonLabel = t('settings.agencyLogoUpload');
+  if (isUploadingLogo) logoButtonLabel = t('settings.agencyLogoUploading');
+  else if (displayedLogo) logoButtonLabel = t('settings.agencyLogoReplace');
+  const renderLogoButtonIcon = () => {
+    if (isUploadingLogo) return <Loader2 className="h-4 w-4 animate-spin" />;
+    if (displayedLogo) return <Replace className="h-4 w-4" />;
+    return <Upload className="h-4 w-4" />;
   };
 
   return (
@@ -134,18 +223,6 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-3xl font-bold text-foreground">{t('settings.title')}</h1>
         <p className="text-muted-foreground mt-1">{t('settings.subtitle')}</p>
-        {feedback && (
-          <div
-            role="status"
-            className={`mt-4 rounded-lg border px-3 py-2 text-sm ${
-              feedback.type === 'success'
-                ? 'border-success/30 bg-success/10 text-success'
-                : 'border-danger/30 bg-danger/10 text-danger'
-            }`}
-          >
-            {feedback.text}
-          </div>
-        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -195,6 +272,63 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <Label htmlFor="settings-company">{t('settings.agencyName')}</Label>
                   <Input id="settings-company" {...register('companyName')} />
+                </div>
+                {/* #859: agency logo upload (AgencyProfile.logo). */}
+                <div className="space-y-2">
+                  <Label htmlFor="settings-logo-file">{t('settings.agencyLogo')}</Label>
+                  <div className="flex items-center gap-4">
+                    {displayedLogo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={displayedLogo}
+                        alt=""
+                        className="h-14 w-14 shrink-0 rounded-xl border border-border bg-white object-contain"
+                      />
+                    ) : (
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-dashed border-border px-1 text-center text-[10px] text-muted-foreground">
+                        {t('settings.agencyLogoNone')}
+                      </div>
+                    )}
+                    <input
+                      ref={logoFileInputRef}
+                      id="settings-logo-file"
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="hidden"
+                      onChange={onLogoFileChange}
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={logoBusy}
+                        onClick={() => logoFileInputRef.current?.click()}
+                      >
+                        {renderLogoButtonIcon()}
+                        {logoButtonLabel}
+                      </Button>
+                      {displayedLogo && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={logoBusy}
+                          onClick={onRemoveLogo}
+                          className="text-danger hover:text-danger"
+                        >
+                          {isRemovingLogo ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                          {t('settings.agencyLogoRemove')}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t('settings.agencyLogoHelp')}</p>
+                  {logoUploadError && (
+                    <p role="alert" className="text-sm font-semibold text-rose-600">{logoUploadError}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="settings-bio">{t('settings.shortBio')}</Label>
@@ -362,7 +496,7 @@ export default function SettingsPage() {
             </Card>
 
             <div className="flex justify-end gap-3">
-              <Button variant="outline" type="button" onClick={() => { reset(); setFeedback(null); }}>{t('settings.discardChanges')}</Button>
+              <Button variant="outline" type="button" onClick={() => { reset(); }}>{t('settings.discardChanges')}</Button>
               <Button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2">
                 {isSaving ? t('settings.saving') : <><Save className="h-4 w-4" /> {t('settings.saveChanges')}</>}
               </Button>

@@ -273,9 +273,19 @@ describe('anonymous session probing (#245)', () => {
     localStorageStub.setItem(BROWSER_SESSION_HINT_KEY, '1');
     expect(fresh!.hasPossibleBrowserSession()).toBe(true);
 
+    // A DEFINITIVE rejection: the server answered the refresh with a
+    // 401 (the #863 network-failure case is the sibling test below —
+    // a refresh that never gets an answer must NOT clear the hint).
     const postSpy = jest
       .spyOn(freshAxios!, 'post')
-      .mockRejectedValue(new Error('refresh cookie expired'));
+      .mockImplementation(async () => {
+        const error = new Error('Request failed with status code 401');
+        (error as { response?: unknown }).response = {
+          status: 401,
+          data: { detail: 'Invalid refresh token' },
+        };
+        throw error;
+      });
     const client = fresh!.createBrowserApiClient(BASE_URL);
     client.defaults.adapter = async (
       config: InternalAxiosRequestConfig,
@@ -285,10 +295,47 @@ describe('anonymous session probing (#245)', () => {
 
     await expect(client.get('/users/me')).rejects.toBeTruthy();
 
-    expect(postSpy).toHaveBeenCalledTimes(1);
+    // Initial attempt + the single in-lock race retry (#846).
+    expect(postSpy).toHaveBeenCalledTimes(2);
     expect(String(postSpy.mock.calls[0][0])).toContain('/auth/refresh');
-    // The failed restore clears the hint, so later loads stay silent.
+    // The definitively failed restore clears the hint, so later loads stay silent.
     expect(fresh!.hasBrowserSessionHint()).toBe(false);
+  });
+
+  it('keeps the last-known profile alongside the session lifecycle (#864)', async () => {
+    const {
+      persistLastKnownProfile,
+      readLastKnownProfile,
+      BROWSER_SESSION_PROFILE_KEY,
+    } = require('../client') as typeof import('../client');
+
+    expect(readLastKnownProfile()).toBeNull();
+
+    persistLastKnownProfile({
+      id: 'user-1',
+      name: 'Test Traveller',
+      email: 't@example.test',
+      role: 'TRAVELER',
+      avatar: 'https://example.com/a.png',
+      // Credential-shaped fields must never be persisted.
+      accessToken: 'must-not-be-stored',
+      refreshToken: 'must-not-be-stored',
+    });
+    const stored = readLastKnownProfile();
+    expect(stored?.id).toBe('user-1');
+    expect(stored?.email).toBe('t@example.test');
+    expect((stored as Record<string, unknown>)?.accessToken).toBeUndefined();
+    expect((stored as Record<string, unknown>)?.refreshToken).toBeUndefined();
+    expect(storage.has(BROWSER_SESSION_PROFILE_KEY)).toBe(true);
+
+    // Malformed payloads never persist.
+    persistLastKnownProfile({ name: 'no ids' });
+    expect(readLastKnownProfile()?.id).toBe('user-1');
+
+    // Clearing the token clears the profile with the hint.
+    await setBrowserAccessToken('token-1');
+    clearBrowserAccessToken();
+    expect(readLastKnownProfile()).toBeNull();
   });
 });
 
@@ -472,6 +519,42 @@ describe('refresh-rotation race (#840)', () => {
     expect(locationStub.href).toBe('/login');
   });
 
+  it('(f) refresh NETWORK failure: callers reject, but the session is NOT torn down — hint survives, no redirect (#863)', async () => {
+    await setBrowserAccessToken('token-old');
+    expect(hasBrowserSessionHint()).toBe(true);
+    // Ignore the BFF session-establish call made by the setup above.
+    fetchMock.mockClear();
+
+    // The refresh dies without an answer — connection reset while the
+    // API cold-wakes, a mobile network blip. Twice, so the in-lock
+    // network retry runs as well.
+    const postSpy = jest
+      .spyOn(axios, 'post')
+      .mockRejectedValue(new Error('Network Error'));
+
+    const client = createBrowserApiClient(BASE_URL);
+    client.defaults.adapter = async (
+      config: InternalAxiosRequestConfig,
+    ): Promise<AxiosResponse> => {
+      throw httpError(config, 401);
+    };
+
+    await expect(client.get('/bookings')).rejects.toBeTruthy();
+
+    // One refresh + its single network retry, then the interceptor
+    // rejects WITHOUT touching session state: no hint deletion, no
+    // BFF session DELETE, no bounce to /login. The next load gets to
+    // try the (never-rejected) refresh cookie again.
+    expect(postSpy).toHaveBeenCalledTimes(2);
+    expect(hasBrowserSessionHint()).toBe(true);
+    expect(hasPossibleBrowserSession()).toBe(true);
+    const deleteCalls = fetchMock.mock.calls.filter(
+      (call) => (call[1] as { method?: string } | undefined)?.method === 'DELETE',
+    );
+    expect(deleteCalls).toHaveLength(0);
+    expect(locationStub.href).toBe('');
+  });
+
   it('(d) a refresh 401 from a lost cross-context race heals on the in-lock retry — no teardown (#846)', async () => {
     await setBrowserAccessToken('token-old');
     let refreshCalls = 0;
@@ -589,5 +672,99 @@ describe('refresh-rotation race (#840)', () => {
     } finally {
       delete (global as any).navigator;
     }
+  });
+});
+
+describe('refresh settles the BFF session before resolving (#873)', () => {
+  // Same browser stand-ins as the #840 suite.
+  const storage = new Map<string, string>();
+  const localStorageStub = {
+    getItem: (key: string) => (storage.has(key) ? storage.get(key)! : null),
+    setItem: (key: string, value: string) => {
+      storage.set(key, value);
+    },
+    removeItem: (key: string) => {
+      storage.delete(key);
+    },
+    clear: () => storage.clear(),
+  };
+  const locationStub = { href: '' };
+  const fetchMock = jest.fn();
+
+  const authOf = (config: InternalAxiosRequestConfig): unknown => {
+    const headers = config.headers as unknown as {
+      get?: (name: string) => unknown;
+      Authorization?: unknown;
+      authorization?: unknown;
+    };
+    return headers?.get?.('Authorization') ??
+      headers?.Authorization ??
+      headers?.authorization;
+  };
+
+  beforeEach(() => {
+    storage.clear();
+    locationStub.href = '';
+    (global as any).window = {
+      localStorage: localStorageStub,
+      location: locationStub,
+    };
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue({ ok: true, status: 200 });
+    global.fetch = fetchMock as unknown as typeof fetch;
+  });
+
+  afterEach(async () => {
+    await setBrowserAccessToken(null);
+    clearBrowserAccessToken();
+    jest.restoreAllMocks();
+    delete (global as any).window;
+  });
+
+  it('a request healed by a refresh completes only after the BFF session POST has settled', async () => {
+    await setBrowserAccessToken('token-old');
+    jest
+      .spyOn(axios, 'post')
+      .mockResolvedValue({ data: { accessToken: 'token-new' } } as never);
+
+    // Hold the BFF session POST (the fetch behind establishAppSession)
+    // open until released: the rotated token exists, the gate cookie
+    // does not — yet.
+    let releaseSession!: () => void;
+    const sessionGate = new Promise<void>((resolve) => {
+      releaseSession = resolve;
+    });
+    fetchMock.mockReset();
+    fetchMock.mockImplementation(async () => {
+      await sessionGate;
+      return { ok: true, status: 200 };
+    });
+
+    const client = createBrowserApiClient(BASE_URL);
+    client.defaults.adapter = async (
+      config: InternalAxiosRequestConfig,
+    ): Promise<AxiosResponse> => {
+      if (authOf(config) === 'Bearer token-new') return okResponse(config);
+      throw httpError(config, 401);
+    };
+
+    let settled = false;
+    const pending = client.get('/users/me').then((res) => {
+      settled = true;
+      return res;
+    });
+
+    // Give the refresh + retry chain every chance to run ahead of the
+    // BFF leg. Before #873 the refresh resolved fire-and-forget and
+    // this request completed while the session POST was still open.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(settled).toBe(false);
+
+    releaseSession();
+    const res = await pending;
+    expect(res.status).toBe(200);
+    expect(settled).toBe(true);
+    expect(hasBrowserSessionHint()).toBe(true);
+    expect(locationStub.href).toBe('');
   });
 });
