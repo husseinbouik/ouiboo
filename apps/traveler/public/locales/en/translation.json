@@ -61,7 +61,8 @@
   },
   "featured": {
     "title": "Featured Experiences",
-    "subtitle": "Hand-picked itineraries from local agencies.",
+    "subtitle": "Featured itineraries.",
+    "criteria": "One trip per agency, rotated weekly — from licence-checked agencies with upcoming departures.",
     "viewAll": "View all trips",
     "from": "From",
     "emptyTitle": "No trips found",
@@ -425,7 +426,7 @@
   "featuredPage": {
     "badge": "Featured Collection",
     "title": "Handpicked Experiences",
-    "subtitle": "A launch shortlist of active trips across discovery, demand, and agency quality.",
+    "subtitle": "One trip per agency — drawn from licence-checked agencies with upcoming departures.",
     "browseAll": "Browse all trips",
     "emptyTitle": "Featured trips are being refreshed",
     "emptySubtitle": "Explore the full catalog while the team curates the next launch-ready list.",

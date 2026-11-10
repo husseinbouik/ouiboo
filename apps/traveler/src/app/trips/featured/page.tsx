@@ -5,6 +5,7 @@ import { Badge, Button } from '@ouiboo/ui';
 import Link from 'next/link';
 import { Compass, Sparkles } from 'lucide-react';
 import { getInitialLanguage } from '@ouiboo/i18n/server';
+import { getServerTranslations } from '@/lib/server-translations';
 
 const TripCard = dynamic(() => import('@/components/TripCard').then((m) => m.TripCard));
 
@@ -12,15 +13,25 @@ async function getFeaturedTrips(): Promise<TripCardTrip[]> {
   try {
     // #546: trip text in the visitor's language.
     const locale = await getInitialLanguage();
-    let response = await apiClient.get(`/trips?featured=true&status=ACTIVE&locale=${locale}`);
-    const directFeatured = Array.isArray(response.data) ? response.data : response.data?.data;
+    const response = await apiClient.get(`/trips?featured=true&status=ACTIVE&locale=${locale}`);
+    const directFeatured: TripCardTrip[] = Array.isArray(response.data)
+      ? response.data
+      : response.data?.data ?? [];
 
-    if (directFeatured?.length) {
-      return directFeatured;
-    }
-
-    response = await apiClient.get(`/trips?status=ACTIVE&sortBy=popularity&sortOrder=desc&limit=12&locale=${locale}`);
-    return response.data?.data || response.data || [];
+    // #879 (Council S12 P0): the page publishes a one-trip-per-agency
+    // rule, so the composition must match it. Previously an empty
+    // featured set silently fell back to the top-12 trips by
+    // popularity and still presented them as "Featured" — the page
+    // now shows only genuinely featured trips, at most one per
+    // agency, and falls through to the honest empty state instead.
+    const seenAgencies = new Set<string>();
+    return directFeatured.filter((trip) => {
+      const agencyId = trip.agency?.id;
+      if (!agencyId) return true;
+      if (seenAgencies.has(agencyId)) return false;
+      seenAgencies.add(agencyId);
+      return true;
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.warn(`Failed to load featured trips: ${message}`);
@@ -29,6 +40,7 @@ async function getFeaturedTrips(): Promise<TripCardTrip[]> {
 }
 
 export default async function FeaturedTripsPage() {
+  const { t } = await getServerTranslations();
   const trips = await getFeaturedTrips();
 
   return (
@@ -37,16 +49,16 @@ export default async function FeaturedTripsPage() {
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
           <div>
             <Badge className="bg-sunset-orange/10 text-sunset-orange border-none px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-              Featured Collection
+              {t('featuredPage.badge')}
             </Badge>
-            <h1 className="mt-4 text-5xl font-black font-display tracking-tight text-foreground">Handpicked Experiences</h1>
+            <h1 className="mt-4 text-5xl font-black font-display tracking-tight text-foreground">{t('featuredPage.title')}</h1>
             <p className="mt-3 max-w-2xl text-muted-foreground">
-              A launch-MVP shortlist of the strongest active trips across discovery, demand, and agency quality.
+              {t('featuredPage.subtitle')}
             </p>
           </div>
           <Button asChild variant="outline" className="rounded-xl font-bold">
               <Link href="/search"><Compass className="h-4 w-4 mr-2" />
-              Browse all trips</Link>
+              {t('featuredPage.browseAll')}</Link>
             </Button>
         </div>
 
@@ -61,13 +73,13 @@ export default async function FeaturedTripsPage() {
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted">
               <Sparkles className="h-7 w-7 text-sunset-orange" />
             </div>
-            <h2 className="mt-5 text-2xl font-black text-foreground">Featured trips are being refreshed</h2>
+            <h2 className="mt-5 text-2xl font-black text-foreground">{t('featuredPage.emptyTitle')}</h2>
             <p className="mt-3 text-muted-foreground">
-              Explore the full catalog while the team curates the next launch-ready list.
+              {t('featuredPage.emptySubtitle')}
             </p>
             <div className="mt-6">
               <Button asChild className="bg-sunset-orange hover:bg-orange-600 border-none">
-              <Link href="/search">Explore trips</Link>
+              <Link href="/search">{t('featuredPage.explore')}</Link>
             </Button>
             </div>
           </div>
@@ -76,4 +88,3 @@ export default async function FeaturedTripsPage() {
     </div>
   );
 }
-

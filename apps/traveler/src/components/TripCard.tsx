@@ -50,6 +50,9 @@ export interface TripCardTrip {
     startDate: string;
   }>;
   agency?: {
+    /** Carried by every public trip payload; used by the featured
+     * curation (#879/#885) to enforce one trip per agency. */
+    id?: string;
     companyName?: string;
     verificationStatus?: VerificationStatusType;
     /** #413 (Council B10): what+when verification statement fields. */

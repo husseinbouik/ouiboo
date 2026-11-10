@@ -61,7 +61,8 @@
   },
   "featured": {
     "title": "Expériences en vedette",
-    "subtitle": "Des itinéraires sélectionnés par des agences locales.",
+    "subtitle": "Itinéraires en vedette.",
+    "criteria": "Un voyage par agence, en rotation chaque semaine — des agences à la licence vérifiée avec des départs à venir.",
     "viewAll": "Voir tous les voyages",
     "from": "À partir de",
     "emptyTitle": "Aucun voyage trouvé",
@@ -425,7 +426,7 @@
   "featuredPage": {
     "badge": "Collection en vedette",
     "title": "Expériences sélectionnées",
-    "subtitle": "Une sélection de lancement de voyages actifs en termes de découverte, de demande et de qualité d'agence.",
+    "subtitle": "Un voyage par agence — parmi les agences à la licence vérifiée ayant des départs à venir.",
     "browseAll": "Parcourir tous les voyages",
     "emptyTitle": "Les voyages en vedette sont en cours de renouvellement",
     "emptySubtitle": "Explorez tout le catalogue pendant que l'équipe prépare la prochaine sélection.",
