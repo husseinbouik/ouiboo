@@ -62,15 +62,17 @@ describe('HomeClient hero search (#723)', () => {
 
     it('submits a known destination as the destination facet with canonical date params', () => {
         render(<HomeClient featuredTrips={[]} />);
-        fillHero('search.destinationNames.chefchaouen', '2026-11-10', '2026-11-12');
+        // #877: dates must be in the future — past dates are rejected
+        // inline by design, so this #723-era fixture uses 2027 dates.
+        fillHero('search.destinationNames.chefchaouen', '2027-11-10', '2027-11-12');
 
         fireEvent.click(screen.getByRole('button', { name: 'hero.search' }));
 
         expect(mockPush).toHaveBeenCalledTimes(1);
         const url = mockPush.mock.calls[0][0] as string;
         expect(url).toContain('destination=chefchaouen');
-        expect(url).toContain('dateFrom=2026-11-10');
-        expect(url).toContain('dateTo=2026-11-12');
+        expect(url).toContain('dateFrom=2027-11-10');
+        expect(url).toContain('dateTo=2027-11-12');
         expect(url).not.toContain('q=');
     });
 
@@ -104,7 +106,9 @@ describe('HomeClient hero search (#723)', () => {
 
     it('blocks an inverted date range with an accessible validation message', () => {
         render(<HomeClient featuredTrips={[]} />);
-        fillHero('', '2026-11-12', '2026-11-10');
+        // Future dates, so the range check — not the #877 past-date
+        // check, which runs first — is what fires.
+        fillHero('', '2027-11-12', '2027-11-10');
 
         fireEvent.click(screen.getByRole('button', { name: 'hero.search' }));
 
