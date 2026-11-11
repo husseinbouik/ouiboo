@@ -252,7 +252,7 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
   const storyExcerpt = pickStoryExcerpt([...featuredTrips, ...allTrips]);
 
   return (
-    <div className="bg-background min-h-screen font-sans text-foreground overflow-hidden home-display">
+    <div className="bg-background min-h-screen font-sans text-foreground overflow-hidden">
       
       {/* Hero Section — #880: compressed (vertical whitespace more
           than halved) so a cold arrival sees Morocco — and the first
