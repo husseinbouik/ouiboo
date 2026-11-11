@@ -24,7 +24,7 @@ import {
   type ShowcaseDestination,
 } from '@/lib/curation';
 import { useDisplayPrice } from '@/lib/display-currency';
-import { CATEGORY_IMAGES, DESTINATION_IMAGES, HERO_IMAGE, STATIC_HOME_PHOTO_IDS } from '@/lib/static-imagery';
+import { CATEGORY_IMAGES, DESTINATION_IMAGES, HERO_IMAGE, NON_PLACE_PHOTO_IDS, STATIC_HOME_PHOTO_IDS } from '@/lib/static-imagery';
 
 const TripCard = dynamic(() => import('@/components/TripCard').then((m) => m.TripCard));
 
@@ -225,7 +225,11 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
   // Round 2: the coverage showcase (lib/curation) — destinations
   // beyond the cluster with live counts, plus the honestly-empty
   // well-known places, filtered against the live catalogue.
-  const coverageDestinations = showcaseDestinations(allTrips, STATIC_HOME_PHOTO_IDS);
+  // Photo-truth (#898, council P0-1): the pick skips the static
+  // assets (no photo twice on the page) AND the audited non-place
+  // photos, so a destination with no truthful photo in its trips'
+  // media renders the graded tile rather than somewhere else.
+  const coverageDestinations = showcaseDestinations(allTrips, [...STATIC_HOME_PHOTO_IDS, ...NON_PLACE_PHOTO_IDS]);
   const absentCoverage = ABSENT_COVERAGE_CANDIDATES.filter(
     (candidate) => !tripsCoverPlace(allTrips, [...candidate.aliases]),
   );
@@ -404,7 +408,7 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
                   )}
                   <Button
                     type="submit"
-                    className="h-14 lg:h-auto px-8 rounded-xl bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-orange-600 text-white font-semibold text-lg shadow-md transition-all">
+                    className="h-14 lg:h-auto px-8 rounded-xl bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-orange-600 text-white dark:text-deep-blue font-semibold text-lg shadow-md transition-all">
                     {t('hero.search', 'Search')}
                   </Button>
                 </div>
@@ -545,7 +549,10 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
           are FIXED curated assets (lib/static-imagery.ts, founder
           amendment to #898, 2026-11-11) — never borrowed from trip
           inventory; a city without a curated photo keeps the
-          brand-graded tile. */}
+          brand-graded tile. Photo-truth audit (council P0-1,
+          2026-11-11): only Chefchaouen carries a photo — the
+          round-2 Tangier/Tétouan picks depicted other places and
+          were reverted to graded tiles (see static-imagery.ts). */}
       {hasCatalogSections && (
         <section className="py-24 bg-background">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
