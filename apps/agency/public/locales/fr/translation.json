@@ -195,9 +195,9 @@
     "contactBody": "Écrivez à privacy@ouiboo.com et nous répondrons rapidement."
   },
   "betaOffer": {
-    "title": "Votre offre bêta",
+    "title": "Votre offre agence",
     "verificationTitle": "Vérifiée avant mise en ligne",
-    "verificationBody": "Nous vérifions votre licence de voyage et votre assurance RC avant la mise en ligne de vos voyages — le même contrôle pour chaque agence de la bêta.",
+    "verificationBody": "Nous vérifions votre licence de voyage et votre assurance RC avant la mise en ligne de vos voyages — le même contrôle pour chaque agence.",
     "assistedTitle": "Premières annonces assistées",
     "assistedBody": "Nous construisons vos premières annonces avec vous — photos, itinéraire, prix — et rien n’est publié avant votre validation.",
     "supportTitle": "Partage d’assistance, annoncé dès le départ",
@@ -1018,7 +1018,7 @@
   "support": {
     "title": "Assistance OuiBoo",
     "body": "Une question sur la vérification, un justificatif de paiement suspect ou un dossier de remboursement bloqué ? Écrivez-nous — nous répondons sous {{hours}} heures dans le cadre de l'assistance normale.",
-    "bodyNoEmail": "Une question sur la vérification, un justificatif de paiement suspect ou un dossier de remboursement bloqué ? Pendant la bêta fermée, contactez OuiBoo via la personne qui a accompagné l'inscription de votre agence — nous répondons sous {{hours}} heures dans le cadre de l'assistance normale.",
+    "bodyNoEmail": "Une question sur la vérification, un justificatif de paiement suspect ou un dossier de remboursement bloqué ? Contactez OuiBoo via la personne qui a accompagné l'inscription de votre agence — nous répondons sous {{hours}} heures dans le cadre de l'assistance normale.",
     "escalationRole": "Pendant un voyage en cours, vous êtes le premier appel du voyageur — gardez votre contact d'urgence à jour dans les Paramètres. Si vous ne pouvez pas résoudre un problème pendant un voyage, faites-le remonter immédiatement à OuiBoo.",
     "intro": "Comment joindre l'assistance OuiBoo — et quoi faire en premier pendant un voyage en cours. L'assistance normale répond sous {{hours}} heures.",
     "contactLine": "Boîte surveillée : {{email}}",
@@ -1373,21 +1373,21 @@
   "sharePreview": {
     "title": "Aperçu du lien",
     "liveNote": "Le partage est activé : voici l’aperçu que les réseaux sociaux afficheront pour ce voyage.",
-    "gatedNote": "Le partage est désactivé pendant la bêta : l’aperçu public actuel est la carte générique Ouiboo. Voici l’aperçu que ce voyage affichera à l’ouverture du partage au lancement public.",
+    "gatedNote": "Le partage est actuellement désactivé : l’aperçu public actuel est la carte générique Ouiboo. Voici l’aperçu que ce voyage affichera à l’ouverture du partage.",
     "shareTextLabel": "Texte de partage",
     "noPublicBase": "Aucune adresse voyageur publique n’est configurée pour ce build : aucun lien de partage ne peut être prévisualisé."
   },
   "betaNotAvailable": {
-    "title": "Pas dans la bêta",
-    "subtitle": "La bêta fermée est entièrement gratuite.",
-    "billingTitle": "La facturation et l’abonnement ne font pas partie de la bêta",
-    "walletTitle": "Les paiements ne sont pas actifs dans la bêta",
-    "body": "Pendant la bêta fermée, il n’y a ni frais de plateforme, ni abonnement, ni crédits — rien à payer à Ouiboo et rien à résilier. Cette surface ouvrira au lancement des formules payantes, après la bêta.",
+    "title": "Pas encore activé",
+    "subtitle": "Ouiboo est actuellement gratuit pour les agences.",
+    "billingTitle": "La facturation et l’abonnement ne sont pas encore activés",
+    "walletTitle": "Les paiements via Ouiboo ne sont pas encore actifs",
+    "body": "Actuellement, il n’y a ni frais de plateforme, ni abonnement, ni crédits — rien à payer à Ouiboo et rien à résilier. Cette surface ouvrira au lancement des formules payantes.",
     "paymentsNote": "Les paiements des voyageurs sont distincts : les voyageurs paient votre agence directement (virement bancaire ou votre prestataire de paiement). Ouiboo ne détient jamais l’argent des voyageurs : il n’existe donc aucun solde Ouiboo à retirer.",
     "viewPayments": "Voir les paiements reçus directement",
     "viewBookings": "Voir les réservations",
-    "walletBannerTitle": "Bêta gratuite — ni frais, ni crédits",
-    "walletBannerBody": "Cette page enregistre les paiements des voyageurs versés directement à votre agence. Ouiboo ne détient pas l’argent et ne facture aucun frais pendant la bêta ; les totaux ci-dessous sont un relevé, pas un solde."
+    "walletBannerTitle": "Gratuit pour les agences — ni frais, ni crédits",
+    "walletBannerBody": "Cette page enregistre les paiements des voyageurs versés directement à votre agence. Ouiboo ne détient pas l’argent et ne facture aucun frais ; les totaux ci-dessous sont un relevé, pas un solde."
   },
   "commandPalette": {
     "open": "Ouvrir la palette de commandes",
