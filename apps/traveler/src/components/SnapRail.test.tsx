@@ -44,6 +44,7 @@ jest.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string, options?: any) => {
             if (key === 'tripCard.imageCounter') return `${options?.current} / ${options?.total}`;
+            if (key === 'tripCard.imagePosition') return `Image ${options?.current} of ${options?.total}`;
             if (key === 'tripCard.viewImage') return `View image ${options?.count}`;
             return key;
         },
@@ -424,6 +425,42 @@ describe('SnapRail (#490)', () => {
         it('without the flag (cards) slides stay non-interactive divs', () => {
             const { container } = renderRail({ onSlideClick: jest.fn() });
             expect(container.querySelectorAll('div[role="button"]')).toHaveLength(0);
+        });
+    });
+
+    describe('deferred slides + carousel semantics (#881/#882)', () => {
+        it('renders only the first photo (one URL, real + clone) before interaction intent', () => {
+            const { container } = renderRail({ deferOffscreenSlides: true });
+            const srcs = [...container.querySelectorAll('img')].map((img) => img.getAttribute('src'));
+            expect(srcs).toEqual(['https://cdn.example.com/a.jpg', 'https://cdn.example.com/a.jpg']);
+        });
+
+        it('loads the full set on pointer intent', () => {
+            const { container } = renderRail({ deferOffscreenSlides: true });
+            fireEvent.pointerEnter(container.firstChild as Element);
+            const srcs = new Set([...container.querySelectorAll('img')].map((img) => img.getAttribute('src')));
+            expect(srcs).toEqual(new Set(['https://cdn.example.com/a.jpg', 'https://cdn.example.com/b.jpg', 'https://cdn.example.com/c.jpg']));
+        });
+
+        it('marks the rail as a carousel, labels dots at 24px targets, and announces position politely', () => {
+            const { container } = renderRail();
+            const viewport = container.querySelector('[aria-roledescription="carousel"]');
+            expect(viewport).not.toBeNull();
+            const dot = screen.getByLabelText('View image 2');
+            expect(dot.className).toContain('h-6');
+            expect(dot.className).toContain('w-6');
+            expect(screen.getByText('Image 1 of 3')).not.toBeNull();
+        });
+
+        it('hides off-screen slides from the accessibility tree on card rails, but never on the keyboard gallery', () => {
+            const { container } = renderRail();
+            const hidden = container.querySelectorAll('[aria-hidden="true"]');
+            // 5 positions: all but the resting one are hidden (clones included).
+            expect(hidden.length).toBe(4);
+            const gallery = renderRail({ slideKeyboardOpen: true, onSlideClick: jest.fn() });
+            const galleryHidden = gallery.container.querySelectorAll('[aria-hidden="true"]');
+            // Only the two clones are hidden on the keyboard-openable rail.
+            expect(galleryHidden.length).toBe(2);
         });
     });
 
