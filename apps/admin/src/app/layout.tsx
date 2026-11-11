@@ -70,8 +70,8 @@ export default async function RootLayout({
   const meta = META_BY_LANGUAGE[initialLanguage];
 
   return (
-    <html lang={initialLanguage} dir={initialLanguage === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning>
-      <body className={`${manrope.variable} ${spaceGrotesk.variable}`} suppressHydrationWarning>
+    <html lang={initialLanguage} dir={initialLanguage === 'ar' ? 'rtl' : 'ltr'} className={`${manrope.variable} ${spaceGrotesk.variable}`} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <Script
           id="language-init"
           strategy="beforeInteractive"

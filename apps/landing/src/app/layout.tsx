@@ -41,8 +41,8 @@ export default async function RootLayout({
   const currentLocale = await getInitialLanguage();
 
   return (
-    <html lang={currentLocale} dir={currentLocale === 'ar' ? 'rtl' : 'ltr'} data-emphasis="landing" suppressHydrationWarning={true}>
-      <body className={`${manrope.variable} ${spaceGrotesk.variable} antialiased`} suppressHydrationWarning>
+    <html lang={currentLocale} dir={currentLocale === 'ar' ? 'rtl' : 'ltr'} data-emphasis="landing" className={`${manrope.variable} ${spaceGrotesk.variable}`} suppressHydrationWarning={true}>
+      <body className="antialiased" suppressHydrationWarning>
         <Script
           id="language-init"
           strategy="beforeInteractive"
