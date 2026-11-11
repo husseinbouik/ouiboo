@@ -129,6 +129,44 @@ describe('HomeClient hero search (#723)', () => {
     });
 });
 
+describe('HomeClient static imagery + trust strip (founder amendments 2026-11-11, #880/#887/#898/#917)', () => {
+    it('renders the fixed signature hero photo — a place, not a trip link', () => {
+        const { container } = render(<HomeClient featuredTrips={[]} />);
+        const heroImg = container.querySelector('img[alt="hero.photoAlt"]');
+        expect(heroImg).not.toBeNull();
+        expect(heroImg?.getAttribute('src')).toContain('hero-erg-chebbi');
+        expect(screen.getByText('hero.photoCaption')).not.toBeNull();
+        // The hero is a photograph of a place: it must not navigate
+        // to a trip and must not carry a trip title.
+        expect(heroImg?.closest('a')).toBeNull();
+    });
+
+    it('renders the #887 trust strip claims under the hero search', () => {
+        render(<HomeClient featuredTrips={[]} />);
+        expect(screen.getByText('trustStrip.licence')).not.toBeNull();
+        expect(screen.getByText('trustStrip.payDirect')).not.toBeNull();
+        expect(screen.getByText('trustStrip.cancellation')).not.toBeNull();
+    });
+
+    it('destination tiles use the fixed curated asset, never a trip photo (#898)', () => {
+        const trip: any = {
+            id: 'chef-1',
+            title: 'Blue City',
+            destinationSlug: 'chefchaouen',
+            startLocation: 'Chefchaouen',
+            images: ['https://example.com/trip-photo.jpg'],
+            sessions: [],
+            agency: { id: 'agency-1' },
+        };
+        render(<HomeClient catalogTrips={[trip]} />);
+        const section = screen.getByText('featured.betaRegion.title').closest('section');
+        expect(section).not.toBeNull();
+        const tileSrcs = [...(section?.querySelectorAll('img') ?? [])].map((img) => img.getAttribute('src') ?? '');
+        expect(tileSrcs.some((src) => src.includes('chefchaouen'))).toBe(true);
+        expect(tileSrcs.some((src) => src.includes('trip-photo'))).toBe(false);
+    });
+});
+
 describe('HomeClient featured trips (#575)', () => {
     it('renders the error state — not the empty state — when the catalogue fetch failed', () => {
         render(<HomeClient featuredTrips={[]} featuredTripsFetchFailed />);
