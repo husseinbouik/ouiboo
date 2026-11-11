@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import HomeClient from './HomeClient';
 
@@ -207,8 +207,11 @@ describe('HomeClient coverage showcase + category tiles (round 2, founder 2026-1
         expect(screen.getByText('featured.coverage.title')).not.toBeNull();
         expect(screen.queryByText('featured.allTrips.title')).toBeNull();
         // The two Merzouga spellings group into a single tile that
-        // links into search for the place.
-        const tile = screen.getByRole('link', { name: /Merzouga/ });
+        // links into search for the place. (Scoped to the section:
+        // Option B's Popular chips repeat the same place link above
+        // it, #929.)
+        const section = screen.getByText('featured.coverage.title').closest('section');
+        const tile = within(section as HTMLElement).getByRole('link', { name: /Merzouga/ });
         expect(tile.getAttribute('href')).toBe('/search?q=Merzouga');
         // Honestly-empty well-known places render as tiles too.
         expect(screen.getByText('featured.coverage.names.agadir')).not.toBeNull();
@@ -254,11 +257,14 @@ describe('HomeClient coverage showcase + category tiles (round 2, founder 2026-1
                 images: ['https://images.unsplash.com/photo-1542401886-65d6c61db217?q=80&w=1200'],
             }),
         ];
-        const { container } = render(wrap(<HomeClient catalogTrips={trips} />));
-        const casaTile = container.querySelector('a[href="/search?q=Casablanca"]');
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        // Scoped to the coverage section — the Popular chips carry
+        // the same hrefs earlier in the page (#929).
+        const section = screen.getByText('featured.coverage.title').closest('section');
+        const casaTile = section?.querySelector('a[href="/search?q=Casablanca"]');
         expect(casaTile).not.toBeNull();
         expect(casaTile?.querySelector('img')).toBeNull();
-        const merzTile = container.querySelector('a[href="/search?q=Merzouga"]');
+        const merzTile = section?.querySelector('a[href="/search?q=Merzouga"]');
         expect(merzTile?.querySelector('img')).not.toBeNull();
     });
 
