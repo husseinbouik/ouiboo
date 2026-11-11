@@ -89,14 +89,6 @@
      --font-space-grotesk, --font-geist-mono variables). */
   --font-sans: var(--font-manrope), var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-space-grotesk), var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
-  /* Display serif (#926, design-directions council): the hybrid's
-     bounded voice layer — Fraunces paired with Noto Naskh Arabic
-     500/600 for display headlines (traveller home H1/H2 at adoption;
-     extension beyond home is a separate decision). Font FILES load
-     per app (traveller globals @font-face, self-hosted subsets);
-     apps that never reference this token never fetch them. The
-     wordmark is never set in this stack. */
-  --font-display-serif: "Fraunces", "Noto Naskh Arabic", "Fraunces Fallback", "Naskh Fallback", Georgia, serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 
   /* Shared radius scale (#572): one scale for every app, derived from
@@ -169,7 +161,8 @@
 
   /* Semantic */
   --background: #fffaf4;
-  /* Warm paper ground for the hybrid hero/display zone (#926). */
+  /* Warm paper ground (#926; retained under #929 pure-B: Option B
+     paints this exact ground on the USP strip and Why-book cards). */
   --paper: #fdfbf7;
   --foreground: #0a192f;
   --card: rgba(255, 255, 255, 0.92);
@@ -228,7 +221,7 @@
 
 .dark {
   --background: #06101f;
-  /* No paper ground on dark: the display zone stays on the dark ground. */
+  /* No paper ground on dark: paper surfaces stay on the dark ground. */
   --paper: var(--background);
   --foreground: #f8fafc;
   --card: rgba(13, 28, 52, 0.92);
