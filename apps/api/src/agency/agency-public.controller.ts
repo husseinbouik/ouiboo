@@ -21,6 +21,9 @@ export class AgencyPublicController {
                 bio: true,
                 logo: true,
                 verificationStatus: true,
+                // #878: test/example supply flag — the storefront renders
+                // the Example state instead of verification claims.
+                isTestData: true,
                 // #371: seller-of-record display. The licence number itself
                 // is only exposed while the licence is verified (Law 11-16
                 // requires verified agents to display it publicly).
@@ -106,9 +109,12 @@ export class AgencyPublicController {
         const reviewCount = reviewAggregate._count._all;
         const MIN_REVIEWS_FOR_RATING = 5;
 
-        const licenceVerified = effectiveLicenceStatus(agency) === 'VERIFIED';
+        // #878: for test/example supply the claim derivations are
+        // forced off at the source — no licence number, insurer name
+        // or check date leaves the API for a team-created agency.
+        const licenceVerified = !agency.isTestData && effectiveLicenceStatus(agency) === 'VERIFIED';
         const effectiveInsurance = effectiveInsuranceStatus(agency);
-        const insuranceVerified = effectiveInsurance === 'VERIFIED';
+        const insuranceVerified = !agency.isTestData && effectiveInsurance === 'VERIFIED';
 
         return {
             id: agency.id,
@@ -122,6 +128,8 @@ export class AgencyPublicController {
             // read — VERIFIED only when identity + licence + insurance
             // are all effectively verified (see agency-licence.util).
             verificationStatus: effectiveVerificationStatus(agency),
+            // #878: the storefront reads this to render the Example state.
+            isTestData: agency.isTestData,
             legalName: agency.legalName,
             licenceVerified,
             // #673 (Council S6): the dated verification statement needs

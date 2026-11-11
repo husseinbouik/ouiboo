@@ -53,16 +53,50 @@
     "tagline": "Discover the Uncharted",
     "title": "Discover Morocco's",
     "accent": "Hidden Gems",
-    "subtitle": "Book unique adventures curated by local experts. Experience authentic Moroccan culture like never before.",
+    "subtitle": "Rediscover Morocco, one journey at a time — trips run by licence-checked local agencies. Send a request, the agency confirms, and you pay the agency directly.",
     "where": "Where to?",
     "when": "When?",
     "search": "Search",
-    "dateRangeError": "The end date must be on or after the start date."
+    "dateRangeError": "The end date must be on or after the start date.",
+    "addDates": "Add dates",
+    "removeDates": "Remove dates",
+    "pastDateError": "Those dates are in the past — pick dates from today onwards."
+  },
+  "example": {
+    "badge": "Example"
   },
   "featured": {
     "title": "Featured Experiences",
     "subtitle": "Featured itineraries.",
     "criteria": "One trip per agency, rotated weekly — from licence-checked agencies with upcoming departures.",
+    "betaRegion": {
+      "title": "Start in the North",
+      "subtitle": "The beta region — three cities, honestly stocked.",
+      "tripsCount_one": "{{count}} trip",
+      "tripsCount_other": "{{count}} trips",
+      "noTripsYet": "No trips yet",
+      "tripsComing": "Trips coming — be first to ask a local agency.",
+      "blurb": {
+        "tangier": "Kasbah, medina and the strait — the beta's front door.",
+        "tetouan": "The white dove of the Rif, between mountains and sea.",
+        "chefchaouen": "The blue pearl of the Rif."
+      },
+      "tripsCount_zero": "{{count}} trips",
+      "tripsCount_two": "{{count}} trips",
+      "tripsCount_few": "{{count}} trips",
+      "tripsCount_many": "{{count}} trips"
+    },
+    "allTrips": {
+      "title": "All beta trips",
+      "subtitle": "Every active trip, reachable from home — at beta scale, completeness replaces curation theatre.",
+      "searchAll": "Search all trips",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "days_zero": "{{count}} days",
+      "days_two": "{{count}} days",
+      "days_few": "{{count}} days",
+      "days_many": "{{count}} days"
+    },
     "viewAll": "View all trips",
     "from": "From",
     "emptyTitle": "No trips found",
@@ -365,6 +399,8 @@
     "previousImage": "Previous image",
     "nextImage": "Next image",
     "viewImage": "View image {{count}}",
+    "imagePosition": "Image {{current}} of {{total}}",
+    "photoCarousel": "{{title}} — photos",
     "imageCounter": "{{current}} / {{total}}",
     "defaultCategory": "Adventure",
     "priceTba": "Price TBA",
@@ -474,6 +510,10 @@
   },
   "search": {
     "resultCount": "Showing {{count}} of {{total}}",
+    "clearAllShowAll": "Clear all filters — show all trips",
+    "zeroStateFeaturedTitle": "Or start with a featured trip",
+    "datesRemovedBanner": "No departures matched those dates — showing trips for {{place}} without date filtering.",
+    "everywhere": "everywhere",
     "metaTitle": "Explore trips — Ouiboo",
     "metaDescription": "Search and filter handpicked travel experiences across Morocco and beyond.",
     "title": "Find your next Adventure",
@@ -1102,6 +1142,8 @@
   },
   "verificationRecord": {
     "title": "Verification record",
+    "exampleTitle": "Example listing",
+    "exampleNotice": "Example listing — demonstration data. This licence and insurance have not been checked by Ouiboo.",
     "legalName": "Legal name",
     "licence": "Travel-agent licence",
     "authority": "Issuing authority",

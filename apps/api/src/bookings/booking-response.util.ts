@@ -200,6 +200,8 @@ type BookingMapperInput = {
          * licence facts are gated client-side by SellerIdentity, the
          * same derivation the public profile endpoint applies. */
         legalName?: string | null;
+        /** #878: test/example supply flag (booking view Example state). */
+        isTestData?: boolean;
         travelLicenceType?: string | null;
         travelLicenceNumber?: string | null;
         travelLicenceStatus?: string | null;
@@ -467,6 +469,9 @@ export const mapBookingDetails = (
         // booking response (the booking view is the receipt surface —
         // its seller block and Verification Record link read these).
         legalName: booking.session.template.agency?.legalName ?? null,
+        // #878: test/example supply flag — the booking view renders the
+        // Example state instead of verification claims for these.
+        isTestData: booking.session.template.agency?.isTestData ?? false,
         travelLicenceType: booking.session.template.agency?.travelLicenceType ?? null,
         travelLicenceNumber: booking.session.template.agency?.travelLicenceNumber ?? null,
         travelLicenceStatus: booking.session.template.agency?.travelLicenceStatus ?? null,

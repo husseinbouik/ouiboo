@@ -53,16 +53,50 @@
     "tagline": "Découvrez l'inattendu",
     "title": "Découvrez les",
     "accent": "Trésors du Maroc",
-    "subtitle": "Réservez des aventures uniques conçues par des experts locaux. Vivez la culture marocaine authentique.",
+    "subtitle": "Redécouvrez le Maroc, voyage après voyage — des circuits organisés par des agences locales à la licence vérifiée. Envoyez une demande, l'agence confirme, et vous payez l'agence directement.",
     "where": "Où allez-vous ?",
     "when": "Quand ?",
     "search": "Rechercher",
-    "dateRangeError": "La date de fin doit être postérieure ou égale à la date de début."
+    "dateRangeError": "La date de fin doit être postérieure ou égale à la date de début.",
+    "addDates": "Ajouter des dates",
+    "removeDates": "Retirer les dates",
+    "pastDateError": "Ces dates sont passées — choisissez des dates à partir d'aujourd'hui."
+  },
+  "example": {
+    "badge": "Exemple"
   },
   "featured": {
     "title": "Expériences en vedette",
     "subtitle": "Itinéraires en vedette.",
     "criteria": "Un voyage par agence, en rotation chaque semaine — des agences à la licence vérifiée avec des départs à venir.",
+    "betaRegion": {
+      "title": "Commencez par le Nord",
+      "subtitle": "La région bêta — trois villes, affichées honnêtement.",
+      "tripsCount_one": "{{count}} voyage",
+      "tripsCount_other": "{{count}} voyages",
+      "noTripsYet": "Aucun voyage pour le moment",
+      "tripsComing": "Des voyages arrivent — soyez le premier à solliciter une agence locale.",
+      "blurb": {
+        "tangier": "Kasbah, médina et détroit — la porte d'entrée de la bêta.",
+        "tetouan": "La colombe blanche du Rif, entre montagnes et mer.",
+        "chefchaouen": "La perle bleue du Rif."
+      },
+      "tripsCount_zero": "{{count}} voyage",
+      "tripsCount_two": "{{count}} voyages",
+      "tripsCount_few": "{{count}} voyages",
+      "tripsCount_many": "{{count}} voyages"
+    },
+    "allTrips": {
+      "title": "Tous les voyages bêta",
+      "subtitle": "Chaque voyage actif, accessible depuis l'accueil — à l'échelle de la bêta, l'exhaustivité remplace la mise en scène.",
+      "searchAll": "Rechercher tous les voyages",
+      "days_one": "{{count}} jour",
+      "days_other": "{{count}} jours",
+      "days_zero": "{{count}} jour",
+      "days_two": "{{count}} jours",
+      "days_few": "{{count}} jours",
+      "days_many": "{{count}} jours"
+    },
     "viewAll": "Voir tous les voyages",
     "from": "À partir de",
     "emptyTitle": "Aucun voyage trouvé",
@@ -365,6 +399,8 @@
     "previousImage": "Image précédente",
     "nextImage": "Image suivante",
     "viewImage": "Voir l'image {{count}}",
+    "imagePosition": "Image {{current}} sur {{total}}",
+    "photoCarousel": "{{title}} — photos",
     "imageCounter": "{{current}} / {{total}}",
     "defaultCategory": "Aventure",
     "priceTba": "Prix à venir",
@@ -474,6 +510,10 @@
   },
   "search": {
     "resultCount": "Affichage de {{count}} sur {{total}}",
+    "clearAllShowAll": "Effacer tous les filtres — afficher tous les voyages",
+    "zeroStateFeaturedTitle": "Ou commencez par un voyage en vedette",
+    "datesRemovedBanner": "Aucun départ ne correspondait à ces dates — affichage des voyages pour {{place}} sans filtre de dates.",
+    "everywhere": "toutes les destinations",
     "metaTitle": "Découvrir les voyages — Ouiboo",
     "metaDescription": "Recherchez et filtrez des expériences de voyage sélectionnées au Maroc et au-delà.",
     "title": "Trouvez votre prochaine Aventure",
@@ -1102,6 +1142,8 @@
   },
   "verificationRecord": {
     "title": "Fiche de vérification",
+    "exampleTitle": "Annonce d'exemple",
+    "exampleNotice": "Annonce d'exemple — données de démonstration. Cette licence et cette assurance n'ont pas été vérifiées par Ouiboo.",
     "legalName": "Raison sociale",
     "licence": "Licence d’agent de voyages",
     "authority": "Autorité de délivrance",

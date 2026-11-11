@@ -78,6 +78,8 @@ export interface TripAgencySummary {
   companyName: string
   logo?: string | null
   verificationStatus?: VerificationStatus
+  /** #878: test/example supply — public surfaces render the Example state. */
+  isTestData?: boolean
 }
 
 export interface TripListItem extends TripTemplate {

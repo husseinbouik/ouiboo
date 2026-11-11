@@ -879,6 +879,9 @@ export interface BookingAgencySummary {
      * for legacy records missing the issue data.
      */
     legalName?: string | null;
+    /** #878: test/example supply flag — booking surfaces render the
+     * Example state instead of verification claims for these. */
+    isTestData?: boolean;
     travelLicenceType?: string | null;
     travelLicenceNumber?: string | null;
     travelLicenceStatus?: string | null;
