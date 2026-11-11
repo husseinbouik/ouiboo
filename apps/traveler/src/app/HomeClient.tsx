@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {
-  MapPin, Calendar, Star, ArrowRight, Compass, Banknote, Zap, Heart, Mountain, Palmtree, AlertTriangle, Plus, X
+  MapPin, Calendar, Star, ArrowRight, Compass, Banknote, Zap, Heart, Mountain, Palmtree, AlertTriangle, Plus, X, Check
 } from 'lucide-react';
 import Image from 'next/image';
 import { Button, EmptyState, SafeImage } from '@ouiboo/ui';
@@ -21,6 +21,7 @@ import {
   curateFeaturedTrips,
 } from '@/lib/curation';
 import { useDisplayPrice } from '@/lib/display-currency';
+import { DESTINATION_IMAGES, HERO_IMAGE } from '@/lib/static-imagery';
 
 const TripCard = dynamic(() => import('@/components/TripCard').then((m) => m.TripCard));
 
@@ -58,7 +59,7 @@ interface HomeClientProps {
   catalogDestinations?: string[];
 }
 
-/** #885: one compact "All beta trips" row — thumbnail, facts, from-price. */
+/** #885: one compact "All trips" row — thumbnail, facts, from-price. */
 function AllTripsRow({ trip }: { trip: HomeCatalogTrip }) {
   const { t, i18n } = useTranslation();
   const sessions = trip.sessions ?? [];
@@ -173,19 +174,13 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
 
   // #885: home composition from the catalogue. The featured rail is
   // curated under the published rule (lib/curation.ts); the chip rail,
-  // destination section and "All beta trips" read the same catalogue.
+  // destination section and "All trips" read the same catalogue.
   // Legacy callers passing only `featuredTrips` render that list as
   // the rail verbatim (the pre-#885 contract the tests lock).
   const allTrips = catalogTrips ?? featuredTripsProp ?? [];
   const featuredTrips = catalogTrips ? curateFeaturedTrips(catalogTrips) : allTrips;
   const destinationTripCounts = countTripsByDestination(allTrips);
   const categoryTripCounts = countTripsByCategory(allTrips);
-  const destinationPhotoBySlug: Record<string, string | undefined> = {};
-  for (const trip of allTrips) {
-    if (trip.destinationSlug && !destinationPhotoBySlug[trip.destinationSlug]) {
-      destinationPhotoBySlug[trip.destinationSlug] = trip.images?.[0];
-    }
-  }
   const styleChips = [
     { key: 'ADVENTURE', label: t('categories.adventure') },
     { key: 'CULTURAL', label: t('categories.cultural') },
@@ -198,12 +193,6 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
     String(a.title ?? '').localeCompare(String(b.title ?? '')),
   );
   const hasCatalogSections = Boolean(catalogTrips) && !featuredTripsFetchFailed;
-  // #880: the hero's visual anchor is the first featured trip's own
-  // slide-1 photo — the same optimizer URL its card requests below
-  // the fold, so the anchor costs ~0 KB incremental and serves as
-  // the page's LCP (priority / fetchPriority=high).
-  const heroAnchorTrip = featuredTrips[0];
-  const heroAnchorImage = heroAnchorTrip?.images?.[0];
   const travelStyles = [
     { key: 'adventure', name: t('categories.adventure'), Icon: Mountain, color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' },
     { key: 'cultural', name: t('categories.cultural'), Icon: Compass, color: 'bg-blue-100 text-ocean-600 dark:text-ocean-300 dark:bg-blue-900/30 dark:text-blue-400' },
@@ -215,9 +204,9 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
     <div className="bg-background min-h-screen font-sans text-foreground overflow-hidden">
       
       {/* Hero Section — #880: compressed (vertical whitespace more
-          than halved) and anchored by the first featured trip's own
-          photo, so a cold arrival sees product — a place, a trip —
-          in the first screen instead of a claim and a form. */}
+          than halved) so a cold arrival sees Morocco — and the first
+          trip card peeking below — in the first screen instead of a
+          claim and a form. */}
       <div className="relative isolate pt-24 pb-8 sm:pt-28 sm:pb-10">
         {/* Background Blob */}
         <div aria-hidden="true" className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80 opacity-20 dark:opacity-10">
@@ -247,37 +236,32 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
             </motion.p>
             </div>
 
-            {/* #880: the anchor photo — the first featured trip's
-                slide-1 at its existing optimizer URL (the same asset
-                its card loads below the fold), prioritised as LCP.
-                On mobile it stacks first: product tops the screen. */}
-            {heroAnchorTrip && heroAnchorImage ? (
-              <motion.div variants={fadeInUp} className="order-first lg:order-none">
-                <Link
-                  href={`/trip/${heroAnchorTrip.id}`}
-                  className="relative block h-44 overflow-hidden rounded-3xl shadow-xl sm:h-56 lg:h-[340px] focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset-orange focus-visible:ring-offset-2"
-                  aria-label={heroAnchorTrip.title}
-                >
-                  <Image
-                    src={heroAnchorImage}
-                    alt={heroAnchorTrip.imageAlts?.[0] ?? heroAnchorTrip.title}
-                    fill
-                    sizes="(min-width: 1024px) 40vw, 100vw"
-                    className="object-cover"
-                    priority
-                    fetchPriority="high"
-                  />
-                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent p-5 pt-10 text-start">
-                    <span className="block font-display text-lg font-bold text-white">{heroAnchorTrip.title}</span>
-                    {heroAnchorTrip.startLocation ? (
-                      <span className="mt-0.5 flex items-center gap-1 text-sm text-white/85">
-                        <MapPin className="h-4 w-4" aria-hidden="true" /> {heroAnchorTrip.startLocation}
-                      </span>
-                    ) : null}
+            {/* Founder amendment to #880 (2026-11-11): the hero's
+                visual anchor is a FIXED signature photograph of a
+                Moroccan place (Erg Chebbi — lib/static-imagery.ts),
+                a static asset with the same treatment: not a trip,
+                not promoted, no link, no trip title — the caption
+                names the place only, and the alt says what it is.
+                Prioritised as LCP. On mobile it stacks first:
+                Morocco tops the screen. */}
+            <motion.div variants={fadeInUp} className="order-first lg:order-none">
+              <figure className="relative block h-44 overflow-hidden rounded-3xl shadow-xl sm:h-56 lg:h-[340px]">
+                <Image
+                  src={HERO_IMAGE.src}
+                  alt={t('hero.photoAlt')}
+                  fill
+                  sizes="(min-width: 1024px) 40vw, 100vw"
+                  className="object-cover"
+                  priority
+                  fetchPriority="high"
+                />
+                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent p-5 pt-10 text-start">
+                  <span className="flex items-center gap-1.5 font-display text-lg font-bold text-white">
+                    <MapPin className="h-5 w-5 shrink-0" aria-hidden="true" /> {t('hero.photoCaption')}
                   </span>
-                </Link>
-              </motion.div>
-            ) : null}
+                </span>
+              </figure>
+            </motion.div>
           </motion.div>
           <motion.div
             initial="hidden"
@@ -389,6 +373,27 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
               </form>
             </motion.div>
           </motion.div>
+
+          {/* #887: the trust strip — the three verified claims,
+              directly under the hero search where the click decision
+              happens, instead of only at the bottom of the page.
+              No beta explainer (founder de-beta directive, #917). */}
+          <motion.div
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            className="mx-auto mt-6 flex max-w-3xl flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-semibold text-muted-foreground"
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <Check className="h-4 w-4 shrink-0 text-success" aria-hidden="true" /> {t('trustStrip.licence')}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Check className="h-4 w-4 shrink-0 text-success" aria-hidden="true" /> {t('trustStrip.payDirect')}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Check className="h-4 w-4 shrink-0 text-success" aria-hidden="true" /> {t('trustStrip.cancellation')}
+            </span>
+          </motion.div>
         </div>
       </div>
 
@@ -491,10 +496,13 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
         </div>
       </section>
 
-      {/* #885: the beta-region destination section — the three cluster
-          cities only. A city with no trips renders honestly empty
-          (never backfilled with out-of-cluster supply); a stocked
-          city's photo is its own first trip's photo. */}
+      {/* #885: the destination section — the three cluster cities
+          only. A city with no trips renders honestly empty (never
+          backfilled with out-of-cluster supply). Tile photographs
+          are FIXED curated assets (lib/static-imagery.ts, founder
+          amendment to #898, 2026-11-11) — never borrowed from trip
+          inventory; a city without a curated photo keeps the
+          brand-graded tile. */}
       {hasCatalogSections && (
         <section className="py-24 bg-background">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
@@ -505,14 +513,14 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {CLUSTER_DESTINATION_SLUGS.map((slug) => {
                 const count = destinationTripCounts[slug] ?? 0;
-                const photo = destinationPhotoBySlug[slug];
+                const photo = DESTINATION_IMAGES[slug];
                 return (
                   <Link
                     key={slug}
                     href={`/search?destination=${slug}`}
                     className="group relative block min-h-[280px] overflow-hidden rounded-3xl bg-deep-blue text-white shadow-sm transition-shadow hover:shadow-xl"
                   >
-                    {count > 0 && photo ? (
+                    {photo ? (
                       <SafeImage src={photo} alt="" fill sizes="(min-width: 768px) 33vw, 100vw" className="object-cover opacity-90 transition-transform duration-500 group-hover:scale-105" />
                     ) : null}
                     <span className="absolute inset-0 bg-gradient-to-t from-deep-blue/85 via-deep-blue/25 to-transparent" aria-hidden="true" />
@@ -533,8 +541,8 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
         </section>
       )}
 
-      {/* #885: "All beta trips" — at beta scale every active trip is
-          reachable from home itself, in compact rows. */}
+      {/* #885: "All trips" — every active trip is reachable from
+          home itself, in compact rows. */}
       {hasCatalogSections && allTripsSorted.length > 0 && (
         <section className="py-24 bg-muted/35">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">

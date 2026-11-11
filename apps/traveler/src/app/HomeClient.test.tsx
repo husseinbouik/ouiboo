@@ -3,6 +3,7 @@
  */
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import HomeClient from './HomeClient';
 
 const mockPush = jest.fn();
@@ -126,6 +127,51 @@ describe('HomeClient hero search (#723)', () => {
 
         expect(mockPush).not.toHaveBeenCalled();
         expect(screen.getByRole('alert').textContent).toBe('hero.pastDateError');
+    });
+});
+
+describe('HomeClient static imagery + trust strip (founder amendments 2026-11-11, #880/#887/#898/#917)', () => {
+    it('renders the fixed signature hero photo — a place, not a trip link', () => {
+        const { container } = render(<HomeClient featuredTrips={[]} />);
+        const heroImg = container.querySelector('img[alt="hero.photoAlt"]');
+        expect(heroImg).not.toBeNull();
+        expect(heroImg?.getAttribute('src')).toContain('hero-erg-chebbi');
+        expect(screen.getByText('hero.photoCaption')).not.toBeNull();
+        // The hero is a photograph of a place: it must not navigate
+        // to a trip and must not carry a trip title.
+        expect(heroImg?.closest('a')).toBeNull();
+    });
+
+    it('renders the #887 trust strip claims under the hero search', () => {
+        render(<HomeClient featuredTrips={[]} />);
+        expect(screen.getByText('trustStrip.licence')).not.toBeNull();
+        expect(screen.getByText('trustStrip.payDirect')).not.toBeNull();
+        expect(screen.getByText('trustStrip.cancellation')).not.toBeNull();
+    });
+
+    it('destination tiles use the fixed curated asset, never a trip photo (#898)', () => {
+        const trip: any = {
+            id: 'chef-1',
+            title: 'Blue City',
+            destinationSlug: 'chefchaouen',
+            startLocation: 'Chefchaouen',
+            images: ['https://example.com/trip-photo.jpg'],
+            sessions: [],
+            agency: { id: 'agency-1' },
+        };
+        // The All-trips rows this catalogue renders use react-query
+        // (display-currency) — provide a client like the app does.
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        render(
+            <QueryClientProvider client={queryClient}>
+                <HomeClient catalogTrips={[trip]} />
+            </QueryClientProvider>,
+        );
+        const section = screen.getByText('featured.betaRegion.title').closest('section');
+        expect(section).not.toBeNull();
+        const tileSrcs = [...(section?.querySelectorAll('img') ?? [])].map((img) => img.getAttribute('src') ?? '');
+        expect(tileSrcs.some((src) => src.includes('chefchaouen'))).toBe(true);
+        expect(tileSrcs.some((src) => src.includes('trip-photo'))).toBe(false);
     });
 });
 
