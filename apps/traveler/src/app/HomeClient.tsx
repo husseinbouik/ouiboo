@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {
-  MapPin, Calendar, Compass, Banknote, ShieldCheck, CalendarCheck, AlertTriangle, Plus, X, Check, MessageCircle
+  MapPin, Calendar, Compass, Banknote, ShieldCheck, CalendarCheck, AlertTriangle, Plus, X, Check, MessageCircle, ArrowRight
 } from 'lucide-react';
 import Image from 'next/image';
 import { Button, EmptyState, SafeImage } from '@ouiboo/ui';
@@ -19,7 +19,6 @@ import {
   countTripsByCategory,
   countTripsByDestination,
   curateFeaturedTrips,
-  pickStoryExcerpt,
   showcaseDestinations,
   tripsCoverPlace,
   type ShowcaseDestination,
@@ -65,62 +64,75 @@ interface HomeClientProps {
 }
 
 /**
- * Round 2 (founder decision 2026-11-11): the coverage showcase
- * replaces the "All trips" listing on home. A HAS tile — a
- * destination with trips: its own photo, the live count and the
- * from-price, linking into search for that place.
+ * Pure Option B (#929): the coverage showcase as a compact
+ * destination INDEX — a white card with a short photo header and a
+ * name + count/from-price body. A destination whose trips carry no
+ * truthful photo (photo-truth audit, #898) gets the graded navy
+ * header instead — never a photograph of somewhere else.
  */
 function CoverageTile({ destination }: { destination: ShowcaseDestination }) {
   const { t, i18n } = useTranslation();
   const displayPrice = useDisplayPrice(destination.minPrice, destination.priceCurrency, i18n.language);
+  // B draws a short descriptor on its graded coverage headers
+  // ("Atlas gateway", "City stop"); keyed by the folded place name,
+  // absent for destinations B never drew one for.
+  const descriptor = t(`featured.coverage.descriptor.${destination.name.toLowerCase().replace(/\s+/g, '')}`, { defaultValue: '' });
   return (
     <Link
       href={`/search?q=${encodeURIComponent(destination.name)}`}
-      className="group relative block min-h-[180px] overflow-hidden rounded-3xl bg-deep-blue text-white shadow-sm transition-shadow hover:shadow-xl sm:min-h-[220px]"
+      className="group block overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-xl"
     >
       {destination.photo ? (
-        <SafeImage
-          src={destination.photo}
-          alt=""
-          fill
-          sizes="(min-width: 1024px) 25vw, 50vw"
-          className="object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
-        />
-      ) : null}
-      <span className="absolute inset-0 bg-gradient-to-t from-deep-blue/90 via-deep-blue/40 to-transparent" aria-hidden="true" />
-      <span className="absolute top-4 start-4 rounded-full bg-card px-3 py-1 text-[11px] font-extrabold text-foreground shadow">
-        {t('featured.betaRegion.tripsCount', { count: destination.count })}
-      </span>
-      <span className="absolute inset-x-0 bottom-0 p-5">
-        <span className="block font-display text-lg font-extrabold sm:text-[22px]">{destination.name}</span>
-        {displayPrice ? (
-          <span className="mt-1 block text-sm text-white/85">
-            {t('featured.from')} {displayPrice}
-          </span>
-        ) : null}
+        <span className="relative block h-[104px] overflow-hidden">
+          <SafeImage
+            src={destination.photo}
+            alt=""
+            fill
+            sizes="(min-width: 1024px) 25vw, 50vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        </span>
+      ) : (
+        <span className="flex h-[104px] items-end bg-deep-blue p-3">
+          {descriptor ? (
+            <span className="font-display text-[11px] font-bold uppercase tracking-[0.08em] text-white/85">{descriptor}</span>
+          ) : (
+            <MapPin className="h-5 w-5 text-white/70" aria-hidden="true" />
+          )}
+        </span>
+      )}
+      <span className="block p-3 sm:p-3.5">
+        <span className="block font-display text-[15px] font-bold text-foreground">{destination.name}</span>
+        <span className="mt-0.5 block text-xs font-semibold text-muted-foreground">
+          {t('featured.betaRegion.tripsCount', { count: destination.count })}
+          {displayPrice ? (
+            <> · {t('featured.from')} <span className="font-bold text-foreground">{displayPrice}</span></>
+          ) : null}
+        </span>
       </span>
     </Link>
   );
 }
 
 /** A DON'T-HAVE tile — a well-known place with no trips yet, shown
- * honestly empty in the same graded treatment as Tétouan above. */
+ * honestly empty as B's dashed flat card, mixed into the same index
+ * grid as the covered destinations. Not a link: there is nothing
+ * to see yet, and an empty result page is a dead end (#877). */
 function AbsentCoverageTile({ slug }: { slug: string }) {
   const { t } = useTranslation();
   const name = t(`featured.coverage.names.${slug}`);
   return (
-    <Link
-      href={`/search?q=${encodeURIComponent(name)}`}
-      className="group relative block min-h-[180px] overflow-hidden rounded-3xl bg-deep-blue text-white shadow-sm transition-shadow hover:shadow-xl sm:min-h-[220px]"
-    >
-      <span className="absolute top-4 start-4 rounded-full bg-card px-3 py-1 text-[11px] font-extrabold text-foreground shadow">
+    <div className="flex flex-col rounded-2xl border border-dashed border-border bg-sand/35 p-3.5">
+      <span className="mb-7 flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-deep-blue">
+        <MapPin className="h-[18px] w-[18px]" aria-hidden="true" />
+      </span>
+      <span className="font-display text-[15px] font-bold text-foreground/80">{name}</span>
+      <span className="mt-0.5 text-xs font-semibold leading-relaxed text-muted-foreground">
         {t('featured.betaRegion.noTripsYet')}
+        <br />
+        {t('featured.betaRegion.tripsComing')}
       </span>
-      <span className="absolute inset-x-0 bottom-0 p-5">
-        <span className="block font-display text-lg font-extrabold sm:text-[22px]">{name}</span>
-        <span className="mt-1 block text-sm text-white/85">{t('featured.betaRegion.tripsComing')}</span>
-      </span>
-    </Link>
+    </div>
   );
 }
 
@@ -157,7 +169,7 @@ const staggerContainer: Variants = {
 };
 
 export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsProp, featuredTripsFetchFailed = false, catalogDestinations = [] }: HomeClientProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchDateFrom, setSearchDateFrom] = useState('');
@@ -240,284 +252,265 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
   // suppression rule; Luxury and Budget sit out, #903).
   const categoryTiles = [
     { key: 'ADVENTURE', name: t('categories.adventure'), photo: CATEGORY_IMAGES.adventure },
-    { key: 'CULTURAL', name: t('categories.cultural'), photo: CATEGORY_IMAGES.cultural },
     { key: 'NATURE', name: t('categories.nature'), photo: CATEGORY_IMAGES.nature },
+    { key: 'CULTURAL', name: t('categories.cultural'), photo: CATEGORY_IMAGES.cultural },
   ]
     .map((tile) => ({ ...tile, count: categoryTripCounts[tile.key] ?? 0 }))
     .filter((tile): tile is typeof tile & { photo: string } => Boolean(tile.photo) && tile.count >= 2);
-  // Hybrid (#926, rec item 7): the story strip's excerpt — pulled
-  // from the lead Selected trip's stored description in this locale
-  // (then the wider catalogue), or null when no description
-  // qualifies, in which case the strip is omitted entirely.
-  const storyExcerpt = pickStoryExcerpt([...featuredTrips, ...allTrips]);
+  // Pure B (#929): the "Popular:" quick chips under the search
+  // card — places with trips only (#877: a suggestion with zero
+  // trips is a dead end). Coverage destinations lead (the places
+  // travellers ask for), cluster destinations follow.
+  const popularChips = [
+    ...coverageDestinations.slice(0, 3).map((destination) => ({
+      label: destination.name,
+      href: `/search?q=${encodeURIComponent(destination.name)}`,
+    })),
+    ...CLUSTER_DESTINATION_SLUGS.filter((slug) => (destinationTripCounts[slug] ?? 0) > 0).map((slug) => ({
+      label: t(`search.destinationNames.${slug}`),
+      href: `/search?destination=${slug}`,
+    })),
+  ].slice(0, 5);
 
   return (
     <div className="bg-background min-h-screen font-sans text-foreground overflow-hidden">
       
-      {/* Hero Section — #880: compressed (vertical whitespace more
-          than halved) so a cold arrival sees Morocco — and the first
-          trip card peeking below — in the first screen instead of a
-          claim and a form. */}
-      <div className="relative isolate bg-paper pt-24 pb-8 sm:pt-28 sm:pb-10">
-        {/* Background Blob */}
-        <div aria-hidden="true" className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80 opacity-20 dark:opacity-10">
-          <div style={{ clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)' }} className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-sunset-orange sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"/>
-        </div>
-
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+      {/* Pure Option B (#929): the hero is B's drawn composition —
+          a full-bleed static place photograph under a navy shade
+          (the founder-settled Atlas asset, #880), the settled
+          headline in the shipped display type, and the search card
+          overlapping the fold. The functional search form — live
+          suggestions, Add-dates, validation (#723/#877) — is
+          unchanged in behaviour; only its housing is B's. */}
+      <div className="relative isolate bg-deep-blue">
+        <Image
+          src={HERO_IMAGE.src}
+          alt={t('hero.photoAlt')}
+          fill
+          sizes="100vw"
+          className="object-cover opacity-90"
+          priority
+          fetchPriority="high"
+        />
+        <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-r rtl:bg-gradient-to-l from-deep-blue/85 via-deep-blue/55 to-deep-blue/15" />
+        <div className="relative mx-auto max-w-7xl px-6 pt-24 pb-28 sm:pt-28 lg:px-8">
           <motion.div
             initial="hidden"
             animate="visible"
             variants={staggerContainer}
-            className="grid items-center gap-8 lg:grid-cols-[1.08fr_0.92fr]"
+            className="max-w-[680px] text-start"
           >
-            <div className="text-center lg:text-start">
-            {/* Hybrid (#926): B's chassis carries no tagline pill —
-                the line it occupied now belongs to the positioning
-                claim under the H1 (rec item 4), and the first-screen
-                lock (P0-8) is measured without it. */}
-
-            <motion.h1 variants={fadeInUp} className="text-5xl font-bold tracking-tight text-foreground sm:text-6xl mb-5">
-              {t('hero.titleStart')} <span className="text-sunset-orange-dark">{t('hero.titleAccent')}</span>{t('hero.titleEnd')}
+            {/* Claims lock (council P0-3, carried into #929): the
+                check claim always renders in full — B's drawn
+                compressed kicker ("Checked agencies") ships with
+                the full wording, its accent in the text-safe
+                orange-dark of the P0-2 contrast rule. */}
+            <motion.div variants={fadeInUp} className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-deep-blue">
+              {t('hero.kickerTrips')} <span className="text-sunset-orange-dark">· {t('hero.kickerChecked')}</span>
+            </motion.div>
+            <motion.h1 variants={fadeInUp} className="mt-4 text-[42px] font-bold leading-[1.02] tracking-tight text-white sm:text-[50px]">
+              {t('hero.titleStart')} {t('hero.titleAccent')}{t('hero.titleEnd')}
             </motion.h1>
-
-            <motion.p variants={fadeInUp} className="mt-4 text-lg leading-8 text-muted-foreground max-w-2xl mx-auto lg:mx-0">
-              {t('hero.subtitle', 'Connect with local experts to plan trips that are as unique as you are.')}
+            <motion.p variants={fadeInUp} className="mt-3 max-w-[540px] text-base font-medium leading-relaxed text-white/85">
+              {t('hero.subtitle')}
             </motion.p>
-            {/* Hybrid (#926, council rec item 4): the money claim at
-                headline rank — the positioning promoted out of the
-                trust strip. Roman + orange emphasis; in Arabic the
-                emphasis is colour alone (P0-5 dual encoding). */}
-            <motion.p variants={fadeInUp} className="mt-4 text-xl font-bold text-foreground">
-              {t('hero.payDirectLead')} <span className="text-sunset-orange-dark">{t('hero.payDirectAccent')}</span>
-            </motion.p>
-            </div>
-
-            {/* Founder amendment to #880 (2026-11-11): the hero's
-                visual anchor is a FIXED signature photograph of a
-                Moroccan place (the High Atlas — lib/static-imagery.ts;
-                round 2 re-froze the asset to the proposal's own
-                Milky-Way photograph after the first pick rendered
-                hazy and duplicated the lead card), a static asset
-                with the same treatment: not a trip, not promoted,
-                no link, no trip title — the caption names the place
-                only, and the alt says what it is. Prioritised as
-                LCP. On mobile it stacks first: Morocco tops the
-                screen. */}
-            <motion.div variants={fadeInUp} className="order-first lg:order-none">
-              <figure className="relative block h-44 overflow-hidden rounded-3xl shadow-xl sm:h-56 lg:h-[340px]">
-                <Image
-                  src={HERO_IMAGE.src}
-                  alt={t('hero.photoAlt')}
-                  fill
-                  sizes="(min-width: 1024px) 40vw, 100vw"
-                  className="object-cover"
-                  priority
-                  fetchPriority="high"
-                />
-                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent p-5 pt-10 text-start">
-                  <span className="flex items-center gap-1.5 font-display text-lg font-bold text-white">
-                    <MapPin className="h-5 w-5 shrink-0" aria-hidden="true" /> {t('hero.photoCaption')}
-                  </span>
-                </span>
-              </figure>
+            <motion.div variants={fadeInUp} className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs font-semibold text-white/75">
+              <span className="inline-flex items-center gap-1.5">
+                <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {t('hero.metaPrices')}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {t('hero.metaPayDirect')}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {t('hero.photoCaption')}
+              </span>
             </motion.div>
           </motion.div>
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-            className="mx-auto max-w-4xl text-center"
-          >
+          {/* The caption names the place only — the photograph is a
+              place, not a trip (#880). Hidden on mobile, as drawn. */}
+          <span className="absolute end-6 bottom-24 hidden rounded-full bg-deep-blue/60 px-2.5 py-1 text-[11px] font-semibold text-white/90 sm:block lg:end-8">
+            {t('hero.photoCaption')}
+          </span>
+        </div>
+      </div>
 
+      {/* The search zone overlaps the hero fold (B's defining
+          geometry), followed by the Popular chips and the USP
+          strip — the three verified claims as titled one-liners
+          (#887, in B's paper-card form). */}
+      <div className="relative z-10 mx-auto -mt-16 max-w-7xl px-6 lg:px-8">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={staggerContainer}
+          className="mx-auto max-w-4xl"
+        >
+          <motion.div variants={fadeInUp}>
             {/* Clean Search Bar — #723: a semantic form, so the button
                 AND Enter in any field submit the same search. The
                 destination suggestions are the #675 beta destinations
                 (localised names); picking or typing one submits the
                 `destination` facet, other text submits as `q`. */}
-            <motion.div variants={fadeInUp} className="mt-6 mx-auto max-w-3xl">
-              <form onSubmit={handleSearch} noValidate>
-                <div className="bg-card p-2 rounded-2xl shadow-xl border border-border flex flex-col lg:flex-row gap-2">
-                  <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
-                    <MapPin className="h-5 w-5 text-sunset-orange me-3 shrink-0" />
-                    <input
-                      type="text"
-                      aria-label={t('hero.where')}
-                      placeholder={t('hero.where')}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      list="hero-destination-suggestions"
-                      autoComplete="off"
-                      className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
-                    />
-                    <datalist id="hero-destination-suggestions">
-                      {/* #877: suggestions are generated from the live
-                          catalogue — only destinations with at least
-                          one active trip are offered. */}
-                      {BETA_DESTINATIONS.filter((destination) => catalogDestinations.includes(destination.slug)).map((destination) => (
-                        <option
-                          key={destination.slug}
-                          value={t(`search.destinationNames.${destination.slug}`)}
-                        />
-                      ))}
-                    </datalist>
-                  </div>
-                  {/* #877: dates demoted behind an explicit toggle —
-                      collapsed by default. Open, the two fields carry
-                      visible Start/End labels (they previously had
-                      aria-labels only, indistinguishable unlabelled
-                      boxes on the first screen). */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (datesOpen) {
-                        setSearchDateFrom('');
-                        setSearchDateTo('');
-                        setDateError('');
-                      }
-                      setDatesOpen(!datesOpen);
-                    }}
-                    aria-expanded={datesOpen}
-                    className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border text-muted-foreground font-medium hover:text-foreground hover:border-sunset-orange/50 transition-all"
-                  >
-                    {datesOpen ? <X className="h-4 w-4 shrink-0" /> : <Plus className="h-4 w-4 shrink-0" />}
-                    {datesOpen ? t('hero.removeDates') : t('hero.addDates')}
-                  </button>
-                  {datesOpen && (
-                    <>
-                      <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
-                        <Calendar className="h-5 w-5 text-sunset-orange me-3 shrink-0" />
-                        <label className="flex w-full flex-col gap-0.5 text-start">
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('search.startDate')}</span>
-                          <input
-                            type="date"
-                            ref={dateFromInputRef}
-                            aria-label={t('search.startDate')}
-                            value={searchDateFrom}
-                            onChange={(e) => { setSearchDateFrom(e.target.value); setDateError(''); }}
-                            aria-invalid={dateError ? true : undefined}
-                            aria-describedby={dateError ? 'hero-date-error' : undefined}
-                            className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
-                          />
-                        </label>
-                      </div>
-                      <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
-                        <Calendar className="h-5 w-5 text-sunset-orange me-3 shrink-0" />
-                        <label className="flex w-full flex-col gap-0.5 text-start">
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('search.endDate')}</span>
-                          <input
-                            type="date"
-                            ref={dateToInputRef}
-                            aria-label={t('search.endDate')}
-                            value={searchDateTo}
-                            onChange={(e) => { setSearchDateTo(e.target.value); setDateError(''); }}
-                            aria-invalid={dateError ? true : undefined}
-                            aria-describedby={dateError ? 'hero-date-error' : undefined}
-                            className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
-                          />
-                        </label>
-                      </div>
-                    </>
-                  )}
-                  <Button
-                    type="submit"
-                    className="h-14 lg:h-auto px-8 rounded-xl bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-orange-600 text-white dark:text-deep-blue font-semibold text-lg shadow-md transition-all">
-                    {t('hero.search', 'Search')}
-                  </Button>
+            <form onSubmit={handleSearch} noValidate>
+              <div className="bg-card p-2 rounded-2xl shadow-xl border border-border flex flex-col lg:flex-row gap-2">
+                <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
+                  <MapPin className="h-5 w-5 text-sunset-orange me-3 shrink-0" />
+                  <input
+                    type="text"
+                    aria-label={t('hero.where')}
+                    placeholder={t('hero.where')}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    list="hero-destination-suggestions"
+                    autoComplete="off"
+                    className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
+                  />
+                  <datalist id="hero-destination-suggestions">
+                    {/* #877: suggestions are generated from the live
+                        catalogue — only destinations with at least
+                        one active trip are offered. */}
+                    {BETA_DESTINATIONS.filter((destination) => catalogDestinations.includes(destination.slug)).map((destination) => (
+                      <option
+                        key={destination.slug}
+                        value={t(`search.destinationNames.${destination.slug}`)}
+                      />
+                    ))}
+                  </datalist>
                 </div>
-                {dateError && (
-                  <p id="hero-date-error" role="alert" className="mt-3 text-sm font-medium text-danger">
-                    {dateError}
-                  </p>
+                {/* #877: dates demoted behind an explicit toggle —
+                    collapsed by default. Open, the two fields carry
+                    visible Start/End labels (they previously had
+                    aria-labels only, indistinguishable unlabelled
+                    boxes on the first screen). */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (datesOpen) {
+                      setSearchDateFrom('');
+                      setSearchDateTo('');
+                      setDateError('');
+                    }
+                    setDatesOpen(!datesOpen);
+                  }}
+                  aria-expanded={datesOpen}
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border text-muted-foreground font-medium hover:text-foreground hover:border-sunset-orange/50 transition-all"
+                >
+                  {datesOpen ? <X className="h-4 w-4 shrink-0" /> : <Plus className="h-4 w-4 shrink-0" />}
+                  {datesOpen ? t('hero.removeDates') : t('hero.addDates')}
+                </button>
+                {datesOpen && (
+                  <>
+                    <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
+                      <Calendar className="h-5 w-5 text-sunset-orange me-3 shrink-0" />
+                      <label className="flex w-full flex-col gap-0.5 text-start">
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('search.startDate')}</span>
+                        <input
+                          type="date"
+                          ref={dateFromInputRef}
+                          aria-label={t('search.startDate')}
+                          value={searchDateFrom}
+                          onChange={(e) => { setSearchDateFrom(e.target.value); setDateError(''); }}
+                          aria-invalid={dateError ? true : undefined}
+                          aria-describedby={dateError ? 'hero-date-error' : undefined}
+                          className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
+                        />
+                      </label>
+                    </div>
+                    <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
+                      <Calendar className="h-5 w-5 text-sunset-orange me-3 shrink-0" />
+                      <label className="flex w-full flex-col gap-0.5 text-start">
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('search.endDate')}</span>
+                        <input
+                          type="date"
+                          ref={dateToInputRef}
+                          aria-label={t('search.endDate')}
+                          value={searchDateTo}
+                          onChange={(e) => { setSearchDateTo(e.target.value); setDateError(''); }}
+                          aria-invalid={dateError ? true : undefined}
+                          aria-describedby={dateError ? 'hero-date-error' : undefined}
+                          className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
+                        />
+                      </label>
+                    </div>
+                  </>
                 )}
-              </form>
-            </motion.div>
+                <Button
+                  type="submit"
+                  className="h-14 lg:h-auto px-8 rounded-xl bg-sunset-orange hover:bg-sunset-orange-dark text-deep-blue hover:text-white font-semibold text-lg shadow-md transition-all">
+                  {t('hero.search', 'Search')}
+                </Button>
+              </div>
+              {dateError && (
+                <p id="hero-date-error" role="alert" className="mt-3 text-sm font-medium text-danger">
+                  {dateError}
+                </p>
+              )}
+            </form>
           </motion.div>
+        </motion.div>
 
-          {/* #887: the trust strip — the three verified claims,
-              directly under the hero search where the click decision
-              happens, instead of only at the bottom of the page.
-              No beta explainer (founder de-beta directive, #917). */}
-          <motion.div
-            variants={fadeInUp}
-            initial="hidden"
-            animate="visible"
-            className="mx-auto mt-6 flex max-w-3xl flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-semibold text-muted-foreground"
-          >
-            <span className="inline-flex items-center gap-1.5">
-              <Check className="h-4 w-4 shrink-0 text-success" aria-hidden="true" /> {t('trustStrip.licence')}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Check className="h-4 w-4 shrink-0 text-success" aria-hidden="true" /> {t('trustStrip.payDirect')}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Check className="h-4 w-4 shrink-0 text-success" aria-hidden="true" /> {t('trustStrip.cancellation')}
-            </span>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* #885: one-tap chip rail directly under the hero — destination
-          chips carry live catalogue counts (a zero-trip destination is
-          an honest dashed chip, never hidden and never padded); style
-          chips appear only for categories with at least two trips. */}
-      {hasCatalogSections && (
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="flex flex-wrap items-center gap-2.5 pt-2 pb-1" data-testid="home-chip-rail">
-            {CLUSTER_DESTINATION_SLUGS.map((slug) => {
-              const count = destinationTripCounts[slug] ?? 0;
-              return count > 0 ? (
-                <Link
-                  key={slug}
-                  href={`/search?destination=${slug}`}
-                  className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground shadow-sm transition-shadow hover:shadow-md"
-                >
-                  {t(`search.destinationNames.${slug}`)}
-                  <span className="text-sunset-orange-dark">{t('featured.betaRegion.tripsCount', { count })}</span>
-                </Link>
-              ) : (
-                <Link
-                  key={slug}
-                  href={`/search?destination=${slug}`}
-                  className="inline-flex items-center gap-2 rounded-full border border-dashed border-border bg-transparent px-4 py-2.5 text-sm font-bold text-muted-foreground"
-                >
-                  {t(`search.destinationNames.${slug}`)}
-                  <span>{t('featured.betaRegion.noTripsYet')}</span>
-                </Link>
-              );
-            })}
-            {styleChips.map((chip) => (
+        {hasCatalogSections && popularChips.length > 0 && (
+          <div className="mx-auto mt-3.5 flex max-w-4xl flex-wrap items-center gap-2" data-testid="home-popular-chips">
+            <span className="text-xs font-bold text-muted-foreground">{t('hero.popular')}</span>
+            {popularChips.map((chip) => (
               <Link
-                key={chip.key}
-                href={`/search?category=${chip.key}`}
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/60 px-4 py-2.5 text-sm font-bold text-foreground transition-shadow hover:shadow-md"
+                key={chip.href}
+                href={chip.href}
+                className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-bold text-foreground transition-shadow hover:shadow-md"
               >
                 {chip.label}
-                <span className="text-sunset-orange-dark">{categoryTripCounts[chip.key]}</span>
               </Link>
             ))}
           </div>
-        </div>
-      )}
+        )}
+
+        <motion.div
+          variants={fadeInUp}
+          initial="hidden"
+          animate="visible"
+          className="mx-auto mt-4 grid max-w-4xl gap-px overflow-hidden rounded-2xl border border-border bg-border/60 sm:grid-cols-3"
+        >
+          <div className="flex gap-3 bg-paper p-4">
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-ocean-600 dark:text-ocean-300" aria-hidden="true" />
+            <div>
+              <p className="text-[13px] font-bold text-foreground">{t('usp.checkedTitle')}</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{t('usp.checkedText')}</p>
+            </div>
+          </div>
+          <div className="flex gap-3 bg-paper p-4">
+            <Banknote className="mt-0.5 h-5 w-5 shrink-0 text-ocean-600 dark:text-ocean-300" aria-hidden="true" />
+            <div>
+              <p className="text-[13px] font-bold text-foreground">{t('usp.payTitle')}</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{t('usp.payText')}</p>
+            </div>
+          </div>
+          <div className="flex gap-3 bg-paper p-4">
+            <CalendarCheck className="mt-0.5 h-5 w-5 shrink-0 text-ocean-600 dark:text-ocean-300" aria-hidden="true" />
+            <div>
+              <p className="text-[13px] font-bold text-foreground">{t('usp.pricesTitle')}</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{t('usp.pricesText')}</p>
+            </div>
+          </div>
+        </motion.div>
+      </div>
 
       {/* Featured Trips Section — #880: tightened so the first card
           row peeks into the first screen below the compressed hero. */}
-      <section className="py-12 sm:py-16 bg-background relative">
+      <section className="py-10 sm:py-12 bg-background relative">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-6 gap-4">
             <div className="max-w-2xl">
-              <h2 className="oui-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">{t('featured.title')}</h2>
-              <p className="text-lg text-muted-foreground">{t('featured.subtitle')}</p>
-              {/* #885: the curation rule is published where the rail
-                  renders — one trip per agency, rotated weekly. */}
-              {hasCatalogSections && (
-                <p className="mt-2 text-sm text-muted-foreground">{t('featured.criteria')}</p>
-              )}
+              <h2 className="oui-balance text-[26px] font-bold tracking-tight text-foreground sm:text-3xl mb-2">{t('featured.title')}</h2>
+              <p className="text-[15px] text-muted-foreground">{t('featured.subtitle')}</p>
             </div>
-            {/* Hybrid (#926, rec item 5): "View all trips" is
-                deleted from this section — the rail is a curation,
-                not an index; the catalogue lives behind search and
-                the destination sections. */}
+            {/* Pure B (#929): "View all trips" is restored beside
+                the rail — B draws a section link here (its deletion
+                was a Hybrid borrow, not a veto). The curation line
+                itself is B's single subline above (#885's rule is
+                unchanged in code). */}
+            <Link href="/search" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-extrabold text-foreground transition-colors hover:text-sunset-orange-dark">
+              {t('featured.viewAll')} <ArrowRight className={`h-4 w-4 ${i18n.language === 'ar' ? 'rotate-180' : ''}`} aria-hidden="true" />
+            </Link>
           </div>
 
           <motion.div 
@@ -525,7 +518,7 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-50px" }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
           >
             {featuredTripsFetchFailed ? (
                 <EmptyState
@@ -540,12 +533,9 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
                     )}
                 />
             ) : featuredTrips.length > 0 ? (
-              featuredTrips.map((trip, index) => (
-                <motion.div key={trip.id} variants={fadeInUp} className={index === 0 ? 'md:col-span-2' : undefined}>
-                  <TripCard
-                    trip={trip}
-                    imageSizes={index === 0 ? '(min-width: 1024px) 66vw, (min-width: 768px) 100vw, 100vw' : undefined}
-                  />
+              featuredTrips.map((trip) => (
+                <motion.div key={trip.id} variants={fadeInUp}>
+                  <TripCard trip={trip} />
                 </motion.div>
               ))
             ) : (
@@ -560,8 +550,10 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
         </div>
       </section>
 
-      {/* #885: the destination section — the three cluster cities
-          only. A city with no trips renders honestly empty (never
+      {/* #885, in B's form (#929): the destination section — the
+          three cluster cities only, as compact tiles with the
+          count in the bottom bar and B's filter-chip row above.
+          A city with no trips renders honestly empty (never
           backfilled with out-of-cluster supply). Tile photographs
           are FIXED curated assets (lib/static-imagery.ts, founder
           amendment to #898, 2026-11-11) — never borrowed from trip
@@ -569,15 +561,37 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
           brand-graded tile. Photo-truth audit (council P0-1,
           2026-11-11): only Chefchaouen carries a photo — the
           round-2 Tangier/Tétouan picks depicted other places and
-          were reverted to graded tiles (see static-imagery.ts). */}
+          were reverted to graded tiles (see static-imagery.ts);
+          the B mockups' own Tangier/Tétouan images are those
+          vetoed picks and are not followed. */}
       {hasCatalogSections && (
-        <section className="py-24 bg-background">
+        <section className="py-10 sm:py-12 bg-background">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <div className="max-w-2xl mb-12">
-              <h2 className="oui-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">{t('featured.betaRegion.title')}</h2>
-              <p className="text-lg text-muted-foreground">{t('featured.betaRegion.subtitle')}</p>
+            <div className="flex flex-col md:flex-row justify-between items-end mb-5 gap-4">
+              <div className="max-w-2xl">
+                <h2 className="oui-balance text-[26px] font-bold tracking-tight text-foreground sm:text-3xl mb-2">{t('featured.betaRegion.title')}</h2>
+                <p className="text-[15px] text-muted-foreground">{t('featured.betaRegion.subtitle')}</p>
+              </div>
+              <Link href="/search" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-extrabold text-foreground transition-colors hover:text-sunset-orange-dark">
+                {t('featured.allDestinations')} <ArrowRight className={`h-4 w-4 ${i18n.language === 'ar' ? 'rotate-180' : ''}`} aria-hidden="true" />
+              </Link>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="mb-5 flex flex-wrap gap-2">
+              <Link href="/search" className="rounded-full bg-deep-blue px-3.5 py-2 text-[13px] font-bold text-white">
+                {t('featured.allChip')}
+              </Link>
+              {styleChips.map((chip) => (
+                <Link
+                  key={chip.key}
+                  href={`/search?category=${chip.key}`}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-[13px] font-bold text-foreground transition-shadow hover:shadow-md"
+                >
+                  {chip.label}
+                  <span className="text-sunset-orange-dark">· {categoryTripCounts[chip.key]}</span>
+                </Link>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {CLUSTER_DESTINATION_SLUGS.map((slug) => {
                 const count = destinationTripCounts[slug] ?? 0;
                 const photo = DESTINATION_IMAGES[slug];
@@ -585,19 +599,21 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
                   <Link
                     key={slug}
                     href={`/search?destination=${slug}`}
-                    className="group relative block min-h-[280px] overflow-hidden rounded-3xl bg-deep-blue text-white shadow-sm transition-shadow hover:shadow-xl"
+                    className="group relative block h-44 overflow-hidden rounded-3xl bg-deep-blue text-white shadow-sm transition-shadow hover:shadow-xl sm:h-[190px]"
                   >
                     {photo ? (
                       <SafeImage src={photo} alt="" fill sizes="(min-width: 768px) 33vw, 100vw" className="object-cover opacity-90 transition-transform duration-500 group-hover:scale-105" />
                     ) : null}
                     <span className="absolute inset-0 bg-gradient-to-t from-deep-blue/90 via-deep-blue/40 to-transparent" aria-hidden="true" />
-                    <span className="absolute top-4 start-4 rounded-full bg-card px-3 py-1 text-[11px] font-extrabold text-foreground shadow">
-                      {count > 0 ? t('featured.betaRegion.tripsCount', { count }) : t('featured.betaRegion.noTripsYet')}
-                    </span>
-                    <span className="absolute inset-x-0 bottom-0 p-6">
-                      <span className="block font-display text-[26px] font-extrabold">{t(`search.destinationNames.${slug}`)}</span>
-                      <span className="mt-1 block text-sm text-white/85">
-                        {count > 0 ? t(`featured.betaRegion.blurb.${slug}`) : t('featured.betaRegion.tripsComing')}
+                    <span className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 sm:p-5">
+                      <span>
+                        <span className="block font-display text-xl font-extrabold">{t(`search.destinationNames.${slug}`)}</span>
+                        <span className="mt-0.5 block text-xs font-medium text-white/85">
+                          {count > 0 ? t(`featured.betaRegion.blurb.${slug}`) : t('featured.betaRegion.tripsComing')}
+                        </span>
+                      </span>
+                      <span className="shrink-0 rounded-full bg-card px-2.5 py-1 text-[11px] font-extrabold text-foreground shadow">
+                        {count > 0 ? t('featured.betaRegion.tripsCount', { count }) : t('featured.betaRegion.noTripsYet')}
                       </span>
                     </span>
                   </Link>
@@ -608,89 +624,55 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
         </section>
       )}
 
-      {/* Round 2 (founder decision 2026-11-11, superseding #885's
-          home listing): the "All trips" inventory dump is GONE —
-          in its place the coverage showcase, the honest map of
-          what Ouiboo HAS (destinations beyond the northern
-          cluster, with live counts and from-prices) and what it
-          does NOT have yet (well-known places with no trips,
-          shown honestly empty). Individual trips stay reachable
-          through search and the destination pages. */}
+      {/* Coverage (#924), restyled to B's compact index (#929):
+          destinations beyond the cluster as small index cards
+          (photo header or graded header, count + from-price), and
+          the honestly-empty well-known places as dashed flat cards
+          MIXED into the same grid — B's treatment; the Hybrid's
+          "Still growing" segregation is removed. The live filter
+          still removes an empty tile the moment a trip exists
+          there; individual trips stay reachable through search. */}
       {hasCatalogSections && (coverageDestinations.length > 0 || absentCoverage.length > 0) && (
-        <section className="py-24 bg-muted/35">
+        <section className="py-10 sm:py-12 bg-background">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <div className="max-w-2xl mb-12">
-              <h2 className="oui-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">{t('featured.coverage.title')}</h2>
-              <p className="text-lg text-muted-foreground">{t('featured.coverage.subtitle')}</p>
+            <div className="flex flex-col md:flex-row justify-between items-end mb-6 gap-4">
+              <div className="max-w-2xl">
+                <h2 className="oui-balance text-[26px] font-bold tracking-tight text-foreground sm:text-3xl mb-2">{t('featured.coverage.title')}</h2>
+                <p className="text-[15px] text-muted-foreground">{t('featured.coverage.subtitle')}</p>
+              </div>
+              <span className="shrink-0 text-xs font-bold text-muted-foreground">{t('featured.coverage.countsNote')}</span>
             </div>
-            {coverageDestinations.length > 0 && (
-              <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
-                {coverageDestinations.map((destination) => (
-                  <CoverageTile key={destination.name} destination={destination} />
-                ))}
-              </div>
-            )}
-            {/* Hybrid (#926, rec item 6): the honestly-empty places
-                are SEGREGATED into their own "Still growing" group —
-                visually distinct from the HAS tiles above, under a
-                conditional line (trips arrive as agencies join),
-                never mixed into the covered grid. The live filter
-                still removes a tile the moment a trip exists. */}
-            {absentCoverage.length > 0 && (
-              <div className="mt-12 border-t border-border/70 pt-10">
-                <div className="mb-6 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                  <h3 className="text-lg font-bold text-foreground">{t('featured.coverage.stillGrowing')}</h3>
-                  <p className="text-sm text-muted-foreground">{t('featured.coverage.stillGrowingLine')}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
-                  {absentCoverage.map((candidate) => (
-                    <AbsentCoverageTile key={candidate.slug} slug={candidate.slug} />
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
+              {coverageDestinations.map((destination) => (
+                <CoverageTile key={destination.name} destination={destination} />
+              ))}
+              {absentCoverage.map((candidate) => (
+                <AbsentCoverageTile key={candidate.slug} slug={candidate.slug} />
+              ))}
+            </div>
           </div>
         </section>
       )}
 
-      {/* Hybrid (#926, rec item 7): the story strip — one excerpt,
-          pulled programmatically from a trip's stored description
-          in this locale (lib/curation pickStoryExcerpt: exact
-          contiguous substring, sentence/word-boundary truncation),
-          attributed in full, set in body type. Never styled as
-          social proof: no stars, no quote marks, no reviewer.
-          Omitted entirely when no description qualifies. */}
-      {hasCatalogSections && storyExcerpt && (
-        <section className="bg-paper py-14">
-          <div className="mx-auto max-w-3xl px-6 text-center lg:px-8">
-            <p className="text-lg leading-8 text-foreground">{storyExcerpt.text}</p>
-            <p className="mt-4 text-sm font-semibold text-muted-foreground">
-              <Link href={`/trip/${storyExcerpt.tripId}`} className="underline decoration-sunset-orange decoration-2 underline-offset-4 transition-colors hover:text-foreground">
-                {t('storyStrip.attribution', { title: storyExcerpt.title })}
-              </Link>
-            </p>
-          </div>
-        </section>
-      )}
-
-      {/* #898: "Travel your way" — the proposal's category PHOTO
-          tiles at a fixed crop (the imageless icon cards were the
-          round-2 audit's clearest deviation), each carrying a
-          frozen catalogue photograph and the live trip count.
-          Categories under two trips stay suppressed. */}
+      {/* #898, in B's proportions (#929): "Travel your way" —
+          category PHOTO tiles (Adventure wide, then Nature,
+          Cultural, as drawn), each carrying a frozen catalogue
+          photograph, B's short descriptor and the live trip count
+          in the bottom bar. Categories under two trips stay
+          suppressed (#903). */}
       {hasCatalogSections && categoryTiles.length > 0 && (
-        <section className="py-24 bg-background">
+        <section className="py-10 sm:py-12 bg-background">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <div className="mx-auto max-w-2xl text-center mb-16">
-              <h2 className="oui-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl">{t('categories.title')}</h2>
-              <p className="mt-4 text-lg text-muted-foreground">{t('categories.subtitle')}</p>
+            <div className="max-w-2xl mb-6">
+              <h2 className="oui-balance text-[26px] font-bold tracking-tight text-foreground sm:text-3xl mb-2">{t('categories.title')}</h2>
+              <p className="text-[15px] text-muted-foreground">{t('categories.subtitle')}</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr] gap-5">
               {categoryTiles.map((tile) => (
                 <Link
                   key={tile.key}
                   href={`/search?category=${tile.key}`}
-                  className="group relative block aspect-[4/3] overflow-hidden rounded-3xl bg-deep-blue text-white shadow-sm transition-shadow hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset-orange focus-visible:ring-offset-2"
+                  className="group relative block h-48 overflow-hidden rounded-3xl bg-deep-blue text-white shadow-sm transition-shadow hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset-orange focus-visible:ring-offset-2 sm:h-[190px]"
                 >
                   <SafeImage
                     src={tile.photo}
@@ -700,9 +682,12 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
                     className="object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
                   />
                   <span className="absolute inset-0 bg-gradient-to-t from-deep-blue/90 via-deep-blue/40 to-transparent" aria-hidden="true" />
-                  <span className="absolute inset-x-0 bottom-0 p-6">
-                    <span className="block font-display text-[24px] font-extrabold">{tile.name}</span>
-                    <span className="mt-1 block text-sm font-semibold text-white/85">
+                  <span className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-5">
+                    <span>
+                      <span className="block font-display text-[22px] font-extrabold">{tile.name}</span>
+                      <span className="mt-0.5 block text-xs font-medium text-white/85">{t(`categories.blurb.${tile.key.toLowerCase()}`)}</span>
+                    </span>
+                    <span className="shrink-0 rounded-full bg-card px-2.5 py-1 text-[11px] font-extrabold text-foreground shadow">
                       {t('featured.betaRegion.tripsCount', { count: tile.count })}
                     </span>
                   </span>
@@ -713,69 +698,99 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
         </section>
       )}
 
-      {/* The proposal's closing trust trio (P1-21): three blocks
-          under ONE "Why book on Ouiboo" H2, one icon family
-          (banknote / shield-check / calendar-check) in one tint —
-          the round-2 audit found no H2 and mismatched icons
-          (a heart for "licence", a bolt for "booking requests"). */}
-      <section className="py-24 bg-background border-t border-border">
+      {/* Pure B (#929): "How Ouiboo works" — B draws the three
+          steps the Hybrid home never carried, as one bordered
+          panel, with the min-group refund sentence under it in its
+          bare form only (Trust veto: no leader line, no widened
+          promise). The numbered circles take navy numerals on the
+          brand orange (P0-2: white on #FF6B35 measures 2.84:1). */}
+      <section className="py-10 sm:py-12 bg-background">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="max-w-2xl mb-6">
+            <h2 className="oui-balance text-[26px] font-bold tracking-tight text-foreground sm:text-3xl mb-2">{t('howItWorks.title')}</h2>
+            <p className="text-[15px] text-muted-foreground">{t('howItWorks.subtitle')}</p>
+          </div>
+          <div className="grid gap-px overflow-hidden rounded-2xl border border-border bg-border/60 md:grid-cols-3">
+            {(['step1', 'step2', 'step3'] as const).map((step, index) => (
+              <div key={step} className="bg-card p-5">
+                <span className="mb-3 flex h-7 w-7 items-center justify-center rounded-full bg-sunset-orange font-display text-[13px] font-bold text-deep-blue">{index + 1}</span>
+                <h3 className="text-[15px] font-bold text-foreground">{t(`howItWorks.${step}Title`)}</h3>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{t(`howItWorks.${step}Text`)}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-3.5 py-2.5 text-[13px] font-medium text-foreground dark:border-orange-900/50 dark:bg-orange-950/30">
+            <ShieldCheck className="h-[18px] w-[18px] shrink-0 text-sunset-orange-dark" aria-hidden="true" />
+            {t('howItWorks.refundNote')}
+          </p>
+        </div>
+      </section>
+
+      {/* "Why book on Ouiboo" (P1-21), in B's form (#929): three
+          paper cards, one icon family (banknote / shield-check /
+          calendar-check) in navy chips, B's short truthful lines.
+          The dated what+when verification statements live on the
+          cards and agency pages (#673), not here. */}
+      <section className="py-10 sm:py-12 bg-background">
          <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <div className="mx-auto max-w-2xl text-center mb-16">
-                <h2 className="oui-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl">{t('trust.title')}</h2>
+            <div className="max-w-2xl mb-6">
+                <h2 className="oui-balance text-[26px] font-bold tracking-tight text-foreground sm:text-3xl">{t('trust.title')}</h2>
             </div>
-            <div className="grid grid-cols-1 gap-y-16 lg:grid-cols-3 lg:gap-x-8">
-                <div className="flex flex-col items-center text-center">
-                    <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-ocean-500/10">
-                        <Banknote className="h-8 w-8 text-ocean-600 dark:text-ocean-300" />
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+                <div className="rounded-2xl border border-border bg-paper p-5">
+                    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-deep-blue text-white">
+                        <Banknote className="h-5 w-5" aria-hidden="true" />
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground">{t('trust.secureTitle')}</h3>
-                    <p className="mt-2 text-base text-muted-foreground max-w-xs">{t('trust.secureDescription')}</p>
+                    <h3 className="text-[15px] font-bold text-foreground">{t('trust.secureTitle')}</h3>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{t('trust.secureDescription')}</p>
                 </div>
-                <div className="flex flex-col items-center text-center">
-                    <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-ocean-500/10">
-                        <ShieldCheck className="h-8 w-8 text-ocean-600 dark:text-ocean-300" />
+                <div className="rounded-2xl border border-border bg-paper p-5">
+                    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-deep-blue text-white">
+                        <ShieldCheck className="h-5 w-5" aria-hidden="true" />
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground">{t('trust.verifiedTitle')}</h3>
-                    <p className="mt-2 text-base text-muted-foreground max-w-xs">{t('trust.verifiedDescription')}</p>
+                    <h3 className="text-[15px] font-bold text-foreground">{t('trust.verifiedTitle')}</h3>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{t('trust.verifiedDescription')}</p>
                 </div>
-                <div className="flex flex-col items-center text-center">
-                    <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-ocean-500/10">
-                        <CalendarCheck className="h-8 w-8 text-ocean-600 dark:text-ocean-300" />
+                <div className="rounded-2xl border border-border bg-paper p-5">
+                    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-deep-blue text-white">
+                        <CalendarCheck className="h-5 w-5" aria-hidden="true" />
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground">{t('trust.instantTitle')}</h3>
-                    <p className="mt-2 text-base text-muted-foreground max-w-xs">{t('trust.instantDescription')}</p>
+                    <h3 className="text-[15px] font-bold text-foreground">{t('trust.instantTitle')}</h3>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{t('trust.instantDescription')}</p>
                 </div>
             </div>
          </div>
       </section>
 
-      {/* Hybrid (#926, #903, council rec item 8): the agency band —
-          C's warmth under Trust's wording. WhatsApp is the primary
-          action (the number already public on /agences, with a
-          prefilled localised message); sign-up is the quiet link.
-          Fee silence: no fee line appears here at all — the vetoed
-          "No listing fee to start" never ships in any borrow. */}
-      <section className="bg-deep-blue py-20 text-white">
-        <div className="mx-auto max-w-3xl px-6 text-center lg:px-8">
-          <h2 className="oui-balance text-3xl font-bold tracking-tight sm:text-4xl">{t('agencyBand.title')}</h2>
-          <p className="mt-4 text-lg text-white/85">{t('agencyBand.relationship')}</p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-5">
-            <a
-              href={`https://wa.me/212632718980?text=${encodeURIComponent(t('agencyBand.whatsappMessage'))}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-sunset-orange px-6 py-3 text-base font-bold text-deep-blue shadow-md transition-colors hover:bg-orange-600"
-            >
-              <MessageCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
-              {t('agencyBand.ctaWhatsapp')}
-            </a>
+      {/* Pure B (#929, #903): the agency band in B's drawn form —
+          left-aligned text, "List your trips" (agency sign-up) as
+          the solid primary and WhatsApp as the outline secondary
+          (the Hybrid had WhatsApp primary with a quiet link). Fee
+          silence: no fee line appears here at all — the vetoed
+          "No listing fee to start" never ships in any direction. */}
+      <section className="bg-deep-blue py-10 text-white sm:py-12">
+        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-6 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+          <div>
+            <h2 className="oui-balance text-[26px] font-bold tracking-tight sm:text-3xl">{t('agencyBand.title')}</h2>
+            <p className="mt-2 text-[15px] text-white/80">{t('agencyBand.relationship')}</p>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center shrink-0">
             <a
               href={`${AGENCY_URL}/signup`}
               target="_blank"
               rel="noreferrer"
-              className="text-base font-semibold text-white underline decoration-sunset-orange decoration-2 underline-offset-4 transition-colors hover:text-sand"
+              className="inline-flex items-center justify-center rounded-xl bg-sunset-orange px-5 py-2.5 text-sm font-extrabold text-deep-blue shadow-md transition-colors hover:bg-sunset-orange-dark hover:text-white"
             >
               {t('agencyBand.ctaSignup')}
+            </a>
+            <a
+              href={`https://wa.me/212632718980?text=${encodeURIComponent(t('agencyBand.whatsappMessage'))}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/50 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/10"
+            >
+              <MessageCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+              {t('agencyBand.ctaWhatsapp')}
             </a>
           </div>
         </div>

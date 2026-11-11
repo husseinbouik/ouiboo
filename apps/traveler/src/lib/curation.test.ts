@@ -10,9 +10,7 @@ import {
   curateFeaturedTrips,
   effectiveDestinationSlug,
   isoWeekNumber,
-  pickStoryExcerpt,
   showcaseDestinations,
-  storyExcerptText,
   tripsCoverPlace,
   type CurationTrip,
   type ShowcaseTrip,
@@ -198,52 +196,5 @@ describe('coverage showcase (round 2, supersedes the home "All trips" listing)',
     expect(tripsCoverPlace([sTrip({ id: '1', startLocation: 'Agadir' })], ['agadir', 'أكادير'])).toBe(true);
     expect(tripsCoverPlace([sTrip({ id: '1', startLocation: 'أكادير' })], ['agadir', 'أكادير'])).toBe(true);
     expect(tripsCoverPlace([sTrip({ id: '1', startLocation: 'Fes' })], ['agadir', 'أكادير'])).toBe(false);
-  });
-});
-
-describe('story strip excerpt (#926)', () => {
-  const VERBATIM =
-    'Ride camels to the camp at dusk, dinner and music by the fire, a night in a comfort tent, then sunrise over the Erg Chebbi dunes before riding back.';
-
-  it('returns a fitting description verbatim (an exact substring, no rewriting)', () => {
-    expect(storyExcerptText(VERBATIM)).toBe(VERBATIM);
-  });
-
-  it('rejects stubs below the floor — fixture descriptions never qualify', () => {
-    expect(storyExcerptText('Batch F witness fixture trip.')).toBeNull();
-    expect(storyExcerptText('   ')).toBeNull();
-  });
-
-  it('cuts at a sentence boundary when the text overflows the budget', () => {
-    const long =
-      'Leave Merzouga in the late afternoon and ride camels deep into the dunes to reach the camp before dark. ' +
-      'Dinner and music by the fire follow, then a night in a comfort tent under a sky full of stars, and sunrise over the dunes before the long ride back to the village.';
-    const text = storyExcerptText(long);
-    expect(text).toBe(
-      'Leave Merzouga in the late afternoon and ride camels deep into the dunes to reach the camp before dark.',
-    );
-    expect(text?.endsWith('…')).toBe(false);
-  });
-
-  it('falls back to a word boundary with an ellipsis when no sentence fits', () => {
-    const one = 'word '.repeat(80).trim();
-    const text = storyExcerptText(one);
-    expect(text?.endsWith('…')).toBe(true);
-    expect((text ?? '').length).toBeLessThanOrEqual(221);
-    expect(one.startsWith((text ?? '').slice(0, -1))).toBe(true);
-  });
-
-  it('the picker walks the given order and skips stubs', () => {
-    const trips = [
-      { id: 'stub', title: 'Fixture', description: 'Short.' },
-      { id: 'real', title: 'Blue Pearl', description: VERBATIM },
-      { id: 'later', title: 'Other Trip', description: VERBATIM },
-    ];
-    expect(pickStoryExcerpt(trips)).toEqual({ tripId: 'real', title: 'Blue Pearl', text: VERBATIM });
-  });
-
-  it('the picker returns null when nothing qualifies', () => {
-    expect(pickStoryExcerpt([{ id: 'x', title: 'T', description: 'Short.' }])).toBeNull();
-    expect(pickStoryExcerpt([])).toBeNull();
   });
 });

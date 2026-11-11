@@ -55,50 +55,44 @@
     "titleStart": "Le Maroc,",
     "titleAccent": "à vous",
     "titleEnd": " de l'explorer.",
-    "payDirectLead": "Vous payez l'agence directement —",
-    "payDirectAccent": "jamais à nous.",
-    "subtitle": "Redécouvrez le Maroc, voyage après voyage — des circuits organisés par des agences locales à la licence vérifiée. Envoyez une demande, l'agence confirme, et vous payez l'agence directement.",
+    "subtitle": "Des voyages guidés organisés par des agences locales — vérifiées avant publication, réservés directement auprès de celles et ceux qui les accompagnent.",
     "where": "Où allez-vous ?",
     "when": "Quand ?",
     "search": "Rechercher",
     "dateRangeError": "La date de fin doit être postérieure ou égale à la date de début.",
     "addDates": "Ajouter des dates",
     "removeDates": "Retirer les dates",
-    "pastDateError": "Ces dates sont passées — choisissez des dates à partir d'aujourd'hui."
-  },
-  "storyStrip": {
-    "attribution": "Extrait de la description du voyage · {{title}}"
+    "pastDateError": "Ces dates sont passées — choisissez des dates à partir d'aujourd'hui.",
+    "kickerTrips": "Voyages au Maroc",
+    "kickerChecked": "Vérifiées avant publication",
+    "metaPrices": "Prix en MAD",
+    "metaPayDirect": "Vous payez l'agence directement",
+    "popular": "Populaire :"
   },
   "agencyBand": {
-    "title": "Vous organisez des voyages au Maroc ? Nous serions ravis de vous rencontrer.",
-    "relationship": "Vous gardez la relation avec le voyageur.",
+    "title": "Vous organisez des voyages au Maroc ?",
+    "relationship": "Publiez vos voyages sur Ouiboo et touchez les voyageurs qui préparent leur séjour.",
     "ctaWhatsapp": "Discuter sur WhatsApp",
     "whatsappMessage": "Bonjour Ouiboo — j'organise des voyages au Maroc et je souhaite en savoir plus.",
-    "ctaSignup": "Créer un compte agence"
+    "ctaSignup": "Publiez vos voyages"
   },
   "example": {
     "badge": "Exemple"
   },
-  "trustStrip": {
-    "licence": "Agences à la licence vérifiée",
-    "payDirect": "Vous payez l'agence directement",
-    "cancellation": "Conditions d'annulation sur chaque voyage"
-  },
   "featured": {
     "title": "Voyages sélectionnés",
-    "subtitle": "Une courte sélection pour commencer — un voyage par agence, en rotation chaque semaine.",
-    "criteria": "Un voyage par agence, choisi pour le lieu qu'il fait découvrir.",
+    "subtitle": "Une courte liste, actualisée au fil des publications des agences — un voyage par agence.",
     "betaRegion": {
       "title": "Commencez par le Nord",
-      "subtitle": "Trois villes du nord du Maroc, affichées telles qu'elles sont.",
+      "subtitle": "Nos premières agences sont basées autour de Tanger, Tétouan et Chefchaouen.",
       "tripsCount_one": "{{count}} voyage",
       "tripsCount_other": "{{count}} voyages",
       "noTripsYet": "Aucun voyage pour le moment",
-      "tripsComing": "Des voyages arrivent — soyez le premier à solliciter une agence locale.",
+      "tripsComing": "Des voyages arrivent au fil des adhésions des agences",
       "blurb": {
-        "tangier": "Kasbah, médina et détroit — là où le Maroc rencontre la mer.",
-        "tetouan": "La colombe blanche du Rif, entre montagnes et mer.",
-        "chefchaouen": "La perle bleue du Rif."
+        "tangier": "Ville portuaire · médina et côte",
+        "tetouan": "Ville blanche · contreforts du Rif",
+        "chefchaouen": "Rues bleues · lumière de montagne"
       },
       "tripsCount_zero": "{{count}} voyage",
       "tripsCount_two": "{{count}} voyages",
@@ -117,15 +111,18 @@
       "days_many": "{{count}} jours"
     },
     "coverage": {
-      "title": "Là où nous avons des voyages — et là où nous n'en avons pas",
-      "subtitle": "Les destinations avec des voyages que vous pouvez demander dès aujourd'hui, et les lieux bien connus qu'aucune agence ne couvre encore — montrés tels qu'ils sont.",
-      "stillGrowing": "Encore en développement",
-      "stillGrowingLine": "Des voyages arriveront à mesure que des agences nous rejoignent",
+      "title": "Où va Ouiboo",
+      "subtitle": "Toutes les destinations où nos agences, vérifiées avant publication, organisent des voyages aujourd'hui — et les lieux que nous ne couvrons pas encore, en toute honnêteté.",
       "names": {
         "agadir": "Agadir",
         "dakhla": "Dakhla",
         "ifrane": "Ifrane",
         "alhoceima": "Al Hoceïma"
+      },
+      "countsNote": "Effectifs et prix de départ issus du catalogue",
+      "descriptor": {
+        "imlil": "Porte de l'Atlas",
+        "casablanca": "Étape urbaine"
       }
     },
     "viewAll": "Voir tous les voyages",
@@ -133,17 +130,24 @@
     "emptyTitle": "Aucun voyage trouvé",
     "emptySubtitle": "Revenez bientôt pour découvrir de nouvelles aventures.",
     "loadErrorTitle": "Impossible de charger les voyages",
-    "loadErrorSubtitle": "Un problème est survenu lors du chargement du catalogue. Vérifiez votre connexion et réessayez."
+    "loadErrorSubtitle": "Un problème est survenu lors du chargement du catalogue. Vérifiez votre connexion et réessayez.",
+    "allChip": "Tout",
+    "allDestinations": "Toutes les destinations"
   },
   "categories": {
     "title": "Voyagez à votre façon",
-    "subtitle": "Explorez selon le type de voyage que vous cherchez.",
+    "subtitle": "Filtrez selon le type de journée que vous voulez — les effectifs viennent du catalogue.",
     "adventure": "Aventure",
     "cultural": "Culturel",
     "luxury": "Luxe",
     "budget": "Économique",
     "nature": "Nature",
-    "discoverTrips": "Découvrir les voyages"
+    "discoverTrips": "Découvrir les voyages",
+    "blurb": {
+      "adventure": "Treks, désert et sommets",
+      "nature": "Vallées, côte et cascades",
+      "cultural": "Médinas, cuisine et patrimoine"
+    }
   },
   "checkout": {
     "promo": {
@@ -273,12 +277,12 @@
   },
   "trust": {
     "title": "Pourquoi réserver sur Ouiboo",
-    "secureTitle": "Paiements directs",
-    "secureDescription": "Vous payez l'agence directement — Ouiboo ne détient jamais votre argent.",
-    "verifiedTitle": "Licence et assurance vérifiées",
-    "verifiedDescription": "La licence et l'assurance de chaque agence sont vérifiées par Ouiboo. Chaque page de voyage et d'agence indique le statut de la licence, sa date d'expiration et la date de sa vérification, ainsi que la date de vérification de l'assurance.",
-    "instantTitle": "Demandes de réservation, confirmation par l'agence",
-    "instantDescription": "Envoyez une demande de réservation et l'agence confirmera la disponibilité. Aucun frais caché."
+    "secureTitle": "Payez l'agence, pas une plateforme",
+    "secureDescription": "Acomptes et soldes vont directement à l'agence qui organise votre voyage.",
+    "verifiedTitle": "Agences vérifiées avant publication",
+    "verifiedDescription": "Nous examinons la licence et les informations de chaque agence avant la parution de son premier voyage.",
+    "instantTitle": "Des réponses avant de réserver",
+    "instantDescription": "Vos questions vont directement à l'agence — aucun centre d'appels entre vous."
   },
   "footer": {
     "explainer": "Ouiboo rassemble des voyages organisés par des agences locales vérifiées. Une réservation est une demande que l'agence confirme — et vous payez toujours l'agence directement.",
@@ -1389,5 +1393,24 @@
     "introduced": "Vous avez fait découvrir Ouiboo à {{count}} voyageurs",
     "introducedOne": "Vous avez fait découvrir Ouiboo à 1 voyageur",
     "thankYouZero": "Merci de faire connaître Ouiboo — partagez votre lien pour présenter votre premier voyageur."
+  },
+  "usp": {
+    "checkedTitle": "Vérifiées avant publication",
+    "checkedText": "La licence de chaque agence est examinée avant que ses voyages n'apparaissent ici.",
+    "payTitle": "Vous payez l'agence directement",
+    "payText": "Votre argent va à l'agence qui organise votre voyage — jamais à nous.",
+    "pricesTitle": "Des prix clairs en MAD",
+    "pricesText": "Le prix complet et les conditions d'annulation avant de réserver."
+  },
+  "howItWorks": {
+    "title": "Comment fonctionne Ouiboo",
+    "subtitle": "Trois étapes, aucune plateforme au milieu de votre argent.",
+    "step1Title": "Trouvez votre voyage",
+    "step1Text": "Cherchez parmi les voyages des agences que nous avons vérifiées.",
+    "step2Title": "Réservez auprès de l'agence",
+    "step2Text": "Envoyez une demande de réservation ; l'agence confirme vos places.",
+    "step3Title": "Recevez votre Booking Pass",
+    "step3Text": "Votre pass confirme le voyage, le point de rendez-vous et ce qui est inclus.",
+    "refundNote": "Si le groupe minimum n'est pas atteint, votre acompte est intégralement remboursé."
   }
 }

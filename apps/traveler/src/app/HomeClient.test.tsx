@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import HomeClient from './HomeClient';
 
@@ -136,17 +136,17 @@ describe('HomeClient static imagery + trust strip (founder amendments 2026-11-11
         const heroImg = container.querySelector('img[alt="hero.photoAlt"]');
         expect(heroImg).not.toBeNull();
         expect(heroImg?.getAttribute('src')).toContain('hero-atlas-night');
-        expect(screen.getByText('hero.photoCaption')).not.toBeNull();
+        expect(screen.getAllByText('hero.photoCaption').length).toBeGreaterThan(0);
         // The hero is a photograph of a place: it must not navigate
         // to a trip and must not carry a trip title.
         expect(heroImg?.closest('a')).toBeNull();
     });
 
-    it('renders the #887 trust strip claims under the hero search', () => {
+    it('renders the #887 claims as the Option B USP strip under the search zone (#929)', () => {
         render(<HomeClient featuredTrips={[]} />);
-        expect(screen.getByText('trustStrip.licence')).not.toBeNull();
-        expect(screen.getByText('trustStrip.payDirect')).not.toBeNull();
-        expect(screen.getByText('trustStrip.cancellation')).not.toBeNull();
+        expect(screen.getByText('usp.checkedTitle')).not.toBeNull();
+        expect(screen.getByText('usp.payTitle')).not.toBeNull();
+        expect(screen.getByText('usp.pricesTitle')).not.toBeNull();
     });
 
     it('destination tiles use the fixed curated asset, never a trip photo (#898)', () => {
@@ -207,8 +207,11 @@ describe('HomeClient coverage showcase + category tiles (round 2, founder 2026-1
         expect(screen.getByText('featured.coverage.title')).not.toBeNull();
         expect(screen.queryByText('featured.allTrips.title')).toBeNull();
         // The two Merzouga spellings group into a single tile that
-        // links into search for the place.
-        const tile = screen.getByRole('link', { name: /Merzouga/ });
+        // links into search for the place. (Scoped to the section:
+        // Option B's Popular chips repeat the same place link above
+        // it, #929.)
+        const section = screen.getByText('featured.coverage.title').closest('section');
+        const tile = within(section as HTMLElement).getByRole('link', { name: /Merzouga/ });
         expect(tile.getAttribute('href')).toBe('/search?q=Merzouga');
         // Honestly-empty well-known places render as tiles too.
         expect(screen.getByText('featured.coverage.names.agadir')).not.toBeNull();
@@ -254,11 +257,14 @@ describe('HomeClient coverage showcase + category tiles (round 2, founder 2026-1
                 images: ['https://images.unsplash.com/photo-1542401886-65d6c61db217?q=80&w=1200'],
             }),
         ];
-        const { container } = render(wrap(<HomeClient catalogTrips={trips} />));
-        const casaTile = container.querySelector('a[href="/search?q=Casablanca"]');
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        // Scoped to the coverage section — the Popular chips carry
+        // the same hrefs earlier in the page (#929).
+        const section = screen.getByText('featured.coverage.title').closest('section');
+        const casaTile = section?.querySelector('a[href="/search?q=Casablanca"]');
         expect(casaTile).not.toBeNull();
         expect(casaTile?.querySelector('img')).toBeNull();
-        const merzTile = container.querySelector('a[href="/search?q=Merzouga"]');
+        const merzTile = section?.querySelector('a[href="/search?q=Merzouga"]');
         expect(merzTile?.querySelector('img')).not.toBeNull();
     });
 
@@ -313,7 +319,7 @@ describe('HomeClient featured trips (#575)', () => {
     });
 });
 
-describe('HomeClient hybrid adoption (#926)', () => {
+describe('HomeClient pure Option B (#929)', () => {
     function wrap(ui: React.ReactNode) {
         const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
         return <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>;
@@ -329,49 +335,39 @@ describe('HomeClient hybrid adoption (#926)', () => {
         } as any;
     }
 
-    it('deletes "View all trips" from the Selected section; the lead card breaks the grid wide', () => {
+    it('restores "View all trips" beside the Selected rail; no featured-card break', () => {
         const trips = [
             catalogTrip({ id: 'c1', title: 'Blue City', destinationSlug: 'chefchaouen', startLocation: 'Chefchaouen' }),
             catalogTrip({ id: 't1', title: 'Tangier Day', destinationSlug: 'tangier', startLocation: 'Tangier', agency: { id: 'agency-2' } }),
         ];
         const { container } = render(wrap(<HomeClient catalogTrips={trips} />));
-        expect(screen.queryByText('featured.viewAll')).toBeNull();
-        // Exactly one card wrapper carries the featured-card break.
-        expect(container.querySelectorAll('.md\\:col-span-2').length).toBe(1);
+        expect(screen.getByText('featured.viewAll')).not.toBeNull();
+        // B's grid is equal — no card wrapper breaks it wide.
+        expect(container.querySelectorAll('.md\\:col-span-2').length).toBe(0);
     });
 
-    it('segregates the honest empties under their own "Still growing" group', () => {
+    it('mixes the honest empties into the coverage index — no "Still growing" segregation', () => {
         const trips = [
             catalogTrip({ id: 'm1', title: 'Merzouga Trek', startLocation: 'Merzouga', destinationSlug: null }),
         ];
         render(wrap(<HomeClient catalogTrips={trips} />));
-        const label = screen.getByText('featured.coverage.stillGrowing');
-        expect(screen.getByText('featured.coverage.stillGrowingLine')).not.toBeNull();
-        const group = label.closest('div')?.parentElement;
-        expect(group?.textContent).toContain('featured.coverage.names.agadir');
-        expect(group?.textContent).toContain('featured.coverage.names.dakhla');
+        expect(screen.queryByText('featured.coverage.stillGrowing')).toBeNull();
+        const section = screen.getByText('featured.coverage.title').closest('section');
+        expect(section?.textContent).toContain('featured.coverage.names.agadir');
+        expect(section?.textContent).toContain('featured.coverage.names.dakhla');
     });
 
-    it('renders the story strip from a stored description, attributed in full', () => {
+    it('carries no story strip (a Hybrid/C device, removed)', () => {
         const desc =
             'Leave Merzouga in the late afternoon, ride camels to the camp, dinner and music by the fire, a night in a comfort tent, then sunrise over the Erg Chebbi dunes before riding back.';
         const trips = [
             catalogTrip({ id: 'c1', title: 'Blue Pearl', destinationSlug: 'chefchaouen', startLocation: 'Chefchaouen', description: desc }),
         ];
         render(wrap(<HomeClient catalogTrips={trips} />));
-        expect(screen.getByText(desc)).not.toBeNull();
-        expect(screen.getByText('storyStrip.attribution')).not.toBeNull();
-    });
-
-    it('omits the story strip when no description qualifies', () => {
-        const trips = [
-            catalogTrip({ id: 't1', title: 'Fixture', destinationSlug: 'tangier', startLocation: 'Tangier', description: 'Short stub.' }),
-        ];
-        render(wrap(<HomeClient catalogTrips={trips} />));
         expect(screen.queryByText('storyStrip.attribution')).toBeNull();
     });
 
-    it('renders the agency band: council headline, WhatsApp primary, quiet sign-up, fee silence', () => {
+    it('renders the agency band in B form: sign-up link and WhatsApp link both present', () => {
         render(wrap(<HomeClient catalogTrips={[]} />));
         expect(screen.getByText('agencyBand.title')).not.toBeNull();
         expect(screen.getByText('agencyBand.relationship')).not.toBeNull();
@@ -379,5 +375,13 @@ describe('HomeClient hybrid adoption (#926)', () => {
         expect(wa.getAttribute('href')).toContain('https://wa.me/212632718980?text=');
         const signup = screen.getByRole('link', { name: 'agencyBand.ctaSignup' });
         expect(signup.getAttribute('href')).toContain('/signup');
+    });
+
+    it('renders the How-it-works steps with the bare-form refund note', () => {
+        render(wrap(<HomeClient catalogTrips={[]} />));
+        expect(screen.getByText('howItWorks.title')).not.toBeNull();
+        expect(screen.getByText('howItWorks.step1Title')).not.toBeNull();
+        expect(screen.getByText('howItWorks.step3Title')).not.toBeNull();
+        expect(screen.getByText('howItWorks.refundNote')).not.toBeNull();
     });
 });

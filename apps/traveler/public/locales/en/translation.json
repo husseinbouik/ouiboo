@@ -55,50 +55,44 @@
     "titleStart": "Morocco is",
     "titleAccent": "yours",
     "titleEnd": " to explore.",
-    "payDirectLead": "You pay the agency directly —",
-    "payDirectAccent": "never to us.",
-    "subtitle": "Rediscover Morocco, one journey at a time — trips run by licence-checked local agencies. Send a request, the agency confirms, and you pay the agency directly.",
+    "subtitle": "Guided trips run by local agencies — checked before listing, booked directly with the people who lead them.",
     "where": "Where to?",
     "when": "When?",
     "search": "Search",
     "dateRangeError": "The end date must be on or after the start date.",
     "addDates": "Add dates",
     "removeDates": "Remove dates",
-    "pastDateError": "Those dates are in the past — pick dates from today onwards."
-  },
-  "storyStrip": {
-    "attribution": "From the trip description · {{title}}"
+    "pastDateError": "Those dates are in the past — pick dates from today onwards.",
+    "kickerTrips": "Trips in Morocco",
+    "kickerChecked": "Checked before listing",
+    "metaPrices": "Prices in MAD",
+    "metaPayDirect": "Pay the agency directly",
+    "popular": "Popular:"
   },
   "agencyBand": {
-    "title": "Run trips in Morocco? We'd love to meet you.",
-    "relationship": "You keep the traveller relationship.",
+    "title": "Run trips in Morocco?",
+    "relationship": "List your trips on Ouiboo and reach travellers planning their journey.",
     "ctaWhatsapp": "Chat on WhatsApp",
     "whatsappMessage": "Hello Ouiboo — I run trips in Morocco and I'd like to know more.",
-    "ctaSignup": "Create an agency account"
+    "ctaSignup": "List your trips"
   },
   "example": {
     "badge": "Example"
   },
-  "trustStrip": {
-    "licence": "Licence-checked agencies",
-    "payDirect": "You pay the agency directly",
-    "cancellation": "Cancellation terms on every trip"
-  },
   "featured": {
     "title": "Selected trips",
-    "subtitle": "A short selection to get you started — one trip per agency, rotated weekly.",
-    "criteria": "One trip per agency, chosen for the place it opens up.",
+    "subtitle": "A short list, refreshed as agencies publish — one trip per agency.",
     "betaRegion": {
       "title": "Start in the North",
-      "subtitle": "Three cities in the north of Morocco, shown as they are.",
+      "subtitle": "Our first agencies are based around Tangier, Tétouan and Chefchaouen.",
       "tripsCount_one": "{{count}} trip",
       "tripsCount_other": "{{count}} trips",
       "noTripsYet": "No trips yet",
-      "tripsComing": "Trips coming — be first to ask a local agency.",
+      "tripsComing": "Trips coming as agencies join",
       "blurb": {
-        "tangier": "Kasbah, medina and the strait — where Morocco meets the sea.",
-        "tetouan": "The white dove of the Rif, between mountains and sea.",
-        "chefchaouen": "The blue pearl of the Rif."
+        "tangier": "Port city · medina & coast",
+        "tetouan": "White city · Rif foothills",
+        "chefchaouen": "Blue streets · mountain light"
       },
       "tripsCount_zero": "{{count}} trips",
       "tripsCount_two": "{{count}} trips",
@@ -117,15 +111,18 @@
       "days_many": "{{count}} days"
     },
     "coverage": {
-      "title": "Where we have trips — and where we don't",
-      "subtitle": "Destinations with trips you can request today, and the well-known places no agency covers yet — shown as they are.",
-      "stillGrowing": "Still growing",
-      "stillGrowingLine": "Trips coming as agencies join",
+      "title": "Where Ouiboo goes",
+      "subtitle": "Everywhere our checked-before-listing agencies run trips today — and the places we are honest about not covering yet.",
       "names": {
         "agadir": "Agadir",
         "dakhla": "Dakhla",
         "ifrane": "Ifrane",
         "alhoceima": "Al Hoceima"
+      },
+      "countsNote": "Counts & from-prices from the catalogue",
+      "descriptor": {
+        "imlil": "Atlas gateway",
+        "casablanca": "City stop"
       }
     },
     "viewAll": "View all trips",
@@ -133,17 +130,24 @@
     "emptyTitle": "No trips found",
     "emptySubtitle": "Check back later for new adventures.",
     "loadErrorTitle": "We couldn't load trips",
-    "loadErrorSubtitle": "Something went wrong while loading the catalogue. Check your connection and try again."
+    "loadErrorSubtitle": "Something went wrong while loading the catalogue. Check your connection and try again.",
+    "allChip": "All",
+    "allDestinations": "All destinations"
   },
   "categories": {
     "title": "Travel your way",
-    "subtitle": "Explore by the kind of trip you want.",
+    "subtitle": "Filter by the kind of day you want — counts are from the catalogue.",
     "adventure": "Adventure",
     "cultural": "Cultural",
     "luxury": "Luxury",
     "budget": "Budget",
     "nature": "Nature",
-    "discoverTrips": "Discover trips"
+    "discoverTrips": "Discover trips",
+    "blurb": {
+      "adventure": "Treks, desert & summits",
+      "nature": "Valleys, coast & waterfalls",
+      "cultural": "Medinas, food & heritage"
+    }
   },
   "checkout": {
     "promo": {
@@ -273,12 +277,12 @@
   },
   "trust": {
     "title": "Why book on Ouiboo",
-    "secureTitle": "Direct payments",
-    "secureDescription": "You pay the agency directly — Ouiboo never holds your money.",
-    "verifiedTitle": "Licence & insurance checked",
-    "verifiedDescription": "Every agency's licence and insurance are checked by Ouiboo. Each trip and agency page shows the licence status, its expiry date and the date it was verified, and the date its insurance was verified.",
-    "instantTitle": "Booking requests, agency confirms",
-    "instantDescription": "Send a booking request and the agency confirms availability. No hidden fees."
+    "secureTitle": "Pay the agency, not a platform",
+    "secureDescription": "Deposits and balances go directly to the agency running your trip.",
+    "verifiedTitle": "Agencies checked before listing",
+    "verifiedDescription": "We review each agency's licence and details before its first trip appears.",
+    "instantTitle": "Answers before you book",
+    "instantDescription": "Questions go straight to the agency — no call centre in between."
   },
   "footer": {
     "explainer": "Ouiboo brings together trips run by checked local agencies. A booking is a request the agency confirms — and you always pay the agency directly.",
@@ -1389,5 +1393,24 @@
     "introduced": "You've introduced {{count}} travellers to Ouiboo",
     "introducedOne": "You've introduced 1 traveller to Ouiboo",
     "thankYouZero": "Thank you for spreading the word — share your link to introduce your first traveller."
+  },
+  "usp": {
+    "checkedTitle": "Checked before listing",
+    "checkedText": "Every agency's licence is reviewed before its trips appear here.",
+    "payTitle": "You pay the agency directly",
+    "payText": "Your money goes to the agency running your trip — never to us.",
+    "pricesTitle": "Clear prices in MAD",
+    "pricesText": "The full price and cancellation terms before you book."
+  },
+  "howItWorks": {
+    "title": "How Ouiboo works",
+    "subtitle": "Three steps, no platform in the middle of your money.",
+    "step1Title": "Find your trip",
+    "step1Text": "Search trips run by agencies we've checked.",
+    "step2Title": "Book with the agency",
+    "step2Text": "Send a booking request; the agency confirms your places.",
+    "step3Title": "Get your Booking Pass",
+    "step3Text": "Your pass confirms the trip, the meeting point and what's included.",
+    "refundNote": "If the minimum group isn't reached, your deposit is refunded in full."
   }
 }
