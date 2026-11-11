@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api-client';
+import { effectiveDestinationSlug } from '@/lib/curation';
 import dynamic from 'next/dynamic';
 import type { Metadata } from 'next';
 import { getInitialLanguage } from '@ouiboo/i18n/server';
@@ -9,7 +10,7 @@ const HomeClient = dynamic(() => import('./HomeClient'));
 
 type FeaturedTrip = TripTemplate & {
   sessions?: TripSession[];
-  agency?: { verificationStatus?: VerificationStatusType } | null;
+  agency?: { id?: string; verificationStatus?: VerificationStatusType } | null;
 };
 
 /**
@@ -40,73 +41,53 @@ export async function generateMetadata(): Promise<Metadata> {
  * as "No trips found" hides the outage from travellers (and from us).
  * The result therefore carries an explicit fetchFailed flag so the
  * home page can render its error state instead of the empty state.
+ * #877/#885: hero suggestions and every home section derive from this
+ * one catalogue fetch (the old featured-then-everything fallback and
+ * the separate destinations fetch are gone).
  */
-export interface FeaturedTripsResult {
+export interface CatalogResult {
   trips: FeaturedTrip[];
   fetchFailed: boolean;
 }
 
-async function getFeaturedTrips(): Promise<FeaturedTripsResult> {
-  try {
-    const extractTrips = (payload: unknown): FeaturedTrip[] => {
-      if (Array.isArray(payload)) return payload as FeaturedTrip[];
-      if (payload && typeof payload === 'object' && Array.isArray((payload as { data?: unknown }).data)) {
-        return (payload as { data: FeaturedTrip[] }).data;
-      }
-      return [];
-    };
-
-    // #546: ask the API for trip text in the visitor's language.
-    const locale = await getInitialLanguage();
-    let response = await apiClient.get(`/trips?featured=true&status=ACTIVE&locale=${locale}`);
-    let trips = extractTrips(response.data);
-    if (trips.length === 0) {
-      response = await apiClient.get(`/trips?status=ACTIVE&locale=${locale}`);
-      trips = extractTrips(response.data);
-    }
-    return { trips, fetchFailed: false };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.warn(`Failed to fetch featured trips: ${message}`);
-    return { trips: [], fetchFailed: true };
-  }
-}
-
 /**
- * #877: the hero suggestion list is generated from the live catalogue
- * — the slugs of beta destinations carrying at least one active trip.
- * (Trips whose destinationSlug is null or outside the beta taxonomy
- * add no suggestion: the hero can only facet the configured slugs.)
- * A failed fetch yields no suggestions rather than resurrecting the
- * old static list that suggested a zero-trip destination.
+ * #885: ONE catalogue fetch feeds the whole home composition — the
+ * featured rail is curated from it client-side under the published
+ * rule (see lib/curation.ts), hero suggestions derive from it, and
+ * "All beta trips" lists it in full. A failure is flagged, never
+ * swallowed into an empty array (#575's rule, extended).
  */
-async function getCatalogDestinations(): Promise<string[]> {
+async function getCatalogTrips(): Promise<CatalogResult> {
   try {
     const locale = await getInitialLanguage();
     const response = await apiClient.get(`/trips?status=ACTIVE&limit=100&locale=${locale}`);
     const payload: unknown = response.data;
-    const trips: Array<{ destinationSlug?: string | null }> = Array.isArray(payload)
-      ? payload
+    const trips: FeaturedTrip[] = Array.isArray(payload)
+      ? (payload as FeaturedTrip[])
       : Array.isArray((payload as { data?: unknown })?.data)
-        ? (payload as { data: Array<{ destinationSlug?: string | null }> }).data
+        ? (payload as { data: FeaturedTrip[] }).data
         : [];
-    return [...new Set(trips.map((trip) => trip.destinationSlug).filter(Boolean) as string[])];
+    return { trips, fetchFailed: false };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.warn(`Failed to fetch catalogue destinations: ${message}`);
-    return [];
+    console.warn(`Failed to fetch catalogue trips: ${message}`);
+    return { trips: [], fetchFailed: true };
   }
 }
 
 export default async function HomePage() {
-  const [{ trips: featuredTrips, fetchFailed }, catalogDestinations] = await Promise.all([
-    getFeaturedTrips(),
-    getCatalogDestinations(),
-  ]);
+  const { trips: catalogTrips, fetchFailed } = await getCatalogTrips();
+  const catalogDestinations = [
+    ...new Set(
+      catalogTrips
+        .map((trip) => effectiveDestinationSlug(trip))
+        .filter(Boolean) as string[],
+    ),
+  ];
 
   return (
     <HomeClient
-      featuredTrips={featuredTrips}
+      catalogTrips={catalogTrips}
       featuredTripsFetchFailed={fetchFailed}
       catalogDestinations={catalogDestinations}
     />

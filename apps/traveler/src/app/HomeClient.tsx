@@ -7,22 +7,46 @@ import dynamic from 'next/dynamic';
 import {
   MapPin, Calendar, Star, ArrowRight, Compass, Banknote, Zap, Heart, Mountain, Palmtree, AlertTriangle, Plus, X
 } from 'lucide-react';
-import { Button, EmptyState } from '@ouiboo/ui';
+import Image from 'next/image';
+import { Button, EmptyState, SafeImage } from '@ouiboo/ui';
 import { motion, Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { BETA_DESTINATIONS } from '@ouiboo/types';
 import type { TripSession, TripTemplate, VerificationStatusType } from '@ouiboo/types';
 import { buildHeroSearchParams, isInvalidDateRange, isPastDate } from '@/lib/hero-search';
+import {
+  CLUSTER_DESTINATION_SLUGS,
+  countTripsByCategory,
+  countTripsByDestination,
+  curateFeaturedTrips,
+} from '@/lib/curation';
+import { useDisplayPrice } from '@/lib/display-currency';
 
 const TripCard = dynamic(() => import('@/components/TripCard').then((m) => m.TripCard));
 
+/** The full catalogue trip shape the home page composes from (#885). */
+export type HomeCatalogTrip = TripTemplate & {
+  sessions?: TripSession[];
+  agency?: {
+    id?: string;
+    companyName?: string;
+    verificationStatus?: VerificationStatusType;
+    isTestData?: boolean;
+    travelLicenceStatus?: string;
+    licenceVerifiedAt?: string | null;
+    licenceExpiry?: string | null;
+    insuranceStatus?: string;
+    insuranceVerifiedAt?: string | null;
+  } | null;
+};
+
 interface HomeClientProps {
-  featuredTrips: Array<TripTemplate & {
-    sessions?: TripSession[];
-    agency?: {
-      verificationStatus?: VerificationStatusType;
-    } | null;
-  }>;
+  /** #885: the full active catalogue from the server page. The
+   * featured rail is curated from it under the published rule; the
+   * legacy `featuredTrips` prop is still accepted so existing callers
+   * and tests render the rail directly. */
+  catalogTrips?: HomeCatalogTrip[];
+  featuredTrips?: HomeCatalogTrip[];
   /** #575: true when the server catalogue fetch failed — render the
    * error state, never the genuine-empty state, for an outage. */
   featuredTripsFetchFailed?: boolean;
@@ -32,6 +56,50 @@ interface HomeClientProps {
    * with zero trips was the tested dead end this fixes. Empty when
    * the catalogue fetch failed (free text still works). */
   catalogDestinations?: string[];
+}
+
+/** #885: one compact "All beta trips" row — thumbnail, facts, from-price. */
+function AllTripsRow({ trip }: { trip: HomeCatalogTrip }) {
+  const { t, i18n } = useTranslation();
+  const sessions = trip.sessions ?? [];
+  const minPrice = sessions.length
+    ? Math.min(...sessions.map((session) => Number(session.price || 0)))
+    : null;
+  const cheapest = minPrice === null
+    ? null
+    : (sessions.find((session) => Number(session.price || 0) === minPrice) ?? null);
+  const displayPrice = useDisplayPrice(minPrice, cheapest?.currency ?? trip.currency, i18n.language);
+  const facts = [
+    trip.startLocation,
+    trip.durationDays ? t('featured.allTrips.days', { count: trip.durationDays }) : null,
+    trip.agency?.companyName,
+  ].filter(Boolean).join(' · ');
+  return (
+    <Link
+      href={`/trip/${trip.id}`}
+      className="flex items-center gap-4 rounded-2xl border border-border bg-card p-3 shadow-sm transition-shadow hover:shadow-md"
+    >
+      <span className="relative block h-14 w-[74px] shrink-0 overflow-hidden rounded-xl">
+        <SafeImage
+          src={trip.images?.[0]}
+          alt={trip.imageAlts?.[0] ?? trip.title}
+          fill
+          sizes="74px"
+          className="object-cover"
+        />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-display text-[15px] font-bold text-foreground">{trip.title}</span>
+        <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">{facts}</span>
+      </span>
+      <span className="shrink-0 text-end">
+        <span className="block text-[11px] font-semibold text-muted-foreground">{t('featured.from')}</span>
+        <span className="block font-display text-base font-extrabold text-foreground">
+          {displayPrice ?? t('tripCard.priceTba')}
+        </span>
+      </span>
+    </Link>
+  );
 }
 
 const fadeInUp: Variants = {
@@ -52,7 +120,7 @@ const staggerContainer: Variants = {
   }
 };
 
-export default function HomeClient({ featuredTrips, featuredTripsFetchFailed = false, catalogDestinations = [] }: HomeClientProps) {
+export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsProp, featuredTripsFetchFailed = false, catalogDestinations = [] }: HomeClientProps) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
@@ -102,6 +170,40 @@ export default function HomeClient({ featuredTrips, featuredTripsFetchFailed = f
     const queryString = params.toString();
     router.push(`/search${queryString ? `?${queryString}` : ''}`);
   };
+
+  // #885: home composition from the catalogue. The featured rail is
+  // curated under the published rule (lib/curation.ts); the chip rail,
+  // destination section and "All beta trips" read the same catalogue.
+  // Legacy callers passing only `featuredTrips` render that list as
+  // the rail verbatim (the pre-#885 contract the tests lock).
+  const allTrips = catalogTrips ?? featuredTripsProp ?? [];
+  const featuredTrips = catalogTrips ? curateFeaturedTrips(catalogTrips) : allTrips;
+  const destinationTripCounts = countTripsByDestination(allTrips);
+  const categoryTripCounts = countTripsByCategory(allTrips);
+  const destinationPhotoBySlug: Record<string, string | undefined> = {};
+  for (const trip of allTrips) {
+    if (trip.destinationSlug && !destinationPhotoBySlug[trip.destinationSlug]) {
+      destinationPhotoBySlug[trip.destinationSlug] = trip.images?.[0];
+    }
+  }
+  const styleChips = [
+    { key: 'ADVENTURE', label: t('categories.adventure') },
+    { key: 'CULTURAL', label: t('categories.cultural') },
+    { key: 'NATURE', label: t('categories.nature') },
+    { key: 'LUXURY', label: t('categories.luxury') },
+    { key: 'BUDGET', label: t('categories.budget') },
+  ].filter((chip) => (categoryTripCounts[chip.key] ?? 0) >= 2);
+  const allTripsSorted = [...allTrips].sort((a, b) =>
+    String(a.startLocation ?? '').localeCompare(String(b.startLocation ?? '')) ||
+    String(a.title ?? '').localeCompare(String(b.title ?? '')),
+  );
+  const hasCatalogSections = Boolean(catalogTrips) && !featuredTripsFetchFailed;
+  // #880: the hero's visual anchor is the first featured trip's own
+  // slide-1 photo — the same optimizer URL its card requests below
+  // the fold, so the anchor costs ~0 KB incremental and serves as
+  // the page's LCP (priority / fetchPriority=high).
+  const heroAnchorTrip = featuredTrips[0];
+  const heroAnchorImage = heroAnchorTrip?.images?.[0];
   const travelStyles = [
     { key: 'adventure', name: t('categories.adventure'), Icon: Mountain, color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' },
     { key: 'cultural', name: t('categories.cultural'), Icon: Compass, color: 'bg-blue-100 text-ocean-600 dark:text-ocean-300 dark:bg-blue-900/30 dark:text-blue-400' },
@@ -112,40 +214,84 @@ export default function HomeClient({ featuredTrips, featuredTripsFetchFailed = f
   return (
     <div className="bg-background min-h-screen font-sans text-foreground overflow-hidden">
       
-      {/* Hero Section */}
-      <div className="relative isolate pt-32 pb-20 sm:pt-40 sm:pb-24">
+      {/* Hero Section — #880: compressed (vertical whitespace more
+          than halved) and anchored by the first featured trip's own
+          photo, so a cold arrival sees product — a place, a trip —
+          in the first screen instead of a claim and a form. */}
+      <div className="relative isolate pt-24 pb-8 sm:pt-28 sm:pb-10">
         {/* Background Blob */}
         <div aria-hidden="true" className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80 opacity-20 dark:opacity-10">
           <div style={{ clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)' }} className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-sunset-orange sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"/>
         </div>
 
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <motion.div 
-            initial="hidden" 
-            animate="visible" 
-            variants={staggerContainer} 
-            className="mx-auto max-w-4xl text-center"
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+            className="grid items-center gap-8 lg:grid-cols-[1.08fr_0.92fr]"
           >
-            <motion.div variants={fadeInUp} className="mb-6 flex justify-center">
+            <div className="text-center lg:text-start">
+            <motion.div variants={fadeInUp} className="mb-5 flex justify-center lg:justify-start">
                 <span className="rounded-full bg-sunset-orange/10 px-3 py-1 text-sm font-semibold text-sunset-orange-dark ring-1 ring-inset ring-sunset-orange/20">
                     {t('hero.tagline')}
                 </span>
             </motion.div>
-            
-            <motion.h1 variants={fadeInUp} className="text-5xl font-bold tracking-tight text-foreground sm:text-7xl mb-6">
+
+            <motion.h1 variants={fadeInUp} className="text-5xl font-bold tracking-tight text-foreground sm:text-6xl mb-5">
               {t('hero.title', 'Find your perfect')} <span className="text-sunset-orange-dark">{t('hero.accent', 'Adventure')}</span>
             </motion.h1>
-            
-            <motion.p variants={fadeInUp} className="mt-6 text-lg leading-8 text-muted-foreground max-w-2xl mx-auto">
+
+            <motion.p variants={fadeInUp} className="mt-4 text-lg leading-8 text-muted-foreground max-w-2xl mx-auto lg:mx-0">
               {t('hero.subtitle', 'Connect with local experts to plan trips that are as unique as you are.')}
             </motion.p>
+            </div>
+
+            {/* #880: the anchor photo — the first featured trip's
+                slide-1 at its existing optimizer URL (the same asset
+                its card loads below the fold), prioritised as LCP.
+                On mobile it stacks first: product tops the screen. */}
+            {heroAnchorTrip && heroAnchorImage ? (
+              <motion.div variants={fadeInUp} className="order-first lg:order-none">
+                <Link
+                  href={`/trip/${heroAnchorTrip.id}`}
+                  className="relative block h-44 overflow-hidden rounded-3xl shadow-xl sm:h-56 lg:h-[340px] focus:outline-none focus-visible:ring-2 focus-visible:ring-sunset-orange focus-visible:ring-offset-2"
+                  aria-label={heroAnchorTrip.title}
+                >
+                  <Image
+                    src={heroAnchorImage}
+                    alt={heroAnchorTrip.imageAlts?.[0] ?? heroAnchorTrip.title}
+                    fill
+                    sizes="(min-width: 1024px) 40vw, 100vw"
+                    className="object-cover"
+                    priority
+                    fetchPriority="high"
+                  />
+                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent p-5 pt-10 text-start">
+                    <span className="block font-display text-lg font-bold text-white">{heroAnchorTrip.title}</span>
+                    {heroAnchorTrip.startLocation ? (
+                      <span className="mt-0.5 flex items-center gap-1 text-sm text-white/85">
+                        <MapPin className="h-4 w-4" aria-hidden="true" /> {heroAnchorTrip.startLocation}
+                      </span>
+                    ) : null}
+                  </span>
+                </Link>
+              </motion.div>
+            ) : null}
+          </motion.div>
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+            className="mx-auto max-w-4xl text-center"
+          >
 
             {/* Clean Search Bar — #723: a semantic form, so the button
                 AND Enter in any field submit the same search. The
                 destination suggestions are the #675 beta destinations
                 (localised names); picking or typing one submits the
                 `destination` facet, other text submits as `q`. */}
-            <motion.div variants={fadeInUp} className="mt-10 mx-auto max-w-3xl">
+            <motion.div variants={fadeInUp} className="mt-6 mx-auto max-w-3xl">
               <form onSubmit={handleSearch} noValidate>
                 <div className="bg-card p-2 rounded-2xl shadow-xl border border-border flex flex-col lg:flex-row gap-2">
                   <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
@@ -246,13 +392,62 @@ export default function HomeClient({ featuredTrips, featuredTripsFetchFailed = f
         </div>
       </div>
 
-      {/* Featured Trips Section */}
-      <section className="py-24 sm:py-32 bg-background relative">
+      {/* #885: one-tap chip rail directly under the hero — destination
+          chips carry live catalogue counts (a zero-trip destination is
+          an honest dashed chip, never hidden and never padded); style
+          chips appear only for categories with at least two trips. */}
+      {hasCatalogSections && (
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+          <div className="flex flex-wrap items-center gap-2.5 pt-2 pb-1" data-testid="home-chip-rail">
+            {CLUSTER_DESTINATION_SLUGS.map((slug) => {
+              const count = destinationTripCounts[slug] ?? 0;
+              return count > 0 ? (
+                <Link
+                  key={slug}
+                  href={`/search?destination=${slug}`}
+                  className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground shadow-sm transition-shadow hover:shadow-md"
+                >
+                  {t(`search.destinationNames.${slug}`)}
+                  <span className="text-sunset-orange-dark">{t('featured.betaRegion.tripsCount', { count })}</span>
+                </Link>
+              ) : (
+                <Link
+                  key={slug}
+                  href={`/search?destination=${slug}`}
+                  className="inline-flex items-center gap-2 rounded-full border border-dashed border-border bg-transparent px-4 py-2.5 text-sm font-bold text-muted-foreground"
+                >
+                  {t(`search.destinationNames.${slug}`)}
+                  <span>{t('featured.betaRegion.noTripsYet')}</span>
+                </Link>
+              );
+            })}
+            {styleChips.map((chip) => (
+              <Link
+                key={chip.key}
+                href={`/search?category=${chip.key}`}
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/60 px-4 py-2.5 text-sm font-bold text-foreground transition-shadow hover:shadow-md"
+              >
+                {chip.label}
+                <span className="text-sunset-orange-dark">{categoryTripCounts[chip.key]}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Featured Trips Section — #880: tightened so the first card
+          row peeks into the first screen below the compressed hero. */}
+      <section className="py-12 sm:py-16 bg-background relative">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
             <div className="max-w-2xl">
               <h2 className="oui-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">{t('featured.title')}</h2>
               <p className="text-lg text-muted-foreground">{t('featured.subtitle')}</p>
+              {/* #885: the curation rule is published where the rail
+                  renders — one trip per agency, rotated weekly. */}
+              {hasCatalogSections && (
+                <p className="mt-2 text-sm text-muted-foreground">{t('featured.criteria')}</p>
+              )}
             </div>
             <Link href="/search" className="text-sunset-orange-dark font-semibold hover:text-orange-800 flex items-center gap-2 transition-colors">
               {t('featured.viewAll')} <ArrowRight className={`h-4 w-4 ${i18n.language === 'ar' ? 'rotate-180' : ''}`} />
@@ -295,6 +490,71 @@ export default function HomeClient({ featuredTrips, featuredTripsFetchFailed = f
           </motion.div>
         </div>
       </section>
+
+      {/* #885: the beta-region destination section — the three cluster
+          cities only. A city with no trips renders honestly empty
+          (never backfilled with out-of-cluster supply); a stocked
+          city's photo is its own first trip's photo. */}
+      {hasCatalogSections && (
+        <section className="py-24 bg-background">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="max-w-2xl mb-12">
+              <h2 className="oui-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">{t('featured.betaRegion.title')}</h2>
+              <p className="text-lg text-muted-foreground">{t('featured.betaRegion.subtitle')}</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {CLUSTER_DESTINATION_SLUGS.map((slug) => {
+                const count = destinationTripCounts[slug] ?? 0;
+                const photo = destinationPhotoBySlug[slug];
+                return (
+                  <Link
+                    key={slug}
+                    href={`/search?destination=${slug}`}
+                    className="group relative block min-h-[280px] overflow-hidden rounded-3xl bg-deep-blue text-white shadow-sm transition-shadow hover:shadow-xl"
+                  >
+                    {count > 0 && photo ? (
+                      <SafeImage src={photo} alt="" fill sizes="(min-width: 768px) 33vw, 100vw" className="object-cover opacity-90 transition-transform duration-500 group-hover:scale-105" />
+                    ) : null}
+                    <span className="absolute inset-0 bg-gradient-to-t from-deep-blue/85 via-deep-blue/25 to-transparent" aria-hidden="true" />
+                    <span className="absolute top-4 start-4 rounded-full bg-card px-3 py-1 text-[11px] font-extrabold text-foreground shadow">
+                      {count > 0 ? t('featured.betaRegion.tripsCount', { count }) : t('featured.betaRegion.noTripsYet')}
+                    </span>
+                    <span className="absolute inset-x-0 bottom-0 p-6">
+                      <span className="block font-display text-[26px] font-extrabold">{t(`search.destinationNames.${slug}`)}</span>
+                      <span className="mt-1 block text-sm text-white/85">
+                        {count > 0 ? t(`featured.betaRegion.blurb.${slug}`) : t('featured.betaRegion.tripsComing')}
+                      </span>
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* #885: "All beta trips" — at beta scale every active trip is
+          reachable from home itself, in compact rows. */}
+      {hasCatalogSections && allTripsSorted.length > 0 && (
+        <section className="py-24 bg-muted/35">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="mb-10 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+              <div className="max-w-2xl">
+                <h2 className="oui-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">{t('featured.allTrips.title')}</h2>
+                <p className="text-lg text-muted-foreground">{t('featured.allTrips.subtitle')}</p>
+              </div>
+              <Link href="/search" className="flex items-center gap-2 font-semibold text-sunset-orange-dark transition-colors hover:text-orange-800">
+                {t('featured.allTrips.searchAll')} <ArrowRight className={`h-4 w-4 ${i18n.language === 'ar' ? 'rotate-180' : ''}`} />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              {allTripsSorted.map((trip) => (
+                <AllTripsRow key={trip.id} trip={trip} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Travel Styles / Categories */}
       <section className="py-24 bg-muted/35">

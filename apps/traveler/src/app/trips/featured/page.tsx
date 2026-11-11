@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/api-client';
 import dynamic from 'next/dynamic';
 import type { TripCardTrip } from '@/components/TripCard';
+import { curateFeaturedTrips } from '@/lib/curation';
 import { Badge, Button } from '@ouiboo/ui';
 import Link from 'next/link';
 import { Compass, Sparkles } from 'lucide-react';
@@ -13,25 +14,20 @@ async function getFeaturedTrips(): Promise<TripCardTrip[]> {
   try {
     // #546: trip text in the visitor's language.
     const locale = await getInitialLanguage();
-    const response = await apiClient.get(`/trips?featured=true&status=ACTIVE&locale=${locale}`);
-    const directFeatured: TripCardTrip[] = Array.isArray(response.data)
+    const response = await apiClient.get(`/trips?status=ACTIVE&limit=100&locale=${locale}`);
+    const catalogue: TripCardTrip[] = Array.isArray(response.data)
       ? response.data
       : response.data?.data ?? [];
 
-    // #879 (Council S12 P0): the page publishes a one-trip-per-agency
-    // rule, so the composition must match it. Previously an empty
-    // featured set silently fell back to the top-12 trips by
-    // popularity and still presented them as "Featured" — the page
-    // now shows only genuinely featured trips, at most one per
-    // agency, and falls through to the honest empty state instead.
-    const seenAgencies = new Set<string>();
-    return directFeatured.filter((trip) => {
-      const agencyId = trip.agency?.id;
-      if (!agencyId) return true;
-      if (seenAgencies.has(agencyId)) return false;
-      seenAgencies.add(agencyId);
-      return true;
-    });
+    // #879/#885 (Council S12 P0): the page publishes the same rule the
+    // home rail enforces — one trip per agency, agencies rotated
+    // weekly, beta-cluster supply only — so the composition must be
+    // produced by that rule (lib/curation.ts), not by the raw
+    // agency-set featured flag. Previously an empty featured set
+    // silently fell back to the top-12 trips by popularity and still
+    // presented them as "Featured"; the page now falls through to
+    // the honest empty state instead.
+    return curateFeaturedTrips(catalogue);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.warn(`Failed to load featured trips: ${message}`);
