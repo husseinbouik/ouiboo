@@ -51,6 +51,8 @@
   },
   "hero": {
     "tagline": "Découvrez l'inattendu",
+    "photoAlt": "La Voie lactée au-dessus des montagnes du Haut Atlas, au Maroc",
+    "photoCaption": "Le Haut Atlas",
     "title": "Découvrez les",
     "accent": "Trésors du Maroc",
     "subtitle": "Redécouvrez le Maroc, voyage après voyage — des circuits organisés par des agences locales à la licence vérifiée. Envoyez une demande, l'agence confirme, et vous payez l'agence directement.",
@@ -65,19 +67,24 @@
   "example": {
     "badge": "Exemple"
   },
+  "trustStrip": {
+    "licence": "Agences à la licence vérifiée",
+    "payDirect": "Vous payez l'agence directement",
+    "cancellation": "Conditions d'annulation sur chaque voyage"
+  },
   "featured": {
-    "title": "Expériences en vedette",
-    "subtitle": "Itinéraires en vedette.",
-    "criteria": "Un voyage par agence, en rotation chaque semaine — des agences à la licence vérifiée avec des départs à venir.",
+    "title": "Voyages sélectionnés",
+    "subtitle": "Une courte sélection pour commencer — un voyage par agence, en rotation chaque semaine.",
+    "criteria": "Des agences à la licence vérifiée, avec des départs à venir.",
     "betaRegion": {
       "title": "Commencez par le Nord",
-      "subtitle": "La région bêta — trois villes, affichées honnêtement.",
+      "subtitle": "Trois villes du nord du Maroc, affichées telles qu'elles sont.",
       "tripsCount_one": "{{count}} voyage",
       "tripsCount_other": "{{count}} voyages",
       "noTripsYet": "Aucun voyage pour le moment",
       "tripsComing": "Des voyages arrivent — soyez le premier à solliciter une agence locale.",
       "blurb": {
-        "tangier": "Kasbah, médina et détroit — la porte d'entrée de la bêta.",
+        "tangier": "Kasbah, médina et détroit — là où le Maroc rencontre la mer.",
         "tetouan": "La colombe blanche du Rif, entre montagnes et mer.",
         "chefchaouen": "La perle bleue du Rif."
       },
@@ -87,8 +94,8 @@
       "tripsCount_many": "{{count}} voyages"
     },
     "allTrips": {
-      "title": "Tous les voyages bêta",
-      "subtitle": "Chaque voyage actif, accessible depuis l'accueil — à l'échelle de la bêta, l'exhaustivité remplace la mise en scène.",
+      "title": "Tous les voyages",
+      "subtitle": "Chaque voyage actif, accessible depuis l'accueil.",
       "searchAll": "Rechercher tous les voyages",
       "days_one": "{{count}} jour",
       "days_other": "{{count}} jours",
@@ -96,6 +103,16 @@
       "days_two": "{{count}} jours",
       "days_few": "{{count}} jours",
       "days_many": "{{count}} jours"
+    },
+    "coverage": {
+      "title": "Là où nous avons des voyages — et là où nous n'en avons pas",
+      "subtitle": "Les destinations avec des voyages que vous pouvez demander dès aujourd'hui, et les lieux bien connus qu'aucune agence ne couvre encore — montrés tels qu'ils sont.",
+      "names": {
+        "agadir": "Agadir",
+        "dakhla": "Dakhla",
+        "ifrane": "Ifrane",
+        "alhoceima": "Al Hoceïma"
+      }
     },
     "viewAll": "Voir tous les voyages",
     "from": "À partir de",
@@ -106,7 +123,7 @@
   },
   "categories": {
     "title": "Voyagez à votre façon",
-    "subtitle": "Explorez les destinations selon votre style de voyage préféré.",
+    "subtitle": "Explorez selon le type de voyage que vous cherchez.",
     "adventure": "Aventure",
     "cultural": "Culturel",
     "luxury": "Luxe",
@@ -241,14 +258,16 @@
     }
   },
   "trust": {
+    "title": "Pourquoi réserver sur Ouiboo",
     "secureTitle": "Paiements directs",
     "secureDescription": "Vous payez l'agence directement — Ouiboo ne détient jamais votre argent.",
-    "verifiedTitle": "Détails de la licence de l'agence",
+    "verifiedTitle": "Licence et assurance vérifiées",
     "verifiedDescription": "La licence et l'assurance de chaque agence sont vérifiées par Ouiboo. Chaque page de voyage et d'agence indique le statut de la licence, sa date d'expiration et la date de sa vérification, ainsi que la date de vérification de l'assurance.",
-    "instantTitle": "Demandes de réservation",
+    "instantTitle": "Demandes de réservation, confirmation par l'agence",
     "instantDescription": "Envoyez une demande de réservation et l'agence confirmera la disponibilité. Aucun frais caché."
   },
   "footer": {
+    "explainer": "Ouiboo rassemble des voyages organisés par des agences locales vérifiées. Une réservation est une demande que l'agence confirme — et vous payez toujours l'agence directement.",
     "rights": "Copyright {{year}} Ouiboo. Tous droits réservés.",
     "support": "Assistance",
     "privacy": "Confidentialité",
@@ -1043,7 +1062,7 @@
     "bandLine": "{{days}}+ jours avant le départ : remboursement de {{percent}} %",
     "accept": "Accepter ce devis",
     "acceptedOn": "Accepté le {{date}} — le devis, son échelle et cet horodatage d’acceptation sont enregistrés sur la demande.",
-    "acceptedNote": "Les devis acceptés sont définitifs. Pendant la bêta, aucun paiement n’est prélevé sur OuiBoo — l’agence confirme les étapes suivantes directement avec vous.",
+    "acceptedNote": "Les devis acceptés sont définitifs. Aucun paiement n’est prélevé sur OuiBoo — l’agence confirme les étapes suivantes directement avec vous.",
     "status": {
       "PENDING": "En attente de l’agence",
       "QUOTED": "Devis ferme reçu",

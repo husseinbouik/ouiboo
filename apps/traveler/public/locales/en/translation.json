@@ -51,6 +51,8 @@
   },
   "hero": {
     "tagline": "Discover the Uncharted",
+    "photoAlt": "The Milky Way over the Atlas Mountains, Morocco",
+    "photoCaption": "The High Atlas",
     "title": "Discover Morocco's",
     "accent": "Hidden Gems",
     "subtitle": "Rediscover Morocco, one journey at a time — trips run by licence-checked local agencies. Send a request, the agency confirms, and you pay the agency directly.",
@@ -65,19 +67,24 @@
   "example": {
     "badge": "Example"
   },
+  "trustStrip": {
+    "licence": "Licence-checked agencies",
+    "payDirect": "You pay the agency directly",
+    "cancellation": "Cancellation terms on every trip"
+  },
   "featured": {
-    "title": "Featured Experiences",
-    "subtitle": "Featured itineraries.",
-    "criteria": "One trip per agency, rotated weekly — from licence-checked agencies with upcoming departures.",
+    "title": "Selected trips",
+    "subtitle": "A short selection to get you started — one trip per agency, rotated weekly.",
+    "criteria": "From licence-checked agencies with upcoming departures.",
     "betaRegion": {
       "title": "Start in the North",
-      "subtitle": "The beta region — three cities, honestly stocked.",
+      "subtitle": "Three cities in the north of Morocco, shown as they are.",
       "tripsCount_one": "{{count}} trip",
       "tripsCount_other": "{{count}} trips",
       "noTripsYet": "No trips yet",
       "tripsComing": "Trips coming — be first to ask a local agency.",
       "blurb": {
-        "tangier": "Kasbah, medina and the strait — the beta's front door.",
+        "tangier": "Kasbah, medina and the strait — where Morocco meets the sea.",
         "tetouan": "The white dove of the Rif, between mountains and sea.",
         "chefchaouen": "The blue pearl of the Rif."
       },
@@ -87,8 +94,8 @@
       "tripsCount_many": "{{count}} trips"
     },
     "allTrips": {
-      "title": "All beta trips",
-      "subtitle": "Every active trip, reachable from home — at beta scale, completeness replaces curation theatre.",
+      "title": "All trips",
+      "subtitle": "Every active trip, reachable from home.",
       "searchAll": "Search all trips",
       "days_one": "{{count}} day",
       "days_other": "{{count}} days",
@@ -96,6 +103,16 @@
       "days_two": "{{count}} days",
       "days_few": "{{count}} days",
       "days_many": "{{count}} days"
+    },
+    "coverage": {
+      "title": "Where we have trips — and where we don't",
+      "subtitle": "Destinations with trips you can request today, and the well-known places no agency covers yet — shown as they are.",
+      "names": {
+        "agadir": "Agadir",
+        "dakhla": "Dakhla",
+        "ifrane": "Ifrane",
+        "alhoceima": "Al Hoceima"
+      }
     },
     "viewAll": "View all trips",
     "from": "From",
@@ -106,7 +123,7 @@
   },
   "categories": {
     "title": "Travel your way",
-    "subtitle": "Explore destinations by your preferred travel style.",
+    "subtitle": "Explore by the kind of trip you want.",
     "adventure": "Adventure",
     "cultural": "Cultural",
     "luxury": "Luxury",
@@ -241,14 +258,16 @@
     }
   },
   "trust": {
+    "title": "Why book on Ouiboo",
     "secureTitle": "Direct payments",
     "secureDescription": "You pay the agency directly — Ouiboo never holds your money.",
-    "verifiedTitle": "Agency licence details",
+    "verifiedTitle": "Licence & insurance checked",
     "verifiedDescription": "Every agency's licence and insurance are checked by Ouiboo. Each trip and agency page shows the licence status, its expiry date and the date it was verified, and the date its insurance was verified.",
-    "instantTitle": "Booking requests",
+    "instantTitle": "Booking requests, agency confirms",
     "instantDescription": "Send a booking request and the agency confirms availability. No hidden fees."
   },
   "footer": {
+    "explainer": "Ouiboo brings together trips run by checked local agencies. A booking is a request the agency confirms — and you always pay the agency directly.",
     "rights": "Copyright {{year}} Ouiboo. All rights reserved.",
     "support": "Support",
     "privacy": "Privacy",
@@ -1043,7 +1062,7 @@
     "bandLine": "{{days}}+ days before departure: {{percent}}% refund",
     "accept": "Accept this quote",
     "acceptedOn": "Accepted on {{date}} — the quote, its scale and this acceptance time are saved on the request.",
-    "acceptedNote": "Accepted quotes are final. In the beta, no payment is taken on OuiBoo — the agency confirms the next steps with you directly.",
+    "acceptedNote": "Accepted quotes are final. No payment is taken on OuiBoo — the agency confirms the next steps with you directly.",
     "status": {
       "PENDING": "Waiting for the agency",
       "QUOTED": "Firm quote received",
