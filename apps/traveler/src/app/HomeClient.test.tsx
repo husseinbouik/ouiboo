@@ -135,7 +135,7 @@ describe('HomeClient static imagery + trust strip (founder amendments 2026-11-11
         const { container } = render(<HomeClient featuredTrips={[]} />);
         const heroImg = container.querySelector('img[alt="hero.photoAlt"]');
         expect(heroImg).not.toBeNull();
-        expect(heroImg?.getAttribute('src')).toContain('hero-erg-chebbi');
+        expect(heroImg?.getAttribute('src')).toContain('hero-atlas-night');
         expect(screen.getByText('hero.photoCaption')).not.toBeNull();
         // The hero is a photograph of a place: it must not navigate
         // to a trip and must not carry a trip title.
@@ -159,7 +159,7 @@ describe('HomeClient static imagery + trust strip (founder amendments 2026-11-11
             sessions: [],
             agency: { id: 'agency-1' },
         };
-        // The All-trips rows this catalogue renders use react-query
+        // The coverage tiles this catalogue renders use react-query
         // (display-currency) — provide a client like the app does.
         const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
         render(
@@ -172,6 +172,76 @@ describe('HomeClient static imagery + trust strip (founder amendments 2026-11-11
         const tileSrcs = [...(section?.querySelectorAll('img') ?? [])].map((img) => img.getAttribute('src') ?? '');
         expect(tileSrcs.some((src) => src.includes('chefchaouen'))).toBe(true);
         expect(tileSrcs.some((src) => src.includes('trip-photo'))).toBe(false);
+    });
+});
+
+describe('HomeClient coverage showcase + category tiles (round 2, founder 2026-11-11)', () => {
+    function wrap(ui: React.ReactNode) {
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        return <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>;
+    }
+
+    function catalogTrip(partial: Record<string, unknown>) {
+        return {
+            title: 'Trip',
+            images: [],
+            sessions: [],
+            agency: { id: 'agency-1' },
+            ...partial,
+        } as any;
+    }
+
+    it('replaces the All-trips listing with the have / don\'t-have coverage showcase', () => {
+        const trips = [
+            catalogTrip({ id: 'merz-1', title: 'Merzouga Camel Trek', startLocation: 'Merzouga', destinationSlug: null, images: ['https://images.unsplash.com/photo-aaaa1111?q=80&w=1200'] }),
+            catalogTrip({ id: 'merz-2', title: 'Dunes Night', startLocation: 'Merzouga, Morocco', destinationSlug: null, images: ['https://images.unsplash.com/photo-bbbb2222?q=80&w=1200'] }),
+            catalogTrip({ id: 'tang-1', title: 'Tangier Day', startLocation: 'Tanger', destinationSlug: 'tangier' }),
+        ];
+        const { container } = render(wrap(<HomeClient catalogTrips={trips} />));
+        expect(screen.getByText('featured.coverage.title')).not.toBeNull();
+        expect(screen.queryByText('featured.allTrips.title')).toBeNull();
+        // The two Merzouga spellings group into a single tile that
+        // links into search for the place.
+        const tile = screen.getByRole('link', { name: /Merzouga/ });
+        expect(tile.getAttribute('href')).toBe('/search?q=Merzouga');
+        // Honestly-empty well-known places render as tiles too.
+        expect(screen.getByText('featured.coverage.names.agadir')).not.toBeNull();
+        expect(screen.getByText('featured.coverage.names.dakhla')).not.toBeNull();
+        // The cluster destination is NOT repeated in the showcase
+        // (Start in the North covers it, one section up).
+        expect(container.querySelector('a[href="/search?q=Tanger"]')).toBeNull();
+    });
+
+    it('an "absent" place disappears from the showcase the moment a trip exists there', () => {
+        const trips = [
+            catalogTrip({ id: 'aga-1', title: 'Agadir Beach Break', startLocation: 'Agadir', destinationSlug: null }),
+        ];
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        expect(screen.queryByText('featured.coverage.names.agadir')).toBeNull();
+        expect(screen.getByText('featured.coverage.names.dakhla')).not.toBeNull();
+    });
+
+    it('category tiles are photo tiles, with styles under 2 trips suppressed (#898/#903)', () => {
+        const trips = [
+            catalogTrip({ id: 'a1', category: 'ADVENTURE', startLocation: 'Imlil', destinationSlug: null }),
+            catalogTrip({ id: 'a2', category: 'ADVENTURE', startLocation: 'Imlil', destinationSlug: null }),
+            catalogTrip({ id: 'l1', category: 'LUXURY', startLocation: 'Merzouga', destinationSlug: null }),
+        ];
+        const { container } = render(wrap(<HomeClient catalogTrips={trips} />));
+        // The chip rail and the tile share the category href; the
+        // TILE is the one carrying the frozen category photograph.
+        const adventureLinks = [...container.querySelectorAll('a[href="/search?category=ADVENTURE"]')];
+        const photoTile = adventureLinks.find((a) => a.querySelector('img')?.getAttribute('src')?.includes('categories/adventure'));
+        expect(photoTile).toBeTruthy();
+        // Luxury has one trip: no chip, no tile.
+        expect(container.querySelector('a[href="/search?category=LUXURY"]')).toBeNull();
+    });
+
+    it('renders the Why-book trio under its H2 (proposal P1-21)', () => {
+        render(<HomeClient featuredTrips={[]} />);
+        expect(screen.getByText('trust.title')).not.toBeNull();
+        expect(screen.getByText('trust.verifiedTitle')).not.toBeNull();
+        expect(screen.getByText('trust.instantTitle')).not.toBeNull();
     });
 });
 
