@@ -454,11 +454,14 @@ describe('SnapRail (#490)', () => {
 
         it('hides off-screen slides from the accessibility tree on card rails, but never on the keyboard gallery', () => {
             const { container } = renderRail();
-            const hidden = container.querySelectorAll('[aria-hidden="true"]');
+            // Count SLIDES only: the prev/next arrow icons are also
+            // aria-hidden (decorative Lucide SVGs), so a bare
+            // [aria-hidden] count over the whole rail mixes the two.
+            const hidden = container.querySelectorAll('div[aria-hidden="true"]');
             // 5 positions: all but the resting one are hidden (clones included).
             expect(hidden.length).toBe(4);
             const gallery = renderRail({ slideKeyboardOpen: true, onSlideClick: jest.fn() });
-            const galleryHidden = gallery.container.querySelectorAll('[aria-hidden="true"]');
+            const galleryHidden = gallery.container.querySelectorAll('div[aria-hidden="true"]');
             // Only the two clones are hidden on the keyboard-openable rail.
             expect(galleryHidden.length).toBe(2);
         });
