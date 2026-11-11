@@ -25,7 +25,7 @@ import {
 } from '@/lib/curation';
 import { useDisplayPrice } from '@/lib/display-currency';
 import { AGENCY_URL } from '@/lib/site';
-import { CATEGORY_IMAGES, DESTINATION_IMAGES, HERO_IMAGE, NON_PLACE_PHOTO_IDS, STATIC_HOME_PHOTO_IDS } from '@/lib/static-imagery';
+import { CATEGORY_IMAGES, COVERAGE_IMAGES, DESTINATION_IMAGES, HERO_IMAGE, NON_PLACE_PHOTO_IDS, STATIC_HOME_PHOTO_IDS } from '@/lib/static-imagery';
 
 const TripCard = dynamic(() => import('@/components/TripCard').then((m) => m.TripCard));
 
@@ -242,8 +242,15 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
   // Photo-truth (#898, council P0-1): the pick skips the static
   // assets (no photo twice on the page) AND the audited non-place
   // photos, so a destination with no truthful photo in its trips'
-  // media renders the graded tile rather than somewhere else.
-  const coverageDestinations = showcaseDestinations(allTrips, [...STATIC_HOME_PHOTO_IDS, ...NON_PLACE_PHOTO_IDS]);
+  // media renders the graded tile rather than somewhere else —
+  // unless it has a curated static of its own (COVERAGE_IMAGES:
+  // the verified follow-up curation), which always wins.
+  const coverageDestinations = showcaseDestinations(allTrips, [...STATIC_HOME_PHOTO_IDS, ...NON_PLACE_PHOTO_IDS]).map(
+    (destination) => {
+      const curated = COVERAGE_IMAGES[destination.name.toLowerCase().replace(/\s+/g, '')];
+      return curated ? { ...destination, photo: curated } : destination;
+    },
+  );
   const absentCoverage = ABSENT_COVERAGE_CANDIDATES.filter(
     (candidate) => !tripsCoverPlace(allTrips, [...candidate.aliases]),
   );

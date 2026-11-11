@@ -46,17 +46,59 @@
  * of Skye, Scotland — replaced above with the Atlas Trek lead.
  * A generic medina/souk photograph may NOT stand in for a named
  * city; new frozen assets must pass this place-check.
+ *
+ * FOLLOW-UP CURATION (founder-approved, 2026-11-11): the four
+ * places the audit left graded now carry photographs that were
+ * individually VISUALLY VERIFIED against their labels. Source for
+ * all four: Wikimedia Commons (licence-clean; attribution recorded
+ * here and on #898 — these are curated assets, so their provenance
+ * IDs are Commons file names, not Unsplash photo tokens):
+ * - Tangier — the octagonal minaret of the Kasbah Mosque above the
+ *   whitewashed kasbah quarter: "Kasbah Mosque in Tangier.jpg" by
+ *   Rachidourkia, CC BY-SA 4.0.
+ * - Tétouan — a whitewashed medina alley with the city's pointed
+ *   sabat arches and a green door: "Tetouan Old Medina streets
+ *   4.jpg" by Ideophagous, CC BY-SA 4.0.
+ * - Casablanca — the Hassan II Mosque from its esplanade (minaret,
+ *   prayer hall, arcades): "Hassan II Mosque - general framing,
+ *   Casablanca, Morocco.jpg" by Tinuzzo, CC BY 4.0.
+ * - Imlil — the terraced earthen village above the Mizane valley
+ *   terraces under the Atlas massif: "Imlil village, High Atlas
+ *   Mountains.jpg" by Mounir Neddi, CC BY-SA 4.0.
+ * Rejected after visual inspection (do not re-add): the
+ * watermarked Travel4Brews Tangier photographs; a genuine but
+ * generic Tangier-medina shop interior (the audit's rule above);
+ * a Hassan II plaza shot that never shows the mosque; a
+ * black-and-white corniche shot; a generic olive-plain photograph
+ * filed under Imlil commune.
  */
 export const HERO_IMAGE = { src: '/images/hero-atlas-night.jpg' } as const;
 
 /** Fixed destination-tile photographs by destination slug. A slug
  * absent here renders the brand-graded tile — by design, never a
- * trip photo. Tangier and Tétouan are deliberately ABSENT: the
- * photo-truth audit (header comment, #898) found no photograph in
- * catalogue media that actually depicts either city, and a photo
- * of somewhere else may not stand in for a named place. */
+ * trip photo. All three cluster slugs are curated: Chefchaouen
+ * from round 1, Tangier and Tétouan from the verified follow-up
+ * curation (header comment, #898) — a photo of somewhere else may
+ * still never stand in for a named place. */
 export const DESTINATION_IMAGES: Record<string, string> = {
+  tangier: '/images/destinations/tangier.jpg',
+  tetouan: '/images/destinations/tetouan.jpg',
   chefchaouen: '/images/destinations/chefchaouen.jpg',
+};
+
+/** Fixed coverage-showcase photographs for destinations beyond
+ * the cluster, keyed by the folded place name the showcase groups
+ * by (lowercase, spaces stripped — the same keying as the coverage
+ * descriptors in HomeClient). The showcase's media pick runs
+ * first; a destination listed here always renders its curated
+ * asset instead, so a place whose trip media holds no truthful
+ * photo of itself (Casablanca, Imlil — see NON_PLACE_PHOTO_IDS)
+ * still shows a verified photograph of the place. Destinations
+ * absent here keep the media pick, and a pick that exhausts to
+ * null renders the graded tile. */
+export const COVERAGE_IMAGES: Record<string, string> = {
+  casablanca: '/images/destinations/casablanca.jpg',
+  imlil: '/images/destinations/imlil.jpg',
 };
 
 /** Fixed category-tile photographs by lower-case category key
