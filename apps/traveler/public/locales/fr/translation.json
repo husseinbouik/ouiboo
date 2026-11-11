@@ -67,12 +67,12 @@
   "example": {
     "badge": "Exemple"
   },
-  "featured": {  "trustStrip": {
+  "trustStrip": {
     "licence": "Agences à la licence vérifiée",
     "payDirect": "Vous payez l'agence directement",
     "cancellation": "Conditions d'annulation sur chaque voyage"
   },
-
+  "featured": {
     "title": "Voyages sélectionnés",
     "subtitle": "Une courte sélection pour commencer — un voyage par agence, en rotation chaque semaine.",
     "criteria": "Des agences à la licence vérifiée, avec des départs à venir.",

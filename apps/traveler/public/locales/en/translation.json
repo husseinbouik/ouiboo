@@ -67,12 +67,12 @@
   "example": {
     "badge": "Example"
   },
-  "featured": {  "trustStrip": {
+  "trustStrip": {
     "licence": "Licence-checked agencies",
     "payDirect": "You pay the agency directly",
     "cancellation": "Cancellation terms on every trip"
   },
-
+  "featured": {
     "title": "Selected trips",
     "subtitle": "A short selection to get you started — one trip per agency, rotated weekly.",
     "criteria": "From licence-checked agencies with upcoming departures.",
