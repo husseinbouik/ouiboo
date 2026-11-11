@@ -2,7 +2,7 @@
 
 **Migration:** `20260915133000_add_currency_status_enums_and_indexes`
 **Database:** `postgresql://localhost:5432/ouiboo_rehearsal_test?schema=public`
-**Date:** 2026-09-25
+**Date:** 2026-11-10
 **Result:** ALL REHEARSAL SCENARIOS PASSED
 
 ## Methodology
@@ -16,7 +16,7 @@ non-production scratch database (name ends `_test`, local host by default).
 ## Scenario results
 | Scenario | Result | Detail |
 |----------|--------|--------|
-| A-clean-legacy-migrates | PASS | 10 legacy migrations applied; target deploy exit 0 in 2591 ms |
+| A-clean-legacy-migrates | PASS | 10 legacy migrations applied; target deploy exit 0 in 1383 ms |
 | B-rejects-invalid-notification-status | PASS | target deploy exit 1; A migration failed to apply. New migrations cannot be applied before the error is recovered from. Read more about how to |
 | C-rejects-invalid-payment-status | PASS | target deploy exit 1; A migration failed to apply. New migrations cannot be applied before the error is recovered from. Read more about how to |
 | D-rejects-duplicate-reset-token-hash | PASS | target deploy exit 1; A migration failed to apply. New migrations cannot be applied before the error is recovered from. Read more about how to |

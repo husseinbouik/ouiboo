@@ -4,20 +4,22 @@ This is the first environment you should make fully operational.
 
 ## 1. Infrastructure And URLs
 
-- [ ] staging API URL exists
-- [ ] staging traveler URL exists
-- [ ] staging agency URL exists
-- [ ] staging admin URL exists
-- [ ] staging landing URL exists
-- [ ] all URLs are reachable over HTTPS if possible
+- [x] staging API URL exists
+- [x] staging traveler URL exists
+- [x] staging agency URL exists
+- [x] staging admin URL exists
+- [x] staging landing URL exists
+- [x] all URLs returned HTTP 200 over HTTPS on 2026-11-10
 
 Record them here:
 
-- Staging API URL: `________________`
-- Staging traveler URL: `________________`
-- Staging agency URL: `________________`
-- Staging admin URL: `________________`
-- Staging landing URL: `________________`
+- Staging API URL: `https://ouiboo-api-staging.vercel.app/api/v1`
+- Staging traveler URL: `https://ouiboo-traveler-staging.vercel.app`
+- Staging agency URL: `https://ouiboo-agency-staging.vercel.app`
+- Staging admin URL: `https://ouiboo-admin-staging.vercel.app`
+- Staging landing URL: `https://ouiboo-landing-staging.vercel.app`
+
+Evidence boundary: these URLs served a release other than the current pull-request candidate when checked. The latest observed Staging Release workflow failed before migration/attestation, even though scheduled smoke and uptime checks passed. Reachability is not candidate release attestation.
 
 ## 2. GitHub Environment Setup
 
@@ -59,7 +61,8 @@ Create or verify the GitHub `staging` environment and load:
 
 Before running the workflow, confirm:
 
-- [ ] staging database exists
+- [x] staging database responds through the API readiness check
+- [x] staging Redis responds through the API readiness check
 - [ ] storage bucket or container exists
 - [ ] email sender is configured
 - [ ] frontend apps point to staging API
@@ -86,11 +89,11 @@ Expected workflow order:
 
 These health checks must pass:
 
-- [ ] API `/api/v1/health/ready`
-- [ ] traveler `/api/health`
-- [ ] agency `/api/health`
-- [ ] admin `/api/health`
-- [ ] landing `/api/health`
+- [x] API `/api/v1/health/ready` (database and Redis `ok`, 2026-11-10)
+- [x] traveler application URL
+- [x] agency application URL
+- [x] admin application URL
+- [x] landing application URL
 - [ ] worker heartbeat and Redis health command succeeds
 
 ## 6. Dress Rehearsal
@@ -121,6 +124,6 @@ Staging is ready only when:
 
 ## Owners
 
-- Staging setup owner: `________________`
-- Technical lead: `________________`
-- Ops signoff: `________________`
+- Staging setup owner: `OWNER REQUIRED`
+- Technical lead: `OWNER REQUIRED`
+- Ops signoff: `OWNER REQUIRED`
