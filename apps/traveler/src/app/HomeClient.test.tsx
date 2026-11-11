@@ -172,6 +172,12 @@ describe('HomeClient static imagery + trust strip (founder amendments 2026-11-11
         const tileSrcs = [...(section?.querySelectorAll('img') ?? [])].map((img) => img.getAttribute('src') ?? '');
         expect(tileSrcs.some((src) => src.includes('chefchaouen'))).toBe(true);
         expect(tileSrcs.some((src) => src.includes('trip-photo'))).toBe(false);
+        // Photo-truth audit (council P0-1, #898): Tangier and
+        // Tétouan have NO curated photo — the round-2 picks
+        // depicted other places — so their tiles render graded,
+        // with no <img> at all, until a true-place photo exists.
+        expect(tileSrcs.some((src) => src.includes('tangier'))).toBe(false);
+        expect(tileSrcs.some((src) => src.includes('tetouan'))).toBe(false);
     });
 });
 
@@ -219,6 +225,41 @@ describe('HomeClient coverage showcase + category tiles (round 2, founder 2026-1
         render(wrap(<HomeClient catalogTrips={trips} />));
         expect(screen.queryByText('featured.coverage.names.agadir')).toBeNull();
         expect(screen.getByText('featured.coverage.names.dakhla')).not.toBeNull();
+    });
+
+    it('coverage tiles withhold photos verified not to depict the place (photo-truth, #898)', () => {
+        const trips = [
+            // Casablanca's only tour carries no photograph of
+            // Casablanca: a tropical beach, an aerial shoreline and
+            // a spice flat-lay (all in NON_PLACE_PHOTO_IDS). Its
+            // tile must render graded — count and price, no photo.
+            catalogTrip({
+                id: 'casa-1',
+                title: 'Casablanca & Rabat Heritage Tour',
+                startLocation: 'Casablanca',
+                destinationSlug: null,
+                images: [
+                    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200',
+                    'https://images.unsplash.com/photo-1505142468610-359e7d316be0?q=80&w=1200',
+                    'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=1200',
+                ],
+            }),
+            // A truthful pick is untouched: Merzouga keeps the photo
+            // from its own trips.
+            catalogTrip({
+                id: 'merz-1',
+                title: 'Merzouga Camel Trek',
+                startLocation: 'Merzouga',
+                destinationSlug: null,
+                images: ['https://images.unsplash.com/photo-1542401886-65d6c61db217?q=80&w=1200'],
+            }),
+        ];
+        const { container } = render(wrap(<HomeClient catalogTrips={trips} />));
+        const casaTile = container.querySelector('a[href="/search?q=Casablanca"]');
+        expect(casaTile).not.toBeNull();
+        expect(casaTile?.querySelector('img')).toBeNull();
+        const merzTile = container.querySelector('a[href="/search?q=Merzouga"]');
+        expect(merzTile?.querySelector('img')).not.toBeNull();
     });
 
     it('category tiles are photo tiles, with styles under 2 trips suppressed (#898/#903)', () => {
