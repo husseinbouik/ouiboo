@@ -77,6 +77,10 @@ export interface TripCardTrip {
 
 interface TripCardProps {
   trip: TripCardTrip;
+  /** Hybrid (#926): rendered-width hint for the photo rail when the
+   * card renders wider than the standard grid cell (the Selected
+   * rail's featured-card break), so a wide card never upscales. */
+  imageSizes?: string;
 }
 
 /** #673: a licence expiry only supports the dated statement while it is
@@ -88,7 +92,7 @@ function futureLicenceExpiry(value?: string | null): Date | null {
   return Number.isNaN(date.getTime()) || date.getTime() <= new Date().getTime() ? null : date;
 }
 
-export function TripCard({ trip }: TripCardProps) {
+export function TripCard({ trip, imageSizes }: TripCardProps) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   // #745 (remainder): the API resolves a translated startLocation
@@ -220,7 +224,7 @@ export function TripCard({ trip }: TripCardProps) {
             ariaLabel={t('tripCard.photoCarousel', { title: trip.title })}
             rootClassName="h-full"
             viewportClassName="h-full"
-            sizes="(min-width: 1024px) 33vw, 100vw"
+            sizes={imageSizes ?? "(min-width: 1024px) 33vw, 100vw"}
             showIndicators
             deferOffscreenSlides
             onSlideClick={() => router.push(`/trip/${trip.id}`)}
@@ -274,7 +278,11 @@ export function TripCard({ trip }: TripCardProps) {
       <Link href={`/trip/${trip.id}`} className="flex-1 flex flex-col p-6">
         <div className="space-y-3 flex-1">
           <div className="flex justify-between items-start gap-3">
-            <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-tight">{trip.title}</h3>
+            {/* Hybrid P0-7 (#926/#745): titles are never clamped —
+                FR/AR titles were cut at two lines; the reserved
+                two-line min-height keeps card geometry (and CLS)
+                exactly where the clamp held it. */}
+            <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors leading-tight min-h-[2.85rem]">{trip.title}</h3>
             {/* #681 (Council S6): an average is a claim — it renders only
                 at/above MIN_REVIEWS_FOR_RATING reviews. Below that the
                 count is still published (even when small); at zero the

@@ -91,6 +91,28 @@ export const TRAVELER_URL = resolveTravelerUrl()
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1'
 
+/**
+ * #926: the agency app's public base, used by the home page's
+ * agency band. Mirrors the traveller resolution: an explicit
+ * NEXT_PUBLIC_AGENCY_URL wins; otherwise the agency host is the
+ * traveller host's sibling (ouiboo-traveler[-staging] ->
+ * ouiboo-agency[-staging]), so a staging build never sends a
+ * staging visitor to production. Local dev falls back to the
+ * production agency app.
+ */
+const PRODUCTION_AGENCY_URL = 'https://ouiboo-agency.vercel.app'
+
+function resolveAgencyUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_AGENCY_URL?.trim()
+  if (configured) return configured.replace(/\/+$/, '')
+  if (TRAVELER_URL.includes('ouiboo-traveler')) {
+    return TRAVELER_URL.replace('ouiboo-traveler', 'ouiboo-agency')
+  }
+  return PRODUCTION_AGENCY_URL
+}
+
+export const AGENCY_URL = resolveAgencyUrl()
+
 export function absoluteTravelerUrl(path: string): string {
   return new URL(path, `${TRAVELER_URL}/`).toString()
 }
