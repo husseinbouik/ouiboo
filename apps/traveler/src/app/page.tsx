@@ -76,6 +76,7 @@ async function getCatalogTrips(): Promise<CatalogResult> {
 }
 
 export default async function HomePage() {
+  const locale = await getInitialLanguage();
   const { trips: catalogTrips, fetchFailed } = await getCatalogTrips();
   const catalogDestinations = [
     ...new Set(
@@ -86,11 +87,24 @@ export default async function HomePage() {
   ];
 
   return (
-    <HomeClient
-      catalogTrips={catalogTrips}
-      featuredTripsFetchFailed={fetchFailed}
-      catalogDestinations={catalogDestinations}
-    />
+    <>
+      {/* #926 (hybrid, P0-4): exactly one font preload on home —
+          the display serif the visitor's script will actually use
+          (Fraunces 700 latin, or Naskh 600 on Arabic pages, whose
+          headings render at the pairing's top weight). */}
+      <link
+        rel="preload"
+        as="font"
+        type="font/woff2"
+        crossOrigin="anonymous"
+        href={locale === 'ar' ? '/fonts/naskh-arabic-600.woff2' : '/fonts/fraunces-latin-700.woff2'}
+      />
+      <HomeClient
+        catalogTrips={catalogTrips}
+        featuredTripsFetchFailed={fetchFailed}
+        catalogDestinations={catalogDestinations}
+      />
+    </>
   );
 }
 // Trigger fresh traveler deployment
