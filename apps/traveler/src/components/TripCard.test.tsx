@@ -27,6 +27,13 @@ jest.mock('next/image', () => ({
     default: (props: any) => <img {...props} alt={props.alt} />,
 }));
 
+// #882: the card rail no longer sits inside a Link; a genuine photo
+// click navigates through the router instead.
+const mockPush = jest.fn();
+jest.mock('next/navigation', () => ({
+    useRouter: () => ({ push: mockPush }),
+}));
+
 jest.mock('framer-motion', () => ({
     motion: {
         div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
@@ -246,11 +253,15 @@ describe('TripCard photo tap (founder decision 2026-10-29: link to the trip page
         };
     }
 
-    it('wraps the photo in a link to the trip page', () => {
+    it('a genuine photo tap navigates to the trip page (#882: no anchor wraps the rail)', () => {
         const { container } = render(<TripCard trip={photoTrip()} />);
         const img = container.querySelector('img[src="https://cdn.example.com/a.jpg"]');
         expect(img).not.toBeNull();
-        expect(img?.closest('a')?.getAttribute('href')).toBe('/trip/trip-3');
+        // #882: interactive rail content must not sit inside an anchor —
+        // the photo's genuine click routes via router.push instead.
+        expect(img?.closest('a')).toBeNull();
+        fireEvent.click(img as Element);
+        expect(mockPush).toHaveBeenCalledWith('/trip/trip-3');
     });
 
     it('never opens the full-screen photo viewer from a card photo or arrow tap', () => {
