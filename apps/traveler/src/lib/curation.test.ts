@@ -10,7 +10,10 @@ import {
   curateFeaturedTrips,
   effectiveDestinationSlug,
   isoWeekNumber,
+  showcaseDestinations,
+  tripsCoverPlace,
   type CurationTrip,
+  type ShowcaseTrip,
 } from './curation';
 
 function trip(partial: Partial<CurationTrip> & { id: string }): CurationTrip {
@@ -130,5 +133,68 @@ describe('catalogue counts (#885)', () => {
       trip({ id: '3', category: 'LUXURY' }),
     ]);
     expect(counts).toEqual({ ADVENTURE: 2, LUXURY: 1 });
+  });
+});
+
+describe('coverage showcase (round 2, supersedes the home "All trips" listing)', () => {
+  function sTrip(partial: Partial<ShowcaseTrip> & { id: string }): ShowcaseTrip {
+    return {
+      destinationSlug: null,
+      startLocation: 'Merzouga',
+      title: 'Trip',
+      images: [],
+      sessions: [],
+      agency: { id: 'agency-a' },
+      ...partial,
+    };
+  }
+
+  it('groups by destination, folding the country suffix into one tile', () => {
+    const groups = showcaseDestinations([
+      sTrip({ id: '1', startLocation: 'Merzouga' }),
+      sTrip({ id: '2', startLocation: 'Merzouga, Morocco' }),
+      sTrip({ id: '3', startLocation: 'Fes' }),
+    ]);
+    expect(groups.map((g) => [g.name, g.count])).toEqual([['Merzouga', 2], ['Fes', 1]]);
+  });
+
+  it('excludes the cluster destinations (Start in the North covers them)', () => {
+    const groups = showcaseDestinations([
+      sTrip({ id: '1', destinationSlug: 'tangier', startLocation: 'Tanger' }),
+      sTrip({ id: '2', startLocation: 'Essaouira' }),
+    ]);
+    expect(groups.map((g) => g.name)).toEqual(['Essaouira']);
+  });
+
+  it('skips photos already shown on the page when picking a destination photo', () => {
+    const groups = showcaseDestinations(
+      [
+        sTrip({
+          id: '1',
+          title: 'Casablanca & Rabat Heritage Tour',
+          startLocation: 'Casablanca',
+          images: [
+            'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?q=80&w=1200',
+            'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200',
+          ],
+        }),
+      ],
+      ['photo-1539020140153-e479b8c22e70'],
+    );
+    expect(groups[0].photo).toContain('photo-1507525428034');
+  });
+
+  it('derives the from-price and its currency from the cheapest session', () => {
+    const groups = showcaseDestinations([
+      sTrip({ id: '1', sessions: [{ price: 900, currency: 'MAD' }, { price: 450, currency: 'MAD' }] }),
+    ]);
+    expect(groups[0].minPrice).toBe(450);
+    expect(groups[0].priceCurrency).toBe('MAD');
+  });
+
+  it('tripsCoverPlace matches a place across spellings, and only then', () => {
+    expect(tripsCoverPlace([sTrip({ id: '1', startLocation: 'Agadir' })], ['agadir', 'أكادير'])).toBe(true);
+    expect(tripsCoverPlace([sTrip({ id: '1', startLocation: 'أكادير' })], ['agadir', 'أكادير'])).toBe(true);
+    expect(tripsCoverPlace([sTrip({ id: '1', startLocation: 'Fes' })], ['agadir', 'أكادير'])).toBe(false);
   });
 });

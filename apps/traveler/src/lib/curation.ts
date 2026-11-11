@@ -177,3 +177,119 @@ export function countTripsByCategory<T extends CurationTrip>(trips: T[]): Record
   }
   return counts;
 }
+
+/**
+ * Round 2 (founder decision 2026-11-11, superseding #885's home
+ * "All trips" listing): the coverage showcase. Instead of listing
+ * every trip, home shows the honest map — destinations WITH trips
+ * (live counts) and, via `tripsCoverPlace`, well-known places with
+ * none yet. The cluster destinations are NOT repeated here: "Start
+ * in the North" directly above already covers them.
+ */
+
+export interface ShowcaseDestination {
+  /** Display place name (the catalogue's own startLocation text,
+   * country suffix stripped — "Merzouga, Morocco" → "Merzouga"). */
+  name: string;
+  count: number;
+  /** A photo from the destination's own trips, or null. */
+  photo: string | null;
+  minPrice: number | null;
+  priceCurrency: string | null;
+}
+
+export interface ShowcaseTrip extends CurationTrip {
+  title?: unknown;
+  images?: string[] | null;
+  currency?: string | null;
+  sessions?:
+    | Array<CurationSession & { price?: number | string | null; currency?: string | null }>
+    | null;
+}
+
+/** The stable identity of a photo URL (its Unsplash photo-id token;
+ * the URL itself for non-Unsplash media), for page-wide dedupe. */
+export function photoIdOf(url: string): string {
+  const match = /photo-[0-9a-z-]+/i.exec(url);
+  return match ? match[0].toLowerCase() : url;
+}
+
+/** "Merzouga, Morocco" and "Merzouga" are one destination. */
+function stripCountrySuffix(name: string): string {
+  return name.replace(/,?\s*(morocco|maroc|المغرب)\s*$/i, '').trim();
+}
+
+/**
+ * Group the non-cluster catalogue by destination: live counts, a
+ * from-price, and one representative photo per destination. The
+ * photo prefers a trip whose title names the place, and skips any
+ * photo the caller already shows elsewhere on the page
+ * (`excludedPhotoIds` — the fixed assets), so no photograph ever
+ * appears twice on home. Sorted by count, then name; capped.
+ */
+export function showcaseDestinations<T extends ShowcaseTrip>(
+  trips: T[],
+  excludedPhotoIds: readonly string[] = [],
+  limit = 8,
+): ShowcaseDestination[] {
+  const groups = new Map<string, { name: string; trips: T[] }>();
+  for (const trip of trips) {
+    if (effectiveDestinationSlug(trip)) continue; // cluster: covered above
+    const raw = locationText(trip.startLocation);
+    if (!raw) continue;
+    const name = stripCountrySuffix(raw);
+    if (!name) continue;
+    const key = foldName(name);
+    const group = groups.get(key) ?? { name, trips: [] };
+    group.trips.push(trip);
+    groups.set(key, group);
+  }
+  const excluded = new Set(excludedPhotoIds.map((id) => id.toLowerCase()));
+  const result: ShowcaseDestination[] = [];
+  for (const [key, group] of groups) {
+    const byTitle = [...group.trips].sort((a, b) =>
+      locationText(a.title).localeCompare(locationText(b.title)),
+    );
+    const photoOrder = [
+      ...byTitle.filter((trip) => foldName(locationText(trip.title)).includes(key)),
+      ...byTitle.filter((trip) => !foldName(locationText(trip.title)).includes(key)),
+    ];
+    let photo: string | null = null;
+    for (const trip of photoOrder) {
+      for (const image of trip.images ?? []) {
+        if (image && !excluded.has(photoIdOf(image))) { photo = image; break; }
+      }
+      if (photo) break;
+    }
+    let minPrice: number | null = null;
+    let priceCurrency: string | null = null;
+    for (const trip of group.trips) {
+      for (const session of trip.sessions ?? []) {
+        const price = Number(session?.price);
+        if (!Number.isFinite(price) || price <= 0) continue;
+        if (minPrice === null || price < minPrice) {
+          minPrice = price;
+          priceCurrency = session?.currency ?? trip.currency ?? null;
+        }
+      }
+    }
+    result.push({ name: group.name, count: group.trips.length, photo, minPrice, priceCurrency });
+  }
+  return result
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+    .slice(0, limit);
+}
+
+/**
+ * Does any trip in the catalogue start at a place matching these
+ * aliases (EN/FR/AR spellings)? The showcase's "not covered yet"
+ * tiles are filtered through this, so the section can never claim
+ * a place has no trips while trips exist there.
+ */
+export function tripsCoverPlace<T extends CurationTrip>(trips: T[], aliases: string[]): boolean {
+  return trips.some((trip) => {
+    const text = foldName(locationText(trip.startLocation));
+    if (!text) return false;
+    return aliases.some((alias) => text.includes(foldName(alias)));
+  });
+}

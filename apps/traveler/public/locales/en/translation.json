@@ -51,8 +51,8 @@
   },
   "hero": {
     "tagline": "Discover the Uncharted",
-    "photoAlt": "The dunes of Erg Chebbi at golden hour, Morocco",
-    "photoCaption": "Erg Chebbi · Merzouga",
+    "photoAlt": "The Milky Way over the Atlas Mountains, Morocco",
+    "photoCaption": "The High Atlas",
     "title": "Discover Morocco's",
     "accent": "Hidden Gems",
     "subtitle": "Rediscover Morocco, one journey at a time — trips run by licence-checked local agencies. Send a request, the agency confirms, and you pay the agency directly.",
@@ -104,6 +104,16 @@
       "days_few": "{{count}} days",
       "days_many": "{{count}} days"
     },
+    "coverage": {
+      "title": "Where we have trips — and where we don't",
+      "subtitle": "Destinations with trips you can request today, and the well-known places no agency covers yet — shown as they are.",
+      "names": {
+        "agadir": "Agadir",
+        "dakhla": "Dakhla",
+        "ifrane": "Ifrane",
+        "alhoceima": "Al Hoceima"
+      }
+    },
     "viewAll": "View all trips",
     "from": "From",
     "emptyTitle": "No trips found",
@@ -113,7 +123,7 @@
   },
   "categories": {
     "title": "Travel your way",
-    "subtitle": "Explore destinations by your preferred travel style.",
+    "subtitle": "Explore by the kind of trip you want.",
     "adventure": "Adventure",
     "cultural": "Cultural",
     "luxury": "Luxury",
@@ -248,14 +258,16 @@
     }
   },
   "trust": {
+    "title": "Why book on Ouiboo",
     "secureTitle": "Direct payments",
     "secureDescription": "You pay the agency directly — Ouiboo never holds your money.",
-    "verifiedTitle": "Agency licence details",
+    "verifiedTitle": "Licence & insurance checked",
     "verifiedDescription": "Every agency's licence and insurance are checked by Ouiboo. Each trip and agency page shows the licence status, its expiry date and the date it was verified, and the date its insurance was verified.",
-    "instantTitle": "Booking requests",
+    "instantTitle": "Booking requests, agency confirms",
     "instantDescription": "Send a booking request and the agency confirms availability. No hidden fees."
   },
   "footer": {
+    "explainer": "Ouiboo brings together trips run by checked local agencies. A booking is a request the agency confirms — and you always pay the agency directly.",
     "rights": "Copyright {{year}} Ouiboo. All rights reserved.",
     "support": "Support",
     "privacy": "Privacy",
