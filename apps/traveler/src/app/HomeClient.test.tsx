@@ -48,6 +48,10 @@ describe('HomeClient hero search (#723)', () => {
         if (destination !== undefined) {
             fireEvent.change(screen.getByLabelText('hero.where'), { target: { value: destination } });
         }
+        if (dateFrom !== undefined || dateTo !== undefined) {
+            // #877: dates live behind the "Add dates" toggle — open it first.
+            fireEvent.click(screen.getByRole('button', { name: 'hero.addDates' }));
+        }
         if (dateFrom !== undefined) {
             fireEvent.change(screen.getByLabelText('search.startDate'), { target: { value: dateFrom } });
         }
@@ -108,6 +112,16 @@ describe('HomeClient hero search (#723)', () => {
         const alert = screen.getByRole('alert');
         expect(alert.textContent).toBe('hero.dateRangeError');
         expect(screen.getByLabelText('search.startDate').getAttribute('aria-describedby')).toBe('hero-date-error');
+    });
+
+    it('blocks past dates with the past-date validation message (#877)', () => {
+        render(<HomeClient featuredTrips={[]} />);
+        fillHero('', '2020-01-10', '2020-01-12');
+
+        fireEvent.click(screen.getByRole('button', { name: 'hero.search' }));
+
+        expect(mockPush).not.toHaveBeenCalled();
+        expect(screen.getByRole('alert').textContent).toBe('hero.pastDateError');
     });
 });
 

@@ -5,14 +5,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {
-  MapPin, Calendar, Star, ArrowRight, Compass, Banknote, Zap, Heart, Mountain, Palmtree, AlertTriangle
+  MapPin, Calendar, Star, ArrowRight, Compass, Banknote, Zap, Heart, Mountain, Palmtree, AlertTriangle, Plus, X
 } from 'lucide-react';
 import { Button, EmptyState } from '@ouiboo/ui';
 import { motion, Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { BETA_DESTINATIONS } from '@ouiboo/types';
 import type { TripSession, TripTemplate, VerificationStatusType } from '@ouiboo/types';
-import { buildHeroSearchParams, isInvalidDateRange } from '@/lib/hero-search';
+import { buildHeroSearchParams, isInvalidDateRange, isPastDate } from '@/lib/hero-search';
 
 const TripCard = dynamic(() => import('@/components/TripCard').then((m) => m.TripCard));
 
@@ -26,6 +26,12 @@ interface HomeClientProps {
   /** #575: true when the server catalogue fetch failed — render the
    * error state, never the genuine-empty state, for an outage. */
   featuredTripsFetchFailed?: boolean;
+  /** #877: slugs of beta destinations with at least one active trip,
+   * computed from the live catalogue by the server page. The hero
+   * suggestion list offers exactly these — suggesting a destination
+   * with zero trips was the tested dead end this fixes. Empty when
+   * the catalogue fetch failed (free text still works). */
+  catalogDestinations?: string[];
 }
 
 const fadeInUp: Variants = {
@@ -46,13 +52,16 @@ const staggerContainer: Variants = {
   }
 };
 
-export default function HomeClient({ featuredTrips, featuredTripsFetchFailed = false }: HomeClientProps) {
+export default function HomeClient({ featuredTrips, featuredTripsFetchFailed = false, catalogDestinations = [] }: HomeClientProps) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchDateFrom, setSearchDateFrom] = useState('');
   const [searchDateTo, setSearchDateTo] = useState('');
   const [dateError, setDateError] = useState('');
+  // #877: dates are optional refinement, not a co-equal field — they
+  // stay behind "Add dates" until the traveller asks for them.
+  const [datesOpen, setDatesOpen] = useState(false);
   const dateFromInputRef = useRef<HTMLInputElement>(null);
   const dateToInputRef = useRef<HTMLInputElement>(null);
 
@@ -68,6 +77,12 @@ export default function HomeClient({ featuredTrips, featuredTripsFetchFailed = f
     // Read dates from refs as fallback in case state hasn't synced (#120)
     const dateFrom = searchDateFrom || dateFromInputRef.current?.value || '';
     const dateTo = searchDateTo || dateToInputRef.current?.value || '';
+    // #877: past dates can only dead-end (every matching session is
+    // gone) — reject them here, inline, like the reversed range.
+    if (isPastDate(dateFrom) || isPastDate(dateTo)) {
+      setDateError(t('hero.pastDateError'));
+      return;
+    }
     if (isInvalidDateRange(dateFrom, dateTo)) {
       setDateError(t('hero.dateRangeError'));
       return;
@@ -146,7 +161,10 @@ export default function HomeClient({ featuredTrips, featuredTripsFetchFailed = f
                       className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
                     />
                     <datalist id="hero-destination-suggestions">
-                      {BETA_DESTINATIONS.map((destination) => (
+                      {/* #877: suggestions are generated from the live
+                          catalogue — only destinations with at least
+                          one active trip are offered. */}
+                      {BETA_DESTINATIONS.filter((destination) => catalogDestinations.includes(destination.slug)).map((destination) => (
                         <option
                           key={destination.slug}
                           value={t(`search.destinationNames.${destination.slug}`)}
@@ -154,32 +172,63 @@ export default function HomeClient({ featuredTrips, featuredTripsFetchFailed = f
                       ))}
                     </datalist>
                   </div>
-                  <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
-                    <Calendar className="h-5 w-5 text-sunset-orange me-3 shrink-0" />
-                    <input
-                      type="date"
-                      ref={dateFromInputRef}
-                      aria-label={t('search.startDate')}
-                      value={searchDateFrom}
-                      onChange={(e) => { setSearchDateFrom(e.target.value); setDateError(''); }}
-                      aria-invalid={dateError ? true : undefined}
-                      aria-describedby={dateError ? 'hero-date-error' : undefined}
-                      className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
-                    />
-                  </div>
-                  <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
-                    <Calendar className="h-5 w-5 text-sunset-orange me-3 shrink-0" />
-                    <input
-                      type="date"
-                      ref={dateToInputRef}
-                      aria-label={t('search.endDate')}
-                      value={searchDateTo}
-                      onChange={(e) => { setSearchDateTo(e.target.value); setDateError(''); }}
-                      aria-invalid={dateError ? true : undefined}
-                      aria-describedby={dateError ? 'hero-date-error' : undefined}
-                      className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
-                    />
-                  </div>
+                  {/* #877: dates demoted behind an explicit toggle —
+                      collapsed by default. Open, the two fields carry
+                      visible Start/End labels (they previously had
+                      aria-labels only, indistinguishable unlabelled
+                      boxes on the first screen). */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (datesOpen) {
+                        setSearchDateFrom('');
+                        setSearchDateTo('');
+                        setDateError('');
+                      }
+                      setDatesOpen(!datesOpen);
+                    }}
+                    aria-expanded={datesOpen}
+                    className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border text-muted-foreground font-medium hover:text-foreground hover:border-sunset-orange/50 transition-all"
+                  >
+                    {datesOpen ? <X className="h-4 w-4 shrink-0" /> : <Plus className="h-4 w-4 shrink-0" />}
+                    {datesOpen ? t('hero.removeDates') : t('hero.addDates')}
+                  </button>
+                  {datesOpen && (
+                    <>
+                      <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
+                        <Calendar className="h-5 w-5 text-sunset-orange me-3 shrink-0" />
+                        <label className="flex w-full flex-col gap-0.5 text-start">
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('search.startDate')}</span>
+                          <input
+                            type="date"
+                            ref={dateFromInputRef}
+                            aria-label={t('search.startDate')}
+                            value={searchDateFrom}
+                            onChange={(e) => { setSearchDateFrom(e.target.value); setDateError(''); }}
+                            aria-invalid={dateError ? true : undefined}
+                            aria-describedby={dateError ? 'hero-date-error' : undefined}
+                            className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
+                          />
+                        </label>
+                      </div>
+                      <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
+                        <Calendar className="h-5 w-5 text-sunset-orange me-3 shrink-0" />
+                        <label className="flex w-full flex-col gap-0.5 text-start">
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('search.endDate')}</span>
+                          <input
+                            type="date"
+                            ref={dateToInputRef}
+                            aria-label={t('search.endDate')}
+                            value={searchDateTo}
+                            onChange={(e) => { setSearchDateTo(e.target.value); setDateError(''); }}
+                            aria-invalid={dateError ? true : undefined}
+                            aria-describedby={dateError ? 'hero-date-error' : undefined}
+                            className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
+                          />
+                        </label>
+                      </div>
+                    </>
+                  )}
                   <Button
                     type="submit"
                     className="h-14 lg:h-auto px-8 rounded-xl bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-orange-600 text-white font-semibold text-lg shadow-md transition-all">

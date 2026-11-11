@@ -68,6 +68,8 @@ test.describe('traveler launch flow', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     await page.getByLabel(/where to/i).fill('Chefchaouen');
+    // #877: dates are demoted behind the "Add dates" toggle.
+    await page.getByRole('button', { name: /add dates/i }).click();
     await page.getByLabel(/start date/i).fill('2027-05-10');
     await page.getByLabel(/end date/i).fill('2027-05-12');
     await page.getByRole('button', { name: /^search$/i }).click();

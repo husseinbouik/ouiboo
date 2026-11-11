@@ -79,7 +79,12 @@ const initialFilters: SearchInitialFilters = {
 };
 
 function lastQueryParams() {
-  const calls = mockUseTripsQuery.mock.calls;
+  // #877: the zero-state featured query is a second useTripsQuery
+  // consumer; the main search query is the one WITHOUT the featured
+  // flag — pick the last of those.
+  const calls = mockUseTripsQuery.mock.calls.filter(
+    (call) => !(call[0] as { featured?: unknown })?.featured,
+  );
   return calls[calls.length - 1][0];
 }
 
@@ -205,6 +210,10 @@ describe('SearchClient URL-as-source-of-truth (#440)', () => {
     jest.useFakeTimers();
     try {
       render(<SearchClient initialFilters={initialFilters} initialResponse={null} />);
+      // #877: the dated fixture resolves empty, so the dated
+      // auto-strip legitimately fires router.replace on mount —
+      // clear it; this test measures the debounce write only.
+      mockReplace.mockClear();
       fireEvent.change(screen.getByLabelText('search.placeholder'), {
         target: { value: 'oasis' },
       });
