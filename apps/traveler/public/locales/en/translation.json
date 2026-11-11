@@ -50,11 +50,13 @@
     "notificationsUnread": "{{count}} unread notifications"
   },
   "hero": {
-    "tagline": "Discover the Uncharted",
     "photoAlt": "The Milky Way over the Atlas Mountains, Morocco",
     "photoCaption": "The High Atlas",
-    "title": "Discover Morocco's",
-    "accent": "Hidden Gems",
+    "titleStart": "Morocco is",
+    "titleAccent": "yours",
+    "titleEnd": " to explore.",
+    "payDirectLead": "You pay the agency directly —",
+    "payDirectAccent": "never to us.",
     "subtitle": "Rediscover Morocco, one journey at a time — trips run by licence-checked local agencies. Send a request, the agency confirms, and you pay the agency directly.",
     "where": "Where to?",
     "when": "When?",

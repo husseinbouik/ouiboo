@@ -245,13 +245,13 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
     .filter((tile): tile is typeof tile & { photo: string } => Boolean(tile.photo) && tile.count >= 2);
 
   return (
-    <div className="bg-background min-h-screen font-sans text-foreground overflow-hidden">
+    <div className="bg-background min-h-screen font-sans text-foreground overflow-hidden home-display">
       
       {/* Hero Section — #880: compressed (vertical whitespace more
           than halved) so a cold arrival sees Morocco — and the first
           trip card peeking below — in the first screen instead of a
           claim and a form. */}
-      <div className="relative isolate pt-24 pb-8 sm:pt-28 sm:pb-10">
+      <div className="relative isolate bg-paper pt-24 pb-8 sm:pt-28 sm:pb-10">
         {/* Background Blob */}
         <div aria-hidden="true" className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80 opacity-20 dark:opacity-10">
           <div style={{ clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)' }} className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-sunset-orange sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"/>
@@ -265,18 +265,24 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
             className="grid items-center gap-8 lg:grid-cols-[1.08fr_0.92fr]"
           >
             <div className="text-center lg:text-start">
-            <motion.div variants={fadeInUp} className="mb-5 flex justify-center lg:justify-start">
-                <span className="rounded-full bg-sunset-orange/10 px-3 py-1 text-sm font-semibold text-sunset-orange-dark ring-1 ring-inset ring-sunset-orange/20">
-                    {t('hero.tagline')}
-                </span>
-            </motion.div>
+            {/* Hybrid (#926): B's chassis carries no tagline pill —
+                the line it occupied now belongs to the positioning
+                claim under the H1 (rec item 4), and the first-screen
+                lock (P0-8) is measured without it. */}
 
             <motion.h1 variants={fadeInUp} className="text-5xl font-bold tracking-tight text-foreground sm:text-6xl mb-5">
-              {t('hero.title', 'Find your perfect')} <span className="text-sunset-orange-dark">{t('hero.accent', 'Adventure')}</span>
+              {t('hero.titleStart')} <span className="text-sunset-orange-dark">{t('hero.titleAccent')}</span>{t('hero.titleEnd')}
             </motion.h1>
 
             <motion.p variants={fadeInUp} className="mt-4 text-lg leading-8 text-muted-foreground max-w-2xl mx-auto lg:mx-0">
               {t('hero.subtitle', 'Connect with local experts to plan trips that are as unique as you are.')}
+            </motion.p>
+            {/* Hybrid (#926, council rec item 4): the money claim at
+                headline rank — the positioning promoted out of the
+                trust strip. Roman + orange emphasis; in Arabic the
+                emphasis is colour alone (P0-5 dual encoding). */}
+            <motion.p variants={fadeInUp} className="mt-4 text-xl font-bold text-foreground">
+              {t('hero.payDirectLead')} <span className="text-sunset-orange-dark">{t('hero.payDirectAccent')}</span>
             </motion.p>
             </div>
 

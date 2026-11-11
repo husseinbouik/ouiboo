@@ -50,11 +50,13 @@
     "notificationsUnread": "{{count}} notifications non lues"
   },
   "hero": {
-    "tagline": "Découvrez l'inattendu",
     "photoAlt": "La Voie lactée au-dessus des montagnes du Haut Atlas, au Maroc",
     "photoCaption": "Le Haut Atlas",
-    "title": "Découvrez les",
-    "accent": "Trésors du Maroc",
+    "titleStart": "Le Maroc,",
+    "titleAccent": "à vous",
+    "titleEnd": " de l'explorer.",
+    "payDirectLead": "Vous payez l'agence directement —",
+    "payDirectAccent": "jamais à nous.",
     "subtitle": "Redécouvrez le Maroc, voyage après voyage — des circuits organisés par des agences locales à la licence vérifiée. Envoyez une demande, l'agence confirme, et vous payez l'agence directement.",
     "where": "Où allez-vous ?",
     "when": "Quand ?",

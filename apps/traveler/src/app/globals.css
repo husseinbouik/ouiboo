@@ -90,3 +90,81 @@ h1, h2, h3, h4, .font-display {
     animation: none !important;
   }
 }
+
+/* Hybrid display voice (#926, design-directions council 2026-11-11):
+   a bounded serif layer for the traveller HOME page's H1/H2 only —
+   Fraunces (latin) paired with Noto Naskh Arabic, declared as the
+   --font-display-serif token in @ouiboo/tokens and applied through
+   the .home-display scope below, so no other page changes type.
+   The woff2 files are hand-subset from the upstream variable fonts
+   (Fraunces: opsz pinned 144, SOFT 0, WONK 1, weights 600/700, latin
+   charset, 29 KB each; Naskh: weights 500/600, arabic charset,
+   31 KB each) and self-hosted under /fonts. A page downloads only
+   the one file its script and weight actually render (unicode-range
+   split), and the home page preloads exactly that one file (P0-4
+   font gate — measured against the #881 lines on staging). The
+   metric-matched fallback faces hold headline geometry during the
+   swap (CLS; P0-8 first-screen lock). */
+@font-face {
+  font-family: "Fraunces";
+  src: url("/fonts/fraunces-latin-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0020-007E, U+00A0-00FF, U+0152-0153, U+2010-2015, U+2018-201A, U+201C-201E, U+2020-2022, U+2026, U+20AC;
+}
+@font-face {
+  font-family: "Fraunces";
+  src: url("/fonts/fraunces-latin-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0020-007E, U+00A0-00FF, U+0152-0153, U+2010-2015, U+2018-201A, U+201C-201E, U+2020-2022, U+2026, U+20AC;
+}
+@font-face {
+  font-family: "Noto Naskh Arabic";
+  src: url("/fonts/naskh-arabic-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0020-007E, U+0600-06FF, U+200C-200D, U+2010-2015, U+2018-201A, U+201C-201E, U+2026, U+00AB, U+00BB;
+}
+@font-face {
+  font-family: "Noto Naskh Arabic";
+  src: url("/fonts/naskh-arabic-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0020-007E, U+0600-06FF, U+200C-200D, U+2010-2015, U+2018-201A, U+201C-201E, U+2026, U+00AB, U+00BB;
+}
+/* Metric-matched fallbacks: the override descriptors restate the
+   serifs' own line boxes (Fraunces 1956/-510 on 2000 upm; Naskh
+   1069/-634 on 1000 upm), so a headline occupies the same geometry
+   before and after its font arrives. */
+@font-face {
+  font-family: "Fraunces Fallback";
+  src: local("Georgia"), local("Times New Roman");
+  ascent-override: 97.8%;
+  descent-override: 25.5%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Naskh Fallback";
+  src: local("Noto Naskh Arabic"), local("Traditional Arabic");
+  ascent-override: 106.9%;
+  descent-override: 63.4%;
+  line-gap-override: 0%;
+}
+
+.home-display h1,
+.home-display h2 {
+  font-family: var(--font-display-serif);
+}
+
+/* Arabic headlines lead with the pairing's Arabic half (P0-5):
+   Naskh carries its own Latin for the brand name, so an Arabic
+   page downloads the one Naskh file and nothing else. */
+html[lang="ar"] .home-display h1,
+html[lang="ar"] .home-display h2 {
+  font-family: "Noto Naskh Arabic", "Fraunces", "Naskh Fallback", Georgia, serif;
+}
