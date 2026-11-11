@@ -195,9 +195,9 @@
     "contactBody": "Reach out to privacy@ouiboo.com and we'll respond quickly."
   },
   "betaOffer": {
-    "title": "Your beta offer",
+    "title": "Your agency offer",
     "verificationTitle": "Checked before listing",
-    "verificationBody": "We check your travel licence and RC insurance before any of your trips can be listed — the same gate every beta agency passes.",
+    "verificationBody": "We check your travel licence and RC insurance before any of your trips can be listed — the same check every agency passes.",
     "assistedTitle": "Assisted first listings",
     "assistedBody": "We build your first listings with you — photos, itinerary, prices — and nothing is published until you approve it.",
     "supportTitle": "Support split, stated up front",
@@ -1018,7 +1018,7 @@
   "support": {
     "title": "OuiBoo support",
     "body": "Questions about verification, a payment proof that looks wrong, or a refund case that's stuck? Email us — we reply within {{hours}} hours on the normal support lane.",
-    "bodyNoEmail": "Questions about verification, a payment proof that looks wrong, or a refund case that's stuck? During the closed beta, reach OuiBoo through the contact who onboarded your agency — we reply within {{hours}} hours on the normal support lane.",
+    "bodyNoEmail": "Questions about verification, a payment proof that looks wrong, or a refund case that's stuck? Reach Ouiboo through the contact who onboarded your agency — we reply within {{hours}} hours on the normal support lane.",
     "escalationRole": "During an active trip, you are the traveller's first call — keep your emergency contact up to date in Settings. If you cannot resolve a problem during a trip, escalate it to OuiBoo right away.",
     "intro": "How to reach OuiBoo support — and what to do first while a trip is running. Normal support replies within {{hours}} hours.",
     "contactLine": "Monitored inbox: {{email}}",
@@ -1373,21 +1373,21 @@
   "sharePreview": {
     "title": "Link preview",
     "liveNote": "Sharing is on: this is the preview social apps will render for this trip.",
-    "gatedNote": "Sharing is off for the beta: the live public preview is the generic Ouiboo card. This is the preview this trip will carry when sharing opens at public launch.",
+    "gatedNote": "Sharing is currently off: the live public preview is the generic Ouiboo card. This is the preview this trip will carry when sharing opens.",
     "shareTextLabel": "Share text",
     "noPublicBase": "No public traveller address is configured for this build, so no share link can be previewed."
   },
   "betaNotAvailable": {
-    "title": "Not in the beta",
-    "subtitle": "The closed beta is completely free.",
-    "billingTitle": "Billing & subscription are not part of the beta",
-    "walletTitle": "Payments are not active in the beta",
-    "body": "During the closed beta there is no platform fee, no subscription and no credits — nothing to pay Ouiboo and nothing to cancel. This surface opens when paid plans launch after the beta.",
+    "title": "Not switched on yet",
+    "subtitle": "Ouiboo is currently free for agencies.",
+    "billingTitle": "Billing & subscription are not switched on yet",
+    "walletTitle": "Payments through Ouiboo are not active yet",
+    "body": "There is currently no platform fee, no subscription and no credits — nothing to pay Ouiboo and nothing to cancel. This surface opens when paid plans launch.",
     "paymentsNote": "Traveller payments are separate: travellers pay your agency directly (bank transfer or your payment provider). Ouiboo never holds traveller money, so there is no Ouiboo balance to withdraw.",
     "viewPayments": "View payments received directly",
     "viewBookings": "View bookings",
-    "walletBannerTitle": "Free beta — no fees or credits",
-    "walletBannerBody": "This page records traveller payments made directly to your agency. Ouiboo does not hold the money and charges no fee during the beta; the totals below are a record, not a balance."
+    "walletBannerTitle": "Free for agencies — no fees or credits",
+    "walletBannerBody": "This page records traveller payments made directly to your agency. Ouiboo does not hold the money and charges no fee; the totals below are a record, not a balance."
   },
   "commandPalette": {
     "open": "Open command palette",
