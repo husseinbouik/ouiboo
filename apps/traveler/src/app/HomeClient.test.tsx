@@ -231,7 +231,7 @@ describe('HomeClient coverage showcase + category tiles (round 2, founder 2026-1
         // The chip rail and the tile share the category href; the
         // TILE is the one carrying the frozen category photograph.
         const adventureLinks = [...container.querySelectorAll('a[href="/search?category=ADVENTURE"]')];
-        const photoTile = adventureLinks.find((a) => a.querySelector('img')?.getAttribute('src')?.includes('categories/adventure'));
+        const photoTile = adventureLinks.find((a) => a.querySelector('img')?.getAttribute('src')?.includes('categories%2Fadventure'));
         expect(photoTile).toBeTruthy();
         // Luxury has one trip: no chip, no tile.
         expect(container.querySelector('a[href="/search?category=LUXURY"]')).toBeNull();
