@@ -3,6 +3,7 @@
  */
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import HomeClient from './HomeClient';
 
 const mockPush = jest.fn();
@@ -158,7 +159,14 @@ describe('HomeClient static imagery + trust strip (founder amendments 2026-11-11
             sessions: [],
             agency: { id: 'agency-1' },
         };
-        render(<HomeClient catalogTrips={[trip]} />);
+        // The All-trips rows this catalogue renders use react-query
+        // (display-currency) — provide a client like the app does.
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        render(
+            <QueryClientProvider client={queryClient}>
+                <HomeClient catalogTrips={[trip]} />
+            </QueryClientProvider>,
+        );
         const section = screen.getByText('featured.betaRegion.title').closest('section');
         expect(section).not.toBeNull();
         const tileSrcs = [...(section?.querySelectorAll('img') ?? [])].map((img) => img.getAttribute('src') ?? '');
