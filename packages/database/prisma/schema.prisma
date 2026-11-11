@@ -473,6 +473,10 @@ model AgencyProfile {
   patente            String
   rib                String
   verificationStatus VerificationStatus @default(PENDING)
+  // #878 (Council S12 P0): team-created test/example supply flag.
+  // Public surfaces render the Example state instead of verification
+  // claims for these agencies; never set for a real onboarded agency.
+  isTestData         Boolean            @default(false)
   bio                String?
   logo               String?
   templates          TripTemplate[]

@@ -561,6 +561,9 @@ export class TripsService {
                                 // #317: the traveler card badges verified agencies from
                                 // this field; without it every card read "Agency Pending".
                                 verificationStatus: true,
+                                // #878: test/example supply flag — the card
+                                // renders the Example state for these.
+                                isTestData: true,
                                 // #413 (Council B10): the card renders an explicit
                                 // what+when statement (what was checked + the date),
                                 // so the licence/insurance states and their
@@ -716,6 +719,9 @@ export class TripsService {
                         companyName: true,
                         logo: true,
                         verificationStatus: true,
+                        // #878: test/example supply flag — the trip page
+                        // renders the Example state for these agencies.
+                        isTestData: true,
                         // #380: checkout renders the agency's bank
                         // instructions from this field and blocks booking when
                         // it is empty; without it in the select, checkout read
@@ -897,6 +903,8 @@ export class TripsService {
                         legalName: true,
                         logo: true,
                         verificationStatus: true,
+                        // #878: test/example supply flag (destination pages).
+                        isTestData: true,
                         travelLicenceStatus: true,
                         licenceVerifiedAt: true,
                         licenceMinistryCheckedAt: true,

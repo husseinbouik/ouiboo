@@ -53,6 +53,9 @@ export interface TripCardTrip {
     /** Carried by every public trip payload; used by the featured
      * curation (#879/#885) to enforce one trip per agency. */
     id?: string;
+    /** #878: test/example supply — the card shows the Example badge
+     * and suppresses every verification claim. */
+    isTestData?: boolean;
     companyName?: string;
     verificationStatus?: VerificationStatusType;
     /** #413 (Council B10): what+when verification statement fields. */
@@ -132,12 +135,15 @@ export function TripCard({ trip }: TripCardProps) {
       : new Intl.DateTimeFormat(i18n.language || 'en', { dateStyle: 'medium' }).format(date);
   };
   const licenceExpiryDate = futureLicenceExpiry(trip.agency?.licenceExpiry);
+  // #878: test/example supply carries no verification claims at all.
   const licenceCheckedDate =
-    trip.agency?.travelLicenceStatus === 'VERIFIED' && (!trip.agency?.licenceExpiry || licenceExpiryDate)
+    !trip.agency?.isTestData &&
+    trip.agency?.travelLicenceStatus === 'VERIFIED' &&
+    (!trip.agency?.licenceExpiry || licenceExpiryDate)
       ? formatCheckDate(trip.agency?.licenceVerifiedAt)
       : null;
   const insuranceEvidencedDate =
-    trip.agency?.insuranceStatus === 'VERIFIED'
+    !trip.agency?.isTestData && trip.agency?.insuranceStatus === 'VERIFIED'
       ? formatCheckDate(trip.agency?.insuranceVerifiedAt)
       : null;
   const verificationChecks = [
@@ -209,10 +215,20 @@ export function TripCard({ trip }: TripCardProps) {
           />
         </Link>
 
-        <div className="absolute top-3 start-3">
+        <div className="absolute top-3 start-3 flex flex-col items-start gap-2">
           <Badge className="bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none">
             {categoryLabel}
           </Badge>
+          {/* #878: test/example supply is badged on every card, so a
+              demo trip can never be mistaken for a checked listing. */}
+          {trip.agency?.isTestData && (
+            <Badge
+              data-testid="trip-card-example-badge"
+              className="bg-amber-600 text-white text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none"
+            >
+              {t('example.badge')}
+            </Badge>
+          )}
         </div>
 
         <div className="absolute top-3 end-16 flex flex-col items-end gap-2">

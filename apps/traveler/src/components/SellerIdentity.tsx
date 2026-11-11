@@ -18,6 +18,10 @@ import { BadgeCheck, ShieldAlert } from 'lucide-react';
 export interface SellerAgencyInfo {
     companyName?: string | null;
     legalName?: string | null;
+    /** #878 (Council S12 P0): test/example supply — no verification
+     * claim (licence line, dated checks) may render for these agencies;
+     * the seller block shows the Example badge instead. */
+    isTestData?: boolean;
     /** #859: agency logo (public URL, derived by the API from the
      * stored AgencyProfile.logo) — rendered beside the seller name. */
     logo?: string | null;
@@ -58,11 +62,14 @@ export function getVerificationChecks(agency: SellerAgencyInfo, now: Date = new 
     // record carries one; records verified before that stamp existed
     // fall back to the verified-at stamp. Either way it is a real
     // date from the agency's record — never a hard-coded one.
-    const licenceCheckedDate = isLicenceVerifiedForDisplay(agency, now)
-        ? (toValidDate(agency.licenceMinistryCheckedAt) ?? toValidDate(agency.licenceVerifiedAt))
-        : null;
+    const licenceCheckedDate =
+        !agency.isTestData && isLicenceVerifiedForDisplay(agency, now)
+            ? (toValidDate(agency.licenceMinistryCheckedAt) ?? toValidDate(agency.licenceVerifiedAt))
+            : null;
     const insuranceEvidencedDate =
-        agency.insuranceStatus === 'VERIFIED' ? toValidDate(agency.insuranceVerifiedAt) : null;
+        !agency.isTestData && agency.insuranceStatus === 'VERIFIED'
+            ? toValidDate(agency.insuranceVerifiedAt)
+            : null;
     return { licenceCheckedDate, insuranceEvidencedDate };
 }
 
@@ -86,7 +93,8 @@ export function isLicenceVerifiedForDisplay(agency: SellerAgencyInfo, now: Date 
 
 export function getSellerDisplay(agency: SellerAgencyInfo, now: Date = new Date()) {
     const name = agency.legalName?.trim() || agency.companyName?.trim() || '';
-    const licenceVerified = isLicenceVerifiedForDisplay(agency, now);
+    // #878: test/example supply never presents a verified licence.
+    const licenceVerified = !agency.isTestData && isLicenceVerifiedForDisplay(agency, now);
     // B4: the complete seller block needs the licence type, issue date,
     // and issuing authority alongside the number. All three are licence
     // facts, so they are withheld unless the licence is verified (the
@@ -179,6 +187,11 @@ export default function SellerIdentity({
                 <span>
                     {t('seller.organisedAndSoldBy', { name, defaultValue: `Organised and sold by ${name}` })}
                 </span>
+                {agency.isTestData && (
+                    <span className="inline-flex items-center rounded-md bg-amber-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                        {t('example.badge', { defaultValue: 'Example' })}
+                    </span>
+                )}
                 {licenceVerified && licenceNumber && (
                     <span className="inline-flex items-center gap-1 font-medium text-foreground">
                         <BadgeCheck className="h-4 w-4 text-emerald-600" aria-hidden="true" />
