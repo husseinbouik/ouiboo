@@ -48,6 +48,10 @@ describe('HomeClient hero search (#723)', () => {
         if (destination !== undefined) {
             fireEvent.change(screen.getByLabelText('hero.where'), { target: { value: destination } });
         }
+        if (dateFrom !== undefined || dateTo !== undefined) {
+            // #877: dates live behind the "Add dates" toggle — open it first.
+            fireEvent.click(screen.getByRole('button', { name: 'hero.addDates' }));
+        }
         if (dateFrom !== undefined) {
             fireEvent.change(screen.getByLabelText('search.startDate'), { target: { value: dateFrom } });
         }
@@ -58,15 +62,17 @@ describe('HomeClient hero search (#723)', () => {
 
     it('submits a known destination as the destination facet with canonical date params', () => {
         render(<HomeClient featuredTrips={[]} />);
-        fillHero('search.destinationNames.chefchaouen', '2026-11-10', '2026-11-12');
+        // #877: dates must be in the future — past dates are rejected
+        // inline by design, so this #723-era fixture uses 2027 dates.
+        fillHero('search.destinationNames.chefchaouen', '2027-11-10', '2027-11-12');
 
         fireEvent.click(screen.getByRole('button', { name: 'hero.search' }));
 
         expect(mockPush).toHaveBeenCalledTimes(1);
         const url = mockPush.mock.calls[0][0] as string;
         expect(url).toContain('destination=chefchaouen');
-        expect(url).toContain('dateFrom=2026-11-10');
-        expect(url).toContain('dateTo=2026-11-12');
+        expect(url).toContain('dateFrom=2027-11-10');
+        expect(url).toContain('dateTo=2027-11-12');
         expect(url).not.toContain('q=');
     });
 
@@ -100,7 +106,9 @@ describe('HomeClient hero search (#723)', () => {
 
     it('blocks an inverted date range with an accessible validation message', () => {
         render(<HomeClient featuredTrips={[]} />);
-        fillHero('', '2026-11-12', '2026-11-10');
+        // Future dates, so the range check — not the #877 past-date
+        // check, which runs first — is what fires.
+        fillHero('', '2027-11-12', '2027-11-10');
 
         fireEvent.click(screen.getByRole('button', { name: 'hero.search' }));
 
@@ -108,6 +116,16 @@ describe('HomeClient hero search (#723)', () => {
         const alert = screen.getByRole('alert');
         expect(alert.textContent).toBe('hero.dateRangeError');
         expect(screen.getByLabelText('search.startDate').getAttribute('aria-describedby')).toBe('hero-date-error');
+    });
+
+    it('blocks past dates with the past-date validation message (#877)', () => {
+        render(<HomeClient featuredTrips={[]} />);
+        fillHero('', '2020-01-10', '2020-01-12');
+
+        fireEvent.click(screen.getByRole('button', { name: 'hero.search' }));
+
+        expect(mockPush).not.toHaveBeenCalled();
+        expect(screen.getByRole('alert').textContent).toBe('hero.pastDateError');
     });
 });
 

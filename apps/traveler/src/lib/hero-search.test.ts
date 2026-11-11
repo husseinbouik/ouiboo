@@ -9,6 +9,8 @@
 import {
   buildHeroSearchParams,
   isInvalidDateRange,
+  isPastDate,
+  todayLocalISO,
   resolveDestinationSlug,
 } from './hero-search';
 
@@ -83,5 +85,19 @@ describe('isInvalidDateRange (#723)', () => {
     expect(isInvalidDateRange('2026-11-10', '2026-11-10')).toBe(false);
     expect(isInvalidDateRange('2026-11-10', '')).toBe(false);
     expect(isInvalidDateRange('', '2026-11-10')).toBe(false);
+  });
+});
+
+describe('isPastDate / todayLocalISO (#877)', () => {
+  it('flags only dates strictly before today; empty is never past', () => {
+    expect(isPastDate('2026-11-09', '2026-11-10')).toBe(true);
+    expect(isPastDate('2026-11-10', '2026-11-10')).toBe(false);
+    expect(isPastDate('2026-11-11', '2026-11-10')).toBe(false);
+    expect(isPastDate('', '2026-11-10')).toBe(false);
+  });
+
+  it('formats the local calendar date as yyyy-mm-dd', () => {
+    expect(todayLocalISO(new Date(2026, 0, 5, 23, 59))).toBe('2026-01-05');
+    expect(todayLocalISO(new Date(2026, 10, 11, 0, 1))).toBe('2026-11-11');
   });
 });

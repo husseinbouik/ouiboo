@@ -244,6 +244,32 @@ export default function SearchClient({
   const trips = response?.data || [];
   const pagination = response?.pagination || { total: 0, page: 1, limit: 20, totalPages: 0 };
 
+  // #877: the zero-results state carries its own recovery — featured
+  // trips to fall back on (same featured set the home rail draws from).
+  const { data: featuredResponse } = useTripsQuery(
+    { featured: true, status: TripStatus.Active, limit: 3, locale: i18n.language },
+    { enabled: !isLoading && !isError && trips.length === 0 },
+  );
+  const featuredTrips = featuredResponse?.data || [];
+
+  // #877: a dated search with zero results auto-strips the dates and
+  // re-runs unfiltered under a banner, instead of dead-ending. The key
+  // remembers the exact dated filter set already stripped, so the
+  // strip fires once per dated search (a traveller who deliberately
+  // re-picks the same empty dates gets the honest zero state, and the
+  // banner never loops).
+  const [datesStrippedKey, setDatesStrippedKey] = useState<string | null>(null);
+  const datedFilterKey = `${filters.destination}|${filters.searchQuery}|${filters.dateFrom}|${filters.dateTo}`;
+  useEffect(() => {
+    if (isLoading || isError) return;
+    if (trips.length > 0 || pagination.total > 0) return;
+    if (!filters.dateFrom && !filters.dateTo) return;
+    if (datesStrippedKey === datedFilterKey) return;
+    setDatesStrippedKey(datedFilterKey);
+    updateFilters({ dateFrom: "", dateTo: "" });
+  }, [isLoading, isError, trips.length, pagination.total, filters.dateFrom, filters.dateTo, datesStrippedKey, datedFilterKey, updateFilters]);
+  const showDatesRemovedBanner = datesStrippedKey !== null && !filters.dateFrom && !filters.dateTo && !isError;
+
   const clearAllFilters = () => {
     setSearchQueryInput("");
     setCurrentPage(1);
@@ -525,6 +551,18 @@ export default function SearchClient({
               </div>
             )}
 
+            {/* #877: after the dated auto-strip, say plainly that the
+                results below are NOT date-filtered. */}
+            {!isLoading && trips.length > 0 && showDatesRemovedBanner && (
+              <div role="status" className="mb-4 rounded-lg border border-sunset-orange/40 bg-sunset-orange/10 p-3 text-sm text-foreground">
+                {t('search.datesRemovedBanner', {
+                  place: filters.destination
+                    ? t(`search.destinationNames.${filters.destination}`)
+                    : t('search.everywhere'),
+                })}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {isLoading ? (
                 <TripCardSkeletonGrid count={4} className="md:col-span-2 sm:grid-cols-2 lg:grid-cols-2 gap-8" />
@@ -541,6 +579,22 @@ export default function SearchClient({
                   <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4"><Compass className="h-6 w-6" /></div>
                   <h3 className="text-lg font-semibold">{t('search.noTrips')}</h3>
                   <p className="text-sm text-muted-foreground mt-2">{t('search.noTripsHint', 'Try adjusting your filters or clearing them.')}</p>
+                  {/* #877: the zero state carries its own one-tap
+                      recovery — previously the copy advised clearing
+                      filters the page gave no single control for. */}
+                  <div className="mt-5">
+                    <Button type="button" onClick={clearAllFilters}>{t('search.clearAllShowAll')}</Button>
+                  </div>
+                  {featuredTrips.length > 0 && (
+                    <div className="mt-12 text-start">
+                      <h4 className="mb-6 text-center text-base font-semibold">{t('search.zeroStateFeaturedTitle')}</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {featuredTrips.map((trip) => (
+                          <TripCard key={trip.id} trip={trip} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
