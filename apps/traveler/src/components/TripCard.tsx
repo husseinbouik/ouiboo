@@ -4,6 +4,7 @@ import React from 'react';
 import { Card, Badge, Button } from '@ouiboo/ui';
 import { MapPin, Star, Zap } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -22,6 +23,11 @@ export interface TripCardTrip {
   id: string;
   title: string;
   category?: string;
+  /** #885: curation inputs — cluster eligibility (lib/curation.ts)
+   * reads the stamped slug, falling back to startLocation. */
+  destinationSlug?: string | null;
+  featured?: boolean | null;
+  createdAt?: string | null;
   /** #498: authoritative trip currency. The API enforces a single currency
    * per trip (every session must match the template currency), and the trip
    * payload already carries it — the card type just never declared it. */
@@ -84,6 +90,7 @@ function futureLicenceExpiry(value?: string | null): Date | null {
 
 export function TripCard({ trip }: TripCardProps) {
   const { t, i18n } = useTranslation();
+  const router = useRouter();
   // #745 (remainder): the API resolves a translated startLocation
   // when the trip's translations map carries one; for the remaining
   // single-language strings the country suffix localizes here.
@@ -192,28 +199,36 @@ export function TripCard({ trip }: TripCardProps) {
             #571: the overlays stay minimal — category badge, ONE
             availability badge, the wishlist button and the rail
             controls; the footer is the single price surface. */}
-        {/* Founder decision 2026-10-29: a card photo tap is a plain
-            link to the trip page — the #623 full-screen viewer opens
-            from the trip page only, never from cards. The rail's root
+        {/* Founder decision 2026-10-29: a card photo tap navigates to
+            the trip page — the #623 full-screen viewer opens from the
+            trip page only, never from cards. The rail's root
             click-capture swallows the click that follows a drag, so
             swipes never navigate; its arrows and indicators cancel
-            their own clicks, so they keep cycling photos in place. */}
-        <Link href={`/trip/${trip.id}`} className="absolute inset-0 block">
+            their own clicks, so they keep cycling photos in place.
+            #882: the rail is no longer wrapped in a Link — interactive
+            content (arrows, dots, focusable slides) nested inside an
+            anchor is invalid and screen readers announced the whole
+            photo strip as one link. Photo navigation now runs through
+            the rail's genuine-click callback (router.push), and the
+            card body below stays a real link. */}
+        <div className="absolute inset-0 block">
           <SnapRail
             images={images}
             imageAlts={trip.imageAlts}
             imageBlurDataURLs={trip.imageBlurDataURLs}
             captionFallback={displayLocation ? `${trip.title} · ${displayLocation}` : trip.title}
-            ariaLabel={t('tripDetails.photosLabel')}
+            ariaLabel={t('tripCard.photoCarousel', { title: trip.title })}
             rootClassName="h-full"
             viewportClassName="h-full"
             sizes="(min-width: 1024px) 33vw, 100vw"
             showIndicators
+            deferOffscreenSlides
+            onSlideClick={() => router.push(`/trip/${trip.id}`)}
             slideStyle={(idx, isActive) =>
               isActive ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined
             }
           />
-        </Link>
+        </div>
 
         <div className="absolute top-3 start-3 flex flex-col items-start gap-2">
           <Badge className="bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none">
