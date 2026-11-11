@@ -308,7 +308,7 @@
   "guides": {
     "bookingsNotOpen": "Bookings are not open yet.",
     "waitlistCta": "Explore showcase trips",
-    "waitlistNote": "Bookings are not open yet and no trips are sold from this page. See the showcase on the homepage for a look at the trips the first agencies will publish.",
+    "waitlistNote": "Bookings are not open yet and no trips are sold from this page. See the showcase on the homepage for a look at the trips the founding agencies will publish.",
     "faqTitle": "Travellers ask",
     "highlightsTitle": "What to see",
     "verificationLink": "How agency verification works on OuiBoo",
@@ -592,7 +592,7 @@
       "title": "Real trips, from real agencies",
       "intro": "A first look at the kind of trips the founding agencies will publish — checked documents, named organisers, no anonymous listings.",
       "noteLead": "Showcase only.",
-      "note": "Bookings open with the first agencies — no prices or dates are shown until they can actually be booked.",
+      "note": "Bookings open with the founding agencies — no prices or dates are shown until they can actually be booked.",
       "viewTrip": "View trip details",
       "organiser": "Organiser",
       "checkLine": "Licence checked 30 Oct 2026 · RC insurance valid to 31 Dec 2027",
@@ -736,7 +736,7 @@
         },
         "whenBook": {
           "q": "When can I book?",
-          "lead": "Bookings open with the first agencies.",
+          "lead": "Bookings open with the founding agencies.",
           "rest": " Until then, this site is a showcase: real trips and real checks, shown honestly, with no bookings or payments taken."
         }
       }

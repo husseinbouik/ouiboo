@@ -592,7 +592,7 @@
       "title": "De vrais voyages, de vraies agences",
       "intro": "Un premier aperçu des voyages que les agences fondatrices publieront — documents vérifiés, organisateurs nommés, aucun listing anonyme.",
       "noteLead": "Vitrine uniquement.",
-      "note": "Les réservations ouvriront avec les premières agences — aucun prix ni date n'est affiché tant qu'ils ne peuvent pas être réellement réservés.",
+      "note": "Les réservations ouvriront avec les agences fondatrices — aucun prix ni date n'est affiché tant qu'ils ne peuvent pas être réellement réservés.",
       "viewTrip": "Voir le détail du voyage",
       "organiser": "Organisateur",
       "checkLine": "Licence vérifiée le 30 oct. 2026 · Assurance RC valable jusqu'au 31 déc. 2027",
@@ -736,7 +736,7 @@
         },
         "whenBook": {
           "q": "Quand puis-je réserver ?",
-          "lead": "Les réservations ouvriront avec les premières agences.",
+          "lead": "Les réservations ouvriront avec les agences fondatrices.",
           "rest": " D'ici là, ce site est une vitrine : de vrais voyages et de vraies vérifications, montrés honnêtement, sans réservation ni paiement acceptés."
         }
       }
