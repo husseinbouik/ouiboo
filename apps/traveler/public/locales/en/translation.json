@@ -66,6 +66,16 @@
     "removeDates": "Remove dates",
     "pastDateError": "Those dates are in the past — pick dates from today onwards."
   },
+  "storyStrip": {
+    "attribution": "From the trip description · {{title}}"
+  },
+  "agencyBand": {
+    "title": "Run trips in Morocco? We'd love to meet you.",
+    "relationship": "You keep the traveller relationship.",
+    "ctaWhatsapp": "Chat on WhatsApp",
+    "whatsappMessage": "Hello Ouiboo — I run trips in Morocco and I'd like to know more.",
+    "ctaSignup": "Create an agency account"
+  },
   "example": {
     "badge": "Example"
   },
@@ -77,7 +87,7 @@
   "featured": {
     "title": "Selected trips",
     "subtitle": "A short selection to get you started — one trip per agency, rotated weekly.",
-    "criteria": "From licence-checked agencies with upcoming departures.",
+    "criteria": "One trip per agency, chosen for the place it opens up.",
     "betaRegion": {
       "title": "Start in the North",
       "subtitle": "Three cities in the north of Morocco, shown as they are.",
@@ -109,6 +119,8 @@
     "coverage": {
       "title": "Where we have trips — and where we don't",
       "subtitle": "Destinations with trips you can request today, and the well-known places no agency covers yet — shown as they are.",
+      "stillGrowing": "Still growing",
+      "stillGrowingLine": "Trips coming as agencies join",
       "names": {
         "agadir": "Agadir",
         "dakhla": "Dakhla",

@@ -293,3 +293,59 @@ export function tripsCoverPlace<T extends CurationTrip>(trips: T[], aliases: str
     return aliases.some((alias) => text.includes(foldName(alias)));
   });
 }
+
+/**
+ * Hybrid story strip (#926, council rec item 7): the strip's text is
+ * pulled programmatically from a trip's stored description in the
+ * page locale — never hand-written, never invented. The excerpt is
+ * an EXACT contiguous substring of the stored description: whole
+ * sentences while they fit the budget, otherwise a cut at a word
+ * boundary with an ellipsis appended (the ellipsis is punctuation
+ * the truncation rule adds, not source text). A trip qualifies only
+ * with a description long enough to say something — the staging
+ * fixtures' 77-character stubs never qualify — and the picker walks
+ * the caller's order (the Selected rail first), so the strip is
+ * deterministic. Null when nothing qualifies: the strip is then
+ * omitted, per the rule.
+ */
+export interface StoryExcerpt {
+  tripId: string;
+  title: string;
+  text: string;
+}
+
+const STORY_MIN_DESCRIPTION = 120;
+const STORY_MAX_CHARS = 220;
+
+export function storyExcerptText(
+  description: string,
+  maxChars: number = STORY_MAX_CHARS,
+): string | null {
+  const text = description.trim().replace(/\s+/g, ' ');
+  if (text.length < STORY_MIN_DESCRIPTION) return null;
+  if (text.length <= maxChars) return text;
+  const window = text.slice(0, maxChars);
+  const sentenceEnd = Math.max(
+    window.lastIndexOf('. '),
+    window.lastIndexOf('! '),
+    window.lastIndexOf('? '),
+    window.lastIndexOf('؟ '),
+  );
+  if (sentenceEnd >= Math.floor(maxChars * 0.45)) return window.slice(0, sentenceEnd + 1);
+  const wordEnd = window.lastIndexOf(' ');
+  return `${window.slice(0, wordEnd > 0 ? wordEnd : maxChars).trimEnd()}…`;
+}
+
+export function pickStoryExcerpt<
+  T extends { id: string; title?: unknown; description?: unknown },
+>(trips: T[]): StoryExcerpt | null {
+  for (const trip of trips) {
+    if (typeof trip.description !== 'string') continue;
+    const text = storyExcerptText(trip.description);
+    if (!text) continue;
+    const title = locationText(trip.title);
+    if (!title) continue;
+    return { tripId: trip.id, title, text };
+  }
+  return null;
+}

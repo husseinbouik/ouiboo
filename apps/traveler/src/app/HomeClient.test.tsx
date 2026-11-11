@@ -312,3 +312,72 @@ describe('HomeClient featured trips (#575)', () => {
         expect(screen.queryByText('featured.loadErrorTitle')).toBeNull();
     });
 });
+
+describe('HomeClient hybrid adoption (#926)', () => {
+    function wrap(ui: React.ReactNode) {
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        return <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>;
+    }
+
+    function catalogTrip(partial: Record<string, unknown>) {
+        return {
+            title: 'Trip',
+            images: [],
+            sessions: [],
+            agency: { id: 'agency-1' },
+            ...partial,
+        } as any;
+    }
+
+    it('deletes "View all trips" from the Selected section; the lead card breaks the grid wide', () => {
+        const trips = [
+            catalogTrip({ id: 'c1', title: 'Blue City', destinationSlug: 'chefchaouen', startLocation: 'Chefchaouen' }),
+            catalogTrip({ id: 't1', title: 'Tangier Day', destinationSlug: 'tangier', startLocation: 'Tangier', agency: { id: 'agency-2' } }),
+        ];
+        const { container } = render(wrap(<HomeClient catalogTrips={trips} />));
+        expect(screen.queryByText('featured.viewAll')).toBeNull();
+        // Exactly one card wrapper carries the featured-card break.
+        expect(container.querySelectorAll('.md\\:col-span-2').length).toBe(1);
+    });
+
+    it('segregates the honest empties under their own "Still growing" group', () => {
+        const trips = [
+            catalogTrip({ id: 'm1', title: 'Merzouga Trek', startLocation: 'Merzouga', destinationSlug: null }),
+        ];
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        const label = screen.getByText('featured.coverage.stillGrowing');
+        expect(screen.getByText('featured.coverage.stillGrowingLine')).not.toBeNull();
+        const group = label.closest('div')?.parentElement;
+        expect(group?.textContent).toContain('featured.coverage.names.agadir');
+        expect(group?.textContent).toContain('featured.coverage.names.dakhla');
+    });
+
+    it('renders the story strip from a stored description, attributed in full', () => {
+        const desc =
+            'Leave Merzouga in the late afternoon, ride camels to the camp, dinner and music by the fire, a night in a comfort tent, then sunrise over the Erg Chebbi dunes before riding back.';
+        const trips = [
+            catalogTrip({ id: 'c1', title: 'Blue Pearl', destinationSlug: 'chefchaouen', startLocation: 'Chefchaouen', description: desc }),
+        ];
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        expect(screen.getByText(desc)).not.toBeNull();
+        expect(screen.getByText('storyStrip.attribution')).not.toBeNull();
+    });
+
+    it('omits the story strip when no description qualifies', () => {
+        const trips = [
+            catalogTrip({ id: 't1', title: 'Fixture', destinationSlug: 'tangier', startLocation: 'Tangier', description: 'Short stub.' }),
+        ];
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        expect(screen.queryByText('storyStrip.attribution')).toBeNull();
+    });
+
+    it('renders the agency band: council headline, WhatsApp primary, quiet sign-up, fee silence', () => {
+        render(wrap(<HomeClient catalogTrips={[]} />));
+        expect(screen.getByText('agencyBand.title')).not.toBeNull();
+        expect(screen.getByText('agencyBand.relationship')).not.toBeNull();
+        const wa = screen.getByRole('link', { name: 'agencyBand.ctaWhatsapp' });
+        expect(wa.getAttribute('href')).toContain('https://wa.me/212632718980?text=');
+        const signup = screen.getByRole('link', { name: 'agencyBand.ctaSignup' });
+        expect(signup.getAttribute('href')).toContain('/signup');
+    });
+});

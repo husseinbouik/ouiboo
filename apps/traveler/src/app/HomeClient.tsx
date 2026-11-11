@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {
-  MapPin, Calendar, ArrowRight, Compass, Banknote, ShieldCheck, CalendarCheck, AlertTriangle, Plus, X, Check
+  MapPin, Calendar, Compass, Banknote, ShieldCheck, CalendarCheck, AlertTriangle, Plus, X, Check, MessageCircle
 } from 'lucide-react';
 import Image from 'next/image';
 import { Button, EmptyState, SafeImage } from '@ouiboo/ui';
@@ -19,11 +19,13 @@ import {
   countTripsByCategory,
   countTripsByDestination,
   curateFeaturedTrips,
+  pickStoryExcerpt,
   showcaseDestinations,
   tripsCoverPlace,
   type ShowcaseDestination,
 } from '@/lib/curation';
 import { useDisplayPrice } from '@/lib/display-currency';
+import { AGENCY_URL } from '@/lib/site';
 import { CATEGORY_IMAGES, DESTINATION_IMAGES, HERO_IMAGE, NON_PLACE_PHOTO_IDS, STATIC_HOME_PHOTO_IDS } from '@/lib/static-imagery';
 
 const TripCard = dynamic(() => import('@/components/TripCard').then((m) => m.TripCard));
@@ -85,7 +87,7 @@ function CoverageTile({ destination }: { destination: ShowcaseDestination }) {
           className="object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
         />
       ) : null}
-      <span className="absolute inset-0 bg-gradient-to-t from-deep-blue/85 via-deep-blue/25 to-transparent" aria-hidden="true" />
+      <span className="absolute inset-0 bg-gradient-to-t from-deep-blue/90 via-deep-blue/40 to-transparent" aria-hidden="true" />
       <span className="absolute top-4 start-4 rounded-full bg-card px-3 py-1 text-[11px] font-extrabold text-foreground shadow">
         {t('featured.betaRegion.tripsCount', { count: destination.count })}
       </span>
@@ -155,7 +157,7 @@ const staggerContainer: Variants = {
 };
 
 export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsProp, featuredTripsFetchFailed = false, catalogDestinations = [] }: HomeClientProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchDateFrom, setSearchDateFrom] = useState('');
@@ -243,6 +245,11 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
   ]
     .map((tile) => ({ ...tile, count: categoryTripCounts[tile.key] ?? 0 }))
     .filter((tile): tile is typeof tile & { photo: string } => Boolean(tile.photo) && tile.count >= 2);
+  // Hybrid (#926, rec item 7): the story strip's excerpt — pulled
+  // from the lead Selected trip's stored description in this locale
+  // (then the wider catalogue), or null when no description
+  // qualifies, in which case the strip is omitted entirely.
+  const storyExcerpt = pickStoryExcerpt([...featuredTrips, ...allTrips]);
 
   return (
     <div className="bg-background min-h-screen font-sans text-foreground overflow-hidden home-display">
@@ -507,9 +514,10 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
                 <p className="mt-2 text-sm text-muted-foreground">{t('featured.criteria')}</p>
               )}
             </div>
-            <Link href="/search" className="text-sunset-orange-dark font-semibold hover:text-orange-800 flex items-center gap-2 transition-colors">
-              {t('featured.viewAll')} <ArrowRight className={`h-4 w-4 ${i18n.language === 'ar' ? 'rotate-180' : ''}`} />
-            </Link>
+            {/* Hybrid (#926, rec item 5): "View all trips" is
+                deleted from this section — the rail is a curation,
+                not an index; the catalogue lives behind search and
+                the destination sections. */}
           </div>
 
           <motion.div 
@@ -532,9 +540,12 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
                     )}
                 />
             ) : featuredTrips.length > 0 ? (
-              featuredTrips.map((trip) => (
-                <motion.div key={trip.id} variants={fadeInUp}>
-                  <TripCard trip={trip} />
+              featuredTrips.map((trip, index) => (
+                <motion.div key={trip.id} variants={fadeInUp} className={index === 0 ? 'md:col-span-2' : undefined}>
+                  <TripCard
+                    trip={trip}
+                    imageSizes={index === 0 ? '(min-width: 1024px) 66vw, (min-width: 768px) 100vw, 100vw' : undefined}
+                  />
                 </motion.div>
               ))
             ) : (
@@ -579,7 +590,7 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
                     {photo ? (
                       <SafeImage src={photo} alt="" fill sizes="(min-width: 768px) 33vw, 100vw" className="object-cover opacity-90 transition-transform duration-500 group-hover:scale-105" />
                     ) : null}
-                    <span className="absolute inset-0 bg-gradient-to-t from-deep-blue/85 via-deep-blue/25 to-transparent" aria-hidden="true" />
+                    <span className="absolute inset-0 bg-gradient-to-t from-deep-blue/90 via-deep-blue/40 to-transparent" aria-hidden="true" />
                     <span className="absolute top-4 start-4 rounded-full bg-card px-3 py-1 text-[11px] font-extrabold text-foreground shadow">
                       {count > 0 ? t('featured.betaRegion.tripsCount', { count }) : t('featured.betaRegion.noTripsYet')}
                     </span>
@@ -612,14 +623,52 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
               <h2 className="oui-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">{t('featured.coverage.title')}</h2>
               <p className="text-lg text-muted-foreground">{t('featured.coverage.subtitle')}</p>
             </div>
-            <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
-              {coverageDestinations.map((destination) => (
-                <CoverageTile key={destination.name} destination={destination} />
-              ))}
-              {absentCoverage.map((candidate) => (
-                <AbsentCoverageTile key={candidate.slug} slug={candidate.slug} />
-              ))}
-            </div>
+            {coverageDestinations.length > 0 && (
+              <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+                {coverageDestinations.map((destination) => (
+                  <CoverageTile key={destination.name} destination={destination} />
+                ))}
+              </div>
+            )}
+            {/* Hybrid (#926, rec item 6): the honestly-empty places
+                are SEGREGATED into their own "Still growing" group —
+                visually distinct from the HAS tiles above, under a
+                conditional line (trips arrive as agencies join),
+                never mixed into the covered grid. The live filter
+                still removes a tile the moment a trip exists. */}
+            {absentCoverage.length > 0 && (
+              <div className="mt-12 border-t border-border/70 pt-10">
+                <div className="mb-6 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                  <h3 className="text-lg font-bold text-foreground">{t('featured.coverage.stillGrowing')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('featured.coverage.stillGrowingLine')}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+                  {absentCoverage.map((candidate) => (
+                    <AbsentCoverageTile key={candidate.slug} slug={candidate.slug} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Hybrid (#926, rec item 7): the story strip — one excerpt,
+          pulled programmatically from a trip's stored description
+          in this locale (lib/curation pickStoryExcerpt: exact
+          contiguous substring, sentence/word-boundary truncation),
+          attributed in full, set in body type. Never styled as
+          social proof: no stars, no quote marks, no reviewer.
+          Omitted entirely when no description qualifies. */}
+      {hasCatalogSections && storyExcerpt && (
+        <section className="bg-paper py-14">
+          <div className="mx-auto max-w-3xl px-6 text-center lg:px-8">
+            <p className="text-lg leading-8 text-foreground">{storyExcerpt.text}</p>
+            <p className="mt-4 text-sm font-semibold text-muted-foreground">
+              <Link href={`/trip/${storyExcerpt.tripId}`} className="underline decoration-sunset-orange decoration-2 underline-offset-4 transition-colors hover:text-foreground">
+                {t('storyStrip.attribution', { title: storyExcerpt.title })}
+              </Link>
+            </p>
           </div>
         </section>
       )}
@@ -650,7 +699,7 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
                     sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                     className="object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
                   />
-                  <span className="absolute inset-0 bg-gradient-to-t from-deep-blue/85 via-deep-blue/25 to-transparent" aria-hidden="true" />
+                  <span className="absolute inset-0 bg-gradient-to-t from-deep-blue/90 via-deep-blue/40 to-transparent" aria-hidden="true" />
                   <span className="absolute inset-x-0 bottom-0 p-6">
                     <span className="block font-display text-[24px] font-extrabold">{tile.name}</span>
                     <span className="mt-1 block text-sm font-semibold text-white/85">
@@ -698,6 +747,38 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
                 </div>
             </div>
          </div>
+      </section>
+
+      {/* Hybrid (#926, #903, council rec item 8): the agency band —
+          C's warmth under Trust's wording. WhatsApp is the primary
+          action (the number already public on /agences, with a
+          prefilled localised message); sign-up is the quiet link.
+          Fee silence: no fee line appears here at all — the vetoed
+          "No listing fee to start" never ships in any borrow. */}
+      <section className="bg-deep-blue py-20 text-white">
+        <div className="mx-auto max-w-3xl px-6 text-center lg:px-8">
+          <h2 className="oui-balance text-3xl font-bold tracking-tight sm:text-4xl">{t('agencyBand.title')}</h2>
+          <p className="mt-4 text-lg text-white/85">{t('agencyBand.relationship')}</p>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-5">
+            <a
+              href={`https://wa.me/212632718980?text=${encodeURIComponent(t('agencyBand.whatsappMessage'))}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-sunset-orange px-6 py-3 text-base font-bold text-deep-blue shadow-md transition-colors hover:bg-orange-600"
+            >
+              <MessageCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
+              {t('agencyBand.ctaWhatsapp')}
+            </a>
+            <a
+              href={`${AGENCY_URL}/signup`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-base font-semibold text-white underline decoration-sunset-orange decoration-2 underline-offset-4 transition-colors hover:text-sand"
+            >
+              {t('agencyBand.ctaSignup')}
+            </a>
+          </div>
+        </div>
       </section>
 
       {/* The global footer (Support / Privacy / Terms / rights) renders

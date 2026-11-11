@@ -66,6 +66,16 @@
     "removeDates": "Retirer les dates",
     "pastDateError": "Ces dates sont passées — choisissez des dates à partir d'aujourd'hui."
   },
+  "storyStrip": {
+    "attribution": "Extrait de la description du voyage · {{title}}"
+  },
+  "agencyBand": {
+    "title": "Vous organisez des voyages au Maroc ? Nous serions ravis de vous rencontrer.",
+    "relationship": "Vous gardez la relation avec le voyageur.",
+    "ctaWhatsapp": "Discuter sur WhatsApp",
+    "whatsappMessage": "Bonjour Ouiboo — j'organise des voyages au Maroc et je souhaite en savoir plus.",
+    "ctaSignup": "Créer un compte agence"
+  },
   "example": {
     "badge": "Exemple"
   },
@@ -77,7 +87,7 @@
   "featured": {
     "title": "Voyages sélectionnés",
     "subtitle": "Une courte sélection pour commencer — un voyage par agence, en rotation chaque semaine.",
-    "criteria": "Des agences à la licence vérifiée, avec des départs à venir.",
+    "criteria": "Un voyage par agence, choisi pour le lieu qu'il fait découvrir.",
     "betaRegion": {
       "title": "Commencez par le Nord",
       "subtitle": "Trois villes du nord du Maroc, affichées telles qu'elles sont.",
@@ -109,6 +119,8 @@
     "coverage": {
       "title": "Là où nous avons des voyages — et là où nous n'en avons pas",
       "subtitle": "Les destinations avec des voyages que vous pouvez demander dès aujourd'hui, et les lieux bien connus qu'aucune agence ne couvre encore — montrés tels qu'ils sont.",
+      "stillGrowing": "Encore en développement",
+      "stillGrowingLine": "Des voyages arriveront à mesure que des agences nous rejoignent",
       "names": {
         "agadir": "Agadir",
         "dakhla": "Dakhla",
