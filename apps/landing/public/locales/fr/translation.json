@@ -101,7 +101,7 @@
       "title": "Touchez de nouveaux voyageurs",
       "description": "Présentez vos voyages à des voyageurs qui recherchent des expériences comme les vôtres."
     },
-    "offerTitle": "L’offre bêta pour les agences",
+    "offerTitle": "L’offre pour les agences",
     "offer1": {
       "title": "Vérifiée avant mise en ligne",
       "description": "Votre licence de voyage et votre assurance RC sont vérifiées avant la mise en ligne de vos voyages — le même contrôle pour chaque agence."
@@ -163,15 +163,15 @@
   },
   "pricing": {
     "preTitle": "Tarifs",
-    "title": "Tarifs pendant la bêta fermée",
-    "subtitle": "Ouiboo est en bêta fermée. Les voyageurs paient votre agence directement.",
-    "betaStatement": "Aucun frais de plateforme pendant la bêta fermée.",
+    "title": "Tarifs",
+    "subtitle": "Ouiboo est actuellement gratuit pour les agences. Les voyageurs paient votre agence directement.",
+    "betaStatement": "Aucun frais de plateforme pour le moment.",
     "free": {
       "title": "Gratuit",
       "description": "Parfait pour commencer",
       "price": "0",
       "currency": "MAD/mois",
-      "commission": "Aucun frais de plateforme pendant la bêta fermée.",
+      "commission": "Aucun frais de plateforme pour le moment.",
       "button": "Commencer",
       "feature1": "3 voyages",
       "feature2": "Profil de base",
@@ -182,7 +182,7 @@
       "description": "Pour les agences en croissance",
       "price": "499",
       "currency": "MAD/mois",
-      "commission": "Aucun frais de plateforme pendant la bêta fermée.",
+      "commission": "Aucun frais de plateforme pour le moment.",
       "button": "Bientôt disponible",
       "feature1": "Voyages illimités",
       "feature2": "Marque et personnalisation",
@@ -194,7 +194,7 @@
       "description": "Pour les agences établies",
       "price": "999",
       "currency": "MAD/mois",
-      "commission": "Aucun frais de plateforme pendant la bêta fermée.",
+      "commission": "Aucun frais de plateforme pour le moment.",
       "button": "Bientôt disponible",
       "feature1": "Tout du plan Pro",
       "feature2": "Analyses avancées",
@@ -206,7 +206,7 @@
       "description": "Pour les opérations à grande échelle",
       "price": "Sur mesure",
       "currency": "",
-      "commission": "Aucun frais de plateforme pendant la bêta fermée.",
+      "commission": "Aucun frais de plateforme pour le moment.",
       "button": "Contacter les ventes",
       "feature1": "Tout du plan Premium",
       "feature2": "Solution en marque blanche",
@@ -226,7 +226,7 @@
   "waitlist": {
     "title": "Découvrez Ouiboo dès son lancement",
     "subtitle": "Rejoignez notre liste d'attente pour un accès anticipé et des nouvelles du lancement.",
-    "paused": "Les inscriptions à la liste d'attente sont en pause pendant la préparation de la bêta fermée. Revenez bientôt — aucune information n'est collectée en attendant.",
+    "paused": "Les inscriptions à la liste d'attente sont en pause pour le moment. Revenez bientôt — aucune information n'est collectée en attendant.",
     "form": {
       "name": "Entrez votre nom",
       "email": "Entrez votre email",
@@ -308,7 +308,7 @@
   "guides": {
     "bookingsNotOpen": "Les réservations ne sont pas encore ouvertes.",
     "waitlistCta": "Découvrir les voyages vitrine",
-    "waitlistNote": "OuiBoo fonctionne en bêta fermée — les réservations ne sont pas encore ouvertes et aucun voyage n’est vendu depuis cette page. Découvrez la vitrine sur la page d’accueil pour voir les voyages que les agences fondatrices publieront.",
+    "waitlistNote": "Les réservations ne sont pas encore ouvertes et aucun voyage n’est vendu depuis cette page. Découvrez la vitrine sur la page d’accueil pour voir les voyages que les agences fondatrices publieront.",
     "faqTitle": "Les voyageurs demandent",
     "highlightsTitle": "À voir",
     "verificationLink": "Comment fonctionne la vérification des agences sur OuiBoo",
@@ -347,7 +347,7 @@
         },
         {
           "q": "Puis-je déjà réserver des voyages à Tanger sur OuiBoo ?",
-          "a": "Pas encore. Les réservations ne sont pas ouvertes pendant la bêta fermée d’OuiBoo. Rejoignez la liste d’attente et nous vous écrirons à l’ouverture."
+          "a": "Pas encore. Les réservations ne sont pas encore ouvertes. Rejoignez la liste d’attente et nous vous écrirons à l’ouverture."
         }
       ]
     },
@@ -381,7 +381,7 @@
         },
         {
           "q": "Puis-je déjà réserver des voyages à Tétouan sur OuiBoo ?",
-          "a": "Pas encore. Les réservations ne sont pas ouvertes pendant la bêta fermée d’OuiBoo. Rejoignez la liste d’attente et nous vous écrirons à l’ouverture."
+          "a": "Pas encore. Les réservations ne sont pas encore ouvertes. Rejoignez la liste d’attente et nous vous écrirons à l’ouverture."
         }
       ]
     },
@@ -415,7 +415,7 @@
         },
         {
           "q": "Puis-je déjà réserver des voyages à Chefchaouen sur OuiBoo ?",
-          "a": "Pas encore. Les réservations ne sont pas ouvertes pendant la bêta fermée d’OuiBoo. Rejoignez la liste d’attente et nous vous écrirons à l’ouverture."
+          "a": "Pas encore. Les réservations ne sont pas encore ouvertes. Rejoignez la liste d’attente et nous vous écrirons à l’ouverture."
         }
       ]
     },
@@ -492,7 +492,7 @@
       },
       "how": {
         "title": "Comment OuiBoo fonctionne ici",
-        "text": "OuiBoo est une plateforme technologique : les agences locales vendent leurs propres voyages, et les voyageurs paient l’agence directement — OuiBoo ne détient jamais les fonds des voyageurs. Avant de pouvoir publier, chaque agence passe une porte de vérification — licence de voyage, assurance responsabilité civile, identité du vendeur — expliquée sur notre page dédiée. Pendant la bêta fermée, les réservations ne sont pas ouvertes : cette page est un guide, pas une boutique."
+        "text": "OuiBoo est une plateforme technologique : les agences locales vendent leurs propres voyages, et les voyageurs paient l’agence directement — OuiBoo ne détient jamais les fonds des voyageurs. Avant de pouvoir publier, chaque agence passe une porte de vérification — licence de voyage, assurance responsabilité civile, identité du vendeur — expliquée sur notre page dédiée. Les réservations ne sont pas encore ouvertes : cette page est un guide, pas une boutique."
       },
       "tangierGuideLink": "Lire le guide de Tanger",
       "faq": [
@@ -506,7 +506,7 @@
         },
         {
           "q": "Puis-je déjà réserver des voyages à Tanger sur OuiBoo ?",
-          "a": "Pas encore. OuiBoo fonctionne en bêta fermée et les réservations ne sont pas ouvertes. Découvrez la vitrine sur la page d’accueil et rejoignez la liste d’attente pour être prévenu à l’ouverture."
+          "a": "Pas encore. Les réservations ne sont pas encore ouvertes. Découvrez la vitrine sur la page d’accueil et rejoignez la liste d’attente pour être prévenu à l’ouverture."
         }
       ]
     },
@@ -541,7 +541,7 @@
         },
         {
           "q": "Puis-je réserver un voyage maintenant ?",
-          "a": "Pas encore — les réservations ne sont pas ouvertes pendant la bêta fermée. Rejoignez la liste d’attente pour être prévenu à l’ouverture."
+          "a": "Pas encore — les réservations ne sont pas encore ouvertes. Rejoignez la liste d’attente pour être prévenu à l’ouverture."
         }
       ]
     },
@@ -566,7 +566,7 @@
     }
   },
   "beta": {
-    "explainer": "Bêta fermée — voyageurs invités uniquement ; vous payez toujours l'agence directement."
+    "explainer": "Chaque agence est vérifiée avant sa mise en ligne — et vous payez toujours l'agence directement."
   },
   "hw": {
     "nav": {
@@ -576,13 +576,13 @@
       "signup": "S'inscrire"
     },
     "hero": {
-      "statusPill": "Bêta fermée · Vitrine uniquement — aucune réservation ni paiement sur Ouiboo pour le moment",
+      "statusPill": "Vitrine uniquement — aucune réservation ni paiement sur Ouiboo pour le moment",
       "titleA": "Le Maroc, à vous",
       "titleB": "de l'explorer.",
       "subline": "Des voyages organisés par les agences du pays — chacune vérifiée avant d'apparaître ici.",
       "ctaSignup": "S'inscrire gratuitement",
       "ctaExplore": "Découvrir les voyages vitrine",
-      "agencyLink": "Vous êtes une agence ? Rejoignez la bêta gratuite",
+      "agencyLink": "Vous êtes une agence ? Rejoignez-nous gratuitement",
       "trustLine": "Chaque agence est vérifiée avant d'apparaître ici — licence, assurance, identité.",
       "photoCredit": "Photo du voyage — Atlas Adventures SARL · Chefchaouen",
       "heroAlt": "Panorama des maisons chaulées de bleu de Chefchaouen, dans les montagnes du Rif"
@@ -592,7 +592,7 @@
       "title": "De vrais voyages, de vraies agences",
       "intro": "Un premier aperçu des voyages que les agences fondatrices publieront — documents vérifiés, organisateurs nommés, aucun listing anonyme.",
       "noteLead": "Vitrine uniquement.",
-      "note": "Les réservations ouvriront avec la cohorte bêta fondatrice — aucun prix ni date n'est affiché tant qu'ils ne peuvent pas être réellement réservés.",
+      "note": "Les réservations ouvriront avec les premières agences — aucun prix ni date n'est affiché tant qu'ils ne peuvent pas être réellement réservés.",
       "viewTrip": "Voir le détail du voyage",
       "organiser": "Organisateur",
       "checkLine": "Licence vérifiée le 30 oct. 2026 · Assurance RC valable jusqu'au 31 déc. 2027",
@@ -684,12 +684,12 @@
       }
     },
     "agencies": {
-      "eyebrow": "Pour les agences · Bêta fondatrice",
+      "eyebrow": "Pour les agences · Cohorte fondatrice",
       "titleA": "Vendez vos voyages sur Ouiboo.",
-      "titleB": "Gratuit pendant la bêta.",
+      "titleB": "Gratuit pour les agences fondatrices.",
       "lead": "Nous invitons 3 à 5 agences, venues de tout le Maroc, à fonder la marketplace avec nous — chacune contrôlée avant mise en ligne — un accompagnement personnel par le fondateur, aucun formulaire avant d'avoir parlé à un humain.",
       "chips": [
-        "Gratuit pendant la bêta",
+        "Inscription gratuite",
         "Vérifiée avant mise en ligne",
         "Nous vous aidons à publier vos premiers voyages"
       ],
@@ -703,7 +703,7 @@
           "text": "Vous restez l'organisatrice et la vendeuse officielle. Le nom de votre agence figure sur chaque voyage, chaque réservation et chaque avis."
         },
         "fees": {
-          "title": "Aucun frais pendant la bêta",
+          "title": "Aucun frais de plateforme pour le moment",
           "text": "Ensuite, tout frais fera l'objet d'une facture mensuelle publiée, adressée à votre agence — convenue par écrit au préalable, jamais déduite des paiements des voyageurs."
         },
         "exclusive": {
@@ -731,12 +731,12 @@
         },
         "charges": {
           "q": "Que facture Ouiboo ?",
-          "lead": "La bêta est gratuite.",
+          "lead": "L’inscription est gratuite.",
           "rest": " Les frais futurs seront publiés avant de s'appliquer — facturés aux agences par facture mensuelle, jamais ajoutés au prix que vous payez."
         },
         "whenBook": {
           "q": "Quand puis-je réserver ?",
-          "lead": "Les réservations ouvriront avec la cohorte bêta fondatrice.",
+          "lead": "Les réservations ouvriront avec les premières agences.",
           "rest": " D'ici là, ce site est une vitrine : de vrais voyages et de vraies vérifications, montrés honnêtement, sans réservation ni paiement acceptés."
         }
       }
@@ -750,11 +750,11 @@
       "payments": "Comment fonctionnent les paiements",
       "faq": "FAQ",
       "colAgencies": "Agences",
-      "joinBeta": "Rejoindre la bêta gratuite",
+      "joinBeta": "Rejoindre gratuitement",
       "agencyLogin": "Espace agence",
       "travellerLogin": "Espace voyageur",
       "support": "Assistance",
-      "bottomLeft": "© {{year}} Ouiboo · Bêta fermée — vitrine uniquement",
+      "bottomLeft": "© {{year}} Ouiboo · Vitrine uniquement",
       "madeIn": "Fait à Tanger, Maroc",
       "copyright": "Droits d'auteur"
     },
@@ -768,16 +768,16 @@
         "back": "Accueil"
       },
       "hero": {
-        "eyebrow": "Pour les agences · Bêta fondatrice",
+        "eyebrow": "Pour les agences · Cohorte fondatrice",
         "titleA": "Vendez vos voyages sur Ouiboo.",
         "titleB": "Vous êtes payé directement.",
-        "titleC": "Gratuit pendant la bêta.",
-        "lead": "Ouiboo présente vos voyages aux voyageurs ; vous restez l'organisateur et le vendeur, et les voyageurs paient votre agence directement. Pendant la bêta fondatrice : aucun abonnement, aucun frais.",
+        "titleC": "Gratuit pour les agences fondatrices.",
+        "lead": "Ouiboo présente vos voyages aux voyageurs ; vous restez l'organisateur et le vendeur, et les voyageurs paient votre agence directement. Pour les agences fondatrices : aucun abonnement, aucun frais.",
         "founderRole": "Fondateur d'Ouiboo · Tanger",
         "founderLine": "Je recrute personnellement les 3 à 5 agences fondatrices. Vous parlez au fondateur, pas à un service commercial.",
         "ctaWhatsapp": "Discuter avec le fondateur sur WhatsApp",
         "ctaNote": "Pas de formulaire. Une conversation d'abord.",
-        "whatsappMessage": "Bonjour Hussein, je dirige une agence de voyages et je souhaite discuter de la bêta gratuite Ouiboo. (Page agences)"
+        "whatsappMessage": "Bonjour Hussein, je dirige une agence de voyages et je souhaite discuter de rejoindre Ouiboo. (Page agences)"
       },
       "steps": {
         "eyebrow": "Pour commencer",
@@ -810,11 +810,11 @@
             "text": "Aucun paiement ne transite par Ouiboo — ni aujourd'hui, ni plus tard."
           },
           "beta": {
-            "title": "Pendant la bêta : 0 MAD",
+            "title": "Aujourd’hui : 0 MAD",
             "text": "Aucun abonnement, aucun frais, aucune retenue sur vos paiements."
           }
         },
-        "guaranteeTitle": "Après la bêta, notre engagement écrit",
+        "guaranteeTitle": "Notre engagement écrit pour la suite",
         "guarantee": "Tout frais futur ne s'appliquera que par facture mensuelle publiée, adressée à votre agence, convenue par écrit à l'avance, avec un préavis et le droit de partir avant le premier frais — et jamais déduit des paiements des voyageurs."
       },
       "proof": {
@@ -873,15 +873,15 @@
       },
       "honesty": {
         "eyebrow": "Transparence",
-        "title": "Ce qu'est la bêta — et ce qu'elle n'est pas encore",
+        "title": "Où en sont les choses — en toute honnêteté",
         "items": [
           "Aujourd'hui, Ouiboo est une vitrine : aucune réservation ni aucun paiement n'est encore accepté.",
           "Les réservations ouvriront avec les agences fondatrices — pas avant.",
           "3 à 5 places seulement au départ : chaque agence est accompagnée personnellement.",
-          "Pendant la bêta, l'assistance est assurée par le fondateur lui-même.",
+          "L'assistance est assurée par le fondateur lui-même.",
           "Les agences fondatrices participent aux choix du produit."
         ],
-        "legal": "Pourquoi cette prudence ? Ouiboo termine ses formalités légales — classification de l'activité et protection des données — avant d'ouvrir les réservations. La bêta commence donc en vitrine, et c'est assumé."
+        "legal": "Pourquoi cette prudence ? Ouiboo termine ses formalités légales — classification de l'activité et protection des données — avant d'ouvrir les réservations. Ouiboo commence donc en vitrine, et c'est assumé."
       },
       "final": {
         "title": "Parlons de vos voyages",

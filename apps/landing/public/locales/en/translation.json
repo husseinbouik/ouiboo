@@ -101,7 +101,7 @@
       "title": "Reach New Travelers",
       "description": "Present your trips to travelers actively looking for experiences like yours."
     },
-    "offerTitle": "The beta offer for agencies",
+    "offerTitle": "The offer for agencies",
     "offer1": {
       "title": "Checked before listing",
       "description": "Your travel licence and RC insurance are checked before any of your trips can be listed — the same gate for every agency."
@@ -163,15 +163,15 @@
   },
   "pricing": {
     "preTitle": "Pricing",
-    "title": "Pricing during the closed beta",
-    "subtitle": "Ouiboo is in a closed beta. Travellers pay your agency directly.",
-    "betaStatement": "No platform fee during the closed beta.",
+    "title": "Pricing",
+    "subtitle": "Ouiboo is free for agencies today. Travellers pay your agency directly.",
+    "betaStatement": "No platform fee today.",
     "free": {
       "title": "Free",
       "description": "Perfect for getting started",
       "price": "0",
       "currency": "MAD/month",
-      "commission": "No platform fee during the closed beta.",
+      "commission": "No platform fee today.",
       "button": "Get Started",
       "feature1": "3 trips",
       "feature2": "Basic profile",
@@ -182,7 +182,7 @@
       "description": "For growing travel agencies",
       "price": "499",
       "currency": "MAD/month",
-      "commission": "No platform fee during the closed beta.",
+      "commission": "No platform fee today.",
       "button": "Coming Soon",
       "feature1": "Unlimited trips",
       "feature2": "Branding & customization",
@@ -194,7 +194,7 @@
       "description": "For established agencies",
       "price": "999",
       "currency": "MAD/month",
-      "commission": "No platform fee during the closed beta.",
+      "commission": "No platform fee today.",
       "button": "Coming Soon",
       "feature1": "Everything in Pro",
       "feature2": "Advanced analytics",
@@ -206,7 +206,7 @@
       "description": "For large-scale operations",
       "price": "Custom",
       "currency": "",
-      "commission": "No platform fee during the closed beta.",
+      "commission": "No platform fee today.",
       "button": "Contact Sales",
       "feature1": "Everything in Premium",
       "feature2": "White-label solution",
@@ -226,7 +226,7 @@
   "waitlist": {
     "title": "Experience Ouiboo from launch",
     "subtitle": "Join our waitlist for early access and updates on our launch.",
-    "paused": "Waitlist signups are paused while we prepare the closed beta. Please check back soon — no information is collected in the meantime.",
+    "paused": "Waitlist signups are paused for now. Please check back soon — no information is collected in the meantime.",
     "form": {
       "name": "Enter your name",
       "email": "Enter your email",
@@ -308,7 +308,7 @@
   "guides": {
     "bookingsNotOpen": "Bookings are not open yet.",
     "waitlistCta": "Explore showcase trips",
-    "waitlistNote": "OuiBoo is running a closed beta — bookings are not open yet and no trips are sold from this page. See the showcase on the homepage for a look at the trips the founding agencies will publish.",
+    "waitlistNote": "Bookings are not open yet and no trips are sold from this page. See the showcase on the homepage for a look at the trips the first agencies will publish.",
     "faqTitle": "Travellers ask",
     "highlightsTitle": "What to see",
     "verificationLink": "How agency verification works on OuiBoo",
@@ -347,7 +347,7 @@
         },
         {
           "q": "Can I book trips in Tangier on OuiBoo yet?",
-          "a": "Not yet. Bookings are not open while OuiBoo runs its closed beta. Join the waitlist and we will email you when bookings open."
+          "a": "Not yet. Bookings are not open yet. Join the waitlist and we will email you when bookings open."
         }
       ]
     },
@@ -381,7 +381,7 @@
         },
         {
           "q": "Can I book trips in Tétouan on OuiBoo yet?",
-          "a": "Not yet. Bookings are not open while OuiBoo runs its closed beta. Join the waitlist and we will email you when bookings open."
+          "a": "Not yet. Bookings are not open yet. Join the waitlist and we will email you when bookings open."
         }
       ]
     },
@@ -415,7 +415,7 @@
         },
         {
           "q": "Can I book trips in Chefchaouen on OuiBoo yet?",
-          "a": "Not yet. Bookings are not open while OuiBoo runs its closed beta. Join the waitlist and we will email you when bookings open."
+          "a": "Not yet. Bookings are not open yet. Join the waitlist and we will email you when bookings open."
         }
       ]
     },
@@ -492,7 +492,7 @@
       },
       "how": {
         "title": "How OuiBoo works here",
-        "text": "OuiBoo is a technology platform: local agencies sell their own trips, and travellers pay the agency directly — OuiBoo never holds traveller funds. Before an agency can publish, it passes a verification gate — travel licence, civil-liability insurance, seller identity — explained on our dedicated page. During the closed beta, bookings are not open: this page is a guide, not a shop."
+        "text": "OuiBoo is a technology platform: local agencies sell their own trips, and travellers pay the agency directly — OuiBoo never holds traveller funds. Before an agency can publish, it passes a verification gate — travel licence, civil-liability insurance, seller identity — explained on our dedicated page. Bookings are not open yet: this page is a guide, not a shop."
       },
       "tangierGuideLink": "Read the Tangier city guide",
       "faq": [
@@ -506,7 +506,7 @@
         },
         {
           "q": "Can I book Tangier trips on OuiBoo already?",
-          "a": "Not yet. OuiBoo is running a closed beta and bookings are not open. Browse the homepage showcase and join the waitlist to hear when bookings open."
+          "a": "Not yet. Bookings are not open yet. Browse the homepage showcase and join the waitlist to hear when bookings open."
         }
       ]
     },
@@ -541,7 +541,7 @@
         },
         {
           "q": "Can I book a trip now?",
-          "a": "Not yet — bookings are not open during the closed beta. Join the waitlist to be told when they open."
+          "a": "Not yet — bookings are not open yet. Join the waitlist to be told when they open."
         }
       ]
     },
@@ -566,7 +566,7 @@
     }
   },
   "beta": {
-    "explainer": "Closed beta — invited travellers only; you always pay the agency directly."
+    "explainer": "Every agency is checked before listing — and you always pay the agency directly."
   },
   "hw": {
     "nav": {
@@ -576,13 +576,13 @@
       "signup": "Sign up"
     },
     "hero": {
-      "statusPill": "Closed beta · Showcase only — no bookings or payments on Ouiboo yet",
+      "statusPill": "Showcase only — no bookings or payments on Ouiboo yet",
       "titleA": "Morocco is yours",
       "titleB": "to explore.",
       "subline": "Trips run by Morocco's own agencies — each one checked before it appears here.",
       "ctaSignup": "Sign up free",
       "ctaExplore": "Explore showcase trips",
-      "agencyLink": "Are you an agency? Join the free beta",
+      "agencyLink": "Are you an agency? Join free",
       "trustLine": "Every agency is checked before it appears here — licence, insurance, identity.",
       "photoCredit": "Trip photo — Atlas Adventures SARL · Chefchaouen",
       "heroAlt": "Panorama of Chefchaouen's blue-washed houses in the Rif Mountains"
@@ -592,7 +592,7 @@
       "title": "Real trips, from real agencies",
       "intro": "A first look at the kind of trips the founding agencies will publish — checked documents, named organisers, no anonymous listings.",
       "noteLead": "Showcase only.",
-      "note": "Bookings open with the founding beta cohort — no prices or dates are shown until they can actually be booked.",
+      "note": "Bookings open with the first agencies — no prices or dates are shown until they can actually be booked.",
       "viewTrip": "View trip details",
       "organiser": "Organiser",
       "checkLine": "Licence checked 30 Oct 2026 · RC insurance valid to 31 Dec 2027",
@@ -684,12 +684,12 @@
       }
     },
     "agencies": {
-      "eyebrow": "For agencies · Founding beta",
+      "eyebrow": "For agencies · Founding cohort",
       "titleA": "Sell your trips on Ouiboo.",
-      "titleB": "Free during the beta.",
+      "titleB": "Free for founding agencies.",
       "lead": "We're inviting 3–5 agencies from across Morocco to found the marketplace with us — each one checked before listing — founder-led onboarding, no forms before a human conversation.",
       "chips": [
-        "Free during the beta",
+        "Free to join",
         "Checked before listing",
         "We help you list your first trips"
       ],
@@ -703,7 +703,7 @@
           "text": "You stay the organiser and seller of record. Your agency's name is on every trip, every booking and every review."
         },
         "fees": {
-          "title": "No fee during the beta",
+          "title": "No platform fee today",
           "text": "Afterwards, any fee is a published monthly invoice to your agency — agreed in writing first, never deducted from traveller payments."
         },
         "exclusive": {
@@ -731,12 +731,12 @@
         },
         "charges": {
           "q": "What does Ouiboo charge?",
-          "lead": "The beta is free.",
+          "lead": "Joining is free.",
           "rest": " Later fees will be published before they ever apply — charged to agencies as a monthly invoice, never added on top of the price you pay."
         },
         "whenBook": {
           "q": "When can I book?",
-          "lead": "Bookings open with the founding beta cohort.",
+          "lead": "Bookings open with the first agencies.",
           "rest": " Until then, this site is a showcase: real trips and real checks, shown honestly, with no bookings or payments taken."
         }
       }
@@ -750,11 +750,11 @@
       "payments": "How payments work",
       "faq": "FAQ",
       "colAgencies": "Agencies",
-      "joinBeta": "Join the free beta",
+      "joinBeta": "Join free as an agency",
       "agencyLogin": "Agency login",
       "travellerLogin": "Traveller login",
       "support": "Support",
-      "bottomLeft": "© {{year}} Ouiboo · Closed beta — showcase only",
+      "bottomLeft": "© {{year}} Ouiboo · Showcase only",
       "madeIn": "Made in Tangier, Morocco",
       "copyright": "Copyright"
     },
@@ -768,16 +768,16 @@
         "back": "Home"
       },
       "hero": {
-        "eyebrow": "For agencies · Founding beta",
+        "eyebrow": "For agencies · Founding cohort",
         "titleA": "Sell your trips on Ouiboo.",
         "titleB": "You get paid directly.",
-        "titleC": "Free during the beta.",
-        "lead": "Ouiboo puts your trips in front of travellers; you stay the organiser and the seller, and travellers pay your agency directly. During the founding beta: no subscription, no fees.",
+        "titleC": "Free for founding agencies.",
+        "lead": "Ouiboo puts your trips in front of travellers; you stay the organiser and the seller, and travellers pay your agency directly. For founding agencies: no subscription, no fees.",
         "founderRole": "Founder of Ouiboo · Tangier",
         "founderLine": "I am personally recruiting the 3 to 5 founding agencies. You talk to the founder — not to a sales department.",
         "ctaWhatsapp": "Talk to the founder on WhatsApp",
         "ctaNote": "No form. A conversation first.",
-        "whatsappMessage": "Hello Hussein, I run a travel agency and I would like to talk about Ouiboo's free beta. (Agencies page)"
+        "whatsappMessage": "Hello Hussein, I run a travel agency and I would like to talk about joining Ouiboo. (Agencies page)"
       },
       "steps": {
         "eyebrow": "Getting started",
@@ -810,11 +810,11 @@
             "text": "No payment ever passes through Ouiboo — not today, not later."
           },
           "beta": {
-            "title": "During the beta: 0 MAD",
+            "title": "Today: 0 MAD",
             "text": "No subscription, no fees, nothing withheld from your payments."
           }
         },
-        "guaranteeTitle": "After the beta, our written commitment",
+        "guaranteeTitle": "Our written commitment for what comes next",
         "guarantee": "Any future fee will apply only through a published monthly invoice addressed to your agency, agreed in writing in advance, with notice and the right to leave before the first fee — and never deducted from traveller payments."
       },
       "proof": {
@@ -873,15 +873,15 @@
       },
       "honesty": {
         "eyebrow": "Transparency",
-        "title": "What the beta is — and what it is not yet",
+        "title": "Where things stand — honestly",
         "items": [
           "Today, Ouiboo is a showcase: no booking and no payment is accepted yet.",
           "Bookings will open with the founding agencies — not before.",
           "Only 3 to 5 places at the start: every agency is accompanied personally.",
-          "During the beta, support is handled by the founder himself.",
+          "Support is handled by the founder himself.",
           "Founding agencies get a say in the product."
         ],
-        "legal": "Why this caution? Ouiboo is completing its legal formalities — activity classification and data protection — before opening bookings. So the beta starts as a showcase, openly."
+        "legal": "Why this caution? Ouiboo is completing its legal formalities — activity classification and data protection — before opening bookings. So Ouiboo starts as a showcase, openly."
       },
       "final": {
         "title": "Let's talk about your trips",

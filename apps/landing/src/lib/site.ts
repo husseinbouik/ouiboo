@@ -133,19 +133,19 @@ export interface AgencesCopy {
 
 export const AGENCES_COPY: Record<SupportedLanguage, AgencesCopy> = {
   fr: {
-    title: 'Ouiboo pour les agences — vendez vos voyages, payés en direct | Bêta gratuite au Maroc',
+    title: 'Ouiboo pour les agences — vendez vos voyages, payés en direct | Gratuit pour les agences fondatrices',
     description:
-      "Rejoignez la bêta gratuite d'Ouiboo : présentez vos voyages, soyez payé directement par les voyageurs, 0 MAD pendant la bêta — vérification avant mise en ligne.",
+      "Rejoignez Ouiboo gratuitement : présentez vos voyages, soyez payé directement par les voyageurs, 0 MAD aujourd’hui — vérification avant mise en ligne.",
   },
   en: {
-    title: 'Ouiboo for agencies — sell your trips, get paid directly | Free beta in Morocco',
+    title: 'Ouiboo for agencies — sell your trips, get paid directly | Free for founding agencies',
     description:
-      "Join Ouiboo's free beta: present your trips, get paid directly by travellers, 0 MAD during the beta — checked before listing.",
+      "Join Ouiboo free: present your trips, get paid directly by travellers, 0 MAD today — checked before listing.",
   },
   ar: {
-    title: 'Ouiboo للوكالات — بيعوا رحلاتكم واقبضوا مباشرة | نسخة تجريبية مجانية في المغرب',
+    title: 'Ouiboo للوكالات — بيعوا رحلاتكم واقبضوا مباشرة | مجاناً للوكالات التأسيسية',
     description:
-      'انضموا إلى النسخة التجريبية المجانية من Ouiboo: اعرضوا رحلاتكم واقبضوا مباشرة من المسافرين، 0 درهم خلال النسخة التجريبية — مع التحقق قبل النشر.',
+      'انضموا إلى Ouiboo مجاناً: اعرضوا رحلاتكم واقبضوا مباشرة من المسافرين، 0 درهم اليوم — مع التحقق قبل النشر.',
   },
 }
 
