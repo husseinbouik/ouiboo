@@ -249,11 +249,17 @@ const [isOpen, setIsOpen] = useState(false);
         )}
       >
         {/* Logo Section — #794: the final lockup (Route-End symbol +
-            Destination Tittle wordmark) as one SVG; tone auto follows
-            the theme (navy on light, white on dark). The BETA pill
+            Destination Tittle wordmark) as one SVG. Tone follows the
+            SURFACE, not just the theme: while the bar is transparent
+            over the home hero (isTransparent) the lockup sits on a
+            dark photograph in BOTH themes, so it takes the on-dark
+            colourway — tone auto in the light theme rendered it navy
+            on the Atlas-night hero, an illegible smudge (founder
+            report, 2026-11-12). Once the bar is solid (scrolled) or
+            on inner pages it follows the theme again. The BETA pill
             stays a separate badge beside it. */}
         <Link href="/" className="flex items-center gap-2 group shrink-0">
-            <LogoLockup height={30} tone="auto" />
+            <LogoLockup height={30} tone={isTransparent ? "on-dark" : "auto"} />
             <BetaBadge />
         </Link>
 
