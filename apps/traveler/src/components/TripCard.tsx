@@ -89,6 +89,11 @@ interface TripCardProps {
    * put an arrow/dot tab stop per card into the grid's tab order.
    * The home rail keeps the settled SnapRail behaviour (#882). */
   staticPhoto?: boolean;
+  /** Search-page council item 19 (#965): the wishlist page needs to
+   * observe a removal so it can leave a persistent in-place tombstone
+   * with Undo (the button's toast alone never satisfies the page
+   * pattern). Optional — every other surface keeps the bare button. */
+  onWishlistToggle?: (tripId: string, next: boolean) => void;
 }
 
 /** Search-page council K6b: the badge's date is part of the locked
@@ -112,7 +117,7 @@ function futureLicenceExpiry(value?: string | null): Date | null {
   return Number.isNaN(date.getTime()) || date.getTime() <= new Date().getTime() ? null : date;
 }
 
-export function TripCard({ trip, imageSizes, staticPhoto = false }: TripCardProps) {
+export function TripCard({ trip, imageSizes, staticPhoto = false, onWishlistToggle }: TripCardProps) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   // #745 (remainder): the API resolves a translated startLocation
@@ -336,7 +341,11 @@ export function TripCard({ trip, imageSizes, staticPhoto = false }: TripCardProp
           </Badge>
         </div>
 
-          <WishlistButton tripId={trip.id} className="absolute top-3 end-3" />
+          <WishlistButton
+            tripId={trip.id}
+            className="absolute top-3 end-3"
+            onToggled={onWishlistToggle ? (next) => onWishlistToggle(trip.id, next) : undefined}
+          />
       </div>
 
       <Link href={`/trip/${trip.id}`} className="flex-1 flex flex-col p-6">
