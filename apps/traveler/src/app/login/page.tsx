@@ -12,7 +12,7 @@ import { Button, Input, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
 import { AuthBrandLockup } from '../../components/AuthBrandLockup';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/components/AuthContext';
-import { setBrowserAccessToken, getAuthErrorMessage } from '@ouiboo/api-client';
+import { setBrowserAccessToken, ensureBrowserAppSession, getAuthErrorMessage } from '@ouiboo/api-client';
 import { LoginSchema, type LoginInput } from '@ouiboo/schemas';
 import '../../lib/i18n';
 
@@ -31,10 +31,23 @@ type ApiError = {
   };
 };
 
+// #982: the proxy gate sends signed-out visitors here with
+// ?redirect=<the gated page they wanted>. Only a local path is ever
+// honoured — never an absolute or protocol-relative URL, and never
+// /login itself (the return must not re-enter this page).
+function postLoginTarget(): string {
+  if (typeof window === 'undefined') return '/';
+  const raw = new URLSearchParams(window.location.search).get('redirect');
+  if (raw && raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/login')) {
+    return raw;
+  }
+  return '/';
+}
+
 export default function TravelerLoginPage() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const { refetch } = useAuth();
+  const { user, isLoading, refetch } = useAuth();
   const mounted = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -50,6 +63,29 @@ export default function TravelerLoginPage() {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   }, [i18n.language]);
 
+  // #982: a signed-in user lands here when the proxy's 15-minute BFF
+  // gate cookie lapses mid-session — the API session underneath is
+  // still valid and the auth probe restores it on this very page.
+  // Send the restored user on to where they were headed instead of
+  // stranding them on the form (the agency login page has bounced
+  // restored users since #863; this page never did). The return trip
+  // passes the same proxy gate, so the BFF cookie is re-established
+  // first — a restore that needed no token refresh may not have set
+  // it. Best-effort: if that fails, the form simply stays.
+  useEffect(() => {
+    if (isLoading || !user) return;
+    let cancelled = false;
+    (async () => {
+      await ensureBrowserAppSession();
+      if (!cancelled) {
+        router.replace(postLoginTarget());
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, isLoading, router]);
+
   const loginMutation = useMutation<LoginResponse, ApiError, LoginFormValues>({
     mutationFn: async (data) => {
       const response = await apiClient.post('/auth/login', data);
@@ -64,7 +100,9 @@ export default function TravelerLoginPage() {
       }
       // Force update user state
       await refetch();
-      router.push('/');
+      // #982: honour the gate's ?redirect= after a fresh sign-in too,
+      // so a signed-out visitor bounced from a gated page lands on it.
+      router.push(postLoginTarget());
     },
     onError: (err: { response?: { data?: { message?: string } | string } }) => {
       const errorInfo = getAuthErrorMessage(err, (key, fallback) => t(key, fallback));
