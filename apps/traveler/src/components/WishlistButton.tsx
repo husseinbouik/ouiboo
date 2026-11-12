@@ -14,6 +14,9 @@ import { optimisticHandlers } from '@/lib/optimistic';
 interface WishlistButtonProps {
   tripId: string;
   className?: string;
+  /** #965: observers (the wishlist page) are notified of a settled
+   * toggle so they can render their own persistent affordances. */
+  onToggled?: (next: boolean) => void;
 }
 
 interface WishlistStatus {
@@ -30,7 +33,7 @@ interface WishlistStatus {
  * the real inverse mutation (re-add), so it stays truthful if the
  * server state changed in between.
  */
-export function WishlistButton({ tripId, className }: WishlistButtonProps) {
+export function WishlistButton({ tripId, className, onToggled }: WishlistButtonProps) {
   const { t } = useTranslation();
   const { user, setShowLoginModal } = useAuth();
   const queryClient = useQueryClient();
@@ -77,6 +80,7 @@ export function WishlistButton({ tripId, className }: WishlistButtonProps) {
       },
     }),
     onSuccess: (_data, next) => {
+      onToggled?.(next);
       if (!next) {
         toast({
           title: t('wishlist.removed'),
