@@ -1,4 +1,4 @@
-import { BETA_DESTINATIONS } from "@ouiboo/types";
+import { BETA_DESTINATIONS, SessionStatus } from "@ouiboo/types";
 
 /**
  * #885 (Council S12 P0): the beta curation gate, as pure functions so
@@ -28,6 +28,11 @@ import { BETA_DESTINATIONS } from "@ouiboo/types";
 export interface CurationSession {
   startDate?: string | null;
   status?: string | null;
+  /** Transactionally maintained by the API; null/absent = unknown,
+   * which the predicates below treat as bookable (never as full). */
+  availableSeats?: number | null;
+  price?: number | string | null;
+  currency?: string | null;
 }
 
 export interface CurationTrip {
@@ -108,12 +113,36 @@ export function isoWeekNumber(date: Date): number {
   return 1 + Math.round((target.getTime() - firstThursday.getTime()) / (7 * 24 * 3600 * 1000));
 }
 
-function hasUpcomingDeparture(trip: CurationTrip, now: Date): boolean {
-  return (trip.sessions ?? []).some((session) => {
-    if (!session?.startDate) return false;
+/**
+ * THE shared next-session predicate (search-page council items 14 +
+ * 17): a session counts as an upcoming departure only when it is in
+ * the future, OPEN (an absent status is the legacy payload shape and
+ * counts as open, matching the card), and has seats — availableSeats
+ * 0 is FULL even though sessions never flip to a FULL status;
+ * unknown seat data (null) never reads as full. Before this fix the
+ * featured predicate ignored status and seats entirely, so a
+ * 'champion' could be a trip whose only future session was cancelled
+ * or full (punch item 14, the #885 gate defect).
+ */
+export function nextBookableSession(
+  trip: CurationTrip,
+  now: Date = new Date(),
+): { session: CurationSession; spotsLeft: number | null } | null {
+  let best: { session: CurationSession; spotsLeft: number | null; start: number } | null = null;
+  for (const session of trip.sessions ?? []) {
+    if (!session?.startDate) continue;
+    if (session.status != null && session.status !== SessionStatus.Open) continue;
     const start = new Date(session.startDate).getTime();
-    return Number.isFinite(start) && start >= now.getTime();
-  });
+    if (!Number.isFinite(start) || start <= now.getTime()) continue;
+    const spotsLeft = typeof session.availableSeats === "number" ? session.availableSeats : null;
+    if (spotsLeft !== null && spotsLeft <= 0) continue;
+    if (!best || start < best.start) best = { session, spotsLeft, start };
+  }
+  return best ? { session: best.session, spotsLeft: best.spotsLeft } : null;
+}
+
+export function hasUpcomingDeparture(trip: CurationTrip, now: Date): boolean {
+  return nextBookableSession(trip, now) !== null;
 }
 
 /** An agency's rail candidate: upcoming departures first (the
@@ -294,4 +323,101 @@ export function tripsCoverPlace<T extends CurationTrip>(trips: T[], aliases: str
     if (!text) return false;
     return aliases.some((alias) => text.includes(foldName(alias)));
   });
+}
+
+/**
+ * Search-page council item 15 (#961): FC 'Leaving Soon' as a
+ * CONDITIONAL additional strip below Selected — never a replacement.
+ * Pure builder so every K3 condition is unit-testable:
+ *   - rows are the catalogue's next departures (the shared
+ *     nextBookableSession predicate), soonest first; ties break by
+ *     fewest spots left, then trip id (deterministic);
+ *   - at most 2 live rows per agency (disclosed in the standfirst),
+ *     at most maxRows live rows;
+ *   - ONE tombstone at most: the soonest future OPEN session with
+ *     zero seats — 'Fully booked for the <date> session' — persisting
+ *     from the moment it fills until its date passes, muted, never
+ *     counted among the live rows, always rendered last;
+ *   - suppression: 0 live departures → hidden (tombstone included);
+ *     exactly 1 → 'endcap' (the row folds into Selected's grid) —
+ *     unless that row is already IN Selected, which is mere
+ *     duplication → hidden; every live row already in Selected →
+ *     hidden (the strip would merely duplicate it).
+ */
+export interface LeavingSoonRow<T extends CurationTrip = CurationTrip> {
+  trip: T;
+  session: CurationSession;
+  spotsLeft: number | null;
+  kind: "live" | "tombstone";
+}
+
+export interface LeavingSoonResult<T extends CurationTrip = CurationTrip> {
+  decision: "strip" | "endcap" | "hidden";
+  rows: LeavingSoonRow<T>[];
+}
+
+export function buildLeavingSoonRows<T extends CurationTrip>(
+  trips: T[],
+  options: {
+    now?: Date;
+    selectedTripIds?: Iterable<string>;
+    maxRows?: number;
+    maxPerAgency?: number;
+  } = {},
+): LeavingSoonResult<T> {
+  const now = options.now ?? new Date();
+  const maxRows = options.maxRows ?? 6;
+  const maxPerAgency = options.maxPerAgency ?? 2;
+  const selected = new Set(options.selectedTripIds ?? []);
+
+  const live: LeavingSoonRow<T>[] = [];
+  let tombstone: LeavingSoonRow<T> | null = null;
+  let tombstoneStart = Number.POSITIVE_INFINITY;
+
+  for (const trip of trips) {
+    const next = nextBookableSession(trip, now);
+    if (next) {
+      live.push({ trip, session: next.session, spotsLeft: next.spotsLeft, kind: "live" });
+      continue;
+    }
+    // No bookable session: the trip may still carry the tombstone —
+    // its soonest future OPEN session that has filled.
+    for (const session of trip.sessions ?? []) {
+      if (!session?.startDate) continue;
+      if (session.status != null && session.status !== SessionStatus.Open) continue;
+      const start = new Date(session.startDate).getTime();
+      if (!Number.isFinite(start) || start <= now.getTime()) continue;
+      if (session.availableSeats !== 0) continue;
+      if (start < tombstoneStart) {
+        tombstoneStart = start;
+        tombstone = { trip, session, spotsLeft: 0, kind: "tombstone" };
+      }
+    }
+  }
+
+  live.sort((a, b) => {
+    const byDate =
+      new Date(a.session.startDate ?? 0).getTime() - new Date(b.session.startDate ?? 0).getTime();
+    if (byDate !== 0) return byDate;
+    const bySpots =
+      (a.spotsLeft ?? Number.POSITIVE_INFINITY) - (b.spotsLeft ?? Number.POSITIVE_INFINITY);
+    if (bySpots !== 0) return bySpots;
+    return a.trip.id.localeCompare(b.trip.id);
+  });
+
+  const perAgency = new Map<string, number>();
+  const capped: LeavingSoonRow<T>[] = [];
+  for (const row of live) {
+    if (capped.length >= maxRows) break;
+    const agencyKey = row.trip.agency?.id ?? row.trip.id;
+    const count = perAgency.get(agencyKey) ?? 0;
+    if (count >= maxPerAgency) continue;
+    perAgency.set(agencyKey, count + 1);
+    capped.push(row);
+  }
+
+  if (capped.length === 0) return { decision: "hidden", rows: [] };
+  if (capped.every((row) => selected.has(row.trip.id))) return { decision: "hidden", rows: [] };
+  if (capped.length === 1) return { decision: "endcap", rows: capped };
+  return { decision: "strip", rows: tombstone ? [...capped, tombstone] : capped };
 }

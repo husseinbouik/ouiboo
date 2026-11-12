@@ -5,11 +5,14 @@
  * out-of-cluster backfill), honest counts.
  */
 import {
+  buildLeavingSoonRows,
   countTripsByCategory,
   countTripsByDestination,
   curateFeaturedTrips,
   effectiveDestinationSlug,
+  hasUpcomingDeparture,
   isoWeekNumber,
+  nextBookableSession,
   showcaseDestinations,
   tripsCoverPlace,
   type CurationTrip,
@@ -103,6 +106,157 @@ describe('curateFeaturedTrips (#885)', () => {
   it('returns an empty rail when no agency has cluster supply', () => {
     expect(curateFeaturedTrips([trip({ id: 'x', destinationSlug: null })])).toEqual([]);
     expect(curateFeaturedTrips([])).toEqual([]);
+  });
+});
+
+describe('next-session predicate (search-page council items 14 + 17)', () => {
+  const now = new Date('2026-11-12T00:00:00.000Z');
+
+  it('counts a future OPEN session with seats as an upcoming departure', () => {
+    const t1 = trip({ id: 'x', sessions: [{ startDate: '2026-12-01T00:00:00.000Z', status: 'OPEN', availableSeats: 4 }] });
+    expect(hasUpcomingDeparture(t1, now)).toBe(true);
+    expect(nextBookableSession(t1, now)?.spotsLeft).toBe(4);
+  });
+
+  it('a future session that is CANCELLED is not a departure', () => {
+    const t1 = trip({ id: 'x', sessions: [{ startDate: '2026-12-01T00:00:00.000Z', status: 'CANCELLED', availableSeats: 4 }] });
+    expect(hasUpcomingDeparture(t1, now)).toBe(false);
+  });
+
+  it('a future OPEN session with zero seats is FULL — not a departure', () => {
+    const t1 = trip({ id: 'x', sessions: [{ startDate: '2026-12-01T00:00:00.000Z', status: 'OPEN', availableSeats: 0 }] });
+    expect(hasUpcomingDeparture(t1, now)).toBe(false);
+    expect(nextBookableSession(t1, now)).toBeNull();
+  });
+
+  it('unknown seat data never reads as full', () => {
+    const t1 = trip({ id: 'x', sessions: [{ startDate: '2026-12-01T00:00:00.000Z', status: 'OPEN' }] });
+    expect(hasUpcomingDeparture(t1, now)).toBe(true);
+    expect(nextBookableSession(t1, now)?.spotsLeft).toBeNull();
+  });
+
+  it('picks the earliest BOOKABLE session, skipping a filled earlier one', () => {
+    const t1 = trip({
+      id: 'x',
+      sessions: [
+        { startDate: '2026-11-20T00:00:00.000Z', status: 'OPEN', availableSeats: 0 },
+        { startDate: '2026-11-27T00:00:00.000Z', status: 'OPEN', availableSeats: 2 },
+      ],
+    });
+    expect(nextBookableSession(t1, now)?.session.startDate).toBe('2026-11-27T00:00:00.000Z');
+  });
+
+  it("item 14 verification: a trip whose only future session is full produces no champion over a bookable agency-mate", () => {
+    const rail = curateFeaturedTrips(
+      [
+        trip({ id: 'flagged-full', featured: true, sessions: [{ startDate: '2027-01-10T00:00:00.000Z', status: 'OPEN', availableSeats: 0 }] }),
+        trip({ id: 'plain-open', featured: false }),
+      ],
+      now,
+    );
+    expect(rail.map((t) => t.id)).toEqual(['plain-open']);
+  });
+});
+
+describe('buildLeavingSoonRows (#961 — FC strip conditions)', () => {
+  const now = new Date('2026-11-12T00:00:00.000Z');
+  const sess = (startDate: string, extra: Record<string, unknown> = {}) => ({
+    startDate,
+    status: 'OPEN',
+    ...extra,
+  });
+
+  it('orders live rows by date, ties by fewest spots left', () => {
+    const result = buildLeavingSoonRows(
+      [
+        trip({ id: 'later', agency: { id: 'ag-1' }, sessions: [sess('2026-11-25T00:00:00.000Z', { availableSeats: 2 })] }),
+        trip({ id: 'tie-many', agency: { id: 'ag-2' }, sessions: [sess('2026-11-20T00:00:00.000Z', { availableSeats: 9 })] }),
+        trip({ id: 'tie-few', agency: { id: 'ag-3' }, sessions: [sess('2026-11-20T00:00:00.000Z', { availableSeats: 3 })] }),
+      ],
+      { now },
+    );
+    expect(result.decision).toBe('strip');
+    expect(result.rows.map((r) => r.trip.id)).toEqual(['tie-few', 'tie-many', 'later']);
+  });
+
+  it('caps live rows at two per agency', () => {
+    const result = buildLeavingSoonRows(
+      [
+        trip({ id: 'a1', sessions: [sess('2026-11-15T00:00:00.000Z')] }),
+        trip({ id: 'a2', sessions: [sess('2026-11-16T00:00:00.000Z')] }),
+        trip({ id: 'a3', sessions: [sess('2026-11-17T00:00:00.000Z')] }),
+        trip({ id: 'b1', agency: { id: 'agency-b' }, sessions: [sess('2026-11-18T00:00:00.000Z')] }),
+      ],
+      { now },
+    );
+    expect(result.decision).toBe('strip');
+    expect(result.rows.map((r) => r.trip.id)).toEqual(['a1', 'a2', 'b1']);
+  });
+
+  it('hides at zero live departures', () => {
+    const result = buildLeavingSoonRows(
+      [trip({ id: 'past', sessions: [sess('2026-11-01T00:00:00.000Z')] })],
+      { now },
+    );
+    expect(result).toEqual({ decision: 'hidden', rows: [] });
+  });
+
+  it('folds exactly one live departure into the endcap', () => {
+    const result = buildLeavingSoonRows(
+      [trip({ id: 'only', sessions: [sess('2026-11-20T00:00:00.000Z')] })],
+      { now },
+    );
+    expect(result.decision).toBe('endcap');
+    expect(result.rows.map((r) => r.trip.id)).toEqual(['only']);
+  });
+
+  it('hides when the only departure already sits in Selected (mere duplication)', () => {
+    const result = buildLeavingSoonRows(
+      [trip({ id: 'only', sessions: [sess('2026-11-20T00:00:00.000Z')] })],
+      { now, selectedTripIds: ['only'] },
+    );
+    expect(result.decision).toBe('hidden');
+  });
+
+  it('hides when every live row duplicates Selected', () => {
+    const result = buildLeavingSoonRows(
+      [
+        trip({ id: 's1', sessions: [sess('2026-11-20T00:00:00.000Z')] }),
+        trip({ id: 's2', agency: { id: 'agency-b' }, sessions: [sess('2026-11-21T00:00:00.000Z')] }),
+      ],
+      { now, selectedTripIds: ['s1', 's2'] },
+    );
+    expect(result.decision).toBe('hidden');
+  });
+
+  it('appends at most one tombstone — the soonest filled session — never counted as live', () => {
+    const result = buildLeavingSoonRows(
+      [
+        trip({ id: 'live-1', agency: { id: 'ag-1' }, sessions: [sess('2026-11-20T00:00:00.000Z', { availableSeats: 5 })] }),
+        trip({ id: 'live-2', agency: { id: 'ag-2' }, sessions: [sess('2026-11-22T00:00:00.000Z', { availableSeats: 5 })] }),
+        trip({ id: 'filled-late', agency: { id: 'ag-3' }, sessions: [sess('2026-11-25T00:00:00.000Z', { availableSeats: 0 })] }),
+        trip({ id: 'filled-soon', agency: { id: 'ag-4' }, sessions: [sess('2026-11-18T00:00:00.000Z', { availableSeats: 0 })] }),
+      ],
+      { now },
+    );
+    expect(result.decision).toBe('strip');
+    const tombstones = result.rows.filter((r) => r.kind === 'tombstone');
+    expect(tombstones).toHaveLength(1);
+    expect(tombstones[0].trip.id).toBe('filled-soon');
+    expect(result.rows[result.rows.length - 1].kind).toBe('tombstone');
+    expect(result.rows.filter((r) => r.kind === 'live')).toHaveLength(2);
+  });
+
+  it('a filled session in the past leaves no tombstone', () => {
+    const result = buildLeavingSoonRows(
+      [
+        trip({ id: 'live-1', agency: { id: 'ag-1' }, sessions: [sess('2026-11-20T00:00:00.000Z', { availableSeats: 5 })] }),
+        trip({ id: 'live-2', agency: { id: 'ag-2' }, sessions: [sess('2026-11-22T00:00:00.000Z', { availableSeats: 5 })] }),
+        trip({ id: 'filled-past', agency: { id: 'ag-3' }, sessions: [sess('2026-11-01T00:00:00.000Z', { availableSeats: 0 })] }),
+      ],
+      { now },
+    );
+    expect(result.rows.some((r) => r.kind === 'tombstone')).toBe(false);
   });
 });
 
