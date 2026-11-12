@@ -336,7 +336,14 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, variant = 'def
               verification claim below; it has no UI surface. */}
         </div>
 
-        <div className={cn("absolute top-3 flex flex-col items-end gap-2", isSearch ? "end-3" : "end-16")}>
+        {/* #978: on the search variant the badge's container starts at
+            start-28, confining the badge's box to the photo's right zone.
+            The K6 wording is long enough (210px on a 289px photo) that an
+            unconstrained right-anchored badge reached back into the
+            top-left cluster and covered the category pill's right end;
+            capped by this zone (badge max-w-full below) it wraps inside
+            the top-right instead. Other variants keep their geometry. */}
+        <div className={cn("absolute top-3 flex flex-col items-end gap-2", isSearch ? "end-3 start-28" : "end-16")}>
           {/* #571 rework + search-page council K6a (punch item 10,
               #886): the badge colours are a measured spec, not a
               palette pick — available = #15803D with white text
@@ -350,7 +357,7 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, variant = 'def
             data-testid="trip-card-spots-badge"
             data-state={nextSession ? (nextSession.availableSeats <= 5 ? 'low' : 'available') : 'sold-out'}
             className={cn(
-              "text-xs font-bold rounded-lg px-3 py-1.5 shadow-md border-none flex items-center gap-1",
+              "max-w-full text-xs font-bold rounded-lg px-3 py-1.5 shadow-md border-none flex items-center gap-1",
               nextSession
                 ? nextSession.availableSeats <= 5
                   ? "bg-[#FEF3C7] text-[#B45309]"
