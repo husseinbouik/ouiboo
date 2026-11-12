@@ -14,8 +14,11 @@ import { useTranslation } from 'react-i18next';
 import { BETA_DESTINATIONS } from '@ouiboo/types';
 import type { TripSession, TripTemplate, VerificationStatusType } from '@ouiboo/types';
 import {
+  buildLeavingSoonRows,
   countTripsByCategory,
   curateFeaturedTrips,
+  type CurationTrip,
+  type LeavingSoonRow,
   type ShowcaseDestination,
 } from '@/lib/curation';
 import { buildHeroSuggestions } from '@/lib/hero-suggestions';
@@ -175,6 +178,54 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
   // the rail verbatim (the pre-#885 contract the tests lock).
   const allTrips = catalogTrips ?? featuredTripsProp ?? [];
   const featuredTrips = catalogTrips ? curateFeaturedTrips(catalogTrips) : allTrips;
+  // Search-page council item 15 (#961): FC 'Leaving Soon' — a
+  // conditional ADDITIONAL strip below Selected, built by the pure
+  // K3 builder in lib/curation (date order, max 2 per agency, one
+  // tombstone at most, suppression at 0 / duplication, end-cap fold
+  // at 1). Legacy callers without a catalogue get 'hidden' — every
+  // departure they carry is already in the rail.
+  const leavingSoon = catalogTrips
+    ? buildLeavingSoonRows(allTrips as unknown as CurationTrip[], {
+        selectedTripIds: featuredTrips.map((trip) => trip.id),
+      })
+    : { decision: 'hidden' as const, rows: [] as LeavingSoonRow<CurationTrip>[] };
+  const formatSessionDate = (iso?: string | null) =>
+    iso
+      ? new Intl.DateTimeFormat(i18n.language || 'en', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(iso))
+      : '';
+  const sessionCountdown = (iso?: string | null): string => {
+    if (!iso) return '';
+    const start = new Date(iso);
+    const today = new Date();
+    const days = Math.round(
+      (Date.UTC(start.getFullYear(), start.getMonth(), start.getDate()) -
+        Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())) /
+        86400000,
+    );
+    if (days <= 0) return t('featured.leavingSoon.departsToday');
+    if (days === 1) return t('featured.leavingSoon.departsTomorrow');
+    return t('featured.leavingSoon.departsIn', { count: days });
+  };
+  const leavingSoonSessionLine = (row: LeavingSoonRow<CurationTrip>): string => {
+    const price =
+      row.session.price != null && row.session.price !== ''
+        ? `${new Intl.NumberFormat(i18n.language || 'en').format(Number(row.session.price))} ${row.session.currency ?? 'MAD'}`
+        : '';
+    return [formatSessionDate(row.session.startDate), price, sessionCountdown(row.session.startDate)]
+      .filter(Boolean)
+      .join(' · ');
+  };
+  const leavingSoonTripTitle = (trip: CurationTrip): string => {
+    const title = (trip as unknown as { title?: unknown }).title;
+    if (typeof title === 'string') return title;
+    if (title && typeof title === 'object') {
+      const map = title as Record<string, unknown>;
+      for (const key of [i18n.language, 'en', 'fr', 'ar']) {
+        if (typeof map[key] === 'string') return map[key] as string;
+      }
+    }
+    return '';
+  };
   const categoryTripCounts = countTripsByCategory(allTrips);
   const hasCatalogSections = Boolean(catalogTrips) && !featuredTripsFetchFailed;
   // Search council (#938, punch item 12 / #942): the first-screen
@@ -370,11 +421,21 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
                     )}
                 />
             ) : featuredTrips.length > 0 ? (
-              featuredTrips.map((trip) => (
-                <motion.div key={trip.id} variants={fadeInUp}>
-                  <TripCard trip={trip} />
-                </motion.div>
-              ))
+              <>
+                {featuredTrips.map((trip) => (
+                  <motion.div key={trip.id} variants={fadeInUp}>
+                    <TripCard trip={trip} />
+                  </motion.div>
+                ))}
+                {/* #961: at exactly one live departure the strip
+                    folds into Selected's end-cap — that trip's card
+                    closes the grid. */}
+                {leavingSoon.decision === 'endcap' && leavingSoon.rows[0] ? (
+                  <motion.div key={leavingSoon.rows[0].trip.id} variants={fadeInUp}>
+                    <TripCard trip={leavingSoon.rows[0].trip as unknown as HomeCatalogTrip} />
+                  </motion.div>
+                ) : null}
+              </>
             ) : (
                 <EmptyState
                     className="col-span-full py-20 rounded-3xl"
@@ -386,6 +447,52 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
           </motion.div>
         </div>
       </section>
+
+      {/* Search-page council item 15 (#961): 'Leaving soon — the
+          North', an ADDITIONAL strip below Selected, rendered only
+          when the K3 builder's decision is 'strip' (suppressed at 0
+          live departures and when it would merely duplicate
+          Selected; at 1 it folds into the grid's end-cap above).
+          Session prices are stated plainly on each row (T10 — the
+          card's own 'From' line is the trip's starting price, a
+          different fact), countdowns are generated from session
+          data, and the tombstone is a muted non-card that is never
+          counted among the live rows. */}
+      {hasCatalogSections && leavingSoon.decision === 'strip' && (
+        <section className="py-10 sm:py-12 bg-background" data-testid="leaving-soon">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="max-w-2xl mb-6">
+              <h2 className="oui-balance text-[26px] font-bold tracking-tight text-foreground sm:text-3xl mb-2">{t('featured.leavingSoon.title')}</h2>
+              <p className="text-[15px] text-muted-foreground">{t('featured.leavingSoon.standfirst')}</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {leavingSoon.rows.map((row) =>
+                row.kind === 'live' ? (
+                  <div key={row.trip.id}>
+                    <TripCard trip={row.trip as unknown as HomeCatalogTrip} />
+                    <p className="mt-2 text-[13px] font-medium text-muted-foreground">
+                      {leavingSoonSessionLine(row)}
+                    </p>
+                  </div>
+                ) : (
+                  <article
+                    key={`tombstone-${row.trip.id}`}
+                    className="rounded-3xl border border-border bg-muted/40 p-5"
+                    aria-label={t('featured.leavingSoon.tombstone', { date: formatSessionDate(row.session.startDate) })}
+                  >
+                    <h3 className="font-display text-[17px] font-bold text-foreground">
+                      {leavingSoonTripTitle(row.trip)}
+                    </h3>
+                    <p className="mt-1 text-sm font-semibold text-muted-foreground">
+                      {t('featured.leavingSoon.tombstone', { date: formatSessionDate(row.session.startDate) })}
+                    </p>
+                  </article>
+                ),
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* #898, in B's proportions (#929): "Travel your way" —
           category PHOTO tiles (Adventure wide, then Nature,
