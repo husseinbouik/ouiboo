@@ -38,8 +38,9 @@ test.describe('traveler launch flow', () => {
     await seedLocalStorage(page, { 'ouiboo.session.hint': '1' });
     await page.goto('/search', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: 'Atlas Weekend Escape' })).toBeVisible();
-    // "View details" is rendered as a link (Next.js Link), not a button.
-    await page.getByRole('link', { name: /view details/i }).first().click();
+    // #975: /search cards no longer carry a "View Details" affordance —
+    // the whole card body is the link (Next.js Link), named by its text.
+    await page.getByRole('link', { name: /atlas weekend escape/i }).first().click();
     await page.waitForURL(/\/trip\/trip-1/);
     await expect(page.getByRole('heading', { name: 'Atlas Weekend Escape' })).toBeVisible();
     await page.getByText(/spots left/i).first().click();
@@ -80,7 +81,9 @@ test.describe('traveler launch flow', () => {
       && url.searchParams.get('dateFrom') === '2027-05-10'
       && url.searchParams.get('dateTo') === '2027-05-12'
     ));
-    await expect(page.getByRole('heading', { name: /find your next adventure/i })).toBeVisible();
+    // #975: /search opens on the slim segmented search bar, not the
+    // retired marketing heading ("Find your next Adventure").
+    await expect(page.getByRole('combobox')).toBeVisible();
   });
 
   test('traveler homepage hero search submits with Enter and stays unfiltered when empty', async ({ page }) => {
@@ -95,27 +98,32 @@ test.describe('traveler launch flow', () => {
       && !url.searchParams.get('destination')
       && !url.searchParams.get('q')
     ));
-    await expect(page.getByRole('heading', { name: /find your next adventure/i })).toBeVisible();
+    await expect(page.getByRole('combobox')).toBeVisible();
   });
 
   test('traveler search uses the corrected discovery contract', async ({ page }) => {
     await page.goto('/search', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { name: /find your next adventure/i })).toBeVisible();
+    await expect(page.getByRole('combobox')).toBeVisible();
 
     await page.getByPlaceholder(/destination, activity or keyword/i).fill('atlas');
     await page.getByRole('button', { name: /^search$/i }).click();
-    // #599/#560: on small viewports the category controls live inside the
-    // MobileFilterDrawer — they are not in the DOM at all until it opens
-    // (the desktop sidebar is display:none there), so the mobile project
-    // must open the drawer first, exactly as a phone user does. Desktop
-    // keeps the direct sidebar click. The category assertion itself is
-    // unchanged: Adventure is still clicked and must still surface the trip.
+    // #599/#560 + #975: on small viewports the category controls live
+    // inside the MobileFilterDrawer — they are not in the DOM at all
+    // until it opens (the desktop sidebar is display:none there), so
+    // the mobile project must open the drawer first, exactly as a
+    // phone user does. Desktop keeps the direct sidebar click. Since
+    // #975 the category control is a checkbox row, so the click lands
+    // on its label (which toggles the input), not a button. The
+    // category assertion itself is unchanged: Adventure is still
+    // clicked and must still surface the trip.
     const viewport = page.viewportSize();
     const isMobileViewport = viewport !== null && viewport.width < 1024;
     if (isMobileViewport) {
       await page.getByRole('button', { name: /^filters/i }).click();
+      await page.locator('section[role="dialog"] label', { hasText: 'Adventure' }).first().click();
+    } else {
+      await page.locator('aside label', { hasText: 'Adventure' }).first().click();
     }
-    await page.getByRole('button', { name: 'Adventure' }).click();
     if (isMobileViewport) {
       // Close the drawer via its footer CTA so the result is uncovered.
       // Search-page council item 3 (#877): the drawer applies
